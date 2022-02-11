@@ -1,0 +1,31 @@
+{
+  "name": "gleam-lustre",
+  "version": "1.0.0",
+  "description": "A Gleam project",
+  "main": "index.js",
+  "type": "module",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "clean": "rm -rf build dist",
+    "build:gleam": "gleam build && cd src/lustre && find . -type f -iname \"*.mjs\" -ls -exec ditto {} ../../build/dev/javascript/lustre/dist/lustre/{} \\; && cd ../../",
+    "build": "npm run build:gleam && parcel build src/index.html",
+    "start": "npm run build:gleam && concurrently --kill-others \"chokidar src/lustre/* -c \\\"npm run build:gleam\\\"\" \"parcel src/index.html\"",
+    "start:clean": "npm run clean && npm start"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "morphdom": "^2.6.1"
+  },
+  "devDependencies": {
+    "chokidar-cli": "^3.0.0",
+    "concurrently": "^7.0.0",
+    "parcel": "^2.3.0",
+    "process": "^0.11.10"
+  },
+  "alias": {
+    "lustre": "./build/dev/javascript/lustre/dist/lustre"
+  }
+}
