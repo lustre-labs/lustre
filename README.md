@@ -1,19 +1,15 @@
-# gleam_lustre
+# Lustre
 
-A Gleam project
+> A playground for building create web apps – powered by Gleam!
 
-## Quick start
+## Development
 
-```sh
-gleam run   # Run the project
-gleam test  # Run the tests
-gleam shell # Run an Erlang shell
+First, make sure you have both Gleam and Node.js installed, then:
+
+```bash
+npm i
+npm start
 ```
 
-## Installation
-
-If available on Hex this package can be added to your Gleam project.
-
-```sh
-gleam add gleam_lustre
-```
+This sets up `chokidar` to watch our gleam source code and runs the compiler
+whenever we make a change.
