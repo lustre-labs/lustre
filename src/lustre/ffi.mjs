@@ -1,24 +1,22 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 
-export const Program = ({ init, update, view }) => () => {
-    return React.createElement(() => {
+// -----------------------------------------------------------------------------
+
+export const mount = ({ init, update, view }, selector) => {
+    const root = document.querySelector(selector)
+    const App = React.createElement(() => {
         const [state, dispatch] = React.useReducer(update, init)
 
         return view(state)(dispatch)
     })
-}
 
-export const mount = (program, selector) => {
-    const root = document.querySelector(selector)
-    const App = Program(program)
-
-    ReactDOM.render(App(), root)
+    ReactDOM.render(App, root)
 }
 
 // -----------------------------------------------------------------------------
 
-export const element = (tag, attributes, children) => (dispatch) => {
+export const html = (tag, attributes, children) => (dispatch) => {
     const props = attributes.toArray().map(attr => {
         switch (attr.constructor.name) {
             case "Attribute":
@@ -51,6 +49,12 @@ export const element = (tag, attributes, children) => (dispatch) => {
     )
 }
 
+export const stateful = (init, render) => (dispatch) => {
+    const [state, setState] = React.useState(init)
+
+    return render(state, setState)(dispatch)
+}
+
 export const fragment = (children) => (dispatch) => {
     return React.createElement(React.Fragment, null,
         ...children.toArray().map(child => typeof child === 'function'
@@ -63,3 +67,9 @@ export const fragment = (children) => (dispatch) => {
 // This is just an identity function! We need it because we want to trick Gleam
 // into converting a `String` into an `Element(action)` .
 export const text = (content) => content
+
+// -----------------------------------------------------------------------------
+
+export const map = (element, f) => (dispatch) => {
+    return element(action => dispatch(f(action)))
+}
