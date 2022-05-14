@@ -7,3 +7,5 @@ erl_crash.dump
 
 node_modules
 .parcel-cache
+
+dist
