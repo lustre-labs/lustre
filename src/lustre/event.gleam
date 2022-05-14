@@ -9,6 +9,12 @@ pub fn on (name: String, handler: fn (Dynamic, fn (action) -> Nil) -> Nil) -> At
     attribute.event(name, handler)
 }
 
+pub fn dispatch (action: action) -> fn (fn (action) -> Nil) -> Nil {
+    fn (dispatch) {
+        dispatch(action)
+    }
+}
+
 
 // MOUSE EVENTS ----------------------------------------------------------------
 
