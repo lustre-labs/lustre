@@ -1,9 +1,10 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import lustre.{ Element }
-import lustre/element
-
-import example/application/counter
+import gleam/int
+import lustre
+import lustre/attribute.{ style }
+import lustre/element.{ button, div, p, text }
+import lustre/event.{ dispatch, on_click }
 
 // MAIN ------------------------------------------------------------------------
 
@@ -21,39 +22,36 @@ pub fn main () -> Nil {
 
 // STATE -----------------------------------------------------------------------
 
-type State {
-    State(
-        counter: counter.State
-    )
-}
+pub type State 
+    = Int
 
-fn init () -> State {
-    State(
-        counter: counter.init()
-    )
+pub fn init () -> State {
+    0
 }
 
 // UPDATE ----------------------------------------------------------------------
 
-type Action {
-    Counter(counter.Action)
+pub type Action {
+    Incr
+    Decr
 }
 
-fn update (state: State, action: Action) -> State {
+pub fn update (state, action) {
     case action {
-        Counter(counter_action) ->
-            State(counter: counter.update(state.counter, counter_action))
+        Incr ->
+            state + 1
+
+        Decr ->
+            state - 1
     }
 }
 
 // RENDER ----------------------------------------------------------------------
 
-fn render (state: State) -> Element(Action) {
-    element.div([], [
-        element.details([], [
-            element.summary([], [ element.text("Counter") ]),
-            counter.render(state.counter) 
-                |> element.map(Counter)
-        ])
+pub fn render (state) {
+    div([ style([ #("display", "flex") ]) ], [
+        button([ on_click(dispatch(Decr)) ], [ text("-") ]),
+        p([], [ int.to_string(state) |> text ]),
+        button([ on_click(dispatch(Incr)) ], [ text("+") ])
     ])
 }
