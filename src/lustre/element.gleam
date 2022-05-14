@@ -15,8 +15,8 @@ pub external type Element(action)
 /// tag name, a list of attributes (including event handlers), and a list of
 /// child elements.
 ///
-pub external fn html (tag: String, attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action)
-    = "./ffi.mjs" "html"
+pub external fn node (tag: String, attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action)
+    = "./ffi.mjs" "node"
 
 /// A stateful element is exactly what it sounds like: some element with local
 /// encapsulated state! The `render` function we must provide is called with the
@@ -56,8 +56,8 @@ pub external fn map (element: Element(a), f: fn (a) -> b) -> Element(b)
 // MAIN ROOT -------------------------------------------------------------------
 
 ///
-pub fn html_ (attributes: List(Attribute(action)), head: Element(action), body: Element(action)) -> Element(action) {
-    html("html", attributes, [ head, body ])
+pub fn html (attributes: List(Attribute(action)), head: Element(action), body: Element(action)) -> Element(action) {
+    node("html", attributes, [ head, body ])
 }
 
 
@@ -65,34 +65,34 @@ pub fn html_ (attributes: List(Attribute(action)), head: Element(action), body: 
 
 ///
 pub fn base (attributes: List(Attribute(action))) -> Element(action) {
-    html("base", attributes, [])
+    node("base", attributes, [])
 }
 
 ///
 pub fn head (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("head", attributes, children)
+    node("head", attributes, children)
 }
 
 ///
 pub fn meta (attributes: List(Attribute(action))) -> Element(action) {
-    html("meta", attributes, [])
+    node("meta", attributes, [])
 }
 
 ///
 pub fn style (attributes: List(Attribute(action)), css: String) -> Element(action) {
-    html("style", attributes, [ text(css) ])
+    node("style", attributes, [ text(css) ])
 }
 
 ///
 pub fn title (attributes: List(Attribute(action)), name: String) -> Element(action) {
-    html("title", attributes, [ text(name) ])
+    node("title", attributes, [ text(name) ])
 }
 
 // SECTIONING ROOT -------------------------------------------------------------
 
 ///
 pub fn body (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("body", attributes, children)
+    node("body", attributes, children)
 }
 
 
@@ -100,72 +100,72 @@ pub fn body (attributes: List(Attribute(action)), children: List(Element(action)
 
 ///
 pub fn address (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("address", attributes, children)
+    node("address", attributes, children)
 }
 
 ///
 pub fn article (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("article", attributes, children)
+    node("article", attributes, children)
 }
 
 ///
 pub fn aside (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("aside", attributes, children)
+    node("aside", attributes, children)
 }
 
 ///
 pub fn footer (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("footer", attributes, children)
+    node("footer", attributes, children)
 }
 
 ///
 pub fn header (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("header", attributes, children)
+    node("header", attributes, children)
 }
 
 ///
 pub fn h1 (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("h1", attributes, children)
+    node("h1", attributes, children)
 }
 
 ///
 pub fn h2 (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("h2", attributes, children)
+    node("h2", attributes, children)
 }
 
 ///
 pub fn h3 (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("h3", attributes, children)
+    node("h3", attributes, children)
 }
 
 ///
 pub fn h4 (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("h4", attributes, children)
+    node("h4", attributes, children)
 }
 
 ///
 pub fn h5 (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("h5", attributes, children)
+    node("h5", attributes, children)
 }
 
 ///
 pub fn h6 (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("h6", attributes, children)
+    node("h6", attributes, children)
 }
 
 ///
 pub fn main (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("main", attributes, children)
+    node("main", attributes, children)
 }
 
 ///
 pub fn nav (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("nav", attributes, children)
+    node("nav", attributes, children)
 }
 
 ///
 pub fn section (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("section", attributes, children)
+    node("section", attributes, children)
 }
 
 
@@ -173,72 +173,72 @@ pub fn section (attributes: List(Attribute(action)), children: List(Element(acti
 
 ///
 pub fn blockquote (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("blockquote", attributes, children)
+    node("blockquote", attributes, children)
 }
 
 ///
 pub fn dd (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("dd", attributes, children)
+    node("dd", attributes, children)
 }
 
 ///
 pub fn div (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("div", attributes, children)
+    node("div", attributes, children)
 }
 
 ///
 pub fn dl (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("dl", attributes, children)
+    node("dl", attributes, children)
 }
 
 ///
 pub fn dt (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("dt", attributes, children)
+    node("dt", attributes, children)
 }
 
 ///
 pub fn figcaption (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("figcaption", attributes, children)
+    node("figcaption", attributes, children)
 }
 
 ///
 pub fn figure (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("figure", attributes, children)
+    node("figure", attributes, children)
 }
 
 ///
 pub fn hr (attributes: List(Attribute(action))) -> Element(action) {
-    html("hr", attributes, [])
+    node("hr", attributes, [])
 }
 
 ///
 pub fn li (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("li", attributes, children)
+    node("li", attributes, children)
 }
 
 ///
 pub fn menu (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("menu", attributes, children)
+    node("menu", attributes, children)
 }
 
 ///
 pub fn ol (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("ol", attributes, children)
+    node("ol", attributes, children)
 }
 
 ///
 pub fn p (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("p", attributes, children)
+    node("p", attributes, children)
 }
 
 ///
 pub fn pre (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("pre", attributes, children)
+    node("pre", attributes, children)
 }
 
 ///
 pub fn ul (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("ul", attributes, children)
+    node("ul", attributes, children)
 }
 
 
@@ -246,137 +246,137 @@ pub fn ul (attributes: List(Attribute(action)), children: List(Element(action)))
 
 ///
 pub fn a (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("a", attributes, children)
+    node("a", attributes, children)
 }
 
 ///
 pub fn abbr (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("abbr", attributes, children)
+    node("abbr", attributes, children)
 }
 
 ///
 pub fn b (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("b", attributes, children)
+    node("b", attributes, children)
 }
 
 ///
 pub fn bdi (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("bdi", attributes, children)
+    node("bdi", attributes, children)
 }
 
 ///
 pub fn bdo (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("bdo", attributes, children)
+    node("bdo", attributes, children)
 }
 
 ///
 pub fn br (attributes: List(Attribute(action))) -> Element(action) {
-    html("br", attributes, [])
+    node("br", attributes, [])
 }
 
 ///
 pub fn cite (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("cite", attributes, children)
+    node("cite", attributes, children)
 }
 
 ///
 pub fn code (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("code", attributes, children)
+    node("code", attributes, children)
 }
 
 ///
 pub fn dfn (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("dfn", attributes, children)
+    node("dfn", attributes, children)
 }
 
 ///
 pub fn em (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("em", attributes, children)
+    node("em", attributes, children)
 }
 
 ///
 pub fn i (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("i", attributes, children)
+    node("i", attributes, children)
 }
 
 ///
 pub fn kbd (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("kbd", attributes, children)
+    node("kbd", attributes, children)
 }
 
 ///
 pub fn mark (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("mark", attributes, children)
+    node("mark", attributes, children)
 }
 
 ///
 pub fn rp (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("rp", attributes, children)
+    node("rp", attributes, children)
 }
 
 ///
 pub fn rt (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("rt", attributes, children)
+    node("rt", attributes, children)
 }
 
 ///
 pub fn ruby (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("ruby", attributes, children)
+    node("ruby", attributes, children)
 }
 
 ///
 pub fn s (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("s", attributes, children)
+    node("s", attributes, children)
 }
 
 ///
 pub fn samp (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("samp", attributes, children)
+    node("samp", attributes, children)
 }
 
 ///
 pub fn small (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("small", attributes, children)
+    node("small", attributes, children)
 }
 
 ///
 pub fn span (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("span", attributes, children)
+    node("span", attributes, children)
 }
 
 ///
 pub fn strong (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("strong", attributes, children)
+    node("strong", attributes, children)
 }
 
 ///
 pub fn sub (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("sub", attributes, children)
+    node("sub", attributes, children)
 }
 
 ///
 pub fn sup (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("sup", attributes, children)
+    node("sup", attributes, children)
 }
 
 ///
 pub fn time (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("time", attributes, children)
+    node("time", attributes, children)
 }
 
 ///
 pub fn u (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("u", attributes, children)
+    node("u", attributes, children)
 }
 
 ///
 pub fn var_ (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("var", attributes, children)
+    node("var", attributes, children)
 }
 
 ///
 pub fn wbr (attributes: List(Attribute(action))) -> Element(action) {
-    html("wbr", attributes, [])
+    node("wbr", attributes, [])
 }
 
 
@@ -384,32 +384,32 @@ pub fn wbr (attributes: List(Attribute(action))) -> Element(action) {
 
 ///
 pub fn area (attributes: List(Attribute(action))) -> Element(action) {
-    html("area", attributes, [])
+    node("area", attributes, [])
 }
 
 ///
 pub fn audio (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("audio", attributes, children)
+    node("audio", attributes, children)
 }
 
 ///
 pub fn img (attributes: List(Attribute(action))) -> Element(action) {
-    html("img", attributes, [])
+    node("img", attributes, [])
 }
 
 ///
 pub fn map_ (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("map", attributes, children)
+    node("map", attributes, children)
 }
 
 ///
 pub fn track (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("track", attributes, children)
+    node("track", attributes, children)
 }
 
 ///
 pub fn video (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("video", attributes, children)
+    node("video", attributes, children)
 }
 
 
@@ -417,37 +417,37 @@ pub fn video (attributes: List(Attribute(action)), children: List(Element(action
 
 ///
 pub fn embed (attributes: List(Attribute(action))) -> Element(action) {
-    html("embed", attributes, [])
+    node("embed", attributes, [])
 }
 
 ///
 pub fn iframe (attributes: List(Attribute(action))) -> Element(action) {
-    html("iframe", attributes, [])
+    node("iframe", attributes, [])
 }
 
 ///
 pub fn object (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("object", attributes, children)
+    node("object", attributes, children)
 }
 
 ///
 pub fn param (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("param", attributes, children)
+    node("param", attributes, children)
 }
 
 ///
 pub fn picture (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("picture", attributes, children)
+    node("picture", attributes, children)
 }
 
 ///
 pub fn portal (attributes: List(Attribute(action))) -> Element(action) {
-    html("portal", attributes, [])
+    node("portal", attributes, [])
 }
 
 ///
 pub fn source (attributes: List(Attribute(action))) -> Element(action) {
-    html("source", attributes, [])
+    node("source", attributes, [])
 }
 
 
@@ -455,24 +455,24 @@ pub fn source (attributes: List(Attribute(action))) -> Element(action) {
 
 ///
 pub fn svg (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("svg", [attribute("xmlns", "http://www.w3.org/2000/svg"), ..attributes], children)
+    node("svg", [attribute("xmlns", "http://www.w3.org/2000/svg"), ..attributes], children)
 }
 
 ///
 pub fn mathml (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("mathml", [attribute("xmlns", "http://www.w3.org/1998/Math/MathML"), ..attributes], children)
+    node("mathml", [attribute("xmlns", "http://www.w3.org/1998/Math/MathML"), ..attributes], children)
 }
 
 // SCRIPTING -------------------------------------------------------------------
 
 ///
 pub fn canvas (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("canvas", attributes, children)
+    node("canvas", attributes, children)
 }
 
 ///
 pub fn noscript (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("noscript", attributes, children)
+    node("noscript", attributes, children)
 }
 
 
@@ -480,12 +480,12 @@ pub fn noscript (attributes: List(Attribute(action)), children: List(Element(act
 
 ///
 pub fn del (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("del", attributes, children)
+    node("del", attributes, children)
 }
 
 ///
 pub fn ins (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("ins", attributes, children)
+    node("ins", attributes, children)
 }
 
 
@@ -493,52 +493,52 @@ pub fn ins (attributes: List(Attribute(action)), children: List(Element(action))
 
 ///
 pub fn caption (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("caption", attributes, children)
+    node("caption", attributes, children)
 }
 
 ///
 pub fn col (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("col", attributes, children)
+    node("col", attributes, children)
 }
 
 ///
 pub fn colgroup (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("colgroup", attributes, children)
+    node("colgroup", attributes, children)
 }
 
 ///
 pub fn table (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("table", attributes, children)
+    node("table", attributes, children)
 }
 
 ///
 pub fn tbody (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("tbody", attributes, children)
+    node("tbody", attributes, children)
 }
 
 ///
 pub fn td (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("td", attributes, children)
+    node("td", attributes, children)
 }
 
 ///
 pub fn tfoot (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("tfoot", attributes, children)
+    node("tfoot", attributes, children)
 }
 
 ///
 pub fn th (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("th", attributes, children)
+    node("th", attributes, children)
 }
 
 ///
 pub fn thead (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("thead", attributes, children)
+    node("thead", attributes, children)
 }
 
 ///
 pub fn tr (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("tr", attributes, children)
+    node("tr", attributes, children)
 }
 
 
@@ -546,72 +546,72 @@ pub fn tr (attributes: List(Attribute(action)), children: List(Element(action)))
 
 ///
 pub fn button (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("button", attributes, children)
+    node("button", attributes, children)
 }
 
 ///
 pub fn datalist (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("datalist", attributes, children)
+    node("datalist", attributes, children)
 }
 
 ///
 pub fn fieldset (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("fieldset", attributes, children)
+    node("fieldset", attributes, children)
 }
 
 ///
 pub fn form (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("form", attributes, children)
+    node("form", attributes, children)
 }
 
 ///
 pub fn input (attributes: List(Attribute(action))) -> Element(action) {
-    html("input", attributes, [])
+    node("input", attributes, [])
 }
 
 ///
 pub fn label (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("label", attributes, children)
+    node("label", attributes, children)
 }
 
 ///
 pub fn legend (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("legend", attributes, children)
+    node("legend", attributes, children)
 }
 
 ///
 pub fn meter (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("meter", attributes, children)
+    node("meter", attributes, children)
 }
 
 ///
 pub fn optgroup (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("optgroup", attributes, children)
+    node("optgroup", attributes, children)
 }
 
 ///
 pub fn option (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("option", attributes, children)
+    node("option", attributes, children)
 }
 
 ///
 pub fn output (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("output", attributes, children)
+    node("output", attributes, children)
 }
 
 ///
 pub fn progress (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("progress", attributes, children)
+    node("progress", attributes, children)
 }
 
 ///
 pub fn select (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("select", attributes, children)
+    node("select", attributes, children)
 }
 
 ///
 pub fn textarea (attributes: List(Attribute(action))) -> Element(action) {
-    html("textarea", attributes, [])
+    node("textarea", attributes, [])
 }
 
 
@@ -619,17 +619,17 @@ pub fn textarea (attributes: List(Attribute(action))) -> Element(action) {
 
 ///
 pub fn details (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("details", attributes, children)
+    node("details", attributes, children)
 }
 
 ///
 pub fn dialog (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("dialog", attributes, children)
+    node("dialog", attributes, children)
 }
 
 ///
 pub fn summary (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("summary", attributes, children)
+    node("summary", attributes, children)
 }
 
 
@@ -637,10 +637,10 @@ pub fn summary (attributes: List(Attribute(action)), children: List(Element(acti
 
 ///
 pub fn slot (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("slot", attributes, children)
+    node("slot", attributes, children)
 }
 
 ///
 pub fn template (attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action) {
-    html("template", attributes, children)
+    node("template", attributes, children)
 }

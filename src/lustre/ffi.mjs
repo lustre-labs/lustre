@@ -5,6 +5,20 @@ import * as ReactDOM from 'react-dom'
 
 export const mount = ({ init, update, view }, selector) => {
     const root = document.querySelector(selector)
+
+    if (!root) {
+        console.warn([
+            '[lustre] Oops, it looks like I couldn\'t find an element on the ',
+            'page matching the selector "' + selector + '".',
+            '',
+            'Hint: make sure you aren\'t running your script before the rest of ',
+            'the HTML document has been parsed! you can add the `defer` attribute ',
+            'to your script tag to make sure that can\'t happen.'
+        ].join('\n'))
+
+        return
+    }
+
     const App = React.createElement(() => {
         const [state, dispatch] = React.useReducer(update, init)
 
@@ -16,7 +30,7 @@ export const mount = ({ init, update, view }, selector) => {
 
 // -----------------------------------------------------------------------------
 
-export const html = (tag, attributes, children) => (dispatch) => {
+export const node = (tag, attributes, children) => (dispatch) => {
     const props = attributes.toArray().map(attr => {
         switch (attr.constructor.name) {
             case "Attribute":
@@ -24,10 +38,24 @@ export const html = (tag, attributes, children) => (dispatch) => {
                 return [attr.name, attr.value]
 
             case "Event":
-                return [attr.on, (e) => dispatch(attr.handler(e))]
+                return ['on' + capitalise(attr.name), (e) => attr.handler(e, dispatch)]
 
-            default:
-                throw new Error(`Unknown attribute type: ${attr.constructor.name}`)
+
+            // This should Never Happen™️ but if it does we don't want everything
+            // to explode, so we'll print a friendly error, ignore the attribute
+            // and carry on as normal.
+            default: {
+                console.warn([
+                    '[lustre] Oops, I\'m not sure how to handle attributes with ',
+                    'the type "' + attr.constructor.name + '". Did you try calling ',
+                    'this function from JavaScript by mistake?',
+                    '',
+                    'If not, it might be an error in lustre itself. Please open ',
+                    'an issue at https://github.com/hayleigh-dot-dev/gleam-lustre/issues'
+                ].join('\n'))
+
+                return []
+            }
         }
     })
 
@@ -73,3 +101,8 @@ export const text = (content) => content
 export const map = (element, f) => (dispatch) => {
     return element(action => dispatch(f(action)))
 }
+
+
+// -----------------------------------------------------------------------------
+
+const capitalise = s => s && s[0].toUpperCase() + s.slice(1)
