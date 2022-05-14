@@ -2,7 +2,7 @@ import gleam/dynamic.{ Dynamic }
 import lustre/attribute.{ Attribute }
 
 pub external fn ignore () -> action
-    = "./ffi.mjs" "ignore"
+    = "../lustre.mjs" "ignore"
 
 
 pub fn on (name: String, handler: fn (Dynamic, fn (action) -> Nil) -> Nil) -> Attribute(action) {

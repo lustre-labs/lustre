@@ -5,6 +5,7 @@
 
 import lustre/element
 import lustre/attribute
+import gleam/result
 
 
 // TYPES -----------------------------------------------------------------------
@@ -22,6 +23,9 @@ pub opaque type Program(state, action) {
 pub type Element(action)   = element.Element(action)
 pub type Attribute(action) = attribute.Attribute(action)
 
+pub type Error {
+    ElementNotFound
+}
 
 // These types aren't exposed, but they're just here to try and shrink the type
 // annotations for `Program` and `program` a little bit. When generating docs,
@@ -39,7 +43,8 @@ type Render(state, action) = fn (state) -> Element(action)
 /// you can still create components with local state.
 ///
 /// Basic lustre programs don't have any *global* application state and so the
-/// plumbing is a lot simpler. If you find yourself passing state 
+/// plumbing is a lot simpler. If you find yourself passing lot's state of state
+/// around, you might want to consider using `application` instead.
 ///
 pub fn basic (element: Element(any)) -> Program(Nil, any) {
     let init   = Nil
@@ -53,7 +58,10 @@ pub fn basic (element: Element(any)) -> Program(Nil, any) {
 /// start with some initial `state`, a function to update that state, and then
 /// a render function to derive our program's view from that state.
 ///
-/// 
+/// Events produced by elements are passed a `dispatch` function that can be 
+/// used to emit actions that trigger your `update` function to be called and
+/// trigger a rerender.
+///
 pub fn application (init: state, update: Update(state, action), render: Render(state, action)) -> Program(state, action) {
     Program(init, update, render)
 }
@@ -61,6 +69,15 @@ pub fn application (init: state, update: Update(state, action), render: Render(s
 
 // EFFECTS ---------------------------------------------------------------------
 
+/// Once you have created a program with either `basic` or `application`, you 
+/// need to actually start it! This function will mount your program to the DOM
+/// node that matches the query selector you provide.
 ///
-pub external fn start (program: Program(state, action), selector: String) -> Nil
+pub fn start (program: Program(state, action), selector: String) -> Result(Nil, Error) {
+    mount(program, selector)
+        |> result.replace_error(ElementNotFound)
+}
+
+
+external fn mount (program: Program(state, action), selector: String) -> Result(Nil, Nil)
     = "./lustre/ffi.mjs" "mount"

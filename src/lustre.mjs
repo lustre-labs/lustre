@@ -1,5 +1,6 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
+import * as Gleam from './gleam.mjs'
 
 // -----------------------------------------------------------------------------
 
@@ -16,7 +17,7 @@ export const mount = ({ init, update, view }, selector) => {
             'to your script tag to make sure that can\'t happen.'
         ].join('\n'))
 
-        return
+        return new Gleam.Error()
     }
 
     const App = React.createElement(() => {
@@ -26,6 +27,8 @@ export const mount = ({ init, update, view }, selector) => {
     })
 
     ReactDOM.render(App, root)
+
+    return new Gleam.Ok()
 }
 
 // -----------------------------------------------------------------------------
