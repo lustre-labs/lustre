@@ -80,4 +80,4 @@ pub fn start (program: Program(state, action), selector: String) -> Result(Nil, 
 
 
 external fn mount (program: Program(state, action), selector: String) -> Result(Nil, Nil)
-    = "./lustre/ffi.mjs" "mount"
+    = "./ffi.mjs" "mount"

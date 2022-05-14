@@ -16,7 +16,7 @@ pub external type Element(action)
 /// child elements.
 ///
 pub external fn node (tag: String, attributes: List(Attribute(action)), children: List(Element(action))) -> Element(action)
-    = "../lustre.mjs" "node"
+    = "../ffi.mjs" "node"
 
 /// A stateful element is exactly what it sounds like: some element with local
 /// encapsulated state! The `render` function we must provide is called with the
@@ -27,18 +27,18 @@ pub external fn node (tag: String, attributes: List(Attribute(action)), children
 /// Those are just regular Gleam functions that return `Element`s!
 ///
 pub external fn stateful (init: state, render: fn (state, fn (state) -> Nil) -> Element(action)) -> Element(action)
-    = "../lustre.mjs" "stateful"
+    = "../ffi.mjs" "stateful"
 
 /// A fragment doesn't appear in the DOM, but allows us to treat a list of elements
 /// as if it were a single one. 
 ///
 pub external fn fragment (children: List(Element(action))) -> Element(action)
-    = "../lustre.mjs" "fragment"
+    = "../ffi.mjs" "fragment"
 
 /// Render a Gleam string as an HTML text node.
 ///
 pub external fn text (content: String) -> Element(action)
-    = "../lustre.mjs" "text"
+    = "../ffi.mjs" "text"
 
 
 // MANIPULATIONS ---------------------------------------------------------------
@@ -46,7 +46,7 @@ pub external fn text (content: String) -> Element(action)
 /// Transforms the actions produced by some element.
 ///
 pub external fn map (element: Element(a), f: fn (a) -> b) -> Element(b)
-    = "../lustre.mjs" "map"
+    = "../ffi.mjs" "map"
 
 
 // CONSTRUCTING NODES ----------------------------------------------------------
