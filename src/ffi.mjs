@@ -4,7 +4,7 @@ import * as Gleam from './gleam.mjs'
 
 // -----------------------------------------------------------------------------
 
-export const mount = ({ init, update, view }, selector) => {
+export const mount = ({ init, update, render }, selector) => {
     const root = document.querySelector(selector)
 
     if (!root) {
@@ -22,8 +22,12 @@ export const mount = ({ init, update, view }, selector) => {
 
     const App = React.createElement(() => {
         const [state, dispatch] = React.useReducer(update, init)
+        const el = render(state)
 
-        return view(state)(dispatch)
+
+        return typeof el == 'string'
+            ? el
+            : el(dispatch)
     })
 
     ReactDOM.render(App, root)
@@ -107,5 +111,7 @@ export const map = (element, f) => (dispatch) => {
 
 
 // -----------------------------------------------------------------------------
+
+export const object = (entries) => Object.fromEntries(entries)
 
 const capitalise = s => s && s[0].toUpperCase() + s.slice(1)

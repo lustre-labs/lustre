@@ -19,3 +19,12 @@ pub fn property (name: String, value: Dynamic) -> Attribute(action) {
 pub fn event (name: String, handler: fn (Dynamic, fn (action) -> Nil) -> Nil) -> Attribute(action) {
     Event(name, handler)
 }
+
+//
+
+pub fn style (properties: List(#(String, String))) -> Attribute(action) {
+    property("style", style_object(properties))
+}
+
+external fn style_object (properties: List(#(String, String))) -> Dynamic
+    = "../ffi.mjs" "object"
