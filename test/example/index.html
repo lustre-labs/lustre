@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <script type="module">
+        // `example` is set up as an alias in our `package.json` to point to
+        // some of Gleam's build artifacts.
+        import { main } from 'example/main.mjs'
+
+        document.addEventListener('DOMContentLoaded', main)
+    </script>
+</head>
+
+<body>
+    <div data-lustre-container></div>
+</body>
+
+</html>
