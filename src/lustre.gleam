@@ -1,4 +1,4 @@
-////
+//// Lustre is a declarative framework for building Web apps in Gleam. 
 
 
 // IMPORTS ---------------------------------------------------------------------
@@ -21,30 +21,31 @@ import gleam/result
 /// in time.
 ///
 ///```
-///                                      ┌────────┐
-///                                      │        │
-///                                      │ update │
-///                                      │        │
-///                                      └──────┬─┘
-///                                        ▲    │
-///                                        │    │ #(State, Action)
-///                                 Action │    │
-///                                        │    │
-///                                        │    ▼
-///  ┌──────┐                    ┌─────────┴──────────────┐
-///  │      │  #(State, Action)  │                        │
-///  │ init ├───────────────────►│     Lustre Runtime     │
-///  │      │                    │                        │
-///  └──────┘                    └──────────────┬─────────┘
-///                                        ▲    │
-///                                        │    │ State
-///                                 Action │    │
-///                                        │    ▼
-///                                      ┌─┴──────┐
-///                                      │        │
-///                                      │ render │
-///                                      │        │
-///                                      └────────┘
+///                                      +--------+
+///                                      |        |
+///                                      | update |
+///                                      |        |
+///                                      +--------+
+///                                        ^    |
+///                                        |    | 
+///                                 Action |    | #(State, Action)
+///                                        |    |
+///                                        |    v
+///  +------+                    +------------------------+
+///  |      |  #(State, Action)  |                        |
+///  | init |------------------->|     Lustre Runtime     |
+///  |      |                    |                        |
+///  +------+                    +------------------------+
+///                                        ^    |
+///                                        |    |
+///                                 Action |    | State
+///                                        |    |
+///                                        |    v
+///                                      +--------+
+///                                      |        |
+///                                      | render |
+///                                      |        |
+///                                      +--------+
 ///```
 ///
 /// <small>Someone please PR the Gleam docs generator to fix the monospace font,
@@ -78,10 +79,26 @@ type Render(state, action) = fn (state) -> Element(action)
 /// you can still create components with local state.
 ///
 /// Basic lustre apps don't have any *global* application state and so the
-/// plumbing is a lot simpler. If you find yourself passing lot's state of state
-/// around, you might want to consider using `application` instead.
+/// plumbing is a lot simpler. If you find yourself passing lots of state around,
+/// you might want to consider using [`simple`](#simple) or [`application`](#application)
+/// instead.
 ///
-pub fn basic (element: Element(any)) -> App(Nil, any) {
+///```gleam
+///import lustre
+///import lustre/element
+///
+///pub fn main () {
+///    let app = lustre.element(
+///        element.h1([], [
+///            element.text("Hello, world!") 
+///        ])
+///    )
+///
+///    lustre.start(app, "#root")
+///}
+///```
+///
+pub fn element (element: Element(any)) -> App(Nil, any) {
     let init   = #(Nil, cmd.none())
     let update = fn (_, _) { #(Nil, cmd.none()) }
     let render = fn (_) { element }
@@ -89,14 +106,96 @@ pub fn basic (element: Element(any)) -> App(Nil, any) {
     App(init, update, render)
 }
 
-/// Create a more complex application mimicing TEA – the Elm architecture. We
-/// start with some initial `state`, a function to update that state, and then
-/// a render function to derive our app's view from that state.
+/// If you start off with a simple `[element`](#element) app, you may find
+/// yourself leaning on [`stateful`](./lustrel/element.html#stateful) elements
+/// to manage state used throughout your app. If that's the case or if you know
+/// you need some global state from the get-go, you might want to construct a 
+/// [`simple`](#simple) app instead.
 ///
-/// Events produced by elements are passed a `dispatch` function that can be 
-/// used to emit actions that trigger your `update` function to be called and
-/// trigger a rerender.
+/// This is one app constructor that allows your HTML elements to dispatch actions
+/// to update your program state. 
 ///
+///```
+///import gleam/int
+///import lustre
+///import lustre/element
+///import lustre/event.{ dispatch }
+///
+///type Action {
+///    Incr
+///    Decr
+///}
+///
+///pub fn main () {
+///    let init = 0
+///    let update = fn (state, action) {
+///        case action {
+///            Incr -> state + 1
+///            Decr -> state - 1
+///        }
+///    }
+///    let render = fn (state) {
+///        element.div([], [
+///            element.button([ event.on_click(dispatch(Decr)) ], [
+///                element.text("-")
+///            ]),
+///            element.text(state |> int.to_string |> element.text),
+///            element.button([ event.on_click(dispatch(Incr)) ], [
+///                element.text("+")
+///            ])
+///        ])
+///    }
+///
+///    let app = lustre.simple(init, update, render)
+///    lustre.start(app, "#root")
+///}
+///```
+pub fn simple (init: state, update: fn (state, action) -> state, render: fn (state) -> Element(action)) -> App(state, action) {
+    let init   = #(init, cmd.none())
+    let update = fn (state, action) { #(update(state, action), cmd.none()) }
+
+    App(init, update, render)
+}
+
+/// An evolution of a [`simple`](#simple) app that allows you to return a
+/// [`Cmd`](./lustre/cmd.html#Cmd) from your `init` and `update`s. Commands give
+/// us a way to perform side effects like sending an HTTP request or running a
+/// timer and then dispatch actions back to the runtime to trigger an `update`.
+///
+///```
+///import lustre
+///import lustre/cmd
+///import lustre/element
+///
+///pub fn main () {
+///    let init = #(0, tick())
+///    let update = fn (state, action) {
+///        case action {
+///            Tick -> #(state + 1, tick())
+///        }
+///    }
+///    let render = fn (state) {
+///        element.div([], [
+///            element.text("Count is: ")
+///            element.text(state |> int.to_string |> element.text)
+///        ])
+///    }
+///
+///    let app = lustre.simple(init, update, render)
+///    lustre.start(app, "#root")   
+///}
+///
+///fn tick () -> Cmd(Action) {
+///    cmd.from(fn (dispatch) {
+///        setInterval(fn () {
+///            dispatch(Tick)
+///        }, 1000)
+///    })
+///}
+///
+///external fn set_timeout (f: fn () -> a, delay: Int) -> Nil 
+///    = "" "window.setTimeout"
+///```
 pub fn application (init: #(state, Cmd(action)), update: Update(state, action), render: Render(state, action)) -> App(state, action) {
     App(init, update, render)
 }
@@ -110,6 +209,19 @@ pub fn application (init: #(state, Cmd(action)), update: Update(state, action), 
 ///
 /// If everything mounted OK, we'll get back a dispatch function that you can 
 /// call to send actions to your app and trigger an update. 
+///
+///```
+///import lustre
+///
+///pub fn main () {
+///    let app = lustre.appliation(init, update, render)
+///    assert Ok(dispatch) = lustre.start(app, "#root")
+///
+///    dispatch(Incr)
+///    dispatch(Incr)
+///    dispatch(Incr)
+///}
+///```
 ///
 pub fn start (app: App(state, action), selector: String) -> Result(fn (action) -> Nil, Error) {
     mount(app, selector)
