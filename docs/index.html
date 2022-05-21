@@ -215,9 +215,8 @@
       <main class="content">
         
 <h1>Lustre</h1>
-<blockquote>
 <p>A framework for building create web apps – powered by Gleam and React!</p>
-</blockquote>
+<hr />
 <p><a href="https://hex.pm/packages/lustre"><img src="https://img.shields.io/hexpm/v/lustre" alt="Package Version" /></a>
 <a href="https://hexdocs.pm/lustre/"><img src="https://img.shields.io/badge/hex-docs-ffaff3" alt="Hex Docs" /></a></p>
 <pre><code class="language-gleam">import gleam/int
@@ -250,16 +249,15 @@ fn render (state) {
     ])
 }
 </code></pre>
-<blockquote>
-<p>❗️ This package relies on Gleam’s JavaScript FFI and will not work if your are
-targeting Erlang.</p>
-</blockquote>
+<hr />
+<p>❗️ This package relies on Gleam’s JavaScript FFI and is intended to be run in
+the browser. <strong>It will not work if your are targetting Node.js or Erlang.</strong></p>
 <hr />
 <h2>Installation</h2>
 <p>If available on Hex, this package can be added to your Gleam project:</p>
 <pre><code class="language-sh">gleam add lustre
 </code></pre>
-<p>and its documentation can be found at <a href="https://hexdocs.pm/eval">https://hexdocs.pm/eval</a>. You will also
+<p>and its documentation can be found at <a href="https://hexdocs.pm/lustre">https://hexdocs.pm/lustre</a>. You will also
 need to install <code>react</code> and <code>react-dom</code> from npm:</p>
 <pre><code class="language-sh">npm i react react-dom
 </code></pre>
@@ -271,7 +269,7 @@ npm start
 </code></pre>
 <p>This sets up <code>chokidar</code> to watch our gleam source code and runs the compiler
 whenever we make a change. It also starts a server that will serve the examples
-located in <code>test/examples/</code>.</p>
+located in <code>test/example/</code>.</p>
 
 
       </main>

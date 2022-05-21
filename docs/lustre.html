@@ -214,15 +214,9 @@
 <h2>Types</h2>
 <ul>
   
-  <li><a href="#Attribute">Attribute</a></li>
-  
-  <li><a href="#Cmd">Cmd</a></li>
-  
-  <li><a href="#Element">Element</a></li>
+  <li><a href="#App">App</a></li>
   
   <li><a href="#Error">Error</a></li>
-  
-  <li><a href="#Program">Program</a></li>
   
 </ul>
 
@@ -263,56 +257,52 @@
   
   <div class="member">
     <div class="member-name">
-      <h2 id="Attribute">
-        <a href="#Attribute">
-          Attribute
+      <h2 id="App">
+        <a href="#App">
+          App
         </a>
       </h2>
       
       
     </div>
     <div class="custom-type-constructors">
-      <div class="rendered-markdown"></div>
-      <pre><code class="hljs gleam">pub type Attribute(action) =
-  attribute.Attribute(action)</code></pre>
-      
-      
-    </div>
-  </div>
-  
-  <div class="member">
-    <div class="member-name">
-      <h2 id="Cmd">
-        <a href="#Cmd">
-          Cmd
-        </a>
-      </h2>
-      
-      
-    </div>
-    <div class="custom-type-constructors">
-      <div class="rendered-markdown"></div>
-      <pre><code class="hljs gleam">pub type Cmd(action) =
-  cmd.Cmd(action)</code></pre>
-      
-      
-    </div>
-  </div>
-  
-  <div class="member">
-    <div class="member-name">
-      <h2 id="Element">
-        <a href="#Element">
-          Element
-        </a>
-      </h2>
-      
-      
-    </div>
-    <div class="custom-type-constructors">
-      <div class="rendered-markdown"></div>
-      <pre><code class="hljs gleam">pub type Element(action) =
-  element.Element(action)</code></pre>
+      <div class="rendered-markdown"><p>An <code>App</code> describes a Lustre application: what state it holds and what kind
+of actions get dispatched to update that state. The only useful thing you can
+do with an <code>App</code> is pass it to <a href="#start"><code>start</code></a>.</p>
+<p>You can construct an <code>App</code> from the two constructors exposed in this module:
+<a href="#basic"><code>basic</code></a> and <a href="#application"><code>application</code></a>. Although you can’t do
+anything but <a href="#start"><code>start</code></a> them, the constructors are separated in case
+you want to set up an application but defer starting it until some later point
+in time.</p>
+<pre><code>                                      ┌────────┐
+                                      │        │
+                                      │ update │
+                                      │        │
+                                      └──────┬─┘
+                                        ▲    │
+                                        │    │ #(State, Action)
+                                 Action │    │
+                                        │    │
+                                        │    ▼
+  ┌──────┐                    ┌─────────┴──────────────┐
+  │      │  #(State, Action)  │                        │
+  │ init ├───────────────────►│     Lustre Runtime     │
+  │      │                    │                        │
+  └──────┘                    └──────────────┬─────────┘
+                                        ▲    │
+                                        │    │ State
+                                 Action │    │
+                                        │    ▼
+                                      ┌─┴──────┐
+                                      │        │
+                                      │ render │
+                                      │        │
+                                      └────────┘
+</code></pre>
+<p><small>Someone please PR the Gleam docs generator to fix the monospace font,
+thanks! 💖</small></p>
+</div>
+      <pre><code class="hljs gleam">pub opaque type App(state, action)</code></pre>
       
       
     </div>
@@ -358,24 +348,6 @@
     </div>
   </div>
   
-  <div class="member">
-    <div class="member-name">
-      <h2 id="Program">
-        <a href="#Program">
-          Program
-        </a>
-      </h2>
-      
-      
-    </div>
-    <div class="custom-type-constructors">
-      <div class="rendered-markdown"></div>
-      <pre><code class="hljs gleam">pub opaque type Program(state, action)</code></pre>
-      
-      
-    </div>
-  </div>
-  
 </section>
 
 
@@ -400,10 +372,10 @@
       
     </div>
     <pre><code class="hljs gleam">pub fn application(init: #(a, Cmd(b)), update: fn(a, b) -&gt;
-    #(a, Cmd(b)), render: fn(a) -&gt; Element(b)) -&gt; Program(a, b)</code></pre>
+    #(a, Cmd(b)), render: fn(a) -&gt; Element(b)) -&gt; App(a, b)</code></pre>
     <div class="rendered-markdown"><p>Create a more complex application mimicing TEA – the Elm architecture. We
 start with some initial <code>state</code>, a function to update that state, and then
-a render function to derive our program’s view from that state.</p>
+a render function to derive our app’s view from that state.</p>
 <p>Events produced by elements are passed a <code>dispatch</code> function that can be 
 used to emit actions that trigger your <code>update</code> function to be called and
 trigger a rerender.</p>
@@ -420,11 +392,11 @@ trigger a rerender.</p>
       
       
     </div>
-    <pre><code class="hljs gleam">pub fn basic(element: Element(a)) -&gt; Program(Nil, a)</code></pre>
-    <div class="rendered-markdown"><p>Create a basic lustre program that just renders some element on the page.
+    <pre><code class="hljs gleam">pub fn basic(element: Element(a)) -&gt; App(Nil, a)</code></pre>
+    <div class="rendered-markdown"><p>Create a basic lustre app that just renders some element on the page.
 Note that this doesn’t mean the content is static! With <code>element.stateful</code>
 you can still create components with local state.</p>
-<p>Basic lustre programs don’t have any <em>global</em> application state and so the
+<p>Basic lustre apps don’t have any <em>global</em> application state and so the
 plumbing is a lot simpler. If you find yourself passing lot’s state of state
 around, you might want to consider using <code>application</code> instead.</p>
 </div>
@@ -440,15 +412,15 @@ around, you might want to consider using <code>application</code> instead.</p>
       
       
     </div>
-    <pre><code class="hljs gleam">pub fn start(program: Program(a, b), selector: String) -&gt; Result(
+    <pre><code class="hljs gleam">pub fn start(app: App(a, b), selector: String) -&gt; Result(
   fn(b) -&gt; Nil,
   Error,
 )</code></pre>
-    <div class="rendered-markdown"><p>Once you have created a program with either <code>basic</code> or <code>application</code>, you 
-need to actually start it! This function will mount your program to the DOM
+    <div class="rendered-markdown"><p>Once you have created a app with either <code>basic</code> or <code>application</code>, you 
+need to actually start it! This function will mount your app to the DOM
 node that matches the query selector you provide.</p>
 <p>If everything mounted OK, we’ll get back a dispatch function that you can 
-call to send actions to your program and trigger an update. </p>
+call to send actions to your app and trigger an update. </p>
 </div>
   </div>
   
