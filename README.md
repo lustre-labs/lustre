@@ -1,6 +1,8 @@
 # Lustre
 
-> A framework for building create web apps – powered by Gleam and React!
+A framework for building create web apps – powered by Gleam and React!
+
+---
 
 [![Package Version](https://img.shields.io/hexpm/v/lustre)](https://hex.pm/packages/lustre)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/lustre/)
@@ -37,8 +39,10 @@ fn render (state) {
 }
 ```
 
-> ❗️ This package relies on Gleam's JavaScript FFI and will not work if your are
-> targeting Erlang.
+---
+
+❗️ This package relies on Gleam's JavaScript FFI and is intended to be run in
+the browser. **It will not work if your are targetting Node.js or Erlang.**
 
 ---
 
@@ -50,7 +54,7 @@ If available on Hex, this package can be added to your Gleam project:
 gleam add lustre
 ```
 
-and its documentation can be found at <https://hexdocs.pm/eval>. You will also
+and its documentation can be found at <https://hexdocs.pm/lustre>. You will also
 need to install `react` and `react-dom` from npm:
 
 ```sh
@@ -70,4 +74,4 @@ npm start
 
 This sets up `chokidar` to watch our gleam source code and runs the compiler
 whenever we make a change. It also starts a server that will serve the examples
-located in `test/examples/`.
+located in `test/example/`.
