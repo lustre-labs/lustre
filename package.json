@@ -9,6 +9,7 @@
   "scripts": {
     "clean": "rm -rf build dist",
     "build": "gleam test && parcel build test/example/index.html",
+    "docs": "gleam build docs && cp -a ./build/dev/docs/lustre/. ./docs/",
     "start": "gleam test && concurrently --kill-others \"chokidar \"src/*\" \"test/example/*\" -c \\\"gleam test\\\"\" \"parcel test/example/index.html\"",
     "start:clean": "npm run clean && npm start"
   },
