@@ -9,8 +9,9 @@
   "scripts": {
     "clean": "rm -rf build dist",
     "build": "gleam test && parcel build test/example/index.html",
-    "docs": "gleam build docs && cp -a ./build/dev/docs/lustre/. ./docs/",
+    "build:docs": "gleam docs build && cp -a ./build/dev/docs/lustre/. ./docs/",
     "start": "gleam test && concurrently --kill-others \"chokidar \"src/*\" \"test/example/*\" -c \\\"gleam test\\\"\" \"parcel test/example/index.html\"",
+    "start:docs": "concurrently --kill-others \"chokidar \"src/*\" \"test/example/*\" -c \\\"npm run build:docs\\\"\" \"http-server docs\"",
     "start:clean": "npm run clean && npm start"
   },
   "author": "",
@@ -18,6 +19,7 @@
   "devDependencies": {
     "chokidar-cli": "^3.0.0",
     "concurrently": "^7.0.0",
+    "http-server": "^14.1.0",
     "parcel": "^2.3.0",
     "process": "^0.11.10"
   },
