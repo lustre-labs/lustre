@@ -140,13 +140,13 @@
       <h2>
         <a href="./">lustre</a>
         <span id="project-version">
-          <span> - v0.1.0 </span>
+          <span> - v1.0.0 </span>
         </span>
         <script>
           "use strict";
 
           if ("undefined" !== typeof versionNodes) {
-            const currentVersion = "v0.1.0";
+            const currentVersion = "v1.0.0";
             if (! versionNodes.find(element => element.version === currentVersion)) {
               versionNodes.unshift({ version: currentVersion, url: "#" });
             }
@@ -192,6 +192,14 @@
         
 
         
+        <h2>Links</h2>
+        <ul>
+        
+          <li><a href="https://hayleigh-dot-dev.github.io/gleam-lustre">Website</a></li>
+        
+          <li><a href="https://github.com/hayleigh-dot-dev/gleam-lustre">Repository</a></li>
+        
+        </ul>
         
 
         <h2>Modules</h2>
@@ -230,7 +238,9 @@
   
   <li><a href="#application">application</a></li>
   
-  <li><a href="#basic">basic</a></li>
+  <li><a href="#element">element</a></li>
+  
+  <li><a href="#simple">simple</a></li>
   
   <li><a href="#start">start</a></li>
   
@@ -245,6 +255,7 @@
   <a href="#module-name">lustre</a>
   <svg class="icon icon-gleam-chasse"><use xlink:href="#icon-gleam-chasse"></use></svg>
 </h1>
+<p>Lustre is a declarative framework for building Web apps in Gleam. </p>
 
 
 
@@ -263,6 +274,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre.gleam#L54-L54">
+        &lt;/&gt;
+      </a>
       
     </div>
     <div class="custom-type-constructors">
@@ -274,30 +288,31 @@ do with an <code>App</code> is pass it to <a href="#start"><code>start</code></a
 anything but <a href="#start"><code>start</code></a> them, the constructors are separated in case
 you want to set up an application but defer starting it until some later point
 in time.</p>
-<pre><code>                                      ┌────────┐
-                                      │        │
-                                      │ update │
-                                      │        │
-                                      └──────┬─┘
-                                        ▲    │
-                                        │    │ #(State, Action)
-                                 Action │    │
-                                        │    │
-                                        │    ▼
-  ┌──────┐                    ┌─────────┴──────────────┐
-  │      │  #(State, Action)  │                        │
-  │ init ├───────────────────►│     Lustre Runtime     │
-  │      │                    │                        │
-  └──────┘                    └──────────────┬─────────┘
-                                        ▲    │
-                                        │    │ State
-                                 Action │    │
-                                        │    ▼
-                                      ┌─┴──────┐
-                                      │        │
-                                      │ render │
-                                      │        │
-                                      └────────┘
+<pre><code>                                      +--------+
+                                      |        |
+                                      | update |
+                                      |        |
+                                      +--------+
+                                        ^    |
+                                        |    | 
+                                 Action |    | #(State, Action)
+                                        |    |
+                                        |    v
+  +------+                    +------------------------+
+  |      |  #(State, Action)  |                        |
+  | init |-------------------&gt;|     Lustre Runtime     |
+  |      |                    |                        |
+  +------+                    +------------------------+
+                                        ^    |
+                                        |    |
+                                 Action |    | State
+                                        |    |
+                                        |    v
+                                      +--------+
+                                      |        |
+                                      | render |
+                                      |        |
+                                      +--------+
 </code></pre>
 <p><small>Someone please PR the Gleam docs generator to fix the monospace font,
 thanks! 💖</small></p>
@@ -316,6 +331,9 @@ thanks! 💖</small></p>
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre.gleam#L62-L62">
+        &lt;/&gt;
+      </a>
       
     </div>
     <div class="custom-type-constructors">
@@ -369,36 +387,146 @@ thanks! 💖</small></p>
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre.gleam#L199-L199">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn application(init: #(a, Cmd(b)), update: fn(a, b) -&gt;
     #(a, Cmd(b)), render: fn(a) -&gt; Element(b)) -&gt; App(a, b)</code></pre>
-    <div class="rendered-markdown"><p>Create a more complex application mimicing TEA – the Elm architecture. We
-start with some initial <code>state</code>, a function to update that state, and then
-a render function to derive our app’s view from that state.</p>
-<p>Events produced by elements are passed a <code>dispatch</code> function that can be 
-used to emit actions that trigger your <code>update</code> function to be called and
-trigger a rerender.</p>
+    <div class="rendered-markdown"><p>An evolution of a <a href="#simple"><code>simple</code></a> app that allows you to return a
+<a href="./lustre/cmd.html#Cmd"><code>Cmd</code></a> from your <code>init</code> and <code>update</code>s. Commands give
+us a way to perform side effects like sending an HTTP request or running a
+timer and then dispatch actions back to the runtime to trigger an <code>update</code>.</p>
+<pre><code>import lustre
+import lustre/cmd
+import lustre/element
+
+pub fn main () {
+    let init = #(0, tick())
+    let update = fn (state, action) {
+        case action {
+            Tick -&gt; #(state + 1, tick())
+        }
+    }
+    let render = fn (state) {
+        element.div([], [
+            element.text(&quot;Count is: &quot;)
+            element.text(state |&gt; int.to_string |&gt; element.text)
+        ])
+    }
+
+    let app = lustre.simple(init, update, render)
+    lustre.start(app, &quot;#root&quot;)   
+}
+
+fn tick () -&gt; Cmd(Action) {
+    cmd.from(fn (dispatch) {
+        setInterval(fn () {
+            dispatch(Tick)
+        }, 1000)
+    })
+}
+
+external fn set_timeout (f: fn () -&gt; a, delay: Int) -&gt; Nil 
+    = &quot;&quot; &quot;window.setTimeout&quot;
+</code></pre>
 </div>
   </div>
   
   <div class="member">
     <div class="member-name">
-      <h2 id="basic">
-        <a href="#basic">
-          basic
+      <h2 id="element">
+        <a href="#element">
+          element
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre.gleam#L101-L101">
+        &lt;/&gt;
+      </a>
       
     </div>
-    <pre><code class="hljs gleam">pub fn basic(element: Element(a)) -&gt; App(Nil, a)</code></pre>
+    <pre><code class="hljs gleam">pub fn element(element: Element(a)) -&gt; App(Nil, a)</code></pre>
     <div class="rendered-markdown"><p>Create a basic lustre app that just renders some element on the page.
 Note that this doesn’t mean the content is static! With <code>element.stateful</code>
 you can still create components with local state.</p>
 <p>Basic lustre apps don’t have any <em>global</em> application state and so the
-plumbing is a lot simpler. If you find yourself passing lot’s state of state
-around, you might want to consider using <code>application</code> instead.</p>
+plumbing is a lot simpler. If you find yourself passing lots of state around,
+you might want to consider using <a href="#simple"><code>simple</code></a> or <a href="#application"><code>application</code></a>
+instead.</p>
+<pre><code class="language-gleam">import lustre
+import lustre/element
+
+pub fn main () {
+    let app = lustre.element(
+        element.h1([], [
+            element.text(&quot;Hello, world!&quot;) 
+        ])
+    )
+
+    lustre.start(app, &quot;#root&quot;)
+}
+</code></pre>
+</div>
+  </div>
+  
+  <div class="member">
+    <div class="member-name">
+      <h2 id="simple">
+        <a href="#simple">
+          simple
+        </a>
+      </h2>
+      
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre.gleam#L153-L153">
+        &lt;/&gt;
+      </a>
+      
+    </div>
+    <pre><code class="hljs gleam">pub fn simple(init: a, update: fn(a, b) -&gt; a, render: fn(a) -&gt;
+    Element(b)) -&gt; App(a, b)</code></pre>
+    <div class="rendered-markdown"><p>If you start off with a simple <code>[element</code>](#element) app, you may find
+yourself leaning on <a href="./lustrel/element.html#stateful"><code>stateful</code></a> elements
+to manage state used throughout your app. If that’s the case or if you know
+you need some global state from the get-go, you might want to construct a 
+<a href="#simple"><code>simple</code></a> app instead.</p>
+<p>This is one app constructor that allows your HTML elements to dispatch actions
+to update your program state. </p>
+<pre><code>import gleam/int
+import lustre
+import lustre/element
+import lustre/event.{ dispatch }
+
+type Action {
+    Incr
+    Decr
+}
+
+pub fn main () {
+    let init = 0
+    let update = fn (state, action) {
+        case action {
+            Incr -&gt; state + 1
+            Decr -&gt; state - 1
+        }
+    }
+    let render = fn (state) {
+        element.div([], [
+            element.button([ event.on_click(dispatch(Decr)) ], [
+                element.text(&quot;-&quot;)
+            ]),
+            element.text(state |&gt; int.to_string |&gt; element.text),
+            element.button([ event.on_click(dispatch(Incr)) ], [
+                element.text(&quot;+&quot;)
+            ])
+        ])
+    }
+
+    let app = lustre.simple(init, update, render)
+    lustre.start(app, &quot;#root&quot;)
+}
+</code></pre>
 </div>
   </div>
   
@@ -410,6 +538,9 @@ around, you might want to consider using <code>application</code> instead.</p>
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre.gleam#L226-L226">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn start(app: App(a, b), selector: String) -&gt; Result(
@@ -421,6 +552,17 @@ need to actually start it! This function will mount your app to the DOM
 node that matches the query selector you provide.</p>
 <p>If everything mounted OK, we’ll get back a dispatch function that you can 
 call to send actions to your app and trigger an update. </p>
+<pre><code>import lustre
+
+pub fn main () {
+    let app = lustre.appliation(init, update, render)
+    assert Ok(dispatch) = lustre.start(app, &quot;#root&quot;)
+
+    dispatch(Incr)
+    dispatch(Incr)
+    dispatch(Incr)
+}
+</code></pre>
 </div>
   </div>
   

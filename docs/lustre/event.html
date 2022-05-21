@@ -140,13 +140,13 @@
       <h2>
         <a href="../">lustre</a>
         <span id="project-version">
-          <span> - v0.1.0 </span>
+          <span> - v1.0.0 </span>
         </span>
         <script>
           "use strict";
 
           if ("undefined" !== typeof versionNodes) {
-            const currentVersion = "v0.1.0";
+            const currentVersion = "v1.0.0";
             if (! versionNodes.find(element => element.version === currentVersion)) {
               versionNodes.unshift({ version: currentVersion, url: "#" });
             }
@@ -192,6 +192,14 @@
         
 
         
+        <h2>Links</h2>
+        <ul>
+        
+          <li><a href="https://hayleigh-dot-dev.github.io/gleam-lustre">Website</a></li>
+        
+          <li><a href="https://github.com/hayleigh-dot-dev/gleam-lustre">Repository</a></li>
+        
+        </ul>
         
 
         <h2>Modules</h2>
@@ -288,6 +296,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L16-L16">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn dispatch(action: a) -&gt; fn(fn(a) -&gt; Nil) -&gt; Nil</code></pre>
@@ -302,6 +313,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L11-L11">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on(name: String, handler: fn(Dynamic, fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(
@@ -318,6 +332,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L114-L114">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_blur(handler: fn(fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(a)</code></pre>
@@ -332,6 +349,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L96-L96">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_check(handler: fn(Bool, fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(
@@ -348,6 +368,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L25-L25">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_click(handler: fn(fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(a)</code></pre>
@@ -362,6 +385,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L110-L110">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_focus(handler: fn(fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(a)</code></pre>
@@ -376,6 +402,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L88-L88">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_input(handler: fn(String, fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(
@@ -392,6 +421,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L69-L69">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_keydown(handler: fn(String, fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(
@@ -408,6 +440,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L61-L61">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_keypress(handler: fn(String, fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(
@@ -424,6 +459,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L77-L77">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_keyup(handler: fn(String, fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(
@@ -440,6 +478,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L30-L30">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_mouse_down(handler: fn(fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(
@@ -456,6 +497,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L40-L40">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_mouse_enter(handler: fn(fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(
@@ -472,6 +516,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L45-L45">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_mouse_leave(handler: fn(fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(
@@ -488,6 +535,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L55-L55">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_mouse_out(handler: fn(fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(
@@ -504,6 +554,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L50-L50">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_mouse_over(handler: fn(fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(
@@ -520,6 +573,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L35-L35">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_mouse_up(handler: fn(fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(
@@ -536,6 +592,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/event.gleam#L104-L104">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn on_submit(handler: fn(fn(a) -&gt; Nil) -&gt; Nil) -&gt; Attribute(a)</code></pre>

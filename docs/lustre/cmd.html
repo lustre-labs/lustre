@@ -140,13 +140,13 @@
       <h2>
         <a href="../">lustre</a>
         <span id="project-version">
-          <span> - v0.1.0 </span>
+          <span> - v1.0.0 </span>
         </span>
         <script>
           "use strict";
 
           if ("undefined" !== typeof versionNodes) {
-            const currentVersion = "v0.1.0";
+            const currentVersion = "v1.0.0";
             if (! versionNodes.find(element => element.version === currentVersion)) {
               versionNodes.unshift({ version: currentVersion, url: "#" });
             }
@@ -192,6 +192,14 @@
         
 
         
+        <h2>Links</h2>
+        <ul>
+        
+          <li><a href="https://hayleigh-dot-dev.github.io/gleam-lustre">Website</a></li>
+        
+          <li><a href="https://github.com/hayleigh-dot-dev/gleam-lustre">Repository</a></li>
+        
+        </ul>
         
 
         <h2>Modules</h2>
@@ -265,6 +273,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/cmd.gleam#L7-L7">
+        &lt;/&gt;
+      </a>
       
     </div>
     <div class="custom-type-constructors">
@@ -296,6 +307,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/cmd.gleam#L24-L24">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn batch(cmds: List(Cmd(a))) -&gt; Cmd(a)</code></pre>
@@ -310,6 +324,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/cmd.gleam#L14-L14">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn from(cmd: fn(fn(a) -&gt; Nil) -&gt; Nil) -&gt; Cmd(a)</code></pre>
@@ -324,6 +341,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/cmd.gleam#L30-L30">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn map(cmd: Cmd(a), f: fn(a) -&gt; b) -&gt; Cmd(b)</code></pre>
@@ -338,6 +358,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/cmd.gleam#L18-L18">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn none() -&gt; Cmd(a)</code></pre>
@@ -352,6 +375,9 @@
         </a>
       </h2>
       
+      <a class="member-source" alt="View Source" title="View Source" href="https://github.com/hayleigh-dot-dev/gleam-lustre/blob/v1.0.0/src/lustre/cmd.gleam#L46-L46">
+        &lt;/&gt;
+      </a>
       
     </div>
     <pre><code class="hljs gleam">pub fn to_list(cmd: Cmd(a)) -&gt; List(fn(fn(a) -&gt; Nil) -&gt; Nil)</code></pre>
