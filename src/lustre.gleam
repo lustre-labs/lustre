@@ -3,6 +3,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import lustre/cmd
 import lustre/element
 import lustre/attribute
 import gleam/result
@@ -13,12 +14,13 @@ import gleam/result
 ///
 pub opaque type Program(state, action) {
     Program(
-        init: state,
+        init: #(state, Cmd(action)),
         update: Update(state, action),
         render: Render(state, action)
     )
 }
 
+pub type Cmd(action) = cmd.Cmd(action)
 
 pub type Element(action)   = element.Element(action)
 pub type Attribute(action) = attribute.Attribute(action)
@@ -32,7 +34,7 @@ pub type Error {
 // Gleam automatically expands type aliases so this is purely for the benefit of
 // those reading the source.
 //
-type Update(state, action) = fn (state, action) -> state
+type Update(state, action) = fn (state, action) -> #(state, Cmd(action))
 type Render(state, action) = fn (state) -> Element(action)
 
 
@@ -47,8 +49,8 @@ type Render(state, action) = fn (state) -> Element(action)
 /// around, you might want to consider using `application` instead.
 ///
 pub fn basic (element: Element(any)) -> Program(Nil, any) {
-    let init   = Nil
-    let update = fn (_, _) { Nil }
+    let init   = #(Nil, cmd.none())
+    let update = fn (_, _) { #(Nil, cmd.none()) }
     let render = fn (_) { element }
 
     Program(init, update, render)
@@ -62,7 +64,7 @@ pub fn basic (element: Element(any)) -> Program(Nil, any) {
 /// used to emit actions that trigger your `update` function to be called and
 /// trigger a rerender.
 ///
-pub fn application (init: state, update: Update(state, action), render: Render(state, action)) -> Program(state, action) {
+pub fn application (init: #(state, Cmd(action)), update: Update(state, action), render: Render(state, action)) -> Program(state, action) {
     Program(init, update, render)
 }
 
@@ -73,11 +75,14 @@ pub fn application (init: state, update: Update(state, action), render: Render(s
 /// need to actually start it! This function will mount your program to the DOM
 /// node that matches the query selector you provide.
 ///
-pub fn start (program: Program(state, action), selector: String) -> Result(Nil, Error) {
+/// If everything mounted OK, we'll get back a dispatch function that you can 
+/// call to send actions to your program and trigger an update. 
+///
+pub fn start (program: Program(state, action), selector: String) -> Result(fn (action) -> Nil, Error) {
     mount(program, selector)
         |> result.replace_error(ElementNotFound)
 }
 
 
-external fn mount (program: Program(state, action), selector: String) -> Result(Nil, Nil)
+external fn mount (program: Program(state, action), selector: String) -> Result(fn (action) -> Nil, Nil)
     = "./ffi.mjs" "mount"

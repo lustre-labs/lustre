@@ -1,6 +1,8 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
+
 import * as Gleam from './gleam.mjs'
+import * as Cmd from './lustre/cmd.mjs'
 
 // -----------------------------------------------------------------------------
 
@@ -20,19 +22,37 @@ export const mount = ({ init, update, render }, selector) => {
         return new Gleam.Error()
     }
 
+    // OK this looks sus, what's going on here? We want to be able to return the
+    // dispatch function given to us from `useReducer` so that the rest of our
+    // Gleam code *outside* the application and dispatch commands.
+    //
+    // That's great but because `useReducer` is part of the callback passed to
+    // `createElement` we can't just save it to a variable and return it. We
+    // immediately render the app, so this all happens synchronously, so there's
+    // no chance of accidentally returning `null` and our Gleam code consuming it
+    // as if it was a function.
+    let dispatch = null
+
     const App = React.createElement(() => {
-        const [state, dispatch] = React.useReducer(update, init)
+        const [[state, cmds], $dispatch] = React.useReducer(([state, _], action) => update(state, action), init)
         const el = render(state)
 
+        if (dispatch === null) dispatch = $dispatch
+
+        React.useEffect(() => {
+            for (const cmd of Cmd.to_list(cmds)) {
+                cmd($dispatch)
+            }
+        })
 
         return typeof el == 'string'
             ? el
-            : el(dispatch)
+            : el($dispatch)
     })
 
     ReactDOM.render(App, root)
 
-    return new Gleam.Ok()
+    return new Gleam.Ok(dispatch)
 }
 
 // -----------------------------------------------------------------------------
@@ -46,7 +66,6 @@ export const node = (tag, attributes, children) => (dispatch) => {
 
             case "Event":
                 return ['on' + capitalise(attr.name), (e) => attr.handler(e, dispatch)]
-
 
             // This should Never Happen™️ but if it does we don't want everything
             // to explode, so we'll print a friendly error, ignore the attribute
