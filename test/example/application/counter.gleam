@@ -3,6 +3,7 @@
 import gleam/int
 import lustre
 import lustre/attribute.{ style }
+import lustre/cmd.{ Cmd }
 import lustre/element.{ button, div, p, text }
 import lustre/event.{ dispatch, on_click }
 
@@ -22,11 +23,16 @@ pub fn main () -> Nil {
 
 // STATE -----------------------------------------------------------------------
 
-pub type State 
-    = Int
+pub type State {
+    State(
+        count: Int,
+        clock: Bool,
+        timer_id: Int
+    )
+}
 
-pub fn init () -> State {
-    0
+pub fn init () -> #(State, Cmd(Action)) {
+    #(State(0, True, 0), tick())
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -34,16 +40,39 @@ pub fn init () -> State {
 pub type Action {
     Incr
     Decr
+    Tick
 }
 
 pub fn update (state, action) {
     case action {
         Incr ->
-            state + 1
+            #(State(..state, count: state.count + 1), cmd.none())
 
         Decr ->
-            state - 1
+            #(State(..state, count: state.count - 1), cmd.none())
+
+        Tick ->
+            #(State(..state, count: state.count + 1), 
+                case state.clock {
+                    True -> 
+                        tick()
+
+                    False ->
+                        cmd.none()        
+                }
+            )
     }
+}
+
+external fn after (f: fn () -> any, delay: Int) -> Nil
+    = "" "window.setTimeout"
+
+fn tick () -> Cmd(Action) {
+    cmd.from(fn (dispatch) {
+        after(fn () {
+            dispatch(Tick)
+        }, 1000)
+    })
 }
 
 // RENDER ----------------------------------------------------------------------
@@ -51,7 +80,7 @@ pub fn update (state, action) {
 pub fn render (state) {
     div([ style([ #("display", "flex") ]) ], [
         button([ on_click(dispatch(Decr)) ], [ text("-") ]),
-        p([], [ int.to_string(state) |> text ]),
+        p([], [ int.to_string(state.count) |> text ]),
         button([ on_click(dispatch(Incr)) ], [ text("+") ])
     ])
 }

@@ -1,7 +1,8 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import lustre.{ Element }
-import lustre/element
+import lustre
+import lustre/cmd.{ Cmd }
+import lustre/element.{ Element }
 
 import example/application/counter
 
@@ -14,7 +15,11 @@ pub fn main () -> Nil {
     // `lustre.start` can return an `Error` if no DOM element is found that matches
     // the selector. This is a fatal error for our examples, so we panic if that 
     // happens.
-    assert Ok(_) = lustre.start(program, selector)
+    assert Ok(dispatch) = lustre.start(program, selector)
+
+    dispatch(Counter(counter.Incr))
+    dispatch(Counter(counter.Incr))
+    dispatch(Counter(counter.Incr))
 
     Nil
 }
@@ -27,10 +32,13 @@ type State {
     )
 }
 
-fn init () -> State {
-    State(
-        counter: counter.init()
+fn init () -> #(State, Cmd(Action)) {
+    let #(counter, counter_cmds) = counter.init()
+    let state = State(
+        counter
     )
+
+    #(state, cmd.map(counter_cmds, Counter))
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -39,10 +47,16 @@ type Action {
     Counter(counter.Action)
 }
 
-fn update (state: State, action: Action) -> State {
+fn update (state: State, action: Action) -> #(State, Cmd(Action)) {
     case action {
-        Counter(counter_action) ->
-            State(counter: counter.update(state.counter, counter_action))
+        Counter(counter_action) -> {
+            let #(counter, counter_cmds) = counter.update(state.counter, counter_action)
+            let state = State(
+                counter
+            )
+
+            #(state, cmd.map(counter_cmds, Counter))
+        }
     }
 }
 
