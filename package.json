@@ -1,7 +1,7 @@
 {
   "name": "gleam-lustre",
   "version": "1.0.0",
-  "description": "A Gleam project",
+  "description": "A framework for building web apps - powered by Gleam and React!",
   "type": "module",
   "directories": {
     "test": "test"
