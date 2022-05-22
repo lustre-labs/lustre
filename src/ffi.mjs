@@ -58,42 +58,7 @@ export const mount = ({ init, update, render }, selector) => {
 // -----------------------------------------------------------------------------
 
 export const node = (tag, attributes, children) => (dispatch) => {
-    const props = attributes.toArray().map(attr => {
-        switch (attr.constructor.name) {
-            case "Attribute":
-            case "Property":
-                return [attr.name, attr.value]
-
-            case "Event":
-                return ['on' + capitalise(attr.name), (e) => attr.handler(e, dispatch)]
-
-            // This should Never Happen™️ but if it does we don't want everything
-            // to explode, so we'll print a friendly error, ignore the attribute
-            // and carry on as normal.
-            default: {
-                console.warn([
-                    '[lustre] Oops, I\'m not sure how to handle attributes with ',
-                    'the type "' + attr.constructor.name + '". Did you try calling ',
-                    'this function from JavaScript by mistake?',
-                    '',
-                    'If not, it might be an error in lustre itself. Please open ',
-                    'an issue at https://github.com/hayleigh-dot-dev/gleam-lustre/issues'
-                ].join('\n'))
-
-                return []
-            }
-        }
-    })
-
-    return React.createElement(tag,
-        // React expects an object of "props" where the keys are attribute names
-        // like "class" or "onClick" and their corresponding values. Lustre's API
-        // works with lists, though.
-        //
-        // The snippet above converts our Gleam list of attributes to a JavaScript
-        // array of key/value pairs. This below turns that array into an object.
-        Object.fromEntries(props),
-
+    return React.createElement(tag, toProps(attributes, dispatch),
         // Recursively pass down the dispatch function to all children. Text nodes
         // – constructed below – aren't functions
         ...children.toArray().map(child => typeof child === 'function'
@@ -128,9 +93,45 @@ export const map = (element, f) => (dispatch) => {
     return element(action => dispatch(f(action)))
 }
 
+// React expects an object of "props" where the keys are attribute names
+// like "class" or "onClick" and their corresponding values. Lustre's API
+// works with lists, though.
+//
+// The snippet below converts our Gleam list of attributes to a JavaScript
+// array of key/value pairs, and then a plain ol' object.
+export const toProps = (attributes, dispatch) => {
+    const capitalise = s => s && s[0].toUpperCase() + s.slice(1)
+
+    return Object.fromEntries(
+        attributes.toArray().map(attr => {
+            switch (attr.constructor.name) {
+                case "Attribute":
+                case "Property":
+                    return [attr.name, attr.value]
+
+                case "Event":
+                    return ['on' + capitalise(attr.name), (e) => attr.handler(e, dispatch)]
+
+                // This should Never Happen™️ but if it does we don't want everything
+                // to explode, so we'll print a friendly error, ignore the attribute
+                // and carry on as normal.
+                default: {
+                    console.warn([
+                        '[lustre] Oops, I\'m not sure how to handle attributes with ',
+                        'the type "' + attr.constructor.name + '". Did you try calling ',
+                        'this function from JavaScript by mistake?',
+                        '',
+                        'If not, it might be an error in lustre itself. Please open ',
+                        'an issue at https://github.com/hayleigh-dot-dev/gleam-lustre/issues'
+                    ].join('\n'))
+
+                    return []
+                }
+            }
+        })
+    )
+}
 
 // -----------------------------------------------------------------------------
 
 export const object = (entries) => Object.fromEntries(entries)
-
-const capitalise = s => s && s[0].toUpperCase() + s.slice(1)
