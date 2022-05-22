@@ -10,13 +10,15 @@
     "clean": "rm -rf build dist",
     "build": "gleam test && parcel build test/example/index.html",
     "build:docs": "gleam docs build && cp -a ./build/dev/docs/lustre/. ./docs/",
-    "start": "gleam test && concurrently --kill-others \"chokidar \"src/*\" \"test/example/*\" -c \\\"gleam test\\\"\" \"parcel test/example/index.html\"",
-    "start:docs": "concurrently --kill-others \"chokidar \"src/*\" \"test/example/*\" -c \\\"npm run build:docs\\\"\" \"http-server docs\"",
+    "start": "gleam test && concurrently --kill-others \"chokidar \"src/*\" \"test/*\" -c \\\"gleam test\\\"\" \"parcel test/example/index.html\"",
+    "start:playground": "gleam test && concurrently --kill-others \"chokidar \"src/*\" \"test/*\" -c \\\"gleam test\\\"\" \"parcel test/playground/index.html\"",
+    "start:docs": "concurrently --kill-others \"chokidar \"src/*\" \"test/*\" -c \\\"npm run build:docs\\\"\" \"http-server docs\"",
     "start:clean": "npm run clean && npm start"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@monaco-editor/react": "^4.4.5",
     "chokidar-cli": "^3.0.0",
     "concurrently": "^7.0.0",
     "http-server": "^14.1.0",
@@ -25,7 +27,8 @@
   },
   "alias": {
     "example": "./build/dev/javascript/lustre/dist/example",
-    "lustre": "./build/dev/javascript/lustre/dist/lustre"
+    "lustre": "./build/dev/javascript/lustre/dist",
+    "playground": "./build/dev/javascript/lustre/dist/playground"
   },
   "dependencies": {
     "react": "^17.0.2",
