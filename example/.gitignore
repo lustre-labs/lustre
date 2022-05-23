@@ -3,3 +3,4 @@
 build
 erl_crash.dump
 node_modules
+dist
