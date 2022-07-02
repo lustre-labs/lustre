@@ -113,7 +113,7 @@ pub fn autocomplete (should_autocomplete: Bool) -> Attribute(action) {
 
 ///
 pub fn autofocus (should_autofocus: Bool) -> Attribute(action) {
-    property("autofocus", dynamic.from(should_autofocus))
+    property("autoFocus", dynamic.from(should_autofocus))
 }
 
 ///

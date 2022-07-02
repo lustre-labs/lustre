@@ -28,38 +28,38 @@ pub fn on_click (handler: fn (fn (action) -> Nil) -> Nil) -> Attribute(action) {
 
 ///
 pub fn on_mouse_down (handler: fn (fn (action) -> Nil) -> Nil) -> Attribute(action) {
-    on("mousedown", fn (_, dispatch) { handler(dispatch) })
+    on("mouseDown", fn (_, dispatch) { handler(dispatch) })
 }
 
 ///
 pub fn on_mouse_up (handler: fn (fn (action) -> Nil) -> Nil) -> Attribute(action) {
-    on("mouseup", fn (_, dispatch) { handler(dispatch) })
+    on("mouseUp", fn (_, dispatch) { handler(dispatch) })
 }
 
 ///
 pub fn on_mouse_enter (handler: fn (fn (action) -> Nil) -> Nil) -> Attribute(action) {
-    on("mouseenter", fn (_, dispatch) { handler(dispatch) })
+    on("mouseEnter", fn (_, dispatch) { handler(dispatch) })
 }
 
 ///
 pub fn on_mouse_leave (handler: fn (fn (action) -> Nil) -> Nil) -> Attribute(action) {
-    on("mouseleave", fn (_, dispatch) { handler(dispatch) })
+    on("mouseLeave", fn (_, dispatch) { handler(dispatch) })
 }
 
 ///
 pub fn on_mouse_over (handler: fn (fn (action) -> Nil) -> Nil) -> Attribute(action) {
-    on("mouseover", fn (_, dispatch) { handler(dispatch) })
+    on("mouseOver", fn (_, dispatch) { handler(dispatch) })
 }
 
 ///
 pub fn on_mouse_out (handler: fn (fn (action) -> Nil) -> Nil) -> Attribute(action) {
-    on("mouseout", fn (_, dispatch) { handler(dispatch) })
+    on("mouseOut", fn (_, dispatch) { handler(dispatch) })
 }
 
 // KEYBOARD EVENTS -------------------------------------------------------------
 
 pub fn on_keypress (handler: fn (String, fn (action) -> Nil) -> Nil) -> Attribute(action) {
-    on("keypress", fn (e, dispatch) {
+    on("keyPress", fn (e, dispatch) {
         assert Ok(key) = e |> dynamic.field("key", dynamic.string)
 
         handler(key, dispatch)
@@ -67,7 +67,7 @@ pub fn on_keypress (handler: fn (String, fn (action) -> Nil) -> Nil) -> Attribut
 }
 
 pub fn on_keydown (handler: fn (String, fn (action) -> Nil) -> Nil) -> Attribute(action) {
-    on("keydown", fn (e, dispatch) {
+    on("keyDown", fn (e, dispatch) {
         assert Ok(key) = e |> dynamic.field("key", dynamic.string)
 
         handler(key, dispatch)
@@ -75,7 +75,7 @@ pub fn on_keydown (handler: fn (String, fn (action) -> Nil) -> Nil) -> Attribute
 }
 
 pub fn on_keyup (handler: fn (String, fn (action) -> Nil) -> Nil) -> Attribute(action) {
-    on("keyup", fn (e, dispatch) {
+    on("keyUp", fn (e, dispatch) {
         assert Ok(key) = e |> dynamic.field("key", dynamic.string)
 
         handler(key, dispatch)
