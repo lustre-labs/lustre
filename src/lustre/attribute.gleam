@@ -137,7 +137,7 @@ pub fn readonly (is_readonly: Bool) -> Attribute(action) {
 }
 
 ///
-pub fn require (is_required: Bool) -> Attribute(action) {
+pub fn required (is_required: Bool) -> Attribute(action) {
     property("required", dynamic.from(is_required))
 }
 
