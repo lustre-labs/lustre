@@ -104,29 +104,36 @@ export const toProps = (attributes, dispatch) => {
 
     return Object.fromEntries(
         attributes.toArray().map(attr => {
-            switch (attr.constructor.name) {
-                case "Attribute":
-                case "Property":
-                    return [attr.name, attr.value]
+            // The constructors for the `Attribute` type are not public in the
+            // gleam source to prevent users from constructing them directly.
+            // This has the unfortunate side effect of not letting us `instanceof`
+            // the constructors to pattern match on them and instead we have to
+            // rely on the structure to work out what kind of attribute it is.
+            //
+            // This case handles `Attribute` and `Property` variants.
+            if ('name' in attr && 'value' in attr) {
+                return [attr.name, attr.value]
+            }
 
-                case "Event":
-                    return ['on' + capitalise(attr.name), (e) => attr.handler(e, dispatch)]
+            // This case handles `Event` variants.
+            else if ('name' in attr && 'handler' in attr) {
+                return ['on' + capitalise(attr.name), (e) => attr.handler(e, dispatch)]
+            }
 
-                // This should Never Happen™️ but if it does we don't want everything
-                // to explode, so we'll print a friendly error, ignore the attribute
-                // and carry on as normal.
-                default: {
-                    console.warn([
-                        '[lustre] Oops, I\'m not sure how to handle attributes with ',
-                        'the type "' + attr.constructor.name + '". Did you try calling ',
-                        'this function from JavaScript by mistake?',
-                        '',
-                        'If not, it might be an error in lustre itself. Please open ',
-                        'an issue at https://github.com/hayleigh-dot-dev/gleam-lustre/issues'
-                    ].join('\n'))
+            // This should Never Happen™️ but if it does we don't want everything
+            // to explode, so we'll print a friendly error, ignore the attribute
+            // and carry on as normal.
+            else {
+                console.warn([
+                    '[lustre] Oops, I\'m not sure how to handle attributes with ',
+                    'the type "' + attr.constructor.name + '". Did you try calling ',
+                    'this function from JavaScript by mistake?',
+                    '',
+                    'If not, it might be an error in lustre itself. Please open ',
+                    'an issue at https://github.com/hayleigh-dot-dev/gleam-lustre/issues'
+                ].join('\n'))
 
-                    return []
-                }
+                return []
             }
         })
     )
