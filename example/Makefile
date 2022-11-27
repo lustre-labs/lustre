@@ -10,4 +10,4 @@ dist:
 dev:
 	npx concurrently \
 		vite \
-		'watchexec --filter "src/*" gleam build'
+		'watchexec --filter "src/**" gleam build'
