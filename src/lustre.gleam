@@ -1,17 +1,15 @@
 //// Lustre is a declarative framework for building Web apps in Gleam. 
 
-
 // IMPORTS ---------------------------------------------------------------------
 
-import lustre/cmd.{ Cmd }
-import lustre/element.{ Element }
+import lustre/cmd.{Cmd}
+import lustre/element.{Element}
 import gleam/result
- 
 
 // TYPES -----------------------------------------------------------------------
 
 /// An `App` describes a Lustre application: what state it holds and what kind
-/// of actions get dispatched to update that state. The only useful thing you can
+/// of actions get dispatched to update that model. The only useful thing you can
 /// do with an `App` is pass it to [`start`](#start).
 ///
 /// You can construct an `App` from the two constructors exposed in this module:
@@ -20,47 +18,47 @@ import gleam/result
 /// you want to set up an application but defer starting it until some later point
 /// in time.
 ///
-///```
-///                                      +--------+
-///                                      |        |
-///                                      | update |
-///                                      |        |
-///                                      +--------+
-///                                        ^    |
-///                                        |    | 
-///                                 Action |    | #(State, Action)
-///                                        |    |
-///                                        |    v
-///  +------+                    +------------------------+
-///  |      |  #(State, Action)  |                        |
-///  | init |------------------->|     Lustre Runtime     |
-///  |      |                    |                        |
-///  +------+                    +------------------------+
-///                                        ^    |
-///                                        |    |
-///                                 Action |    | State
-///                                        |    |
-///                                        |    v
-///                                      +--------+
-///                                      |        |
-///                                      | render |
-///                                      |        |
-///                                      +--------+
-///```
+/// ```text
+///                                       +--------+
+///                                       |        |
+///                                       | update |
+///                                       |        |
+///                                       +--------+
+///                                         ^    |
+///                                         |    | 
+///                                     Msg |    | #(Model, Cmd(Msg))
+///                                         |    |
+///                                         |    v
+/// +------+                      +------------------------+
+/// |      |  #(Model, Cmd(Msg))  |                        |
+/// | init |--------------------->|     Lustre Runtime     |
+/// |      |                      |                        |
+/// +------+                      +------------------------+
+///                                         ^    |
+///                                         |    |
+///                                     Msg |    | Model
+///                                         |    |
+///                                         |    v
+///                                       +--------+
+///                                       |        |
+///                                       | render |
+///                                       |        |
+///                                       +--------+
+/// ```
 ///
 /// <small>Someone please PR the Gleam docs generator to fix the monospace font,
 /// thanks! 💖</small>
 ///
-pub opaque type App(state, action) {
-    App(
-        init: #(state, Cmd(action)),
-        update: Update(state, action),
-        render: Render(state, action)
-    )
+pub opaque type App(model, msg) {
+  App(
+    init: #(model, Cmd(msg)),
+    update: Update(model, msg),
+    render: Render(model, msg),
+  )
 }
 
 pub type Error {
-    ElementNotFound
+  ElementNotFound
 }
 
 // These types aren't exposed, but they're just here to try and shrink the type
@@ -68,9 +66,12 @@ pub type Error {
 // Gleam automatically expands type aliases so this is purely for the benefit of
 // those reading the source.
 //
-type Update(state, action) = fn (state, action) -> #(state, Cmd(action))
-type Render(state, action) = fn (state) -> Element(action)
 
+type Update(model, msg) =
+  fn(model, msg) -> #(model, Cmd(msg))
+
+type Render(model, msg) =
+  fn(model) -> Element(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -83,78 +84,87 @@ type Render(state, action) = fn (state) -> Element(action)
 /// you might want to consider using [`simple`](#simple) or [`application`](#application)
 /// instead.
 ///
-///```gleam
-///import lustre
-///import lustre/element
+/// ```gleam
+/// import lustre
+/// import lustre/element
+/// 
+/// pub fn main () {
+///   let app = lustre.element(
+///     element.h1([], [
+///       element.text("Hello, world!") 
+///     ])
+///   )
+/// 
+///   assert Ok(_) = lustre.start(app, "#root")
+/// }
+/// ```
 ///
-///pub fn main () {
-///    let app = lustre.element(
-///        element.h1([], [
-///            element.text("Hello, world!") 
-///        ])
-///    )
-///
-///    lustre.start(app, "#root")
-///}
-///```
-///
-pub fn element (element: Element(any)) -> App(Nil, any) {
-    let init   = #(Nil, cmd.none())
-    let update = fn (_, _) { #(Nil, cmd.none()) }
-    let render = fn (_) { element }
+pub fn element(element: Element(msg)) -> App(Nil, msg) {
+  let init = #(Nil, cmd.none())
+  let update = fn(_, _) { #(Nil, cmd.none()) }
+  let render = fn(_) { element }
 
-    App(init, update, render)
+  App(init, update, render)
 }
 
 /// If you start off with a simple `[element`](#element) app, you may find
 /// yourself leaning on [`stateful`](./lustrel/element.html#stateful) elements
-/// to manage state used throughout your app. If that's the case or if you know
-/// you need some global state from the get-go, you might want to construct a 
+/// to manage model used throughout your app. If that's the case or if you know
+/// you need some global model from the get-go, you might want to construct a 
 /// [`simple`](#simple) app instead.
 ///
 /// This is one app constructor that allows your HTML elements to dispatch actions
-/// to update your program state. 
+/// to update your program model. 
 ///
-///```
-///import gleam/int
-///import lustre
-///import lustre/element
-///import lustre/event.{ dispatch }
+/// ```gleam
+/// import gleam/int
+/// import lustre
+/// import lustre/element
+/// import lustre/event
+/// 
+/// type Msg {
+///   Decr
+///   Incr
+/// }
+/// 
+/// pub fn main () {
+///   let init = 0
 ///
-///type Action {
-///    Incr
-///    Decr
-///}
+///   let update = fn (model, msg) {
+///     case msg {
+///       Decr -> model - 1
+///       Incr -> model + 1
+///     }
+///   }
 ///
-///pub fn main () {
-///    let init = 0
-///    let update = fn (state, action) {
-///        case action {
-///            Incr -> state + 1
-///            Decr -> state - 1
-///        }
-///    }
-///    let render = fn (state) {
-///        element.div([], [
-///            element.button([ event.on_click(dispatch(Decr)) ], [
-///                element.text("-")
-///            ]),
-///            element.text(state |> int.to_string |> element.text),
-///            element.button([ event.on_click(dispatch(Incr)) ], [
-///                element.text("+")
-///            ])
-///        ])
-///    }
+///   let render = fn (model) {
+///     element.div([], [
+///       element.button([ event.on_click(Decr) ], [
+///         element.text("-")
+///       ]),
 ///
-///    let app = lustre.simple(init, update, render)
-///    lustre.start(app, "#root")
-///}
-///```
-pub fn simple (init: state, update: fn (state, action) -> state, render: fn (state) -> Element(action)) -> App(state, action) {
-    let init   = #(init, cmd.none())
-    let update = fn (state, action) { #(update(state, action), cmd.none()) }
+///       element.text(int.to_string(model)),
+///
+///       element.button([ event.on_click(Incr) ], [
+///         element.text("+")
+///       ])
+///     ])
+///   }
+/// 
+///   let app = lustre.simple(init, update, render)
+///   assert Ok(_) = lustre.start(app, "#root")
+/// }
+/// ```
+///
+pub fn simple(
+  init: model,
+  update: fn(model, msg) -> model,
+  render: fn(model) -> Element(msg),
+) -> App(model, msg) {
+  let init = #(init, cmd.none())
+  let update = fn(model, msg) { #(update(model, msg), cmd.none()) }
 
-    App(init, update, render)
+  App(init, update, render)
 }
 
 /// An evolution of a [`simple`](#simple) app that allows you to return a
@@ -163,43 +173,48 @@ pub fn simple (init: state, update: fn (state, action) -> state, render: fn (sta
 /// timer and then dispatch actions back to the runtime to trigger an `update`.
 ///
 ///```
-///import lustre
-///import lustre/cmd
-///import lustre/element
+/// import lustre
+/// import lustre/cmd
+/// import lustre/element
+/// 
+/// pub fn main () {
+///   let init = #(0, tick())
 ///
-///pub fn main () {
-///    let init = #(0, tick())
-///    let update = fn (state, action) {
-///        case action {
-///            Tick -> #(state + 1, tick())
-///        }
-///    }
-///    let render = fn (state) {
-///        element.div([], [
-///            element.text("Count is: ")
-///            element.text(state |> int.to_string |> element.text)
-///        ])
-///    }
+///   let update = fn (model, msg) {
+///     case msg {
+///       Tick -> #(model + 1, tick())
+///     }
+///   }
 ///
-///    let app = lustre.simple(init, update, render)
-///    lustre.start(app, "#root")   
-///}
-///
-///fn tick () -> Cmd(Action) {
-///    cmd.from(fn (dispatch) {
-///        setInterval(fn () {
-///            dispatch(Tick)
-///        }, 1000)
-///    })
-///}
-///
-///external fn set_timeout (f: fn () -> a, delay: Int) -> Nil 
-///    = "" "window.setTimeout"
+///   let render = fn (model) {
+///     element.div([], [
+///       element.text("Time elapsed: ")
+///       element.text(int.to_string(model))
+///     ])
+///   }
+///   
+///   let app = lustre.simple(init, update, render)
+///   assert Ok(_) = lustre.start(app, "#root")   
+/// }
+/// 
+/// fn tick () -> Cmd(Msg) {
+///   cmd.from(fn (dispatch) {
+///     setInterval(fn () {
+///       dispatch(Tick)
+///     }, 1000)
+///   })
+/// }
+/// 
+/// external fn set_timeout (f: fn () -> a, delay: Int) -> Nil 
+///   = "" "window.setTimeout"
 ///```
-pub fn application (init: #(state, Cmd(action)), update: Update(state, action), render: Render(state, action)) -> App(state, action) {
-    App(init, update, render)
+pub fn application(
+  init: #(model, Cmd(msg)),
+  update: Update(model, msg),
+  render: Render(model, msg),
+) -> App(model, msg) {
+  App(init, update, render)
 }
-
 
 // EFFECTS ---------------------------------------------------------------------
 
@@ -211,23 +226,32 @@ pub fn application (init: #(state, Cmd(action)), update: Update(state, action), 
 /// call to send actions to your app and trigger an update. 
 ///
 ///```
-///import lustre
+/// import lustre
 ///
-///pub fn main () {
-///    let app = lustre.appliation(init, update, render)
-///    assert Ok(dispatch) = lustre.start(app, "#root")
-///
-///    dispatch(Incr)
-///    dispatch(Incr)
-///    dispatch(Incr)
-///}
+/// pub fn main () {
+///   let app = lustre.appliation(init, update, render)
+///   assert Ok(dispatch) = lustre.start(app, "#root")
+/// 
+///   dispatch(Incr)
+///   dispatch(Incr)
+///   dispatch(Incr)
+/// }
 ///```
 ///
-pub fn start (app: App(state, action), selector: String) -> Result(fn (action) -> Nil, Error) {
-    mount(app, selector)
-        |> result.replace_error(ElementNotFound)
+/// This may not seem super useful at first, but by returning this dispatch
+/// function from your `main` (or elsewhere) you can get events into your Lustre
+/// app from the outside world.
+///
+pub fn start(
+  app: App(model, msg),
+  selector: String,
+) -> Result(fn(msg) -> Nil, Error) {
+  mount(app, selector)
+  |> result.replace_error(ElementNotFound)
 }
 
-
-external fn mount (app: App(state, action), selector: String) -> Result(fn (action) -> Nil, Nil)
-    = "./ffi.mjs" "mount"
+external fn mount(
+  app: App(model, msg),
+  selector: String,
+) -> Result(fn(msg) -> Nil, Nil) =
+  "./ffi.mjs" "mount"
