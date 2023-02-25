@@ -143,7 +143,7 @@ pub fn required(is_required: Bool) -> Attribute(msg) {
 
 ///
 pub fn for(id: String) -> Attribute(msg) {
-  attribute("for", id)
+  attribute("htmlFor", id)
 }
 
 // INPUT RANGES ----------------------------------------------------------------
