@@ -11,7 +11,7 @@ A framework for building create web apps – powered by Gleam and React!
 import gleam/int
 import lustre
 import lustre/element.{button, div, p, text}
-import lustre/event.{dispatch, on_click}
+import lustre/event.{on_click}
 import lustre/cmd
 
 pub fn main() {
@@ -35,9 +35,9 @@ fn render(state) {
   div(
     [],
     [
-      button([on_click(dispatch(Decr))], [text("-")]),
+      button([on_click(Decr)], [text("-")]),
       p([], [text(int.to_string(state))]),
-      button([on_click(dispatch(Incr))], [text("+")]),
+      button([on_click(Incr)], [text("+")]),
     ],
   )
 }
