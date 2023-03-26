@@ -16,7 +16,7 @@ pub fn main () -> Nil {
     // `lustre.start` can return an `Error` if no DOM element is found that matches
     // the selector. This is a fatal error for our examples, so we panic if that 
     // happens.
-    assert Ok(_) = lustre.start(program, selector)
+    let assert Ok(_) = lustre.start(program, selector)
 
     Nil
 }
@@ -77,7 +77,7 @@ fn tick () -> Cmd(Action) {
 
 // RENDER ----------------------------------------------------------------------
 
-pub fn render (state) {
+pub fn render (state: State) {
     div([ style([ #("display", "flex") ]) ], [
         button([ on_click(Decr) ], [ text("-") ]),
         p([], [ int.to_string(state.count) |> text ]),

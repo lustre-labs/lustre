@@ -15,7 +15,7 @@ pub fn main () -> Nil {
     // `lustre.start` can return an `Error` if no DOM element is found that matches
     // the selector. This is a fatal error for our examples, so we panic if that 
     // happens.
-    assert Ok(dispatch) = lustre.start(program, selector)
+    let assert Ok(dispatch) = lustre.start(program, selector)
 
     dispatch(Counter(counter.Incr))
     dispatch(Counter(counter.Incr))
