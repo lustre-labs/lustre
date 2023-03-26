@@ -5,7 +5,7 @@ import lustre
 import lustre/attribute.{ style }
 import lustre/cmd.{ Cmd }
 import lustre/element.{ button, div, p, text }
-import lustre/event.{ dispatch, on_click }
+import lustre/event.{ on_click }
 
 // MAIN ------------------------------------------------------------------------
 
@@ -79,8 +79,8 @@ fn tick () -> Cmd(Action) {
 
 pub fn render (state) {
     div([ style([ #("display", "flex") ]) ], [
-        button([ on_click(dispatch(Decr)) ], [ text("-") ]),
+        button([ on_click(Decr) ], [ text("-") ]),
         p([], [ int.to_string(state.count) |> text ]),
-        button([ on_click(dispatch(Incr)) ], [ text("+") ])
+        button([ on_click(Incr) ], [ text("+") ]),
     ])
 }
