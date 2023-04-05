@@ -2,7 +2,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{DecodeError, Decoder, Dynamic}
+import gleam/dynamic.{DecodeError, Dynamic}
 import gleam/result
 import lustre/attribute.{Attribute}
 
