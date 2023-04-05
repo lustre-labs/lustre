@@ -35,20 +35,37 @@ export const mount = ({ init, update, render }, selector) => {
   //
   let dispatch = null;
 
+  let init_cmds = null;
+
   const App = React.createElement(() => {
-    const [[state, cmds], $dispatch] = React.useReducer(
-      ([state, _], action) => update(state, action),
-      init
+    const [state, $dispatch] = React.useReducer(
+      (state, action) => {
+        let [new_state, cmds] = update(state, action)
+        // Handle cmds immediately, they're not React-kind-of-state
+        for (const cmd of Cmd.to_list(cmds)) {
+          cmd(dispatch);
+        }
+        return new_state
+      },
+      undefined,
+      () => {
+        let [state, cmds] = init
+        // postpone handling cmds, as we do not have the dispatch, yet
+        init_cmds = cmds
+        return state
+      }
     );
-    const el = render(state);
 
     if (dispatch === null) dispatch = $dispatch;
 
+    const el = render(state);
+
     React.useEffect(() => {
-      for (const cmd of Cmd.to_list(cmds)) {
+      for (const cmd of Cmd.to_list(init_cmds)) {
         cmd($dispatch);
       }
-    }, [cmds]);
+      init_cmds = undefined;  // Just so we get an error, rather than re-execute
+    }, []);  // empty deps array means this effect will only run on initial render
 
     return typeof el == "string" ? el : el($dispatch);
   });

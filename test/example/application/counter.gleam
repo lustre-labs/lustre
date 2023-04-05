@@ -5,7 +5,7 @@ import lustre
 import lustre/attribute.{ style }
 import lustre/cmd.{ Cmd }
 import lustre/element.{ button, div, p, text }
-import lustre/event.{ dispatch, on_click }
+import lustre/event.{ on_click }
 
 // MAIN ------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@ pub fn main () -> Nil {
     // `lustre.start` can return an `Error` if no DOM element is found that matches
     // the selector. This is a fatal error for our examples, so we panic if that 
     // happens.
-    assert Ok(_) = lustre.start(program, selector)
+    let assert Ok(_) = lustre.start(program, selector)
 
     Nil
 }
@@ -77,10 +77,10 @@ fn tick () -> Cmd(Action) {
 
 // RENDER ----------------------------------------------------------------------
 
-pub fn render (state) {
+pub fn render (state: State) {
     div([ style([ #("display", "flex") ]) ], [
-        button([ on_click(dispatch(Decr)) ], [ text("-") ]),
+        button([ on_click(Decr) ], [ text("-") ]),
         p([], [ int.to_string(state.count) |> text ]),
-        button([ on_click(dispatch(Incr)) ], [ text("+") ])
+        button([ on_click(Incr) ], [ text("+") ]),
     ])
 }

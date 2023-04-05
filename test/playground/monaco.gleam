@@ -8,7 +8,7 @@ pub external fn render (attributes: List(Attribute(action))) -> Element(action)
 
 pub fn on_change (handler: fn (String, fn (action) -> Nil) -> Nil) -> Attribute(action) {
     event.on("change", fn (e, dispatch) {
-        assert Ok(code) = dynamic.string(e)
+        let assert Ok(code) = dynamic.string(e)
 
         handler(code, dispatch)
     })
