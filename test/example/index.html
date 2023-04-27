@@ -1,37 +1,37 @@
 <!DOCTYPE html>
 <html lang="en" hidden>
-
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
 
     <script type="module">
-        // `example` is set up as an alias in our `package.json` to point to
-        // some of Gleam's build artifacts.
-        import { main } from 'example/main.mjs'
+      // `example` is set up as an alias in our `package.json` to point to
+      // some of Gleam's build artifacts.
+      import { main } from "example/src/main.mjs";
 
-        document.addEventListener('DOMContentLoaded', main)
+      document.addEventListener("DOMContentLoaded", main);
 
-        // This is so dumb. Parcel refuses to work with https imports, and when
-        // we try to use a script tag it "helpfully" strips the `type="module"`
-        // attribute meaning the shim doesn't work anyway.
-        //
-        // Here we're manually creating the script and setting its source using
-        // a string to stop parcle meddling with it. It works but,, eesh.
-        document.querySelector('head').appendChild((() => {
-            const script = document.createElement('script')
-            script.type = 'module'
-            script.innerHTML = `import 'https://cdn.skypack.dev/twind/shim'`
+      // This is so dumb. Parcel refuses to work with https imports, and when
+      // we try to use a script tag it "helpfully" strips the `type="module"`
+      // attribute meaning the shim doesn't work anyway.
+      //
+      // Here we're manually creating the script and setting its source using
+      // a string to stop parcle meddling with it. It works but,, eesh.
+      document.querySelector("head").appendChild(
+        (() => {
+          const script = document.createElement("script");
+          script.type = "module";
+          script.innerHTML = `import 'https://cdn.skypack.dev/twind/shim'`;
 
-            return script
-        })())
+          return script;
+        })()
+      );
     </script>
-</head>
+  </head>
 
-<body class="bg-gray-100 mx-8 md:mx-32 lg:mx-64">
+  <body class="bg-gray-100 mx-8 md:mx-32 lg:mx-64">
     <div data-lustre-container class="prose lg:prose-xl p-8"></div>
-</body>
-
+  </body>
 </html>

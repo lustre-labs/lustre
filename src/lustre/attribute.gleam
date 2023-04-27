@@ -39,7 +39,7 @@ pub fn style(properties: List(#(String, String))) -> Attribute(msg) {
 }
 
 external fn style_object(properties: List(#(String, String))) -> Dynamic =
-  "../ffi.mjs" "object"
+  "../lustre.ffi.mjs" "to_object"
 
 ///
 pub fn class(name: String) -> Attribute(msg) {

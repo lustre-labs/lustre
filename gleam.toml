@@ -1,5 +1,5 @@
 name = "lustre"
-version = "2.0.1"
+version = "3.0.0-rc.1"
 
 target = "javascript"
 
@@ -13,6 +13,7 @@ links = [{ title = "Website", href = "https://hayleigh-dot-dev.github.io/gleam-l
 
 [dependencies]
 gleam_stdlib = "~> 0.28"
+gleam_javascript = "~> 0.4"
 
 [dev-dependencies]
 gleeunit = "~> 0.6"

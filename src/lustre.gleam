@@ -4,7 +4,7 @@
 
 import lustre/cmd.{Cmd}
 import lustre/element.{Element}
-import gleam/result
+import gleam/javascript/promise.{Promise}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -242,16 +242,12 @@ pub fn application(
 /// function from your `main` (or elsewhere) you can get events into your Lustre
 /// app from the outside world.
 ///
-pub fn start(
-  app: App(model, msg),
-  selector: String,
-) -> Result(fn(msg) -> Nil, Error) {
+pub fn start(app: App(model, msg), selector: String) -> Promise(fn(msg) -> Nil) {
   mount(app, selector)
-  |> result.replace_error(ElementNotFound)
 }
 
 external fn mount(
   app: App(model, msg),
   selector: String,
-) -> Result(fn(msg) -> Nil, Nil) =
-  "./ffi.mjs" "mount"
+) -> Promise(fn(msg) -> Nil) =
+  "./lustre.ffi.mjs" "mount"
