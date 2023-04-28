@@ -43,13 +43,16 @@ export const mount = (app, selector) => {
           // bit of state to track whether we need to run the cmds we have or
           // not.
           const [shouldRunCmds, setShouldRunCmds] = React.useState(true);
-          const [[state, cmds], dispatch] = React.useReducer((state, msg) => {
-            // Every time we call the user's update function we'll get back a
-            // new lot of cmds to run, so we need to set this flag to true to
-            // let our `useEffect` know it can run them!
-            setShouldRunCmds(true);
-            return app.update(state, msg);
-          }, app.init);
+          const [[state, cmds], dispatch] = React.useReducer(
+            ([state, _], msg) => {
+              // Every time we call the user's update function we'll get back a
+              // new lot of cmds to run, so we need to set this flag to true to
+              // let our `useEffect` know it can run them!
+              setShouldRunCmds(true);
+              return app.update(state, msg);
+            },
+            app.init
+          );
 
           React.useImperativeHandle(ref, () => dispatch, [dispatch]);
           React.useEffect(() => {
