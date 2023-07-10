@@ -23,6 +23,15 @@ pub external fn node(
 ) -> Element(msg) =
   "../lustre.ffi.mjs" "node"
 
+// pub external fn stateful(
+//   init: state,
+//   render: fn(state, fn(state) -> Nil) -> Element(msg),
+// ) -> Element(msg) =
+//   "../lustre.ffi.mjs" "stateful"
+
+// pub external fn fragment(children: List(Element(msg))) -> Element(msg) =
+//   "../lustre.ffi.mjs" "fragment"
+
 /// A stateful element is exactly what it sounds like: an element with local
 /// encapsulated state! The `render` function we must provide is called with the
 /// element's current state as well as a function to set a new state. Whenever
@@ -62,18 +71,9 @@ pub external fn node(
 /// elements don't necessarily produce messages: calling `set_state` is a side
 /// effect.
 ///
-pub external fn stateful(
-  init: state,
-  render: fn(state, fn(state) -> Nil) -> Element(msg),
-) -> Element(msg) =
-  "../lustre.ffi.mjs" "stateful"
-
 /// A fragment doesn't appear in the DOM, but allows us to treat a list of elements
 /// as if it were a single one. 
 ///
-pub external fn fragment(children: List(Element(msg))) -> Element(msg) =
-  "../lustre.ffi.mjs" "fragment"
-
 /// Render a Gleam string as an HTML text node.
 ///
 pub external fn text(content: String) -> Element(msg) =
@@ -177,7 +177,7 @@ pub external fn text(content: String) -> Element(msg) =
 /// If this feels like a lt of work... sometimes it is! Take a look at the docs
 /// for [`stateful`](#stateful) elements to see how all this can be encapsulated.
 ///
-pub external fn map(element: fn() -> Element(a), f: fn(a) -> b) -> Element(b) =
+pub external fn map(element: Element(a), f: fn(a) -> b) -> Element(b) =
   "../lustre.ffi.mjs" "map"
 
 // CONSTRUCTING NODES ----------------------------------------------------------
