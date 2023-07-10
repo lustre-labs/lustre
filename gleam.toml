@@ -12,8 +12,7 @@ repository = { type = "github", user = "hayleigh-dot-dev", repo = "gleam-lustre"
 links = [{ title = "Website", href = "https://hayleigh-dot-dev.github.io/gleam-lustre" }]
 
 [dependencies]
-gleam_stdlib = "~> 0.28"
-gleam_javascript = "~> 0.4"
+gleam_stdlib = "~> 0.29"
 
 [dev-dependencies]
 gleeunit = "~> 0.6"
