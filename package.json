@@ -1,37 +1,6 @@
 {
-  "name": "gleam-lustre",
-  "version": "1.3.0",
-  "description": "A framework for building web apps - powered by Gleam and React!",
-  "type": "module",
-  "directories": {
-    "test": "test"
-  },
-  "scripts": {
-    "clean": "rm -rf build dist",
-    "build": "gleam test && parcel build test/example/index.html",
-    "build:docs": "gleam docs build && cp -a ./build/dev/docs/lustre/. ./docs/",
-    "start": "gleam test && concurrently --kill-others \"chokidar \"src/*\" \"test/*\" -c \\\"gleam test\\\"\" \"parcel test/example/index.html\"",
-    "start:playground": "gleam test && concurrently --kill-others \"chokidar \"src/*\" \"test/*\" -c \\\"gleam test\\\"\" \"parcel test/playground/index.html\"",
-    "start:docs": "concurrently --kill-others \"chokidar \"src/*\" \"test/*\" -c \\\"npm run build:docs\\\"\" \"http-server docs\"",
-    "start:clean": "npm run clean && npm start"
-  },
-  "author": "",
-  "license": "MIT",
+  "private": true,
   "devDependencies": {
-    "@monaco-editor/react": "^4.4.5",
-    "chokidar-cli": "^3.0.0",
-    "concurrently": "^8.0.0",
-    "http-server": "^14.1.0",
-    "parcel": "^2.8.0",
-    "process": "^0.11.10"
-  },
-  "alias": {
-    "example": "./build/dev/javascript/lustre/example",
-    "lustre": "./build/dev/javascript/lustre",
-    "playground": "./build/dev/javascript/lustre/playground"
-  },
-  "dependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "vite": "^4.4.2"
   }
 }
