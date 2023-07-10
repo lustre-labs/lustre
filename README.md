@@ -1,6 +1,6 @@
 # Lustre
 
-A framework for building create web apps – powered by Gleam and React!
+An Elm-inspired framework for building web apps in Gleam!
 
 ---
 
@@ -15,19 +15,25 @@ import lustre/event.{on_click}
 import lustre/cmd
 
 pub fn main() {
-  let app = lustre.application(#(0, cmd.none()), update, render)
-  lustre.start(app, "#app")
+  let app = lustre.simple(init, update, render)
+  let assert Ok(_) = lustre.start(app, "#app")
+
+  Nil
 }
 
-pub type Action {
+fn init() {
+  0
+}
+
+type Msg {
   Incr
   Decr
 }
 
-fn update(state, action) {
-  case action {
-    Incr -> #(state + 1, cmd.none())
-    Decr -> #(state - 1, cmd.none())
+fn update(state, msg) {
+  case msg {
+    Incr -> state + 1
+    Decr -> state - 1
   }
 }
 
@@ -52,30 +58,9 @@ the browser. **It will not work if your are targetting Node.js or Erlang.**
 
 ## Installation
 
-If available on Hex, this package can be added to your Gleam project:
+Lustre is available on [Hex](https://hex.pm/packages/lustre). You can install
+it like any other Hex package:
 
 ```sh
-gleam add lustre
+$ gleam add lustre
 ```
-
-and its documentation can be found at <https://hexdocs.pm/lustre>. You will also
-need to install `react` and `react-dom` from npm:
-
-```sh
-npm i react react-dom
-```
-
----
-
-## Development
-
-First, make sure you have both Gleam and Node.js installed, then:
-
-```bash
-npm i
-npm start
-```
-
-This sets up `chokidar` to watch our gleam source code and runs the compiler
-whenever we make a change. It also starts a server that will serve the examples
-located in `test/example/`.
