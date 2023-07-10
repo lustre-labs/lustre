@@ -3,7 +3,6 @@
 import gleam/dynamic.{Dynamic}
 import gleam/int
 import gleam/list
-import gleam/pair
 import gleam/string
 
 // TYPES -----------------------------------------------------------------------
@@ -11,48 +10,47 @@ import gleam/string
 /// Attributes are attached to specific elements. They're either key/value pairs
 /// or event handlers.
 ///
-pub opaque type Attribute(msg) {
-  Attribute(name: String, value: Dynamic)
-  Event(name: String, handler: fn(Dynamic, fn(msg) -> Nil) -> Nil)
-}
+pub external type Attribute(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
 ///
-pub fn attribute(name: String, value: any) -> Attribute(msg) {
-  Attribute(name, dynamic.from(value))
-}
-
-///                                                            
-pub fn event(
-  name: String,
-  handler: fn(Dynamic, fn(msg) -> Nil) -> Nil,
-) -> Attribute(msg) {
-  Event(name, handler)
-}
+/// Lustre does some work internally to convert common Gleam values into ones that
+/// make sense for JavaScript. Here are the types that are converted:
+/// 
+///   - `List(a)` ->  `Array(a)`
+///   - `Some(a)` ->  `a`
+///   - `None`    ->  `undefined`
+///   
+pub external fn attribute(name: String, value: any) -> Attribute(msg) =
+  "../lustre.ffi.mjs" "attr"
 
 // COMMON ATTRIBUTES -----------------------------------------------------------
 
 ///
 pub fn style(properties: List(#(String, String))) -> Attribute(msg) {
-  attribute("style", style_object(properties))
+  attribute("style", styles(properties))
 }
 
-external fn style_object(properties: List(#(String, String))) -> Dynamic =
-  "../lustre.ffi.mjs" "to_object"
+external fn styles(properties: List(#(String, String))) -> Dynamic =
+  "../lustre.ffi.mjs" "styles"
 
 ///
 pub fn class(name: String) -> Attribute(msg) {
-  attribute("className", name)
+  attribute("class", name)
 }
 
 ///
 pub fn classes(names: List(#(String, Bool))) -> Attribute(msg) {
   attribute(
-    "className",
+    "class",
     names
-    |> list.filter(pair.second)
-    |> list.map(pair.first)
+    |> list.filter_map(fn(class) {
+      case class.1 {
+        True -> Ok(class.0)
+        False -> Error(Nil)
+      }
+    })
     |> string.join(" "),
   )
 }

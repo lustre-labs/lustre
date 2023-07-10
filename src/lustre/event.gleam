@@ -3,6 +3,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{DecodeError, Dynamic}
+import gleam/option.{None, Option, Some}
 import gleam/result
 import lustre/attribute.{Attribute}
 
@@ -18,19 +19,19 @@ type Decoded(a) =
 /// check those out first.
 ///
 /// If you need to handle an event that isn't covered by the helper functions,
-/// then you can use `on` to attach a custom event handler. The callback receives
-/// a `Dynamic` representing the JavaScript event object, and a dispatch function
-/// you can use to send messages to the Lustre runtime.
+/// then you can use `on` to attach a custom event handler. The callback is given
+/// the event object as a `Dynamic`.
 ///
 /// As a simple example, you can implement `on_click` like so:
 ///
 /// ```gleam
+/// import gleam/option.{Some}
 /// import lustre/attribute.{Attribute}
 /// import lustre/event
 /// 
 /// pub fn on_click(msg: msg) -> Attribute(msg) {
-///   use _, dispatch <- event.on("click")
-///   dispatch(msg)
+///   use _ <- event.on("click")
+///   Some(msg)
 /// }
 /// ```
 ///
@@ -39,18 +40,19 @@ type Decoded(a) =
 ///
 /// ```gleam
 /// import gleam/dynamic
+/// import gleam/option.{None, Some}
+/// import gleam/result
 /// import lustre/attribute.{Attribute}
 /// import lustre/event
 /// 
 /// pub fn on_input(msg: fn(String) -> msg) -> Attribute(msg) {
 ///   use event, dispatch <- on("input")
-///   let decode_value = dynamic.field("target", dynamic.field("value", dynamic.string))
-///   let emit_value = fn(value) { dispatch(msg(value)) }
+///   let decode = dynamic.field("target", dynamic.field("value", dynamic.string))
 /// 
-///   event
-///   |> decode_value
-///   |> result.map(emit_value)
-///   |> result.unwrap(Nil)
+///   case decode(event) {
+///     Ok(value) -> Some(msg(value))
+///     Error(_) -> None
+///   }
 /// }
 /// ```
 ///
@@ -61,93 +63,72 @@ type Decoded(a) =
 /// Unlike the helpers in the rest of this module, it is possible to simply ignore
 /// the dispatch function and not dispatch a message at all. In fact, we saw this
 /// with the `on_input` example above: if we can't decode the event object, we
-/// simply return `Nil` and do nothing.
+/// simply return `None` and emit nothing.
 ///
-/// Beyond error handling, this can be used to perform side effects we don't need
+/// Beyond ignoring errors, this can be used to perform side effects we don't need
 /// to observe in our main application loop, such as logging...
 ///
 /// ```gleam
 /// import gleam/io
+/// import gleam/option.{None}
 /// import lustre/attribute.{Attribute}
 /// import lustre/event
 /// 
 /// pub fn log_on_click(msg: String) -> Attribute(msg) {
-///   use _, _ <- event.on("click")
+///   use _ <- event.on("click")
 ///   io.println(msg)
+///   None
 /// }
 /// ```
 ///
-/// ...or calling `set_state` from a `stateful` Lustre element:
-///
-/// ```gleam
-/// import gleam/int
-/// import lustre/attribute.{Attribute}
-/// import lustre/element.{Element}
-/// import lustre/event
-/// 
-/// pub fn counter() -> Element(msg) {
-///   use state, set_state = lustre.stateful(0)
-/// 
-///   let decr = event.on("click", fn(_, _) { set_state(state - 1) })
-///   let incr = event.on("click", fn(_, _) { set_state(state + 1) })
-/// 
-///   element.div([], [
-///     element.button([decr], [element.text("-")]),
-///     element.text(int.to_string(state)),
-///     element.button([incr], [element.text("+")]),
-///   ])
-/// }
-/// ```
-///
-pub fn on(
+pub external fn on(
   name: String,
-  handler: fn(Dynamic, fn(msg) -> Nil) -> Nil,
-) -> Attribute(msg) {
-  attribute.event(name, handler)
-}
+  handler: fn(Dynamic) -> Option(msg),
+) -> Attribute(msg) =
+  "../lustre.ffi.mjs" "on"
 
 // MOUSE EVENTS ----------------------------------------------------------------
 
 ///
 pub fn on_click(msg: msg) -> Attribute(msg) {
-  use _, dispatch <- on("click")
-  dispatch(msg)
+  use _ <- on("click")
+  Some(msg)
 }
 
 ///
 pub fn on_mouse_down(msg: msg) -> Attribute(msg) {
-  use _, dispatch <- on("mouseDown")
-  dispatch(msg)
+  use _ <- on("mousedown")
+  Some(msg)
 }
 
 ///
 pub fn on_mouse_up(msg: msg) -> Attribute(msg) {
-  use _, dispatch <- on("mouseUp")
-  dispatch(msg)
+  use _ <- on("mouseup")
+  Some(msg)
 }
 
 ///
 pub fn on_mouse_enter(msg: msg) -> Attribute(msg) {
-  use _, dispatch <- on("mouseEnter")
-  dispatch(msg)
+  use _ <- on("mouseenter")
+  Some(msg)
 }
 
 ///
 pub fn on_mouse_leave(msg: msg) -> Attribute(msg) {
-  use _, dispatch <- on("mouseLeave")
-  dispatch(msg)
+  use _ <- on("mouseleave")
+  Some(msg)
 }
 
 ///
 pub fn on_mouse_over(msg: msg) -> Attribute(msg) {
-  use _, dispatch <- on("mouseOver")
-  dispatch(msg)
+  use _ <- on("mouseover")
+  Some(msg)
 }
 
 ///
 pub fn on_mouse_out(msg: msg) -> Attribute(msg) {
-  use _, dispatch <- on("mouseOut")
-  dispatch(msg)
+  use _ <- on("mouseout")
+  Some(msg)
 }
 
 // KEYBOARD EVENTS -------------------------------------------------------------
@@ -156,79 +137,74 @@ pub fn on_mouse_out(msg: msg) -> Attribute(msg) {
 /// current key being pressed.
 ///
 pub fn on_keypress(msg: fn(String) -> msg) -> Attribute(msg) {
-  use event, dispatch <- on("keyPress")
+  use event <- on("keypress")
 
-  event
-  |> dynamic.field("key", dynamic.string)
-  |> result.map(msg)
-  |> result.map(dispatch)
-  |> result.unwrap(Nil)
+  case dynamic.field("key", dynamic.string)(event) {
+    Ok(key) -> Some(msg(key))
+    Error(_) -> None
+  }
 }
 
 /// Listens for key dow events on an element, and dispatches a message with the
 /// current key being pressed.
 ///
 pub fn on_keydown(msg: fn(String) -> msg) -> Attribute(msg) {
-  use event, dispatch <- on("keyDown")
+  use event <- on("keydown")
 
-  event
-  |> dynamic.field("key", dynamic.string)
-  |> result.map(msg)
-  |> result.map(dispatch)
-  |> result.unwrap(Nil)
+  case dynamic.field("key", dynamic.string)(event) {
+    Ok(key) -> Some(msg(key))
+    Error(_) -> None
+  }
 }
 
 /// Listens for key up events on an element, and dispatches a message with the
 /// current key being released.
 ///
 pub fn on_keyup(msg: fn(String) -> msg) -> Attribute(msg) {
-  use event, dispatch <- on("keyUp")
+  use event <- on("keyup")
 
-  event
-  |> dynamic.field("key", dynamic.string)
-  |> result.map(msg)
-  |> result.map(dispatch)
-  |> result.unwrap(Nil)
+  case dynamic.field("key", dynamic.string)(event) {
+    Ok(key) -> Some(msg(key))
+    Error(_) -> None
+  }
 }
 
 // FORM EVENTS -----------------------------------------------------------------
 
 ///
 pub fn on_input(msg: fn(String) -> msg) -> Attribute(msg) {
-  use event, dispatch <- on("change")
+  use event <- on("input")
 
-  event
-  |> value
-  |> result.map(msg)
-  |> result.map(dispatch)
-  |> result.unwrap(Nil)
+  case value(event) {
+    Ok(val) -> Some(msg(val))
+    Error(_) -> None
+  }
 }
 
 pub fn on_check(msg: fn(Bool) -> msg) -> Attribute(msg) {
-  use event, dispatch <- on("change")
+  use event <- on("change")
 
-  event
-  |> dynamic.field("target", dynamic.field("checked", dynamic.bool))
-  |> result.map(msg)
-  |> result.map(dispatch)
-  |> result.unwrap(Nil)
+  case checked(event) {
+    Ok(val) -> Some(msg(val))
+    Error(_) -> None
+  }
 }
 
 pub fn on_submit(msg: msg) -> Attribute(msg) {
-  use _, dispatch <- on("submit")
-  dispatch(msg)
+  use _ <- on("submit")
+  Some(msg)
 }
 
 // FOCUS EVENTS ----------------------------------------------------------------
 
 pub fn on_focus(msg: msg) -> Attribute(msg) {
-  use _, dispatch <- on("focus")
-  dispatch(msg)
+  use _ <- on("focus")
+  Some(msg)
 }
 
 pub fn on_blur(msg: msg) -> Attribute(msg) {
-  use _, dispatch <- on("blur")
-  dispatch(msg)
+  use _ <- on("blur")
+  Some(msg)
 }
 
 // DECODERS --------------------------------------------------------------------

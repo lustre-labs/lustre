@@ -2,9 +2,9 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/result
 import lustre/cmd.{Cmd}
 import lustre/element.{Element}
-import gleam/javascript/promise.{Promise}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -49,13 +49,7 @@ import gleam/javascript/promise.{Promise}
 /// <small>Someone please PR the Gleam docs generator to fix the monospace font,
 /// thanks! 💖</small>
 ///
-pub opaque type App(model, msg) {
-  App(
-    init: #(model, Cmd(msg)),
-    update: Update(model, msg),
-    render: Render(model, msg),
-  )
-}
+pub external type App(model, msg)
 
 pub type Error {
   ElementNotFound
@@ -100,11 +94,11 @@ type Render(model, msg) =
 /// ```
 ///
 pub fn element(element: Element(msg)) -> App(Nil, msg) {
-  let init = #(Nil, cmd.none())
+  let init = fn() { #(Nil, cmd.none()) }
   let update = fn(_, _) { #(Nil, cmd.none()) }
   let render = fn(_) { element }
 
-  App(init, update, render)
+  application(init, update, render)
 }
 
 /// If you start off with a simple `[element`](#element) app, you may find
@@ -157,14 +151,14 @@ pub fn element(element: Element(msg)) -> App(Nil, msg) {
 /// ```
 ///
 pub fn simple(
-  init: model,
+  init: fn() -> model,
   update: fn(model, msg) -> model,
   render: fn(model) -> Element(msg),
 ) -> App(model, msg) {
-  let init = #(init, cmd.none())
+  let init = fn() { #(init(), cmd.none()) }
   let update = fn(model, msg) { #(update(model, msg), cmd.none()) }
 
-  App(init, update, render)
+  application(init, update, render)
 }
 
 /// An evolution of a [`simple`](#simple) app that allows you to return a
@@ -208,13 +202,12 @@ pub fn simple(
 /// external fn set_timeout (f: fn () -> a, delay: Int) -> Nil 
 ///   = "" "window.setTimeout"
 ///```
-pub fn application(
-  init: #(model, Cmd(msg)),
+pub external fn application(
+  init: fn() -> #(model, Cmd(msg)),
   update: Update(model, msg),
   render: Render(model, msg),
-) -> App(model, msg) {
-  App(init, update, render)
-}
+) -> App(model, msg) =
+  "./lustre.ffi.mjs" "setup"
 
 // EFFECTS ---------------------------------------------------------------------
 
@@ -242,12 +235,16 @@ pub fn application(
 /// function from your `main` (or elsewhere) you can get events into your Lustre
 /// app from the outside world.
 ///
-pub fn start(app: App(model, msg), selector: String) -> Promise(fn(msg) -> Nil) {
-  mount(app, selector)
-}
-
-external fn mount(
+pub fn start(
   app: App(model, msg),
   selector: String,
-) -> Promise(fn(msg) -> Nil) =
-  "./lustre.ffi.mjs" "mount"
+) -> Result(fn(msg) -> Nil, Error) {
+  start_(app, selector)
+  |> result.replace_error(ElementNotFound)
+}
+
+external fn start_(
+  app: App(model, msg),
+  selector: String,
+) -> Result(fn(msg) -> Nil, Nil) =
+  "./lustre.ffi.mjs" "start"

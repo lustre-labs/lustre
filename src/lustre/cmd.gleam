@@ -9,8 +9,7 @@ import gleam/list
 /// get information back into your program.
 ///
 pub opaque type Cmd(action) {
-  Cmd(fn(fn(action) -> Nil) -> Nil, Cmd(action))
-  None
+  Cmd(List(fn(fn(action) -> Nil) -> Nil))
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -37,7 +36,7 @@ pub opaque type Cmd(action) {
 /// ```
 ///
 pub fn from(cmd: fn(fn(action) -> Nil) -> Nil) -> Cmd(action) {
-  Cmd(cmd, None)
+  Cmd([cmd])
 }
 
 /// Typically our app's `update` function needs to return a tuple of
@@ -45,7 +44,7 @@ pub fn from(cmd: fn(fn(action) -> Nil) -> Nil) -> Cmd(action) {
 /// can just return `none()`!
 ///
 pub fn none() -> Cmd(action) {
-  None
+  Cmd([])
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
@@ -53,26 +52,13 @@ pub fn none() -> Cmd(action) {
 /// 
 ///
 pub fn batch(cmds: List(Cmd(action))) -> Cmd(action) {
-  cmds
-  |> list.flat_map(to_list)
-  |> list.fold_right(None, fn(rest, cmd) { Cmd(cmd, rest) })
+  Cmd({
+    use b, Cmd(a) <- list.fold(cmds, [])
+    list.append(b, a)
+  })
 }
 
 pub fn map(cmd: Cmd(a), f: fn(a) -> b) -> Cmd(b) {
-  case cmd {
-    Cmd(cmd, next) ->
-      Cmd(fn(dispatch) { cmd(fn(a) { dispatch(f(a)) }) }, map(next, f))
-
-    None -> None
-  }
-}
-
-// CONVERSIONS -----------------------------------------------------------------
-
-pub fn to_list(cmd: Cmd(action)) -> List(fn(fn(action) -> Nil) -> Nil) {
-  case cmd {
-    Cmd(cmd, next) -> [cmd, ..to_list(next)]
-
-    None -> []
-  }
+  let Cmd(l) = cmd
+  Cmd(list.map(l, fn(cmd) { fn(dispatch) { cmd(fn(a) { dispatch(f(a)) }) } }))
 }
