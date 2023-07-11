@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>lustre | forms</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style type="text/tailwindcss">
+      @layer components {
+        .container {
+          @apply flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8;
+        }
+
+        .card {
+          @apply mt-10 sm:mx-auto sm:w-full sm:max-w-[480px];
+        }
+
+        .card > div {
+          @apply bg-white px-6 py-12 shadow sm:rounded-lg sm:px-12 space-y-6;
+        }
+
+        .debug {
+          @apply text-sm text-gray-400 whitespace-pre-line;
+        }
+
+        .input label {
+          @apply block text-sm font-medium leading-6 text-gray-900;
+        }
+
+        .input input {
+          @apply block w-full rounded-md border-0 p-1.5 mt-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-pink-600 sm:text-sm sm:leading-6;
+        }
+
+        .checkbox {
+          @apply h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-600;
+        }
+
+        .checkbox + label {
+          @apply ml-3 block text-sm leading-6 text-gray-900;
+        }
+      }
+    </style>
+
+    <script type="module">
+      import { main } from "../build/dev/javascript/lustre/input.mjs";
+
+      document.addEventListener("DOMContentLoaded", main);
+    </script>
+  </head>
+  <body class="h-full"></body>
+</html>
