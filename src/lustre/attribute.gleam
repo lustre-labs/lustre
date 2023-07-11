@@ -105,8 +105,8 @@ pub fn msg(uri: String) -> Attribute(msg) {
 }
 
 ///
-pub fn autocomplete(should_autocomplete: Bool) -> Attribute(msg) {
-  attribute("autocomplete", should_autocomplete)
+pub fn autocomplete(name: String) -> Attribute(msg) {
+  attribute("autocomplete", name)
 }
 
 ///
