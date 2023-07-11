@@ -1,6 +1,10 @@
 import { innerHTML, createTree } from "./runtime.ffi.mjs";
 import { Ok, Error, List } from "./gleam.mjs";
-import { Some, Option } from "../gleam_stdlib/gleam/option.mjs";
+import {
+  Some,
+  None,
+  map as option_map,
+} from "../gleam_stdlib/gleam/option.mjs";
 
 // RUNTIME ---------------------------------------------------------------------
 
@@ -39,12 +43,12 @@ export class App {
     this.#commands = cmds[0].toArray();
     this.#didUpdate = true;
 
-    window.requestAnimationFrame(this.#tick.bind(this));
+    window.requestAnimationFrame(() => this.#tick());
     return new Ok((msg) => this.dispatch(msg));
   }
 
   dispatch(msg) {
-    if (!this.#willUpdate) window.requestAnimationFrame(this.#tick.bind(this));
+    if (!this.#willUpdate) window.requestAnimationFrame(() => this.#tick());
 
     this.#queue.push(msg);
     this.#willUpdate = true;
@@ -52,11 +56,7 @@ export class App {
 
   #render() {
     const node = this.#__render(this.#state);
-    const tree = createTree(
-      map(node, (msg) => {
-        if (msg instanceof Some) this.dispatch(msg[0]);
-      })
-    );
+    const tree = createTree(map(node, (msg) => this.dispatch(msg)));
 
     innerHTML(this.#root, tree);
   }
@@ -101,7 +101,8 @@ export const node = (tag, attrs, children) =>
 export const text = (content) => content;
 export const attr = (key, value) => {
   if (value instanceof List) return [key, value.toArray()];
-  if (value instanceof Option) return [key, value?.[0]];
+  if (value instanceof Some) return [key, value[0]];
+  if (value instanceof None) return [key, undefined];
 
   return [key, value];
 };
@@ -115,7 +116,7 @@ export const map = (node, f) => ({
     // If the attribute is an event handler, wrap it in a function that
     // transforms
     if (key.startsWith("on") && typeof value === "function") {
-      attrs[key] = (e) => f(value(e));
+      attrs[key] = (e) => option_map(value(e), f);
     } else {
       attrs[key] = value;
     }
