@@ -1,7 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic
-import gleam/option.{None, Option, Some}
 import gleam/string
 import lustre
 import lustre/attribute.{attribute}
