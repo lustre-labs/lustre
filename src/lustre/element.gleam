@@ -8,7 +8,7 @@ import lustre/attribute.{Attribute, attribute}
 
 /// 
 ///
-pub external type Element(msg)
+pub type Element(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -16,12 +16,10 @@ pub external type Element(msg)
 /// tag name, a list of attributes (including event handlers), and a list of
 /// child elements.
 ///
-pub external fn node(
-  tag: String,
-  attrs: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) =
-  "../lustre.ffi.mjs" "node"
+@external(javascript, "../lustre.ffi.mjs", "node")
+pub fn node(tag tag: String, attrs attrs: List(Attribute(msg)), children children: List(
+    Element(msg),
+  )) -> Element(msg)
 
 // pub external fn stateful(
 //   init: state,
@@ -76,8 +74,8 @@ pub external fn node(
 ///
 /// Render a Gleam string as an HTML text node.
 ///
-pub external fn text(content: String) -> Element(msg) =
-  "../lustre.ffi.mjs" "text"
+@external(javascript, "../lustre.ffi.mjs", "text")
+pub fn text(content content: String) -> Element(msg)
 
 // MANIPULATIONS ---------------------------------------------------------------
 
@@ -177,8 +175,8 @@ pub external fn text(content: String) -> Element(msg) =
 /// If this feels like a lt of work... sometimes it is! Take a look at the docs
 /// for [`stateful`](#stateful) elements to see how all this can be encapsulated.
 ///
-pub external fn map(element: Element(a), f: fn(a) -> b) -> Element(b) =
-  "../lustre.ffi.mjs" "map"
+@external(javascript, "../lustre.ffi.mjs", "map")
+pub fn map(element element: Element(a), f f: fn(a) -> b) -> Element(b)
 
 // CONSTRUCTING NODES ----------------------------------------------------------
 // This list and grouping of nodes has been taken from the MDN reference at:

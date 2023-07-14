@@ -49,7 +49,7 @@ import lustre/element.{Element}
 /// <small>Someone please PR the Gleam docs generator to fix the monospace font,
 /// thanks! 💖</small>
 ///
-pub external type App(model, msg)
+pub type App(model, msg)
 
 pub type Error {
   ElementNotFound
@@ -202,12 +202,11 @@ pub fn simple(
 /// external fn set_timeout (f: fn () -> a, delay: Int) -> Nil 
 ///   = "" "window.setTimeout"
 ///```
-pub external fn application(
-  init: fn() -> #(model, Cmd(msg)),
-  update: Update(model, msg),
-  render: Render(model, msg),
-) -> App(model, msg) =
-  "./lustre.ffi.mjs" "setup"
+@external(javascript, "./lustre.ffi.mjs", "setup")
+pub fn application(init init: fn() -> #(model, Cmd(msg)), update update: Update(
+    model,
+    msg,
+  ), render render: Render(model, msg)) -> App(model, msg)
 
 // EFFECTS ---------------------------------------------------------------------
 
@@ -243,8 +242,8 @@ pub fn start(
   |> result.replace_error(ElementNotFound)
 }
 
-external fn start_(
-  app: App(model, msg),
-  selector: String,
-) -> Result(fn(msg) -> Nil, Nil) =
-  "./lustre.ffi.mjs" "start"
+@external(javascript, "./lustre.ffi.mjs", "start")
+fn start_(app app: App(model, msg), selector selector: String) -> Result(
+  fn(msg) -> Nil,
+  Nil,
+)

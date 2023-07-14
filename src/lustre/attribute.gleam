@@ -10,7 +10,7 @@ import gleam/string
 /// Attributes are attached to specific elements. They're either key/value pairs
 /// or event handlers.
 ///
-pub external type Attribute(msg)
+pub type Attribute(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -22,8 +22,8 @@ pub external type Attribute(msg)
 ///   - `Some(a)` ->  `a`
 ///   - `None`    ->  `undefined`
 ///   
-pub external fn attribute(name: String, value: any) -> Attribute(msg) =
-  "../lustre.ffi.mjs" "attr"
+@external(javascript, "../lustre.ffi.mjs", "attr")
+pub fn attribute(name name: String, value value: any) -> Attribute(msg)
 
 // COMMON ATTRIBUTES -----------------------------------------------------------
 
@@ -32,8 +32,8 @@ pub fn style(properties: List(#(String, String))) -> Attribute(msg) {
   attribute("style", styles(properties))
 }
 
-external fn styles(properties: List(#(String, String))) -> Dynamic =
-  "../lustre.ffi.mjs" "styles"
+@external(javascript, "../lustre.ffi.mjs", "styles")
+fn styles(properties properties: List(#(String, String))) -> Dynamic
 
 ///
 pub fn class(name: String) -> Attribute(msg) {

@@ -81,11 +81,10 @@ type Decoded(a) =
 /// }
 /// ```
 ///
-pub external fn on(
-  name: String,
-  handler: fn(Dynamic) -> Option(msg),
-) -> Attribute(msg) =
-  "../lustre.ffi.mjs" "on"
+@external(javascript, "../lustre.ffi.mjs", "on")
+pub fn on(name name: String, handler handler: fn(Dynamic) -> Option(msg)) -> Attribute(
+  msg,
+)
 
 // MOUSE EVENTS ----------------------------------------------------------------
 
