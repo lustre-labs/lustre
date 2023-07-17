@@ -2,7 +2,8 @@
 
 import gleam/int
 import lustre
-import lustre/element.{Element, button, div, p, text}
+import lustre/element.{Element, t}
+import lustre/html.{button, div, p}
 import lustre/event
 
 // MAIN ------------------------------------------------------------------------
@@ -12,11 +13,7 @@ pub fn main() {
   // start with if you're just getting started with lustre or you know you don't
   // need the runtime to manage any side effects.
   let app = lustre.simple(init, update, render)
-  let assert Ok(dispatch) = lustre.start(app, "body")
-
-  dispatch(Incr)
-  dispatch(Incr)
-  dispatch(Incr)
+  let assert Ok(_) = lustre.start(app, "body")
 }
 
 // MODEL -----------------------------------------------------------------------
@@ -50,10 +47,10 @@ pub fn render(model: Model) -> Element(Msg) {
   div(
     [],
     [
-      button([event.on_click(Incr)], [text("+")]),
-      button([event.on_click(Decr)], [text("-")]),
-      button([event.on_click(Reset)], [text("Reset")]),
-      p([], [text(int.to_string(model))]),
+      button([event.on_click(Incr)], [t("+")]),
+      button([event.on_click(Decr)], [t("-")]),
+      button([event.on_click(Reset)], [t("Reset")]),
+      p([], [t(int.to_string(model))]),
     ],
   )
 }

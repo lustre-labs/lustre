@@ -3,8 +3,10 @@
 import counter
 import gleam/list
 import gleam/map.{Map}
+import gleam/pair
 import lustre
-import lustre/element.{Element, div}
+import lustre/element.{Element}
+import lustre/html.{div}
 
 // MAIN ------------------------------------------------------------------------
 
@@ -13,7 +15,7 @@ pub fn main() {
   // start with if you're just getting started with lustre or you know you don't
   // need the runtime to manage any side effects.
   let app = lustre.simple(init, update, render)
-  let assert Ok(dispatch) = lustre.start(app, "body")
+  let assert Ok(_) = lustre.start(app, "body")
 
   Nil
 }
@@ -44,13 +46,12 @@ fn update(model: Model, msg: Msg) -> Model {
 // RENDER ----------------------------------------------------------------------
 
 fn render(model: Model) -> Element(Msg) {
-  div(
-    [],
-    {
-      use #(id, counter) <- list.map(map.to_list(model))
-      let tagger = fn(msg) { #(id, msg) }
+  let counters = {
+    use rest, id, counter <- map.fold(model, [])
+    let el = element.map(counter.render(counter), pair.new(id, _))
 
-      element.map(counter.render(counter), tagger)
-    },
-  )
+    [el, ..rest]
+  }
+
+  div([], counters)
 }
