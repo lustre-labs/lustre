@@ -1,18 +1,13 @@
 name = "lustre"
 version = "3.0.0-rc.4"
 
+description = "A framework for building web apps - powered by Gleam and React!"
+licences = ["MIT"]
+links = [{ title = "Buy me a coffee?", href = "https://github.com/sponsors/hayleigh-dot-dev" }]
+repository = { type = "github", user = "hayleigh-dot-dev", repo = "gleam-lustre" }
 target = "javascript"
 
-# Fill out these fields if you intend to generate HTML documentation or publish
-# your project to the Hex package manager.
-#
-licences = ["MIT"]
-description = "A framework for building web apps - powered by Gleam and React!"
-repository = { type = "github", user = "hayleigh-dot-dev", repo = "gleam-lustre" }
-links = [{ title = "Website", href = "https://hayleigh-dot-dev.github.io/gleam-lustre" }]
-
 [dependencies]
-gleam_stdlib = "~> 0.29"
+gleam_stdlib = "~> 0.30"
+funtil = "~> 1.0"
 
-[dev-dependencies]
-gleeunit = "~> 0.6"
