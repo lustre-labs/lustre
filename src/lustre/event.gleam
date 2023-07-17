@@ -3,88 +3,14 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{DecodeError, Dynamic}
-import gleam/option.{None, Option, Some}
+import gleam/option.{None, Some}
 import gleam/result
-import lustre/attribute.{Attribute}
+import lustre/attribute.{Attribute, on}
 
 // TYPES -----------------------------------------------------------------------
 
 type Decoded(a) =
   Result(a, List(DecodeError))
-
-// CONSTRUCTORS ----------------------------------------------------------------
-
-/// Attach custom event handlers to an element. A number of helper functions exist
-/// in this module to cover the most common events and use-cases, so you should
-/// check those out first.
-///
-/// If you need to handle an event that isn't covered by the helper functions,
-/// then you can use `on` to attach a custom event handler. The callback is given
-/// the event object as a `Dynamic`.
-///
-/// As a simple example, you can implement `on_click` like so:
-///
-/// ```gleam
-/// import gleam/option.{Some}
-/// import lustre/attribute.{Attribute}
-/// import lustre/event
-/// 
-/// pub fn on_click(msg: msg) -> Attribute(msg) {
-///   use _ <- event.on("click")
-///   Some(msg)
-/// }
-/// ```
-///
-/// By using `gleam/dynamic` you can decode the event object and pull out all sorts
-/// of useful data. This is how `on_input` is implemented:
-///
-/// ```gleam
-/// import gleam/dynamic
-/// import gleam/option.{None, Some}
-/// import gleam/result
-/// import lustre/attribute.{Attribute}
-/// import lustre/event
-/// 
-/// pub fn on_input(msg: fn(String) -> msg) -> Attribute(msg) {
-///   use event, dispatch <- on("input")
-///   let decode = dynamic.field("target", dynamic.field("value", dynamic.string))
-/// 
-///   case decode(event) {
-///     Ok(value) -> Some(msg(value))
-///     Error(_) -> None
-///   }
-/// }
-/// ```
-///
-/// You can take a look at the MDN reference for events
-/// [here](https://developer.mozilla.org/en-US/docs/Web/API/Event) to see what
-/// you can decode. 
-///
-/// Unlike the helpers in the rest of this module, it is possible to simply ignore
-/// the dispatch function and not dispatch a message at all. In fact, we saw this
-/// with the `on_input` example above: if we can't decode the event object, we
-/// simply return `None` and emit nothing.
-///
-/// Beyond ignoring errors, this can be used to perform side effects we don't need
-/// to observe in our main application loop, such as logging...
-///
-/// ```gleam
-/// import gleam/io
-/// import gleam/option.{None}
-/// import lustre/attribute.{Attribute}
-/// import lustre/event
-/// 
-/// pub fn log_on_click(msg: String) -> Attribute(msg) {
-///   use _ <- event.on("click")
-///   io.println(msg)
-///   None
-/// }
-/// ```
-///
-@external(javascript, "../lustre.ffi.mjs", "on")
-pub fn on(name name: String, handler handler: fn(Dynamic) -> Option(msg)) -> Attribute(
-  msg,
-)
 
 // MOUSE EVENTS ----------------------------------------------------------------
 

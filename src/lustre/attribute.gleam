@@ -3,14 +3,19 @@
 import gleam/dynamic.{Dynamic}
 import gleam/int
 import gleam/list
+import gleam/option.{Option}
 import gleam/string
+import gleam/string_builder.{StringBuilder}
 
 // TYPES -----------------------------------------------------------------------
 
 /// Attributes are attached to specific elements. They're either key/value pairs
 /// or event handlers.
 ///
-pub type Attribute(msg)
+pub opaque type Attribute(msg) {
+  Attribute(String, Dynamic)
+  Event(String, fn(Dynamic) -> Option(msg))
+}
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -22,18 +27,183 @@ pub type Attribute(msg)
 ///   - `Some(a)` ->  `a`
 ///   - `None`    ->  `undefined`
 ///   
-@external(javascript, "../lustre.ffi.mjs", "attr")
-pub fn attribute(name name: String, value value: any) -> Attribute(msg)
+pub fn attribute(name: String, value: any) -> Attribute(msg) {
+  let dyn = dynamic.from(value)
+
+  case dynamic.classify(dyn) {
+    "String" ->
+      dynamic.unsafe_coerce(dyn)
+      |> escape("", _)
+      |> dynamic.from
+      |> Attribute(name, _)
+    _ -> Attribute(name, dyn)
+  }
+}
+
+fn escape(escaped: String, content: String) -> String {
+  case string.pop_grapheme(content) {
+    Ok(#("<", xs)) -> escape(escaped <> "&lt;", xs)
+    Ok(#(">", xs)) -> escape(escaped <> "&gt;", xs)
+    Ok(#("&", xs)) -> escape(escaped <> "&amp;", xs)
+    Ok(#("\"", xs)) -> escape(escaped <> "&quot;", xs)
+    Ok(#("'", xs)) -> escape(escaped <> "&#x27;", xs)
+    Ok(#(x, xs)) -> escape(escaped <> x, xs)
+    Error(_) -> escaped <> content
+  }
+}
+
+/// Attach custom event handlers to an element. A number of helper functions exist
+/// in this module to cover the most common events and use-cases, so you should
+/// check those out first.
+///
+/// If you need to handle an event that isn't covered by the helper functions,
+/// then you can use `on` to attach a custom event handler. The callback is given
+/// the event object as a `Dynamic`.
+///
+/// As a simple example, you can implement `on_click` like so:
+///
+/// ```gleam
+/// import gleam/option.{Some}
+/// import lustre/attribute.{Attribute}
+/// import lustre/event
+/// 
+/// pub fn on_click(msg: msg) -> Attribute(msg) {
+///   use _ <- event.on("click")
+///   Some(msg)
+/// }
+/// ```
+///
+/// By using `gleam/dynamic` you can decode the event object and pull out all sorts
+/// of useful data. This is how `on_input` is implemented:
+///
+/// ```gleam
+/// import gleam/dynamic
+/// import gleam/option.{None, Some}
+/// import gleam/result
+/// import lustre/attribute.{Attribute}
+/// import lustre/event
+/// 
+/// pub fn on_input(msg: fn(String) -> msg) -> Attribute(msg) {
+///   use event, dispatch <- on("input")
+///   let decode = dynamic.field("target", dynamic.field("value", dynamic.string))
+/// 
+///   case decode(event) {
+///     Ok(value) -> Some(msg(value))
+///     Error(_) -> None
+///   }
+/// }
+/// ```
+///
+/// You can take a look at the MDN reference for events
+/// [here](https://developer.mozilla.org/en-US/docs/Web/API/Event) to see what
+/// you can decode. 
+///
+/// Unlike the helpers in the rest of this module, it is possible to simply ignore
+/// the dispatch function and not dispatch a message at all. In fact, we saw this
+/// with the `on_input` example above: if we can't decode the event object, we
+/// simply return `None` and emit nothing.
+///
+/// Beyond ignoring errors, this can be used to perform side effects we don't need
+/// to observe in our main application loop, such as logging...
+///
+/// ```gleam
+/// import gleam/io
+/// import gleam/option.{None}
+/// import lustre/attribute.{Attribute}
+/// import lustre/event
+/// 
+/// pub fn log_on_click(msg: String) -> Attribute(msg) {
+///   use _ <- event.on("click")
+///   io.println(msg)
+///   None
+/// }
+/// ```
+///
+pub fn on(name: String, handler: fn(Dynamic) -> Option(msg)) -> Attribute(msg) {
+  Event("on" <> name, handler)
+}
+
+// MANIPULATIONS ---------------------------------------------------------------
+
+///
+/// 
+pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
+  case attr {
+    Attribute(name, value) -> Attribute(name, value)
+    Event(on, handler) -> Event(on, fn(e) { option.map(handler(e), f) })
+  }
+}
+
+// CONVERSIONS -----------------------------------------------------------------
+
+///
+/// 
+pub fn to_string(attr: Attribute(msg)) -> String {
+  case attr {
+    Attribute(name, value) -> {
+      case dynamic.classify(value) {
+        "String" -> name <> "=\"" <> dynamic.unsafe_coerce(value) <> "\""
+
+        // Boolean attributes are determined based on their presence, eg we don't
+        // want to render `disabled="false"` if the value is `false` we simply
+        // want to omit the attribute altogether.
+        "Boolean" ->
+          case dynamic.unsafe_coerce(value) {
+            True -> name
+            False -> ""
+          }
+
+        // For everything else we'll just make a best-effort serialisation. 
+        _ -> name <> "=\"" <> string.inspect(value) <> "\""
+      }
+    }
+    Event(on, _) -> "data-lustre-on:" <> on
+  }
+}
+
+///
+///
+pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
+  case attr {
+    Attribute(name, value) -> {
+      case dynamic.classify(value) {
+        "String" ->
+          [name, "=\"", dynamic.unsafe_coerce(value), "\""]
+          |> string_builder.from_strings
+
+        // Boolean attributes are determined based on their presence, eg we don't
+        // want to render `disabled="false"` if the value is `false` we simply
+        // want to omit the attribute altogether.
+        "Boolean" ->
+          case dynamic.unsafe_coerce(value) {
+            True -> string_builder.from_string(name)
+            False -> string_builder.new()
+          }
+
+        // For everything else we'll just make a best-effort serialisation. 
+        _ ->
+          [name, "=\"", string.inspect(value), "\""]
+          |> string_builder.from_strings
+      }
+    }
+    Event(on, _) ->
+      ["data-lustre-on:", on]
+      |> string_builder.from_strings
+  }
+}
 
 // COMMON ATTRIBUTES -----------------------------------------------------------
 
 ///
 pub fn style(properties: List(#(String, String))) -> Attribute(msg) {
-  attribute("style", styles(properties))
+  attribute(
+    "style",
+    {
+      use styles, #(name, value) <- list.fold(properties, "")
+      styles <> name <> ":" <> value <> ";"
+    },
+  )
 }
-
-@external(javascript, "../lustre.ffi.mjs", "styles")
-fn styles(properties properties: List(#(String, String))) -> Dynamic
 
 ///
 pub fn class(name: String) -> Attribute(msg) {
