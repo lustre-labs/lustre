@@ -1,3 +1,5 @@
+import { h, t } from "./lustre/element.mjs";
+
 // This file is vendored from https://github.com/patrick-steele-idem/morphdom/
 // and is licensed under the MIT license. For a copy of the original license
 // head on over to:
@@ -780,3 +782,167 @@ function morphdomFactory(morphAttrs) {
 export const morphdom = morphdomFactory(morphAttrs);
 
 export default morphdom;
+
+// VDOM HACKS ------------------------------------------------------------------
+
+// Whew this is some Naughty Stuff™. Our `Element` Gleam type is opaque so the
+// class constructors are not exposed and we can't import them. We need to
+// massage these classes into a shape that morphdom knows how to deal with, and
+// because we can't get at the constructors directly we're going to be sneaky and
+// get in by constructing some dummy elements and stealing their prototypes.
+//
+// Morphdom expects the following properties/methods to exist on a valid VDOM
+// node:
+//
+//   - firstChild;
+//   - nextSibling;
+//   - nodeType;
+//   - nodeName;
+//   - namespaceURI;
+//   - nodeValue;
+//   - attributes;
+//   - value;
+//   - selected;
+//   - disabled;
+//   - hasAttributeNS(namespaceURI, name);
+//   - actualize(document);
+//
+// See more here: https://github.com/patrick-steele-idem/morphdom/blob/master/docs/virtual-dom.md
+//
+
+Object.defineProperties(h("").constructor.prototype, {
+  firstChild: {
+    get() {
+      // If this is the first time `firstChild` is being accessed, we need to
+      // create the children array first.
+      if (!this.children) this.children = this[2].toArray();
+
+      const child = this.children[0];
+
+      if (child) {
+        child.parentElement = this;
+        child.index = 0;
+      }
+
+      return child;
+    },
+  },
+
+  nextSibling: {
+    get() {
+      const sibling = this.parentElement?.children[this.index + 1];
+
+      if (sibling) {
+        sibling.parentElement = this.parentElement;
+        sibling.index = this.index + 1;
+      }
+
+      return sibling;
+    },
+  },
+
+  nodeType: {
+    value: ELEMENT_NODE,
+  },
+
+  nodeName: {
+    get() {
+      return this[0].toUpperCase();
+    },
+  },
+
+  namespaceURI: {
+    value: undefined,
+  },
+
+  nodeValue: {
+    value: null,
+  },
+
+  attributes: {
+    get() {
+      if (!this._attributes) {
+        this._attributes = Object.fromEntries(this[1].toArray());
+      }
+
+      return this._attributes;
+    },
+  },
+
+  value: {
+    get() {
+      return this.attributes.value;
+    },
+  },
+
+  selected: {
+    get() {
+      return !!this.attributes.selected;
+    },
+  },
+
+  disabled: {
+    get() {
+      return !!this.attributes.disabled;
+    },
+  },
+
+  hasAttributeNS: {
+    value: function (_, name) {
+      return name in this.attributes;
+    },
+  },
+
+  actualize: {
+    value: function (document) {
+      const el = document.createElement(this[0]);
+
+      for (const key in this.attributes) {
+        el[key] = this.attributes[key];
+      }
+
+      for (let child = this.firstChild; !!child; child = child.nextSibling) {
+        el.appendChild(child.actualize(document));
+      }
+
+      return el;
+    },
+  },
+});
+
+Object.defineProperties(t("").constructor.prototype, {
+  nextSibling: {
+    get() {
+      const sibling = this.parentElement?.children[this.index + 1];
+
+      if (sibling) {
+        sibling.parentElement = this.parentElement;
+        sibling.index = this.index + 1;
+      }
+
+      return sibling;
+    },
+  },
+
+  nodeType: {
+    get() {
+      return TEXT_NODE;
+    },
+  },
+
+  nodeName: {
+    value: "#text",
+  },
+
+  nodeValue: {
+    get() {
+      return this[0];
+    },
+  },
+
+  actualize: {
+    value: function (document) {
+      return document.createTextNode(this[0]);
+    },
+  },
+});
