@@ -64,7 +64,16 @@ fn render(model: Model) -> Element(Msg) {
         email_input(model.email),
         password_input(model.password),
         remember_checkbox(model.remember_me),
-        pre([attribute.class("debug")], [t(string.inspect(model))]),
+        pre(
+          [attribute.class("debug")],
+          [
+            string.inspect(model)
+            |> string.replace("(", "(\n  ")
+            |> string.replace(", ", ",\n  ")
+            |> string.replace(")", "\n)")
+            |> t,
+          ],
+        ),
       ]),
     ],
   )
