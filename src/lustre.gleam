@@ -68,6 +68,7 @@ type Render(model, msg) =
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
+@target(javascript)
 /// Create a basic lustre app that just renders some element on the page.
 /// Note that this doesn't mean the content is static! With `element.stateful`
 /// you can still create components with local state.
@@ -100,6 +101,7 @@ pub fn element(element: Element(msg)) -> App(Nil, msg) {
   application(init, update, render)
 }
 
+@target(javascript)
 /// If you start off with a simple `[element`](#element) app, you may find
 /// yourself leaning on [`stateful`](./lustrel/element.html#stateful) elements
 /// to manage model used throughout your app. If that's the case or if you know
@@ -160,6 +162,7 @@ pub fn simple(
   application(init, update, render)
 }
 
+@target(javascript)
 /// An evolution of a [`simple`](#simple) app that allows you to return a
 /// [`Effect`](./lustre/effect.html#Effect) from your `init` and `update`s. Commands give
 /// us a way to perform side effects like sending an HTTP request or running a
@@ -207,6 +210,7 @@ pub fn application(init: fn() -> #(model, Effect(msg)), update: Update(
     msg,
   ), render: Render(model, msg)) -> App(model, msg)
 
+@target(javascript)
 @external(javascript, "./lustre.ffi.mjs", "setup_component")
 pub fn component(name: String, init: fn() -> #(model, Effect(msg)), update: Update(
     model,
@@ -218,6 +222,7 @@ pub fn component(name: String, init: fn() -> #(model, Effect(msg)), update: Upda
 
 // EFFECTS ---------------------------------------------------------------------
 
+@target(javascript)
 /// Once you have created a app with either `basic` or `application`, you 
 /// need to actually start it! This function will mount your app to the DOM
 /// node that matches the query selector you provide.
