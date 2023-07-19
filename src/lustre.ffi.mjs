@@ -1,4 +1,4 @@
-import { morphdom } from "./runtime.ffi.mjs";
+import { morph } from "./runtime.ffi.mjs";
 import { Ok, Error } from "./gleam.mjs";
 import { map } from "./lustre/element.mjs";
 
@@ -13,6 +13,10 @@ export class App {
   #commands = [];
   #willUpdate = false;
   #didUpdate = false;
+
+  #init = null;
+  #update = null;
+  #view = null;
 
   constructor(init, update, render) {
     this.#init = init;
@@ -51,7 +55,7 @@ export class App {
     const node = this.#view(this.#state);
     const vdom = map(node, (msg) => this.dispatch(msg));
 
-    morphdom(this.#root.firstChild, vdom);
+    morph(this.#root, vdom);
   }
 
   #tick() {
