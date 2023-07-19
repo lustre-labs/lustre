@@ -29,7 +29,7 @@ pub fn h(
 ///
 /// 
 pub fn t(content: String) -> Element(msg) {
-  Text(escape("", content))
+  Text(content)
 }
 
 fn escape(escaped: String, content: String) -> String {
@@ -42,12 +42,6 @@ fn escape(escaped: String, content: String) -> String {
     Ok(#(x, xs)) -> escape(escaped <> x, xs)
     Error(_) -> escaped <> content
   }
-}
-
-///
-/// 
-pub fn unescaped_text(content: String) -> Element(msg) {
-  Text(content)
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
@@ -79,7 +73,7 @@ pub fn to_string(element: Element(msg)) -> String {
 /// 
 pub fn to_string_builder(element: Element(msg)) -> StringBuilder {
   case element {
-    Text(content) -> string_builder.from_string(content)
+    Text(content) -> string_builder.from_string(escape("", content))
     Element(tag, attrs, children) -> {
       string_builder.from_string("<" <> tag)
       |> attrs_to_string_builder(attrs)
