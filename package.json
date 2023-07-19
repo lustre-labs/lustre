@@ -1,5 +1,9 @@
 {
   "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "gleam build && vite serve ./test/examples"
+  },
   "devDependencies": {
     "vite": "^4.4.2"
   }
