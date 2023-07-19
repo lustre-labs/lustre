@@ -13,7 +13,7 @@ pub fn main() {
   // start with if you're just getting started with lustre or you know you don't
   // need the runtime to manage any side effects.
   let app = lustre.simple(init, update, render)
-  let assert Ok(_) = lustre.start(app, "body")
+  let assert Ok(_) = lustre.start(app, "[data-lustre-app]")
 }
 
 // MODEL -----------------------------------------------------------------------
