@@ -3,14 +3,26 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{DecodeError, Dynamic}
-import gleam/option.{None, Some}
+import gleam/option.{None, Option, Some}
 import gleam/result
-import lustre/attribute.{Attribute, on}
+import lustre/attribute.{Attribute}
+import lustre/effect.{Effect}
 
 // TYPES -----------------------------------------------------------------------
 
 type Decoded(a) =
   Result(a, List(DecodeError))
+
+// EFFECTS ---------------------------------------------------------------------
+
+@external(javascript, "../lustre.ffi.mjs", "emit")
+pub fn emit(event: String, data: any) -> Effect(msg)
+
+// CUSTOM EVENTS ---------------------------------------------------------------
+
+pub fn on(name: String, handler: fn(Dynamic) -> Option(msg)) -> Attribute(msg) {
+  attribute.on(name, handler)
+}
 
 // MOUSE EVENTS ----------------------------------------------------------------
 

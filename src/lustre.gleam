@@ -2,6 +2,8 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/dynamic.{Decoder}
+import gleam/map.{Map}
 import lustre/effect.{Effect}
 import lustre/element.{Element}
 
@@ -49,6 +51,7 @@ pub type App(model, msg)
 
 pub type Error {
   ElementNotFound
+  ComponentAlreadyRegistered
 }
 
 // These types aren't exposed, but they're just here to try and shrink the type
@@ -203,6 +206,15 @@ pub fn application(init: fn() -> #(model, Effect(msg)), update: Update(
     model,
     msg,
   ), render: Render(model, msg)) -> App(model, msg)
+
+@external(javascript, "./lustre.ffi.mjs", "setup_component")
+pub fn component(name: String, init: fn() -> #(model, Effect(msg)), update: Update(
+    model,
+    msg,
+  ), render: Render(model, msg), on_attribute_change: Map(String, Decoder(msg))) -> Result(
+  Nil,
+  Error,
+)
 
 // EFFECTS ---------------------------------------------------------------------
 

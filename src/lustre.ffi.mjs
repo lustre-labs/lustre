@@ -1,7 +1,8 @@
-import { morph } from "./runtime.ffi.mjs";
-import { Ok, Error } from "./gleam.mjs";
-import { ElementNotFound } from "./lustre.mjs";
+import { ElementNotFound, ComponentAlreadyRegistered } from "./lustre.mjs";
+import { from } from "./lustre/effect.mjs";
 import { map } from "./lustre/element.mjs";
+import { morph } from "./runtime.ffi.mjs";
+import { Ok, Error, isEqual } from "./gleam.mjs";
 
 // RUNTIME ---------------------------------------------------------------------
 
@@ -9,9 +10,10 @@ import { map } from "./lustre/element.mjs";
 ///
 export class App {
   #root = null;
+  #el = null;
   #state = null;
   #queue = [];
-  #commands = [];
+  #effects = [];
   #willUpdate = false;
   #didUpdate = false;
 
@@ -29,12 +31,15 @@ export class App {
     if (this.#root) return this;
 
     try {
-      const el = document.querySelector(selector);
-      const [next, cmds] = this.#init();
+      const el =
+        selector instanceof HTMLElement
+          ? selector
+          : document.querySelector(selector);
+      const [next, effects] = this.#init();
 
       this.#root = el;
       this.#state = next;
-      this.#commands = cmds[0].toArray();
+      this.#effects = effects[0].toArray();
       this.#didUpdate = true;
 
       window.requestAnimationFrame(() => this.#tick());
@@ -52,11 +57,33 @@ export class App {
     this.#willUpdate = true;
   }
 
+  emit(name, event = null) {
+    this.#root.dispatchEvent(
+      new CustomEvent(name, {
+        bubbles: true,
+        detail: event,
+        composed: true,
+      })
+    );
+  }
+
+  destroy() {
+    this.#root = null;
+    this.#el.remove();
+    this.#state = null;
+    this.#queue = [];
+    this.#effects = [];
+    this.#willUpdate = false;
+    this.#didUpdate = false;
+    this.#update = () => {};
+    this.#view = () => {};
+  }
+
   #render() {
     const node = this.#view(this.#state);
     const vdom = map(node, (msg) => this.dispatch(msg));
 
-    morph(this.#root, vdom);
+    this.#el = morph(this.#root, vdom);
   }
 
   #tick() {
@@ -69,19 +96,21 @@ export class App {
   #flush(times = 0) {
     if (this.#queue.length) {
       while (this.#queue.length) {
-        const [next, cmds] = this.#update(this.#state, this.#queue.shift());
+        const [next, effects] = this.#update(this.#state, this.#queue.shift());
 
         this.#state = next;
-        this.#commands.concat(cmds[0].toArray());
+        this.#effects = this.#effects.concat(effects[0].toArray());
       }
-
       this.#didUpdate = true;
     }
 
-    // Each update can produce commands which must now be executed.
-    while (this.#commands.length) this.#commands.shift()(this.dispatch);
+    // Each update can produce effects which must now be executed.
+    while (this.#effects[0])
+      this.#effects.shift()(this.dispatch, (name, data) =>
+        this.emit(name, data)
+      );
 
-    // Synchronous commands will immediately queue a message to be processed. If
+    // Synchronous effects will immediately queue a message to be processed. If
     // it is reasonable, we can process those updates too before proceeding to
     // the next render.
     if (this.#queue.length) {
@@ -92,3 +121,75 @@ export class App {
 
 export const setup = (init, update, render) => new App(init, update, render);
 export const start = (app, selector) => app.start(selector);
+
+export const emit = (name, data) =>
+  // Normal `Effect`s constructed in Gleam from `effect.from` don't get told
+  // about the second argument, but it's there 👀.
+  from((_, emit) => {
+    emit(name, data);
+  });
+
+// CUSTOM ELEMENTS -------------------------------------------------------------
+
+export const setup_component = (
+  name,
+  init,
+  update,
+  render,
+  on_attribute_change
+) => {
+  if (customElements.get(name)) {
+    return new Error(new ComponentAlreadyRegistered());
+  }
+
+  customElements.define(
+    name,
+    class extends HTMLElement {
+      #container = document.createElement("div");
+      #app = null;
+      #dispatch = null;
+
+      constructor() {
+        super();
+        this.attachShadow({ mode: "open" });
+        this.shadowRoot.appendChild(this.#container);
+
+        this.#app = new App(init, update, render);
+        const dispatch = this.#app.start(this.#container);
+        this.#dispatch = dispatch[0];
+
+        on_attribute_change.forEach((decoder, name) => {
+          Object.defineProperty(this, name, {
+            get: () => {
+              return this[`_${name}`] || this.getAttribute(name);
+            },
+
+            set: (value) => {
+              const prev = this[name];
+              const decoded = decoder(value);
+
+              // We need this equality check to prevent constantly dispatching
+              // messages when the value is an object or array: it might not have
+              // changed but its reference might have and we don't want to trigger
+              // useless updates.
+              if (decoded.isOk() && !isEqual(prev, decoded[0])) {
+                this.#dispatch(decoded[0]);
+              }
+
+              if (typeof value === "string") {
+                this.setAttribute(name, value);
+              } else {
+                this[`_${name}`] = value;
+              }
+            },
+          });
+        });
+      }
+
+      disconnectedCallback() {
+        this.#app.destroy();
+      }
+    }
+  );
+  return new Ok(null);
+};
