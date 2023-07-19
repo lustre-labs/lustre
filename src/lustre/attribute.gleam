@@ -27,17 +27,15 @@ pub opaque type Attribute(msg) {
 ///   - `Some(a)` ->  `a`
 ///   - `None`    ->  `undefined`
 ///   
-pub fn attribute(name: String, value: any) -> Attribute(msg) {
-  let dyn = dynamic.from(value)
+pub fn attribute(name: String, value: String) -> Attribute(msg) {
+  escape("", value)
+  |> dynamic.from
+  |> Attribute(name, _)
+}
 
-  case dynamic.classify(dyn) {
-    "String" ->
-      dynamic.unsafe_coerce(dyn)
-      |> escape("", _)
-      |> dynamic.from
-      |> Attribute(name, _)
-    _ -> Attribute(name, dyn)
-  }
+/// 
+pub fn property(name: String, value: any) -> Attribute(msg) {
+  Attribute(name, dynamic.from(value))
 }
 
 fn escape(escaped: String, content: String) -> String {
@@ -239,12 +237,12 @@ pub fn type_(name: String) -> Attribute(msg) {
 
 ///
 pub fn value(val: Dynamic) -> Attribute(msg) {
-  attribute("value", val)
+  property("value", val)
 }
 
 ///
 pub fn checked(is_checked: Bool) -> Attribute(msg) {
-  attribute("checked", is_checked)
+  property("checked", is_checked)
 }
 
 ///
@@ -254,7 +252,7 @@ pub fn placeholder(text: String) -> Attribute(msg) {
 
 ///
 pub fn selected(is_selected: Bool) -> Attribute(msg) {
-  attribute("selected", is_selected)
+  property("selected", is_selected)
 }
 
 // INPUT HELPERS ---------------------------------------------------------------
@@ -281,12 +279,12 @@ pub fn autocomplete(name: String) -> Attribute(msg) {
 
 ///
 pub fn autofocus(should_autofocus: Bool) -> Attribute(msg) {
-  attribute("autoFocus", should_autofocus)
+  property("autoFocus", should_autofocus)
 }
 
 ///
 pub fn disabled(is_disabled: Bool) -> Attribute(msg) {
-  attribute("disabled", is_disabled)
+  property("disabled", is_disabled)
 }
 
 ///
@@ -301,12 +299,12 @@ pub fn pattern(regex: String) -> Attribute(msg) {
 
 ///
 pub fn readonly(is_readonly: Bool) -> Attribute(msg) {
-  attribute("readonly", is_readonly)
+  property("readonly", is_readonly)
 }
 
 ///
 pub fn required(is_required: Bool) -> Attribute(msg) {
-  attribute("required", is_required)
+  property("required", is_required)
 }
 
 ///
@@ -379,12 +377,12 @@ pub fn src(uri: String) -> Attribute(msg) {
 
 ///
 pub fn height(val: Int) -> Attribute(msg) {
-  attribute("height", int.to_string(val))
+  property("height", int.to_string(val))
 }
 
 ///
 pub fn width(val: Int) -> Attribute(msg) {
-  attribute("width", int.to_string(val))
+  property("width", int.to_string(val))
 }
 
 ///
@@ -396,15 +394,15 @@ pub fn alt(text: String) -> Attribute(msg) {
 
 ///
 pub fn autoplay(should_autoplay: Bool) -> Attribute(msg) {
-  attribute("autoplay", should_autoplay)
+  property("autoplay", should_autoplay)
 }
 
 ///
 pub fn controls(visible: Bool) -> Attribute(msg) {
-  attribute("controls", visible)
+  property("controls", visible)
 }
 
 ///
 pub fn loop(should_loop: Bool) -> Attribute(msg) {
-  attribute("loop", should_loop)
+  property("loop", should_loop)
 }
