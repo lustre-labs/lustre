@@ -3,6 +3,12 @@
 import lustre/element.{Element, h, t}
 import lustre/attribute.{Attribute}
 
+// The doc comments (and order) for functions in this module are taken from the
+// MDN Element reference:
+//
+//   https://developer.mozilla.org/en-US/docs/Web/HTML/Element
+//
+
 // HTML ELEMENTS: MAIN ROOT ----------------------------------------------------
 
 /// Represents the root (top-level element) of an HTML document, so it is also
@@ -879,7 +885,7 @@ pub fn noscript(
 /// languages, such as WebGL's GLSL shader programming language and JSON.
 /// 
 pub fn script(attrs: List(Attribute(msg)), js: String) -> Element(msg) {
-  h("script", attrs, [element.unescaped_text(js)])
+  h("script", attrs, [t(js)])
 }
 
 // HTML ELEMENTS: DEMARCATING EDITS ---------------------------------------------
