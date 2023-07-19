@@ -2,7 +2,6 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/result
 import lustre/effect.{Effect}
 import lustre/element.{Element}
 
@@ -200,10 +199,10 @@ pub fn simple(
 ///   = "" "window.setTimeout"
 ///```
 @external(javascript, "./lustre.ffi.mjs", "setup")
-pub fn application(init init: fn() -> #(model, Effect(msg)), update update: Update(
+pub fn application(init: fn() -> #(model, Effect(msg)), update: Update(
     model,
     msg,
-  ), render render: Render(model, msg)) -> App(model, msg)
+  ), render: Render(model, msg)) -> App(model, msg)
 
 // EFFECTS ---------------------------------------------------------------------
 
@@ -231,16 +230,8 @@ pub fn application(init init: fn() -> #(model, Effect(msg)), update update: Upda
 /// function from your `main` (or elsewhere) you can get events into your Lustre
 /// app from the outside world.
 ///
-pub fn start(
-  app: App(model, msg),
-  selector: String,
-) -> Result(fn(msg) -> Nil, Error) {
-  start_(app, selector)
-  |> result.replace_error(ElementNotFound)
-}
-
 @external(javascript, "./lustre.ffi.mjs", "start")
-fn start_(app app: App(model, msg), selector selector: String) -> Result(
+pub fn start(app: App(model, msg), selector: String) -> Result(
   fn(msg) -> Nil,
-  Nil,
+  Error,
 )

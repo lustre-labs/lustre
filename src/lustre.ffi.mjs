@@ -1,5 +1,6 @@
 import { morph } from "./runtime.ffi.mjs";
 import { Ok, Error } from "./gleam.mjs";
+import { ElementNotFound } from "./lustre.mjs";
 import { map } from "./lustre/element.mjs";
 
 // RUNTIME ---------------------------------------------------------------------
@@ -40,7 +41,7 @@ export class App {
 
       return new Ok((msg) => this.dispatch(msg));
     } catch (_) {
-      return new Error(undefined);
+      return new Error(new ElementNotFound());
     }
   }
 
