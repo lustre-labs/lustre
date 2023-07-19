@@ -1,56 +1,62 @@
 import { h, t } from "./lustre/element.mjs";
-import { fold, each } from "../gleam_stdlib/gleam/list.mjs";
+import { fold } from "../gleam_stdlib/gleam/list.mjs";
 
 const Element = h("").constructor;
 const Text = t("").constructor;
 
 export function morph(prev, curr) {
   if (curr instanceof Element) {
-    if (prev?.nodeType === 1 && prev.nodeName !== curr[0].toUpperCase()) {
-      return morphElement(prev, curr);
-    } else {
-      const el = document.createElement(curr[0]);
-
-      each(curr[1], (attr) => {
-        const name = attr[0];
-        const value = attr[1];
-
-        morphAttr(el, name, value);
-      });
-
-      each(curr[2], (child) => {
-        el.appendChild(morph(null, child));
-      });
-
-      if (prev) prev.replaceWith(el);
-
-      return el;
-    }
+    return prev?.nodeType === 1 && prev.nodeName === curr[0].toUpperCase()
+      ? morphElement(prev, curr)
+      : createElement(prev, curr);
   }
 
   if (curr instanceof Text) {
-    if (prev?.nodeType === 3) {
-      return morphText(prev, curr);
-    } else {
-      const el = document.createTextNode(curr[0]);
-      if (prev) prev.replaceWith(el);
-      return el;
-    }
+    return prev?.nodeType === 3
+      ? morphText(prev, curr)
+      : createText(prev, curr);
   }
 
-  return null;
+  return document.createComment(
+    [
+      "[internal lustre error] I couldn't work out how to render this element. This",
+      "function should only be called internally by lustre's runtime: if you think",
+      "this is an error, please open an issue at",
+      "https://github.come/hayleigh-dot-dev/lustre/issues/new.",
+    ].join(" ")
+  );
+}
+
+// ELEMENTS --------------------------------------------------------------------
+
+function createElement(prev, curr) {
+  const el = document.createElement(curr[0]);
+
+  let attr = curr[1];
+  while (attr.head) {
+    morphAttr(el, attr.head[0], attr.head[1]);
+    attr = attr.tail;
+  }
+
+  let child = curr[2];
+  while (child.head) {
+    el.appendChild(morph(null, child.head));
+    child = child.tail;
+  }
+
+  if (prev) prev.replaceWith(el);
+  return el;
 }
 
 function morphElement(prev, curr) {
   const prevAttrs = prev.attributes;
-  const currAttrs = fold(curr[1], new Map(), (acc, attr) => {
-    const name = attr[0];
-    const value = attr[1];
+  const currAttrs = new Map();
 
-    acc.set(name, value);
-    return acc;
-  });
-  const currChildren = curr[2].toArray();
+  let currAttr = curr[1];
+  while (currAttr.head) {
+    currAttrs.set(currAttr.head[0], currAttr.head[1]);
+    currAttr = currAttr.tail;
+  }
 
   for (const { name, value: prevValue } of prevAttrs) {
     if (!currAttrs.has(name)) prev.removeAttribute(name);
@@ -66,25 +72,27 @@ function morphElement(prev, curr) {
     morphAttr(prev, name, value);
   }
 
-  for (let child = prev.firstChild; child; child = child.nextSibling) {
-    if (currChildren.length) {
-      morph(child, currChildren.shift());
-    } else {
-      prev.removeChild(child);
+  let prevChild = prev.firstChild;
+  let currChild = curr[2];
+
+  while (prevChild) {
+    if (currChild.head) {
+      morph(prevChild, currChild.head);
+      currChild = currChild.tail;
     }
+
+    prevChild = prevChild.nextSibling;
   }
 
-  for (const child of currChildren) {
-    prev.appendChild(morph(null, child));
+  while (currChild.head) {
+    prev.appendChild(morph(null, currChild.head));
+    currChild = currChild.tail;
   }
 
   return prev;
 }
 
-function morphText(prev, curr) {
-  if (prev.nodeValue !== curr[0]) prev.nodeValue = curr[0];
-  return prev;
-}
+// ATTRIBUTES ------------------------------------------------------------------
 
 function morphAttr(el, name, value) {
   switch (typeof value) {
@@ -103,4 +111,22 @@ function morphAttr(el, name, value) {
     default:
       if (el[name] !== value) el[name] = value;
   }
+}
+
+// TEXT ------------------------------------------------------------------------
+
+function createText(prev, curr) {
+  const el = document.createTextNode(curr[0]);
+
+  if (prev) prev.replaceWith(el);
+  return el;
+}
+
+function morphText(prev, curr) {
+  const prevValue = prev.nodeValue;
+  const currValue = curr[0];
+
+  if (prevValue !== currValue) prev.nodeValue = currValue;
+
+  return prev;
 }
