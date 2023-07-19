@@ -11,7 +11,7 @@ import lustre/html.{div, input, label, pre}
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
-  // A `simple` lustre application doesn't produce `Cmd`s. These are best to 
+  // A `simple` lustre application doesn't produce `Effect`s. These are best to 
   // start with if you're just getting started with lustre or you know you don't
   // need the runtime to manage any side effects.
   let app = lustre.simple(init, update, render)

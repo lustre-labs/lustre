@@ -3,7 +3,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/result
-import lustre/cmd.{Cmd}
+import lustre/effect.{Effect}
 import lustre/element.{Element}
 
 // TYPES -----------------------------------------------------------------------
@@ -19,35 +19,32 @@ import lustre/element.{Element}
 /// in time.
 ///
 /// ```text
-///                                       +--------+
-///                                       |        |
-///                                       | update |
-///                                       |        |
-///                                       +--------+
-///                                         ^    |
-///                                         |    | 
-///                                     Msg |    | #(Model, Cmd(Msg))
-///                                         |    |
-///                                         |    v
-/// +------+                      +------------------------+
-/// |      |  #(Model, Cmd(Msg))  |                        |
-/// | init |--------------------->|     Lustre Runtime     |
-/// |      |                      |                        |
-/// +------+                      +------------------------+
-///                                         ^    |
-///                                         |    |
-///                                     Msg |    | Model
-///                                         |    |
-///                                         |    v
-///                                       +--------+
-///                                       |        |
-///                                       | render |
-///                                       |        |
-///                                       +--------+
+///                                          +--------+
+///                                          |        |
+///                                          | update |
+///                                          |        |
+///                                          +--------+
+///                                            ^    |
+///                                            |    | 
+///                                        Msg |    | #(Model, Effect(Msg))
+///                                            |    |
+///                                            |    v
+/// +------+                         +------------------------+
+/// |      |  #(Model, Effect(Msg))  |                        |
+/// | init |------------------------>|     Lustre Runtime     |
+/// |      |                         |                        |
+/// +------+                         +------------------------+
+///                                            ^    |
+///                                            |    |
+///                                        Msg |    | Model
+///                                            |    |
+///                                            |    v
+///                                          +--------+
+///                                          |        |
+///                                          | render |
+///                                          |        |
+///                                          +--------+
 /// ```
-///
-/// <small>Someone please PR the Gleam docs generator to fix the monospace font,
-/// thanks! 💖</small>
 ///
 pub type App(model, msg)
 
@@ -62,7 +59,7 @@ pub type Error {
 //
 
 type Update(model, msg) =
-  fn(model, msg) -> #(model, Cmd(msg))
+  fn(model, msg) -> #(model, Effect(msg))
 
 type Render(model, msg) =
   fn(model) -> Element(msg)
@@ -94,8 +91,8 @@ type Render(model, msg) =
 /// ```
 ///
 pub fn element(element: Element(msg)) -> App(Nil, msg) {
-  let init = fn() { #(Nil, cmd.none()) }
-  let update = fn(_, _) { #(Nil, cmd.none()) }
+  let init = fn() { #(Nil, effect.none()) }
+  let update = fn(_, _) { #(Nil, effect.none()) }
   let render = fn(_) { element }
 
   application(init, update, render)
@@ -155,20 +152,20 @@ pub fn simple(
   update: fn(model, msg) -> model,
   render: fn(model) -> Element(msg),
 ) -> App(model, msg) {
-  let init = fn() { #(init(), cmd.none()) }
-  let update = fn(model, msg) { #(update(model, msg), cmd.none()) }
+  let init = fn() { #(init(), effect.none()) }
+  let update = fn(model, msg) { #(update(model, msg), effect.none()) }
 
   application(init, update, render)
 }
 
 /// An evolution of a [`simple`](#simple) app that allows you to return a
-/// [`Cmd`](./lustre/cmd.html#Cmd) from your `init` and `update`s. Commands give
+/// [`Effect`](./lustre/effect.html#Effect) from your `init` and `update`s. Commands give
 /// us a way to perform side effects like sending an HTTP request or running a
 /// timer and then dispatch actions back to the runtime to trigger an `update`.
 ///
 ///```
 /// import lustre
-/// import lustre/cmd
+/// import lustre/effect
 /// import lustre/element
 /// 
 /// pub fn main () {
@@ -191,8 +188,8 @@ pub fn simple(
 ///   assert Ok(_) = lustre.start(app, "#root")   
 /// }
 /// 
-/// fn tick () -> Cmd(Msg) {
-///   cmd.from(fn (dispatch) {
+/// fn tick () -> Effect(Msg) {
+///   effect.from(fn (dispatch) {
 ///     setInterval(fn () {
 ///       dispatch(Tick)
 ///     }, 1000)
@@ -203,7 +200,7 @@ pub fn simple(
 ///   = "" "window.setTimeout"
 ///```
 @external(javascript, "./lustre.ffi.mjs", "setup")
-pub fn application(init init: fn() -> #(model, Cmd(msg)), update update: Update(
+pub fn application(init init: fn() -> #(model, Effect(msg)), update update: Update(
     model,
     msg,
   ), render render: Render(model, msg)) -> App(model, msg)
