@@ -1,5 +1,6 @@
 import { h, t } from "./lustre/element.mjs";
-import { fold } from "../gleam_stdlib/gleam/list.mjs";
+import { List } from "./gleam.mjs";
+import { Some, None } from "../gleam_stdlib/gleam/option.mjs";
 
 const Element = h("").constructor;
 const Text = t("").constructor;
@@ -106,11 +107,39 @@ function morphAttr(el, name, value) {
       value ? el.setAttribute(name, name) : el.removeAttribute(name);
       break;
 
-    // For properties, we're leaning on reference equality to avoid unnecessary
-    // updates.
-    default:
-      if (el[name] !== value) el[name] = value;
+    // Event listeners need to be handled slightly differently because we need
+    // to be able to support custom events. We
+    case name.startsWith("on") && "function": {
+      const event = name.slice(2).toLowerCase();
+
+      if (el[`_${name}`] === value) break;
+
+      el.removeEventListener(event, el[`_${name}`]);
+      el.addEventListener(event, value);
+      el[`_${name}`] = value;
+      break;
+    }
+
+    default: {
+      el[name] = toJsValue(value);
+    }
   }
+}
+
+function toJsValue(value) {
+  if (value instanceof List) {
+    return value.toArray().map(toJsValue);
+  }
+
+  if (value instanceof Some) {
+    return toJsValue(value[0]);
+  }
+
+  if (value instanceof None) {
+    return null;
+  }
+
+  return value;
 }
 
 // TEXT ------------------------------------------------------------------------
