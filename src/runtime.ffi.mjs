@@ -1,11 +1,20 @@
-import { element, text } from "./lustre/element.mjs";
+import { element, element_ns, text } from "./lustre/element.mjs";
 import { List } from "./gleam.mjs";
+import { find } from "../gleam_stdlib/gleam/list.mjs";
 import { Some, None } from "../gleam_stdlib/gleam/option.mjs";
 
 const Element = element("").constructor;
+const ElementNs = element_ns("", "").constructor;
 const Text = text("").constructor;
 
 export function morph(prev, curr) {
+  if (curr instanceof ElementNs)
+    return prev?.nodeType === 1 &&
+      prev.nodeName === curr[0].toUpperCase() &&
+      prev.namespaceURI === curr[3]
+      ? morphElement(prev, curr, curr[3])
+      : createElement(prev, curr, curr[3]);
+
   if (curr instanceof Element) {
     return prev?.nodeType === 1 && prev.nodeName === curr[0].toUpperCase()
       ? morphElement(prev, curr)
@@ -30,20 +39,15 @@ export function morph(prev, curr) {
 
 // ELEMENTS --------------------------------------------------------------------
 
-function createElement(prev, curr) {
-  const el =
-    curr[0] === "svg"
-      ? document.createElementNS("http://www.w3.org/2000/svg", "svg")
-      : document.createElement(curr[0]);
+function createElement(prev, curr, ns) {
+  const el = ns
+    ? document.createElementNS(ns, curr[0])
+    : document.createElement(curr[0]);
 
   let attr = curr[1];
   while (attr.head) {
     morphAttr(el, attr.head[0], attr.head[1]);
     attr = attr.tail;
-  }
-
-  if (curr[0] === "svg" && !el.getAttribute("xmlns")) {
-    el.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   }
 
   let child = curr[2];
@@ -56,7 +60,7 @@ function createElement(prev, curr) {
   return el;
 }
 
-function morphElement(prev, curr) {
+function morphElement(prev, curr, ns) {
   const prevAttrs = prev.attributes;
   const currAttrs = new Map();
 
@@ -64,10 +68,6 @@ function morphElement(prev, curr) {
   while (currAttr.head) {
     currAttrs.set(currAttr.head[0], currAttr.head[1]);
     currAttr = currAttr.tail;
-  }
-
-  if (curr[0] === "svg" && !currAttrs.has("xmlns")) {
-    currAttrs.set("xmlns", "http://www.w3.org/2000/svg");
   }
 
   for (const { name, value: prevValue } of prevAttrs) {

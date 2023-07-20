@@ -12,6 +12,7 @@ import lustre/attribute.{Attribute}
 pub opaque type Element(msg) {
   Text(String)
   Element(String, List(Attribute(msg)), List(Element(msg)))
+  ElementNs(String, List(Attribute(msg)), List(Element(msg)), String)
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -24,6 +25,17 @@ pub fn element(
   children: List(Element(msg)),
 ) -> Element(msg) {
   Element(tag, attrs, children)
+}
+
+///
+///
+pub fn namespaced(
+  namespace: String,
+  tag: String,
+  attrs: List(Attribute(msg)),
+  children: List(Element(msg)),
+) -> Element(msg) {
+  ElementNs(tag, attrs, children, namespace)
 }
 
 ///
@@ -57,6 +69,13 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
         list.map(attrs, attribute.map(_, f)),
         list.map(children, map(_, f)),
       )
+    ElementNs(tag, attrs, children, namespace) ->
+      ElementNs(
+        tag,
+        list.map(attrs, attribute.map(_, f)),
+        list.map(children, map(_, f)),
+        namespace,
+      )
   }
 }
 
@@ -74,13 +93,19 @@ pub fn to_string(element: Element(msg)) -> String {
 pub fn to_string_builder(element: Element(msg)) -> StringBuilder {
   case element {
     Text(content) -> string_builder.from_string(escape("", content))
-    Element(tag, attrs, children) -> {
+    Element(tag, attrs, children) ->
       string_builder.from_string("<" <> tag)
       |> attrs_to_string_builder(attrs)
       |> string_builder.append(">")
       |> children_to_string_builder(children)
       |> string_builder.append("</" <> tag <> ">")
-    }
+    ElementNs(tag, attrs, children, namespace) ->
+      string_builder.from_string("<" <> tag)
+      |> attrs_to_string_builder(attrs)
+      |> string_builder.append(" xmlns=\"" <> namespace <> "\"")
+      |> string_builder.append(">")
+      |> children_to_string_builder(children)
+      |> string_builder.append("</" <> tag <> ">")
   }
 }
 

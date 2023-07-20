@@ -3,7 +3,7 @@
 import gleam/int
 import lustre
 import lustre/attribute.{attribute}
-import lustre/element.{Element, element, text}
+import lustre/element.{Element, namespaced, text}
 import lustre/html.{button, div, p, svg}
 import lustre/event
 
@@ -48,24 +48,29 @@ pub fn render(model: Model) -> Element(Msg) {
   div(
     [],
     [
-      button([event.on_click(Incr)], [plus()]),
-      button([event.on_click(Decr)], [minus()]),
+      button(
+        [event.on_click(Incr)],
+        [plus([attribute.style([#("color", "red")])])],
+      ),
+      button([event.on_click(Decr)], [minus([])]),
       button([event.on_click(Reset)], [text("Reset")]),
       p([], [text(int.to_string(model))]),
     ],
   )
 }
 
-fn plus() {
+fn plus(attrs) {
   svg(
     [
       attribute("width", "15"),
       attribute("height", "15"),
       attribute("viewBox", "0 0 15 15"),
       attribute("fill", "none"),
+      ..attrs
     ],
     [
-      element(
+      namespaced(
+        "http://www.w3.org/2000/svg",
         "path",
         [
           attribute(
@@ -82,16 +87,18 @@ fn plus() {
   )
 }
 
-fn minus() {
+fn minus(attrs) {
   svg(
     [
       attribute("width", "15"),
       attribute("height", "15"),
       attribute("viewBox", "0 0 15 15"),
       attribute("fill", "none"),
+      ..attrs
     ],
     [
-      element(
+      namespaced(
+        "http://www.w3.org/2000/svg",
         "path",
         [
           attribute(

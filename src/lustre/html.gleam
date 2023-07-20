@@ -1,6 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import lustre/element.{Element, element, text}
+import lustre/element.{Element, element, namespaced, text}
 import lustre/attribute.{Attribute}
 
 // The doc comments (and order) for functions in this module are taken from the
@@ -847,11 +847,7 @@ pub fn svg(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element(
-    "svg",
-    [attribute.attribute("xmlns", "http://www.w3.org/2000/svg"), ..attrs],
-    children,
-  )
+  namespaced("http://www.w3.org/2000/svg", "svg", attrs, children)
 }
 
 /// The top-level element in MathML. Every valid MathML instance must be wrapped
