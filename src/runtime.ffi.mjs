@@ -1,10 +1,9 @@
-import { element, element_ns, text } from "./lustre/element.mjs";
+import { element, namespaced, text } from "./lustre/element.mjs";
 import { List } from "./gleam.mjs";
-import { find } from "../gleam_stdlib/gleam/list.mjs";
 import { Some, None } from "../gleam_stdlib/gleam/option.mjs";
 
 const Element = element("").constructor;
-const ElementNs = element_ns("", "").constructor;
+const ElementNs = namespaced("", "").constructor;
 const Text = text("").constructor;
 
 export function morph(prev, curr) {
