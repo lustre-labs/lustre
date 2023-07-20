@@ -145,14 +145,16 @@ export const setup_component = (
   customElements.define(
     name,
     class extends HTMLElement {
+      static get observedAttributes() {
+        return on_attribute_change.entries().map(([name, _]) => name);
+      }
+
       #container = document.createElement("div");
       #app = null;
       #dispatch = null;
 
       constructor() {
         super();
-        this.attachShadow({ mode: "open" });
-        this.shadowRoot.appendChild(this.#container);
 
         this.#app = new App(init, update, render);
         const dispatch = this.#app.start(this.#container);
@@ -184,6 +186,16 @@ export const setup_component = (
             },
           });
         });
+      }
+
+      connectedCallback() {
+        this.appendChild(this.#container);
+      }
+
+      attributeChangedCallback(name, prev, next) {
+        if (prev !== next) {
+          this[name] = next;
+        }
       }
 
       disconnectedCallback() {
