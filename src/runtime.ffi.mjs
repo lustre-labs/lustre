@@ -1,9 +1,9 @@
-import { h, t } from "./lustre/element.mjs";
+import { element, text } from "./lustre/element.mjs";
 import { List } from "./gleam.mjs";
 import { Some, None } from "../gleam_stdlib/gleam/option.mjs";
 
-const Element = h("").constructor;
-const Text = t("").constructor;
+const Element = element("").constructor;
+const Text = text("").constructor;
 
 export function morph(prev, curr) {
   if (curr instanceof Element) {
@@ -31,12 +31,19 @@ export function morph(prev, curr) {
 // ELEMENTS --------------------------------------------------------------------
 
 function createElement(prev, curr) {
-  const el = document.createElement(curr[0]);
+  const el =
+    curr[0] === "svg"
+      ? document.createElementNS("http://www.w3.org/2000/svg", "svg")
+      : document.createElement(curr[0]);
 
   let attr = curr[1];
   while (attr.head) {
     morphAttr(el, attr.head[0], attr.head[1]);
     attr = attr.tail;
+  }
+
+  if (curr[0] === "svg" && !el.getAttribute("xmlns")) {
+    el.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   }
 
   let child = curr[2];
@@ -57,6 +64,10 @@ function morphElement(prev, curr) {
   while (currAttr.head) {
     currAttrs.set(currAttr.head[0], currAttr.head[1]);
     currAttr = currAttr.tail;
+  }
+
+  if (curr[0] === "svg" && !currAttrs.has("xmlns")) {
+    currAttrs.set("xmlns", "http://www.w3.org/2000/svg");
   }
 
   for (const { name, value: prevValue } of prevAttrs) {

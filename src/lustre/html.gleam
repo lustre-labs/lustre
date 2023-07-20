@@ -847,7 +847,11 @@ pub fn svg(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element("svg", attrs, children)
+  element(
+    "svg",
+    [attribute.attribute("xmlns", "http://www.w3.org/2000/svg"), ..attrs],
+    children,
+  )
 }
 
 /// The top-level element in MathML. Every valid MathML instance must be wrapped
