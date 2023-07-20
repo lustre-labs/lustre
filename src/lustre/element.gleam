@@ -18,7 +18,7 @@ pub opaque type Element(msg) {
 
 ///
 /// 
-pub fn h(
+pub fn element(
   tag: String,
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -28,7 +28,7 @@ pub fn h(
 
 ///
 /// 
-pub fn t(content: String) -> Element(msg) {
+pub fn text(content: String) -> Element(msg) {
   Text(content)
 }
 

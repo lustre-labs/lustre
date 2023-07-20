@@ -1,6 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import lustre/element.{Element, h, t}
+import lustre/element.{Element, element, text}
 import lustre/attribute.{Attribute}
 
 // The doc comments (and order) for functions in this module are taken from the
@@ -19,7 +19,7 @@ pub fn html(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("html", attrs, children)
+  element("html", attrs, children)
 }
 
 // HTML ELEMENTS: DOCUMENT METADATA --------------------------------------------
@@ -28,14 +28,14 @@ pub fn html(
 /// be only one such element in a document.
 /// 
 pub fn base(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("base", attrs, [])
+  element("base", attrs, [])
 }
 
 /// Contains machine-readable information (metadata) about the document, like its
 /// title, scripts, and style sheets.
 /// 
 pub fn head(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("head", attrs, [])
+  element("head", attrs, [])
 }
 
 /// Specifies relationships between the current document and an external resource.
@@ -44,28 +44,28 @@ pub fn head(attrs: List(Attribute(msg))) -> Element(msg) {
 /// on mobile devices) among other things.
 /// 
 pub fn link(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("link", attrs, [])
+  element("link", attrs, [])
 }
 
 /// Represents metadata that cannot be represented by other HTML meta-related
 /// elements, like <base>, <link>, <script>, <style> and <title>.
 /// 
 pub fn meta(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("meta", attrs, [])
+  element("meta", attrs, [])
 }
 
 /// Contains style information for a document or part of a document. It contains
 /// CSS, which is applied to the contents of the document containing this element.
 /// 
 pub fn style(attrs: List(Attribute(msg)), css: String) -> Element(msg) {
-  h("style", attrs, [t(css)])
+  element("style", attrs, [text(css)])
 }
 
 /// Defines the document's title that is shown in a browser's title bar or a
 /// page's tab. It only contains text; tags within the element are ignored.
 /// 
-pub fn title(attrs: List(Attribute(msg)), text: String) -> Element(msg) {
-  h("title", attrs, [t(text)])
+pub fn title(attrs: List(Attribute(msg)), content: String) -> Element(msg) {
+  element("title", attrs, [text(content)])
 }
 
 // HTML ELEMENTS: SECTIONING ROOT -----------------------------------------------
@@ -77,7 +77,7 @@ pub fn body(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("body", attrs, children)
+  element("body", attrs, children)
 }
 
 // HTML ELEMENTS: CONTENT SECTIONING -------------------------------------------
@@ -89,7 +89,7 @@ pub fn address(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("address", attrs, children)
+  element("address", attrs, children)
 }
 
 /// Represents a self-contained composition in a document, page, application, or
@@ -102,7 +102,7 @@ pub fn article(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("article", attrs, children)
+  element("article", attrs, children)
 }
 
 /// Represents a portion of a document whose content is only indirectly related
@@ -113,7 +113,7 @@ pub fn aside(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("aside", attrs, children)
+  element("aside", attrs, children)
 }
 
 /// Represents a footer for its nearest ancestor sectioning content or sectioning
@@ -124,7 +124,7 @@ pub fn footer(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("footer", attrs, children)
+  element("footer", attrs, children)
 }
 
 /// Represents introductory content, typically a group of introductory or navigational
@@ -135,7 +135,7 @@ pub fn header(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("header", attrs, children)
+  element("header", attrs, children)
 }
 
 /// Represent six levels of section headings. <h1> is the highest section level
@@ -145,7 +145,7 @@ pub fn h1(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("h1", attrs, children)
+  element("h1", attrs, children)
 }
 
 /// Represent six levels of section headings. <h1> is the highest section level
@@ -155,7 +155,7 @@ pub fn h2(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("h2", attrs, children)
+  element("h2", attrs, children)
 }
 
 /// Represent six levels of section headings. <h1> is the highest section level
@@ -165,7 +165,7 @@ pub fn h3(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("h3", attrs, children)
+  element("h3", attrs, children)
 }
 
 /// Represent six levels of section headings. <h1> is the highest section level
@@ -175,7 +175,7 @@ pub fn h4(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("h4", attrs, children)
+  element("h4", attrs, children)
 }
 
 /// Represent six levels of section headings. <h1> is the highest section level
@@ -185,7 +185,7 @@ pub fn h5(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("h5", attrs, children)
+  element("h5", attrs, children)
 }
 
 /// Represent six levels of section headings. <h1> is the highest section level
@@ -195,7 +195,7 @@ pub fn h6(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("h6", attrs, children)
+  element("h6", attrs, children)
 }
 
 /// Represents a heading grouped with any secondary content, such as subheadings,
@@ -205,7 +205,7 @@ pub fn hgroup(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("hgroup", attrs, children)
+  element("hgroup", attrs, children)
 }
 
 /// Represents the dominant content of the body of a document. The main content
@@ -216,7 +216,7 @@ pub fn main(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("main", attrs, children)
+  element("main", attrs, children)
 }
 
 /// Represents a section of a page whose purpose is to provide navigation links,
@@ -227,7 +227,7 @@ pub fn nav(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("nav", attrs, children)
+  element("nav", attrs, children)
 }
 
 /// Represents a generic standalone section of a document, which doesn't have a
@@ -238,7 +238,7 @@ pub fn section(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("section", attrs, children)
+  element("section", attrs, children)
 }
 
 /// Represents a part that contains a set of form controls or other content related
@@ -248,7 +248,7 @@ pub fn search(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("search", attrs, children)
+  element("search", attrs, children)
 }
 
 // HTML ELEMENTS: TEXT CONTENT -------------------------------------------------
@@ -262,7 +262,7 @@ pub fn blockquote(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("blockquote", attrs, children)
+  element("blockquote", attrs, children)
 }
 
 /// Provides the description, definition, or value for the preceding term (<dt>)
@@ -272,7 +272,7 @@ pub fn dd(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("dd", attrs, children)
+  element("dd", attrs, children)
 }
 
 /// The generic container for flow content. It has no effect on the content or
@@ -284,7 +284,7 @@ pub fn div(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("div", attrs, children)
+  element("div", attrs, children)
 }
 
 /// Represents a description list. The element encloses a list of groups of terms
@@ -296,7 +296,7 @@ pub fn dl(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("dl", attrs, children)
+  element("dl", attrs, children)
 }
 
 /// Specifies a term in a description or definition list, and as such must be
@@ -308,7 +308,7 @@ pub fn dt(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("dt", attrs, children)
+  element("dt", attrs, children)
 }
 
 /// Represents a caption or legend describing the rest of the contents of its
@@ -318,7 +318,7 @@ pub fn figcaption(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("figcaption", attrs, children)
+  element("figcaption", attrs, children)
 }
 
 /// Represents self-contained content, potentially with an optional caption,
@@ -329,14 +329,14 @@ pub fn figure(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("figure", attrs, children)
+  element("figure", attrs, children)
 }
 
 /// Represents a thematic break between paragraph-level elements: for example,
 /// a change of scene in a story, or a shift of topic within a section.
 /// 
 pub fn hr(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("hr", attrs, [])
+  element("hr", attrs, [])
 }
 
 /// Represents an item in a list. It must be contained in a parent element: an
@@ -349,7 +349,7 @@ pub fn li(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("li", attrs, children)
+  element("li", attrs, children)
 }
 
 /// A semantic alternative to <ul>, but treated by browsers (and exposed through
@@ -360,7 +360,7 @@ pub fn menu(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("menu", attrs, children)
+  element("menu", attrs, children)
 }
 
 /// Represents an ordered list of items — typically rendered as a numbered list.
@@ -369,7 +369,7 @@ pub fn ol(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("ol", attrs, children)
+  element("ol", attrs, children)
 }
 
 /// Represents a paragraph. Paragraphs are usually represented in visual media
@@ -381,7 +381,7 @@ pub fn p(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("p", attrs, children)
+  element("p", attrs, children)
 }
 
 /// Represents preformatted text which is to be presented exactly as written in
@@ -392,7 +392,7 @@ pub fn pre(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("pre", attrs, children)
+  element("pre", attrs, children)
 }
 
 /// Represents an unordered list of items, typically rendered as a bulleted list.
@@ -401,7 +401,7 @@ pub fn ul(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("ul", attrs, children)
+  element("ul", attrs, children)
 }
 
 // HTML ELEMENTS: INLINE TEXT SEMANTICS ----------------------------------------
@@ -414,7 +414,7 @@ pub fn a(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("a", attrs, children)
+  element("a", attrs, children)
 }
 
 /// Represents an abbreviation or acronym.
@@ -423,7 +423,7 @@ pub fn abbr(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("abbr", attrs, children)
+  element("abbr", attrs, children)
 }
 
 /// Used to draw the reader's attention to the element's contents, which are not
@@ -438,7 +438,7 @@ pub fn b(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("b", attrs, children)
+  element("b", attrs, children)
 }
 
 /// Tells the browser's bidirectional algorithm to treat the text it contains in
@@ -450,7 +450,7 @@ pub fn bdi(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("bdi", attrs, children)
+  element("bdi", attrs, children)
 }
 
 /// Overrides the current directionality of text, so that the text within is
@@ -460,14 +460,14 @@ pub fn bdo(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("bdo", attrs, children)
+  element("bdo", attrs, children)
 }
 
 /// Produces a line break in text (carriage-return). It is useful for writing a
 /// poem or an address, where the division of lines is significant.
 /// 
 pub fn br(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("br", attrs, [])
+  element("br", attrs, [])
 }
 
 /// Used to mark up the title of a cited creative work. The reference may be in
@@ -478,7 +478,7 @@ pub fn cite(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("cite", attrs, children)
+  element("cite", attrs, children)
 }
 
 /// Displays its contents styled in a fashion intended to indicate that the text
@@ -489,7 +489,7 @@ pub fn code(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("code", attrs, children)
+  element("code", attrs, children)
 }
 
 /// Links a given piece of content with a machine-readable translation. If the
@@ -499,7 +499,7 @@ pub fn data(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("data", attrs, children)
+  element("data", attrs, children)
 }
 
 /// Used to indicate the term being defined within the context of a definition
@@ -511,7 +511,7 @@ pub fn dfn(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("dfn", attrs, children)
+  element("dfn", attrs, children)
 }
 
 /// Marks text that has stress emphasis. The <em> element can be nested, with
@@ -521,7 +521,7 @@ pub fn em(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("em", attrs, children)
+  element("em", attrs, children)
 }
 
 /// Represents a range of text that is set off from the normal text for some
@@ -533,7 +533,7 @@ pub fn i(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("i", attrs, children)
+  element("i", attrs, children)
 }
 
 /// Represents a span of inline text denoting textual user input from a keyboard,
@@ -545,7 +545,7 @@ pub fn kbd(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("kbd", attrs, children)
+  element("kbd", attrs, children)
 }
 
 /// Represents text which is marked or highlighted for reference or notation
@@ -555,7 +555,7 @@ pub fn mark(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("mark", attrs, children)
+  element("mark", attrs, children)
 }
 
 /// Indicates that the enclosed text is a short inline quotation. Most modern
@@ -567,7 +567,7 @@ pub fn q(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("q", attrs, children)
+  element("q", attrs, children)
 }
 
 /// Used to provide fall-back parentheses for browsers that do not support the
@@ -579,7 +579,7 @@ pub fn rp(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("rp", attrs, children)
+  element("rp", attrs, children)
 }
 
 /// Specifies the ruby text component of a ruby annotation, which is used to
@@ -591,7 +591,7 @@ pub fn rt(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("rt", attrs, children)
+  element("rt", attrs, children)
 }
 
 /// Represents small annotations that are rendered above, below, or next to base
@@ -603,7 +603,7 @@ pub fn ruby(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("ruby", attrs, children)
+  element("ruby", attrs, children)
 }
 
 /// Renders text with a strikethrough, or a line through it. Use the <s> element
@@ -615,7 +615,7 @@ pub fn s(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("s", attrs, children)
+  element("s", attrs, children)
 }
 
 /// Used to enclose inline text which represents sample (or quoted) output from
@@ -626,7 +626,7 @@ pub fn samp(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("samp", attrs, children)
+  element("samp", attrs, children)
 }
 
 /// Represents side-comments and small print, like copyright and legal text,
@@ -637,7 +637,7 @@ pub fn small(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("small", attrs, children)
+  element("small", attrs, children)
 }
 
 /// A generic inline container for phrasing content, which does not inherently
@@ -651,7 +651,7 @@ pub fn span(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("span", attrs, children)
+  element("span", attrs, children)
 }
 
 /// Indicates that its contents have strong importance, seriousness, or urgency.
@@ -661,7 +661,7 @@ pub fn strong(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("strong", attrs, children)
+  element("strong", attrs, children)
 }
 
 /// Specifies inline text which should be displayed as subscript for solely
@@ -672,7 +672,7 @@ pub fn sub(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("sub", attrs, children)
+  element("sub", attrs, children)
 }
 
 /// Specifies inline text which is to be displayed as superscript for solely
@@ -683,7 +683,7 @@ pub fn sup(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("sup", attrs, children)
+  element("sup", attrs, children)
 }
 
 /// Represents a specific period in time. It may include the datetime attribute
@@ -694,7 +694,7 @@ pub fn time(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("time", attrs, children)
+  element("time", attrs, children)
 }
 
 /// Represents a span of inline text which should be rendered in a way that
@@ -705,7 +705,7 @@ pub fn u(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("u", attrs, children)
+  element("u", attrs, children)
 }
 
 /// Represents the name of a variable in a mathematical expression or a
@@ -716,7 +716,7 @@ pub fn var(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("var", attrs, children)
+  element("var", attrs, children)
 }
 
 /// Represents the name of a variable in a mathematical expression or a
@@ -724,7 +724,7 @@ pub fn var(
 /// the current typeface, although that behavior is browser-dependent.
 /// 
 pub fn wbr(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("wbr", attrs, [])
+  element("wbr", attrs, [])
 }
 
 // HTML ELEMENTS: IMAGE AND MULTIMEDIA -----------------------------------------
@@ -734,7 +734,7 @@ pub fn wbr(attrs: List(Attribute(msg))) -> Element(msg) {
 /// otherwise create a break at that location.
 /// 
 pub fn area(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("area", attrs, [])
+  element("area", attrs, [])
 }
 
 /// Defines an area inside an image map that has predefined clickable areas. An
@@ -744,7 +744,7 @@ pub fn audio(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("audio", attrs, children)
+  element("audio", attrs, children)
 }
 
 /// Used to embed sound content in documents. It may contain one or more audio
@@ -753,7 +753,7 @@ pub fn audio(
 /// for streamed media, using a MediaStream.
 /// 
 pub fn img(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("img", attrs, [])
+  element("img", attrs, [])
 }
 
 /// Used with <area> elements to define an image map (a clickable link area).
@@ -762,7 +762,7 @@ pub fn map(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("map", attrs, children)
+  element("map", attrs, children)
 }
 
 /// Used as a child of the media elements, audio and video. It lets you specify
@@ -771,7 +771,7 @@ pub fn map(
 /// Text Tracks.
 /// 
 pub fn track(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("track", attrs, [])
+  element("track", attrs, [])
 }
 
 /// Embeds a media player which supports video playback into the document. You
@@ -782,7 +782,7 @@ pub fn video(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("video", attrs, children)
+  element("video", attrs, children)
 }
 
 // HTML ELEMENTS: EMBEDDED CONTENT ---------------------------------------------
@@ -792,21 +792,21 @@ pub fn video(
 /// such as a browser plug-in.
 /// 
 pub fn embed(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("embed", attrs, [])
+  element("embed", attrs, [])
 }
 
 /// Represents a nested browsing context, embedding another HTML page into the
 /// current one.
 /// 
 pub fn iframe(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("iframe", attrs, [])
+  element("iframe", attrs, [])
 }
 
 /// Represents an external resource, which can be treated as an image, a nested
 /// browsing context, or a resource to be handled by a plugin.
 /// 
 pub fn object(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("object", attrs, [])
+  element("object", attrs, [])
 }
 
 /// Contains zero or more <source> elements and one <img> element to offer
@@ -816,14 +816,14 @@ pub fn picture(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("picture", attrs, children)
+  element("picture", attrs, children)
 }
 
 /// Enables the embedding of another HTML page into the current one to enable
 /// smoother navigation into new pages.
 /// 
 pub fn portal(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("portal", attrs, [])
+  element("portal", attrs, [])
 }
 
 /// Specifies multiple media resources for the picture, the audio element, or
@@ -834,7 +834,7 @@ pub fn portal(attrs: List(Attribute(msg))) -> Element(msg) {
 /// and media file formats.
 /// 
 pub fn source(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("source", attrs, [])
+  element("source", attrs, [])
 }
 
 // HTML ELEMENTS: SVG AND MATHML -----------------------------------------------
@@ -847,7 +847,7 @@ pub fn svg(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("svg", attrs, children)
+  element("svg", attrs, children)
 }
 
 /// The top-level element in MathML. Every valid MathML instance must be wrapped
@@ -858,7 +858,7 @@ pub fn math(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("math", attrs, children)
+  element("math", attrs, children)
 }
 
 // HTML ELEMENTS: SCRIPTING ----------------------------------------------------
@@ -867,7 +867,7 @@ pub fn math(
 /// API to draw graphics and animations.
 /// 
 pub fn canvas(attrs: List(Attribute(msg))) -> Element(msg) {
-  h("canvas", attrs, [])
+  element("canvas", attrs, [])
 }
 
 /// Defines a section of HTML to be inserted if a script type on the page is
@@ -877,7 +877,7 @@ pub fn noscript(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  h("noscript", attrs, children)
+  element("noscript", attrs, children)
 }
 
 /// Used to embed executable code or data; this is typically used to embed or
@@ -885,7 +885,7 @@ pub fn noscript(
 /// languages, such as WebGL's GLSL shader programming language and JSON.
 /// 
 pub fn script(attrs: List(Attribute(msg)), js: String) -> Element(msg) {
-  h("script", attrs, [t(js)])
+  element("script", attrs, [text(js)])
 }
 
 // HTML ELEMENTS: DEMARCATING EDITS ---------------------------------------------
@@ -899,7 +899,7 @@ pub fn del(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("del", attrs, children)
+  element.element("del", attrs, children)
 }
 
 /// Represents a range of text that has been added to a document. You can use the
@@ -910,7 +910,7 @@ pub fn ins(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("ins", attrs, children)
+  element.element("ins", attrs, children)
 }
 
 // HTML ELEMENTS: TABLE CONTENT ------------------------------------------------
@@ -921,14 +921,14 @@ pub fn caption(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("caption", attrs, children)
+  element.element("caption", attrs, children)
 }
 
 /// Defines a column within a table and is used for defining common semantics on
 /// all common cells. It is generally found within a <colgroup> element.
 /// 
 pub fn col(attrs: List(Attribute(msg))) -> Element(msg) {
-  element.h("col", attrs, [])
+  element.element("col", attrs, [])
 }
 
 /// Defines a group of columns within a table.
@@ -937,7 +937,7 @@ pub fn colgroup(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("colgroup", attrs, children)
+  element.element("colgroup", attrs, children)
 }
 
 /// Represents tabular data — that is, information presented in a two-dimensional
@@ -947,7 +947,7 @@ pub fn table(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("table", attrs, children)
+  element.element("table", attrs, children)
 }
 
 /// Encapsulates a set of table rows (<tr> elements), indicating that they
@@ -957,7 +957,7 @@ pub fn tbody(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("tbody", attrs, children)
+  element.element("tbody", attrs, children)
 }
 
 /// Defines a cell of a table that contains data. It participates in the table
@@ -967,7 +967,7 @@ pub fn td(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("td", attrs, children)
+  element.element("td", attrs, children)
 }
 
 /// Defines a set of rows summarizing the columns of the table.
@@ -976,7 +976,7 @@ pub fn tfoot(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("tfoot", attrs, children)
+  element.element("tfoot", attrs, children)
 }
 
 /// Defines a cell as a header of a group of table cells. The exact nature of
@@ -986,7 +986,7 @@ pub fn th(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("th", attrs, children)
+  element.element("th", attrs, children)
 }
 
 /// Defines a set of rows defining the head of the columns of the table.
@@ -995,7 +995,7 @@ pub fn thead(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("thead", attrs, children)
+  element.element("thead", attrs, children)
 }
 
 /// Defines a row of cells in a table. The row's cells can then be established
@@ -1005,7 +1005,7 @@ pub fn tr(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("tr", attrs, children)
+  element.element("tr", attrs, children)
 }
 
 // HTML ELEMENTS: FORMS --------------------------------------------------------
@@ -1018,7 +1018,7 @@ pub fn button(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("button", attrs, children)
+  element.element("button", attrs, children)
 }
 
 /// Contains a set of <option> elements that represent the permissible or
@@ -1028,7 +1028,7 @@ pub fn datalist(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("datalist", attrs, children)
+  element.element("datalist", attrs, children)
 }
 
 /// Used to group several controls as well as labels (<label>) within a web form.
@@ -1037,7 +1037,7 @@ pub fn fieldset(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("fieldset", attrs, children)
+  element.element("fieldset", attrs, children)
 }
 
 /// Represents a document section containing interactive controls for submitting
@@ -1047,7 +1047,7 @@ pub fn form(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("form", attrs, children)
+  element.element("form", attrs, children)
 }
 
 /// Used to create interactive controls for web-based forms to accept data from 
@@ -1057,7 +1057,7 @@ pub fn form(
 /// of combinations of input types and attributes.
 /// 
 pub fn input(attrs: List(Attribute(msg))) -> Element(msg) {
-  element.h("input", attrs, [])
+  element.element("input", attrs, [])
 }
 
 /// Represents a caption for an item in a user interface.
@@ -1066,7 +1066,7 @@ pub fn label(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("label", attrs, children)
+  element.element("label", attrs, children)
 }
 
 /// Represents a caption for the content of its parent <fieldset>.
@@ -1075,7 +1075,7 @@ pub fn legend(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("legend", attrs, children)
+  element.element("legend", attrs, children)
 }
 
 /// Represents either a scalar value within a known range or a fractional value.
@@ -1084,7 +1084,7 @@ pub fn meter(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("meter", attrs, children)
+  element.element("meter", attrs, children)
 }
 
 /// Creates a grouping of options within a <select> element.
@@ -1093,7 +1093,7 @@ pub fn optgroup(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("optgroup", attrs, children)
+  element.element("optgroup", attrs, children)
 }
 
 /// Used to define an item contained in a select, an <optgroup>, or a <datalist>
@@ -1101,7 +1101,7 @@ pub fn optgroup(
 /// of items in an HTML document.
 /// 
 pub fn option(attrs: List(Attribute(msg))) -> Element(msg) {
-  element.h("option", attrs, [])
+  element.element("option", attrs, [])
 }
 
 /// Container element into which a site or app can inject the results of a
@@ -1111,7 +1111,7 @@ pub fn output(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("output", attrs, children)
+  element.element("output", attrs, children)
 }
 
 /// Displays an indicator showing the completion progress of a task, typically
@@ -1121,7 +1121,7 @@ pub fn progress(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("progress", attrs, children)
+  element.element("progress", attrs, children)
 }
 
 /// Represents a control that provides a menu of options.
@@ -1130,7 +1130,7 @@ pub fn select(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("select", attrs, children)
+  element.element("select", attrs, children)
 }
 
 /// Represents a multi-line plain-text editing control, useful when you want to
@@ -1138,7 +1138,7 @@ pub fn select(
 /// comment on a review or feedback form.
 /// 
 pub fn textarea(attrs: List(Attribute(msg))) -> Element(msg) {
-  element.h("textarea", attrs, [])
+  element.element("textarea", attrs, [])
 }
 
 // HTML ELEMENTS: INTERACTIVE ELEMENTS -----------------------------------------
@@ -1151,7 +1151,7 @@ pub fn details(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("details", attrs, children)
+  element.element("details", attrs, children)
 }
 
 /// Represents a dialog box or other interactive component, such as a dismissible
@@ -1161,7 +1161,7 @@ pub fn dialog(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("dialog", attrs, children)
+  element.element("dialog", attrs, children)
 }
 
 /// Specifies a summary, caption, or legend for a details element's disclosure box.
@@ -1172,7 +1172,7 @@ pub fn summary(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("summary", attrs, children)
+  element.element("summary", attrs, children)
 }
 
 // HTML ELEMENTS: WEB COMPONENTS -----------------------------------------------
@@ -1182,7 +1182,7 @@ pub fn summary(
 /// create separate DOM trees and present them together.
 ///
 pub fn slot(attrs: List(Attribute(msg))) -> Element(msg) {
-  element.h("slot", attrs, [])
+  element.element("slot", attrs, [])
 }
 
 /// A mechanism for holding HTML that is not to be rendered immediately when a
@@ -1193,5 +1193,5 @@ pub fn template(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.h("template", attrs, children)
+  element.element("template", attrs, children)
 }

@@ -2,7 +2,7 @@
 
 import gleam/int
 import lustre
-import lustre/element.{Element, t}
+import lustre/element.{Element, text}
 import lustre/html.{button, div, p}
 import lustre/event
 
@@ -47,10 +47,10 @@ pub fn render(model: Model) -> Element(Msg) {
   div(
     [],
     [
-      button([event.on_click(Incr)], [t("+")]),
-      button([event.on_click(Decr)], [t("-")]),
-      button([event.on_click(Reset)], [t("Reset")]),
-      p([], [t(int.to_string(model))]),
+      button([event.on_click(Incr)], [text("+")]),
+      button([event.on_click(Decr)], [text("-")]),
+      button([event.on_click(Reset)], [text("Reset")]),
+      p([], [text(int.to_string(model))]),
     ],
   )
 }

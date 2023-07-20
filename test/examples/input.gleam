@@ -4,7 +4,7 @@ import gleam/dynamic
 import gleam/string
 import lustre
 import lustre/attribute.{attribute}
-import lustre/element.{Element, t}
+import lustre/element.{Element, text}
 import lustre/event
 import lustre/html.{div, input, label, pre}
 
@@ -71,7 +71,7 @@ fn render(model: Model) -> Element(Msg) {
             |> string.replace("(", "(\n  ")
             |> string.replace(", ", ",\n  ")
             |> string.replace(")", "\n)")
-            |> t,
+            |> text,
           ],
         ),
       ]),
@@ -96,12 +96,12 @@ fn render_input(
   type_: String,
   id: String,
   value: String,
-  text: String,
+  label_: String,
 ) -> Element(Msg) {
   div(
     [attribute.class("input")],
     [
-      label([attribute.for(id)], [t(text)]),
+      label([attribute.for(id)], [text(label_)]),
       input([
         attribute.id(id),
         attribute.name(id),
@@ -126,7 +126,7 @@ fn remember_checkbox(checked: Bool) -> Element(Msg) {
         attribute.class("checkbox"),
         event.on_click(Toggled(RememberMe, !checked)),
       ]),
-      label([attribute.for("remember-me")], [t("Remember me")]),
+      label([attribute.for("remember-me")], [text("Remember me")]),
     ],
   )
 }

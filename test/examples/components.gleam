@@ -9,7 +9,7 @@ import gleam/result
 import lustre
 import lustre/attribute
 import lustre/effect
-import lustre/element.{h, t}
+import lustre/element.{element, text}
 import lustre/event
 import lustre/html.{button, div, li, ol, p}
 
@@ -58,8 +58,8 @@ fn render(history) {
   div(
     [],
     [
-      ol([], list.map(history, fn(msg) { li([], [t(msg)]) })),
-      h(
+      ol([], list.map(history, fn(msg) { li([], [text(msg)]) })),
+      element(
         "custom-counter",
         [on_custom_click, attribute.property("count", list.length(history))],
         [],
@@ -90,8 +90,8 @@ fn counter_render(count) {
   div(
     [],
     [
-      button([event.on_click(Clicked)], [t("Click me!")]),
-      p([], [t("Count: "), t(int.to_string(count))]),
+      button([event.on_click(Clicked)], [text("Click me!")]),
+      p([], [text("Count: "), text(int.to_string(count))]),
     ],
   )
 }
