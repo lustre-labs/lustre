@@ -10,8 +10,8 @@ import lustre
 import lustre/attribute
 import lustre/effect
 import lustre/element.{element, text}
+import lustre/element/html.{button, div, li, ol, p}
 import lustre/event
-import lustre/html.{button, div, li, ol, p}
 
 // MAIN ------------------------------------------------------------------------
 

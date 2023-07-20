@@ -3,7 +3,7 @@
 import gleam/int
 import lustre
 import lustre/element.{Element, text}
-import lustre/html.{button, div, p}
+import lustre/element/html.{button, div, p}
 import lustre/event
 
 // MAIN ------------------------------------------------------------------------

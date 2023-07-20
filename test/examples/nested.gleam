@@ -6,7 +6,7 @@ import gleam/map.{Map}
 import gleam/pair
 import lustre
 import lustre/element.{Element}
-import lustre/html.{div}
+import lustre/element/html.{div}
 
 // MAIN ------------------------------------------------------------------------
 
