@@ -142,9 +142,10 @@ function morphElement(prev, curr, ns, parent) {
 
     while (prevChild) {
       if (currChild.head) {
+        const next = prevChild.nextSibling;
         morph(prevChild, currChild.head, prev);
         currChild = currChild.tail;
-        prevChild = prevChild.nextSibling;
+        prevChild = next;
       } else {
         const next = prevChild.nextSibling;
         prevChild.remove();
