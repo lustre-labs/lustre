@@ -91,12 +91,15 @@ function morphElement(prev, curr, ns, parent) {
   }
 
   for (const { name, value: prevValue } of prevAttrs) {
-    if (!currAttrs.has(name)) prev.removeAttribute(name);
-    const value = currAttrs.get(name);
+    if (!currAttrs.has(name)) {
+      prev.removeAttribute(name);
+    } else {
+      const value = currAttrs.get(name);
 
-    if (value !== prevValue) {
-      morphAttr(prev, name, value);
-      currAttrs.delete(name);
+      if (value !== prevValue) {
+        morphAttr(prev, name, value);
+        currAttrs.delete(name);
+      }
     }
   }
 
