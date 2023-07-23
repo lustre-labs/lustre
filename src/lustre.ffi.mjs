@@ -127,6 +127,11 @@ export const emit = (name, data) =>
     emit(name, data);
   });
 
+// HTML EVENTS -----------------------------------------------------------------
+
+export const prevent_default = (e) => e.preventDefault?.();
+export const stop_propagation = (e) => e.stopPropagation?.();
+
 // CUSTOM ELEMENTS -------------------------------------------------------------
 
 export const setup_component = (
