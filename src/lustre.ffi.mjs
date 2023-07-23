@@ -13,7 +13,6 @@ export class App {
   #state = null;
   #queue = [];
   #effects = [];
-  #willUpdate = false;
   #didUpdate = false;
 
   #init = null;
@@ -50,10 +49,8 @@ export class App {
   }
 
   dispatch(msg) {
-    if (!this.#willUpdate) window.requestAnimationFrame(() => this.#tick());
-
     this.#queue.push(msg);
-    this.#willUpdate = true;
+    this.#tick();
   }
 
   emit(name, event = null) {
@@ -71,7 +68,6 @@ export class App {
     this.#state = null;
     this.#queue = [];
     this.#effects = [];
-    this.#willUpdate = false;
     this.#didUpdate = false;
     this.#update = () => {};
     this.#view = () => {};
@@ -88,7 +84,6 @@ export class App {
     this.#flush();
     this.#didUpdate && this.#render();
     this.#didUpdate = false;
-    this.#willUpdate = false;
   }
 
   #flush(times = 0) {
