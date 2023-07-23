@@ -10,7 +10,6 @@ import { Ok, Error, isEqual } from "./gleam.mjs";
 ///
 export class App {
   #root = null;
-  #el = null;
   #state = null;
   #queue = [];
   #effects = [];
@@ -68,8 +67,7 @@ export class App {
   }
 
   destroy() {
-    this.#root = null;
-    this.#el.remove();
+    this.#root.remove();
     this.#state = null;
     this.#queue = [];
     this.#effects = [];
@@ -83,7 +81,7 @@ export class App {
     const node = this.#view(this.#state);
     const vdom = map(node, (msg) => this.dispatch(msg));
 
-    this.#el = morph(this.#root, vdom);
+    morph(this.#root, vdom);
   }
 
   #tick() {

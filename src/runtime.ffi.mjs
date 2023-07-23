@@ -1,23 +1,23 @@
 import { element, namespaced, text } from "./lustre/element.mjs";
-import { List } from "./gleam.mjs";
+import { List, Empty } from "./gleam.mjs";
 import { Some, None } from "../gleam_stdlib/gleam/option.mjs";
 
 const Element = element("").constructor;
 const ElementNs = namespaced("", "").constructor;
 const Text = text("").constructor;
 
-export function morph(prev, curr) {
+export function morph(prev, curr, parent) {
   if (curr instanceof ElementNs)
     return prev?.nodeType === 1 &&
       prev.nodeName === curr[0].toUpperCase() &&
       prev.namespaceURI === curr[3]
-      ? morphElement(prev, curr, curr[3])
-      : createElement(prev, curr, curr[3]);
+      ? morphElement(prev, curr, curr[3], parent)
+      : createElement(prev, curr, curr[3], parent);
 
   if (curr instanceof Element) {
     return prev?.nodeType === 1 && prev.nodeName === curr[0].toUpperCase()
-      ? morphElement(prev, curr)
-      : createElement(prev, curr);
+      ? morphElement(prev, curr, null, parent)
+      : createElement(prev, curr, null, parent);
   }
 
   if (curr instanceof Text) {
@@ -38,7 +38,7 @@ export function morph(prev, curr) {
 
 // ELEMENTS --------------------------------------------------------------------
 
-function createElement(prev, curr, ns) {
+function createElement(prev, curr, ns, parent = null) {
   const el = ns
     ? document.createElementNS(ns, curr[0])
     : document.createElement(curr[0]);
@@ -49,17 +49,38 @@ function createElement(prev, curr, ns) {
     attr = attr.tail;
   }
 
-  let child = curr[2];
-  while (child.head) {
-    el.appendChild(morph(null, child.head));
-    child = child.tail;
-  }
+  if (customElements.get(curr[0])) {
+    el._slot = curr[2];
+  } else if (curr[0] === "slot") {
+    let child = new Empty();
+    let parentWithSlot = parent;
 
-  if (prev) prev.replaceWith(el);
+    while (parentWithSlot) {
+      if (parentWithSlot._slot) {
+        child = parentWithSlot._slot;
+        break;
+      } else {
+        parentWithSlot = parentWithSlot.parentNode;
+      }
+    }
+
+    while (child.head) {
+      el.appendChild(morph(null, child.head, el));
+      child = child.tail;
+    }
+  } else {
+    let child = curr[2];
+    while (child.head) {
+      el.appendChild(morph(null, child.head, el));
+      child = child.tail;
+    }
+
+    if (prev) prev.replaceWith(el);
+  }
   return el;
 }
 
-function morphElement(prev, curr, ns) {
+function morphElement(prev, curr, ns, parent) {
   const prevAttrs = prev.attributes;
   const currAttrs = new Map();
 
@@ -83,21 +104,55 @@ function morphElement(prev, curr, ns) {
     morphAttr(prev, name, value);
   }
 
-  let prevChild = prev.firstChild;
-  let currChild = curr[2];
+  if (customElements.get(curr[0])) {
+    prev._slot = curr[2];
+  } else if (curr[0] === "slot") {
+    let prevChild = prev.firstChild;
+    let currChild = new Empty();
+    let parentWithSlot = parent;
 
-  while (prevChild) {
-    if (currChild.head) {
-      morph(prevChild, currChild.head);
-      currChild = currChild.tail;
+    while (parentWithSlot) {
+      if (parentWithSlot._slot) {
+        currChild = parentWithSlot._slot;
+        break;
+      } else {
+        parentWithSlot = parentWithSlot.parentNode;
+      }
     }
 
-    prevChild = prevChild.nextSibling;
-  }
+    while (prevChild) {
+      if (currChild.head) {
+        morph(prevChild, currChild.head, prev);
+        currChild = currChild.tail;
+      }
 
-  while (currChild.head) {
-    prev.appendChild(morph(null, currChild.head));
-    currChild = currChild.tail;
+      prevChild = prevChild.nextSibling;
+    }
+
+    while (currChild.head) {
+      prev.appendChild(morph(null, currChild.head, prev));
+      currChild = currChild.tail;
+    }
+  } else {
+    let prevChild = prev.firstChild;
+    let currChild = curr[2];
+
+    while (prevChild) {
+      if (currChild.head) {
+        morph(prevChild, currChild.head, prev);
+        currChild = currChild.tail;
+        prevChild = prevChild.nextSibling;
+      } else {
+        const next = prevChild.nextSibling;
+        prevChild.remove();
+        prevChild = next;
+      }
+    }
+
+    while (currChild.head) {
+      prev.appendChild(morph(null, currChild.head, prev));
+      currChild = currChild.tail;
+    }
   }
 
   return prev;
