@@ -10,7 +10,7 @@ import lustre
 import lustre/attribute
 import lustre/effect
 import lustre/element.{element, text}
-import lustre/element/html.{button, div, li, ol, p}
+import lustre/element/html.{button, div, li, ol, p, slot}
 import lustre/event
 
 // MAIN ------------------------------------------------------------------------
@@ -47,7 +47,10 @@ fn init() {
 }
 
 fn update(history, msg) {
-  [msg, ..history]
+  case msg {
+    "reset" -> []
+    _ -> [msg, ..history]
+  }
 }
 
 fn render(history) {
@@ -58,11 +61,12 @@ fn render(history) {
   div(
     [],
     [
+      button([event.on_click("reset")], [text("Reset")]),
       ol([], list.map(history, fn(msg) { li([], [text(msg)]) })),
       element(
         "custom-counter",
         [on_custom_click, attribute.property("count", list.length(history))],
-        [],
+        [ol([], list.map(history, fn(msg) { li([], [text(msg)]) }))],
       ),
     ],
   )
@@ -92,6 +96,7 @@ fn counter_render(count) {
     [
       button([event.on_click(Clicked)], [text("Click me!")]),
       p([], [text("Count: "), text(int.to_string(count))]),
+      slot([]),
     ],
   )
 }
