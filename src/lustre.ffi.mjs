@@ -104,8 +104,9 @@ export class App {
 
     // Each update can produce effects which must now be executed.
     while (this.#effects[0])
-      this.#effects.shift()(this.dispatch, (name, data) =>
-        this.emit(name, data)
+      this.#effects.shift()(
+        (msg) => this.dispatch(msg),
+        (name, data) => this.emit(name, data)
       );
 
     // Synchronous effects will immediately queue a message to be processed. If
