@@ -50,8 +50,9 @@ import lustre/element.{Element}
 pub type App(flags, model, msg)
 
 pub type Error {
-  ElementNotFound
   ComponentAlreadyRegistered
+  ElementNotFound
+  NotABrowser
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -243,3 +244,10 @@ pub fn start(
   selector: String,
   flags: flags,
 ) -> Result(fn(msg) -> Nil, Error)
+
+// UTILS -----------------------------------------------------------------------
+
+@external(javascript, "./lustre.ffi.mjs", "is_browser")
+pub fn is_browser() -> Bool {
+  False
+}
