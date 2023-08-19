@@ -6,6 +6,3 @@ erl_crash.dump
 .vscode
 
 node_modules
-.parcel-cache
-
-dist
