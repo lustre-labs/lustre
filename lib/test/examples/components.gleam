@@ -21,7 +21,7 @@ pub fn main() {
       "custom-counter",
       counter_init,
       counter_update,
-      counter_render,
+      counter_view,
       map.from_list([
         #(
           "count",
@@ -36,13 +36,13 @@ pub fn main() {
   // A `simple` lustre application doesn't produce `Effect`s. These are best to 
   // start with if you're just getting started with lustre or you know you don't
   // need the runtime to manage any side effects.
-  let app = lustre.simple(init, update, render)
-  let assert Ok(_) = lustre.start(app, "[data-lustre-app]")
+  let app = lustre.simple(init, update, view)
+  let assert Ok(_) = lustre.start(app, "[data-lustre-app]", Nil)
 
   Nil
 }
 
-fn init() {
+fn init(_) {
   []
 }
 
@@ -53,7 +53,7 @@ fn update(history, msg) {
   }
 }
 
-fn render(history) {
+fn view(history) {
   let on_custom_click = {
     use _ <- event.on("custom-click")
     Some("click")
@@ -90,7 +90,7 @@ fn counter_update(count, msg) {
   }
 }
 
-fn counter_render(count) {
+fn counter_view(count) {
   div(
     [],
     [

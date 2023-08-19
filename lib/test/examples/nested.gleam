@@ -14,8 +14,8 @@ pub fn main() {
   // A `simple` lustre application doesn't produce `Effect`s. These are best to 
   // start with if you're just getting started with lustre or you know you don't
   // need the runtime to manage any side effects.
-  let app = lustre.simple(init, update, render)
-  let assert Ok(_) = lustre.start(app, "[data-lustre-app]")
+  let app = lustre.simple(init, update, view)
+  let assert Ok(_) = lustre.start(app, "[data-lustre-app]", Nil)
 
   Nil
 }
@@ -25,10 +25,10 @@ pub fn main() {
 type Model =
   Map(Int, counter.Model)
 
-fn init() -> Model {
+fn init(_) -> Model {
   use counters, id <- list.fold(list.range(1, 10), map.new())
 
-  map.insert(counters, id, counter.init())
+  map.insert(counters, id, counter.init(Nil))
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -45,10 +45,10 @@ fn update(model: Model, msg: Msg) -> Model {
 
 // RENDER ----------------------------------------------------------------------
 
-fn render(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Msg) {
   let counters = {
     use rest, id, counter <- map.fold(model, [])
-    let el = element.map(counter.render(counter), pair.new(id, _))
+    let el = element.map(counter.view(counter), pair.new(id, _))
 
     [el, ..rest]
   }

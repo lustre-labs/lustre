@@ -14,8 +14,8 @@ pub fn main() {
   // A `simple` lustre application doesn't produce `Effect`s. These are best to 
   // start with if you're just getting started with lustre or you know you don't
   // need the runtime to manage any side effects.
-  let app = lustre.simple(init, update, render)
-  let assert Ok(_) = lustre.start(app, "[data-lustre-app]")
+  let app = lustre.simple(init, update, view)
+  let assert Ok(_) = lustre.start(app, "[data-lustre-app]", Nil)
 
   Nil
 }
@@ -26,7 +26,7 @@ type Model {
   Model(email: String, password: String, remember_me: Bool)
 }
 
-fn init() -> Model {
+fn init(_) -> Model {
   Model(email: "", password: "", remember_me: False)
 }
 
@@ -56,7 +56,7 @@ fn update(model: Model, msg: Msg) -> Model {
 
 // RENDER ----------------------------------------------------------------------
 
-fn render(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Msg) {
   div(
     [attribute.class("container")],
     [

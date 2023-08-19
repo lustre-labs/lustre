@@ -42,34 +42,22 @@ import lustre/element.{Element}
 ///                                            |    v
 ///                                          +--------+
 ///                                          |        |
-///                                          | render |
+///                                          | view |
 ///                                          |        |
 ///                                          +--------+
 /// ```
 ///
-pub type App(model, msg)
+pub type App(flags, model, msg)
 
 pub type Error {
   ElementNotFound
   ComponentAlreadyRegistered
 }
 
-// These types aren't exposed, but they're just here to try and shrink the type
-// annotations for `App` and `application` a little bit. When generating docs,
-// Gleam automatically expands type aliases so this is purely for the benefit of
-// those reading the source.
-//
-
-type Update(model, msg) =
-  fn(model, msg) -> #(model, Effect(msg))
-
-type Render(model, msg) =
-  fn(model) -> Element(msg)
-
 // CONSTRUCTORS ----------------------------------------------------------------
 
 @target(javascript)
-/// Create a basic lustre app that just renders some element on the page.
+/// Create a basic lustre app that just views some element on the page.
 /// Note that this doesn't mean the content is static! With `element.stateful`
 /// you can still create components with local state.
 ///
@@ -93,12 +81,12 @@ type Render(model, msg) =
 /// }
 /// ```
 ///
-pub fn element(element: Element(msg)) -> App(Nil, msg) {
-  let init = fn() { #(Nil, effect.none()) }
+pub fn element(element: Element(msg)) -> App(Nil, Nil, msg) {
+  let init = fn(_) { #(Nil, effect.none()) }
   let update = fn(_, _) { #(Nil, effect.none()) }
-  let render = fn(_) { element }
+  let view = fn(_) { element }
 
-  application(init, update, render)
+  application(init, update, view)
 }
 
 @target(javascript)
@@ -132,7 +120,7 @@ pub fn element(element: Element(msg)) -> App(Nil, msg) {
 ///     }
 ///   }
 ///
-///   let render = fn (model) {
+///   let view = fn (model) {
 ///     element.div([], [
 ///       element.button([ event.on_click(Decr) ], [
 ///         element.text("-")
@@ -146,20 +134,20 @@ pub fn element(element: Element(msg)) -> App(Nil, msg) {
 ///     ])
 ///   }
 /// 
-///   let app = lustre.simple(init, update, render)
+///   let app = lustre.simple(init, update, view)
 ///   assert Ok(_) = lustre.start(app, "#root")
 /// }
 /// ```
 ///
 pub fn simple(
-  init: fn() -> model,
+  init: fn(flags) -> model,
   update: fn(model, msg) -> model,
-  render: fn(model) -> Element(msg),
-) -> App(model, msg) {
-  let init = fn() { #(init(), effect.none()) }
+  view: fn(model) -> Element(msg),
+) -> App(flags, model, msg) {
+  let init = fn(flags) { #(init(flags), effect.none()) }
   let update = fn(model, msg) { #(update(model, msg), effect.none()) }
 
-  application(init, update, render)
+  application(init, update, view)
 }
 
 @target(javascript)
@@ -182,14 +170,14 @@ pub fn simple(
 ///     }
 ///   }
 ///
-///   let render = fn (model) {
+///   let view = fn (model) {
 ///     element.div([], [
 ///       element.text("Time elapsed: ")
 ///       element.text(int.to_string(model))
 ///     ])
 ///   }
 ///   
-///   let app = lustre.simple(init, update, render)
+///   let app = lustre.simple(init, update, view)
 ///   assert Ok(_) = lustre.start(app, "#root")   
 /// }
 /// 
@@ -204,21 +192,23 @@ pub fn simple(
 /// external fn set_timeout (f: fn () -> a, delay: Int) -> Nil 
 ///   = "" "window.setTimeout"
 ///```
+///
 @external(javascript, "./lustre.ffi.mjs", "setup")
-pub fn application(init: fn() -> #(model, Effect(msg)), update: Update(
-    model,
-    msg,
-  ), render: Render(model, msg)) -> App(model, msg)
+pub fn application(
+  init: fn(flags) -> #(model, Effect(msg)),
+  update: fn(model, msg) -> #(model, Effect(msg)),
+  view: fn(model) -> Element(msg),
+) -> App(flags, model, msg)
 
 @target(javascript)
 @external(javascript, "./lustre.ffi.mjs", "setup_component")
-pub fn component(name: String, init: fn() -> #(model, Effect(msg)), update: Update(
-    model,
-    msg,
-  ), render: Render(model, msg), on_attribute_change: Map(String, Decoder(msg))) -> Result(
-  Nil,
-  Error,
-)
+pub fn component(
+  name: String,
+  init: fn() -> #(model, Effect(msg)),
+  update: fn(model, msg) -> #(model, Effect(msg)),
+  view: fn(model) -> Element(msg),
+  on_attribute_change: Map(String, Decoder(msg)),
+) -> Result(Nil, Error)
 
 // EFFECTS ---------------------------------------------------------------------
 
@@ -234,7 +224,7 @@ pub fn component(name: String, init: fn() -> #(model, Effect(msg)), update: Upda
 /// import lustre
 ///
 /// pub fn main () {
-///   let app = lustre.appliation(init, update, render)
+///   let app = lustre.appliation(init, update, view)
 ///   assert Ok(dispatch) = lustre.start(app, "#root")
 /// 
 ///   dispatch(Incr)
@@ -248,7 +238,8 @@ pub fn component(name: String, init: fn() -> #(model, Effect(msg)), update: Upda
 /// app from the outside world.
 ///
 @external(javascript, "./lustre.ffi.mjs", "start")
-pub fn start(app: App(model, msg), selector: String) -> Result(
-  fn(msg) -> Nil,
-  Error,
-)
+pub fn start(
+  app: App(flags, model, msg),
+  selector: String,
+  flags: flags,
+) -> Result(fn(msg) -> Nil, Error)
