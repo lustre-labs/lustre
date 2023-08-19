@@ -50,6 +50,8 @@ import lustre/element.{Element}
 pub type App(flags, model, msg)
 
 pub type Error {
+  AppAlreadyStarted
+  AppNotYetStarted
   ComponentAlreadyRegistered
   ElementNotFound
   NotABrowser
