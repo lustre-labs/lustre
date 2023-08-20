@@ -253,3 +253,8 @@ pub fn start(
 pub fn is_browser() -> Bool {
   False
 }
+
+@external(javascript, "./lustre.ffi.mjs", "is_registered")
+pub fn is_registered(_name: String) -> Bool {
+  False
+}
