@@ -3,6 +3,9 @@
     "dev": "vite"
   },
   "devDependencies": {
+    "autoprefixer": "^10.4.15",
+    "postcss": "^8.4.28",
+    "tailwindcss": "^3.3.3",
     "vite": "^4.4.9",
     "vite-gleam": "^0.2.3"
   }
