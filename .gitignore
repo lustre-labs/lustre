@@ -6,3 +6,4 @@ erl_crash.dump
 .vscode
 
 node_modules
+dist
