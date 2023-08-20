@@ -9,5 +9,3 @@ target = "javascript"
 
 [dependencies]
 gleam_stdlib = "~> 0.30"
-funtil = "~> 1.0"
-
