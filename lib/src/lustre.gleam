@@ -247,6 +247,9 @@ pub fn start(
   flags: flags,
 ) -> Result(fn(msg) -> Nil, Error)
 
+@external(javascript, "./lustre.ffi.mjs", "destroy")
+pub fn destroy(app: App(flags, model, msg)) -> Nil
+
 // UTILS -----------------------------------------------------------------------
 
 @external(javascript, "./lustre.ffi.mjs", "is_browser")
