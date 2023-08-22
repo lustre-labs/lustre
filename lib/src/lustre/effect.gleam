@@ -51,9 +51,9 @@ pub fn none() -> Effect(action) {
 
 /// 
 ///
-pub fn batch(cmds: List(Effect(action))) -> Effect(action) {
+pub fn batch(effects: List(Effect(action))) -> Effect(action) {
   Effect({
-    use b, Effect(a) <- list.fold(cmds, [])
+    use b, Effect(a) <- list.fold(effects, [])
     list.append(b, a)
   })
 }
