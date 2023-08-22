@@ -5,16 +5,84 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lustre</title>
 
+    <script type="module">
+      document.head.appendChild(
+        Object.assign(document.createElement("base"), {
+          href: import.meta.env.BASE_URL,
+        })
+      );
+    </script>
+
     <style>
+      @font-face {
+        font-family: "NTDapper";
+        font-style: normal;
+        font-weight: 400;
+        src: url("/fonts/NTDapper-regular.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "NTDapper";
+        font-style: normal;
+        font-weight: 500;
+        src: url("/fonts/NTDapper-medium.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "NTDapper";
+        font-style: normal;
+        font-weight: 700;
+        src: url("/fonts/NTDapper-bold.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "NTDapper";
+        font-style: normal;
+        font-weight: 900;
+        src: url("/fonts/NTDapper-black.woff2") format("woff2");
+      }
+
       @tailwind base;
       @tailwind components;
       @tailwind utilities;
     </style>
     <script type="module">
-      import { main } from "./src/app.gleam";
+      import { main, OnRouteChange } from "./src/app.gleam";
 
       document.addEventListener("DOMContentLoaded", () => {
-        main();
+        const url = new URL(window.location.href);
+        const dispatch = main({ path: url.pathname, hash: url.hash });
+
+        // We want to trap click events on anchor elements so we can do our own
+        // client side routing.
+        document.addEventListener("click", (e) => {
+          let target = e.target;
+
+          while (target) {
+            if (target === document.body) return;
+            if (target.tagName === "A") {
+              const url = new URL(target.href);
+
+              if (url.origin !== window.location.origin) return;
+              if (url.pathname !== window.location.pathname) e.preventDefault();
+
+              window.requestAnimationFrame(() =>
+                window.history.pushState({}, "", url.href)
+              );
+
+              return void dispatch(
+                new OnRouteChange({ path: url.pathname, hash: url.hash })
+              );
+            }
+
+            target = target.parentNode;
+          }
+        });
+
+        // This lets us listen to the back and forward buttons in the browser
+        // and trigger our app's routing.
+        window.addEventListener("popstate", () => {
+          const url = new URL(window.location.href);
+
+          dispatch(new OnRouteChange({ path: url.pathname, hash: url.hash }));
+        });
       });
     </script>
   </head>
