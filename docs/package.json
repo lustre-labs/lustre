@@ -11,5 +11,8 @@
     "vite": "^4.4.9",
     "vite-gleam": "^0.2.3",
     "vite-plugin-gh-pages": "^0.4.1"
+  },
+  "dependencies": {
+    "mdast-util-from-markdown": "^2.0.0"
   }
 }
