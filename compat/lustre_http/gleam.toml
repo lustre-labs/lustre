@@ -1,0 +1,16 @@
+name = "lustre_http"
+version = "0.3.0"
+target = "javascript"
+
+licences = ["MIT"]
+description = "HTTP requests from lustre"
+repository = { type = "custom", url = "https://git.chmeee.org/lustre_http" }
+links = [{ title = "Package", href = "https://hex.pm/packages/lustre_http" }]
+
+[dependencies]
+gleam_stdlib = "~> 0.30"
+gleam_json = "~> 0.6"
+lustre = { path = "../../lib" }
+
+[dev-dependencies]
+gleeunit = "~> 0.10"
