@@ -1,4 +1,5 @@
-////
+//// To read the full documentation for this module, please visit
+//// [https://pkg.hayleigh.dev/lustre/api/lustre/event](https://pkg.hayleigh.dev/lustre/api/lustre/event)
 
 // IMPORTS ---------------------------------------------------------------------
 
@@ -15,11 +16,13 @@ type Decoded(a) =
 // EFFECTS ---------------------------------------------------------------------
 
 @target(javascript)
+///
 @external(javascript, "../lustre.ffi.mjs", "emit")
 pub fn emit(event: String, data: any) -> Effect(msg)
 
 // CUSTOM EVENTS ---------------------------------------------------------------
 
+///
 pub fn on(
   name: String,
   handler: fn(Dynamic) -> Result(msg, error),
@@ -143,24 +146,18 @@ pub fn on_blur(msg: msg) -> Attribute(msg) {
 
 // DECODERS --------------------------------------------------------------------
 
-/// A helpful decoder to extract the `value` from an event object. This is handy
-/// for getting the value as a string from an input event, for example.
 ///
 pub fn value(event: Dynamic) -> Decoded(String) {
   event
   |> dynamic.field("target", dynamic.field("value", dynamic.string))
 }
 
-/// A helpful decoder to extract the `checked` property from an event triggered
-/// by a checkbox.
 ///
 pub fn checked(event: Dynamic) -> Decoded(Bool) {
   event
   |> dynamic.field("target", dynamic.field("checked", dynamic.bool))
 }
 
-/// A helpful decoder to grab the mouse's current x and y position in the
-/// viewport from an event object.
 ///
 pub fn mouse_position(event: Dynamic) -> Decoded(#(Float, Float)) {
   use x <- result.then(dynamic.field("clientX", dynamic.float)(event))

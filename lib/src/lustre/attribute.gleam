@@ -1,3 +1,6 @@
+//// To read the full documentation for this module, please visit
+//// [https://pkg.hayleigh.dev/lustre/api/lustre/attribute](https://pkg.hayleigh.dev/lustre/api/lustre/attribute)
+
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{Dynamic}
@@ -10,8 +13,6 @@ import gleam/string_builder.{StringBuilder}
 
 // TYPES -----------------------------------------------------------------------
 
-/// Attributes are attached to specific elements. They're either key/value pairs
-/// or event handlers.
 ///
 pub opaque type Attribute(msg) {
   Attribute(String, Dynamic, as_property: Bool)
@@ -40,7 +41,6 @@ pub fn on(
 
 // MANIPULATIONS ---------------------------------------------------------------
 
-///
 /// 
 pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
   case attr {
@@ -77,7 +77,6 @@ pub fn to_string(attr: Attribute(msg)) -> String {
   }
 }
 
-///
 ///
 pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
   case attr {

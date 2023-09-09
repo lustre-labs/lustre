@@ -1,3 +1,6 @@
+//// To read the full documentation for this module, please visit
+//// [https://pkg.hayleigh.dev/lustre/api/lustre/element](https://pkg.hayleigh.dev/lustre/api/lustre/element)
+
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/list
@@ -7,7 +10,6 @@ import lustre/attribute.{Attribute}
 
 // TYPES -----------------------------------------------------------------------
 
-///
 /// 
 pub opaque type Element(msg) {
   Text(String)
@@ -17,7 +19,6 @@ pub opaque type Element(msg) {
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
-///
 /// 
 pub fn element(
   tag: String,
@@ -28,7 +29,6 @@ pub fn element(
 }
 
 ///
-///
 pub fn namespaced(
   namespace: String,
   tag: String,
@@ -38,7 +38,6 @@ pub fn namespaced(
   ElementNs(tag, attrs, children, namespace)
 }
 
-///
 /// 
 pub fn text(content: String) -> Element(msg) {
   Text(content)
@@ -58,7 +57,6 @@ fn escape(escaped: String, content: String) -> String {
 
 // MANIPULATIONS ---------------------------------------------------------------
 
-///
 /// 
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
   case element {
@@ -81,14 +79,12 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
 
 // CONVERSIONS -----------------------------------------------------------------
 
-///
 /// 
 pub fn to_string(element: Element(msg)) -> String {
   to_string_builder(element)
   |> string_builder.to_string
 }
 
-///
 /// 
 pub fn to_string_builder(element: Element(msg)) -> StringBuilder {
   case element {
