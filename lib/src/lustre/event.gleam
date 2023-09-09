@@ -3,7 +3,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{DecodeError, Dynamic}
-import gleam/option.{None, Option, Some}
 import gleam/result
 import lustre/attribute.{Attribute}
 import lustre/effect.{Effect}
@@ -21,7 +20,10 @@ pub fn emit(event: String, data: any) -> Effect(msg)
 
 // CUSTOM EVENTS ---------------------------------------------------------------
 
-pub fn on(name: String, handler: fn(Dynamic) -> Option(msg)) -> Attribute(msg) {
+pub fn on(
+  name: String,
+  handler: fn(Dynamic) -> Result(msg, error),
+) -> Attribute(msg) {
   attribute.on(name, handler)
 }
 
@@ -30,43 +32,43 @@ pub fn on(name: String, handler: fn(Dynamic) -> Option(msg)) -> Attribute(msg) {
 ///
 pub fn on_click(msg: msg) -> Attribute(msg) {
   use _ <- on("click")
-  Some(msg)
+  Ok(msg)
 }
 
 ///
 pub fn on_mouse_down(msg: msg) -> Attribute(msg) {
   use _ <- on("mousedown")
-  Some(msg)
+  Ok(msg)
 }
 
 ///
 pub fn on_mouse_up(msg: msg) -> Attribute(msg) {
   use _ <- on("mouseup")
-  Some(msg)
+  Ok(msg)
 }
 
 ///
 pub fn on_mouse_enter(msg: msg) -> Attribute(msg) {
   use _ <- on("mouseenter")
-  Some(msg)
+  Ok(msg)
 }
 
 ///
 pub fn on_mouse_leave(msg: msg) -> Attribute(msg) {
   use _ <- on("mouseleave")
-  Some(msg)
+  Ok(msg)
 }
 
 ///
 pub fn on_mouse_over(msg: msg) -> Attribute(msg) {
   use _ <- on("mouseover")
-  Some(msg)
+  Ok(msg)
 }
 
 ///
 pub fn on_mouse_out(msg: msg) -> Attribute(msg) {
   use _ <- on("mouseout")
-  Some(msg)
+  Ok(msg)
 }
 
 // KEYBOARD EVENTS -------------------------------------------------------------
@@ -77,10 +79,9 @@ pub fn on_mouse_out(msg: msg) -> Attribute(msg) {
 pub fn on_keypress(msg: fn(String) -> msg) -> Attribute(msg) {
   use event <- on("keypress")
 
-  case dynamic.field("key", dynamic.string)(event) {
-    Ok(key) -> Some(msg(key))
-    Error(_) -> None
-  }
+  event
+  |> dynamic.field("key", dynamic.string)
+  |> result.map(msg)
 }
 
 /// Listens for key dow events on an element, and dispatches a message with the
@@ -89,10 +90,9 @@ pub fn on_keypress(msg: fn(String) -> msg) -> Attribute(msg) {
 pub fn on_keydown(msg: fn(String) -> msg) -> Attribute(msg) {
   use event <- on("keydown")
 
-  case dynamic.field("key", dynamic.string)(event) {
-    Ok(key) -> Some(msg(key))
-    Error(_) -> None
-  }
+  event
+  |> dynamic.field("key", dynamic.string)
+  |> result.map(msg)
 }
 
 /// Listens for key up events on an element, and dispatches a message with the
@@ -101,10 +101,9 @@ pub fn on_keydown(msg: fn(String) -> msg) -> Attribute(msg) {
 pub fn on_keyup(msg: fn(String) -> msg) -> Attribute(msg) {
   use event <- on("keyup")
 
-  case dynamic.field("key", dynamic.string)(event) {
-    Ok(key) -> Some(msg(key))
-    Error(_) -> None
-  }
+  event
+  |> dynamic.field("key", dynamic.string)
+  |> result.map(msg)
 }
 
 // FORM EVENTS -----------------------------------------------------------------
@@ -113,36 +112,33 @@ pub fn on_keyup(msg: fn(String) -> msg) -> Attribute(msg) {
 pub fn on_input(msg: fn(String) -> msg) -> Attribute(msg) {
   use event <- on("input")
 
-  case value(event) {
-    Ok(val) -> Some(msg(val))
-    Error(_) -> None
-  }
+  event
+  |> dynamic.field("key", dynamic.string)
+  |> result.map(msg)
 }
 
 pub fn on_check(msg: fn(Bool) -> msg) -> Attribute(msg) {
   use event <- on("change")
 
-  case checked(event) {
-    Ok(val) -> Some(msg(val))
-    Error(_) -> None
-  }
+  checked(event)
+  |> result.map(msg)
 }
 
 pub fn on_submit(msg: msg) -> Attribute(msg) {
   use _ <- on("submit")
-  Some(msg)
+  Ok(msg)
 }
 
 // FOCUS EVENTS ----------------------------------------------------------------
 
 pub fn on_focus(msg: msg) -> Attribute(msg) {
   use _ <- on("focus")
-  Some(msg)
+  Ok(msg)
 }
 
 pub fn on_blur(msg: msg) -> Attribute(msg) {
   use _ <- on("blur")
-  Some(msg)
+  Ok(msg)
 }
 
 // DECODERS --------------------------------------------------------------------
