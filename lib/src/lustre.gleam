@@ -77,6 +77,8 @@ pub fn start(
   flags: flags,
 ) -> Result(fn(msg) -> Nil, Error)
 
+@target(javascript)
+///
 @external(javascript, "./lustre.ffi.mjs", "destroy")
 pub fn destroy(app: App(flags, model, msg)) -> Result(Nil, Error)
 
