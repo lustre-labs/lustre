@@ -52,6 +52,7 @@ pub type App(flags, model, msg)
 pub type Error {
   AppAlreadyStarted
   AppNotYetStarted
+  BadComponentName
   ComponentAlreadyRegistered
   ElementNotFound
   NotABrowser
@@ -248,7 +249,7 @@ pub fn start(
 ) -> Result(fn(msg) -> Nil, Error)
 
 @external(javascript, "./lustre.ffi.mjs", "destroy")
-pub fn destroy(app: App(flags, model, msg)) -> Nil
+pub fn destroy(app: App(flags, model, msg)) -> Result(Nil, Error)
 
 // UTILS -----------------------------------------------------------------------
 
