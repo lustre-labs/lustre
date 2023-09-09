@@ -1,10 +1,10 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic
+import gleam/function
 import gleam/int
 import gleam/list
 import gleam/map
-import gleam/option.{Some}
 import gleam/result
 import lustre
 import lustre/attribute
@@ -54,10 +54,8 @@ fn update(history, msg) {
 }
 
 fn view(history) {
-  let on_custom_click = {
-    use _ <- event.on("custom-click")
-    Some("click")
-  }
+  let on_custom_click = event.on("custom-click", function.constant(Ok("click")))
+
   div(
     [],
     [
