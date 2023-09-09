@@ -1,10 +1,10 @@
 name = "lustre"
-version = "3.0.0-rc.8"
+version = "3.0.0"
 
 description = "An Elm-inspired framework for building web apps in Gleam!"
 licences = ["MIT"]
 links = [{ title = "Buy me a coffee?", href = "https://github.com/sponsors/hayleigh-dot-dev" }]
-repository = { type = "github", user = "hayleigh-dot-dev", repo = "gleam-lustre" }
+repository = { type = "github", user = "hayleigh-dot-dev", repo = "lustre/lib" }
 target = "javascript"
 
 [dependencies]
