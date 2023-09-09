@@ -1,33 +1,5 @@
-// IMPORTS ---------------------------------------------------------------------
-
-import app/layout
-import gleam/string
-import lustre/element.{Element}
-
-// PAGE ------------------------------------------------------------------------
-
-pub fn view() -> Element(msg) {
-  [
-    title,
-    mouse_events,
-    keyboard_events,
-    form_messages,
-    focus_events,
-    custom_events,
-  ]
-  |> string.join("\n")
-  |> layout.docs
-}
-
-// CONTENT: TITLE --------------------------------------------------------------
-
-const title: String = "
 # lustre/event
-"
 
-// CONTENT: MOUSE EVENTS -------------------------------------------------------
-
-const mouse_events: String = "
 ## Mouse events
 
 ### on_click | erlang javascript
@@ -71,11 +43,7 @@ pub fn on_mouse_over(msg: msg) -> Attribute(msg)
 ```gleam
 pub fn on_mouse_out(msg: msg) -> Attribute(msg)
 ```
-"
 
-// CONTENT: KEYBOARD EVENTS ----------------------------------------------------
-
-const keyboard_events: String = "
 ## Keyboard events
 
 ### on_keypress | erlang javascript
@@ -95,11 +63,7 @@ pub fn on_keydown(msg: fn(String) -> msg) -> Attribute(msg)
 ```gleam
 pub fn on_keyup(msg: fn(String) -> msg) -> Attribute(msg)
 ```
-"
 
-// CONTENT: FORM MESSAGES ------------------------------------------------------
-
-const form_messages: String = "
 ## Form messages
 
 ### on_input | erlang javascript
@@ -119,11 +83,7 @@ pub fn on_change(msg: fn(Bool) -> msg) -> Attribute(msg)
 ```gleam
 pub fn on_submit(msg: msg) -> Attribute(msg)
 ```
-"
 
-// CONTENT: FOCUS EVENTS -------------------------------------------------------
-
-const focus_events: String = "
 ## Focus events
 
 ### on_focus | erlang javascript
@@ -137,17 +97,16 @@ pub fn on_focus(msg: msg) -> Attribute(msg)
 ```gleam
 pub fn on_blur(msg: msg) -> Attribute(msg)
 ```
-"
 
-// CONTENT: CUSTOM EVENTS ------------------------------------------------------
-
-const custom_events: String = "
 ## Custom events
 
 ### on | erlang javascript
 
 ```gleam
-pub fn on(name: String, handler: fn(Dynamic) -> Option(msg)) -> Attribute(msg)
+pub fn on(
+  name: String,
+  handler: fn(Dynamic) -> Result(msg, error)
+) -> Attribute(msg)
 ```
 
 ### prevent_default | javascript
@@ -165,19 +124,19 @@ pub fn stop_propagation(event: Dynamic) -> Nil
 ### value | erlang javascript
 
 ```gleam
-pub fn value(event: Dynamic) -> Decoded(String)
+pub fn value(event: Dynamic) -> Decoder(String)
 ```
 
 ### checked | erlang javascript
 
 ```gleam
-pub fn checked(event: Dynamic) -> Decoded(Bool)
+pub fn checked(event: Dynamic) -> Decoder(Bool)
 ```
 
 ### mouse_position | erlang javascript
 
 ```gleam
-pub fn mouse_position(event: Dynamic) -> Decoded(#(Float, Float)) 
+pub fn mouse_position(event: Dynamic) -> Decoder(#(Float, Float))
 ```
 
 ### emit | javascript
@@ -185,4 +144,3 @@ pub fn mouse_position(event: Dynamic) -> Decoded(#(Float, Float))
 ```gleam
 pub fn emit(event: String, data: any) -> Effect(msg)
 ```
-"

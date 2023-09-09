@@ -9,10 +9,11 @@
     "postcss": "^8.4.28",
     "tailwindcss": "^3.3.3",
     "vite": "^4.4.9",
-    "vite-gleam": "^0.2.3",
+    "vite-gleam": "^0.2.4",
     "vite-plugin-gh-pages": "^0.4.1"
   },
   "dependencies": {
+    "highlight.js": "^11.8.0",
     "mdast-util-from-markdown": "^2.0.0"
   }
 }

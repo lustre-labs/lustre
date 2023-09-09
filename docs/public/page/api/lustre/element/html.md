@@ -1,43 +1,5 @@
-// IMPORTS ---------------------------------------------------------------------
-
-import app/layout
-import gleam/string
-import lustre/element.{Element}
-
-// PAGE ------------------------------------------------------------------------
-
-pub fn view() -> Element(msg) {
-  [
-    title,
-    main_root,
-    document_metadata,
-    sectioning_root,
-    content_sectioning,
-    text_content,
-    inline_text_semantics,
-    image_and_multimedia,
-    embedded_content,
-    svg_and_mathml,
-    scripting,
-    demarcating_edits,
-    table_content,
-    forms,
-    interactive_elements,
-    web_components,
-  ]
-  |> string.join("\n")
-  |> layout.docs
-}
-
-// CONTENT: TITLE --------------------------------------------------------------
-
-const title: String = "
 # lustre/element/html
-"
 
-// CONTENT: MAIN ROOT ---------------------------------------------------------
-
-const main_root: String = "
 ## Main Root
 
 ### html | erlang javascript
@@ -48,11 +10,7 @@ pub fn html(
   children: List(Element(msg)),
 ) -> Element(msg)
 ```
-"
 
-// CONTENT: DOCUMENT METADATA --------------------------------------------------
-
-const document_metadata: String = "
 ## Document Metadata
 
 ### base | erlang javascript
@@ -90,11 +48,7 @@ pub fn style(attrs: List(Attribute(msg)), css: String) -> Element(msg)
 ```gleam
 pub fn title(attrs: List(Attribute(msg)), content: String) -> Element(msg)
 ```
-"
 
-// CONTENT: SECTIONING ROOT ----------------------------------------------------
-
-const sectioning_root: String = "
 ## Sectioning root
 
 ### body | erlang javascript
@@ -105,11 +59,7 @@ pub fn body(
   children: List(Element(msg)),
 ) -> Element(msg)
 ```
-"
 
-// CONTENT: CONTENT SECTIONING -------------------------------------------------
-
-const content_sectioning: String = "
 ## Content sectioning
 
 ### address | erlang javascript
@@ -255,11 +205,7 @@ pub fn search(
   children: List(Element(msg)),
 ) -> Element(msg)
 ```
-"
 
-// CONTENT: TEXT CONTENT -------------------------------------------------------
-
-const text_content: String = "
 ## Text content
 
 ### blockquote | erlang javascript
@@ -384,10 +330,7 @@ pub fn ul(
   children: List(Element(msg)),
 ) -> Element(msg)
 ```
-"
 
-// CONTENT: INLINE TEXT SEMANTICS ----------------------------------------------
-const inline_text_semantics: String = "
 ## Inline text semantics
 
 ### a | erlang javascript
@@ -644,10 +587,7 @@ pub fn var(
 ```gleam
 pub fn wbr(attrs: List(Attribute(msg))) -> Element(msg)
 ```
-"
 
-// CONTENT: IMAGE AND MULTIMEDIA -----------------------------------------------
-const image_and_multimedia: String = "
 ## Image and multimedia
 
 ### area | erlang javascript
@@ -694,11 +634,7 @@ pub fn video(
   children: List(Element(msg)),
 ) -> Element(msg)
 ```
-"
 
-// CONTENT: EMBEDDED CONTENT ---------------------------------------------------
-
-const embedded_content: String = "
 ## Embedded content
 
 ### embed | erlang javascript
@@ -739,16 +675,12 @@ pub fn portal(attrs: List(Attribute(msg))) -> Element(msg)
 ```gleam
 pub fn source(attrs: List(Attribute(msg))) -> Element(msg)
 ```
-"
 
-// CONTENT: SVG AND MATHML -----------------------------------------------------
-
-const svg_and_mathml: String = "
 ## SVG and MathML
 
 ### svg | erlang javascript
 
-```gleam
+````gleam
 pub fn svg(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -761,12 +693,8 @@ pub fn math(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg)
-```
-"
+````
 
-// CONTENT: SCRIPTING ----------------------------------------------------------
-
-const scripting: String = "
 ## Scripting
 
 ### canvas | erlang javascript
@@ -789,11 +717,7 @@ pub fn noscript(
 ```gleam
 pub fn script(attrs: List(Attribute(msg)), js: String) -> Element(msg)
 ```
-"
 
-// CONTENT: DEMARCATING EDITS --------------------------------------------------
-
-const demarcating_edits: String = "
 ## Demarcating edits
 
 ### del | erlang javascript
@@ -813,11 +737,7 @@ pub fn ins(
   children: List(Element(msg)),
 ) -> Element(msg)
 ```
-"
 
-// CONTENT: TABLE CONTENT ------------------------------------------------------
-
-const table_content: String = "
 ## Table content
 
 ### caption | erlang javascript
@@ -906,10 +826,7 @@ pub fn tr(
   children: List(Element(msg)),
 ) -> Element(msg)
 ```
-"
 
-// CONTENT: FORMS --------------------------------------------------------------
-const forms: String = "
 ## Forms
 
 ### button | erlang javascript
@@ -1028,10 +945,7 @@ pub fn select(
 ```gleam
 pub fn textarea(attrs: List(Attribute(msg))) -> Element(msg)
 ```
-"
 
-// CONTENT: INTERACTIVE ELEMENTS -----------------------------------------------
-const interactive_elements: String = "
 ## Interactive elements
 
 ### details | erlang javascript
@@ -1060,10 +974,7 @@ pub fn summary(
   children: List(Element(msg)),
 ) -> Element(msg)
 ```
-"
 
-// CONTENT: WEB COMPONENTS -----------------------------------------------------
-const web_components: String = "
 ## Web components
 
 ### slot | erlang javascript
@@ -1080,4 +991,3 @@ pub fn template(
   children: List(Element(msg)),
 ) -> Element(msg)
 ```
-"

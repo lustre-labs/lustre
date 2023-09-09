@@ -1,116 +1,75 @@
-// IMPORTS ---------------------------------------------------------------------
-
-import app/layout
-import gleam/string
-import lustre/element.{Element}
-
-// PAGE ------------------------------------------------------------------------
-
-pub fn view() -> Element(msg) {
-  [
-    title,
-    animation_elements,
-    basic_shapes,
-    container_elements,
-    descriptive_elements,
-    filter_effects,
-    gradient_elements,
-    graphical_elements,
-    lighting_elements,
-    non_rendered_elements,
-    renderable_elements,
-  ]
-  |> string.join("\n")
-  |> layout.docs
-}
-
-// CONTENT: TITLE --------------------------------------------------------------
-
-const title: String = "
 # lustre/element/svg
-"
 
-// CONTENT: ANIMATION ELEMENTS  ------------------------------------------------
-
-const animation_elements: String = "
 ## Animation elements
 
 ### animate | erlang javascript
 
-```
+```gleam
 pub fn animate(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### animate_motion | erlang javascript
 
-```
+```gleam
 pub fn animate_motion(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### animate_transform | erlang javascript
 
-```
+```gleam
 pub fn animate_transform(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### mpath | erlang javascript
 
-```
+```gleam
 pub fn mpath(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### set | erlang javascript
 
-```
+```gleam
 pub fn set(attrs: List(Attribute(msg))) -> Element(msg)
 ```
-"
 
-// CONTENT: BASIC SHAPES -------------------------------------------------------
-
-const basic_shapes: String = "
 ## Basic shapes
 
 ### circle | erlang javascript
 
-```
+```gleam
 pub fn circle(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### ellipse | erlang javascript
 
-```
+```gleam
 pub fn ellipse(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### line | erlang javascript
 
-```
+```gleam
 pub fn line(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### polygon | erlang javascript
 
-```
+```gleam
 pub fn polygon(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### polyline | erlang javascript
 
-```
+```gleam
 pub fn polyline(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### rect | erlang javascript
 
-```
+```gleam
 pub fn rect(attrs: List(Attribute(msg))) -> Element(msg)
 ```
-"
 
-// CONTENT: CONTAINER ELEMENTS -------------------------------------------------
-
-const container_elements: String = "
 ## Container elements
 
 ### a | erlang javascript
@@ -202,11 +161,7 @@ pub fn symbol(
   children: List(Element(msg)),
 ) -> Element(msg)
 ```
-"
 
-// CONTENT: DESCRIPTIVE ELEMENTS -----------------------------------------------
-
-const descriptive_elements: String = "
 ## Descriptive elements
 
 ### desc | erlang javascript
@@ -235,40 +190,36 @@ pub fn title(
   children: List(Element(msg)),
 ) -> Element(msg)
 ```
-"
 
-// CONTENT: FILTER EFFECTS -----------------------------------------------------
-
-const filter_effects: String = "
 ## Filter effects
 
 ### fe_blend | erlang javascript
 
-```
+```gleam
 pub fn fe_blend(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_color_matrix | erlang javascript
 
-```
+```gleam
 pub fn fe_color_matrix(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_component_transfer | erlang javascript
 
-```
+```gleam
 pub fn fe_component_transfer(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_composite | erlang javascript
 
-```
+```gleam
 pub fn fe_composite(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_convolve_matrix | erlang javascript
 
-```
+```gleam
 pub fn fe_convolve_matrix(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
@@ -283,55 +234,55 @@ pub fn fe_diffuse_lighting(
 
 ### fe_displacement_map | erlang javascript
 
-```
+```gleam
 pub fn fe_displacement_map(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_drop_shadow | erlang javascript
 
-```
+```gleam
 pub fn fe_drop_shadow(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_flood | erlang javascript
 
-```
+```gleam
 pub fn fe_flood(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_func_a | erlang javascript
 
-```
+```gleam
 pub fn fe_func_a(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_func_b | erlang javascript
 
-```
+```gleam
 pub fn fe_func_b(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_func_g | erlang javascript
 
-```
+```gleam
 pub fn fe_func_g(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_func_r | erlang javascript
 
-```
+```gleam
 pub fn fe_func_r(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_gaussian_blur | erlang javascript
 
-```
+```gleam
 pub fn fe_gaussian_blur(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_image | erlang javascript
 
-```
+```gleam
 pub fn fe_image(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
@@ -346,19 +297,19 @@ pub fn fe_merge(
 
 ### fe_merge_node | erlang javascript
 
-```
+```gleam
 pub fn fe_merge_node(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_morphology | erlang javascript
 
-```
+```gleam
 pub fn fe_morphology(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_offset | erlang javascript
 
-```
+```gleam
 pub fn fe_offset(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
@@ -382,14 +333,10 @@ pub fn fe_tile(
 
 ### fe_turbulence | erlang javascript
 
-```
+```gleam
 pub fn fe_turbulence(attrs: List(Attribute(msg))) -> Element(msg)
 ```
-"
 
-// CONTENT: GRADIENT ELEMENTS -------------------------------------------------- 
-
-const gradient_elements: String = "
 ## Gradient elements
 
 ### linear_gradient | erlang javascript
@@ -412,69 +359,57 @@ pub fn radial_gradient(
 
 ### stop | erlang javascript
 
-```
+```gleam
 pub fn stop(attrs: List(Attribute(msg))) -> Element(msg)
 ```
-"
 
-// CONTENT: GRAPHICAL ELEMENTS -------------------------------------------------
-
-const graphical_elements: String = "
 ## Graphical elements
 
 ### image | erlang javascript
 
-```
+```gleam
 pub fn image(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### path | erlang javascript
 
-```
+```gleam
 pub fn path(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### text | erlang javascript
 
-```
+```gleam
 pub fn text(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
-### use_ | erlang javascript
+### use\_ | erlang javascript
 
-```
+```gleam
 pub fn use_(attrs: List(Attribute(msg))) -> Element(msg)
 ```
-"
 
-// CONTENT: LIGHTING ELEMENTS --------------------------------------------------
-
-const lighting_elements: String = "
 ## Lighting elements
 
 ### fe_distant_light | erlang javascript
 
-```
+```gleam
 pub fn fe_distant_light(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_point_light | erlang javascript
 
-```
+```gleam
 pub fn fe_point_light(attrs: List(Attribute(msg))) -> Element(msg)
 ```
 
 ### fe_spot_light | erlang javascript
 
-```
+```gleam
 pub fn fe_spot_light(attrs: List(Attribute(msg))) -> Element(msg)
 ```
-"
 
-// CONTENT: NON-RENDERED ELEMENTS ----------------------------------------------
-
-const non_rendered_elements: String = "
-## Non-rendered elements 
+## Non-rendered elements
 
 ### clip_path | erlang javascript
 
@@ -487,20 +422,16 @@ pub fn clip_path(
 
 ### script | erlang javascript
 
-```
+```gleam
 pub fn script(attrs: List(Attribute(msg)), js: String) -> Element(msg)
 ```
 
 ### style | erlang javascript
 
-```
+```gleam
 pub fn style(attrs: List(Attribute(msg)), css: String) -> Element(msg)
 ```
-"
 
-// CONTENT: RENDERABLE ELEMENTS ------------------------------------------------
-
-const renderable_elements: String = "
 ## Renderable elements
 
 ### foreign_object | erlang javascript
@@ -529,4 +460,3 @@ pub fn tspan(
   children: List(Element(msg)),
 ) -> Element(msg)
 ```
-"

@@ -1,39 +1,5 @@
-// IMPORTS ---------------------------------------------------------------------
-
-import app/layout
-import gleam/string
-import lustre/element.{Element}
-
-// PAGE ------------------------------------------------------------------------
-
-pub fn view() -> Element(msg) {
-  [
-    title,
-    constructing_attributes,
-    mapping_attributes,
-    conversions,
-    common_attributes,
-    input_attributes,
-    more_input_attributes,
-    range_attributes,
-    textarea_attributes,
-    link_attributes,
-    embedded_content,
-    audio_and_video,
-  ]
-  |> string.join("\n")
-  |> layout.docs
-}
-
-// CONTENT: TITLE --------------------------------------------------------------
-
-const title: String = "
 # lustre/attribute
-"
 
-// CONTENT: CONSTRUCTING ATTRIBUTES --------------------------------------------
-
-const constructing_attributes: String = "
 ## Constructing attributes
 
 ### Attribute | erlang javascript
@@ -57,13 +23,12 @@ pub fn property(name: String, value: any) -> Attribute(msg)
 ### on | erlang javascript
 
 ```gleam
-pub fn on(name: String, handler: fn(Dynamic) -> Option(msg)) -> Attribute(msg)
+pub fn on(
+  name: String,
+  handler: fn(Dynamic) -> Result(msg, error)
+) -> Attribute(msg)
 ```
-"
 
-// CONTENT: MAPPING ATTRIBUTES -------------------------------------------------
-
-const mapping_attributes: String = "
 ## Mapping attributes
 
 ### map | erlang javascript
@@ -71,11 +36,7 @@ const mapping_attributes: String = "
 ```gleam
 pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b)
 ```
-"
 
-// CONTENT: CONVERSIONS --------------------------------------------------------
-
-const conversions: String = "
 ## Conversions
 
 ### to_string | erlang javascript
@@ -89,11 +50,7 @@ pub fn to_string(attr: Attribute(msg)) -> String
 ```gleam
 pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder
 ```
-"
 
-// CONTENT: COMMON ATTRIBUTES --------------------------------------------------
-
-const common_attributes: String = "
 ## Common attributes
 
 ### style | erlang javascript
@@ -111,7 +68,7 @@ pub fn class(name: String) -> Attribute(msg)
 ### classes | erlang javascript
 
 ```gleam
-pub fn classes(names: List(#(String, Bool))) -> Attribute(msg) 
+pub fn classes(names: List(#(String, Bool))) -> Attribute(msg)
 ```
 
 ### id | erlang javascript
@@ -119,14 +76,10 @@ pub fn classes(names: List(#(String, Bool))) -> Attribute(msg)
 ```gleam
 pub fn id(name: String) -> Attribute(msg)
 ```
-"
 
-// CONTENT: INPUT ATTRIBUTES ---------------------------------------------------
-
-const input_attributes: String = "
 ## Input attributes
 
-### type_ | erlang javascript
+### type\_ | erlang javascript
 
 ```gleam
 pub fn type_(name: String) -> Attribute(msg)
@@ -155,11 +108,7 @@ pub fn placeholder(text: String) -> Attribute(msg)
 ```gleam
 pub fn selected(is_selected: Bool) -> Attribute(msg
 ```
-"
 
-// CONTENT: MORE INPUT ATTRIBUTES ----------------------------------------------
-
-const more_input_attributes: String = "
 ## More input attributes
 
 ### accept | erlang javascript
@@ -227,11 +176,7 @@ pub fn required(is_required: Bool) -> Attribute(msg)
 ```gleam
 pub fn for(id: String) -> Attribute(msg)
 ```
-"
 
-// CONTENT: RANGE ATTRIBUTES ---------------------------------------------------
-
-const range_attributes: String = "
 ## Range attributes
 
 ### max | erlang javascript
@@ -251,11 +196,7 @@ pub fn min(val: String) -> Attribute(msg)
 ```gleam
 pub fn step(val: String) -> Attribute(msg)
 ```
-"
 
-// CONTENT: TEXTAREA ATTRIBUTES ------------------------------------------------
-
-const textarea_attributes: String = "
 ## Textarea attributes
 
 ### cols | erlang javascript
@@ -275,11 +216,7 @@ pub fn rows(val: Int) -> Attribute(msg)
 ```gleam
 pub fn wrap(mode: String) -> Attribute(msg)
 ```
-"
 
-// CONTENT: LINK ATTRIBUTES ----------------------------------------------------
-
-const link_attributes: String = "
 ## Link attributes
 
 ### href | erlang javascript
@@ -305,11 +242,7 @@ pub fn download(filename: String) -> Attribute(msg)
 ```gleam
 pub fn rel(relationship: String) -> Attribute(msg)
 ```
-"
 
-// CONTENT: EMBEDDED CONTENT ---------------------------------------------------
-
-const embedded_content: String = "
 ## Embedded content
 
 ### gleam | erlang javascript
@@ -335,13 +268,8 @@ pub fn width(val: Int) -> Attribute(msg)
 ```gleam
 pub fn alt(text: String) -> Attribute(msg)
 ```
-"
 
-// CONTENT: AUDIO AND VIDEO ATTRIBUTES -----------------------------------------
-
-const audio_and_video: String = "
 ## Audio and video attributes
-
 
 ### autoplay | erlang javascript
 
@@ -349,17 +277,14 @@ const audio_and_video: String = "
 pub fn autoplay(should_autoplay: Bool) -> Attribute(msg)
 ```
 
-
 ### controls | erlang javascript
 
 ```gleam
 pub fn controls(visible: Bool) -> Attribute(msg)
 ```
 
-
 ### loop | erlang javascript
 
 ```gleam
 pub fn loop(should_loop: Bool) -> Attribute(msg)
 ```
-"

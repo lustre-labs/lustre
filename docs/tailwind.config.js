@@ -3,8 +3,17 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["NTDapper"],
+        serif: ["Fraunces", "serif"],
+        sans: ["Inter", "sans-serif"],
       },
+      typography: (theme) => ({
+        lustre: {
+          css: {
+            "--tw-prose-pre-code": "var(--tw-prose-body)",
+            "--tw-prose-pre-bg": theme("colors.gray[50]"),
+          },
+        },
+      }),
     },
   },
   plugins: [require("@tailwindcss/typography")],

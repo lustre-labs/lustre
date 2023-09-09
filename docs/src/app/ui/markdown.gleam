@@ -2,14 +2,34 @@
 
 import gleam/int
 import gleam/list
-import lustre/attribute
-import lustre/element.{Element}
+import lustre/attribute.{attribute}
+import lustre/element.{Element, element}
 import lustre/element/html
 
-// MARKDOWN ELEMENTS -----------------------------------------------------------
+@external(javascript, "../../markdown.ffi.mjs", "parse_markdown")
+pub fn parse(md: String) -> #(List(Element(msg)), List(Element(msg)))
 
-pub fn code(src: String) -> Element(msg) {
-  html.pre([], [html.code([], [element.text(src)])])
+// MARKDOWN ELEMENTS -----------------------------------------------------------
+//
+// These are used in the FFI markdown renderer to convert the markdown AST into
+// lustre elements.
+//
+
+pub fn code(src: String, hash: String, lang: String) -> Element(msg) {
+  html.pre(
+    [attribute.class("not-prose rounded-xl")],
+    [
+      html.code(
+        [
+          attribute("data-hash", hash),
+          attribute("data-lang", lang),
+          attribute.class("language-" <> lang),
+          attribute.style([#("background", "transparent")]),
+        ],
+        [element.text(src)],
+      ),
+    ],
+  )
 }
 
 pub fn emphasis(content: List(Element(msg))) {
@@ -31,7 +51,7 @@ pub fn heading(
         [attribute.class("flex items-center justify-between"), attribute.id(id)],
         [
           heading_title(title, id),
-          html.p([attribute.class("flex gap-4")], tags),
+          html.p([attribute.class("flex gap-4 font-sans")], tags),
         ],
       )
     2 ->
@@ -42,7 +62,7 @@ pub fn heading(
         ],
         [
           heading_title(title, id),
-          html.p([attribute.class("flex gap-4")], tags),
+          html.p([attribute.class("flex gap-4 font-sans")], tags),
         ],
       )
     3 ->
@@ -50,7 +70,7 @@ pub fn heading(
         [attribute.class("flex items-center justify-between"), attribute.id(id)],
         [
           heading_title(title, id),
-          html.p([attribute.class("flex gap-2")], tags),
+          html.p([attribute.class("flex gap-2 font-sans")], tags),
         ],
       )
   }
