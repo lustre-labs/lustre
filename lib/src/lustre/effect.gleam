@@ -8,8 +8,8 @@ import gleam/list
 /// It is parameterised by our app's `action` type because some effects need to
 /// get information back into your program.
 ///
-pub opaque type Effect(action) {
-  Effect(List(fn(fn(action) -> Nil) -> Nil))
+pub opaque type Effect(msg) {
+  Effect(List(fn(fn(msg) -> Nil) -> Nil))
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -35,15 +35,15 @@ pub opaque type Effect(action) {
 /// }
 /// ```
 ///
-pub fn from(effect: fn(fn(action) -> Nil) -> Nil) -> Effect(action) {
+pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
   Effect([effect])
 }
 
 /// Typically our app's `update` function needs to return a tuple of
-/// `#(model, Effect(action))`. When we don't need to perform any side effects we
+/// `#(model, Effect(msg))`. When we don't need to perform any side effects we
 /// can just return `none()`!
 ///
-pub fn none() -> Effect(action) {
+pub fn none() -> Effect(msg) {
   Effect([])
 }
 
@@ -51,7 +51,7 @@ pub fn none() -> Effect(action) {
 
 /// 
 ///
-pub fn batch(effects: List(Effect(action))) -> Effect(action) {
+pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
   Effect({
     use b, Effect(a) <- list.fold(effects, [])
     list.append(b, a)
