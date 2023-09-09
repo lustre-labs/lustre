@@ -1,27 +1,24 @@
 # Lustre
 
-An Elm-inspired framework for building web apps in Gleam!
-
----
-
 [![Package Version](https://img.shields.io/hexpm/v/lustre)](https://hex.pm/packages/lustre)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/lustre/)
+
+An Elm-inspired framework for building web apps in Gleam!
 
 ```gleam
 import gleam/int
 import lustre
-import lustre/element.{button, div, p, text}
+import lustre/element.{text}
+import lustre/element/html.{div, button, p}
 import lustre/event.{on_click}
-import lustre/cmd
 
 pub fn main() {
-  let app = lustre.simple(init, update, render)
-  let assert Ok(_) = lustre.start(app, "#app")
+  let app = lustre.simple(init, update, view)
+  let assert Ok(_) = lustre.start("[data-lustre-app]", Nil)
 
   Nil
 }
 
-fn init() {
+fn init(_) {
   0
 }
 
@@ -30,31 +27,30 @@ type Msg {
   Decr
 }
 
-fn update(state, msg) {
+fn update(model, msg) {
   case msg {
-    Incr -> state + 1
-    Decr -> state - 1
+    Incr -> model + 1
+    Decr -> model - 1
   }
 }
 
-fn render(state) {
-  div(
-    [],
-    [
-      button([on_click(Decr)], [text("-")]),
-      p([], [text(int.to_string(state))]),
-      button([on_click(Incr)], [text("+")]),
-    ],
-  )
+fn view(model) {
+  let count = int.to_string(model)
+
+  div([], [
+    button([on_click(Decr)], [text(" + ")]),
+    p([], [text(count)]),
+    button([on_click(Incr)], [text(" - ")])
+  ])
 }
 ```
 
----
+## Documentation
 
-❗️ This package relies on Gleam's JavaScript FFI and is intended to be run in
-the browser. **It will not work if your are targetting Node.js or Erlang.**
-
----
+You can find the official documentation over at [pkg.hayleigh.dev/lustre](https://pkg.hayleigh.dev/lustre).
+Note that if you're viewing the documentation published on Hexdocs, you may find
+that things are missing! Because of the way Gleam's documentation is generated,
+packages and functions that target JavaScript don't get documented.
 
 ## Installation
 
