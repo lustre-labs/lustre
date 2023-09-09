@@ -1,9 +1,10 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{Dynamic}
+import gleam/function
 import gleam/int
 import gleam/list
-import gleam/option.{Option}
+import gleam/result
 import gleam/string
 import gleam/string_builder.{StringBuilder}
 
@@ -13,112 +14,28 @@ import gleam/string_builder.{StringBuilder}
 /// or event handlers.
 ///
 pub opaque type Attribute(msg) {
-  Attribute(String, Dynamic)
-  Event(String, fn(Dynamic) -> Option(msg))
+  Attribute(String, Dynamic, as_property: Bool)
+  Event(String, fn(Dynamic) -> Result(msg, Nil))
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
 ///
-/// Lustre does some work internally to convert common Gleam values into ones that
-/// make sense for JavaScript. Here are the types that are converted:
-/// 
-///   - `List(a)` ->  `Array(a)`
-///   - `Some(a)` ->  `a`
-///   - `None`    ->  `undefined`
-///   
 pub fn attribute(name: String, value: String) -> Attribute(msg) {
-  escape("", value)
-  |> dynamic.from
-  |> Attribute(name, _)
+  Attribute(name, dynamic.from(value), as_property: False)
 }
 
 /// 
 pub fn property(name: String, value: any) -> Attribute(msg) {
-  Attribute(name, dynamic.from(value))
+  Attribute(name, dynamic.from(value), as_property: True)
 }
 
-fn escape(escaped: String, content: String) -> String {
-  case string.pop_grapheme(content) {
-    Ok(#("<", xs)) -> escape(escaped <> "&lt;", xs)
-    Ok(#(">", xs)) -> escape(escaped <> "&gt;", xs)
-    Ok(#("&", xs)) -> escape(escaped <> "&amp;", xs)
-    Ok(#("\"", xs)) -> escape(escaped <> "&quot;", xs)
-    Ok(#("'", xs)) -> escape(escaped <> "&#x27;", xs)
-    Ok(#(x, xs)) -> escape(escaped <> x, xs)
-    Error(_) -> escaped <> content
-  }
-}
-
-/// Attach custom event handlers to an element. A number of helper functions exist
-/// in this module to cover the most common events and use-cases, so you should
-/// check those out first.
 ///
-/// If you need to handle an event that isn't covered by the helper functions,
-/// then you can use `on` to attach a custom event handler. The callback is given
-/// the event object as a `Dynamic`.
-///
-/// As a simple example, you can implement `on_click` like so:
-///
-/// ```gleam
-/// import gleam/option.{Some}
-/// import lustre/attribute.{Attribute}
-/// import lustre/event
-/// 
-/// pub fn on_click(msg: msg) -> Attribute(msg) {
-///   use _ <- event.on("click")
-///   Some(msg)
-/// }
-/// ```
-///
-/// By using `gleam/dynamic` you can decode the event object and pull out all sorts
-/// of useful data. This is how `on_input` is implemented:
-///
-/// ```gleam
-/// import gleam/dynamic
-/// import gleam/option.{None, Some}
-/// import gleam/result
-/// import lustre/attribute.{Attribute}
-/// import lustre/event
-/// 
-/// pub fn on_input(msg: fn(String) -> msg) -> Attribute(msg) {
-///   use event, dispatch <- on("input")
-///   let decode = dynamic.field("target", dynamic.field("value", dynamic.string))
-/// 
-///   case decode(event) {
-///     Ok(value) -> Some(msg(value))
-///     Error(_) -> None
-///   }
-/// }
-/// ```
-///
-/// You can take a look at the MDN reference for events
-/// [here](https://developer.mozilla.org/en-US/docs/Web/API/Event) to see what
-/// you can decode. 
-///
-/// Unlike the helpers in the rest of this module, it is possible to simply ignore
-/// the dispatch function and not dispatch a message at all. In fact, we saw this
-/// with the `on_input` example above: if we can't decode the event object, we
-/// simply return `None` and emit nothing.
-///
-/// Beyond ignoring errors, this can be used to perform side effects we don't need
-/// to observe in our main application loop, such as logging...
-///
-/// ```gleam
-/// import gleam/io
-/// import gleam/option.{None}
-/// import lustre/attribute.{Attribute}
-/// import lustre/event
-/// 
-/// pub fn log_on_click(msg: String) -> Attribute(msg) {
-///   use _ <- event.on("click")
-///   io.println(msg)
-///   None
-/// }
-/// ```
-///
-pub fn on(name: String, handler: fn(Dynamic) -> Option(msg)) -> Attribute(msg) {
-  Event("on" <> name, handler)
+pub fn on(
+  name: String,
+  handler: fn(Dynamic) -> Result(msg, error),
+) -> Attribute(msg) {
+  Event("on" <> name, function.compose(handler, result.replace_error(_, Nil)))
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
@@ -127,8 +44,8 @@ pub fn on(name: String, handler: fn(Dynamic) -> Option(msg)) -> Attribute(msg) {
 /// 
 pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
   case attr {
-    Attribute(name, value) -> Attribute(name, value)
-    Event(on, handler) -> Event(on, fn(e) { option.map(handler(e), f) })
+    Attribute(name, value, as_property) -> Attribute(name, value, as_property)
+    Event(on, handler) -> Event(on, fn(e) { result.map(handler(e), f) })
   }
 }
 
@@ -138,7 +55,7 @@ pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
 /// 
 pub fn to_string(attr: Attribute(msg)) -> String {
   case attr {
-    Attribute(name, value) -> {
+    Attribute(name, value, as_property: False) -> {
       case dynamic.classify(value) {
         "String" -> name <> "=\"" <> dynamic.unsafe_coerce(value) <> "\""
 
@@ -155,6 +72,7 @@ pub fn to_string(attr: Attribute(msg)) -> String {
         _ -> name <> "=\"" <> string.inspect(value) <> "\""
       }
     }
+    Attribute(_, _, as_property: True) -> ""
     Event(on, _) -> "data-lustre-on:" <> on
   }
 }
@@ -163,7 +81,7 @@ pub fn to_string(attr: Attribute(msg)) -> String {
 ///
 pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
   case attr {
-    Attribute(name, value) -> {
+    Attribute(name, value, as_property: True) -> {
       case dynamic.classify(value) {
         "String" ->
           [name, "=\"", dynamic.unsafe_coerce(value), "\""]
@@ -184,6 +102,7 @@ pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
           |> string_builder.from_strings
       }
     }
+    Attribute(_, _, as_property: False) -> string_builder.new()
     Event(on, _) ->
       ["data-lustre-on:", on]
       |> string_builder.from_strings
