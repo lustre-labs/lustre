@@ -115,8 +115,7 @@ pub fn on_keyup(msg: fn(String) -> msg) -> Attribute(msg) {
 pub fn on_input(msg: fn(String) -> msg) -> Attribute(msg) {
   use event <- on("input")
 
-  event
-  |> dynamic.field("key", dynamic.string)
+  value(event)
   |> result.map(msg)
 }
 
