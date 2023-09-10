@@ -124,7 +124,7 @@ export function parse_markdown(md) {
         case "link":
           return Markdown.link(
             node.url.startsWith("/")
-              ? import.meta.BASE_URL + node.url.slice(1)
+              ? import.meta.env.BASE_URL + node.url.slice(1)
               : node.url,
             fold_into_list(node.children, to_lustre_element)
           );
