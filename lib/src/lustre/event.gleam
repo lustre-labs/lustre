@@ -127,7 +127,9 @@ pub fn on_check(msg: fn(Bool) -> msg) -> Attribute(msg) {
 }
 
 pub fn on_submit(msg: msg) -> Attribute(msg) {
-  use _ <- on("submit")
+  use event <- on("submit")
+  let _ = prevent_default(event)
+
   Ok(msg)
 }
 
