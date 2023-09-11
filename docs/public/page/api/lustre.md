@@ -2,6 +2,48 @@
 
 ## Applications
 
+On the client, Lustre applications are built on the Model-View-Update architecture.
+This pattern was popularised by the Elm programming language before being adopted
+by other state mangement libraries like Redux and Vuex.
+
+Your applications will be made up of three fundamental parts:
+
+- A `Model` that represents the entire state of your application and an `init`
+  function to create it.
+- A `Msg` type that represents all the ways the outside world can communicate
+  with your application and an `update` function that that modifies the model
+  in response to these messages.
+- A `view` function that renders the current state of your application to the
+  DOM.
+
+```
+                                         ┌--------+
+                                         |        |
+                                         | update |
+                                         |        |
+                                         +--------+
+                                           ^    |
+                                           |    |
+                                       Msg |    | #(Model, Effect(Msg))
+                                           |    |
+                                           |    v
+┌------+                         ┌------------------------+
+|      |  #(Model, Effect(Msg))  |                        |
+| init |------------------------>|     Lustre Runtime     |
+|      |                         |                        |
++------+                         +------------------------+
+                                           ^    |
+                                           |    |
+                                       Msg |    | Model
+                                           |    |
+                                           |    v
+                                         ┌--------+
+                                         |        |
+                                         |  view  |
+                                         |        |
+                                         +--------+
+```
+
 ### App | erlang javascript
 
 ```gleam
