@@ -109,13 +109,13 @@ pub fn on(
 ) -> Attribute(msg)
 ```
 
-### prevent_default | javascript
+### prevent_default | erlang javascript
 
 ```gleam
 pub fn prevent_default(event: Dynamic) -> Nil
 ```
 
-### stop_propagation | javascript
+### stop_propagation | erlang javascript
 
 ```gleam
 pub fn stop_propagation(event: Dynamic) -> Nil
