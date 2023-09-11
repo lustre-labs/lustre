@@ -23,7 +23,7 @@ found your way to this guide but don't already know what Gleam is you can read
 about it over at [gleam.run](https://gleam.run).
 
 ```shell
-$ gleam new lustre_quickstart && gleam add lustre
+$ gleam new lustre_quickstart && cd lustre_quickstart && gleam add lustre
 ```
 
 In a real project you probably want to use a build tool like [vite](https://vitejs.dev)
@@ -108,7 +108,7 @@ import lustre/event.{on_click}
 
 pub fn main() {
   let app = lustre.simple(init, update, view)
-  let assert Ok(_) = lustre.start("[data-lustre-app]", Nil)
+  let assert Ok(_) = lustre.start(app, "[data-lustre-app]", Nil)
 
   Nil
 }
@@ -133,14 +133,14 @@ fn view(model) {
   let count = int.to_string(model)
 
   div([], [
-    button([on_click(Decr)], [text(" + ")]),
+    button([on_click(Decr)], [text(" - ")]),
     p([], [text(count)]),
-    button([on_click(Incr)], [text(" - ")])
+    button([on_click(Incr)], [text(" + ")])
   ])
 }
 ```
 
-You should know have a very exciting counter app! Almost every Lustre app will
+You should now have a very exciting counter app! Almost every Lustre app will
 boil down to the same three parts:
 
 - A `Model` type that represents your application's state and a function to
@@ -160,7 +160,6 @@ and update logic.
 For now though, we'll leave things here. If you're interested in seeing how Lustre
 can be used to render static HTML on the server, read on! Otherwise, you can take
 this counter application as a base and start building something of your own.
-"
 
 ## On the server | erlang javascript
 
@@ -170,7 +169,7 @@ simply use Lustre as a templating DSL. As before, we'll start by scaffolding a
 new Gleam project and adding Lustre as a dependency:
 
 ```shell
-$ gleam new lustre_quickstart && gleam add lustre
+$ gleam new lustre_quickstart && cd lustre_quickstart && gleam add lustre
 ```
 
 The [`lustre/element`](/api/lustre/element) module contains functions to render
@@ -218,7 +217,7 @@ example:
 ```gleam
 ...
 
-pub fn show_form() -> Response {
+pub fn show_form() {
   // In a larger application a template library or HTML form library might
   // be used here instead of a string literal.
   let html =
@@ -249,7 +248,7 @@ import lustre/element
 import lustre/element/html
 ...
 
-pub fn show_form() -> Response {
+pub fn show_form() {
   html.form([attribute("method", "post")], [
     labelled_input("Title"),
     labelled_input("Name"),
@@ -260,7 +259,7 @@ pub fn show_form() -> Response {
   |> wisp.ok
 }
 
-fn labelled_input(name: String) -> Element(Nil) {
+fn labelled_input(name) {
   html.label([], [
     element.text(name <> ": "),
     html.input([
