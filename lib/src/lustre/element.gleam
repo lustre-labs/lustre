@@ -89,6 +89,23 @@ pub fn to_string(element: Element(msg)) -> String {
 pub fn to_string_builder(element: Element(msg)) -> StringBuilder {
   case element {
     Text(content) -> string_builder.from_string(escape("", content))
+    Element("area" as tag, attrs, _)
+    | Element("base" as tag, attrs, _)
+    | Element("br" as tag, attrs, _)
+    | Element("col" as tag, attrs, _)
+    | Element("embed" as tag, attrs, _)
+    | Element("hr" as tag, attrs, _)
+    | Element("img" as tag, attrs, _)
+    | Element("input" as tag, attrs, _)
+    | Element("link" as tag, attrs, _)
+    | Element("meta" as tag, attrs, _)
+    | Element("param" as tag, attrs, _)
+    | Element("source" as tag, attrs, _)
+    | Element("track" as tag, attrs, _)
+    | Element("wbr" as tag, attrs, _) ->
+      string_builder.from_string("<" <> tag)
+      |> attrs_to_string_builder(attrs)
+      |> string_builder.append(">")
     Element(tag, attrs, children) ->
       string_builder.from_string("<" <> tag)
       |> attrs_to_string_builder(attrs)
