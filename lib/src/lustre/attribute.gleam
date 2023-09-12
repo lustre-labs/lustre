@@ -80,7 +80,7 @@ pub fn to_string(attr: Attribute(msg)) -> String {
 ///
 pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
   case attr {
-    Attribute(name, value, as_property: True) -> {
+    Attribute(name, value, as_property: False) -> {
       case dynamic.classify(value) {
         "String" ->
           [name, "=\"", dynamic.unsafe_coerce(value), "\""]
@@ -101,7 +101,7 @@ pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
           |> string_builder.from_strings
       }
     }
-    Attribute(_, _, as_property: False) -> string_builder.new()
+    Attribute(_, _, as_property: True) -> string_builder.new()
     Event(on, _) ->
       ["data-lustre-on:", on]
       |> string_builder.from_strings
