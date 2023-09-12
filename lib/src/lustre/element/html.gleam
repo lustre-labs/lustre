@@ -24,8 +24,11 @@ pub fn base(attrs: List(Attribute(msg))) -> Element(msg) {
 }
 
 /// 
-pub fn head(attrs: List(Attribute(msg))) -> Element(msg) {
-  element("head", attrs, [])
+pub fn head(
+  attrs: List(Attribute(msg)),
+  children: List(Element(msg)),
+) -> Element(msg) {
+  element("head", attrs, children)
 }
 
 /// 
