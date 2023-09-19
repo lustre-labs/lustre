@@ -1,0 +1,31 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.1.0
+      - uses: erlef/setup-beam@v1.16.0
+        with:
+          otp-version: "26.0.2"
+          gleam-version: "0.30.5"
+      - run: cargo install tomlq
+      - run: |
+          if [ "v$(tomlq version -f gleam.toml)" == "${{ github.ref_name }}" ]; then
+            exit 0
+          fi
+          echo "tag does not match version in gleam.toml, refusing to publish"
+          exit 1
+      - run: gleam format --check src test
+      - run: gleam test --target erlang
+      - run: gleam test --target javascript
+      - run: gleam publish -y
+        env:
+          HEXPM_USER: ${{ secrets.HEX_USERNAME }}
+          HEXPM_PASS: ${{ secrets.HEX_PASSWORD }}
+
+      - uses: softprops/action-gh-release@v1
