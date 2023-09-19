@@ -3,8 +3,11 @@ version = "3.0.3"
 
 description = "An Elm-inspired framework for building web apps in Gleam!"
 licences = ["MIT"]
-links = [{ title = "Buy me a coffee?", href = "https://github.com/sponsors/hayleigh-dot-dev" }]
-repository = { type = "github", user = "hayleigh-dot-dev", repo = "lustre/lib" }
+repository = { type = "github", user = "lustre-labs", repo = "lustre" }
+links = [
+  { title = "Website", href = "https://lustre.build" },
+  { title = "Sponsor", href = "https://github.com/sponsors/hayleigh-dot-dev" },
+]
 
 [dependencies]
 gleam_stdlib = "~> 0.30"
