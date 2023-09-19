@@ -1,9 +1,0 @@
-{
-  "scripts": {
-    "dev": "gleam build && vite",
-    "build": "gleam build && vite build"
-  },
-  "devDependencies": {
-    "vite": "^4.4.9"
-  }
-}
