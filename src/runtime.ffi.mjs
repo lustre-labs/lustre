@@ -16,7 +16,7 @@ export function morph(prev, curr, dispatch, parent) {
       : createElement(prev, curr, null, dispatch, parent);
   }
 
-  if (curr[0] && typeof curr[0] === "string") {
+  if (typeof curr?.[0] === "string") {
     return prev?.nodeType === 3
       ? morphText(prev, curr)
       : createText(prev, curr);
@@ -213,11 +213,6 @@ function morphAttr(el, name, value, dispatch) {
 // TEXT ------------------------------------------------------------------------
 
 function createText(prev, curr) {
-  if (!curr[0]) {
-    prev?.remove();
-    return null;
-  }
-
   const el = document.createTextNode(curr[0]);
 
   if (prev) prev.replaceWith(el);
