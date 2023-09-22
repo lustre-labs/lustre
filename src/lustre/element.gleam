@@ -44,14 +44,17 @@ pub fn text(content: String) -> Element(msg) {
 }
 
 fn escape(escaped: String, content: String) -> String {
-  case string.pop_grapheme(content) {
-    Ok(#("<", xs)) -> escape(escaped <> "&lt;", xs)
-    Ok(#(">", xs)) -> escape(escaped <> "&gt;", xs)
-    Ok(#("&", xs)) -> escape(escaped <> "&amp;", xs)
-    Ok(#("\"", xs)) -> escape(escaped <> "&quot;", xs)
-    Ok(#("'", xs)) -> escape(escaped <> "&#x27;", xs)
-    Ok(#(x, xs)) -> escape(escaped <> x, xs)
-    Error(_) -> escaped <> content
+  case content {
+    "<" <> rest -> escape(escaped <> "&lt;", rest)
+    ">" <> rest -> escape(escaped <> "&gt;", rest)
+    "&" <> rest -> escape(escaped <> "&amp;", rest)
+    "\"" <> rest -> escape(escaped <> "&quot;", rest)
+    "'" <> rest -> escape(escaped <> "&#39;", rest)
+    _ ->
+      case string.pop_grapheme(content) {
+        Ok(#(x, xs)) -> escape(escaped <> x, xs)
+        Error(_) -> escaped
+      }
   }
 }
 
@@ -81,14 +84,16 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
 
 /// 
 pub fn to_string(element: Element(msg)) -> String {
-  to_string_builder(element)
+  to_string_builder(element, False)
   |> string_builder.to_string
 }
 
 /// 
-pub fn to_string_builder(element: Element(msg)) -> StringBuilder {
+pub fn to_string_builder(element: Element(msg), raw_text: Bool) -> StringBuilder {
   case element {
+    Text(content) if raw_text -> string_builder.from_string(content)
     Text(content) -> string_builder.from_string(escape("", content))
+
     Element("area" as tag, attrs, _)
     | Element("base" as tag, attrs, _)
     | Element("br" as tag, attrs, _)
@@ -106,18 +111,28 @@ pub fn to_string_builder(element: Element(msg)) -> StringBuilder {
       string_builder.from_string("<" <> tag)
       |> attrs_to_string_builder(attrs)
       |> string_builder.append(">")
+
+    Element("style" as tag, attrs, children)
+    | Element("script" as tag, attrs, children) ->
+      string_builder.from_string("<" <> tag)
+      |> attrs_to_string_builder(attrs)
+      |> string_builder.append(">")
+      |> children_to_string_builder(children, True)
+      |> string_builder.append("</" <> tag <> ">")
+
     Element(tag, attrs, children) ->
       string_builder.from_string("<" <> tag)
       |> attrs_to_string_builder(attrs)
       |> string_builder.append(">")
-      |> children_to_string_builder(children)
+      |> children_to_string_builder(children, raw_text)
       |> string_builder.append("</" <> tag <> ">")
+
     ElementNs(tag, attrs, children, namespace) ->
       string_builder.from_string("<" <> tag)
       |> attrs_to_string_builder(attrs)
       |> string_builder.append(" xmlns=\"" <> namespace <> "\"")
       |> string_builder.append(">")
-      |> children_to_string_builder(children)
+      |> children_to_string_builder(children, raw_text)
       |> string_builder.append("</" <> tag <> ">")
   }
 }
@@ -133,7 +148,8 @@ fn attrs_to_string_builder(
 fn children_to_string_builder(
   html: StringBuilder,
   children: List(Element(msg)),
+  raw_text: Bool,
 ) -> StringBuilder {
   use html, child <- list.fold(children, html)
-  string_builder.append_builder(html, to_string_builder(child))
+  string_builder.append_builder(html, to_string_builder(child, raw_text))
 }
