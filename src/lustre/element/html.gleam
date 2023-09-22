@@ -1,5 +1,5 @@
 //// To read the full documentation for this module, please visit
-//// [https://pkg.hayleigh.dev/lustre/api/lustre/element/html](https://pkg.hayleigh.dev/lustre/api/lustre/element/html)
+//// [https://lustre.build/api/lustre/element/html](https://lustre.build/api/lustre/element/html)
 
 // IMPORTS ---------------------------------------------------------------------
 

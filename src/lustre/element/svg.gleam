@@ -1,5 +1,5 @@
 //// To read the full documentation for this module, please visit
-//// [https://pkg.hayleigh.dev/lustre/api/lustre/element/svg](https://pkg.hayleigh.dev/lustre/api/lustre/element/svg)
+//// [https://lustre.build/api/lustre/element/svg](https://lustre.build/api/lustre/element/svg)
 
 // IMPORTS ---------------------------------------------------------------------
 

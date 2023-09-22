@@ -1,5 +1,5 @@
 //// To read the full documentation for this module, please visit
-//// [https://pkg.hayleigh.dev/lustre/api/lustre/effect](https://pkg.hayleigh.dev/lustre/api/lustre/effect)
+//// [https://lustre.build/api/lustre/effect](https://lustre.build/api/lustre/effect)
 
 // IMPORTS ---------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
 //// To read the full documentation for this module, please visit
-//// [https://pkg.hayleigh.dev/lustre/api/lustre/attribute](https://pkg.hayleigh.dev/lustre/api/lustre/attribute)
+//// [https://lustre.build/api/lustre/attribute](https://lustre.build/api/lustre/attribute)
 
 // IMPORTS ---------------------------------------------------------------------
 

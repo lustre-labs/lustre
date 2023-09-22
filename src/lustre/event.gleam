@@ -1,5 +1,5 @@
 //// To read the full documentation for this module, please visit
-//// [https://pkg.hayleigh.dev/lustre/api/lustre/event](https://pkg.hayleigh.dev/lustre/api/lustre/event)
+//// [https://lustre.build/api/lustre/event](https://lustre.build/api/lustre/event)
 
 // IMPORTS ---------------------------------------------------------------------
 

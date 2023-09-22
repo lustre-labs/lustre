@@ -47,10 +47,10 @@ fn view(model) {
 
 ## Documentation
 
-You can find the official documentation over at [pkg.hayleigh.dev/lustre](https://pkg.hayleigh.dev/lustre).
-Note that if you're viewing the documentation published on Hexdocs, you may find
-that things are missing! Because of the way Gleam's documentation is generated,
-packages and functions that target JavaScript don't get documented.
+You can find the official documentation over at [lustre.build](lustre.build). Note
+that if you're viewing the documentation published on [Hexdocs](https://hexdocs.pm/lustre/index.html),
+you may find that things are missing! Because of the way Gleam's documentation is
+generated, packages and functions that target _only_ JavaScript don't get documented.
 
 ## Installation
 
