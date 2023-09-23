@@ -17,11 +17,7 @@ pub type App(flags, model, msg)
 @target(erlang)
 ///
 pub opaque type App(flags, model, msg) {
-  App(
-    init: fn(flags) -> #(model, Effect(msg)),
-    update: fn(model, msg) -> #(model, Effect(msg)),
-    view: fn(model) -> Element(msg),
-  )
+  App
 }
 
 pub type Error {
@@ -59,20 +55,33 @@ pub fn simple(
 ///
 @external(javascript, "./lustre.ffi.mjs", "setup")
 pub fn application(
-  init: fn(flags) -> #(model, Effect(msg)),
-  update: fn(model, msg) -> #(model, Effect(msg)),
-  view: fn(model) -> Element(msg),
+  _init: fn(flags) -> #(model, Effect(msg)),
+  _update: fn(model, msg) -> #(model, Effect(msg)),
+  _view: fn(model) -> Element(msg),
 ) -> App(flags, model, msg) {
-  App(init, update, view)
+  // Applications are not usable on the erlang target. For those users, `App`
+  // is an opaque type (aka they can't see its structure) and functions like
+  // `start` and `destroy` are no-ops.
+  //
+  // Because the constructor is marked as `@target(erlang)` for some reason we
+  // can't simply refer to it here even though the compiler should know that the
+  // body of this function can only be entered from erlang (because we have an
+  // external def for javascript) but alas, it does not.
+  //
+  // So instead, we must do this awful hack and cast a `Nil` to the `App` type
+  // to make everything happy. Theoeretically this is not going to be a problem
+  // unless someone starts poking around with their own ffi and at that point
+  // they deserve it.
+  dynamic.unsafe_coerce(dynamic.from(Nil))
 }
 
 @external(javascript, "./lustre.ffi.mjs", "setup_component")
 pub fn component(
-  name: String,
-  init: fn() -> #(model, Effect(msg)),
-  update: fn(model, msg) -> #(model, Effect(msg)),
-  view: fn(model) -> Element(msg),
-  on_attribute_change: Map(String, Decoder(msg)),
+  _name: String,
+  _init: fn() -> #(model, Effect(msg)),
+  _update: fn(model, msg) -> #(model, Effect(msg)),
+  _view: fn(model) -> Element(msg),
+  _on_attribute_change: Map(String, Decoder(msg)),
 ) -> Result(Nil, Error) {
   Ok(Nil)
 }
@@ -82,16 +91,16 @@ pub fn component(
 ///
 @external(javascript, "./lustre.ffi.mjs", "start")
 pub fn start(
-  app: App(flags, model, msg),
-  selector: String,
-  flags: flags,
+  _app: App(flags, model, msg),
+  _selector: String,
+  _flags: flags,
 ) -> Result(fn(msg) -> Nil, Error) {
   Error(NotABrowser)
 }
 
 ///
 @external(javascript, "./lustre.ffi.mjs", "destroy")
-pub fn destroy(app: App(flags, model, msg)) -> Result(Nil, Error) {
+pub fn destroy(_app: App(flags, model, msg)) -> Result(Nil, Error) {
   Ok(Nil)
 }
 
