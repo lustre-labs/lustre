@@ -10,8 +10,19 @@ import lustre/element.{Element}
 
 // TYPES -----------------------------------------------------------------------
 
+@target(javascript)
 ///
 pub type App(flags, model, msg)
+
+@target(erlang)
+///
+pub opaque type App(flags, model, msg) {
+  App(
+    init: fn(flags) -> #(model, Effect(msg)),
+    update: fn(model, msg) -> #(model, Effect(msg)),
+    view: fn(model) -> Element(msg),
+  )
+}
 
 pub type Error {
   AppAlreadyStarted
@@ -24,7 +35,6 @@ pub type Error {
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
-@target(javascript)
 ///
 pub fn element(element: Element(msg)) -> App(Nil, Nil, msg) {
   let init = fn(_) { #(Nil, effect.none()) }
@@ -34,7 +44,6 @@ pub fn element(element: Element(msg)) -> App(Nil, Nil, msg) {
   application(init, update, view)
 }
 
-@target(javascript)
 ///
 pub fn simple(
   init: fn(flags) -> model,
@@ -47,16 +56,16 @@ pub fn simple(
   application(init, update, view)
 }
 
-@target(javascript)
 ///
 @external(javascript, "./lustre.ffi.mjs", "setup")
 pub fn application(
   init: fn(flags) -> #(model, Effect(msg)),
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
-) -> App(flags, model, msg)
+) -> App(flags, model, msg) {
+  App(init, update, view)
+}
 
-@target(javascript)
 @external(javascript, "./lustre.ffi.mjs", "setup_component")
 pub fn component(
   name: String,
@@ -64,23 +73,27 @@ pub fn component(
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
   on_attribute_change: Map(String, Decoder(msg)),
-) -> Result(Nil, Error)
+) -> Result(Nil, Error) {
+  Ok(Nil)
+}
 
 // EFFECTS ---------------------------------------------------------------------
 
-@target(javascript)
 ///
 @external(javascript, "./lustre.ffi.mjs", "start")
 pub fn start(
   app: App(flags, model, msg),
   selector: String,
   flags: flags,
-) -> Result(fn(msg) -> Nil, Error)
+) -> Result(fn(msg) -> Nil, Error) {
+  Error(NotABrowser)
+}
 
-@target(javascript)
 ///
 @external(javascript, "./lustre.ffi.mjs", "destroy")
-pub fn destroy(app: App(flags, model, msg)) -> Result(Nil, Error)
+pub fn destroy(app: App(flags, model, msg)) -> Result(Nil, Error) {
+  Ok(Nil)
+}
 
 // UTILS -----------------------------------------------------------------------
 

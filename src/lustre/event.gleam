@@ -15,10 +15,11 @@ type Decoded(a) =
 
 // EFFECTS ---------------------------------------------------------------------
 
-@target(javascript)
 ///
 @external(javascript, "../lustre.ffi.mjs", "emit")
-pub fn emit(event: String, data: any) -> Effect(msg)
+pub fn emit(event: String, data: any) -> Effect(msg) {
+  effect.none()
+}
 
 // CUSTOM EVENTS ---------------------------------------------------------------
 
