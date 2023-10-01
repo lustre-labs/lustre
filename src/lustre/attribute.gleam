@@ -3,6 +3,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/bool
 import gleam/dynamic.{Dynamic}
 import gleam/function
 import gleam/int
@@ -47,6 +48,53 @@ pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
     Attribute(name, value, as_property) -> Attribute(name, value, as_property)
     Event(on, handler) -> Event(on, fn(e) { result.map(handler(e), f) })
   }
+}
+
+///
+pub fn combine(attrs: List(Attribute(a))) -> List(Attribute(a)) {
+  combine_string_attrs(attrs, "class")
+  |> combine_string_attrs("style")
+}
+
+fn combine_string_attrs(
+  attrs: List(Attribute(a)),
+  to_combine: String,
+) -> List(Attribute(a)) {
+  let #(attrs_with_expected_tag, attrs_without_expected_tag) = {
+    use attr <- list.partition(attrs)
+
+    case attr {
+      Attribute(tag, value, as_property: False) if tag == to_combine -> {
+        dynamic.classify(value) == "String"
+      }
+      _ -> False
+    }
+  }
+
+  use <- bool.guard(
+    when: attrs_with_expected_tag == [],
+    return: attrs_without_expected_tag,
+  )
+
+  let get_attr_value = fn(attr) {
+    case attr {
+      // We don't need to match on attribute kind or as_property
+      // as this is already handled in the partition
+      Attribute(_, value, _) -> dynamic.unsafe_coerce(value)
+
+      // TODO: Should this be a panic? It should be unreachable
+      _ -> panic
+    }
+  }
+
+  let attr_value =
+    list.map(attrs_with_expected_tag, get_attr_value)
+    |> string.join(" ")
+
+  [
+    Attribute(to_combine, dynamic.from(attr_value), as_property: False),
+    ..attrs_without_expected_tag
+  ]
 }
 
 // CONVERSIONS -----------------------------------------------------------------

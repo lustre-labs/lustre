@@ -141,7 +141,7 @@ fn attrs_to_string_builder(
   html: StringBuilder,
   attrs: List(Attribute(msg)),
 ) -> StringBuilder {
-  use html, attr <- list.fold(attrs, html)
+  use html, attr <- list.fold(attribute.combine(attrs), html)
   html
   |> string_builder.append(" ")
   |> string_builder.append_builder(attribute.to_string_builder(attr))
