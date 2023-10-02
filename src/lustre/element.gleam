@@ -146,21 +146,16 @@ fn attrs_to_string_builder(
     use #(html, class, style), attr <- list.fold(attrs, #(html, "", ""))
 
     case attribute.to_string_parts(attr) {
-      Some(#("class", Some(val))) if class == "" -> #(html, val, style)
-      Some(#("class", Some(val))) -> #(html, class <> " " <> val, style)
-      Some(#("style", Some(val))) if style == "" -> #(html, class, val)
-      Some(#("style", Some(val))) -> #(html, class, style <> " " <> val)
-      Some(#(key, Some(val))) -> #(
+      Ok(#("class", val)) if class == "" -> #(html, val, style)
+      Ok(#("class", val)) -> #(html, class <> " " <> val, style)
+      Ok(#("style", val)) if style == "" -> #(html, class, val)
+      Ok(#("style", val)) -> #(html, class, style <> " " <> val)
+      Ok(#(key, val)) -> #(
         string_builder.append(html, " " <> key <> "=\"" <> val <> "\""),
         class,
         style,
       )
-      Some(#(key, None)) -> #(
-        string_builder.append(html, " " <> key),
-        class,
-        style,
-      )
-      None -> #(html, class, style)
+      Error(_) -> #(html, class, style)
     }
   }
 

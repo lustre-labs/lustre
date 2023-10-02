@@ -54,29 +54,38 @@ pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
 
 ///
 /// 
-pub fn to_string_parts(
-  attr: Attribute(msg),
-) -> Option(#(String, Option(String))) {
+pub fn to_string(attr: Attribute(msg)) -> String {
+  case to_string_parts(attr) {
+    Ok(#(key, val)) -> key <> "=\"" <> val <> "\""
+    Error(_) -> ""
+  }
+}
+
+///
+/// 
+pub fn to_string_parts(attr: Attribute(msg)) -> Result(#(String, String), Nil) {
   case attr {
-    Attribute(name, value, as_property: False) -> {
+    Attribute(name, value, as_property) -> {
       case dynamic.classify(value) {
-        "String" -> Some(#(name, Some(dynamic.unsafe_coerce(value))))
+        "String" -> Ok(#(name, dynamic.unsafe_coerce(value)))
 
         // Boolean attributes are determined based on their presence, eg we don't
         // want to render `disabled="false"` if the value is `false` we simply
         // want to omit the attribute altogether.
         "Boolean" ->
           case dynamic.unsafe_coerce(value) {
-            True -> Some(#(name, None))
-            False -> None
+            True -> Ok(#(name, name))
+            False -> Error(Nil)
           }
 
-        // For everything else we'll just make a best-effort serialisation. 
-        _ -> Some(#(name, Some(string.inspect(value))))
+        // For everything else, we care whether or not the attribute is actually
+        // a property. Properties are *Javascript* values that aren't necessarily
+        // reflected in the DOM. 
+        _ if as_property -> Error(Nil)
+        _ -> Ok(#(name, string.inspect(value)))
       }
     }
-    Attribute(_, _, as_property: True) -> None
-    Event(on, _) -> Some(#("data-lustre-on", Some(on)))
+    Event(on, _) -> Ok(#("data-lustre-on", on))
   }
 }
 
