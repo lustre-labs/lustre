@@ -7,7 +7,6 @@ import gleam/dynamic.{Dynamic}
 import gleam/function
 import gleam/int
 import gleam/list
-import gleam/option.{None, Option, Some}
 import gleam/result
 import gleam/string
 import gleam/string_builder.{StringBuilder}

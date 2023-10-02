@@ -4,7 +4,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/list
-import gleam/option.{None, Some}
 import gleam/string
 import gleam/string_builder.{StringBuilder}
 import lustre/attribute.{Attribute}
