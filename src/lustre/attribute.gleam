@@ -54,30 +54,29 @@ pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
 
 ///
 /// 
-pub fn to_string_parts(attr: Attribute(msg)) -> Option(#(String, String)) {
+pub fn to_string_parts(
+  attr: Attribute(msg),
+) -> Option(#(String, Option(String))) {
   case attr {
     Attribute(name, value, as_property: False) -> {
       case dynamic.classify(value) {
-        "String" -> Some(#(name, dynamic.unsafe_coerce(value)))
+        "String" -> Some(#(name, Some(dynamic.unsafe_coerce(value))))
 
         // Boolean attributes are determined based on their presence, eg we don't
         // want to render `disabled="false"` if the value is `false` we simply
         // want to omit the attribute altogether.
-        "Boolean" -> {
-          let value = case dynamic.unsafe_coerce(value) {
-            True -> name
-            False -> ""
+        "Boolean" ->
+          case dynamic.unsafe_coerce(value) {
+            True -> Some(#(name, None))
+            False -> None
           }
 
-          Some(#(name, value))
-        }
-
         // For everything else we'll just make a best-effort serialisation. 
-        _ -> Some(#(name, string.inspect(value)))
+        _ -> Some(#(name, Some(string.inspect(value))))
       }
     }
     Attribute(_, _, as_property: True) -> None
-    Event(on, _) -> Some(#("data-lustre-on", on))
+    Event(on, _) -> Some(#("data-lustre-on", Some(on)))
   }
 }
 

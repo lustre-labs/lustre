@@ -146,12 +146,17 @@ fn attrs_to_string_builder(
     use #(html, class, style), attr <- list.fold(attrs, #(html, "", ""))
 
     case attribute.to_string_parts(attr) {
-      Some(#("class", val)) if class == "" -> #(html, val, style)
-      Some(#("class", val)) -> #(html, class <> " " <> val, style)
-      Some(#("style", val)) if style == "" -> #(html, class, val)
-      Some(#("style", val)) -> #(html, class, style <> " " <> val)
-      Some(#(key, val)) -> #(
+      Some(#("class", Some(val))) if class == "" -> #(html, val, style)
+      Some(#("class", Some(val))) -> #(html, class <> " " <> val, style)
+      Some(#("style", Some(val))) if style == "" -> #(html, class, val)
+      Some(#("style", Some(val))) -> #(html, class, style <> " " <> val)
+      Some(#(key, Some(val))) -> #(
         string_builder.append(html, " " <> key <> "=\"" <> val <> "\""),
+        class,
+        style,
+      )
+      Some(#(key, None)) -> #(
+        string_builder.append(html, " " <> key),
         class,
         style,
       )
@@ -161,12 +166,12 @@ fn attrs_to_string_builder(
 
   case class, style {
     "", "" -> html
-    _, "" -> string_builder.append(html, "class=\"" <> class <> "\"")
-    "", _ -> string_builder.append(html, "style=\"" <> style <> "\"")
+    _, "" -> string_builder.append(html, " class=\"" <> class <> "\"")
+    "", _ -> string_builder.append(html, " style=\"" <> style <> "\"")
     _, _ ->
       string_builder.append(
         html,
-        "class=\"" <> class <> "\" style=\"" <> style <> "\"",
+        " class=\"" <> class <> "\" style=\"" <> style <> "\"",
       )
   }
 }
