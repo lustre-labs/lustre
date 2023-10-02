@@ -10,4 +10,4 @@ links = [
 ]
 
 [dependencies]
-gleam_stdlib = "~> 0.30"
+gleam_stdlib = "~> 0.31"
