@@ -4,6 +4,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/list
+import gleam/option.{None, Some}
 import gleam/string
 import gleam/string_builder.{StringBuilder}
 import lustre/attribute.{Attribute}
@@ -141,10 +142,33 @@ fn attrs_to_string_builder(
   html: StringBuilder,
   attrs: List(Attribute(msg)),
 ) -> StringBuilder {
-  use html, attr <- list.fold(attribute.combine(attrs), html)
-  html
-  |> string_builder.append(" ")
-  |> string_builder.append_builder(attribute.to_string_builder(attr))
+  let #(html, class, style) = {
+    use #(html, class, style), attr <- list.fold(attrs, #(html, "", ""))
+
+    case attribute.to_string_parts(attr) {
+      Some(#("class", val)) if class == "" -> #(html, val, style)
+      Some(#("class", val)) -> #(html, class <> " " <> val, style)
+      Some(#("style", val)) if style == "" -> #(html, class, val)
+      Some(#("style", val)) -> #(html, class, style <> " " <> val)
+      Some(#(key, val)) -> #(
+        string_builder.append(html, " " <> key <> "=\"" <> val <> "\""),
+        class,
+        style,
+      )
+      None -> #(html, class, style)
+    }
+  }
+
+  case class, style {
+    "", "" -> html
+    _, "" -> string_builder.append(html, "class=\"" <> class <> "\"")
+    "", _ -> string_builder.append(html, "style=\"" <> style <> "\"")
+    _, _ ->
+      string_builder.append(
+        html,
+        "class=\"" <> class <> "\" style=\"" <> style <> "\"",
+      )
+  }
 }
 
 fn children_to_string_builder(

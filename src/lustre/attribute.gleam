@@ -3,11 +3,11 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/bool
 import gleam/dynamic.{Dynamic}
 import gleam/function
 import gleam/int
 import gleam/list
+import gleam/option.{None, Option, Some}
 import gleam/result
 import gleam/string
 import gleam/string_builder.{StringBuilder}
@@ -50,78 +50,34 @@ pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
   }
 }
 
-///
-pub fn combine(attrs: List(Attribute(a))) -> List(Attribute(a)) {
-  combine_string_attrs(attrs, "class")
-  |> combine_string_attrs("style")
-}
-
-fn combine_string_attrs(
-  attrs: List(Attribute(a)),
-  to_combine: String,
-) -> List(Attribute(a)) {
-  let #(attrs_with_expected_tag, attrs_without_expected_tag) = {
-    use attr <- list.partition(attrs)
-
-    case attr {
-      Attribute(tag, value, as_property: False) if tag == to_combine -> {
-        dynamic.classify(value) == "String"
-      }
-      _ -> False
-    }
-  }
-
-  use <- bool.guard(
-    when: attrs_with_expected_tag == [],
-    return: attrs_without_expected_tag,
-  )
-
-  let get_attr_value = fn(attr) {
-    case attr {
-      // We don't need to match on attribute kind or as_property
-      // as this is already handled in the partition
-      Attribute(_, value, _) -> dynamic.unsafe_coerce(value)
-
-      // TODO: Should this be a panic? It should be unreachable
-      _ -> panic
-    }
-  }
-
-  let attr_value =
-    list.map(attrs_with_expected_tag, get_attr_value)
-    |> string.join(" ")
-
-  [
-    Attribute(to_combine, dynamic.from(attr_value), as_property: False),
-    ..attrs_without_expected_tag
-  ]
-}
-
 // CONVERSIONS -----------------------------------------------------------------
 
 ///
 /// 
-pub fn to_string(attr: Attribute(msg)) -> String {
+pub fn to_string_parts(attr: Attribute(msg)) -> Option(#(String, String)) {
   case attr {
     Attribute(name, value, as_property: False) -> {
       case dynamic.classify(value) {
-        "String" -> name <> "=\"" <> dynamic.unsafe_coerce(value) <> "\""
+        "String" -> Some(#(name, dynamic.unsafe_coerce(value)))
 
         // Boolean attributes are determined based on their presence, eg we don't
         // want to render `disabled="false"` if the value is `false` we simply
         // want to omit the attribute altogether.
-        "Boolean" ->
-          case dynamic.unsafe_coerce(value) {
+        "Boolean" -> {
+          let value = case dynamic.unsafe_coerce(value) {
             True -> name
             False -> ""
           }
 
+          Some(#(name, value))
+        }
+
         // For everything else we'll just make a best-effort serialisation. 
-        _ -> name <> "=\"" <> string.inspect(value) <> "\""
+        _ -> Some(#(name, string.inspect(value)))
       }
     }
-    Attribute(_, _, as_property: True) -> ""
-    Event(on, _) -> "data-lustre-on:" <> on
+    Attribute(_, _, as_property: True) -> None
+    Event(on, _) -> Some(#("data-lustre-on", on))
   }
 }
 
