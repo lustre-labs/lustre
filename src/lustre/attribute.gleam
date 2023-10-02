@@ -7,6 +7,7 @@ import gleam/dynamic.{Dynamic}
 import gleam/function
 import gleam/int
 import gleam/list
+import gleam/option.{None, Option, Some}
 import gleam/result
 import gleam/string
 import gleam/string_builder.{StringBuilder}
@@ -53,27 +54,29 @@ pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
 
 ///
 /// 
-pub fn to_string(attr: Attribute(msg)) -> String {
+pub fn to_string_parts(
+  attr: Attribute(msg),
+) -> Option(#(String, Option(String))) {
   case attr {
     Attribute(name, value, as_property: False) -> {
       case dynamic.classify(value) {
-        "String" -> name <> "=\"" <> dynamic.unsafe_coerce(value) <> "\""
+        "String" -> Some(#(name, Some(dynamic.unsafe_coerce(value))))
 
         // Boolean attributes are determined based on their presence, eg we don't
         // want to render `disabled="false"` if the value is `false` we simply
         // want to omit the attribute altogether.
         "Boolean" ->
           case dynamic.unsafe_coerce(value) {
-            True -> name
-            False -> ""
+            True -> Some(#(name, None))
+            False -> None
           }
 
         // For everything else we'll just make a best-effort serialisation. 
-        _ -> name <> "=\"" <> string.inspect(value) <> "\""
+        _ -> Some(#(name, Some(string.inspect(value))))
       }
     }
-    Attribute(_, _, as_property: True) -> ""
-    Event(on, _) -> "data-lustre-on:" <> on
+    Attribute(_, _, as_property: True) -> None
+    Event(on, _) -> Some(#("data-lustre-on", Some(on)))
   }
 }
 
