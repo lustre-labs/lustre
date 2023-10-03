@@ -43,14 +43,13 @@ function createElement(prev, curr, ns, dispatch, parent = null) {
 
   let attr = curr[1];
   while (attr.head) {
-    morphAttr(
-      el,
-      attr.head[0],
-      attr.head[0] === "class" && el.className
-        ? `${el.className} ${attr.head[1]}`
-        : attr.head[1],
-      dispatch
-    );
+    if (attr.head[0] === "class") {
+      morphAttr(el, attr.head[0], `${el.className} ${attr.head[1]}`);
+    } else if (attr.head[0] === "style") {
+      morphAttr(el, attr.head[0], `${el.style.cssText} ${attr.head[1]}`);
+    } else {
+      morphAttr(el, attr.head[0], attr.head[1], dispatch);
+    }
 
     attr = attr.tail;
   }
@@ -93,12 +92,19 @@ function morphElement(prev, curr, ns, dispatch, parent) {
 
   let currAttr = curr[1];
   while (currAttr.head) {
-    currAttrs.set(
-      currAttr.head[0],
-      currAttr.head[0] === "class" && currAttrs.has("class")
-        ? `${currAttrs.get("class")} ${currAttr.head[1]}`
-        : currAttr.head[1]
-    );
+    if (currAttr.head[0] === "class" && currAttrs.has("class")) {
+      currAttrs.set(
+        currAttr.head[0],
+        `${currAttrs.get("class")} ${currAttr.head[1]}`
+      );
+    } else if (currAttr.head[0] === "style" && currAttrs.has("style")) {
+      currAttrs.set(
+        currAttr.head[0],
+        `${currAttrs.get("style")} ${currAttr.head[1]}`
+      );
+    } else {
+      currAttrs.set(currAttr.head[0], currAttr.head[1]);
+    }
 
     currAttr = currAttr.tail;
   }
