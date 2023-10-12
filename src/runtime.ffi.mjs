@@ -2,6 +2,7 @@ import { Empty } from "./gleam.mjs";
 import { map as result_map } from "../gleam_stdlib/gleam/result.mjs";
 
 export function morph(prev, curr, dispatch, parent) {
+  // curr is the `ElementNs` variant
   if (curr[3]) {
     return prev?.nodeType === 1 &&
       prev.nodeName === curr[0].toUpperCase() &&
@@ -10,12 +11,14 @@ export function morph(prev, curr, dispatch, parent) {
       : createElement(prev, curr, curr[3], dispatch, parent);
   }
 
+  // curr is the `Element` variant
   if (curr[2]) {
     return prev?.nodeType === 1 && prev.nodeName === curr[0].toUpperCase()
       ? morphElement(prev, curr, null, dispatch, parent)
       : createElement(prev, curr, null, dispatch, parent);
   }
 
+  // curr is the `Text` variant
   if (typeof curr?.[0] === "string") {
     return prev?.nodeType === 3
       ? morphText(prev, curr)
