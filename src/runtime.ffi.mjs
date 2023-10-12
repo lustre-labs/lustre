@@ -1,4 +1,4 @@
-import { Empty } from "./gleam.mjs";
+import { Empty, List } from "./gleam.mjs";
 import { map as result_map } from "../gleam_stdlib/gleam/result.mjs";
 
 export function morph(prev, curr, dispatch, parent) {
@@ -23,6 +23,14 @@ export function morph(prev, curr, dispatch, parent) {
     return prev?.nodeType === 3
       ? morphText(prev, curr)
       : createText(prev, curr);
+  }
+
+  // curr is the `Fragment` variant
+  if (List.isList(curr?.[0])) {
+    // I should morph/create the thingies
+    // but first I have to understand what
+    // `nodeType` is and how to use that
+    // I'm guessing it's important
   }
 
   return document.createComment(
