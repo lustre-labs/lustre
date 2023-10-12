@@ -15,6 +15,7 @@ pub opaque type Element(msg) {
   Text(String)
   Element(String, List(Attribute(msg)), List(Element(msg)))
   ElementNs(String, List(Attribute(msg)), List(Element(msg)), String)
+  Fragment(List(Element(msg)))
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -58,6 +59,11 @@ fn escape(escaped: String, content: String) -> String {
   }
 }
 
+///
+pub fn fragment(children: List(Element(msg))) -> Element(msg) {
+  Fragment(children)
+}
+
 // MANIPULATIONS ---------------------------------------------------------------
 
 /// 
@@ -77,6 +83,7 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
         list.map(children, map(_, f)),
         namespace,
       )
+    Fragment(children) -> Fragment(list.map(children, map(_, f)))
   }
 }
 
@@ -134,6 +141,10 @@ pub fn to_string_builder(element: Element(msg), raw_text: Bool) -> StringBuilder
       |> string_builder.append(">")
       |> children_to_string_builder(children, raw_text)
       |> string_builder.append("</" <> tag <> ">")
+
+    Fragment(children) ->
+      string_builder.new()
+      |> children_to_string_builder(children, raw_text)
   }
 }
 
