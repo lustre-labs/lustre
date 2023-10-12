@@ -3,7 +3,7 @@ import { map as result_map } from "../gleam_stdlib/gleam/result.mjs";
 
 export function morph(prev, curr, dispatch, parent) {
   // curr is the `ElementNs` variant
-  if (curr[3]) {
+  if (curr?.[3]) {
     return prev?.nodeType === 1 &&
       prev.nodeName === curr[0].toUpperCase() &&
       prev.namespaceURI === curr[3]
@@ -12,7 +12,7 @@ export function morph(prev, curr, dispatch, parent) {
   }
 
   // curr is the `Element` variant
-  if (curr[2]) {
+  if (curr?.[2]) {
     return prev?.nodeType === 1 && prev.nodeName === curr[0].toUpperCase()
       ? morphElement(prev, curr, null, dispatch, parent)
       : createElement(prev, curr, null, dispatch, parent);
