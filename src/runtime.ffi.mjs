@@ -90,6 +90,10 @@ function morphElement(prev, curr, ns, dispatch, parent) {
   const prevAttrs = prev.attributes;
   const currAttrs = new Map();
 
+  // This can happen if we're morphing an existing DOM element that *wasn't*
+  // initially created by lustre.
+  prev.$lustre ??= {};
+
   let currAttr = curr[1];
   while (currAttr.head) {
     if (currAttr.head[0] === "class" && currAttrs.has("class")) {
