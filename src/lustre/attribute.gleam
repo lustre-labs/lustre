@@ -91,7 +91,7 @@ pub fn to_string_parts(attr: Attribute(msg)) -> Result(#(String, String), Nil) {
 ///
 pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
   case attr {
-    Attribute(name, value, as_property: False) -> {
+    Attribute(name, value, as_property) -> {
       case dynamic.classify(value) {
         "String" ->
           [name, "=\"", dynamic.unsafe_coerce(value), "\""]
@@ -106,13 +106,12 @@ pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
             False -> string_builder.new()
           }
 
-        // For everything else we'll just make a best-effort serialisation. 
+        _ if as_property -> string_builder.new()
         _ ->
           [name, "=\"", string.inspect(value), "\""]
           |> string_builder.from_strings
       }
     }
-    Attribute(_, _, as_property: True) -> string_builder.new()
     Event(on, _) ->
       ["data-lustre-on:", on]
       |> string_builder.from_strings
