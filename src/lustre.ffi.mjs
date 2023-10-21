@@ -192,7 +192,7 @@ export const setup_component = (
               // messages when the value is an object or array: it might not have
               // changed but its reference might have and we don't want to trigger
               // useless updates.
-              if (decoded.isOk() && !isEqual(prev, decoded[0])) {
+              if (decoded.isOk() && !isEqual(prev, value)) {
                 this.#dispatch(decoded[0]);
               }
 
