@@ -79,9 +79,9 @@ function createElement(prev, curr, ns, dispatch, parent = null) {
       el.appendChild(morph(null, child.head, dispatch, el));
       child = child.tail;
     }
-
-    if (prev) prev.replaceWith(el);
   }
+
+  if (prev) prev.replaceWith(el);
 
   return el;
 }
