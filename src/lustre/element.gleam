@@ -84,12 +84,19 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
 
 /// 
 pub fn to_string(element: Element(msg)) -> String {
-  to_string_builder(element, False)
+  to_string_builder_helper(element, False)
   |> string_builder.to_string
 }
 
+pub fn to_string_builder(element: Element(msg)) -> StringBuilder {
+  to_string_builder_helper(element, False)
+}
+
 /// 
-pub fn to_string_builder(element: Element(msg), raw_text: Bool) -> StringBuilder {
+pub fn to_string_builder_helper(
+  element: Element(msg),
+  raw_text: Bool,
+) -> StringBuilder {
   case element {
     Text(content) if raw_text -> string_builder.from_string(content)
     Text(content) -> string_builder.from_string(escape("", content))
@@ -176,5 +183,5 @@ fn children_to_string_builder(
   raw_text: Bool,
 ) -> StringBuilder {
   use html, child <- list.fold(children, html)
-  string_builder.append_builder(html, to_string_builder(child, raw_text))
+  string_builder.append_builder(html, to_string_builder_helper(child, raw_text))
 }
