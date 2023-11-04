@@ -4,7 +4,7 @@ import gleam/dynamic
 import gleam/string
 import lustre
 import lustre/attribute.{attribute}
-import lustre/element.{Element, text}
+import lustre/element.{type Element, text}
 import lustre/element/html.{div, input, label, pre}
 import lustre/event
 

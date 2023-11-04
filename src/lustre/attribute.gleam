@@ -3,13 +3,13 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{Dynamic}
+import gleam/dynamic.{type Dynamic}
 import gleam/function
 import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
-import gleam/string_builder.{StringBuilder}
+import gleam/string_builder.{type StringBuilder}
 
 // TYPES -----------------------------------------------------------------------
 

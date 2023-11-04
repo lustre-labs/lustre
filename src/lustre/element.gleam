@@ -5,8 +5,8 @@
 
 import gleam/list
 import gleam/string
-import gleam/string_builder.{StringBuilder}
-import lustre/attribute.{Attribute}
+import gleam/string_builder.{type StringBuilder}
+import lustre/attribute.{type Attribute}
 
 // TYPES -----------------------------------------------------------------------
 

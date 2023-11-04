@@ -3,8 +3,8 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import lustre/element.{Element, element, namespaced, text}
-import lustre/attribute.{Attribute}
+import lustre/element.{type Element, element, namespaced, text}
+import lustre/attribute.{type Attribute}
 
 // HTML ELEMENTS: MAIN ROOT ----------------------------------------------------
 

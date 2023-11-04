@@ -8,6 +8,7 @@ links = [
   { title = "Website", href = "https://lustre.build" },
   { title = "Sponsor", href = "https://github.com/sponsors/hayleigh-dot-dev" },
 ]
+gleam = ">= 0.32.0"
 
 [dependencies]
 gleam_stdlib = "~> 0.31"

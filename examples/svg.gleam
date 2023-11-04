@@ -3,7 +3,7 @@
 import gleam/int
 import lustre
 import lustre/attribute.{attribute}
-import lustre/element.{Element, text}
+import lustre/element.{type Element, text}
 import lustre/element/html.{button, div, p, svg}
 import lustre/element/svg.{path}
 import lustre/event

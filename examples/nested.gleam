@@ -2,10 +2,10 @@
 
 import examples/counter
 import gleam/list
-import gleam/map.{Map}
+import gleam/map.{type Map}
 import gleam/pair
 import lustre
-import lustre/element.{Element}
+import lustre/element.{type Element}
 import lustre/element/html.{div}
 
 // MAIN ------------------------------------------------------------------------

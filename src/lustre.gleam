@@ -3,10 +3,10 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{Decoder}
-import gleam/map.{Map}
-import lustre/effect.{Effect}
-import lustre/element.{Element}
+import gleam/dynamic.{type Decoder}
+import gleam/map.{type Map}
+import lustre/effect.{type Effect}
+import lustre/element.{type Element}
 
 // TYPES -----------------------------------------------------------------------
 

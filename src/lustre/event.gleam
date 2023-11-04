@@ -3,10 +3,10 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{DecodeError, Dynamic}
+import gleam/dynamic.{type DecodeError, type Dynamic}
 import gleam/result
-import lustre/attribute.{Attribute}
-import lustre/effect.{Effect}
+import lustre/attribute.{type Attribute}
+import lustre/effect.{type Effect}
 
 // TYPES -----------------------------------------------------------------------
 
