@@ -4,19 +4,23 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/list
+import gleam/function
 
 // TYPES -----------------------------------------------------------------------
 
 ///
 pub opaque type Effect(msg) {
-  Effect(List(fn(fn(msg) -> Nil) -> Nil))
+  Effect(all: List(fn(fn(msg) -> Nil, fn(msg) -> Nil) -> Nil))
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
 ///
 pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  Effect([effect])
+  // Effects constructed with `effect.from` only get told about the `dispatch`
+  // function. If users want to emit events from a component they should use
+  // `event.emit` instead!
+  Effect([fn(dispatch, _) { effect(dispatch) }])
 }
 
 /// Typically our app's `update` function needs to return a tuple of
@@ -39,9 +43,14 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
 
 ///
 pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
-  let Effect(l) = effect
-  Effect(list.map(
-    l,
-    fn(effect) { fn(dispatch) { effect(fn(a) { dispatch(f(a)) }) } },
-  ))
+  Effect({
+    use effect <- list.map(effect.all)
+
+    fn(dispatch, emit) {
+      let dispatch = function.compose(f, dispatch)
+      let emit = function.compose(f, emit)
+
+      effect(dispatch, emit)
+    }
+  })
 }
