@@ -3,6 +3,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/dynamic.{type Dynamic}
 import gleam/list
 import gleam/function
 
@@ -10,7 +11,7 @@ import gleam/function
 
 ///
 pub opaque type Effect(msg) {
-  Effect(all: List(fn(fn(msg) -> Nil, fn(msg) -> Nil) -> Nil))
+  Effect(all: List(fn(fn(msg) -> Nil, fn(String, Dynamic) -> Nil) -> Nil))
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -21,6 +22,17 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
   // function. If users want to emit events from a component they should use
   // `event.emit` instead!
   Effect([fn(dispatch, _) { effect(dispatch) }])
+}
+
+/// Emit a custom event from a component as an effect. Parents can listen to these
+/// events in their `view` function like any other HTML event.
+/// 
+/// You *probably* don't need to use this type of effect if you're not making use
+/// of Lustre's components, but in rare cases it may be useful to emit custom
+/// events from the DOM node that your Lustre application is mounted to.
+/// 
+pub fn event(name: String, data: data) -> Effect(msg) {
+  Effect([fn(_, emit) { emit(name, dynamic.from(data)) }])
 }
 
 /// Typically our app's `update` function needs to return a tuple of
@@ -48,7 +60,6 @@ pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
 
     fn(dispatch, emit) {
       let dispatch = function.compose(f, dispatch)
-      let emit = function.compose(f, emit)
 
       effect(dispatch, emit)
     }

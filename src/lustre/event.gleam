@@ -16,9 +16,8 @@ type Decoded(a) =
 // EFFECTS ---------------------------------------------------------------------
 
 ///
-@external(javascript, "../lustre.ffi.mjs", "emit")
-pub fn emit(_event: String, _data: any) -> Effect(msg) {
-  effect.none()
+pub fn emit(event: String, data: any) -> Effect(msg) {
+  effect.event(event, data)
 }
 
 // CUSTOM EVENTS ---------------------------------------------------------------

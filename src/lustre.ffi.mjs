@@ -125,13 +125,6 @@ export const setup = (init, update, render) => new App(init, update, render);
 export const start = (app, selector, flags) => app.start(selector, flags);
 export const destroy = (app) => app.destroy();
 
-export const emit = (name, data) =>
-  // Normal `Effect`s constructed in Gleam from `effect.from` don't get told
-  // about the second argument, but it's there 👀.
-  from((_, emit) => {
-    emit(name, data);
-  });
-
 // HTML EVENTS -----------------------------------------------------------------
 
 export const prevent_default = (e) => e.preventDefault?.();
