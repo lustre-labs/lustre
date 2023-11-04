@@ -45,7 +45,7 @@ export class App {
     const [next, effects] = this.#init(flags);
 
     this.#state = next;
-    this.#effects = effects[0].toArray();
+    this.#effects = effects.all.toArray();
     this.#didUpdate = true;
 
     window.requestAnimationFrame(() => this.#tick());
@@ -101,7 +101,7 @@ export class App {
         // we don't need to trigger a re-render.
         this.#didUpdate ||= this.#state !== next;
         this.#state = next;
-        this.#effects = this.#effects.concat(effects[0].toArray());
+        this.#effects = this.#effects.concat(effects.all.toArray());
       }
     }
 
