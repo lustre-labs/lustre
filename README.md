@@ -13,7 +13,7 @@ import lustre/event.{on_click}
 
 pub fn main() {
   let app = lustre.simple(init, update, view)
-  let assert Ok(_) = lustre.start("[data-lustre-app]", Nil)
+  let assert Ok(_) = lustre.start(app, "[data-lustre-app]", Nil)
 
   Nil
 }
