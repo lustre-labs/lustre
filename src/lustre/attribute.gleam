@@ -64,6 +64,7 @@ pub fn to_string(attr: Attribute(msg)) -> String {
 /// 
 pub fn to_string_parts(attr: Attribute(msg)) -> Result(#(String, String), Nil) {
   case attr {
+    Attribute("dangerous-unescaped-html", _, _) -> Error(Nil)
     Attribute(name, value, as_property) -> {
       case dynamic.classify(value) {
         "String" -> Ok(#(name, dynamic.unsafe_coerce(value)))
@@ -91,6 +92,7 @@ pub fn to_string_parts(attr: Attribute(msg)) -> Result(#(String, String), Nil) {
 ///
 pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
   case attr {
+    Attribute("dangerous-unescaped-html", _, _) -> string_builder.new()
     Attribute(name, value, as_property) -> {
       case dynamic.classify(value) {
         "String" ->

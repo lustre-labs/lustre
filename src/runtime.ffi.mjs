@@ -42,11 +42,15 @@ function createElement(prev, curr, ns, dispatch, parent = null) {
   el.$lustre = {};
 
   let attr = curr[1];
+  let dangerousUnescapedHtml = "";
+
   while (attr.head) {
     if (attr.head[0] === "class") {
       morphAttr(el, attr.head[0], `${el.className} ${attr.head[1]}`);
     } else if (attr.head[0] === "style") {
       morphAttr(el, attr.head[0], `${el.style.cssText} ${attr.head[1]}`);
+    } else if (attr.head[0] === "dangerous-unescaped-html") {
+      dangerousUnescapedHtml += attr.head[1];
     } else {
       morphAttr(el, attr.head[0], attr.head[1], dispatch);
     }
@@ -73,6 +77,8 @@ function createElement(prev, curr, ns, dispatch, parent = null) {
       el.appendChild(morph(null, child.head, dispatch, el));
       child = child.tail;
     }
+  } else if (dangerousUnescapedHtml) {
+    el.innerHTML = dangerousUnescapedHtml;
   } else {
     let child = curr[2];
     while (child.head) {
@@ -105,6 +111,14 @@ function morphElement(prev, curr, ns, dispatch, parent) {
       currAttrs.set(
         currAttr.head[0],
         `${currAttrs.get("style")} ${currAttr.head[1]}`
+      );
+    } else if (
+      currAttr.head[0] === "dangerous-unescaped-html" &&
+      currAttrs.has("dangerous-unescaped-html")
+    ) {
+      currAttrs.set(
+        currAttr.head[0],
+        `${currAttrs.get("dangerous-unescaped-html")} ${currAttr.head[1]}`
       );
     } else {
       currAttrs.set(currAttr.head[0], currAttr.head[1]);
@@ -159,6 +173,8 @@ function morphElement(prev, curr, ns, dispatch, parent) {
       prev.appendChild(morph(null, currChild.head, dispatch, prev));
       currChild = currChild.tail;
     }
+  } else if (currAttrs.has("dangerous-unescaped-html")) {
+    prev.innerHTML = currAttrs.get("dangerous-unescaped-html");
   } else {
     let prevChild = prev.firstChild;
     let currChild = curr[2];
