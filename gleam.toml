@@ -10,5 +10,9 @@ links = [
 ]
 gleam = ">= 0.32.0"
 
+internal_modules = [
+  "lustre/try",
+]
+
 [dependencies]
 gleam_stdlib = "~> 0.31"
