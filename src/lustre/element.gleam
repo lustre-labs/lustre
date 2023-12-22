@@ -6,26 +6,80 @@
 import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
-import lustre/attribute.{type Attribute}
+import lustre/attribute.{type Attribute, attribute}
 
 // TYPES -----------------------------------------------------------------------
 
 /// 
 pub opaque type Element(msg) {
-  Text(String)
-  Element(String, List(Attribute(msg)), List(Element(msg)))
-  ElementNs(String, List(Attribute(msg)), List(Element(msg)), String)
+  Text(content: String)
+  Element(
+    namespace: String,
+    tag: String,
+    attrs: List(Attribute(msg)),
+    children: List(Element(msg)),
+    self_closing: Bool,
+    void: Bool,
+  )
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
+/// 
+/// 
+/// 🚨 Because Lustre is primarily used to create HTML, this function spcieal-cases
+///    the following tags to be self-closing:
+/// 
+///    - area
+///    - base
+///    - br
+///    - col
+///    - embed
+///    - hr
+///    - img
+///    - input
+///    - link
+///    - meta
+///    - param
+///    - source
+///    - track
+///    - wbr
+/// 
+///    This will only affect the output of `to_string` and `to_string_builder`!
+///    If you need to render any of these tags with children, *or* you want to
+///    render some other tag as self-closing or void, use [`advanced`](#advanced)
+///    instead.
 /// 
 pub fn element(
   tag: String,
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  Element(tag, attrs, children)
+  case tag {
+    "area"
+    | "base"
+    | "br"
+    | "col"
+    | "embed"
+    | "hr"
+    | "img"
+    | "input"
+    | "link"
+    | "meta"
+    | "param"
+    | "source"
+    | "track"
+    | "wbr" -> Element("", tag, attrs, [], False, True)
+    _ ->
+      Element(
+        namespace: "",
+        tag: tag,
+        attrs: attrs,
+        children: children,
+        self_closing: False,
+        void: False,
+      )
+  }
 }
 
 ///
@@ -35,12 +89,36 @@ pub fn namespaced(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  ElementNs(tag, attrs, children, namespace)
+  Element(
+    namespace: namespace,
+    tag: tag,
+    attrs: attrs,
+    children: children,
+    self_closing: False,
+    void: False,
+  )
+}
+
+///
+pub fn advanced(
+  namespace: String,
+  tag: String,
+  attrs: List(Attribute(msg)),
+  children: List(Element(msg)),
+  self_closing: Bool,
+  void: Bool,
+) -> Element(msg) {
+  Element(tag, namespace, attrs, children, self_closing, void)
 }
 
 /// 
 pub fn text(content: String) -> Element(msg) {
   Text(content)
+}
+
+///
+pub fn none() -> Element(msg) {
+  Text("")
 }
 
 fn escape(escaped: String, content: String) -> String {
@@ -64,18 +142,14 @@ fn escape(escaped: String, content: String) -> String {
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
   case element {
     Text(content) -> Text(content)
-    Element(tag, attrs, children) ->
+    Element(namespace, tag, attrs, children, self_closing, void) ->
       Element(
-        tag,
-        list.map(attrs, attribute.map(_, f)),
-        list.map(children, map(_, f)),
-      )
-    ElementNs(tag, attrs, children, namespace) ->
-      ElementNs(
-        tag,
-        list.map(attrs, attribute.map(_, f)),
-        list.map(children, map(_, f)),
         namespace,
+        tag,
+        list.map(attrs, attribute.map(_, f)),
+        list.map(children, map(_, f)),
+        self_closing,
+        void,
       )
   }
 }
@@ -97,33 +171,40 @@ fn to_string_builder_helper(
   raw_text: Bool,
 ) -> StringBuilder {
   case element {
+    Text("") -> string_builder.new()
     Text(content) if raw_text -> string_builder.from_string(content)
     Text(content) -> string_builder.from_string(escape("", content))
 
-    Element("area" as tag, attrs, _)
-    | Element("base" as tag, attrs, _)
-    | Element("br" as tag, attrs, _)
-    | Element("col" as tag, attrs, _)
-    | Element("embed" as tag, attrs, _)
-    | Element("hr" as tag, attrs, _)
-    | Element("img" as tag, attrs, _)
-    | Element("input" as tag, attrs, _)
-    | Element("link" as tag, attrs, _)
-    | Element("meta" as tag, attrs, _)
-    | Element("param" as tag, attrs, _)
-    | Element("source" as tag, attrs, _)
-    | Element("track" as tag, attrs, _)
-    | Element("wbr" as tag, attrs, _) -> {
+    Element(namespace, tag, attrs, _, self_closing, _) if self_closing -> {
       let html = string_builder.from_string("<" <> tag)
-      let #(attrs, _) = attrs_to_string_builder(attrs)
+      let #(attrs, _) =
+        attrs_to_string_builder(case namespace {
+          "" -> attrs
+          _ -> [attribute("xmlns", namespace), ..attrs]
+        })
+
+      html
+      |> string_builder.append_builder(attrs)
+      |> string_builder.append("/>")
+    }
+
+    Element(namespace, tag, attrs, _, _, void) if void -> {
+      let html = string_builder.from_string("<" <> tag)
+      let #(attrs, _) =
+        attrs_to_string_builder(case namespace {
+          "" -> attrs
+          _ -> [attribute("xmlns", namespace), ..attrs]
+        })
 
       html
       |> string_builder.append_builder(attrs)
       |> string_builder.append(">")
     }
 
-    Element("style" as tag, attrs, children)
-    | Element("script" as tag, attrs, children) -> {
+    // Style and script tags are special beacuse they need to contain unescape
+    // text content and not escaped HTML content.
+    Element("", "style" as tag, attrs, children, False, False)
+    | Element("", "script" as tag, attrs, children, False, False) -> {
       let html = string_builder.from_string("<" <> tag)
       let #(attrs, _) = attrs_to_string_builder(attrs)
 
@@ -134,9 +215,13 @@ fn to_string_builder_helper(
       |> string_builder.append("</" <> tag <> ">")
     }
 
-    Element(tag, attrs, children) -> {
+    Element(namespace, tag, attrs, children, _, _) -> {
       let html = string_builder.from_string("<" <> tag)
-      let #(attrs, inner_html) = attrs_to_string_builder(attrs)
+      let #(attrs, inner_html) =
+        attrs_to_string_builder(case namespace {
+          "" -> attrs
+          _ -> [attribute("xmlns", namespace), ..attrs]
+        })
 
       case inner_html {
         "" ->
@@ -148,26 +233,6 @@ fn to_string_builder_helper(
         _ ->
           html
           |> string_builder.append_builder(attrs)
-          |> string_builder.append(">" <> inner_html <> "</" <> tag <> ">")
-      }
-    }
-
-    ElementNs(tag, attrs, children, namespace) -> {
-      let html = string_builder.from_string("<" <> tag)
-      let #(attrs, inner_html) = attrs_to_string_builder(attrs)
-
-      case inner_html {
-        "" ->
-          html
-          |> string_builder.append_builder(attrs)
-          |> string_builder.append(" xmlns=\"" <> namespace <> "\"")
-          |> string_builder.append(">")
-          |> children_to_string_builder(children, raw_text)
-          |> string_builder.append("</" <> tag <> ">")
-        _ ->
-          html
-          |> string_builder.append_builder(attrs)
-          |> string_builder.append(" xmlns=\"" <> namespace <> "\"")
           |> string_builder.append(">" <> inner_html <> "</" <> tag <> ">")
       }
     }

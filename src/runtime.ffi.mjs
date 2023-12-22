@@ -2,26 +2,41 @@ import { Empty } from "./gleam.mjs";
 import { map as result_map } from "../gleam_stdlib/gleam/result.mjs";
 
 export function morph(prev, curr, dispatch, parent) {
-  if (curr[3]) {
-    return prev?.nodeType === 1 &&
-      prev.nodeName === curr[0].toUpperCase() &&
-      prev.namespaceURI === curr[3]
-      ? morphElement(prev, curr, curr[3], dispatch, parent)
-      : createElement(prev, curr, curr[3], dispatch, parent);
+  // The current node is an `Element` and the previous DOM node is also a DOM
+  // element.
+  if (curr?.tag && prev?.nodeType === 1) {
+    const nodeName = curr.tag.toUpperCase();
+    const ns = curr.namespace || null;
+
+    // If the current node and the existing DOM node have the same tag and
+    // namespace, we can morph them together: keeping the DOM node intact and just
+    // updating its attributes and children.
+    if (prev.nodeName === nodeName && prev.namespaceURI === ns) {
+      return morphElement(prev, curr, dispatch, parent);
+    }
+    // Otherwise, we need to replace the DOM node with a new one. The `createElement`
+    // function will handle replacing the existing DOM node for us.
+    else {
+      return createElement(prev, curr, dispatch, parent);
+    }
   }
 
-  if (curr[2]) {
-    return prev?.nodeType === 1 && prev.nodeName === curr[0].toUpperCase()
-      ? morphElement(prev, curr, null, dispatch, parent)
-      : createElement(prev, curr, null, dispatch, parent);
+  // The current node is an `Element` but the previous DOM node either did not
+  // exist or it is not a DOM element (eg it might be a text or comment node).
+  if (curr?.tag) {
+    return createElement(prev, curr, dispatch, parent);
   }
 
-  if (typeof curr?.[0] === "string") {
+  // The current node is a `Text`.
+  if (typeof curr?.content === "string") {
     return prev?.nodeType === 3
       ? morphText(prev, curr)
       : createText(prev, curr);
   }
 
+  // If someone was naughty and tried to pass in something other than a Lustre
+  // element (or if there is an actual bug with the runtime!) we'll render a
+  // comment and ask them to report the issue.
   return document.createComment(
     [
       "[internal lustre error] I couldn't work out how to render this element. This",
@@ -34,14 +49,16 @@ export function morph(prev, curr, dispatch, parent) {
 
 // ELEMENTS --------------------------------------------------------------------
 
-function createElement(prev, curr, ns, dispatch, parent = null) {
-  const el = ns
-    ? document.createElementNS(ns, curr[0])
-    : document.createElement(curr[0]);
+function createElement(prev, curr, dispatch, parent = null) {
+  const el = curr.namespace
+    ? document.createElementNS(curr.namespace, curr.tag)
+    : document.createElement(curr.tag);
 
-  el.$lustre = {};
+  el.$lustre = {
+    __registered_events: new Set(),
+  };
 
-  let attr = curr[1];
+  let attr = curr.attrs;
   let dangerousUnescapedHtml = "";
 
   while (attr.head) {
@@ -51,16 +68,16 @@ function createElement(prev, curr, ns, dispatch, parent = null) {
       morphAttr(el, attr.head[0], `${el.style.cssText} ${attr.head[1]}`);
     } else if (attr.head[0] === "dangerous-unescaped-html") {
       dangerousUnescapedHtml += attr.head[1];
-    } else {
+    } else if (attr.head[0] !== "") {
       morphAttr(el, attr.head[0], attr.head[1], dispatch);
     }
 
     attr = attr.tail;
   }
 
-  if (customElements.get(curr[0])) {
-    el._slot = curr[2];
-  } else if (curr[0] === "slot") {
+  if (customElements.get(curr.tag)) {
+    el._slot = curr.children;
+  } else if (curr.tag === "slot") {
     let child = new Empty();
     let parentWithSlot = parent;
 
@@ -80,7 +97,7 @@ function createElement(prev, curr, ns, dispatch, parent = null) {
   } else if (dangerousUnescapedHtml) {
     el.innerHTML = dangerousUnescapedHtml;
   } else {
-    let child = curr[2];
+    let child = curr.children;
     while (child.head) {
       el.appendChild(morph(null, child.head, dispatch, el));
       child = child.tail;
@@ -92,15 +109,17 @@ function createElement(prev, curr, ns, dispatch, parent = null) {
   return el;
 }
 
-function morphElement(prev, curr, ns, dispatch, parent) {
-  const prevAttrs = prev.attributes;
+function morphElement(prev, curr, dispatch, parent) {
+  const prevAttrs = Object.fromEntries(prev.attributes);
   const currAttrs = new Map();
 
   // This can happen if we're morphing an existing DOM element that *wasn't*
   // initially created by lustre.
-  prev.$lustre ??= {};
+  prev.$lustre ??= { __registered_events: new Set() };
 
-  let currAttr = curr[1];
+  // We're going to convert the Gleam List of attributes into a JavaScript Map
+  // so its easier to lookup specific attributes.
+  let currAttr = curr.attrs;
   while (currAttr.head) {
     if (currAttr.head[0] === "class" && currAttrs.has("class")) {
       currAttrs.set(
@@ -120,13 +139,15 @@ function morphElement(prev, curr, ns, dispatch, parent) {
         currAttr.head[0],
         `${currAttrs.get("dangerous-unescaped-html")} ${currAttr.head[1]}`
       );
-    } else {
+    } else if (currAttr.head[0] !== "") {
       currAttrs.set(currAttr.head[0], currAttr.head[1]);
     }
 
     currAttr = currAttr.tail;
   }
 
+  // TODO: Event listeners aren't currently removed when they are removed from
+  // the attributes list. This is a bug!
   for (const { name, value: prevValue } of prevAttrs) {
     if (!currAttrs.has(name)) {
       prev.removeAttribute(name);
@@ -140,13 +161,25 @@ function morphElement(prev, curr, ns, dispatch, parent) {
     }
   }
 
+  for (const name of prev.$lustre.__registered_events) {
+    if (!currAttrs.has(name)) {
+      const event = name.slice(2).toLowerCase();
+
+      prev.removeEventListener(event, prev.$lustre[`${name}Handler`]);
+      prev.$lustre.__registered_events.delete(name);
+
+      delete prev.$lustre[name];
+      delete prev.$lustre[`${name}Handler`];
+    }
+  }
+
   for (const [name, value] of currAttrs) {
     morphAttr(prev, name, value, dispatch);
   }
 
-  if (customElements.get(curr[0])) {
-    prev._slot = curr[2];
-  } else if (curr[0] === "slot") {
+  if (customElements.get(curr.tag)) {
+    prev._slot = curr.children;
+  } else if (curr.tag === "slot") {
     let prevChild = prev.firstChild;
     let currChild = new Empty();
     let parentWithSlot = parent;
@@ -177,7 +210,7 @@ function morphElement(prev, curr, ns, dispatch, parent) {
     prev.innerHTML = currAttrs.get("dangerous-unescaped-html");
   } else {
     let prevChild = prev.firstChild;
-    let currChild = curr[2];
+    let currChild = curr.children;
 
     while (prevChild) {
       if (currChild.head) {
@@ -227,6 +260,7 @@ function morphAttr(el, name, value, dispatch) {
 
       el.$lustre[name] = value;
       el.$lustre[`${name}Handler`] = handler;
+      el.$lustre.__registered_events.add(name);
 
       break;
     }
@@ -239,7 +273,7 @@ function morphAttr(el, name, value, dispatch) {
 // TEXT ------------------------------------------------------------------------
 
 function createText(prev, curr) {
-  const el = document.createTextNode(curr[0]);
+  const el = document.createTextNode(curr.content);
 
   if (prev) prev.replaceWith(el);
   return el;
@@ -247,7 +281,7 @@ function createText(prev, curr) {
 
 function morphText(prev, curr) {
   const prevValue = prev.nodeValue;
-  const currValue = curr[0];
+  const currValue = curr.text;
 
   if (!currValue) {
     prev?.remove();

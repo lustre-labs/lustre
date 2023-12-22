@@ -39,6 +39,11 @@ pub fn on(
   Event("on" <> name, function.compose(handler, result.replace_error(_, Nil)))
 }
 
+///
+pub fn none() -> Attribute(msg) {
+  Attribute("", dynamic.from(""), as_property: False)
+}
+
 // MANIPULATIONS ---------------------------------------------------------------
 
 /// 
@@ -64,6 +69,7 @@ pub fn to_string(attr: Attribute(msg)) -> String {
 /// 
 pub fn to_string_parts(attr: Attribute(msg)) -> Result(#(String, String), Nil) {
   case attr {
+    Attribute("", _, _) -> Error(Nil)
     Attribute("dangerous-unescaped-html", _, _) -> Error(Nil)
     Attribute(name, value, as_property) -> {
       case dynamic.classify(value) {
@@ -92,6 +98,7 @@ pub fn to_string_parts(attr: Attribute(msg)) -> Result(#(String, String), Nil) {
 ///
 pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
   case attr {
+    Attribute("", _, _) -> string_builder.new()
     Attribute("dangerous-unescaped-html", _, _) -> string_builder.new()
     Attribute(name, value, as_property) -> {
       case dynamic.classify(value) {
