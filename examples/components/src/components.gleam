@@ -4,7 +4,7 @@ import gleam/dynamic
 import gleam/function
 import gleam/int
 import gleam/list
-import gleam/map
+import gleam/dict
 import gleam/result
 import lustre
 import lustre/attribute
@@ -22,7 +22,7 @@ pub fn main() {
       counter_init,
       counter_update,
       counter_view,
-      map.from_list([
+      dict.from_list([
         #(
           "count",
           fn(attr) {
