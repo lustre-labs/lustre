@@ -4,7 +4,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Decoder}
-import gleam/map.{type Map}
+import gleam/dict.{type Dict}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 
@@ -81,7 +81,7 @@ pub fn component(
   _init: fn() -> #(model, Effect(msg)),
   _update: fn(model, msg) -> #(model, Effect(msg)),
   _view: fn(model) -> Element(msg),
-  _on_attribute_change: Map(String, Decoder(msg)),
+  _on_attribute_change: Dict(String, Decoder(msg)),
 ) -> Result(Nil, Error) {
   Ok(Nil)
 }

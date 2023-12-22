@@ -15,4 +15,4 @@ internal_modules = [
 ]
 
 [dependencies]
-gleam_stdlib = "~> 0.31"
+gleam_stdlib = "~> 0.34"

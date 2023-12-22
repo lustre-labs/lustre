@@ -44,13 +44,10 @@ pub fn update(model: Model, msg: Msg) -> Model {
 // VIEW ------------------------------------------------------------------------
 
 pub fn view(model: Model) -> Element(Msg) {
-  div(
-    [],
-    [
-      button([event.on_click(Incr)], [text("+")]),
-      button([event.on_click(Decr)], [text("-")]),
-      button([event.on_click(Reset)], [text("Reset")]),
-      p([], [text(int.to_string(model))]),
-    ],
-  )
+  div([], [
+    button([event.on_click(Incr)], [text("+")]),
+    button([event.on_click(Decr)], [text("-")]),
+    button([event.on_click(Reset)], [text("Reset")]),
+    p([], [text(int.to_string(model))]),
+  ])
 }

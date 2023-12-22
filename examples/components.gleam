@@ -56,18 +56,15 @@ fn update(history, msg) {
 fn view(history) {
   let on_custom_click = event.on("custom-click", function.constant(Ok("click")))
 
-  div(
-    [],
-    [
-      button([event.on_click("reset")], [text("Reset")]),
-      ol([], list.map(history, fn(msg) { li([], [text(msg)]) })),
-      element(
-        "custom-counter",
-        [on_custom_click, attribute.property("count", list.length(history))],
-        [ol([], list.map(history, fn(msg) { li([], [text(msg)]) }))],
-      ),
-    ],
-  )
+  div([], [
+    button([event.on_click("reset")], [text("Reset")]),
+    ol([], list.map(history, fn(msg) { li([], [text(msg)]) })),
+    element(
+      "custom-counter",
+      [on_custom_click, attribute.property("count", list.length(history))],
+      [ol([], list.map(history, fn(msg) { li([], [text(msg)]) }))],
+    ),
+  ])
 }
 
 // COUNTER ---------------------------------------------------------------------
@@ -89,12 +86,9 @@ fn counter_update(count, msg) {
 }
 
 fn counter_view(count) {
-  div(
-    [],
-    [
-      button([event.on_click(Clicked)], [text("Click me!")]),
-      p([], [text("Count: "), text(int.to_string(count))]),
-      slot([]),
-    ],
-  )
+  div([], [
+    button([event.on_click(Clicked)], [text("Click me!")]),
+    p([], [text("Count: "), text(int.to_string(count))]),
+    slot([]),
+  ])
 }

@@ -124,13 +124,10 @@ pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
 
 ///
 pub fn style(properties: List(#(String, String))) -> Attribute(msg) {
-  attribute(
-    "style",
-    {
-      use styles, #(name, value) <- list.fold(properties, "")
-      styles <> name <> ":" <> value <> ";"
-    },
-  )
+  attribute("style", {
+    use styles, #(name, value) <- list.fold(properties, "")
+    styles <> name <> ":" <> value <> ";"
+  })
 }
 
 ///

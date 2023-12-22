@@ -57,26 +57,20 @@ fn update(model: Model, msg: Msg) -> Model {
 // RENDER ----------------------------------------------------------------------
 
 fn view(model: Model) -> Element(Msg) {
-  div(
-    [attribute.class("container")],
-    [
-      card([
-        email_input(model.email),
-        password_input(model.password),
-        remember_checkbox(model.remember_me),
-        pre(
-          [attribute.class("debug")],
-          [
-            string.inspect(model)
-            |> string.replace("(", "(\n  ")
-            |> string.replace(", ", ",\n  ")
-            |> string.replace(")", "\n)")
-            |> text,
-          ],
-        ),
+  div([attribute.class("container")], [
+    card([
+      email_input(model.email),
+      password_input(model.password),
+      remember_checkbox(model.remember_me),
+      pre([attribute.class("debug")], [
+        string.inspect(model)
+        |> string.replace("(", "(\n  ")
+        |> string.replace(", ", ",\n  ")
+        |> string.replace(")", "\n)")
+        |> text,
       ]),
-    ],
-  )
+    ]),
+  ])
 }
 
 fn card(content: List(Element(a))) -> Element(a) {
@@ -98,35 +92,29 @@ fn render_input(
   value: String,
   label_: String,
 ) -> Element(Msg) {
-  div(
-    [attribute.class("input")],
-    [
-      label([attribute.for(id)], [text(label_)]),
-      input([
-        attribute.id(id),
-        attribute.name(id),
-        attribute.type_(type_),
-        attribute.required(True),
-        attribute.value(dynamic.from(value)),
-        event.on_input(fn(value) { Typed(field, value) }),
-      ]),
-    ],
-  )
+  div([attribute.class("input")], [
+    label([attribute.for(id)], [text(label_)]),
+    input([
+      attribute.id(id),
+      attribute.name(id),
+      attribute.type_(type_),
+      attribute.required(True),
+      attribute.value(dynamic.from(value)),
+      event.on_input(fn(value) { Typed(field, value) }),
+    ]),
+  ])
 }
 
 fn remember_checkbox(checked: Bool) -> Element(Msg) {
-  div(
-    [attribute.class("flex items-center")],
-    [
-      input([
-        attribute.id("remember-me"),
-        attribute.name("remember-me"),
-        attribute.type_("checkbox"),
-        attribute.checked(checked),
-        attribute.class("checkbox"),
-        event.on_click(Toggled(RememberMe, !checked)),
-      ]),
-      label([attribute.for("remember-me")], [text("Remember me")]),
-    ],
-  )
+  div([attribute.class("flex items-center")], [
+    input([
+      attribute.id("remember-me"),
+      attribute.name("remember-me"),
+      attribute.type_("checkbox"),
+      attribute.checked(checked),
+      attribute.class("checkbox"),
+      event.on_click(Toggled(RememberMe, !checked)),
+    ]),
+    label([attribute.for("remember-me")], [text("Remember me")]),
+  ])
 }

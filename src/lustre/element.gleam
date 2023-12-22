@@ -186,7 +186,8 @@ fn attrs_to_string_builder(
         html,
         class,
         style,
-        inner_html <> val,
+        inner_html
+        <> val,
       )
       Ok(#("class", val)) if class == "" -> #(html, val, style, inner_html)
       Ok(#("class", val)) -> #(html, class <> " " <> val, style, inner_html)
@@ -210,7 +211,11 @@ fn attrs_to_string_builder(
       _, _ ->
         string_builder.append(
           html,
-          " class=\"" <> class <> "\" style=\"" <> style <> "\"",
+          " class=\""
+          <> class
+          <> "\" style=\""
+          <> style
+          <> "\"",
         )
     },
     inner_html,
