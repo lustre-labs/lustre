@@ -8,7 +8,7 @@ links = [
   { title = "Website", href = "https://lustre.build" },
   { title = "Sponsor", href = "https://github.com/sponsors/hayleigh-dot-dev" },
 ]
-gleam = ">= 0.32.0"
+gleam = ">= 0.33.0"
 
 internal_modules = [
   "lustre/try",
