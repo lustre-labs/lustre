@@ -6,6 +6,7 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/function
 import gleam/int
+import gleam/json.{type Json}
 import gleam/list
 import gleam/result
 import gleam/string
@@ -124,6 +125,56 @@ pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
     Event(on, _) ->
       ["data-lustre-on:", on]
       |> string_builder.from_strings
+  }
+}
+
+///
+/// 
+pub fn encode(attribute: Attribute(msg)) -> Result(Json, Nil) {
+  case attribute {
+    Attribute("", _, _) -> Error(Nil)
+    Attribute(name, value, as_property: False) -> {
+      case dynamic.classify(value) {
+        "String" ->
+          Ok(
+            json.object([
+              #("$", json.string("Attribute")),
+              #("0", json.string(name)),
+              #("1", json.string(dynamic.unsafe_coerce(value))),
+            ]),
+          )
+
+        "Boolean" ->
+          Ok(
+            json.object([
+              #("$", json.string("Attribute")),
+              #("0", json.string(name)),
+              #("1", json.bool(dynamic.unsafe_coerce(value))),
+            ]),
+          )
+
+        "Int" ->
+          Ok(
+            json.object([
+              #("$", json.string("Attribute")),
+              #("0", json.string(name)),
+              #("1", json.int(dynamic.unsafe_coerce(value))),
+            ]),
+          )
+
+        "Float" ->
+          Ok(
+            json.object([
+              #("$", json.string("Attribute")),
+              #("0", json.string(name)),
+              #("1", json.float(dynamic.unsafe_coerce(value))),
+            ]),
+          )
+
+        _ -> Error(Nil)
+      }
+    }
+    _ -> Error(Nil)
   }
 }
 

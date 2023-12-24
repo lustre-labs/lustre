@@ -3,6 +3,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/json.{type Json}
 import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
@@ -294,4 +295,31 @@ fn children_to_string_builder(
 ) -> StringBuilder {
   use html, child <- list.fold(children, html)
   string_builder.append_builder(html, to_string_builder_helper(child, raw_text))
+}
+
+pub fn encode(element: Element(msg)) -> Json {
+  case element {
+    Text(content) ->
+      json.object([
+        #("$", json.string("Text")),
+        #("content", json.string(content)),
+      ])
+
+    Element(namespace, tag, attrs, children, self_closing, void) -> {
+      let attrs =
+        attrs
+        |> list.filter_map(attribute.encode(_))
+        |> json.preprocessed_array
+
+      json.object([
+        #("$", json.string("Element")),
+        #("namespace", json.string(namespace)),
+        #("tag", json.string(tag)),
+        #("attrs", attrs),
+        #("children", json.array(children, encode)),
+        #("self_closing", json.bool(self_closing)),
+        #("void", json.bool(void)),
+      ])
+    }
+  }
 }
