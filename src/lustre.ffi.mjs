@@ -6,7 +6,6 @@ import {
   ElementNotFound,
   NotABrowser,
 } from "./lustre.mjs";
-import { from } from "./lustre/effect.mjs";
 import { morph } from "./runtime.ffi.mjs";
 import { Ok, Error, isEqual } from "./gleam.mjs";
 
@@ -217,6 +216,32 @@ export const setup_component = (
 
   return new Ok(null);
 };
+
+// SERVER COMPONENTS -----------------------------------------------------------
+
+export class ServerComponent {
+  #root = null;
+  #ws = null;
+
+  constructor(selector, ws) {
+    this.#root = document.querySelector(selector);
+    this.#ws = ws;
+
+    this.#ws.addEventListener("message", ({ data }) => {
+      const msg = JSON.parse(data);
+
+      switch (msg.$) {
+        case "Patch": {
+          this.#root = morph(this.#root, msg.vdom, (tag) =>
+            this.#ws.send(JSON.stringify({ $: "Event", tag, event: {} }))
+          );
+
+          break;
+        }
+      }
+    });
+  }
+}
 
 // UTLS ------------------------------------------------------------------------
 
