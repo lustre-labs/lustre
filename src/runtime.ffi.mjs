@@ -58,49 +58,43 @@ function createElement(prev, curr, dispatch, parent = null) {
     __registered_events: new Set(),
   };
 
-  let attr = curr.attrs;
   let dangerousUnescapedHtml = "";
 
-  while (attr.head) {
-    if (attr.head[0] === "class") {
-      morphAttr(el, attr.head[0], `${el.className} ${attr.head[1]}`);
-    } else if (attr.head[0] === "style") {
-      morphAttr(el, attr.head[0], `${el.style.cssText} ${attr.head[1]}`);
-    } else if (attr.head[0] === "dangerous-unescaped-html") {
-      dangerousUnescapedHtml += attr.head[1];
-    } else if (attr.head[0] !== "") {
-      morphAttr(el, attr.head[0], attr.head[1], dispatch);
+  for (const attr of curr.attrs) {
+    if (attr[0] === "class") {
+      morphAttr(el, attr[0], `${el.className} ${attr[1]}`);
+    } else if (attr[0] === "style") {
+      morphAttr(el, attr[0], `${el.style.cssText} ${attr[1]}`);
+    } else if (attr[0] === "dangerous-unescaped-html") {
+      dangerousUnescapedHtml += attr[1];
+    } else if (attr[0] !== "") {
+      morphAttr(el, attr[0], attr[1], dispatch);
     }
-
-    attr = attr.tail;
   }
 
   if (customElements.get(curr.tag)) {
     el._slot = curr.children;
   } else if (curr.tag === "slot") {
-    let child = new Empty();
+    let children = new Empty();
     let parentWithSlot = parent;
 
     while (parentWithSlot) {
       if (parentWithSlot._slot) {
-        child = parentWithSlot._slot;
+        children = parentWithSlot._slot;
         break;
       } else {
         parentWithSlot = parentWithSlot.parentNode;
       }
     }
 
-    while (child.head) {
-      el.appendChild(morph(null, child.head, dispatch, el));
-      child = child.tail;
+    for (const child of children) {
+      el.appendChild(morph(null, child, dispatch, el));
     }
   } else if (dangerousUnescapedHtml) {
     el.innerHTML = dangerousUnescapedHtml;
   } else {
-    let child = curr.children;
-    while (child.head) {
-      el.appendChild(morph(null, child.head, dispatch, el));
-      child = child.tail;
+    for (const child of curr.children) {
+      el.appendChild(morph(null, child, dispatch, el));
     }
   }
 
@@ -119,31 +113,22 @@ function morphElement(prev, curr, dispatch, parent) {
 
   // We're going to convert the Gleam List of attributes into a JavaScript Map
   // so its easier to lookup specific attributes.
-  let currAttr = curr.attrs;
-  while (currAttr.head) {
-    if (currAttr.head[0] === "class" && currAttrs.has("class")) {
-      currAttrs.set(
-        currAttr.head[0],
-        `${currAttrs.get("class")} ${currAttr.head[1]}`
-      );
-    } else if (currAttr.head[0] === "style" && currAttrs.has("style")) {
-      currAttrs.set(
-        currAttr.head[0],
-        `${currAttrs.get("style")} ${currAttr.head[1]}`
-      );
+  for (const currAttr of curr.attrs) {
+    if (currAttr[0] === "class" && currAttrs.has("class")) {
+      currAttrs.set(currAttr[0], `${currAttrs.get("class")} ${currAttr[1]}`);
+    } else if (currAttr[0] === "style" && currAttrs.has("style")) {
+      currAttrs.set(currAttr[0], `${currAttrs.get("style")} ${currAttr[1]}`);
     } else if (
-      currAttr.head[0] === "dangerous-unescaped-html" &&
+      currAttr[0] === "dangerous-unescaped-html" &&
       currAttrs.has("dangerous-unescaped-html")
     ) {
       currAttrs.set(
-        currAttr.head[0],
-        `${currAttrs.get("dangerous-unescaped-html")} ${currAttr.head[1]}`
+        currAttr[0],
+        `${currAttrs.get("dangerous-unescaped-html")} ${currAttr[1]}`
       );
-    } else if (currAttr.head[0] !== "") {
-      currAttrs.set(currAttr.head[0], currAttr.head[1]);
+    } else if (currAttr[0] !== "") {
+      currAttrs.set(currAttr[0], currAttr[1]);
     }
-
-    currAttr = currAttr.tail;
   }
 
   // TODO: Event listeners aren't currently removed when they are removed from
@@ -194,7 +179,9 @@ function morphElement(prev, curr, dispatch, parent) {
     }
 
     while (prevChild) {
-      if (currChild.head) {
+      if (Array.isArray(currChild) && currChild.length) {
+        morph(prevChild, currChild.shift(), dispatch, prev);
+      } else if (currChild.head) {
         morph(prevChild, currChild.head, dispatch, prev);
         currChild = currChild.tail;
       }
@@ -202,9 +189,8 @@ function morphElement(prev, curr, dispatch, parent) {
       prevChild = prevChild.nextSibling;
     }
 
-    while (currChild.head) {
-      prev.appendChild(morph(null, currChild.head, dispatch, prev));
-      currChild = currChild.tail;
+    for (const child of currChild) {
+      prev.appendChild(morph(null, child, dispatch, prev));
     }
   } else if (currAttrs.has("dangerous-unescaped-html")) {
     prev.innerHTML = currAttrs.get("dangerous-unescaped-html");
@@ -213,7 +199,11 @@ function morphElement(prev, curr, dispatch, parent) {
     let currChild = curr.children;
 
     while (prevChild) {
-      if (currChild.head) {
+      if (Array.isArray(currChild) && currChild.length) {
+        const next = prevChild.nextSibling;
+        morph(prevChild, currChild.shift(), dispatch, prev);
+        prevChild = next;
+      } else if (currChild.head) {
         const next = prevChild.nextSibling;
         morph(prevChild, currChild.head, dispatch, prev);
         currChild = currChild.tail;
@@ -225,9 +215,8 @@ function morphElement(prev, curr, dispatch, parent) {
       }
     }
 
-    while (currChild.head) {
-      prev.appendChild(morph(null, currChild.head, dispatch, prev));
-      currChild = currChild.tail;
+    for (const child of currChild) {
+      prev.appendChild(morph(null, child, dispatch, prev));
     }
   }
 
@@ -238,6 +227,23 @@ function morphElement(prev, curr, dispatch, parent) {
 
 function morphAttr(el, name, value, dispatch) {
   switch (typeof value) {
+    case name.startsWith("data-server-") && "string": {
+      const event = name.slice(12).toLowerCase();
+      const handler = () => dispatch(value);
+
+      if (el.$lustre[`${name}Handler`]) {
+        el.removeEventListener(event, el.$lustre[`${name}Handler`]);
+      }
+
+      el.addEventListener(event, handler);
+
+      el.$lustre[name] = value;
+      el.$lustre[`${name}Handler`] = handler;
+      el.$lustre.__registered_events.add(name);
+
+      break;
+    }
+
     case "string":
       if (el.getAttribute(name) !== value) el.setAttribute(name, value);
       if (value === "") el.removeAttribute(name);
