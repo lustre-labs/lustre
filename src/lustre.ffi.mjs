@@ -159,16 +159,6 @@ export const setup_component = (
         super();
 
         this.#app = new App(init, update, render);
-        // This is necessary for ✨ reasons ✨. Clearly there's a bug in the
-        // implementation of either the `App` or the runtime but I con't work it
-        // out.
-        //
-        // If we pass the container to the app directly then the component fails
-        // to render anything to the ODM.
-        this.#container.appendChild(document.createElement("div"));
-
-        const dispatch = this.#app.start(this.#container.firstChild);
-        this.#dispatch = dispatch[0];
 
         on_attribute_change.forEach((decoder, name) => {
           Object.defineProperty(this, name, {
@@ -185,7 +175,7 @@ export const setup_component = (
               // changed but its reference might have and we don't want to trigger
               // useless updates.
               if (decoded.isOk() && !isEqual(prev, value)) {
-                this.#dispatch(decoded[0]);
+                this.#dispatch?.(decoded[0]);
               }
 
               if (typeof value === "string") {
@@ -199,7 +189,10 @@ export const setup_component = (
       }
 
       connectedCallback() {
-        this.appendChild(this.#container.firstChild);
+        const dispatch = this.#app.start(this.#container);
+
+        this.#dispatch = dispatch[0];
+        this.appendChild(this.#container);
       }
 
       attributeChangedCallback(name, prev, next) {
@@ -216,32 +209,6 @@ export const setup_component = (
 
   return new Ok(null);
 };
-
-// SERVER COMPONENTS -----------------------------------------------------------
-
-export class ServerComponent {
-  #root = null;
-  #ws = null;
-
-  constructor(selector, ws) {
-    this.#root = document.querySelector(selector);
-    this.#ws = ws;
-
-    this.#ws.addEventListener("message", ({ data }) => {
-      const msg = JSON.parse(data);
-
-      switch (msg.$) {
-        case "Patch": {
-          this.#root = morph(this.#root, msg.vdom, (tag) =>
-            this.#ws.send(JSON.stringify({ $: "Event", tag, event: {} }))
-          );
-
-          break;
-        }
-      }
-    });
-  }
-}
 
 // UTLS ------------------------------------------------------------------------
 
