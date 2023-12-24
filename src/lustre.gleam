@@ -7,17 +7,19 @@ import gleam/dynamic.{type Decoder}
 import gleam/dict.{type Dict}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
+import lustre/server_runtime.{type Message}
+import gleam/erlang/process.{type Subject}
 
 // TYPES -----------------------------------------------------------------------
 
-@target(javascript)
-///
-pub type App(flags, model, msg)
-
-@target(erlang)
-///
 pub opaque type App(flags, model, msg) {
-  App
+  Ready(
+    init: fn(flags) -> #(model, Effect(msg)),
+    update: fn(model, msg) -> #(model, Effect(msg)),
+    view: fn(model) -> Element(msg),
+    on_client_event: Dict(String, Decoder(msg)),
+  )
+  Running(Subject(Message(model, msg)))
 }
 
 pub type Error {
@@ -53,26 +55,18 @@ pub fn simple(
 }
 
 ///
+/// 
+/// 🚨 Creating an application on the Erlang target will set up a server component
+///    that can not respond to browser events. You probably want to use
+///    [`server_component`](#server_component) instead!
+/// 
 @external(javascript, "./lustre.ffi.mjs", "setup")
 pub fn application(
-  _init: fn(flags) -> #(model, Effect(msg)),
-  _update: fn(model, msg) -> #(model, Effect(msg)),
-  _view: fn(model) -> Element(msg),
+  init: fn(flags) -> #(model, Effect(msg)),
+  update: fn(model, msg) -> #(model, Effect(msg)),
+  view: fn(model) -> Element(msg),
 ) -> App(flags, model, msg) {
-  // Applications are not usable on the erlang target. For those users, `App`
-  // is an opaque type (aka they can't see its structure) and functions like
-  // `start` and `destroy` are no-ops.
-  //
-  // Because the constructor is marked as `@target(erlang)` for some reason we
-  // can't simply refer to it here even though the compiler should know that the
-  // body of this function can only be entered from erlang (because we have an
-  // external def for javascript) but alas, it does not.
-  //
-  // So instead, we must do this awful hack and cast a `Nil` to the `App` type
-  // to make everything happy. Theoeretically this is not going to be a problem
-  // unless someone starts poking around with their own ffi and at that point
-  // they deserve it.
-  dynamic.unsafe_coerce(dynamic.from(Nil))
+  Ready(init, update, view, dict.new())
 }
 
 @external(javascript, "./lustre.ffi.mjs", "setup_component")
@@ -84,6 +78,22 @@ pub fn component(
   _on_attribute_change: Dict(String, Decoder(msg)),
 ) -> Result(Nil, Error) {
   Ok(Nil)
+}
+
+///
+/// 
+/// 🚨 Creating a server_component on the JavaScript target will set up a
+///    normal client application and ignores the `on_client_event` argument. You
+///    probably want to use [`application`](#application) instead!
+/// 
+@external(javascript, "./lustre.ffi.mjs", "setup")
+pub fn server_component(
+  init: fn(flags) -> #(model, Effect(msg)),
+  update: fn(model, msg) -> #(model, Effect(msg)),
+  view: fn(model) -> Element(msg),
+  on_client_event: Dict(String, Decoder(msg)),
+) -> App(flags, model, msg) {
+  Ready(init, update, view, on_client_event)
 }
 
 // EFFECTS ---------------------------------------------------------------------
@@ -98,10 +108,30 @@ pub fn start(
   Error(NotABrowser)
 }
 
+@target(erlang)
 ///
+pub fn start_server(
+  app: App(flags, model, msg),
+  flags: flags,
+) -> Result(Subject(Message(model, msg)), Error) {
+  case app {
+    Ready(init, update, view, on_client_event) ->
+      init(flags)
+      |> server_runtime.start(update, view, on_client_event)
+      |> Ok
+
+    Running(_) -> Error(AppAlreadyStarted)
+  }
+}
+
+///
+/// 
 @external(javascript, "./lustre.ffi.mjs", "destroy")
-pub fn destroy(_app: App(flags, model, msg)) -> Result(Nil, Error) {
-  Ok(Nil)
+pub fn destroy(app: App(flags, model, msg)) -> Result(Nil, Error) {
+  case app {
+    Ready(_, _, _, _) -> Error(AppNotYetStarted)
+    Running(subject) -> Ok(server_runtime.shutdown(subject))
+  }
 }
 
 // UTILS -----------------------------------------------------------------------
