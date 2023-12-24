@@ -46,6 +46,7 @@ pub fn none() -> Effect(msg) {
 // MANIPULATIONS ---------------------------------------------------------------
 
 ///
+/// 
 pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
   Effect({
     use b, Effect(a) <- list.fold(effects, [])
@@ -54,6 +55,7 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
 }
 
 ///
+/// 
 pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
   Effect({
     use effect <- list.map(effect.all)
@@ -64,4 +66,12 @@ pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
       effect(dispatch, emit)
     }
   })
+}
+
+/// Perform a side effect by supplying your own `dispatch` function. This is
+/// primarily used internally by the server runtime, but it is also useful for
+/// testing.
+/// 
+pub fn perform(effect: Effect(a), dispatch: fn(a) -> Nil) -> Nil {
+  list.each(effect.all, fn(eff) { eff(dispatch, fn(_, _) { Nil }) })
 }
