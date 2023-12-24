@@ -6,12 +6,12 @@ export function morph(prev, curr, dispatch, parent) {
   // element.
   if (curr?.tag && prev?.nodeType === 1) {
     const nodeName = curr.tag.toUpperCase();
-    const ns = curr.namespace || null;
+    const ns = curr.namespace || "http://www.w3.org/1999/xhtml";
 
     // If the current node and the existing DOM node have the same tag and
     // namespace, we can morph them together: keeping the DOM node intact and just
     // updating its attributes and children.
-    if (prev.nodeName === nodeName && prev.namespaceURI === ns) {
+    if (prev.nodeName === nodeName && prev.namespaceURI == ns) {
       return morphElement(prev, curr, dispatch, parent);
     }
     // Otherwise, we need to replace the DOM node with a new one. The `createElement`
@@ -104,7 +104,7 @@ function createElement(prev, curr, dispatch, parent = null) {
 }
 
 function morphElement(prev, curr, dispatch, parent) {
-  const prevAttrs = Object.fromEntries(prev.attributes);
+  const prevAttrs = prev.attributes;
   const currAttrs = new Map();
 
   // This can happen if we're morphing an existing DOM element that *wasn't*
@@ -229,7 +229,11 @@ function morphAttr(el, name, value, dispatch) {
   switch (typeof value) {
     case name.startsWith("data-server-") && "string": {
       const event = name.slice(12).toLowerCase();
-      const handler = () => dispatch(value);
+      const handler = (e) => {
+        const data = e.target.dataset.data || "{}";
+
+        dispatch({ tag: value, data: JSON.parse(data) });
+      };
 
       if (el.$lustre[`${name}Handler`]) {
         el.removeEventListener(event, el.$lustre[`${name}Handler`]);
@@ -287,7 +291,7 @@ function createText(prev, curr) {
 
 function morphText(prev, curr) {
   const prevValue = prev.nodeValue;
-  const currValue = curr.text;
+  const currValue = curr.content;
 
   if (!currValue) {
     prev?.remove();
