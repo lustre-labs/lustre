@@ -6,6 +6,7 @@ import gleam/result
 import gleam/string_builder
 import lustre/attribute.{attribute}
 import lustre/element
+import lustre/server
 import lustre/element/html.{html}
 import lustre/ui/styles
 import mist.{type Connection, type ResponseData}
@@ -28,16 +29,11 @@ fn handler(req: Request) -> Response {
       ]),
       styles.elements(),
       html.script(
-        [attribute("type", "module")],
-        " import { ServerComponent } from './static/lustre_client.mjs'
-
-          document.addEventListener('DOMContentLoaded', () => {
-            const ws = new WebSocket('ws://localhost:8000/ws')
-            const app = new ServerComponent(\"[data-lustre-app]\", ws)
-
-            console.log(ws, app)
-          })
-        ",
+        [
+          attribute.src("/static/lustre_server_component.js"),
+          attribute("type", "module"),
+        ],
+        "",
       ),
     ]),
     html.body([], [
@@ -49,7 +45,7 @@ fn handler(req: Request) -> Response {
             #("padding", "2rem"),
           ]),
         ],
-        [html.div([attribute("data-lustre-app", "")], [])],
+        [server.component([server.route("/ws")])],
       ),
     ]),
   ])
