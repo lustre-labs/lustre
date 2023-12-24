@@ -20,7 +20,7 @@ pub opaque type State(model, msg) {
     model: model,
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
-    listeners: Set(fn(Element(msg)) -> Nil),
+    renderers: Set(fn(Element(msg)) -> Nil),
     on_client_event: Dict(String, Decoder(msg)),
   )
 }
@@ -63,15 +63,15 @@ pub fn start(
             let #(model, effects) = state.update(state.model, msg)
             let html = state.view(model)
 
-            set.fold(state.listeners, Nil, fn(_, listener) { listener(html) })
+            set.fold(state.renderers, Nil, fn(_, renderer) { renderer(html) })
             effect.perform(effects, dispatch(_, state.self))
             actor.continue(State(..state, model: model))
           }
 
-          GotRenderer(listener) -> {
-            listener(state.view(state.model))
+          GotRenderer(renderer) -> {
+            renderer(state.view(state.model))
             actor.continue(
-              State(..state, listeners: set.insert(state.listeners, listener)),
+              State(..state, renderers: set.insert(state.renderers, renderer)),
             )
           }
 
@@ -93,9 +93,9 @@ pub fn start(
             actor.continue(state)
           }
 
-          RemoveRenderer(listener) -> {
+          RemoveRenderer(renderer) -> {
             actor.continue(
-              State(..state, listeners: set.delete(state.listeners, listener)),
+              State(..state, renderers: set.delete(state.renderers, renderer)),
             )
           }
 
@@ -133,16 +133,16 @@ pub fn handle_client_event(
 /// 
 pub fn add_renderer(
   runtime: Subject(Message(model, msg)),
-  listener: fn(Element(msg)) -> Nil,
+  renderer: fn(Element(msg)) -> Nil,
 ) -> Nil {
-  actor.send(runtime, GotRenderer(listener))
+  actor.send(runtime, GotRenderer(renderer))
 }
 
 ///
 /// 
 pub fn remove_renderer(
   runtime: Subject(Message(model, msg)),
-  listener: fn(Element(msg)) -> Nil,
+  renderer: fn(Element(msg)) -> Nil,
 ) -> Nil {
-  actor.send(runtime, RemoveRenderer(listener))
+  actor.send(runtime, RemoveRenderer(renderer))
 }

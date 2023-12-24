@@ -7,19 +7,18 @@ import gleam/dynamic.{type Decoder}
 import gleam/dict.{type Dict}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
-import lustre/server_runtime.{type Message}
+import lustre/server/runtime.{type Message}
 import gleam/erlang/process.{type Subject}
 
 // TYPES -----------------------------------------------------------------------
 
 pub opaque type App(flags, model, msg) {
-  Ready(
+  App(
     init: fn(flags) -> #(model, Effect(msg)),
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
     on_client_event: Dict(String, Decoder(msg)),
   )
-  Running(Subject(Message(model, msg)))
 }
 
 pub type Error {
@@ -66,7 +65,7 @@ pub fn application(
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
 ) -> App(flags, model, msg) {
-  Ready(init, update, view, dict.new())
+  App(init, update, view, dict.new())
 }
 
 @external(javascript, "./lustre.ffi.mjs", "setup_component")
@@ -93,7 +92,7 @@ pub fn server_component(
   view: fn(model) -> Element(msg),
   on_client_event: Dict(String, Decoder(msg)),
 ) -> App(flags, model, msg) {
-  Ready(init, update, view, on_client_event)
+  App(init, update, view, on_client_event)
 }
 
 // EFFECTS ---------------------------------------------------------------------
@@ -114,24 +113,16 @@ pub fn start_server(
   app: App(flags, model, msg),
   flags: flags,
 ) -> Result(Subject(Message(model, msg)), Error) {
-  case app {
-    Ready(init, update, view, on_client_event) ->
-      init(flags)
-      |> server_runtime.start(update, view, on_client_event)
-      |> Ok
-
-    Running(_) -> Error(AppAlreadyStarted)
-  }
+  app.init(flags)
+  |> runtime.start(app.update, app.view, app.on_client_event)
+  |> Ok
 }
 
 ///
 /// 
 @external(javascript, "./lustre.ffi.mjs", "destroy")
-pub fn destroy(app: App(flags, model, msg)) -> Result(Nil, Error) {
-  case app {
-    Ready(_, _, _, _) -> Error(AppNotYetStarted)
-    Running(subject) -> Ok(server_runtime.shutdown(subject))
-  }
+pub fn destroy(_app: App(flags, model, msg)) -> Result(Nil, Error) {
+  Error(NotABrowser)
 }
 
 // UTILS -----------------------------------------------------------------------

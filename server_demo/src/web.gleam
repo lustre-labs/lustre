@@ -6,11 +6,13 @@ import gleam/result
 import gleam/string_builder
 import lustre/attribute.{attribute}
 import lustre/element
-import lustre/server
 import lustre/element/html.{html}
+import lustre/server
 import lustre/ui/styles
 import mist.{type Connection, type ResponseData}
 import wisp.{type Request, type Response}
+
+//
 
 pub fn handle(req: HttpRequest(Connection)) -> HttpResponse(ResponseData) {
   wisp.mist_handler(handler, "")(req)
@@ -30,7 +32,7 @@ fn handler(req: Request) -> Response {
       styles.elements(),
       html.script(
         [
-          attribute.src("/static/lustre_server_component.js"),
+          attribute.src("/static/lustre_server_component.mjs"),
           attribute("type", "module"),
         ],
         "",

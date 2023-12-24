@@ -1,18 +1,18 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/dict
 import gleam/erlang/process
 import gleam/http/request.{type Request as HttpRequest}
-import mist.{type Connection}
-import socket
-import web
+import gleam/int
 import lustre
-import lustre/ui
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/server
-import gleam/int
-import gleam/dict
+import lustre/ui
+import mist.{type Connection}
+import socket
+import web
 
 // MAIN ------------------------------------------------------------------------
 

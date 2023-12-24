@@ -10,19 +10,19 @@ import gleam/json
 import gleam/option.{Some}
 import gleam/otp/actor
 import lustre/element.{type Element}
-import lustre/server_runtime.{type Message}
+import lustre/server/runtime.{type Message}
 import mist.{
   type Connection, type ResponseData, type WebsocketConnection,
   type WebsocketMessage,
 }
 
-// MAIN ------------------------------------------------------------------------
+// 
 
 pub fn handle(
   req: HttpRequest(Connection),
   app: Subject(Message(model, msg)),
 ) -> HttpResponse(ResponseData) {
-  mist.websocket(req, update, init(app), close)
+  mist.websocket(req, update, init(app), function.constant(Nil))
 }
 
 type Model(model, msg) {
@@ -35,7 +35,7 @@ fn init(app: Subject(Message(model, msg))) {
     let model = Model(self, app)
     let selector = process.selecting(process.new_selector(), self, identity)
 
-    server_runtime.add_renderer(app, process.send(self, _))
+    runtime.add_renderer(app, process.send(self, _))
 
     #(model, Some(selector))
   }
@@ -55,7 +55,7 @@ fn update(
               dyn
               |> dynamic.decode2(
                 fn(tag, event) {
-                  server_runtime.handle_client_event(model.app, tag, event)
+                  runtime.handle_client_event(model.app, tag, event)
                 },
                 dynamic.field("tag", dynamic.string),
                 dynamic.field("event", dynamic.dynamic),
@@ -78,8 +78,4 @@ fn update(
       actor.continue(model)
     }
   }
-}
-
-fn close(_) -> Nil {
-  Nil
 }
