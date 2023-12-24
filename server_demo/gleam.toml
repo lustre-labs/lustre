@@ -1,0 +1,21 @@
+name = "server_demo"
+version = "1.0.0"
+
+# Fill out these fields if you intend to generate HTML documentation or publish
+# your project to the Hex package manager.
+#
+# description = ""
+# licences = ["Apache-2.0"]
+# repository = { type = "github", user = "username", repo = "project" }
+# links = [{ title = "Website", href = "https://gleam.run" }]
+
+[dependencies]
+gleam_stdlib = "~> 0.34"
+lustre = { path = "../" }
+wisp = "~> 0.8"
+mist = "~> 0.15"
+gleam_erlang = "~> 0.23"
+gleam_http = "~> 3.5"
+gleam_json = "~> 0.7"
+gleam_otp = "~> 0.8"
+lustre_ui = "~> 0.2"
