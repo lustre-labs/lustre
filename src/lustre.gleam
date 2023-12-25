@@ -3,12 +3,14 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{type Decoder}
 import gleam/dict.{type Dict}
+import gleam/dynamic.{type Decoder, type Dynamic}
+import gleam/erlang/process.{type Subject}
+import gleam/otp/actor.{type StartError}
+import gleam/result
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/server/runtime.{type Message}
-import gleam/erlang/process.{type Subject}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -17,11 +19,12 @@ pub opaque type App(flags, model, msg) {
     init: fn(flags) -> #(model, Effect(msg)),
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
-    on_client_event: Dict(String, Decoder(msg)),
+    on_client_event: fn(String, Dynamic) -> Result(msg, Nil),
   )
 }
 
 pub type Error {
+  ActorError(StartError)
   AppAlreadyStarted
   AppNotYetStarted
   BadComponentName
@@ -65,7 +68,7 @@ pub fn application(
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
 ) -> App(flags, model, msg) {
-  App(init, update, view, dict.new())
+  App(init, update, view, fn(_, _) { Error(Nil) })
 }
 
 @external(javascript, "./lustre.ffi.mjs", "setup_component")
@@ -90,7 +93,7 @@ pub fn server_component(
   init: fn(flags) -> #(model, Effect(msg)),
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
-  on_client_event: Dict(String, Decoder(msg)),
+  on_client_event: fn(String, Dynamic) -> Result(msg, Nil),
 ) -> App(flags, model, msg) {
   App(init, update, view, on_client_event)
 }
@@ -115,7 +118,7 @@ pub fn start_server(
 ) -> Result(Subject(Message(model, msg)), Error) {
   app.init(flags)
   |> runtime.start(app.update, app.view, app.on_client_event)
-  |> Ok
+  |> result.map_error(ActorError)
 }
 
 ///

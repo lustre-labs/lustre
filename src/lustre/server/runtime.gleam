@@ -2,10 +2,9 @@
 
 import gleam/function.{identity}
 import gleam/set.{type Set}
-import gleam/dict.{type Dict}
-import gleam/dynamic.{type Decoder, type Dynamic}
+import gleam/dynamic.{type Dynamic}
 import gleam/erlang/process.{type Subject}
-import gleam/otp/actor.{Spec}
+import gleam/otp/actor.{type StartError, Spec}
 import gleam/result
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -14,14 +13,19 @@ import lustre/element.{type Element}
 
 ///
 /// 
+pub type Runtime(model, msg) =
+  Subject(Message(model, msg))
+
+///
+/// 
 pub opaque type State(model, msg) {
   State(
-    self: Subject(Message(model, msg)),
+    self: Runtime(model, msg),
     model: model,
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
     renderers: Set(fn(Element(msg)) -> Nil),
-    on_client_event: Dict(String, Decoder(msg)),
+    on_client_event: fn(String, Dynamic) -> Result(msg, Nil),
   )
 }
 
@@ -45,8 +49,9 @@ pub fn start(
   init: #(model, Effect(msg)),
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
-  on_client_event: Dict(String, Decoder(msg)),
-) -> Subject(Message(model, msg)) {
+  on_client_event: fn(String, Dynamic) -> Result(msg, Nil),
+) -> Result(Runtime(model, msg), StartError) {
+  let timeout = 1000
   let init = fn() {
     let self = process.new_subject()
     let state = State(self, init.0, update, view, set.new(), on_client_event)
@@ -55,74 +60,67 @@ pub fn start(
     actor.Ready(state, selector)
   }
 
-  let assert Ok(subject) =
-    actor.start_spec(
-      Spec(init, 1000, fn(message, state) {
-        case message {
-          GotClientMsg(msg) -> {
-            let #(model, effects) = state.update(state.model, msg)
-            let html = state.view(model)
+  actor.start_spec({
+    use message, state <- Spec(init, timeout)
 
-            set.fold(state.renderers, Nil, fn(_, renderer) { renderer(html) })
-            effect.perform(effects, dispatch(_, state.self))
-            actor.continue(State(..state, model: model))
-          }
+    case message {
+      GotClientMsg(msg) -> {
+        let #(model, effects) = state.update(state.model, msg)
+        let html = state.view(model)
 
-          GotRenderer(renderer) -> {
-            renderer(state.view(state.model))
-            actor.continue(
-              State(..state, renderers: set.insert(state.renderers, renderer)),
-            )
-          }
+        set.fold(state.renderers, Nil, fn(_, renderer) { renderer(html) })
+        effect.perform(effects, dispatch(_, state.self))
+        actor.continue(State(..state, model: model))
+      }
 
-          GotClientEvent(name, event) -> {
-            case dict.get(state.on_client_event, name) {
-              Ok(decoder) ->
-                decoder(event)
-                |> result.map(GotClientMsg)
-                |> result.map(actor.send(state.self, _))
-                |> result.unwrap(Nil)
-              Error(_) -> Nil
-            }
+      GotRenderer(renderer) -> {
+        renderer(state.view(state.model))
+        actor.continue(
+          State(..state, renderers: set.insert(state.renderers, renderer)),
+        )
+      }
 
-            actor.continue(state)
-          }
+      GotClientEvent(name, event) -> {
+        state.on_client_event(name, event)
+        |> result.map(GotClientMsg)
+        |> result.map(actor.send(state.self, _))
+        |> result.unwrap(Nil)
 
-          GetModel(reply) -> {
-            actor.send(reply, state.model)
-            actor.continue(state)
-          }
+        actor.continue(state)
+      }
 
-          RemoveRenderer(renderer) -> {
-            actor.continue(
-              State(..state, renderers: set.delete(state.renderers, renderer)),
-            )
-          }
+      GetModel(reply) -> {
+        actor.send(reply, state.model)
+        actor.continue(state)
+      }
 
-          Shutdown -> actor.Stop(process.Normal)
-        }
-      }),
-    )
+      RemoveRenderer(renderer) -> {
+        actor.continue(
+          State(..state, renderers: set.delete(state.renderers, renderer)),
+        )
+      }
 
-  subject
+      Shutdown -> actor.Stop(process.Normal)
+    }
+  })
 }
 
 ///
 /// 
-pub fn dispatch(msg: msg, to runtime: Subject(Message(model, msg))) -> Nil {
+pub fn dispatch(msg: msg, to runtime: Runtime(model, msg)) -> Nil {
   actor.send(runtime, GotClientMsg(msg))
 }
 
 ///
 /// 
-pub fn shutdown(runtime: Subject(Message(model, msg))) -> Nil {
+pub fn shutdown(runtime: Runtime(model, msg)) -> Nil {
   actor.send(runtime, Shutdown)
 }
 
-///
+/// 
 /// 
 pub fn handle_client_event(
-  runtime: Subject(Message(model, msg)),
+  runtime: Runtime(model, msg),
   tag: String,
   event: Dynamic,
 ) -> Nil {
@@ -132,7 +130,7 @@ pub fn handle_client_event(
 ///
 /// 
 pub fn add_renderer(
-  runtime: Subject(Message(model, msg)),
+  runtime: Runtime(model, msg),
   renderer: fn(Element(msg)) -> Nil,
 ) -> Nil {
   actor.send(runtime, GotRenderer(renderer))
@@ -141,7 +139,7 @@ pub fn add_renderer(
 ///
 /// 
 pub fn remove_renderer(
-  runtime: Subject(Message(model, msg)),
+  runtime: Runtime(model, msg),
   renderer: fn(Element(msg)) -> Nil,
 ) -> Nil {
   actor.send(runtime, RemoveRenderer(renderer))
