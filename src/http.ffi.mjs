@@ -47,9 +47,9 @@ const server = Http.createServer((req, res) => {
           res.statusCode = 200;
           res.end(src);
         })
-        .catch((err) => {
+        .catch((_err) => {
           res.statusCode = 404;
-          res.end(err);
+          res.end();
         });
 
       break;
@@ -62,9 +62,9 @@ const server = Http.createServer((req, res) => {
           res.statusCode = 200;
           res.end(src);
         })
-        .catch((err) => {
+        .catch((_err) => {
           res.statusCode = 404;
-          res.end(err);
+          res.end();
         });
 
       break;
@@ -77,9 +77,9 @@ const server = Http.createServer((req, res) => {
           res.statusCode = 200;
           res.end(src);
         })
-        .catch((err) => {
+        .catch((_err) => {
           res.statusCode = 404;
-          res.end(err);
+          res.end();
         });
     }
   }
