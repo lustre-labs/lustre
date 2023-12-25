@@ -130,9 +130,10 @@ pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
 
 ///
 /// 
-pub fn encode(attribute: Attribute(msg)) -> Result(Json, Nil) {
+pub fn encode(attribute: Attribute(msg), key: String) -> Result(Json, Nil) {
   case attribute {
     Attribute("", _, _) -> Error(Nil)
+    Attribute(_, _, as_property: True) -> Error(Nil)
     Attribute(name, value, as_property: False) -> {
       case dynamic.classify(value) {
         "String" ->
@@ -173,6 +174,30 @@ pub fn encode(attribute: Attribute(msg)) -> Result(Json, Nil) {
 
         _ -> Error(Nil)
       }
+    }
+    Event(name, _) -> {
+      let name = string.drop_left(name, 2)
+
+      Ok(
+        json.object([
+          #("$", json.string("Attribute")),
+          #("0", json.string("data-lustre-on-" <> name)),
+          #("1", json.string(key <> "-" <> name)),
+        ]),
+      )
+    }
+  }
+}
+
+pub fn handler(
+  attr: Attribute(msg),
+  key: String,
+) -> Result(#(String, fn(Dynamic) -> Result(msg, Nil)), Nil) {
+  case attr {
+    Event(name, handler) -> {
+      let name = string.drop_left(name, 2)
+
+      Ok(#(key <> "-" <> name, handler))
     }
     _ -> Error(Nil)
   }
@@ -221,8 +246,8 @@ pub fn type_(name: String) -> Attribute(msg) {
 }
 
 ///
-pub fn value(val: Dynamic) -> Attribute(msg) {
-  property("value", val)
+pub fn value(val: any) -> Attribute(msg) {
+  property("value", dynamic.from(val))
 }
 
 ///

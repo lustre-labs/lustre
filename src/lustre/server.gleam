@@ -23,25 +23,16 @@ pub fn route(path: String) -> Attribute(msg) {
 ///
 /// 
 pub fn data(data: Json) -> Attribute(msg) {
-  attribute("data-server-data", json.to_string(data))
-}
-
-// EVENTS ----------------------------------------------------------------------
-
-///
-/// 
-pub fn on(event: String, tag: String) -> Attribute(msg) {
-  attribute("data-server-" <> event, tag)
+  data
+  |> json.to_string
+  |> attribute("data-lustre-data", _)
 }
 
 ///
 /// 
-pub fn on_click(tag: String) -> Attribute(msg) {
-  attribute("data-server-click", tag)
-}
-
-///
-/// 
-pub fn on_input(tag: String) -> Attribute(msg) {
-  attribute("data-server-input", tag)
+pub fn include(properties: List(String)) -> Attribute(msg) {
+  properties
+  |> json.array(json.string)
+  |> json.to_string
+  |> attribute("data-lustre-include", _)
 }

@@ -3,9 +3,12 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/dict.{type Dict}
+import gleam/dynamic.{type Dynamic}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/string
+import gleam/int
 import gleam/string_builder.{type StringBuilder}
 import lustre/attribute.{type Attribute, attribute}
 
@@ -298,6 +301,10 @@ fn children_to_string_builder(
 }
 
 pub fn encode(element: Element(msg)) -> Json {
+  do_encode(element, "", 0)
+}
+
+pub fn do_encode(element: Element(msg), key: String, pos: Int) -> Json {
   case element {
     Text(content) ->
       json.object([
@@ -306,9 +313,14 @@ pub fn encode(element: Element(msg)) -> Json {
       ])
 
     Element(namespace, tag, attrs, children, self_closing, void) -> {
+      let key = key <> int.to_string(pos)
       let attrs =
         attrs
-        |> list.filter_map(attribute.encode(_))
+        |> list.filter_map(attribute.encode(_, key))
+        |> json.preprocessed_array
+      let children =
+        children
+        |> list.index_map(fn(child, pos) { do_encode(child, key, pos) })
         |> json.preprocessed_array
 
       json.object([
@@ -316,10 +328,39 @@ pub fn encode(element: Element(msg)) -> Json {
         #("namespace", json.string(namespace)),
         #("tag", json.string(tag)),
         #("attrs", attrs),
-        #("children", json.array(children, encode)),
+        #("children", children),
         #("self_closing", json.bool(self_closing)),
         #("void", json.bool(void)),
       ])
+    }
+  }
+}
+
+pub fn handlers(
+  element: Element(msg),
+) -> Dict(String, fn(Dynamic) -> Result(msg, Nil)) {
+  do_handlers(element, dict.new(), "", 0)
+}
+
+fn do_handlers(
+  element: Element(msg),
+  handlers: Dict(String, fn(Dynamic) -> Result(msg, Nil)),
+  key: String,
+  pos: Int,
+) -> Dict(String, fn(Dynamic) -> Result(msg, Nil)) {
+  case element {
+    Text(_) -> handlers
+    Element(_, _, attrs, children, _, _) -> {
+      let key = key <> int.to_string(pos)
+      let handlers =
+        attrs
+        |> list.filter_map(attribute.handler(_, key))
+        |> dict.from_list
+        |> dict.merge(handlers)
+
+      use handlers, child, pos <- list.index_fold(children, handlers)
+
+      do_handlers(child, handlers, key, pos)
     }
   }
 }

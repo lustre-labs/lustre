@@ -18,7 +18,6 @@ export class LustreServerComponent extends HTMLElement {
 
   connectedCallback() {
     this.#root = document.createElement("div");
-
     this.appendChild(this.#root);
   }
 
@@ -29,8 +28,11 @@ export class LustreServerComponent extends HTMLElement {
           this.#ws?.close();
           this.#ws = null;
         } else if (prev !== next) {
+          const id = this.getAttribute("id");
+          const route = next + (id ? `?id=${id}` : "");
+
           this.#ws?.close();
-          this.#ws = new WebSocket(`ws://${window.location.host}${next}`);
+          this.#ws = new WebSocket(`ws://${window.location.host}${route}`);
           this.#ws.addEventListener("message", ({ data }) => {
             const msg = JSON.parse(data);
 
@@ -48,13 +50,7 @@ export class LustreServerComponent extends HTMLElement {
 
   patch(vdom) {
     const dispatch = ({ tag, data }) =>
-      this.#ws?.send(
-        JSON.stringify({
-          $: "Event",
-          tag,
-          event: { data },
-        })
-      );
+      this.#ws?.send(JSON.stringify({ $: "Event", tag, event: data }));
 
     this.#root = morph(this.#root, vdom, dispatch);
   }

@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/function.{identity}
+import gleam/dict.{type Dict}
 import gleam/set.{type Set}
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang/process.{type Subject}
@@ -11,35 +12,37 @@ import lustre/element.{type Element}
 
 // TYPES -----------------------------------------------------------------------
 
-///
 /// 
-pub type Runtime(model, msg) =
-  Subject(Message(model, msg))
+/// 
+pub type ComponentRuntime(msg) =
+  Subject(Message(msg))
 
 ///
 /// 
-pub opaque type State(model, msg) {
+type State(model, msg) {
   State(
-    self: Runtime(model, msg),
+    self: ComponentRuntime(msg),
     model: model,
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
+    html: Element(msg),
     renderers: Set(fn(Element(msg)) -> Nil),
-    on_client_event: fn(String, Dynamic) -> Result(msg, Nil),
+    handlers: Dict(String, fn(Dynamic) -> Result(msg, Nil)),
   )
 }
 
-///
 /// 
-pub opaque type Message(model, msg) {
+/// 
+pub opaque type Message(msg) {
   // Events
   GotClientEvent(String, Dynamic)
   GotClientMsg(msg)
   GotRenderer(fn(Element(msg)) -> Nil)
 
   // Requests
-  GetModel(reply: Subject(model))
   RemoveRenderer(fn(Element(msg)) -> Nil)
+
+  // Internals
   Shutdown
 }
 
@@ -49,12 +52,13 @@ pub fn start(
   init: #(model, Effect(msg)),
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
-  on_client_event: fn(String, Dynamic) -> Result(msg, Nil),
-) -> Result(Runtime(model, msg), StartError) {
+) -> Result(ComponentRuntime(msg), StartError) {
   let timeout = 1000
   let init = fn() {
     let self = process.new_subject()
-    let state = State(self, init.0, update, view, set.new(), on_client_event)
+    let html = view(init.0)
+    let handlers = element.handlers(html)
+    let state = State(self, init.0, update, view, html, set.new(), handlers)
     let selector = process.selecting(process.new_selector(), self, identity)
 
     actor.Ready(state, selector)
@@ -62,65 +66,73 @@ pub fn start(
 
   actor.start_spec({
     use message, state <- Spec(init, timeout)
-
     case message {
+      // Events ----------------------------------------------------------------
       GotClientMsg(msg) -> {
         let #(model, effects) = state.update(state.model, msg)
         let html = state.view(model)
+        let handlers = element.handlers(html)
+        let next = State(..state, model: model, html: html, handlers: handlers)
 
         set.fold(state.renderers, Nil, fn(_, renderer) { renderer(html) })
         effect.perform(effects, dispatch(_, state.self))
-        actor.continue(State(..state, model: model))
+        actor.continue(next)
       }
 
       GotRenderer(renderer) -> {
-        renderer(state.view(state.model))
-        actor.continue(
-          State(..state, renderers: set.insert(state.renderers, renderer)),
-        )
+        let renderers = set.insert(state.renderers, renderer)
+        let next = State(..state, renderers: renderers)
+
+        renderer(state.html)
+        actor.continue(next)
       }
 
       GotClientEvent(name, event) -> {
-        state.on_client_event(name, event)
-        |> result.map(GotClientMsg)
-        |> result.map(actor.send(state.self, _))
-        |> result.unwrap(Nil)
+        case dict.get(state.handlers, name) {
+          Error(_) -> actor.continue(state)
+          Ok(handler) -> {
+            handler(event)
+            |> result.map(GotClientMsg)
+            |> result.map(actor.send(state.self, _))
+            |> result.unwrap(Nil)
 
-        actor.continue(state)
+            actor.continue(state)
+          }
+        }
       }
 
-      GetModel(reply) -> {
-        actor.send(reply, state.model)
-        actor.continue(state)
-      }
-
+      // Requests --------------------------------------------------------------
       RemoveRenderer(renderer) -> {
         actor.continue(
           State(..state, renderers: set.delete(state.renderers, renderer)),
         )
       }
 
-      Shutdown -> actor.Stop(process.Normal)
+      // Internals -------------------------------------------------------------
+      Shutdown -> actor.Stop(process.Killed)
     }
   })
 }
 
-///
+/// Dispatch a message for the server component to handle. This will always cause
+/// the component to be re-rendered and any listeners to be notified.
 /// 
-pub fn dispatch(msg: msg, to runtime: Runtime(model, msg)) -> Nil {
+pub fn dispatch(msg: msg, to runtime: ComponentRuntime(msg)) -> Nil {
   actor.send(runtime, GotClientMsg(msg))
 }
 
-///
+/// Instruct the component to shutdown. The 
+/// [`ExitReason`](https://hexdocs.pm/gleam_erlang/gleam/erlang/process.html#ExitReason)
+/// will be `Killed`.
 /// 
-pub fn shutdown(runtime: Runtime(model, msg)) -> Nil {
+pub fn shutdown(runtime: ComponentRuntime(msg)) -> Nil {
   actor.send(runtime, Shutdown)
 }
 
-/// 
+/// Pass a client event to the server component to handle. 
 /// 
 pub fn handle_client_event(
-  runtime: Runtime(model, msg),
+  runtime: ComponentRuntime(msg),
   tag: String,
   event: Dynamic,
 ) -> Nil {
@@ -130,7 +142,7 @@ pub fn handle_client_event(
 ///
 /// 
 pub fn add_renderer(
-  runtime: Runtime(model, msg),
+  runtime: ComponentRuntime(msg),
   renderer: fn(Element(msg)) -> Nil,
 ) -> Nil {
   actor.send(runtime, GotRenderer(renderer))
@@ -139,7 +151,7 @@ pub fn add_renderer(
 ///
 /// 
 pub fn remove_renderer(
-  runtime: Runtime(model, msg),
+  runtime: ComponentRuntime(msg),
   renderer: fn(Element(msg)) -> Nil,
 ) -> Nil {
   actor.send(runtime, RemoveRenderer(renderer))

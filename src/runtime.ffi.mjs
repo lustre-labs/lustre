@@ -227,13 +227,17 @@ function morphElement(prev, curr, dispatch, parent) {
 
 function morphAttr(el, name, value, dispatch) {
   switch (typeof value) {
-    case name.startsWith("data-server-") && "string": {
-      const event = name.slice(12).toLowerCase();
-      const handler = (e) => {
-        const data = e.target.dataset.data || "{}";
+    case name.startsWith("data-lustre-on-") && "string": {
+      if (!value) {
+        el.removeAttribute(name);
+        el.removeEventListener(event, el.$lustre[`${name}Handler`]);
 
-        dispatch({ tag: value, data: JSON.parse(data) });
-      };
+        break;
+      }
+      if (el.hasAttribute(name)) break;
+
+      const event = name.slice(15).toLowerCase();
+      const handler = (e) => dispatch(serverEventHandler(e));
 
       if (el.$lustre[`${name}Handler`]) {
         el.removeEventListener(event, el.$lustre[`${name}Handler`]);
@@ -244,6 +248,7 @@ function morphAttr(el, name, value, dispatch) {
       el.$lustre[name] = value;
       el.$lustre[`${name}Handler`] = handler;
       el.$lustre.__registered_events.add(name);
+      el.setAttribute(name, value);
 
       break;
     }
@@ -301,4 +306,39 @@ function morphText(prev, curr) {
   if (prevValue !== currValue) prev.nodeValue = currValue;
 
   return prev;
+}
+
+// UTILS -----------------------------------------------------------------------
+
+function serverEventHandler(event) {
+  const el = event.target;
+  const tag = el.getAttribute(`data-lustre-on-${event.type}`);
+  const data = JSON.parse(el.getAttribute("data-lustre-data") || "{}");
+  const include = JSON.parse(el.getAttribute("data-lustre-include") || "[]");
+
+  switch (event.type) {
+    case "input":
+    case "change":
+      include.push("target.value");
+      break;
+  }
+
+  return {
+    tag,
+    data: include.reduce((data, property) => {
+      const path = property.split(".");
+
+      for (let i = 0, o = data, e = event; i < path.length; i++) {
+        if (i === path.length - 1) {
+          o[path[i]] = e[path[i]];
+        } else {
+          o[path[i]] ??= {};
+          e = e[path[i]];
+          o = o[path[i]];
+        }
+      }
+
+      return data;
+    }, data),
+  };
 }

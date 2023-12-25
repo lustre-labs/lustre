@@ -293,12 +293,16 @@ function morphElement(prev, curr, dispatch, parent) {
 }
 function morphAttr(el, name, value, dispatch) {
   switch (typeof value) {
-    case (name.startsWith("data-server-") && "string"): {
-      const event = name.slice(12).toLowerCase();
-      const handler = (e) => {
-        const data = e.target.dataset.data || "{}";
-        dispatch({ tag: value, data: JSON.parse(data) });
-      };
+    case (name.startsWith("data-lustre-on-") && "string"): {
+      if (!value) {
+        el.removeAttribute(name);
+        el.removeEventListener(event, el.$lustre[`${name}Handler`]);
+        break;
+      }
+      if (el.hasAttribute(name))
+        break;
+      const event = name.slice(15).toLowerCase();
+      const handler = (e) => dispatch(serverEventHandler(e));
       if (el.$lustre[`${name}Handler`]) {
         el.removeEventListener(event, el.$lustre[`${name}Handler`]);
       }
@@ -306,6 +310,7 @@ function morphAttr(el, name, value, dispatch) {
       el.$lustre[name] = value;
       el.$lustre[`${name}Handler`] = handler;
       el.$lustre.__registered_events.add(name);
+      el.setAttribute(name, value);
       break;
     }
     case "string":
@@ -351,6 +356,34 @@ function morphText(prev, curr) {
     prev.nodeValue = currValue;
   return prev;
 }
+function serverEventHandler(event) {
+  const el = event.target;
+  const tag = el.getAttribute(`data-lustre-on-${event.type}`);
+  const data = JSON.parse(el.getAttribute("data-lustre-data") || "{}");
+  const include = JSON.parse(el.getAttribute("data-lustre-include") || "[]");
+  switch (event.type) {
+    case "input":
+    case "change":
+      include.push("target.value");
+      break;
+  }
+  return {
+    tag,
+    data: include.reduce((data2, property) => {
+      const path = property.split(".");
+      for (let i = 0, o = data2, e = event; i < path.length; i++) {
+        if (i === path.length - 1) {
+          o[path[i]] = e[path[i]];
+        } else {
+          o[path[i]] ??= {};
+          e = e[path[i]];
+          o = o[path[i]];
+        }
+      }
+      return data2;
+    }, data)
+  };
+}
 
 // src/lustre_server_component.mjs
 var LustreServerComponent = class extends HTMLElement {
@@ -373,8 +406,10 @@ var LustreServerComponent = class extends HTMLElement {
           this.#ws?.close();
           this.#ws = null;
         } else if (prev !== next) {
+          const id = this.getAttribute("id");
+          const route = next + (id ? `?id=${id}` : "");
           this.#ws?.close();
-          this.#ws = new WebSocket(`ws://${window.location.host}${next}`);
+          this.#ws = new WebSocket(`ws://${window.location.host}${route}`);
           this.#ws.addEventListener("message", ({ data }) => {
             const msg = JSON.parse(data);
             switch (msg.$) {
@@ -389,13 +424,7 @@ var LustreServerComponent = class extends HTMLElement {
     }
   }
   patch(vdom) {
-    const dispatch = ({ tag, data }) => this.#ws?.send(
-      JSON.stringify({
-        $: "Event",
-        tag,
-        event: { data }
-      })
-    );
+    const dispatch = ({ tag, data }) => this.#ws?.send(JSON.stringify({ $: "Event", tag, event: data }));
     this.#root = morph(this.#root, vdom, dispatch);
   }
   disconnectedCallback() {
