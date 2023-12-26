@@ -92,7 +92,7 @@ pub fn to_string_parts(attr: Attribute(msg)) -> Result(#(String, String), Nil) {
         _ -> Ok(#(name, string.inspect(value)))
       }
     }
-    Event(on, _) -> Ok(#("data-lustre-on", on))
+    _ -> Error(Nil)
   }
 }
 
@@ -122,9 +122,7 @@ pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
           |> string_builder.from_strings
       }
     }
-    Event(on, _) ->
-      ["data-lustre-on:", on]
-      |> string_builder.from_strings
+    _ -> string_builder.new()
   }
 }
 
