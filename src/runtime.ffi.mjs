@@ -6,12 +6,12 @@ export function morph(prev, curr, dispatch, parent) {
   // element.
   if (curr?.tag && prev?.nodeType === 1) {
     const nodeName = curr.tag.toUpperCase();
-    const ns = curr.namespace || null;
+    const ns = curr.namespace || "http://www.w3.org/1999/xhtml";
 
     // If the current node and the existing DOM node have the same tag and
     // namespace, we can morph them together: keeping the DOM node intact and just
     // updating its attributes and children.
-    if (prev.nodeName === nodeName && prev.namespaceURI === ns) {
+    if (prev.nodeName === nodeName && prev.namespaceURI == ns) {
       return morphElement(prev, curr, dispatch, parent);
     }
     // Otherwise, we need to replace the DOM node with a new one. The `createElement`
@@ -58,49 +58,43 @@ function createElement(prev, curr, dispatch, parent = null) {
     __registered_events: new Set(),
   };
 
-  let attr = curr.attrs;
   let dangerousUnescapedHtml = "";
 
-  while (attr.head) {
-    if (attr.head[0] === "class") {
-      morphAttr(el, attr.head[0], `${el.className} ${attr.head[1]}`);
-    } else if (attr.head[0] === "style") {
-      morphAttr(el, attr.head[0], `${el.style.cssText} ${attr.head[1]}`);
-    } else if (attr.head[0] === "dangerous-unescaped-html") {
-      dangerousUnescapedHtml += attr.head[1];
-    } else if (attr.head[0] !== "") {
-      morphAttr(el, attr.head[0], attr.head[1], dispatch);
+  for (const attr of curr.attrs) {
+    if (attr[0] === "class") {
+      morphAttr(el, attr[0], `${el.className} ${attr[1]}`);
+    } else if (attr[0] === "style") {
+      morphAttr(el, attr[0], `${el.style.cssText} ${attr[1]}`);
+    } else if (attr[0] === "dangerous-unescaped-html") {
+      dangerousUnescapedHtml += attr[1];
+    } else if (attr[0] !== "") {
+      morphAttr(el, attr[0], attr[1], dispatch);
     }
-
-    attr = attr.tail;
   }
 
   if (customElements.get(curr.tag)) {
     el._slot = curr.children;
   } else if (curr.tag === "slot") {
-    let child = new Empty();
+    let children = new Empty();
     let parentWithSlot = parent;
 
     while (parentWithSlot) {
       if (parentWithSlot._slot) {
-        child = parentWithSlot._slot;
+        children = parentWithSlot._slot;
         break;
       } else {
         parentWithSlot = parentWithSlot.parentNode;
       }
     }
 
-    while (child.head) {
-      el.appendChild(morph(null, child.head, dispatch, el));
-      child = child.tail;
+    for (const child of children) {
+      el.appendChild(morph(null, child, dispatch, el));
     }
   } else if (dangerousUnescapedHtml) {
     el.innerHTML = dangerousUnescapedHtml;
   } else {
-    let child = curr.children;
-    while (child.head) {
-      el.appendChild(morph(null, child.head, dispatch, el));
-      child = child.tail;
+    for (const child of curr.children) {
+      el.appendChild(morph(null, child, dispatch, el));
     }
   }
 
@@ -110,7 +104,7 @@ function createElement(prev, curr, dispatch, parent = null) {
 }
 
 function morphElement(prev, curr, dispatch, parent) {
-  const prevAttrs = Object.fromEntries(prev.attributes);
+  const prevAttrs = prev.attributes;
   const currAttrs = new Map();
 
   // This can happen if we're morphing an existing DOM element that *wasn't*
@@ -119,31 +113,22 @@ function morphElement(prev, curr, dispatch, parent) {
 
   // We're going to convert the Gleam List of attributes into a JavaScript Map
   // so its easier to lookup specific attributes.
-  let currAttr = curr.attrs;
-  while (currAttr.head) {
-    if (currAttr.head[0] === "class" && currAttrs.has("class")) {
-      currAttrs.set(
-        currAttr.head[0],
-        `${currAttrs.get("class")} ${currAttr.head[1]}`
-      );
-    } else if (currAttr.head[0] === "style" && currAttrs.has("style")) {
-      currAttrs.set(
-        currAttr.head[0],
-        `${currAttrs.get("style")} ${currAttr.head[1]}`
-      );
+  for (const currAttr of curr.attrs) {
+    if (currAttr[0] === "class" && currAttrs.has("class")) {
+      currAttrs.set(currAttr[0], `${currAttrs.get("class")} ${currAttr[1]}`);
+    } else if (currAttr[0] === "style" && currAttrs.has("style")) {
+      currAttrs.set(currAttr[0], `${currAttrs.get("style")} ${currAttr[1]}`);
     } else if (
-      currAttr.head[0] === "dangerous-unescaped-html" &&
+      currAttr[0] === "dangerous-unescaped-html" &&
       currAttrs.has("dangerous-unescaped-html")
     ) {
       currAttrs.set(
-        currAttr.head[0],
-        `${currAttrs.get("dangerous-unescaped-html")} ${currAttr.head[1]}`
+        currAttr[0],
+        `${currAttrs.get("dangerous-unescaped-html")} ${currAttr[1]}`
       );
-    } else if (currAttr.head[0] !== "") {
-      currAttrs.set(currAttr.head[0], currAttr.head[1]);
+    } else if (currAttr[0] !== "") {
+      currAttrs.set(currAttr[0], currAttr[1]);
     }
-
-    currAttr = currAttr.tail;
   }
 
   // TODO: Event listeners aren't currently removed when they are removed from
@@ -194,7 +179,9 @@ function morphElement(prev, curr, dispatch, parent) {
     }
 
     while (prevChild) {
-      if (currChild.head) {
+      if (Array.isArray(currChild) && currChild.length) {
+        morph(prevChild, currChild.shift(), dispatch, prev);
+      } else if (currChild.head) {
         morph(prevChild, currChild.head, dispatch, prev);
         currChild = currChild.tail;
       }
@@ -202,9 +189,8 @@ function morphElement(prev, curr, dispatch, parent) {
       prevChild = prevChild.nextSibling;
     }
 
-    while (currChild.head) {
-      prev.appendChild(morph(null, currChild.head, dispatch, prev));
-      currChild = currChild.tail;
+    for (const child of currChild) {
+      prev.appendChild(morph(null, child, dispatch, prev));
     }
   } else if (currAttrs.has("dangerous-unescaped-html")) {
     prev.innerHTML = currAttrs.get("dangerous-unescaped-html");
@@ -213,7 +199,11 @@ function morphElement(prev, curr, dispatch, parent) {
     let currChild = curr.children;
 
     while (prevChild) {
-      if (currChild.head) {
+      if (Array.isArray(currChild) && currChild.length) {
+        const next = prevChild.nextSibling;
+        morph(prevChild, currChild.shift(), dispatch, prev);
+        prevChild = next;
+      } else if (currChild.head) {
         const next = prevChild.nextSibling;
         morph(prevChild, currChild.head, dispatch, prev);
         currChild = currChild.tail;
@@ -225,9 +215,8 @@ function morphElement(prev, curr, dispatch, parent) {
       }
     }
 
-    while (currChild.head) {
-      prev.appendChild(morph(null, currChild.head, dispatch, prev));
-      currChild = currChild.tail;
+    for (const child of currChild) {
+      prev.appendChild(morph(null, child, dispatch, prev));
     }
   }
 
@@ -281,7 +270,7 @@ function createText(prev, curr) {
 
 function morphText(prev, curr) {
   const prevValue = prev.nodeValue;
-  const currValue = curr.text;
+  const currValue = curr.content;
 
   if (!currValue) {
     prev?.remove();
