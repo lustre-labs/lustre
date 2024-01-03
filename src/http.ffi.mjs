@@ -85,6 +85,6 @@ const server = Http.createServer((req, res) => {
   }
 });
 
-export const serve = (port) => {
-  server.listen(port, "localhost");
+export const serve = (host, port, on_start) => {
+  server.listen(port, host, on_start);
 };

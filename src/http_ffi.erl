@@ -1,7 +1,7 @@
 -module(http_ffi).
--export([serve/1]).
+-export([serve/3]).
 
-serve(Port) ->
+serve(Host, Port, OnStart) ->
     {ok, Pattern} = re:compile("name *= *\"(?<Name>.+)\""),
     {ok, Toml} = file:read_file("gleam.toml"),
     {match, [Name]} = re:run(Toml, Pattern, [{capture, all_names, binary}]),
@@ -49,12 +49,14 @@ serve(Port) ->
             {document_root, AbsPath},
             {server_root, AbsPath},
             {directory_index, ["index.html"]},
-            {server_name, "localhost"},
+            {server_name, binary_to_list(Host)},
             {port, Port},
             {default_type, "text/html"},
             {mime_types, mime_types()},
             {modules, [mod_alias, mod_dir, mod_get]}
         ]),
+
+    OnStart(),
 
     receive
         {From, shutdown} ->
