@@ -6,14 +6,20 @@ import {
   ElementNotFound,
   NotABrowser,
 } from "./lustre.mjs";
+import { handlers } from "./lustre/element.mjs";
 import { morph } from "./runtime.ffi.mjs";
 import { Ok, Error, isEqual } from "./gleam.mjs";
+import {
+  new$ as dict_new,
+  get as dict_get,
+  has_key as dict_has_key,
+} from "../gleam_stdlib/gleam/dict.mjs";
 
 // RUNTIME ---------------------------------------------------------------------
 
 ///
 ///
-export class App {
+export class ClientApp {
   #root = null;
   #state = null;
   #queue = [];
@@ -115,13 +121,138 @@ export class App {
     // it is reasonable, we can process those updates too before proceeding to
     // the next render.
     if (this.#queue.length) {
-      times >= 5 ? console.warn(tooManyUpdates) : this.#flush(++times);
+      if (times < 5) {
+        this.#flush(++times);
+      } else {
+        console.warn(tooManyUpdates);
+        window.requestAnimationFrame(() => this.#tick());
+      }
     }
   }
 }
 
+export class ServerApp {
+  #queue = [];
+  #effects = [];
+  #didUpdate = false;
+
+  #model = null;
+  #html = null;
+
+  #init = null;
+  #update = null;
+  #view = null;
+
+  #renderers = new Set();
+  #handlers = dict_new();
+
+  constructor(init, update, render) {
+    this.#init = init;
+    this.#update = update;
+    this.#view = render;
+  }
+
+  start(flags) {
+    const [next, effects] = this.#init(flags);
+
+    this.#model = next;
+    this.#effects = effects.all.toArray();
+    this.#didUpdate = true;
+
+    window.queueMicrotask(() => this.#tick());
+
+    return new Ok((msg) => this.dispatch(msg));
+  }
+
+  dispatch(msg) {
+    this.#queue.push(msg);
+    this.#tick();
+  }
+
+  handle_client_event(tag, event) {
+    if (!dict_has_key(this.#handlers, tag)) return;
+
+    const handler = dict_get(this.#handlers, tag);
+    const msg = handler[0](event);
+
+    if (msg.isOk()) {
+      this.dispatch(msg[0]);
+    }
+  }
+
+  add_renderer(renderer) {
+    this.#renderers.add(renderer);
+    renderer(this.#html);
+  }
+
+  remove_renderer(renderer) {
+    this.#renderers.delete(renderer);
+  }
+
+  destroy() {
+    this.#model = null;
+    this.#queue = [];
+    this.#effects = [];
+    this.#didUpdate = false;
+    this.#update = () => {};
+    this.#view = () => {};
+    this.#renderers = new Set();
+    this.#handlers = dict_new();
+  }
+
+  #tick() {
+    this.#flush();
+
+    if (this.#didUpdate) {
+      this.#html = this.#view(this.#model);
+      this.#handlers = handlers(this.#html);
+
+      for (const renderer of this.#renderers) {
+        renderer(this.#html);
+      }
+
+      this.#didUpdate = false;
+    }
+  }
+
+  #flush(times = 0) {
+    if (this.#queue.length) {
+      while (this.#queue.length) {
+        const [next, effects] = this.#update(this.#model, this.#queue.shift());
+        // If the user returned their model unchanged and not reconstructed then
+        // we don't need to trigger a re-render.
+        this.#didUpdate ||= this.#model !== next;
+        this.#model = next;
+        this.#effects = this.#effects.concat(effects.all.toArray());
+      }
+    }
+
+    // Each update can produce effects which must now be executed.
+    while (this.#effects.length)
+      this.#effects.shift()(
+        (msg) => this.dispatch(msg),
+        () => {}
+      );
+
+    // Synchronous effects will immediately queue a message to be processed. If
+    // it is reasonable, we can process those updates too before proceeding to
+    // the next render.
+    if (this.#queue.length) {
+      if (times < 5) {
+        this.#flush(++times);
+      } else {
+        console.warn(tooManyUpdates);
+        window.requestAnimationFrame(() => this.#tick());
+      }
+    }
+  }
+}
+
+export const App = is_browser() ? ClientApp : ServerApp;
+
 export const setup = (init, update, render) => new App(init, update, render);
 export const start = (app, selector, flags) => app.start(selector, flags);
+export const start_server = (app, flags) => app.start(flags);
 export const destroy = (app) => app.destroy();
 
 // HTML EVENTS -----------------------------------------------------------------
