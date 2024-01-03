@@ -14,13 +14,22 @@ pub fn component(attrs: List(Attribute(msg))) -> Element(msg) {
 
 // ATTRIBUTES ------------------------------------------------------------------
 
+/// The `route` attribute should always be included on a [`component`](#component)
+/// to tell the client runtime what path to initiate the WebSocket connection on.
+/// 
 /// 
 /// 
 pub fn route(path: String) -> Attribute(msg) {
   attribute("route", path)
 }
 
-///
+/// Ocassionally you may want to attach custom data to an event sent to the server.
+/// This could be used to include a hash of the current build to detect if the
+/// event was sent from a stale client.
+/// 
+/// ```gleam
+/// 
+/// ```
 /// 
 pub fn data(data: Json) -> Attribute(msg) {
   data
@@ -28,7 +37,35 @@ pub fn data(data: Json) -> Attribute(msg) {
   |> attribute("data-lustre-data", _)
 }
 
-///
+/// Properties of the JavaScript event object are typically not serialisable. 
+/// This means if we want to pass them to the server we need to copy them into
+/// a new object first.
+/// 
+/// This attribute tells Lustre what properties to include. Properties can come
+/// from nested objects by using dot notation. For example, you could include the
+/// `id` of the target `element` by passing `["target.id"]`.
+/// 
+/// ```gleam
+/// import gleam/dynamic
+/// import gleam/result.{try}
+/// import lustre/element.{type Element}
+/// import lustre/element/html
+/// import lustre/event
+/// import lustre/server
+/// 
+/// pub fn custom_button(on_click: fn(String) -> msg) -> Element(msg) {
+///   let handler = fn(event) {
+///     use target <- try(dynamic.field("target", dynamic.dynamic)(event))
+///     use id <- try(dynamic.field("id", dynamic.string)(target))
+/// 
+///     Ok(on_click(id))
+///   }
+/// 
+///   html.button([event.on_click(handler), server.include(["target.id"])], [
+///     element.text("Click me!")
+///   ])
+/// }
+/// ```
 /// 
 pub fn include(properties: List(String)) -> Attribute(msg) {
   properties
