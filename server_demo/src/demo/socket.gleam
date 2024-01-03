@@ -30,7 +30,7 @@ type Model(flags, model, msg) {
 }
 
 fn init(_) {
-  let assert Ok(app) = lustre.start_server(app.new(), 0)
+  let assert Ok(app) = lustre.start(app.new(), 0)
   let self = process.new_subject()
   let model = Model(self, app)
   let selector = process.selecting(process.new_selector(), self, identity)

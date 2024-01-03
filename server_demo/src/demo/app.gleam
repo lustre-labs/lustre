@@ -15,7 +15,7 @@ import lustre/ui
 // MAIN ------------------------------------------------------------------------
 
 pub fn new() -> App(Int, Model, Msg) {
-  lustre.server_component(init, update, view)
+  lustre.component(init, update, view)
 }
 
 // MODEL -----------------------------------------------------------------------

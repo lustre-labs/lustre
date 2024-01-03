@@ -55,11 +55,10 @@ pub fn simple(
   application(init, update, view)
 }
 
-///
+/// Construct a Lustre [`App`](#App) that can perform side effects.
 /// 
-/// 🚨 Creating an application on the Erlang target will set up a server component
-///    that can not respond to browser events. You probably want to use
-///    [`server_component`](#server_component) instead!
+/// 
+/// 
 /// 
 @external(javascript, "./lustre.ffi.mjs", "setup")
 pub fn application(
@@ -67,9 +66,12 @@ pub fn application(
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
 ) -> App(flags, model, msg) {
-  App(init, update, view)
+  component(init, update, view)
 }
 
+@target(javascript)
+///
+/// 
 @external(javascript, "./lustre.ffi.mjs", "setup_component")
 pub fn component(
   _name: String,
@@ -81,14 +83,10 @@ pub fn component(
   Ok(Nil)
 }
 
+@target(erlang)
 ///
 /// 
-/// 🚨 Creating a server_component on the JavaScript target will set up a
-///    normal client application and ignores the `on_client_event` argument. You
-///    probably want to use [`application`](#application) instead!
-/// 
-@external(javascript, "./lustre.ffi.mjs", "setup")
-pub fn server_component(
+pub fn component(
   init: fn(flags) -> #(model, Effect(msg)),
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
@@ -98,6 +96,7 @@ pub fn server_component(
 
 // EFFECTS ---------------------------------------------------------------------
 
+@target(javascript)
 ///
 @external(javascript, "./lustre.ffi.mjs", "start")
 pub fn start(
@@ -110,7 +109,7 @@ pub fn start(
 
 @target(erlang)
 ///
-pub fn start_server(
+pub fn start(
   app: App(flags, model, msg),
   flags: flags,
 ) -> Result(Subject(Message(msg)), Error) {
@@ -119,6 +118,7 @@ pub fn start_server(
   |> result.map_error(ActorError)
 }
 
+@target(javascript)
 ///
 /// 
 @external(javascript, "./lustre.ffi.mjs", "destroy")
