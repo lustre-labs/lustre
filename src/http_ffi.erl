@@ -1,7 +1,7 @@
 -module(http_ffi).
--export([serve/3]).
+-export([serve/4]).
 
-serve(Host, Port, OnStart) ->
+serve(Host, Port, OnStart, OnPortTaken) ->
     {ok, Pattern} = re:compile("name *= *\"(?<Name>.+)\""),
     {ok, Toml} = file:read_file("gleam.toml"),
     {match, [Name]} = re:run(Toml, Pattern, [{capture, all_names, binary}]),
@@ -43,6 +43,15 @@ serve(Host, Port, OnStart) ->
     inets:start(),
     Address = {127, 0, 0, 1},
 
+    ActualPort =
+        case port_available(Port) of
+            true ->
+                Port;
+            false ->
+                OnPortTaken(Port),
+                first_available_port(Port + 1)
+        end,
+
     {ok, Pid} =
         httpd:start_service([
             {bind_address, Address},
@@ -50,18 +59,33 @@ serve(Host, Port, OnStart) ->
             {server_root, AbsPath},
             {directory_index, ["index.html"]},
             {server_name, binary_to_list(Host)},
-            {port, Port},
+            {port, ActualPort},
             {default_type, "text/html"},
             {mime_types, mime_types()},
             {modules, [mod_alias, mod_dir, mod_get]}
         ]),
 
-    OnStart(),
+    OnStart(ActualPort),
 
     receive
         {From, shutdown} ->
             ok = httpd:stop_service(Pid),
             From ! done
+    end.
+
+port_available(Port) ->
+    case gen_tcp:listen(Port, []) of
+        {ok, Sock} ->
+            ok = gen_tcp:close(Sock),
+            true;
+        _ ->
+            false
+    end.
+
+first_available_port(Port) ->
+    case port_available(Port) of
+        true -> Port;
+        false -> first_available_port(Port + 1)
     end.
 
 mime_types() ->
