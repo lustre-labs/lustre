@@ -30,6 +30,9 @@ const html = `<!DOCTYPE html>
 </html>`;
 
 const server = Http.createServer((req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
+
   switch (true) {
     case req.url === "/": {
       res.setHeader("Content-Type", "text/html");
