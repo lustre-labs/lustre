@@ -16,3 +16,4 @@ internal_modules = [
 
 [dependencies]
 gleam_stdlib = "~> 0.34"
+gleam_community_ansi = "~> 1.3"

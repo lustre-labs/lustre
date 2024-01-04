@@ -88,6 +88,17 @@ const server = Http.createServer((req, res) => {
   }
 });
 
-export const serve = (port) => {
-  server.listen(port, "localhost");
+export const serve = (host, port, on_start, on_port_taken) => {
+  let tries = 1;
+  server.on("error", (error) => {
+    if (error.code === "EADDRINUSE") {
+      let is_first_try = tries === 1;
+      if (is_first_try) {
+        on_port_taken(port);
+      }
+      tries++;
+      port++;
+      server.listen(port, host);
+    }
+  }).listen(port, host, () => { on_start(port) });
 };
