@@ -1,5 +1,5 @@
 -module(http_ffi).
--export([serve/4]).
+-export([serve/4, response_default_headers/0]).
 
 serve(Host, Port, OnStart, OnPortTaken) ->
     {ok, Pattern} = re:compile("name *= *\"(?<Name>.+)\""),
@@ -62,6 +62,7 @@ serve(Host, Port, OnStart, OnPortTaken) ->
             {port, ActualPort},
             {default_type, "text/html"},
             {mime_types, mime_types()},
+            {customize, ?MODULE},
             {modules, [mod_alias, mod_dir, mod_get]}
         ]),
 
@@ -99,4 +100,10 @@ mime_types() ->
         {"jpg", "image/jpeg"},
         {"jpeg", "image/jpeg"},
         {"png", "image/png"}
+    ].
+
+response_default_headers() ->
+    [
+        {"cache-control", "no-store, no-cache, must-revalidate, private"},
+        {"pragma", "no-cache"}
     ].
