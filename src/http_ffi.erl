@@ -1,7 +1,7 @@
 -module(http_ffi).
--export([serve/4, response_default_headers/0]).
+-export([serve/3, response_default_headers/0]).
 
-serve(Host, Port, OnStart, OnPortTaken) ->
+serve({options, Host, Port, IncludeStyles}, OnStart, OnPortTaken) ->
     {ok, Pattern} = re:compile("name *= *\"(?<Name>.+)\""),
     {ok, Toml} = file:read_file("gleam.toml"),
     {match, [Name]} = re:run(Toml, Pattern, [{capture, all_names, binary}]),
@@ -13,8 +13,13 @@ serve(Host, Port, OnStart, OnPortTaken) ->
             "<head>\n"
             "  <meta charset=\"UTF-8\">\n"
             "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
-            "  <title>Lustre preview server</title>\n"
-            "\n"
+            "  <title>Lustre preview server</title>\n",
+            case IncludeStyles of
+                true ->
+                     <<"  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/gh/lustre-labs/ui/priv/styles.css\">\n">>;
+                false ->
+                    <<"">>
+            end/binary,
             "  <script type=\"module\">\n"
             "    import { main } from './",
             Name/binary,
