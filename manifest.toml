@@ -2,11 +2,16 @@
 # You typically do not need to edit this file
 
 packages = [
+  { name = "argv", version = "1.0.1", build_tools = ["gleam"], requirements = [], otp_app = "argv", source = "hex", outer_checksum = "A6E9009E50BBE863EB37D963E4315398D41A3D87D0075480FC244125808F964A" },
   { name = "gleam_community_ansi", version = "1.3.0", build_tools = ["gleam"], requirements = ["gleam_community_colour", "gleam_stdlib"], otp_app = "gleam_community_ansi", source = "hex", outer_checksum = "AB7C3CCC894653637E02DC455D5890C8CF3064E83E78CFE61145A4C458D02DE6" },
   { name = "gleam_community_colour", version = "1.3.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_community_colour", source = "hex", outer_checksum = "A49A5E3AE8B637A5ACBA80ECB9B1AFE89FD3D5351FF6410A42B84F666D40D7D5" },
   { name = "gleam_stdlib", version = "0.34.0", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "1FB8454D2991E9B4C0C804544D8A9AD0F6184725E20D63C3155F0AEB4230B016" },
+  { name = "glint", version = "0.14.0", build_tools = ["gleam"], requirements = ["gleam_community_ansi", "gleam_stdlib", "gleam_community_colour", "snag"], otp_app = "glint", source = "hex", outer_checksum = "21AB16D5A50D4EF34DF935915FDBEE06B2DAEDEE3FCC8584C6E635A866566B38" },
+  { name = "snag", version = "0.3.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "snag", source = "hex", outer_checksum = "54D32E16E33655346AA3E66CBA7E191DE0A8793D2C05284E3EFB90AD2CE92BCC" },
 ]
 
 [requirements]
+argv = { version = "~> 1.0" }
 gleam_community_ansi = { version = "~> 1.3" }
 gleam_stdlib = { version = "~> 0.34" }
+glint = { version = "~> 0.14" }
