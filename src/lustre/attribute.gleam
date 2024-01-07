@@ -162,6 +162,11 @@ pub fn id(name: String) -> Attribute(msg) {
   attribute("id", name)
 }
 
+///
+pub fn role(name: String) -> Attribute(msg) {
+  attribute("role", name)
+}
+
 // INPUTS ----------------------------------------------------------------------
 
 ///
