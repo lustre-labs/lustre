@@ -87,8 +87,8 @@ fn on_port_taken(port) -> Nil {
 
 // EXTERNALS -------------------------------------------------------------------
 
-@external(erlang, "http_ffi", "serve")
-@external(javascript, "../http.ffi.mjs", "serve")
+@external(erlang, "lustre_try_ffi", "serve")
+@external(javascript, "../lustre_try.ffi.mjs", "serve")
 fn serve(
   options: Options,
   on_start: fn(Int) -> Nil,

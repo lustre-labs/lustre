@@ -1,4 +1,4 @@
--module(http_ffi).
+-module(lustre_try_ffi).
 -export([exec/1, serve/3, response_default_headers/0]).
 
 exec(Command) ->
