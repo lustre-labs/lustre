@@ -5,7 +5,7 @@ import {
   BadComponentName,
   NotABrowser,
 } from "./lustre.mjs";
-import { LustreClientApplication } from "./client-runtime.ffi.mjs";
+import { LustreClientApplication, is_browser } from "./client-runtime.ffi.mjs";
 
 export function register({ init, update, view, on_attribute_change }, name) {
   if (!is_browser()) return new Error(new NotABrowser());
@@ -19,7 +19,6 @@ export function register({ init, update, view, on_attribute_change }, name) {
     class LustreClientComponent extends HTMLElement {
       #root = document.createElement("div");
       #application = null;
-      #dispatch = null;
 
       static get observedAttributes() {
         return on_attribute_change.entries().map(([name, _]) => name);
@@ -38,7 +37,11 @@ export function register({ init, update, view, on_attribute_change }, name) {
               const decoded = decoder(value);
 
               if (decoded.isOk() && !isEqual(prev, value)) {
-                this.#dispatch?.(decoded[0]);
+                this.#application
+                  ? this.#application.send(new Dispatch(decoded[0]))
+                  : window.requestAnimationFrame(() =>
+                      this.#application.send(new Dispatch(decoded[0]))
+                    );
               }
 
               if (typeof value === "string") {
@@ -53,12 +56,12 @@ export function register({ init, update, view, on_attribute_change }, name) {
 
       connectedCallback() {
         this.#application = new LustreClientApplication(
-          init,
+          init(),
           update,
           view,
           this.#root
-        )[0];
-        this.#dispatch = (msg) => this.#application.send(new Dispatch(msg));
+        );
+        this.appendChild(this.#root);
       }
 
       disconnectedCallback() {
@@ -67,5 +70,5 @@ export function register({ init, update, view, on_attribute_change }, name) {
     }
   );
 
-  new Ok(null);
+  return new Ok(null);
 }
