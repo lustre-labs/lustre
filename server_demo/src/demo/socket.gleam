@@ -11,9 +11,8 @@ import gleam/json
 import gleam/option.{Some}
 import gleam/otp/actor
 import gleam/result
-import lustre
+import lustre.{type Action, type ServerComponent}
 import lustre/element.{type Element}
-import lustre/server/runtime.{type Message}
 import mist.{
   type Connection, type ResponseData, type WebsocketConnection,
   type WebsocketMessage,
@@ -26,17 +25,18 @@ pub fn handle(req: HttpRequest(Connection)) -> HttpResponse(ResponseData) {
 }
 
 type Model(flags, model, msg) {
-  Model(self: Subject(Element(msg)), app: Subject(Message(msg)))
+  Model(self: Subject(Element(msg)), app: Subject(Action(msg, ServerComponent)))
 }
 
 fn init(_) {
-  let assert Ok(app) = lustre.start(app.new(), 0)
+  let assert Ok(app) =
+    lustre.server_component(app.init, app.update, app.view)
+    |> lustre.start_actor(0)
   let self = process.new_subject()
   let model = Model(self, app)
   let selector = process.selecting(process.new_selector(), self, identity)
 
-  runtime.add_renderer(app, process.send(self, _))
-
+  actor.send(app, lustre.add_renderer(process.send(self, _)))
   #(model, Some(selector))
 }
 
@@ -50,7 +50,7 @@ fn update(
       json.decode_bits(bits, fn(dyn) {
         use kind <- result.try(dynamic.field("$", dynamic.string)(dyn))
         let handle_client_event = fn(tag, event) {
-          runtime.handle_client_event(model.app, tag, event)
+          actor.send(model.app, lustre.event(tag, event))
         }
 
         case kind {

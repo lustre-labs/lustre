@@ -127,7 +127,7 @@ function map2(result, fun) {
   }
 }
 
-// build/dev/javascript/lustre/runtime.ffi.mjs
+// build/dev/javascript/lustre/vdom.ffi.mjs
 function morph(prev, curr, dispatch, parent) {
   if (curr?.tag && prev?.nodeType === 1) {
     const nodeName = curr.tag.toUpperCase();
@@ -385,13 +385,13 @@ function serverEventHandler(event) {
   };
 }
 
-// src/lustre_server_component.mjs
+// src/server-component.mjs
 var LustreServerComponent = class extends HTMLElement {
   static get observedAttributes() {
     return ["route"];
   }
   #root = null;
-  #ws = null;
+  #socket = null;
   constructor() {
     super();
   }
@@ -403,14 +403,14 @@ var LustreServerComponent = class extends HTMLElement {
     switch (name) {
       case "route": {
         if (!next) {
-          this.#ws?.close();
-          this.#ws = null;
+          this.#socket?.close();
+          this.#socket = null;
         } else if (prev !== next) {
           const id = this.getAttribute("id");
           const route = next + (id ? `?id=${id}` : "");
-          this.#ws?.close();
-          this.#ws = new WebSocket(`ws://${window.location.host}${route}`);
-          this.#ws.addEventListener("message", ({ data }) => {
+          this.#socket?.close();
+          this.#socket = new WebSocket(`ws://${window.location.host}${route}`);
+          this.#socket.addEventListener("message", ({ data }) => {
             const msg = JSON.parse(data);
             switch (msg.$) {
               case "Patch": {
@@ -424,14 +424,17 @@ var LustreServerComponent = class extends HTMLElement {
     }
   }
   patch(vdom) {
-    const dispatch = ({ tag, data }) => this.#ws?.send(JSON.stringify({ $: "Event", tag, event: data }));
-    this.#root = morph(this.#root, vdom, dispatch);
+    this.#root = morph(this.#root, vdom, (msg) => {
+      this.#socket?.send(
+        JSON.stringify({ $: "Event", tag: msg.tag, event: msg.data })
+      );
+    });
   }
   disconnectedCallback() {
-    this.#ws?.close();
+    this.#socket?.close();
   }
 };
-customElements.define("lustre-server-component", LustreServerComponent);
+window.customElements.define("lustre-server-component", LustreServerComponent);
 export {
   LustreServerComponent
 };

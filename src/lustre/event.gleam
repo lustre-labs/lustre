@@ -169,12 +169,12 @@ pub fn mouse_position(event: Dynamic) -> Decoded(#(Float, Float)) {
 
 // UTILS -----------------------------------------------------------------------
 
-@external(javascript, "../lustre.ffi.mjs", "prevent_default")
+@external(javascript, "../client-runtime.ffi.mjs", "prevent_default")
 pub fn prevent_default(_event: Dynamic) -> Nil {
   Nil
 }
 
-@external(javascript, "../lustre.ffi.mjs", "stop_propagation")
+@external(javascript, "../client-runtime.ffi.mjs", "stop_propagation")
 pub fn stop_propagation(_event: Dynamic) -> Nil {
   Nil
 }

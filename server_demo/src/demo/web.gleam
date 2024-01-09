@@ -32,7 +32,7 @@ fn handler(req: Request) -> Response {
       styles.elements(),
       html.script(
         [
-          attribute.src("/static/lustre_server_component.mjs"),
+          attribute.src("/static/lustre-server-component.mjs"),
           attribute("type", "module"),
         ],
         "",

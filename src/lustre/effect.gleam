@@ -58,13 +58,13 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
 /// 
 pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
   Effect({
-    use effect <- list.map(effect.all)
+    list.map(effect.all, fn(effect) {
+      fn(dispatch, emit) {
+        let dispatch = function.compose(f, dispatch)
 
-    fn(dispatch, emit) {
-      let dispatch = function.compose(f, dispatch)
-
-      effect(dispatch, emit)
-    }
+        effect(dispatch, emit)
+      }
+    })
   })
 }
 
@@ -73,5 +73,8 @@ pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
 /// testing.
 /// 
 pub fn perform(effect: Effect(a), dispatch: fn(a) -> Nil) -> Nil {
-  list.each(effect.all, fn(eff) { eff(dispatch, fn(_, _) { Nil }) })
+  let emit = fn(_, _) { Nil }
+  use eff <- list.each(effect.all)
+
+  eff(dispatch, emit)
 }

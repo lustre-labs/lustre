@@ -3,7 +3,6 @@
 import gleam/dynamic
 import gleam/int
 import gleam/result
-import lustre.{type App}
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -11,12 +10,6 @@ import lustre/element/html
 import lustre/event
 import lustre/server
 import lustre/ui
-
-// MAIN ------------------------------------------------------------------------
-
-pub fn new() -> App(Int, Model, Msg) {
-  lustre.component(init, update, view)
-}
 
 // MODEL -----------------------------------------------------------------------
 
