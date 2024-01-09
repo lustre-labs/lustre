@@ -1,6 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import examples/counter
+import nested/counter
 import gleam/list
 import gleam/map.{type Map}
 import gleam/pair
