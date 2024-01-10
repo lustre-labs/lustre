@@ -39,6 +39,7 @@ pub fn main() {
         let assert Ok(include_styles) = flag.get_bool(flags, "include-styles")
         let options = Options(host, port, include_styles)
 
+        exec("gleam build --target js")
         serve(options, on_start(host, _), on_port_taken)
       })
       |> glint.flag("host", host_flag())
@@ -79,8 +80,8 @@ fn on_start(host: String, port: Int) -> Nil {
 fn on_port_taken(port) -> Nil {
   io.println(
     "🚨 Port "
-    <> ansi.bold(int.to_string(port))
-    <> " already in use, using next available port",
+      <> ansi.bold(int.to_string(port))
+      <> " already in use, using next available port",
   )
 }
 
@@ -93,3 +94,7 @@ fn serve(
   on_start: fn(Int) -> Nil,
   on_port_taken: fn(Int) -> Nil,
 ) -> Nil
+
+@external(erlang, "http_ffi", "exec")
+@external(javascript, "node:child_process", "execSync")
+fn exec(command: String) -> String

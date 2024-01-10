@@ -1,5 +1,8 @@
 -module(http_ffi).
--export([serve/3, response_default_headers/0]).
+-export([exec/1, serve/3, response_default_headers/0]).
+
+exec(Command) ->
+    os:cmd(binary_to_list(Command)).
 
 serve({options, Host, Port, IncludeStyles}, OnStart, OnPortTaken) ->
     {ok, Pattern} = re:compile("name *= *\"(?<Name>.+)\""),
@@ -16,7 +19,7 @@ serve({options, Host, Port, IncludeStyles}, OnStart, OnPortTaken) ->
             "  <title>Lustre preview server</title>\n",
             case IncludeStyles of
                 true ->
-                     <<"  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/gh/lustre-labs/ui/priv/styles.css\">\n">>;
+                    <<"  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/gh/lustre-labs/ui/priv/styles.css\">\n">>;
                 false ->
                     <<"">>
             end/binary,
