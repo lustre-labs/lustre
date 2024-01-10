@@ -25,7 +25,7 @@ pub fn handle(req: HttpRequest(Connection)) -> HttpResponse(ResponseData) {
 }
 
 type Model(flags, model, msg) {
-  Model(self: Subject(Element(msg)), app: Subject(Action(msg, ServerComponent)))
+  Model(self: Subject(Element(msg)), app: Subject(Action(ServerComponent, msg)))
 }
 
 fn init(_) {

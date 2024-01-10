@@ -7,7 +7,7 @@ gleam_http = "~> 3.5"
 gleam_json = "~> 0.7"
 gleam_otp = "~> 0.8"
 gleam_stdlib = "~> 0.34"
-lustre = { path = "../" }
+lustre = { path = "../../" }
 lustre_ui = "~> 0.2"
 mist = "~> 0.15"
 wisp = "~> 0.8"
