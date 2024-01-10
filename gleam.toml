@@ -11,7 +11,7 @@ links = [
 gleam = ">= 0.33.0"
 
 internal_modules = [
-  "lustre/server/*",
+  "lustre/runtime",
   "lustre/try",
 ]
 
