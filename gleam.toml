@@ -14,6 +14,7 @@ internal_modules = [
   "lustre/internals",
   "lustre/internals/*",
   "lustre/try",
+  "lustre/cli/*",
 ]
 
 [dependencies]
