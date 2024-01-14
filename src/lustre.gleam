@@ -10,7 +10,7 @@ import gleam/erlang/process.{type Subject}
 import gleam/otp/actor.{type StartError}
 import gleam/result
 import lustre/effect.{type Effect}
-import lustre/element.{type Element}
+import lustre/element.{type Diff, type Element}
 import lustre/runtime
 
 // TYPES -----------------------------------------------------------------------
@@ -168,7 +168,7 @@ pub fn register(
 // ACTIONS ---------------------------------------------------------------------
 
 pub fn add_renderer(
-  renderer: fn(Element(msg)) -> Nil,
+  renderer: fn(Diff(msg)) -> Nil,
 ) -> Action(ServerComponent, msg) {
   runtime.AddRenderer(renderer)
 }
@@ -182,7 +182,7 @@ pub fn event(name: String, data: Dynamic) -> Action(ServerComponent, msg) {
 }
 
 pub fn remove_renderer(
-  renderer: fn(Element(msg)) -> Nil,
+  renderer: fn(Diff(msg)) -> Nil,
 ) -> Action(ServerComponent, msg) {
   runtime.RemoveRenderer(renderer)
 }

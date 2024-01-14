@@ -7,7 +7,7 @@
 // `vdom.ffi.mjs` is importing things from the Gleam standard library and expects
 // to be placed in the `build/dev/javascript/lustre/` directory.
 //
-import { morph } from "../build/dev/javascript/lustre/vdom.ffi.mjs";
+import { patch } from "../build/dev/javascript/lustre/vdom.ffi.mjs";
 
 export class LustreServerComponent extends HTMLElement {
   static get observedAttributes() {
@@ -39,13 +39,13 @@ export class LustreServerComponent extends HTMLElement {
           this.#socket?.close();
           this.#socket = new WebSocket(`ws://${window.location.host}${route}`);
           this.#socket.addEventListener("message", ({ data }) => {
-            const msg = JSON.parse(data);
+            const [payload, ...rest] = JSON.parse(data);
 
-            switch (msg.$) {
-              case "Patch": {
-                this.patch(msg.vdom);
-                break;
-              }
+            switch (payload) {
+              case "Diff":
+                return this.patch(rest);
+              case "Emit":
+                return this.emit(rest);
             }
           });
         }
@@ -53,12 +53,16 @@ export class LustreServerComponent extends HTMLElement {
     }
   }
 
-  patch(vdom) {
-    this.#root = morph(this.#root, vdom, (msg) => {
+  patch(diff) {
+    this.#root = patch(diff, this.#root, (msg) => {
       this.#socket?.send(
         JSON.stringify({ $: "Event", tag: msg.tag, event: msg.data })
       );
     });
+  }
+
+  emit([event, data]) {
+    this.#root.dispatchEvent(new CustomEvent(event, { detail: data }));
   }
 
   disconnectedCallback() {

@@ -47,6 +47,107 @@ export function morph(prev, curr, dispatch, parent) {
   );
 }
 
+export function patch(diff, dispatch, root) {
+  for (const created of diff[0]) {
+    const key = created[0];
+
+    if (key === "0") {
+      morph(root, created[1], dispatch);
+    } else {
+      const segments = Array.from(key);
+      const parentKey = segments.slice(0, -1).join("");
+      const indexKey = segments.slice(-1)[0];
+      const prev =
+        root.querySelector(`[data-lustre-key="${key}"]`) ??
+        root.querySelector(`[data-lustre-key="${parentKey}"]`).childNodes[
+          indexKey
+        ];
+
+      morph(prev, created[1], dispatch, prev.parentNode);
+    }
+  }
+
+  for (const removed of diff[2]) {
+    const key = removed[0];
+    const segments = Array.from(key);
+    const parentKey = segments.slice(0, -1).join("");
+    const indexKey = segments.slice(-1)[0];
+    const prev =
+      root.querySelector(`[data-lustre-key="${key}"]`) ??
+      root.querySelector(`[data-lustre-key="${parentKey}"]`).childNodes[
+        indexKey
+      ];
+
+    prev.remove();
+  }
+
+  for (const updated of diff[2]) {
+    const key = updated[0];
+    const prev =
+      key === "0" ? root : root.querySelector(`[data-lustre-key="${key}"]`);
+
+    const prevAttrs = prev.attributes;
+    const currAttrs = new Map();
+
+    // This can happen if we're morphing an existing DOM element that *wasn't*
+    // initially created by lustre.
+    prev.$lustre ??= { __registered_events: new Set() };
+
+    // We're going to convert the Gleam List of attributes into a JavaScript Map
+    // so its easier to lookup specific attributes.
+    for (const currAttr of updated[1]) {
+      if (currAttr[0] === "class" && currAttrs.has("class")) {
+        currAttrs.set(currAttr[0], `${currAttrs.get("class")} ${currAttr[1]}`);
+      } else if (currAttr[0] === "style" && currAttrs.has("style")) {
+        currAttrs.set(currAttr[0], `${currAttrs.get("style")} ${currAttr[1]}`);
+      } else if (
+        currAttr[0] === "dangerous-unescaped-html" &&
+        currAttrs.has("dangerous-unescaped-html")
+      ) {
+        currAttrs.set(
+          currAttr[0],
+          `${currAttrs.get("dangerous-unescaped-html")} ${currAttr[1]}`
+        );
+      } else if (currAttr[0] !== "") {
+        currAttrs.set(currAttr[0], currAttr[1]);
+      }
+    }
+
+    // TODO: Event listeners aren't currently removed when they are removed from
+    // the attributes list. This is a bug!
+    for (const { name, value: prevValue } of prevAttrs) {
+      if (!currAttrs.has(name)) {
+        prev.removeAttribute(name);
+      } else {
+        const value = currAttrs.get(name);
+
+        if (value !== prevValue) {
+          morphAttr(prev, name, value, dispatch);
+          currAttrs.delete(name);
+        }
+      }
+    }
+
+    for (const name of prev.$lustre.__registered_events) {
+      if (!currAttrs.has(name)) {
+        const event = name.slice(2).toLowerCase();
+
+        prev.removeEventListener(event, prev.$lustre[`${name}Handler`]);
+        prev.$lustre.__registered_events.delete(name);
+
+        delete prev.$lustre[name];
+        delete prev.$lustre[`${name}Handler`];
+      }
+    }
+
+    for (const [name, value] of currAttrs) {
+      morphAttr(prev, name, value, dispatch);
+    }
+  }
+
+  return root;
+}
+
 // ELEMENTS --------------------------------------------------------------------
 
 function createElement(prev, curr, dispatch, parent = null) {

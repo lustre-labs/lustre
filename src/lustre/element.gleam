@@ -5,10 +5,12 @@
 
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
+import gleam/int
 import gleam/json.{type Json}
 import gleam/list
+import gleam/option.{type Option, None, Some}
+import gleam/set.{type Set}
 import gleam/string
-import gleam/int
 import gleam/string_builder.{type StringBuilder}
 import lustre/attribute.{type Attribute, attribute}
 
@@ -140,6 +142,37 @@ fn escape(escaped: String, content: String) -> String {
   }
 }
 
+// QUERIES ---------------------------------------------------------------------
+
+pub fn handlers(
+  element: Element(msg),
+) -> Dict(String, fn(Dynamic) -> Result(msg, Nil)) {
+  do_handlers(element, dict.new(), "", 0)
+}
+
+fn do_handlers(
+  element: Element(msg),
+  handlers: Dict(String, fn(Dynamic) -> Result(msg, Nil)),
+  key: String,
+  pos: Int,
+) -> Dict(String, fn(Dynamic) -> Result(msg, Nil)) {
+  case element {
+    Text(_) -> handlers
+    Element(_, _, attrs, children, _, _) -> {
+      let key = key <> int.to_string(pos)
+      let handlers =
+        attrs
+        |> list.filter_map(attribute.handler(_, key))
+        |> dict.from_list
+        |> dict.merge(handlers)
+
+      use handlers, child, pos <- list.index_fold(children, handlers)
+
+      do_handlers(child, handlers, key, pos)
+    }
+  }
+}
+
 // MANIPULATIONS ---------------------------------------------------------------
 
 /// 
@@ -155,6 +188,90 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
         self_closing,
         void,
       )
+  }
+}
+
+pub type Diff(a) {
+  Diff(
+    created: Dict(String, Element(a)),
+    removed: Set(String),
+    updated: Dict(String, List(Attribute(a))),
+    handlers: Dict(String, fn(Dynamic) -> Result(a, Nil)),
+  )
+}
+
+///
+/// 
+pub fn diff(old: Element(a), new: Element(a)) -> Diff(a) {
+  Diff(dict.new(), set.new(), dict.new(), dict.new())
+  |> do_diff(Some(old), Some(new), "0")
+}
+
+fn do_diff(
+  diff: Diff(a),
+  old: Option(Element(a)),
+  new: Option(Element(a)),
+  key: String,
+) -> Diff(a) {
+  case old, new {
+    None, None -> diff
+    Some(_), None -> Diff(..diff, removed: set.insert(diff.removed, key))
+    None, Some(new) ->
+      Diff(..diff, created: dict.insert(diff.created, key, new))
+
+    Some(old), Some(new) -> {
+      case old, new {
+        Text(old), Text(new) if old == new -> diff
+        Text(_), Text(_) ->
+          Diff(..diff, created: dict.insert(diff.created, key, new))
+
+        Element(_, _, _, _, _, _), Text(_) ->
+          Diff(..diff, created: dict.insert(diff.created, key, new))
+
+        Text(_), Element(_, _, _, _, _, _) ->
+          Diff(..diff, created: dict.insert(diff.created, key, new))
+
+        Element(old_ns, _, _, _, _, _), Element(new_ns, _, _, _, _, _) if old_ns != new_ns ->
+          Diff(..diff, created: dict.insert(diff.created, key, new))
+
+        Element(_, old_tag, _, _, _, _), Element(_, new_tag, _, _, _, _) if old_tag != new_tag ->
+          Diff(..diff, created: dict.insert(diff.created, key, new))
+
+        Element(_, _, old_attrs, old_children, _, _), Element(
+          _,
+          _,
+          new_attrs,
+          new_children,
+          _,
+          _,
+        ) -> {
+          let diff = case old_attrs == new_attrs {
+            True -> diff
+            False ->
+              Diff(..diff, updated: dict.insert(diff.updated, key, new_attrs))
+          }
+          let handlers =
+            new_attrs
+            |> list.filter_map(attribute.handler(_, key))
+            |> dict.from_list
+          let diff = Diff(..diff, handlers: dict.merge(diff.handlers, handlers))
+          let children = zip_children(old_children, new_children)
+          use diff, #(old, new), pos <- list.index_fold(children, diff)
+          let key = key <> int.to_string(pos)
+
+          do_diff(diff, old, new, key)
+        }
+      }
+    }
+  }
+}
+
+fn zip_children(xs: List(a), ys: List(a)) -> List(#(Option(a), Option(a))) {
+  case xs, ys {
+    [x, ..xs], [y, ..ys] -> [#(Some(x), Some(y)), ..zip_children(xs, ys)]
+    [x, ..xs], [] -> [#(Some(x), None), ..zip_children(xs, [])]
+    [], [y, ..ys] -> [#(None, Some(y)), ..zip_children([], ys)]
+    [], [] -> []
   }
 }
 
@@ -280,11 +397,7 @@ fn attrs_to_string_builder(
       _, _ ->
         string_builder.append(
           html,
-          " class=\""
-          <> class
-          <> "\" style=\""
-          <> style
-          <> "\"",
+          " class=\"" <> class <> "\" style=\"" <> style <> "\"",
         )
     },
     inner_html,
@@ -316,6 +429,7 @@ pub fn do_encode(element: Element(msg), key: String, pos: Int) -> Json {
       let key = key <> int.to_string(pos)
       let attrs =
         attrs
+        |> list.prepend(attribute("data-lustre-key", key))
         |> list.filter_map(attribute.encode(_, key))
         |> json.preprocessed_array
       let children =
@@ -336,31 +450,30 @@ pub fn do_encode(element: Element(msg), key: String, pos: Int) -> Json {
   }
 }
 
-pub fn handlers(
-  element: Element(msg),
-) -> Dict(String, fn(Dynamic) -> Result(msg, Nil)) {
-  do_handlers(element, dict.new(), "", 0)
-}
+pub fn encode_diff(diff: Diff(a)) -> Json {
+  let created =
+    json.preprocessed_array({
+      use arr, key, val <- dict.fold(diff.created, [])
+      let element = json.preprocessed_array([json.string(key), encode(val)])
+      [element, ..arr]
+    })
+  let removed =
+    json.preprocessed_array({
+      use arr, key <- set.fold(diff.removed, [])
+      [json.string(key), ..arr]
+    })
+  let updated =
+    json.preprocessed_array({
+      use arr, key, attrs <- dict.fold(diff.updated, [])
+      let attrs =
+        json.preprocessed_array([
+          json.string(key),
+          json.preprocessed_array(
+            list.filter_map(attrs, attribute.encode(_, key)),
+          ),
+        ])
+      [attrs, ..arr]
+    })
 
-fn do_handlers(
-  element: Element(msg),
-  handlers: Dict(String, fn(Dynamic) -> Result(msg, Nil)),
-  key: String,
-  pos: Int,
-) -> Dict(String, fn(Dynamic) -> Result(msg, Nil)) {
-  case element {
-    Text(_) -> handlers
-    Element(_, _, attrs, children, _, _) -> {
-      let key = key <> int.to_string(pos)
-      let handlers =
-        attrs
-        |> list.filter_map(attribute.handler(_, key))
-        |> dict.from_list
-        |> dict.merge(handlers)
-
-      use handlers, child, pos <- list.index_fold(children, handlers)
-
-      do_handlers(child, handlers, key, pos)
-    }
-  }
+  json.preprocessed_array([json.string("Diff"), created, removed, updated])
 }

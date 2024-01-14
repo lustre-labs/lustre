@@ -153,6 +153,73 @@ function morph(prev, curr, dispatch, parent) {
     ].join(" ")
   );
 }
+function patch(diff, root, dispatch) {
+  for (const created of diff[0]) {
+    const key = created[0];
+    if (key === "0") {
+      morph(root, created[1], dispatch);
+    } else {
+      const segments = Array.from(key);
+      const parentKey = segments.slice(0, -1).join("");
+      const indexKey = segments.slice(-1)[0];
+      const prev = root.querySelector(`[data-lustre-key="${key}"]`) ?? root.querySelector(`[data-lustre-key="${parentKey}"]`).childNodes[indexKey];
+      morph(prev, created[1], dispatch, prev.parentNode);
+    }
+  }
+  for (const removed of diff[2]) {
+    const key = removed[0];
+    const segments = Array.from(key);
+    const parentKey = segments.slice(0, -1).join("");
+    const indexKey = segments.slice(-1)[0];
+    const prev = root.querySelector(`[data-lustre-key="${key}"]`) ?? root.querySelector(`[data-lustre-key="${parentKey}"]`).childNodes[indexKey];
+    prev.remove();
+  }
+  for (const updated of diff[2]) {
+    const key = updated[0];
+    const prev = key === "0" ? root : root.querySelector(`[data-lustre-key="${key}"]`);
+    const prevAttrs = prev.attributes;
+    const currAttrs = /* @__PURE__ */ new Map();
+    prev.$lustre ??= { __registered_events: /* @__PURE__ */ new Set() };
+    for (const currAttr of updated[1]) {
+      if (currAttr[0] === "class" && currAttrs.has("class")) {
+        currAttrs.set(currAttr[0], `${currAttrs.get("class")} ${currAttr[1]}`);
+      } else if (currAttr[0] === "style" && currAttrs.has("style")) {
+        currAttrs.set(currAttr[0], `${currAttrs.get("style")} ${currAttr[1]}`);
+      } else if (currAttr[0] === "dangerous-unescaped-html" && currAttrs.has("dangerous-unescaped-html")) {
+        currAttrs.set(
+          currAttr[0],
+          `${currAttrs.get("dangerous-unescaped-html")} ${currAttr[1]}`
+        );
+      } else if (currAttr[0] !== "") {
+        currAttrs.set(currAttr[0], currAttr[1]);
+      }
+    }
+    for (const { name, value: prevValue } of prevAttrs) {
+      if (!currAttrs.has(name)) {
+        prev.removeAttribute(name);
+      } else {
+        const value = currAttrs.get(name);
+        if (value !== prevValue) {
+          morphAttr(prev, name, value, dispatch);
+          currAttrs.delete(name);
+        }
+      }
+    }
+    for (const name of prev.$lustre.__registered_events) {
+      if (!currAttrs.has(name)) {
+        const event = name.slice(2).toLowerCase();
+        prev.removeEventListener(event, prev.$lustre[`${name}Handler`]);
+        prev.$lustre.__registered_events.delete(name);
+        delete prev.$lustre[name];
+        delete prev.$lustre[`${name}Handler`];
+      }
+    }
+    for (const [name, value] of currAttrs) {
+      morphAttr(prev, name, value, dispatch);
+    }
+  }
+  return root;
+}
 function createElement(prev, curr, dispatch, parent = null) {
   const el = curr.namespace ? document.createElementNS(curr.namespace, curr.tag) : document.createElement(curr.tag);
   el.$lustre = {
@@ -411,24 +478,27 @@ var LustreServerComponent = class extends HTMLElement {
           this.#socket?.close();
           this.#socket = new WebSocket(`ws://${window.location.host}${route}`);
           this.#socket.addEventListener("message", ({ data }) => {
-            const msg = JSON.parse(data);
-            switch (msg.$) {
-              case "Patch": {
-                this.patch(msg.vdom);
-                break;
-              }
+            const [payload, ...rest] = JSON.parse(data);
+            switch (payload) {
+              case "Diff":
+                return this.patch(rest);
+              case "Emit":
+                return this.emit(rest);
             }
           });
         }
       }
     }
   }
-  patch(vdom) {
-    this.#root = morph(this.#root, vdom, (msg) => {
+  patch(diff) {
+    this.#root = patch(diff, this.#root, (msg) => {
       this.#socket?.send(
         JSON.stringify({ $: "Event", tag: msg.tag, event: msg.data })
       );
     });
+  }
+  emit([event, data]) {
+    this.#root.dispatchEvent(new CustomEvent(event, { detail: data }));
   }
   disconnectedCallback() {
     this.#socket?.close();

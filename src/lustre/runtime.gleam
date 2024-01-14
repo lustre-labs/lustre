@@ -8,7 +8,7 @@ import gleam/erlang/process.{type Subject}
 import gleam/otp/actor.{type Next, type StartError, Spec}
 import gleam/result
 import lustre/effect.{type Effect}
-import lustre/element.{type Element}
+import lustre/element.{type Diff, type Element}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -21,7 +21,7 @@ type State(runtime, model, msg) {
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
     html: Element(msg),
-    renderers: Set(fn(Element(msg)) -> Nil),
+    renderers: Set(fn(Diff(msg)) -> Nil),
     handlers: Dict(String, fn(Dynamic) -> Result(msg, Nil)),
   )
 }
@@ -29,10 +29,10 @@ type State(runtime, model, msg) {
 /// 
 /// 
 pub type Action(runtime, msg) {
-  AddRenderer(fn(Element(msg)) -> Nil)
+  AddRenderer(fn(Diff(msg)) -> Nil)
   Dispatch(msg)
   Event(String, Dynamic)
-  RemoveRenderer(fn(Element(msg)) -> Nil)
+  RemoveRenderer(fn(Diff(msg)) -> Nil)
   Shutdown
 }
 
@@ -68,18 +68,20 @@ fn loop(
     AddRenderer(renderer) -> {
       let renderers = set.insert(state.renderers, renderer)
       let next = State(..state, renderers: renderers)
+      let diff = element.diff(element.text(""), state.html)
 
-      renderer(state.html)
+      renderer(diff)
       actor.continue(next)
     }
 
     Dispatch(msg) -> {
       let #(model, effects) = state.update(state.model, msg)
       let html = state.view(model)
-      let handlers = element.handlers(html)
-      let next = State(..state, model: model, html: html, handlers: handlers)
+      let diff = element.diff(state.html, html)
+      let next =
+        State(..state, model: model, html: html, handlers: diff.handlers)
 
-      run_renderers(state.renderers, html)
+      run_renderers(state.renderers, diff)
       run_effects(effects, state.self)
       actor.continue(next)
     }
@@ -111,12 +113,9 @@ fn loop(
 
 // UTILS -----------------------------------------------------------------------
 
-fn run_renderers(
-  renderers: Set(fn(Element(msg)) -> Nil),
-  html: Element(msg),
-) -> Nil {
+fn run_renderers(renderers: Set(fn(Diff(msg)) -> Nil), diff: Diff(msg)) -> Nil {
   use _, renderer <- set.fold(renderers, Nil)
-  renderer(html)
+  renderer(diff)
 }
 
 fn run_effects(effects: Effect(msg), self: Subject(Action(runtime, msg))) -> Nil {

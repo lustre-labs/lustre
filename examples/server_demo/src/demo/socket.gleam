@@ -12,7 +12,7 @@ import gleam/option.{Some}
 import gleam/otp/actor
 import gleam/result
 import lustre.{type Action, type ServerComponent}
-import lustre/element.{type Element}
+import lustre/element.{type Diff}
 import mist.{
   type Connection, type ResponseData, type WebsocketConnection,
   type WebsocketMessage,
@@ -25,7 +25,7 @@ pub fn handle(req: HttpRequest(Connection)) -> HttpResponse(ResponseData) {
 }
 
 type Model(flags, model, msg) {
-  Model(self: Subject(Element(msg)), app: Subject(Action(ServerComponent, msg)))
+  Model(self: Subject(Diff(msg)), app: Subject(Action(ServerComponent, msg)))
 }
 
 fn init(_) {
@@ -43,7 +43,7 @@ fn init(_) {
 fn update(
   model: Model(flags, model, msg),
   conn: WebsocketConnection,
-  msg: WebsocketMessage(Element(a)),
+  msg: WebsocketMessage(Diff(a)),
 ) {
   case msg {
     mist.Text(bits) -> {
@@ -70,8 +70,8 @@ fn update(
     mist.Binary(_) -> actor.continue(model)
     mist.Closed -> actor.continue(model)
     mist.Shutdown -> actor.Stop(process.Normal)
-    mist.Custom(el) -> {
-      json.object([#("$", json.string("Patch")), #("vdom", element.encode(el))])
+    mist.Custom(diff) -> {
+      element.encode_diff(diff)
       |> json.to_string
       |> bit_array.from_string
       |> mist.send_text_frame(conn, _)
