@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import demo/app
+import gleam/bool
 import gleam/bit_array
 import gleam/dynamic.{DecodeError}
 import gleam/erlang/process.{type Subject}
@@ -12,7 +13,7 @@ import gleam/option.{Some}
 import gleam/otp/actor
 import gleam/result
 import lustre.{type Action, type ServerComponent}
-import lustre/element.{type Diff}
+import lustre/element.{type Patch}
 import mist.{
   type Connection, type ResponseData, type WebsocketConnection,
   type WebsocketMessage,
@@ -25,7 +26,7 @@ pub fn handle(req: HttpRequest(Connection)) -> HttpResponse(ResponseData) {
 }
 
 type Model(flags, model, msg) {
-  Model(self: Subject(Diff(msg)), app: Subject(Action(ServerComponent, msg)))
+  Model(self: Subject(Patch(msg)), app: Subject(Action(ServerComponent, msg)))
 }
 
 fn init(_) {
@@ -43,35 +44,31 @@ fn init(_) {
 fn update(
   model: Model(flags, model, msg),
   conn: WebsocketConnection,
-  msg: WebsocketMessage(Diff(a)),
+  msg: WebsocketMessage(Patch(a)),
 ) {
   case msg {
     mist.Text(bits) -> {
-      json.decode_bits(bits, fn(dyn) {
+      let _ = {
+        use dyn <- json.decode_bits(bits)
         use kind <- result.try(dynamic.field("$", dynamic.string)(dyn))
-        let handle_client_event = fn(tag, event) {
-          actor.send(model.app, lustre.event(tag, event))
-        }
+        use <- bool.guard(
+          kind != "Event",
+          Error([DecodeError(expected: "Event", found: kind, path: ["$"])]),
+        )
+        use tag <- result.try(dynamic.field("tag", dynamic.string)(dyn))
+        use event <- result.try(dynamic.field("event", dynamic.dynamic)(dyn))
 
-        case kind {
-          "Event" ->
-            dynamic.decode2(
-              handle_client_event,
-              dynamic.field("tag", dynamic.string),
-              dynamic.field("event", dynamic.dynamic),
-            )(dyn)
-          _ -> Error([DecodeError(expected: "Event", found: kind, path: ["$"])])
-        }
-      })
-      |> result.unwrap(Nil)
+        actor.send(model.app, lustre.event(tag, event))
+        Ok(Nil)
+      }
 
       actor.continue(model)
     }
     mist.Binary(_) -> actor.continue(model)
     mist.Closed -> actor.continue(model)
     mist.Shutdown -> actor.Stop(process.Normal)
-    mist.Custom(diff) -> {
-      element.encode_diff(diff)
+    mist.Custom(patch) -> {
+      element.encode_patch(patch)
       |> json.to_string
       |> bit_array.from_string
       |> mist.send_text_frame(conn, _)

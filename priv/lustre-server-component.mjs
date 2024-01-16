@@ -1,3 +1,8 @@
+// build/dev/javascript/lustre/lustre/internals/constants.mjs
+var diff = 0;
+var emit = 1;
+var morph = 2;
+
 // build/dev/javascript/prelude.mjs
 var CustomType = class {
   withFields(fields) {
@@ -128,7 +133,7 @@ function map2(result, fun) {
 }
 
 // build/dev/javascript/lustre/vdom.ffi.mjs
-function morph(prev, curr, dispatch, parent) {
+function morph2(prev, curr, dispatch, parent) {
   if (curr?.tag && prev?.nodeType === 1) {
     const nodeName = curr.tag.toUpperCase();
     const ns = curr.namespace || "http://www.w3.org/1999/xhtml";
@@ -153,20 +158,20 @@ function morph(prev, curr, dispatch, parent) {
     ].join(" ")
   );
 }
-function patch(diff, root, dispatch) {
-  for (const created of diff[0]) {
+function patch(root, diff2, dispatch) {
+  for (const created of diff2[0]) {
     const key = created[0];
     if (key === "0") {
-      morph(root, created[1], dispatch);
+      morph2(root, created[1], dispatch, root.parentNode);
     } else {
       const segments = Array.from(key);
       const parentKey = segments.slice(0, -1).join("");
       const indexKey = segments.slice(-1)[0];
       const prev = root.querySelector(`[data-lustre-key="${key}"]`) ?? root.querySelector(`[data-lustre-key="${parentKey}"]`).childNodes[indexKey];
-      morph(prev, created[1], dispatch, prev.parentNode);
+      morph2(prev, created[1], dispatch, prev.parentNode);
     }
   }
-  for (const removed of diff[2]) {
+  for (const removed of diff2[1]) {
     const key = removed[0];
     const segments = Array.from(key);
     const parentKey = segments.slice(0, -1).join("");
@@ -174,48 +179,23 @@ function patch(diff, root, dispatch) {
     const prev = root.querySelector(`[data-lustre-key="${key}"]`) ?? root.querySelector(`[data-lustre-key="${parentKey}"]`).childNodes[indexKey];
     prev.remove();
   }
-  for (const updated of diff[2]) {
+  for (const updated of diff2[2]) {
     const key = updated[0];
     const prev = key === "0" ? root : root.querySelector(`[data-lustre-key="${key}"]`);
-    const prevAttrs = prev.attributes;
-    const currAttrs = /* @__PURE__ */ new Map();
     prev.$lustre ??= { __registered_events: /* @__PURE__ */ new Set() };
-    for (const currAttr of updated[1]) {
-      if (currAttr[0] === "class" && currAttrs.has("class")) {
-        currAttrs.set(currAttr[0], `${currAttrs.get("class")} ${currAttr[1]}`);
-      } else if (currAttr[0] === "style" && currAttrs.has("style")) {
-        currAttrs.set(currAttr[0], `${currAttrs.get("style")} ${currAttr[1]}`);
-      } else if (currAttr[0] === "dangerous-unescaped-html" && currAttrs.has("dangerous-unescaped-html")) {
-        currAttrs.set(
-          currAttr[0],
-          `${currAttrs.get("dangerous-unescaped-html")} ${currAttr[1]}`
-        );
-      } else if (currAttr[0] !== "") {
-        currAttrs.set(currAttr[0], currAttr[1]);
-      }
+    for (const created of updated[0]) {
+      morphAttr(prev, created.name, created.value, dispatch);
     }
-    for (const { name, value: prevValue } of prevAttrs) {
-      if (!currAttrs.has(name)) {
-        prev.removeAttribute(name);
+    for (const removed of updated[1]) {
+      if (prev.$lustre.__registered_events.has(removed)) {
+        const event = removed.slice(2).toLowerCase();
+        prev.removeEventListener(event, prev.$lustre[`${removed}Handler`]);
+        prev.$lustre.__registered_events.delete(removed);
+        delete prev.$lustre[removed];
+        delete prev.$lustre[`${removed}Handler`];
       } else {
-        const value = currAttrs.get(name);
-        if (value !== prevValue) {
-          morphAttr(prev, name, value, dispatch);
-          currAttrs.delete(name);
-        }
+        prev.removeAttribute(removed);
       }
-    }
-    for (const name of prev.$lustre.__registered_events) {
-      if (!currAttrs.has(name)) {
-        const event = name.slice(2).toLowerCase();
-        prev.removeEventListener(event, prev.$lustre[`${name}Handler`]);
-        prev.$lustre.__registered_events.delete(name);
-        delete prev.$lustre[name];
-        delete prev.$lustre[`${name}Handler`];
-      }
-    }
-    for (const [name, value] of currAttrs) {
-      morphAttr(prev, name, value, dispatch);
     }
   }
   return root;
@@ -251,13 +231,13 @@ function createElement(prev, curr, dispatch, parent = null) {
       }
     }
     for (const child of children) {
-      el.appendChild(morph(null, child, dispatch, el));
+      el.appendChild(morph2(null, child, dispatch, el));
     }
   } else if (dangerousUnescapedHtml) {
     el.innerHTML = dangerousUnescapedHtml;
   } else {
     for (const child of curr.children) {
-      el.appendChild(morph(null, child, dispatch, el));
+      el.appendChild(morph2(null, child, dispatch, el));
     }
   }
   if (prev)
@@ -321,15 +301,15 @@ function morphElement(prev, curr, dispatch, parent) {
     }
     while (prevChild) {
       if (Array.isArray(currChild) && currChild.length) {
-        morph(prevChild, currChild.shift(), dispatch, prev);
+        morph2(prevChild, currChild.shift(), dispatch, prev);
       } else if (currChild.head) {
-        morph(prevChild, currChild.head, dispatch, prev);
+        morph2(prevChild, currChild.head, dispatch, prev);
         currChild = currChild.tail;
       }
       prevChild = prevChild.nextSibling;
     }
     for (const child of currChild) {
-      prev.appendChild(morph(null, child, dispatch, prev));
+      prev.appendChild(morph2(null, child, dispatch, prev));
     }
   } else if (currAttrs.has("dangerous-unescaped-html")) {
     prev.innerHTML = currAttrs.get("dangerous-unescaped-html");
@@ -339,11 +319,11 @@ function morphElement(prev, curr, dispatch, parent) {
     while (prevChild) {
       if (Array.isArray(currChild) && currChild.length) {
         const next = prevChild.nextSibling;
-        morph(prevChild, currChild.shift(), dispatch, prev);
+        morph2(prevChild, currChild.shift(), dispatch, prev);
         prevChild = next;
       } else if (currChild.head) {
         const next = prevChild.nextSibling;
-        morph(prevChild, currChild.head, dispatch, prev);
+        morph2(prevChild, currChild.head, dispatch, prev);
         currChild = currChild.tail;
         prevChild = next;
       } else {
@@ -353,7 +333,7 @@ function morphElement(prev, curr, dispatch, parent) {
       }
     }
     for (const child of currChild) {
-      prev.appendChild(morph(null, child, dispatch, prev));
+      prev.appendChild(morph2(null, child, dispatch, prev));
     }
   }
   return prev;
@@ -478,27 +458,36 @@ var LustreServerComponent = class extends HTMLElement {
           this.#socket?.close();
           this.#socket = new WebSocket(`ws://${window.location.host}${route}`);
           this.#socket.addEventListener("message", ({ data }) => {
-            const [payload, ...rest] = JSON.parse(data);
-            switch (payload) {
-              case "Diff":
-                return this.patch(rest);
-              case "Emit":
-                return this.emit(rest);
+            const [kind, ...payload] = JSON.parse(data);
+            switch (kind) {
+              case diff:
+                return this.diff(payload);
+              case emit:
+                return this.emit(payload);
+              case morph:
+                return this.morph(payload);
             }
           });
         }
       }
     }
   }
-  patch(diff) {
-    this.#root = patch(diff, this.#root, (msg) => {
+  morph([vdom]) {
+    this.#root = morph2(this.#root, vdom, (msg) => {
+      this.#socket?.send(
+        JSON.stringify({ $: "Event", tag: msg.tag, event: msg.data })
+      );
+    });
+  }
+  diff([diff2]) {
+    this.#root = patch(this.#root, diff2, (msg) => {
       this.#socket?.send(
         JSON.stringify({ $: "Event", tag: msg.tag, event: msg.data })
       );
     });
   }
   emit([event, data]) {
-    this.#root.dispatchEvent(new CustomEvent(event, { detail: data }));
+    this.dispatchEvent(new CustomEvent(event, { detail: data }));
   }
   disconnectedCallback() {
     this.#socket?.close();

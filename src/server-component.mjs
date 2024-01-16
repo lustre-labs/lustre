@@ -7,7 +7,8 @@
 // `vdom.ffi.mjs` is importing things from the Gleam standard library and expects
 // to be placed in the `build/dev/javascript/lustre/` directory.
 //
-import { patch } from "../build/dev/javascript/lustre/vdom.ffi.mjs";
+import * as Constants from "../build/dev/javascript/lustre/lustre/internals/constants.mjs";
+import { patch, morph } from "../build/dev/javascript/lustre/vdom.ffi.mjs";
 
 export class LustreServerComponent extends HTMLElement {
   static get observedAttributes() {
@@ -39,13 +40,17 @@ export class LustreServerComponent extends HTMLElement {
           this.#socket?.close();
           this.#socket = new WebSocket(`ws://${window.location.host}${route}`);
           this.#socket.addEventListener("message", ({ data }) => {
-            const [payload, ...rest] = JSON.parse(data);
+            const [kind, ...payload] = JSON.parse(data);
 
-            switch (payload) {
-              case "Diff":
-                return this.patch(rest);
-              case "Emit":
-                return this.emit(rest);
+            switch (kind) {
+              case Constants.diff:
+                return this.diff(payload);
+
+              case Constants.emit:
+                return this.emit(payload);
+
+              case Constants.morph:
+                return this.morph(payload);
             }
           });
         }
@@ -53,8 +58,16 @@ export class LustreServerComponent extends HTMLElement {
     }
   }
 
-  patch(diff) {
-    this.#root = patch(diff, this.#root, (msg) => {
+  morph([vdom]) {
+    this.#root = morph(this.#root, vdom, (msg) => {
+      this.#socket?.send(
+        JSON.stringify({ $: "Event", tag: msg.tag, event: msg.data })
+      );
+    });
+  }
+
+  diff([diff]) {
+    this.#root = patch(this.#root, diff, (msg) => {
       this.#socket?.send(
         JSON.stringify({ $: "Event", tag: msg.tag, event: msg.data })
       );
@@ -62,7 +75,7 @@ export class LustreServerComponent extends HTMLElement {
   }
 
   emit([event, data]) {
-    this.#root.dispatchEvent(new CustomEvent(event, { detail: data }));
+    this.dispatchEvent(new CustomEvent(event, { detail: data }));
   }
 
   disconnectedCallback() {

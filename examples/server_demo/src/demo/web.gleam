@@ -31,11 +31,18 @@ fn handler(req: Request) -> Response {
       ]),
       styles.elements(),
       html.script(
-        [
-          attribute.src("/static/lustre-server-component.mjs"),
-          attribute("type", "module"),
-        ],
-        "",
+        [attribute("type", "module")],
+        "
+        import '/static/lustre-server-component.mjs'
+
+        document.addEventListener('DOMContentLoaded', () => {
+          document
+            .querySelector('lustre-server-component')
+            .addEventListener('alert', event => {
+              console.log(`The server count says: ${event.detail}`)
+            })
+        })
+        ",
       ),
     ]),
     html.body([], [

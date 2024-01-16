@@ -3,6 +3,7 @@
 import gleam/dynamic
 import gleam/int
 import gleam/result
+import gleam/json
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -28,6 +29,7 @@ pub opaque type Msg {
   Decr
   Change(String)
   Move(Int, Int)
+  Alert
 }
 
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
@@ -36,6 +38,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     Decr -> #(Model(..model, count: model.count - 1), effect.none())
     Change(input) -> #(Model(..model, input: input), effect.none())
     Move(x, y) -> #(Model(..model, mouse: #(x, y)), effect.none())
+    Alert -> #(model, event.emit("alert", json.int(model.count)))
   }
 }
 
@@ -55,6 +58,7 @@ pub fn view(model: Model) -> Element(Msg) {
       ui.button([event.on_click(Decr)], [element.text("-")]),
       ui.centre([], html.span([], [element.text(count)])),
       ui.button([event.on_click(Incr)], [element.text("+")]),
+      ui.button([event.on_click(Alert)], [element.text("alert")]),
     ]),
     ui.cluster([], [
       ui.input([event.on_input(Change), attribute.value(model.input)]),

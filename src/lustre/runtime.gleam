@@ -1,19 +1,22 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/function.{identity}
 import gleam/dict.{type Dict}
-import gleam/set.{type Set}
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang/process.{type Subject}
+import gleam/function.{identity}
+import gleam/json.{type Json}
 import gleam/otp/actor.{type Next, type StartError, Spec}
 import gleam/result
+import gleam/set.{type Set}
 import lustre/effect.{type Effect}
-import lustre/element.{type Diff, type Element}
+import lustre/element.{type Element, type Patch}
+import lustre/internals/patch.{Diff, Morph}
+import lustre/internals/vdom
 
 // TYPES -----------------------------------------------------------------------
 
 ///
-/// 
+///
 type State(runtime, model, msg) {
   State(
     self: Subject(Action(runtime, msg)),
@@ -21,7 +24,7 @@ type State(runtime, model, msg) {
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
     html: Element(msg),
-    renderers: Set(fn(Diff(msg)) -> Nil),
+    renderers: Set(fn(Patch(msg)) -> Nil),
     handlers: Dict(String, fn(Dynamic) -> Result(msg, Nil)),
   )
 }
@@ -29,10 +32,11 @@ type State(runtime, model, msg) {
 /// 
 /// 
 pub type Action(runtime, msg) {
-  AddRenderer(fn(Diff(msg)) -> Nil)
+  AddRenderer(fn(Patch(msg)) -> Nil)
   Dispatch(msg)
+  Emit(String, Json)
   Event(String, Dynamic)
-  RemoveRenderer(fn(Diff(msg)) -> Nil)
+  RemoveRenderer(fn(Patch(msg)) -> Nil)
   Shutdown
 }
 
@@ -49,7 +53,7 @@ pub fn start(
   let init = fn() {
     let self = process.new_subject()
     let html = view(init.0)
-    let handlers = element.handlers(html)
+    let handlers = vdom.handlers(html)
     let state = State(self, init.0, update, view, html, set.new(), handlers)
     let selector = process.selecting(process.new_selector(), self, identity)
 
@@ -68,22 +72,33 @@ fn loop(
     AddRenderer(renderer) -> {
       let renderers = set.insert(state.renderers, renderer)
       let next = State(..state, renderers: renderers)
-      let diff = element.diff(element.text(""), state.html)
 
-      renderer(diff)
+      renderer(Morph(state.html))
       actor.continue(next)
     }
 
     Dispatch(msg) -> {
       let #(model, effects) = state.update(state.model, msg)
       let html = state.view(model)
-      let diff = element.diff(state.html, html)
+      let diff = patch.elements(state.html, html)
       let next =
         State(..state, model: model, html: html, handlers: diff.handlers)
 
-      run_renderers(state.renderers, diff)
       run_effects(effects, state.self)
+
+      case patch.is_empty_element_diff(diff) {
+        True -> Nil
+        False -> run_renderers(state.renderers, Diff(diff))
+      }
+
       actor.continue(next)
+    }
+
+    Emit(name, event) -> {
+      let patch = patch.Emit(name, event)
+
+      run_renderers(state.renderers, patch)
+      actor.continue(state)
     }
 
     Event(name, event) -> {
@@ -113,12 +128,17 @@ fn loop(
 
 // UTILS -----------------------------------------------------------------------
 
-fn run_renderers(renderers: Set(fn(Diff(msg)) -> Nil), diff: Diff(msg)) -> Nil {
+fn run_renderers(
+  renderers: Set(fn(Patch(msg)) -> Nil),
+  patch: Patch(msg),
+) -> Nil {
   use _, renderer <- set.fold(renderers, Nil)
-  renderer(diff)
+  renderer(patch)
 }
 
 fn run_effects(effects: Effect(msg), self: Subject(Action(runtime, msg))) -> Nil {
-  use msg <- effect.perform(effects)
-  actor.send(self, Dispatch(msg))
+  let dispatch = fn(msg) { actor.send(self, Dispatch(msg)) }
+  let emit = fn(name, event) { actor.send(self, Emit(name, event)) }
+
+  effect.perform(effects, dispatch, emit)
 }

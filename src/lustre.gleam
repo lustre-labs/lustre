@@ -1,3 +1,76 @@
+//// Lustre is a framework for rendering Web applications and components using
+//// Gleam. This module contains the core API for constructing and communicating
+//// with the different kinds of Lustre application.
+//// 
+//// Lustre currently has three kinds of application:
+//// 
+//// 1. A `Browser` single-page application: think Elm or React or Vue. These
+////    are applications that run in the client's browser and are responsible for
+////    rendering the entire page.
+//// 
+//// 2. A `WebComponent`: an encapsulated Lustre application that can be embedded
+////    in a larger Lustre application or bundled and used as a standard Custom
+////    Element in any other Web application.
+//// 
+//// 3. A `ServerComponent`: A Lustre application that runs on the server and
+////    computes diffs that can be sent to a browser to be rendered. This is
+////    most-similar to Phoenix LiveView.
+//// 
+//// No matter where a Lustre application runs, it will always follow the same
+//// Model-View-Update architecture. Popularised by Elm (where it is known as The
+//// Elm Architecture), this pattern has since made its way into many other
+//// languages and frameworks and has proven to be a robust and reliable way to
+//// build complex user interfaces.
+//// 
+//// There are three main building blocks to the Model-View-Update architecture:
+//// 
+//// - A `Model` that represents your application's state and an `init` function
+////   to create it.
+//// 
+//// - A `Msg` type that represents all the different ways the outside world can
+////   communicate with your application and an `update` function that modifies
+////   your model in response to those messages.
+//// 
+//// - A `view` function that renders your model to HTML, represented as an
+////   `Element`.
+//// 
+//// To see how those pieces fit together, here's a little diagram:
+//// 
+//// ```text
+////                                          +--------+
+////                                          |        |
+////                                          | update |
+////                                          |        |
+////                                          +--------+
+////                                            ^    |
+////                                            |    |
+////                                        Msg |    | #(Model, Effect(Msg))
+////                                            |    |
+////                                            |    v
+//// +------+                         +------------------------+
+//// |      |  #(Model, Effect(Msg))  |                        |
+//// | init |------------------------>|     Lustre Runtime     |
+//// |      |                         |                        |
+//// +------+                         +------------------------+
+////                                            ^    |
+////                                            |    |
+////                                        Msg |    | Model
+////                                            |    |
+////                                            |    v
+////                                          +--------+
+////                                          |        |
+////                                          |  view  |
+////                                          |        |
+////                                          +--------+
+//// ```
+//// 
+//// ❓ Wondering what that [`Effect`](./effect#effect-type) is all about? Check
+////    out the documentation for that over in the [`effect`](./effect) module.
+//// 
+//// For many types of program, you can easily take these building blocks and
+//// construct any of Lustre's application types with little-to-no modification.
+//// We like to describe Lustre as a **universal framework**. 
+//// 
 //// To read the full documentation for this module, please visit
 //// [https://lustre.build/api/lustre](https://lustre.build/api/lustre)
 
@@ -10,11 +83,32 @@ import gleam/erlang/process.{type Subject}
 import gleam/otp/actor.{type StartError}
 import gleam/result
 import lustre/effect.{type Effect}
-import lustre/element.{type Diff, type Element}
+import lustre/element.{type Element, type Patch}
 import lustre/runtime
 
 // TYPES -----------------------------------------------------------------------
 
+/// Represents a constructed Lustre application that is ready to be started.
+/// Depending on the kind of application you've constructed you have a few 
+/// options:
+/// 
+/// - Use [`start`](#start) to start a `Browser` application on the client.
+/// 
+/// - Use [`start_server_component`](#start_server_component) to start a 
+///   `ServerComponent` anywhere: Erlang, Node, Deno, in the browser.
+/// 
+/// - Use [`start_actor`](#start_actor) to start a `ServerComponent` specifically
+///   for the Erlang target. You'll want to use this one to properly make use of
+///   OTP features.
+/// 
+/// - Use [`register`](#register) to register a `WebComponent` in the browser to
+///   be used as a Custom Element.
+/// 
+/// 💡 That `runtime` type parameter tells you what sort of application this is.
+/// It's actually a [phantom type](https://hayleigh-dot-dev.github.io/blog/phantom-types-in-gleam/)
+/// that doesn't exist when your program is running. It's used to make sure you
+/// don't try and use a `Browser` application on the server. 
+/// 
 pub opaque type App(runtime, flags, model, msg) {
   App(
     init: fn(flags) -> #(model, Effect(msg)),
@@ -24,10 +118,24 @@ pub opaque type App(runtime, flags, model, msg) {
   )
 }
 
+/// A `ServerComponent` is a type of Lustre application that does not directly
+/// render anything to the DOM. Instead, it can run anywhere Gleam runs and 
+/// operates in a "headless" mode where it computes diffs between renders and
+/// sends them to any number of connected listeners.
+/// 
+/// Lustre Server Components are not tied to any particular transport or network
+/// protocol, but they are most commonly used with WebSockets in a fashion similar
+/// to Phoenix LiveView.
+/// 
 pub type ServerComponent
 
+/// The `Browser` runtime is the most typical kind of Lustre application: it's
+/// a single-page application that runs in the browser similar to React or Vue.
+/// 
 pub type Browser
 
+///
+/// 
 pub type WebComponent
 
 pub type Action(runtime, msg) =
@@ -117,7 +225,11 @@ fn do_start(
   _selector: String,
   _flags: flags,
 ) -> Result(fn(Action(Browser, msg)) -> Nil, Error) {
-  panic
+  // It should never be possible for the body of this function to execute on the
+  // Erlang target because the `is_browser` guard will prevent it. Instead of
+  // a panic, we still return a well-typed `Error` here in the case where someone
+  // mistakenly uses this function internally.
+  Error(NotABrowser)
 }
 
 ///
@@ -132,6 +244,11 @@ pub fn start_server_component(
 }
 
 ///
+/// 
+/// 🚨 This function is only meaningful on the Erlang target. Attempts to call
+/// it on the JavaScript will result in the `NotErlang` error. If you're running
+/// a Lustre Server Component on Node or Deno, use 
+/// [`start_server_component`](#start_server_component) instead.
 /// 
 pub fn start_actor(
   app: App(ServerComponent, flags, model, msg),
@@ -168,7 +285,7 @@ pub fn register(
 // ACTIONS ---------------------------------------------------------------------
 
 pub fn add_renderer(
-  renderer: fn(Diff(msg)) -> Nil,
+  renderer: fn(Patch(msg)) -> Nil,
 ) -> Action(ServerComponent, msg) {
   runtime.AddRenderer(renderer)
 }
@@ -182,7 +299,7 @@ pub fn event(name: String, data: Dynamic) -> Action(ServerComponent, msg) {
 }
 
 pub fn remove_renderer(
-  renderer: fn(Diff(msg)) -> Nil,
+  renderer: fn(Patch(msg)) -> Nil,
 ) -> Action(ServerComponent, msg) {
   runtime.RemoveRenderer(renderer)
 }

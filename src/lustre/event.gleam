@@ -4,6 +4,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type DecodeError, type Dynamic}
+import gleam/json.{type Json}
 import gleam/result
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
@@ -16,7 +17,7 @@ type Decoded(a) =
 // EFFECTS ---------------------------------------------------------------------
 
 ///
-pub fn emit(event: String, data: any) -> Effect(msg) {
+pub fn emit(event: String, data: Json) -> Effect(msg) {
   effect.event(event, data)
 }
 
