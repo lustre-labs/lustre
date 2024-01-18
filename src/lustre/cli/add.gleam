@@ -22,6 +22,8 @@ type Error {
 
 // MAIN ------------------------------------------------------------------------
 
+const esbuild_path = "priv/bin/esbuild"
+
 pub fn run() -> Command(Nil) {
   glint.command(fn(input) {
     let CommandInput(args, flags) = input
@@ -92,7 +94,7 @@ fn download_esbuild(flags: Dict(String, Flag)) -> Result(Nil, Error) {
   let _ = simplifile.create_directory_all("priv/bin")
   use esbuild <- result.try(unzip_esbuild(tarball))
   use _ <- result.try(
-    "priv/bin/esbuild"
+    esbuild_path
     |> simplifile.write_bits(esbuild)
     |> result.map_error(SimplifileError),
   )
@@ -104,7 +106,7 @@ fn download_esbuild(flags: Dict(String, Flag)) -> Result(Nil, Error) {
       other: set.from_list([Read, Execute]),
     )
   use _ <- result.try(
-    "priv/bin/esbuild"
+    esbuild_path
     |> simplifile.set_permissions(permissions)
     |> result.map_error(SimplifileError),
   )
@@ -117,7 +119,8 @@ fn download_esbuild(flags: Dict(String, Flag)) -> Result(Nil, Error) {
 fn explain(error: Error) -> Nil {
   case error {
     EsbuildAlreadyExists ->
-      "✨ esbuild already exists in `priv/esbuild` "
+      "✨ esbuild already exists in `{path}` "
+      |> string.replace(each: "{path}", with: esbuild_path)
       |> string.pad_right(78, ".")
       |> string.append(" ✅")
     NetworkError(_) ->
@@ -125,7 +128,8 @@ fn explain(error: Error) -> Nil {
       |> string.pad_right(78, ".")
       |> string.append(" ❌")
     SimplifileError(_error) ->
-      "🚨 An unknown error occured while writing the executable to `priv/esbuild` "
+      "🚨 An unknown error occured while writing the executable to `{path}` "
+      |> string.replace(each: "{path}", with: esbuild_path)
       |> string.pad_right(78, ".")
       |> string.append(" ❌")
     UnknownPlatform(os, cpu) ->
