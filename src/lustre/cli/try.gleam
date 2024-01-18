@@ -4,7 +4,6 @@ import gleam_community/ansi
 import gleam/bool
 import gleam/int
 import gleam/io
-import gleam/result
 import gleam/string
 import glint.{type Command, CommandInput}
 import glint/flag
@@ -31,7 +30,7 @@ pub fn run() -> Command(Nil) {
     let CommandInput(_, flags) = input
     let assert Ok(port) = flag.get_int(flags, "port")
     let assert Ok(host) = flag.get_string(flags, "host")
-    let assert Ok(no_styles) = flag.get_bool(flags, "no-styles-styles")
+    let assert Ok(no_styles) = flag.get_bool(flags, "no-styles")
 
     let result = {
       let stdout = exec("gleam build --target javascript")
@@ -96,8 +95,8 @@ fn on_start(host: String, port: Int) -> Nil {
 fn on_port_taken(port) -> Nil {
   io.println(
     "🚨 Port "
-    <> ansi.bold(int.to_string(port))
-    <> " already in use, using next available port",
+      <> ansi.bold(int.to_string(port))
+      <> " already in use, using next available port",
   )
 }
 
