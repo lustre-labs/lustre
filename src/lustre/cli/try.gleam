@@ -4,11 +4,13 @@ import gleam_community/ansi
 import gleam/bool
 import gleam/int
 import gleam/io
+import gleam/result
 import gleam/string
 import glint.{type Command, CommandInput}
 import glint/flag
 import simplifile
 import tom
+import lustre/cli/project
 
 // TYPES -----------------------------------------------------------------------
 
@@ -33,17 +35,11 @@ pub fn run() -> Command(Nil) {
     let assert Ok(no_styles) = flag.get_bool(flags, "no-styles")
 
     let result = {
-      let stdout = exec("gleam build --target javascript")
-      use <- bool.guard(string.contains(stdout, "error:"), Error(CompileError))
-      // These are all safe to assert because the Gleam project wouldn't compile
-      // if any of this stuff was invalid.
-      let assert Ok(config) = simplifile.read("gleam.toml")
-      let assert Ok(toml) = tom.parse(config)
-      let assert Ok(name) = tom.get_string(toml, ["name"])
-      let options = Options(name, host, port, no_styles)
-
+      let compile = result.replace_error(project.build(), CompileError)
+      use compiled <- result.try(compile)
+      let configuration = project.read_configuration(compiled)
+      let options = Options(configuration.name, host, port, no_styles)
       serve(options, on_start(host, _), on_port_taken)
-
       Ok(Nil)
     }
 

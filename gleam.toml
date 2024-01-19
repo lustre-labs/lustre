@@ -32,3 +32,4 @@ justin = "~> 1.0"
 [dev-dependencies]
 birdie = "~> 1.0"
 gleeunit = "~> 1.0"
+filepath = "~> 0.1"

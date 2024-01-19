@@ -88,13 +88,11 @@ fn on_port_taken(port) -> Nil {
 // EXTERNALS -------------------------------------------------------------------
 
 @external(erlang, "lustre_try_ffi", "serve")
-@external(javascript, "../lustre_try.ffi.mjs", "serve")
 fn serve(
   options: Options,
   on_start: fn(Int) -> Nil,
   on_port_taken: fn(Int) -> Nil,
 ) -> Nil
 
-@external(erlang, "http_ffi", "exec")
-@external(javascript, "node:child_process", "execSync")
+@external(erlang, "lustre_try_ffi", "exec")
 fn exec(command: String) -> String

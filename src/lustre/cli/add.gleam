@@ -12,7 +12,7 @@ import simplifile.{type FilePermissions, Execute, FilePermissions, Read, Write}
 
 // TYPES -----------------------------------------------------------------------
 
-type Error {
+pub type Error {
   EsbuildAlreadyExists
   NetworkError(Dynamic)
   SimplifileError(simplifile.FileError)
@@ -54,9 +54,9 @@ FLAGS:
 
 // DOWNLOAD ESBUILD ------------------------------------------------------------
 
-fn download_esbuild(flags: Dict(String, Flag)) -> Result(Nil, Error) {
-  let assert Ok(os) = result.or(flag.get_string(flags, "os"), Ok(get_os()))
-  let assert Ok(cpu) = result.or(flag.get_string(flags, "cpu"), Ok(get_cpu()))
+pub fn download_esbuild(flags: Dict(String, Flag)) -> Result(Nil, Error) {
+  let os = result.unwrap(flag.get_string(flags, "os"), get_os())
+  let cpu = result.unwrap(flag.get_string(flags, "cpu"), get_cpu())
   let base = "https://registry.npmjs.org/@esbuild/"
   let path = case os, cpu {
     "android", "arm" -> Ok("android-arm/-/android-arm-0.19.10.tgz")
