@@ -1,9 +1,10 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic
+import gleam/dict.{type Dict}
+import gleam/dynamic.{type Decoder}
 import gleam/int
-import gleam/result
 import gleam/json
+import gleam/result
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -14,12 +15,11 @@ import lustre/ui
 
 // MODEL -----------------------------------------------------------------------
 
-pub type Model {
-  Model(count: Int, input: String, mouse: #(Int, Int))
-}
+pub type Model =
+  Int
 
 pub fn init(count: Int) -> #(Model, Effect(Msg)) {
-  #(Model(count, "", #(0, 0)), effect.none())
+  #(count, effect.none())
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -27,56 +27,62 @@ pub fn init(count: Int) -> #(Model, Effect(Msg)) {
 pub opaque type Msg {
   Incr
   Decr
-  Change(String)
-  Move(Int, Int)
-  Alert
+  Reset(Int)
 }
 
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
-    Incr -> #(Model(..model, count: model.count + 1), effect.none())
-    Decr -> #(Model(..model, count: model.count - 1), effect.none())
-    Change(input) -> #(Model(..model, input: input), effect.none())
-    Move(x, y) -> #(Model(..model, mouse: #(x, y)), effect.none())
-    Alert -> #(model, event.emit("alert", json.int(model.count)))
+    Incr -> #(model + 1, effect.none())
+    Decr -> #(model - 1, effect.none())
+    Reset(count) -> #(
+      count,
+      effect.event(
+        "changed",
+        json.string("You reset the count to: " <> int.to_string(count)),
+      ),
+    )
   }
+}
+
+pub fn on_attribute_change() -> Dict(String, Decoder(Msg)) {
+  dict.from_list([
+    #("count", fn(dyn) {
+      dyn
+      |> dynamic.int
+      |> result.map(Reset)
+    }),
+  ])
 }
 
 // VIEW ------------------------------------------------------------------------
 
 pub fn view(model: Model) -> Element(Msg) {
-  let count = int.to_string(model.count)
-  let on_mouse_move = fn(event) {
-    use x <- result.try(dynamic.field("offsetX", dynamic.int)(event))
-    use y <- result.try(dynamic.field("offsetY", dynamic.int)(event))
+  let count = int.to_string(model)
 
-    Ok(Move(x, y))
-  }
-
-  ui.stack([], [
+  ui.centre(
+    [attribute.style([#("width", "100vw"), #("height", "100vh")])],
     ui.sequence([], [
       ui.button([event.on_click(Decr)], [element.text("-")]),
       ui.centre([], html.span([], [element.text(count)])),
       ui.button([event.on_click(Incr)], [element.text("+")]),
-      ui.button([event.on_click(Alert)], [element.text("alert")]),
     ]),
-    ui.cluster([], [
-      ui.input([event.on_input(Change), attribute.value(model.input)]),
-      html.span([], [element.text(model.input)]),
-    ]),
-    ui.centre(
-      [
-        event.on("mousemove", on_mouse_move),
-        server.include(["offsetX", "offsetY"]),
-        attribute.style([
-          #("aspect-ratio", "1 / 1 "),
-          #("background-color", "var(--element-background)"),
-        ]),
-      ],
-      html.div([], [
-        html.p([], [element.text("x: " <> int.to_string(model.mouse.0))]),
-        html.p([], [element.text("y: " <> int.to_string(model.mouse.1))]),
-      ]),
-    ),
-  ])
+  )
+  // ui.cluster([], [
+  //   ui.input([event.on_input(Change), attribute.value(model.input)]),
+  //   html.span([], [element.text(model.input)]),
+  // ]),
+  // ui.centre(
+  //   [
+  //     event.on("mousemove", on_mouse_move),
+  //     server.include(["offsetX", "offsetY"]),
+  //     attribute.style([
+  //       #("aspect-ratio", "1 / 1 "),
+  //       #("background-color", "var(--element-background)"),
+  //     ]),
+  //   ],
+  //   html.div([], [
+  //     html.p([], [element.text("x: " <> int.to_string(model.mouse.0))]),
+  //     html.p([], [element.text("y: " <> int.to_string(model.mouse.1))]),
+  //   ]),
+  // ),
 }

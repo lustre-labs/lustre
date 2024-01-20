@@ -45,18 +45,7 @@ fn handler(req: Request) -> Response {
         ",
       ),
     ]),
-    html.body([], [
-      html.div(
-        [
-          attribute.style([
-            #("width", "80ch"),
-            #("margin", "0 auto"),
-            #("padding", "2rem"),
-          ]),
-        ],
-        [server.component([server.route("/ws")])],
-      ),
-    ]),
+    html.body([], [server.component([server.route("/ws")])]),
   ])
   |> element.to_string_builder
   |> string_builder.prepend("<!DOCTYPE html>\n")
