@@ -448,10 +448,14 @@ var LustreServerComponent = class extends HTMLElement {
       const changed = [];
       for (const mutation of mutations) {
         if (mutation.type === "attributes") {
-          const { name, oldValue: prev } = mutation;
+          const { attributeName: name, oldValue: prev } = mutation;
           const next = this.getAttribute(name);
           if (prev !== next) {
-            changed.push([name, next]);
+            try {
+              changed.push([name, JSON.parse(next)]);
+            } catch {
+              changed.push([name, next]);
+            }
           }
         }
       }
@@ -500,7 +504,7 @@ var LustreServerComponent = class extends HTMLElement {
       }
       Object.defineProperty(this, attr, {
         get() {
-          return this[`_${attr}`] || this.getAttribute(attr);
+          return this[`_${attr}`] ?? this.getAttribute(attr);
         },
         set(value) {
           const prev = this[attr];
