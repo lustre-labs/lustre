@@ -19,7 +19,7 @@ import lustre/internals/vdom.{
 pub type Patch(msg) {
   Diff(ElementDiff(msg))
   Emit(String, Json)
-  Morph(Element(msg))
+  Init(List(String), Element(msg))
 }
 
 pub type ElementDiff(msg) {
@@ -209,9 +209,10 @@ pub fn patch_to_json(patch: Patch(msg)) -> Json {
         json.string(name),
         event,
       ])
-    Morph(element) ->
+    Init(attrs, element) ->
       json.preprocessed_array([
-        json.int(constants.morph),
+        json.int(constants.init),
+        json.array(attrs, json.string),
         vdom.element_to_json(element),
       ])
   }

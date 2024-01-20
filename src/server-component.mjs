@@ -15,11 +15,31 @@ export class LustreServerComponent extends HTMLElement {
     return ["route"];
   }
 
+  #observer = null;
   #root = null;
   #socket = null;
 
   constructor() {
     super();
+
+    this.#observer = new MutationObserver((mutations) => {
+      const changed = [];
+
+      for (const mutation of mutations) {
+        if (mutation.type === "attributes") {
+          const { name, oldValue: prev } = mutation;
+          const next = this.getAttribute(name);
+
+          if (prev !== next) {
+            changed.push([name, next]);
+          }
+        }
+      }
+
+      if (changed.length) {
+        this.#socket?.send(JSON.stringify([Constants.attrs, changed]));
+      }
+    });
   }
 
   connectedCallback() {
@@ -49,8 +69,8 @@ export class LustreServerComponent extends HTMLElement {
               case Constants.emit:
                 return this.emit(payload);
 
-              case Constants.morph:
-                return this.morph(payload);
+              case Constants.init:
+                return this.init(payload);
             }
           });
         }
@@ -58,19 +78,64 @@ export class LustreServerComponent extends HTMLElement {
     }
   }
 
-  morph([vdom]) {
+  init([attrs, vdom]) {
+    const initial = [];
+
+    for (const attr of attrs) {
+      if (attr in this) {
+        initial.push([attr, this[attr]]);
+      } else if (this.hasAttribute(attr)) {
+        initial.push([attr, this.getAttribute(attr)]);
+      }
+
+      Object.defineProperty(this, attr, {
+        get() {
+          return this[`_${attr}`] || this.getAttribute(attr);
+        },
+        set(value) {
+          const prev = this[attr];
+
+          if (typeof value === "string") {
+            this.setAttribute(attr, value);
+          } else {
+            this[`_${attr}`] = value;
+          }
+
+          if (prev !== value) {
+            this.#socket?.send(
+              JSON.stringify([Constants.attrs, [[attr, value]]])
+            );
+          }
+        },
+      });
+    }
+
+    this.#observer.observe(this, {
+      attributeFilter: attrs,
+      attributeOldValue: true,
+      attributes: true,
+      characterData: false,
+      characterDataOldValue: false,
+      childList: false,
+      subtree: false,
+    });
+
+    this.morph(vdom);
+
+    if (initial.length) {
+      this.#socket?.send(JSON.stringify([Constants.attrs, initial]));
+    }
+  }
+
+  morph(vdom) {
     this.#root = morph(this.#root, vdom, (msg) => {
-      this.#socket?.send(
-        JSON.stringify({ $: "Event", tag: msg.tag, event: msg.data })
-      );
+      this.#socket?.send(JSON.stringify([Constants.event, msg.tag, msg.data]));
     });
   }
 
   diff([diff]) {
     this.#root = patch(this.#root, diff, (msg) => {
-      this.#socket?.send(
-        JSON.stringify({ $: "Event", tag: msg.tag, event: msg.data })
-      );
+      this.#socket?.send(JSON.stringify([Constants.event, msg.tag, msg.data]));
     });
   }
 

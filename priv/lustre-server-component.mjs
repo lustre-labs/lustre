@@ -1,7 +1,9 @@
 // build/dev/javascript/lustre/lustre/internals/constants.mjs
 var diff = 0;
 var emit = 1;
-var morph = 2;
+var init = 2;
+var event = 4;
+var attrs = 5;
 
 // build/dev/javascript/prelude.mjs
 var CustomType = class {
@@ -133,7 +135,7 @@ function map2(result, fun) {
 }
 
 // build/dev/javascript/lustre/vdom.ffi.mjs
-function morph2(prev, curr, dispatch, parent) {
+function morph(prev, curr, dispatch, parent) {
   if (curr?.tag && prev?.nodeType === 1) {
     const nodeName = curr.tag.toUpperCase();
     const ns = curr.namespace || "http://www.w3.org/1999/xhtml";
@@ -162,13 +164,13 @@ function patch(root, diff2, dispatch) {
   for (const created of diff2[0]) {
     const key = created[0];
     if (key === "0") {
-      morph2(root, created[1], dispatch, root.parentNode);
+      morph(root, created[1], dispatch, root.parentNode);
     } else {
       const segments = Array.from(key);
       const parentKey = segments.slice(0, -1).join("");
       const indexKey = segments.slice(-1)[0];
       const prev = root.querySelector(`[data-lustre-key="${key}"]`) ?? root.querySelector(`[data-lustre-key="${parentKey}"]`).childNodes[indexKey];
-      morph2(prev, created[1], dispatch, prev.parentNode);
+      morph(prev, created[1], dispatch, prev.parentNode);
     }
   }
   for (const removed of diff2[1]) {
@@ -188,8 +190,8 @@ function patch(root, diff2, dispatch) {
     }
     for (const removed of updated[1]) {
       if (prev.$lustre.__registered_events.has(removed)) {
-        const event = removed.slice(2).toLowerCase();
-        prev.removeEventListener(event, prev.$lustre[`${removed}Handler`]);
+        const event2 = removed.slice(2).toLowerCase();
+        prev.removeEventListener(event2, prev.$lustre[`${removed}Handler`]);
         prev.$lustre.__registered_events.delete(removed);
         delete prev.$lustre[removed];
         delete prev.$lustre[`${removed}Handler`];
@@ -231,13 +233,13 @@ function createElement(prev, curr, dispatch, parent = null) {
       }
     }
     for (const child of children) {
-      el.appendChild(morph2(null, child, dispatch, el));
+      el.appendChild(morph(null, child, dispatch, el));
     }
   } else if (dangerousUnescapedHtml) {
     el.innerHTML = dangerousUnescapedHtml;
   } else {
     for (const child of curr.children) {
-      el.appendChild(morph2(null, child, dispatch, el));
+      el.appendChild(morph(null, child, dispatch, el));
     }
   }
   if (prev)
@@ -275,8 +277,8 @@ function morphElement(prev, curr, dispatch, parent) {
   }
   for (const name of prev.$lustre.__registered_events) {
     if (!currAttrs.has(name)) {
-      const event = name.slice(2).toLowerCase();
-      prev.removeEventListener(event, prev.$lustre[`${name}Handler`]);
+      const event2 = name.slice(2).toLowerCase();
+      prev.removeEventListener(event2, prev.$lustre[`${name}Handler`]);
       prev.$lustre.__registered_events.delete(name);
       delete prev.$lustre[name];
       delete prev.$lustre[`${name}Handler`];
@@ -301,15 +303,15 @@ function morphElement(prev, curr, dispatch, parent) {
     }
     while (prevChild) {
       if (Array.isArray(currChild) && currChild.length) {
-        morph2(prevChild, currChild.shift(), dispatch, prev);
+        morph(prevChild, currChild.shift(), dispatch, prev);
       } else if (currChild.head) {
-        morph2(prevChild, currChild.head, dispatch, prev);
+        morph(prevChild, currChild.head, dispatch, prev);
         currChild = currChild.tail;
       }
       prevChild = prevChild.nextSibling;
     }
     for (const child of currChild) {
-      prev.appendChild(morph2(null, child, dispatch, prev));
+      prev.appendChild(morph(null, child, dispatch, prev));
     }
   } else if (currAttrs.has("dangerous-unescaped-html")) {
     prev.innerHTML = currAttrs.get("dangerous-unescaped-html");
@@ -319,11 +321,11 @@ function morphElement(prev, curr, dispatch, parent) {
     while (prevChild) {
       if (Array.isArray(currChild) && currChild.length) {
         const next = prevChild.nextSibling;
-        morph2(prevChild, currChild.shift(), dispatch, prev);
+        morph(prevChild, currChild.shift(), dispatch, prev);
         prevChild = next;
       } else if (currChild.head) {
         const next = prevChild.nextSibling;
-        morph2(prevChild, currChild.head, dispatch, prev);
+        morph(prevChild, currChild.head, dispatch, prev);
         currChild = currChild.tail;
         prevChild = next;
       } else {
@@ -333,7 +335,7 @@ function morphElement(prev, curr, dispatch, parent) {
       }
     }
     for (const child of currChild) {
-      prev.appendChild(morph2(null, child, dispatch, prev));
+      prev.appendChild(morph(null, child, dispatch, prev));
     }
   }
   return prev;
@@ -343,17 +345,17 @@ function morphAttr(el, name, value, dispatch) {
     case (name.startsWith("data-lustre-on-") && "string"): {
       if (!value) {
         el.removeAttribute(name);
-        el.removeEventListener(event, el.$lustre[`${name}Handler`]);
+        el.removeEventListener(event2, el.$lustre[`${name}Handler`]);
         break;
       }
       if (el.hasAttribute(name))
         break;
-      const event = name.slice(15).toLowerCase();
+      const event2 = name.slice(15).toLowerCase();
       const handler = (e) => dispatch(serverEventHandler(e));
       if (el.$lustre[`${name}Handler`]) {
-        el.removeEventListener(event, el.$lustre[`${name}Handler`]);
+        el.removeEventListener(event2, el.$lustre[`${name}Handler`]);
       }
-      el.addEventListener(event, handler);
+      el.addEventListener(event2, handler);
       el.$lustre[name] = value;
       el.$lustre[`${name}Handler`] = handler;
       el.$lustre.__registered_events.add(name);
@@ -371,12 +373,12 @@ function morphAttr(el, name, value, dispatch) {
     case (name.startsWith("on") && "function"): {
       if (el.$lustre[name] === value)
         break;
-      const event = name.slice(2).toLowerCase();
+      const event2 = name.slice(2).toLowerCase();
       const handler = (e) => map2(value(e), dispatch);
       if (el.$lustre[`${name}Handler`]) {
-        el.removeEventListener(event, el.$lustre[`${name}Handler`]);
+        el.removeEventListener(event2, el.$lustre[`${name}Handler`]);
       }
-      el.addEventListener(event, handler);
+      el.addEventListener(event2, handler);
       el.$lustre[name] = value;
       el.$lustre[`${name}Handler`] = handler;
       el.$lustre.__registered_events.add(name);
@@ -403,12 +405,12 @@ function morphText(prev, curr) {
     prev.nodeValue = currValue;
   return prev;
 }
-function serverEventHandler(event) {
-  const el = event.target;
-  const tag = el.getAttribute(`data-lustre-on-${event.type}`);
+function serverEventHandler(event2) {
+  const el = event2.target;
+  const tag = el.getAttribute(`data-lustre-on-${event2.type}`);
   const data = JSON.parse(el.getAttribute("data-lustre-data") || "{}");
   const include = JSON.parse(el.getAttribute("data-lustre-include") || "[]");
-  switch (event.type) {
+  switch (event2.type) {
     case "input":
     case "change":
       include.push("target.value");
@@ -418,7 +420,7 @@ function serverEventHandler(event) {
     tag,
     data: include.reduce((data2, property) => {
       const path = property.split(".");
-      for (let i = 0, o = data2, e = event; i < path.length; i++) {
+      for (let i = 0, o = data2, e = event2; i < path.length; i++) {
         if (i === path.length - 1) {
           o[path[i]] = e[path[i]];
         } else {
@@ -437,10 +439,26 @@ var LustreServerComponent = class extends HTMLElement {
   static get observedAttributes() {
     return ["route"];
   }
+  #observer = null;
   #root = null;
   #socket = null;
   constructor() {
     super();
+    this.#observer = new MutationObserver((mutations) => {
+      const changed = [];
+      for (const mutation of mutations) {
+        if (mutation.type === "attributes") {
+          const { name, oldValue: prev } = mutation;
+          const next = this.getAttribute(name);
+          if (prev !== next) {
+            changed.push([name, next]);
+          }
+        }
+      }
+      if (changed.length) {
+        this.#socket?.send(JSON.stringify([attrs, changed]));
+      }
+    });
   }
   connectedCallback() {
     this.#root = document.createElement("div");
@@ -464,30 +482,67 @@ var LustreServerComponent = class extends HTMLElement {
                 return this.diff(payload);
               case emit:
                 return this.emit(payload);
-              case morph:
-                return this.morph(payload);
+              case init:
+                return this.init(payload);
             }
           });
         }
       }
     }
   }
-  morph([vdom]) {
-    this.#root = morph2(this.#root, vdom, (msg) => {
-      this.#socket?.send(
-        JSON.stringify({ $: "Event", tag: msg.tag, event: msg.data })
-      );
+  init([attrs2, vdom]) {
+    const initial = [];
+    for (const attr of attrs2) {
+      if (attr in this) {
+        initial.push([attr, this[attr]]);
+      } else if (this.hasAttribute(attr)) {
+        initial.push([attr, this.getAttribute(attr)]);
+      }
+      Object.defineProperty(this, attr, {
+        get() {
+          return this[`_${attr}`] || this.getAttribute(attr);
+        },
+        set(value) {
+          const prev = this[attr];
+          if (typeof value === "string") {
+            this.setAttribute(attr, value);
+          } else {
+            this[`_${attr}`] = value;
+          }
+          if (prev !== value) {
+            this.#socket?.send(
+              JSON.stringify([attrs, [[attr, value]]])
+            );
+          }
+        }
+      });
+    }
+    this.#observer.observe(this, {
+      attributeFilter: attrs2,
+      attributeOldValue: true,
+      attributes: true,
+      characterData: false,
+      characterDataOldValue: false,
+      childList: false,
+      subtree: false
+    });
+    this.morph(vdom);
+    if (initial.length) {
+      this.#socket?.send(JSON.stringify([attrs, initial]));
+    }
+  }
+  morph(vdom) {
+    this.#root = morph(this.#root, vdom, (msg) => {
+      this.#socket?.send(JSON.stringify([event, msg.tag, msg.data]));
     });
   }
   diff([diff2]) {
     this.#root = patch(this.#root, diff2, (msg) => {
-      this.#socket?.send(
-        JSON.stringify({ $: "Event", tag: msg.tag, event: msg.data })
-      );
+      this.#socket?.send(JSON.stringify([event, msg.tag, msg.data]));
     });
   }
-  emit([event, data]) {
-    this.dispatchEvent(new CustomEvent(event, { detail: data }));
+  emit([event2, data]) {
+    this.dispatchEvent(new CustomEvent(event2, { detail: data }));
   }
   disconnectedCallback() {
     this.#socket?.close();

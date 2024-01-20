@@ -105,9 +105,9 @@ import lustre/runtime
 ///   be used as a Custom Element.
 /// 
 /// 💡 That `runtime` type parameter tells you what sort of application this is.
-/// It's actually a [phantom type](https://hayleigh-dot-dev.github.io/blog/phantom-types-in-gleam/)
-/// that doesn't exist when your program is running. It's used to make sure you
-/// don't try and use a `Browser` application on the server. 
+///    It's actually a [phantom type](https://hayleigh-dot-dev.github.io/blog/phantom-types-in-gleam/)
+///    that doesn't exist when your program is running. It's used to make sure you
+///    don't try and use a `Browser` application on the server. 
 /// 
 pub opaque type App(runtime, flags, model, msg) {
   App(
@@ -134,13 +134,33 @@ pub type ServerComponent
 /// 
 pub type Browser
 
-///
+/// A `WebComponent` is an encapsulated Lustre application that runs inside a
+/// custom HTML element. These runtimes are excellent for complex stateful widgets
+/// that you don't want to manage from a `Browser` application's main update loop.
+/// 
+/// The Lustre CLI also provides a way for you to bundle a `WebComponent` (or
+/// multiple components) into a single JavaScript file that you can drop into any
+/// other Web application to use your component as a standard Custom Element.
 /// 
 pub type WebComponent
 
+/// An action represents a message that can be sent to (some types of) a running
+/// Lustre application. Like the [`App`](#App) type, the `runtime` type parameter
+/// can be used to determine what kinds of application a particular action can be
+/// sent to.
+/// 
+/// 
+/// 
 pub type Action(runtime, msg) =
   runtime.Action(runtime, msg)
 
+/// Starting a Lustre application might fail for a number of reasons. This error
+/// type enumerates all those reasons, even though some of them are only possible
+/// on certain targets.
+/// 
+/// This generally makes error handling simpler than having to worry about a bunch
+/// of different error types and potentially unifying them yourself.
+/// 
 pub type Error {
   ActorError(StartError)
   BadComponentName
@@ -152,7 +172,17 @@ pub type Error {
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
-///
+/// An element is the simplest type of Lustre application. It renders its contents
+/// once and does not handle any messages or effects. Often this type of application
+/// is used for folks just getting started with Lustre on the frontend and want a
+/// quick way to get something on the screen.
+/// 
+/// Take a look at the [`simple`](#simple) application constructor if you want to
+/// build something interactive.
+/// 
+/// 💡 Just because an element doesn't have its own update loop, doesn't mean its
+///    content is always static! An element application may render a component or
+///    server component that has its own encapsulated update loop!
 /// 
 pub fn element(element: Element(msg)) -> App(Browser, Nil, Nil, msg) {
   let init = fn(_) { #(Nil, effect.none()) }
@@ -202,8 +232,9 @@ pub fn server_component(
   init: fn(flags) -> #(model, Effect(msg)),
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
+  on_attribute_change: Dict(String, Decoder(msg)),
 ) -> App(ServerComponent, flags, model, msg) {
-  App(init, update, view, dict.new())
+  App(init, update, view, on_attribute_change)
 }
 
 // EFFECTS ---------------------------------------------------------------------
@@ -220,11 +251,10 @@ pub fn start(
 }
 
 @external(javascript, "./client-runtime.ffi.mjs", "start")
-fn do_start(
-  _app: App(Browser, flags, model, msg),
-  _selector: String,
-  _flags: flags,
-) -> Result(fn(Action(Browser, msg)) -> Nil, Error) {
+fn do_start(_app: App(Browser, flags, model, msg), _selector: String, _flags: flags) -> Result(
+  fn(Action(Browser, msg)) -> Nil,
+  Error,
+) {
   // It should never be possible for the body of this function to execute on the
   // Erlang target because the `is_browser` guard will prevent it. Instead of
   // a panic, we still return a well-typed `Error` here in the case where someone
@@ -235,10 +265,10 @@ fn do_start(
 ///
 ///
 @external(javascript, "./server-runtime.ffi.mjs", "start")
-pub fn start_server_component(
-  app: App(ServerComponent, flags, model, msg),
-  flags: flags,
-) -> Result(fn(Action(ServerComponent, msg)) -> Nil, Error) {
+pub fn start_server_component(app: App(ServerComponent, flags, model, msg), flags: flags) -> Result(
+  fn(Action(ServerComponent, msg)) -> Nil,
+  Error,
+) {
   use runtime <- result.map(start_actor(app, flags))
   actor.send(runtime, _)
 }
@@ -268,26 +298,27 @@ fn do_start_actor(
   flags: flags,
 ) -> Result(Subject(Action(ServerComponent, msg)), Error) {
   app.init(flags)
-  |> runtime.start(app.update, app.view)
+  |> runtime.start(app.update, app.view, app.on_attribute_change)
   |> result.map_error(ActorError)
 }
 
 ///
 /// 
 @external(javascript, "./client-component.ffi.mjs", "register")
-pub fn register(
-  _app: App(WebComponent, Nil, model, msg),
-  _name: String,
-) -> Result(Nil, Error) {
+pub fn register(_app: App(WebComponent, Nil, model, msg), _name: String) -> Result(
+  Nil,
+  Error,
+) {
   Error(NotABrowser)
 }
 
 // ACTIONS ---------------------------------------------------------------------
 
 pub fn add_renderer(
+  id: any,
   renderer: fn(Patch(msg)) -> Nil,
 ) -> Action(ServerComponent, msg) {
-  runtime.AddRenderer(renderer)
+  runtime.AddRenderer(dynamic.from(id), renderer)
 }
 
 pub fn dispatch(msg: msg) -> Action(runtime, msg) {
@@ -298,10 +329,8 @@ pub fn event(name: String, data: Dynamic) -> Action(ServerComponent, msg) {
   runtime.Event(name, data)
 }
 
-pub fn remove_renderer(
-  renderer: fn(Patch(msg)) -> Nil,
-) -> Action(ServerComponent, msg) {
-  runtime.RemoveRenderer(renderer)
+pub fn remove_renderer(id: any) -> Action(ServerComponent, msg) {
+  runtime.RemoveRenderer(dynamic.from(id))
 }
 
 pub fn shutdown() -> Action(runtime, msg) {
