@@ -1,5 +1,5 @@
 name = "lustre"
-version = "3.1.1"
+version = "3.1.3"
 
 description = "An Elm-inspired framework for building web apps in Gleam!"
 licences = ["MIT"]
@@ -22,3 +22,6 @@ gleam_erlang = "~> 0.23"
 gleam_json = "~> 0.7"
 gleam_otp = "~> 0.8"
 gleam_stdlib = "~> 0.34"
+gleam_community_ansi = "~> 1.3"
+glint = "~> 0.14"
+argv = "~> 1.0"

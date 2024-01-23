@@ -9,27 +9,15 @@ const root = Path.join(cwd, "build/dev/javascript");
 const toml = readFileSync(Path.join(cwd, "gleam.toml"), "utf-8");
 const name = toml.match(/name *= *"(.+)"/)[1];
 
-const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lustre preview server</title>
-
-  <script type="module">
-    import { main } from "./${name}/${name}.mjs"
-
-    document.addEventListener("DOMContentLoaded", () => {
-      main();
-    });
-  </script>
-</head>
-<body>
-  <div data-lustre-app></div>
-</body>
-</html>`;
+let html;
 
 const server = Http.createServer((req, res) => {
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, private"
+  );
+  res.setHeader("Pragma", "no-cache");
+
   switch (true) {
     case req.url === "/": {
       res.setHeader("Content-Type", "text/html");
@@ -47,9 +35,9 @@ const server = Http.createServer((req, res) => {
           res.statusCode = 200;
           res.end(src);
         })
-        .catch((err) => {
+        .catch((_err) => {
           res.statusCode = 404;
-          res.end(err);
+          res.end();
         });
 
       break;
@@ -62,9 +50,9 @@ const server = Http.createServer((req, res) => {
           res.statusCode = 200;
           res.end(src);
         })
-        .catch((err) => {
+        .catch((_err) => {
           res.statusCode = 404;
-          res.end(err);
+          res.end();
         });
 
       break;
@@ -77,14 +65,59 @@ const server = Http.createServer((req, res) => {
           res.statusCode = 200;
           res.end(src);
         })
-        .catch((err) => {
+        .catch((_err) => {
           res.statusCode = 404;
-          res.end(err);
+          res.end();
         });
     }
   }
 });
 
-export const serve = (port) => {
-  server.listen(port, "localhost");
+export const serve = (
+  { host, port, include_styles },
+  on_start,
+  on_port_taken
+) => {
+  let is_first_try = true;
+
+  html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lustre preview server</title>
+
+  ${
+    include_styles
+      ? `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lustre-labs/ui/priv/styles.css">`
+      : ""
+  }
+
+  <script type="module">
+    import { main } from "./${name}/${name}.mjs"
+
+    document.addEventListener("DOMContentLoaded", () => {
+      main();
+    });
+  </script>
+</head>
+<body>
+  <div data-lustre-app></div>
+</body>
+</html>`;
+
+  server
+    .on("error", (error) => {
+      if (error.code === "EADDRINUSE") {
+        if (is_first_try) {
+          on_port_taken(port);
+          is_first_try = false;
+        }
+
+        server.listen(++port, host);
+      }
+    })
+    .listen(port, host, () => {
+      on_start(port);
+    });
 };
