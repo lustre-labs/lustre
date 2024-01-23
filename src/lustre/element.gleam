@@ -3,25 +3,22 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/json.{type Json}
 import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
 import lustre/attribute.{type Attribute, attribute}
+import lustre/internals/vdom.{Element, Text}
+import lustre/internals/patch
 
 // TYPES -----------------------------------------------------------------------
 
 /// 
-pub opaque type Element(msg) {
-  Text(content: String)
-  Element(
-    namespace: String,
-    tag: String,
-    attrs: List(Attribute(msg)),
-    children: List(Element(msg)),
-    self_closing: Bool,
-    void: Bool,
-  )
-}
+pub type Element(msg) =
+  vdom.Element(msg)
+
+pub type Patch(msg) =
+  patch.Patch(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -158,140 +155,17 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
 
 /// 
 pub fn to_string(element: Element(msg)) -> String {
-  to_string_builder_helper(element, False)
-  |> string_builder.to_string
+  vdom.element_to_string(element)
 }
 
 pub fn to_string_builder(element: Element(msg)) -> StringBuilder {
-  to_string_builder_helper(element, False)
+  vdom.element_to_string_builder(element)
 }
 
-fn to_string_builder_helper(
-  element: Element(msg),
-  raw_text: Bool,
-) -> StringBuilder {
-  case element {
-    Text("") -> string_builder.new()
-    Text(content) if raw_text -> string_builder.from_string(content)
-    Text(content) -> string_builder.from_string(escape("", content))
-
-    Element(namespace, tag, attrs, _, self_closing, _) if self_closing -> {
-      let html = string_builder.from_string("<" <> tag)
-      let #(attrs, _) =
-        attrs_to_string_builder(case namespace {
-          "" -> attrs
-          _ -> [attribute("xmlns", namespace), ..attrs]
-        })
-
-      html
-      |> string_builder.append_builder(attrs)
-      |> string_builder.append("/>")
-    }
-
-    Element(namespace, tag, attrs, _, _, void) if void -> {
-      let html = string_builder.from_string("<" <> tag)
-      let #(attrs, _) =
-        attrs_to_string_builder(case namespace {
-          "" -> attrs
-          _ -> [attribute("xmlns", namespace), ..attrs]
-        })
-
-      html
-      |> string_builder.append_builder(attrs)
-      |> string_builder.append(">")
-    }
-
-    // Style and script tags are special beacuse they need to contain unescape
-    // text content and not escaped HTML content.
-    Element("", "style" as tag, attrs, children, False, False)
-    | Element("", "script" as tag, attrs, children, False, False) -> {
-      let html = string_builder.from_string("<" <> tag)
-      let #(attrs, _) = attrs_to_string_builder(attrs)
-
-      html
-      |> string_builder.append_builder(attrs)
-      |> string_builder.append(">")
-      |> children_to_string_builder(children, True)
-      |> string_builder.append("</" <> tag <> ">")
-    }
-
-    Element(namespace, tag, attrs, children, _, _) -> {
-      let html = string_builder.from_string("<" <> tag)
-      let #(attrs, inner_html) =
-        attrs_to_string_builder(case namespace {
-          "" -> attrs
-          _ -> [attribute("xmlns", namespace), ..attrs]
-        })
-
-      case inner_html {
-        "" ->
-          html
-          |> string_builder.append_builder(attrs)
-          |> string_builder.append(">")
-          |> children_to_string_builder(children, raw_text)
-          |> string_builder.append("</" <> tag <> ">")
-        _ ->
-          html
-          |> string_builder.append_builder(attrs)
-          |> string_builder.append(">" <> inner_html <> "</" <> tag <> ">")
-      }
-    }
-  }
+pub fn encode(element: Element(msg)) -> Json {
+  vdom.element_to_json(element)
 }
 
-fn attrs_to_string_builder(
-  attrs: List(Attribute(msg)),
-) -> #(StringBuilder, String) {
-  let #(html, class, style, inner_html) = {
-    let init = #(string_builder.new(), "", "", "")
-    use #(html, class, style, inner_html), attr <- list.fold(attrs, init)
-
-    case attribute.to_string_parts(attr) {
-      Ok(#("dangerous-unescaped-html", val)) -> #(
-        html,
-        class,
-        style,
-        inner_html
-        <> val,
-      )
-      Ok(#("class", val)) if class == "" -> #(html, val, style, inner_html)
-      Ok(#("class", val)) -> #(html, class <> " " <> val, style, inner_html)
-      Ok(#("style", val)) if style == "" -> #(html, class, val, inner_html)
-      Ok(#("style", val)) -> #(html, class, style <> " " <> val, inner_html)
-      Ok(#(key, val)) -> #(
-        string_builder.append(html, " " <> key <> "=\"" <> val <> "\""),
-        class,
-        style,
-        inner_html,
-      )
-      Error(_) -> #(html, class, style, inner_html)
-    }
-  }
-
-  #(
-    case class, style {
-      "", "" -> html
-      _, "" -> string_builder.append(html, " class=\"" <> class <> "\"")
-      "", _ -> string_builder.append(html, " style=\"" <> style <> "\"")
-      _, _ ->
-        string_builder.append(
-          html,
-          " class=\""
-          <> class
-          <> "\" style=\""
-          <> style
-          <> "\"",
-        )
-    },
-    inner_html,
-  )
-}
-
-fn children_to_string_builder(
-  html: StringBuilder,
-  children: List(Element(msg)),
-  raw_text: Bool,
-) -> StringBuilder {
-  use html, child <- list.fold(children, html)
-  string_builder.append_builder(html, to_string_builder_helper(child, raw_text))
+pub fn encode_patch(patch: Patch(msg)) -> Json {
+  patch.patch_to_json(patch)
 }

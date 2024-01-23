@@ -9,15 +9,13 @@ import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
-import gleam/string_builder.{type StringBuilder}
+import lustre/internals/vdom.{Attribute, Event}
 
 // TYPES -----------------------------------------------------------------------
 
 ///
-pub opaque type Attribute(msg) {
-  Attribute(String, Dynamic, as_property: Bool)
-  Event(String, fn(Dynamic) -> Result(msg, Nil))
-}
+pub type Attribute(msg) =
+  vdom.Attribute(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -51,79 +49,6 @@ pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
   case attr {
     Attribute(name, value, as_property) -> Attribute(name, value, as_property)
     Event(on, handler) -> Event(on, fn(e) { result.map(handler(e), f) })
-  }
-}
-
-// CONVERSIONS -----------------------------------------------------------------
-
-///
-/// 
-pub fn to_string(attr: Attribute(msg)) -> String {
-  case to_string_parts(attr) {
-    Ok(#(key, val)) -> key <> "=\"" <> val <> "\""
-    Error(_) -> ""
-  }
-}
-
-///
-/// 
-pub fn to_string_parts(attr: Attribute(msg)) -> Result(#(String, String), Nil) {
-  case attr {
-    Attribute("", _, _) -> Error(Nil)
-    Attribute("dangerous-unescaped-html", _, _) -> Error(Nil)
-    Attribute(name, value, as_property) -> {
-      case dynamic.classify(value) {
-        "String" -> Ok(#(name, dynamic.unsafe_coerce(value)))
-
-        // Boolean attributes are determined based on their presence, eg we don't
-        // want to render `disabled="false"` if the value is `false` we simply
-        // want to omit the attribute altogether.
-        "Boolean" ->
-          case dynamic.unsafe_coerce(value) {
-            True -> Ok(#(name, name))
-            False -> Error(Nil)
-          }
-
-        // For everything else, we care whether or not the attribute is actually
-        // a property. Properties are *Javascript* values that aren't necessarily
-        // reflected in the DOM. 
-        _ if as_property -> Error(Nil)
-        _ -> Ok(#(name, string.inspect(value)))
-      }
-    }
-    Event(on, _) -> Ok(#("data-lustre-on", on))
-  }
-}
-
-///
-pub fn to_string_builder(attr: Attribute(msg)) -> StringBuilder {
-  case attr {
-    Attribute("", _, _) -> string_builder.new()
-    Attribute("dangerous-unescaped-html", _, _) -> string_builder.new()
-    Attribute(name, value, as_property) -> {
-      case dynamic.classify(value) {
-        "String" ->
-          [name, "=\"", dynamic.unsafe_coerce(value), "\""]
-          |> string_builder.from_strings
-
-        // Boolean attributes are determined based on their presence, eg we don't
-        // want to render `disabled="false"` if the value is `false` we simply
-        // want to omit the attribute altogether.
-        "Boolean" ->
-          case dynamic.unsafe_coerce(value) {
-            True -> string_builder.from_string(name)
-            False -> string_builder.new()
-          }
-
-        _ if as_property -> string_builder.new()
-        _ ->
-          [name, "=\"", string.inspect(value), "\""]
-          |> string_builder.from_strings
-      }
-    }
-    Event(on, _) ->
-      ["data-lustre-on:", on]
-      |> string_builder.from_strings
   }
 }
 
@@ -175,8 +100,8 @@ pub fn type_(name: String) -> Attribute(msg) {
 }
 
 ///
-pub fn value(val: Dynamic) -> Attribute(msg) {
-  property("value", val)
+pub fn value(val: any) -> Attribute(msg) {
+  property("value", dynamic.from(val))
 }
 
 ///

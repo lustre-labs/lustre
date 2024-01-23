@@ -3,7 +3,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{type Dynamic}
+import gleam/json.{type Json}
 import gleam/list
 import gleam/function
 
@@ -11,7 +11,7 @@ import gleam/function
 
 ///
 pub opaque type Effect(msg) {
-  Effect(all: List(fn(fn(msg) -> Nil, fn(String, Dynamic) -> Nil) -> Nil))
+  Effect(all: List(fn(fn(msg) -> Nil, fn(String, Json) -> Nil) -> Nil))
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -31,8 +31,8 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 /// of Lustre's components, but in rare cases it may be useful to emit custom
 /// events from the DOM node that your Lustre application is mounted to.
 /// 
-pub fn event(name: String, data: data) -> Effect(msg) {
-  Effect([fn(_, emit) { emit(name, dynamic.from(data)) }])
+pub fn event(name: String, data: Json) -> Effect(msg) {
+  Effect([fn(_, emit) { emit(name, data) }])
 }
 
 /// Typically our app's `update` function needs to return a tuple of
@@ -46,6 +46,7 @@ pub fn none() -> Effect(msg) {
 // MANIPULATIONS ---------------------------------------------------------------
 
 ///
+/// 
 pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
   Effect({
     use b, Effect(a) <- list.fold(effects, [])
@@ -54,14 +55,29 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
 }
 
 ///
+/// 
 pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
   Effect({
-    use effect <- list.map(effect.all)
+    list.map(effect.all, fn(effect) {
+      fn(dispatch, emit) {
+        let dispatch = function.compose(f, dispatch)
 
-    fn(dispatch, emit) {
-      let dispatch = function.compose(f, dispatch)
-
-      effect(dispatch, emit)
-    }
+        effect(dispatch, emit)
+      }
+    })
   })
+}
+
+/// Perform a side effect by supplying your own `dispatch` function. This is
+/// primarily used internally by the server runtime, but it is also useful for
+/// testing.
+/// 
+pub fn perform(
+  effect: Effect(a),
+  dispatch: fn(a) -> Nil,
+  emit: fn(String, Json) -> Nil,
+) -> Nil {
+  use eff <- list.each(effect.all)
+
+  eff(dispatch, emit)
 }

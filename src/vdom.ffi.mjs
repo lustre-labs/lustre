@@ -47,6 +47,69 @@ export function morph(prev, curr, dispatch, parent) {
   );
 }
 
+export function patch(root, diff, dispatch) {
+  for (const created of diff[0]) {
+    const key = created[0];
+
+    if (key === "0") {
+      morph(root, created[1], dispatch, root.parentNode);
+    } else {
+      const segments = Array.from(key);
+      const parentKey = segments.slice(0, -1).join("");
+      const indexKey = segments.slice(-1)[0];
+      const prev =
+        root.querySelector(`[data-lustre-key="${key}"]`) ??
+        root.querySelector(`[data-lustre-key="${parentKey}"]`).childNodes[
+          indexKey
+        ];
+
+      morph(prev, created[1], dispatch, prev.parentNode);
+    }
+  }
+
+  for (const removed of diff[1]) {
+    const key = removed[0];
+    const segments = Array.from(key);
+    const parentKey = segments.slice(0, -1).join("");
+    const indexKey = segments.slice(-1)[0];
+    const prev =
+      root.querySelector(`[data-lustre-key="${key}"]`) ??
+      root.querySelector(`[data-lustre-key="${parentKey}"]`).childNodes[
+        indexKey
+      ];
+
+    prev.remove();
+  }
+
+  for (const updated of diff[2]) {
+    const key = updated[0];
+    const prev =
+      key === "0" ? root : root.querySelector(`[data-lustre-key="${key}"]`);
+
+    prev.$lustre ??= { __registered_events: new Set() };
+
+    for (const created of updated[0]) {
+      morphAttr(prev, created.name, created.value, dispatch);
+    }
+
+    for (const removed of updated[1]) {
+      if (prev.$lustre.__registered_events.has(removed)) {
+        const event = removed.slice(2).toLowerCase();
+
+        prev.removeEventListener(event, prev.$lustre[`${removed}Handler`]);
+        prev.$lustre.__registered_events.delete(removed);
+
+        delete prev.$lustre[removed];
+        delete prev.$lustre[`${removed}Handler`];
+      } else {
+        prev.removeAttribute(removed);
+      }
+    }
+  }
+
+  return root;
+}
+
 // ELEMENTS --------------------------------------------------------------------
 
 function createElement(prev, curr, dispatch, parent = null) {

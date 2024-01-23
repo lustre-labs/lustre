@@ -16,23 +16,20 @@ import lustre/event
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
-  let assert Ok(_) =
+  let counter =
     lustre.component(
-      "custom-counter",
       counter_init,
       counter_update,
       counter_view,
       dict.from_list([
-        #(
-          "count",
-          fn(attr) {
-            dynamic.int(attr)
-            |> result.map(GotCount)
-          },
-        ),
+        #("count", fn(attr) {
+          dynamic.int(attr)
+          |> result.map(GotCount)
+        }),
       ]),
     )
 
+  let assert Ok(_) = lustre.register(counter, "custom-counter")
   // A `simple` lustre application doesn't produce `Effect`s. These are best to 
   // start with if you're just getting started with lustre or you know you don't
   // need the runtime to manage any side effects.

@@ -11,10 +11,16 @@ links = [
 gleam = ">= 0.33.0"
 
 internal_modules = [
+  "lustre/internals",
+  "lustre/internals/*",
+  "lustre/runtime",
   "lustre/try",
 ]
 
 [dependencies]
+gleam_erlang = "~> 0.23"
+gleam_json = "~> 0.7"
+gleam_otp = "~> 0.8"
 gleam_stdlib = "~> 0.34"
 gleam_community_ansi = "~> 1.3"
 glint = "~> 0.14"
