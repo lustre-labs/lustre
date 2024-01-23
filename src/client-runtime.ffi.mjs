@@ -19,7 +19,7 @@ export class LustreClientApplication {
       selector instanceof HTMLElement
         ? selector
         : document.querySelector(selector);
-    if (!root) return new Error(new ElementNotFound());
+    if (!root) return new Error(new ElementNotFound(selector));
     const app = new LustreClientApplication(init(flags), update, view, root);
 
     return new Ok((msg) => app.send(msg));

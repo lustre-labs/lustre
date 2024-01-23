@@ -155,9 +155,9 @@ pub type Action(runtime, msg) =
 /// 
 pub type Error {
   ActorError(StartError)
-  BadComponentName
-  ComponentAlreadyRegistered
-  ElementNotFound
+  BadComponentName(name: String)
+  ComponentAlreadyRegistered(name: String)
+  ElementNotFound(selector: String)
   NotABrowser
   NotErlang
 }
@@ -232,11 +232,10 @@ pub fn start(
 }
 
 @external(javascript, "./client-runtime.ffi.mjs", "start")
-fn do_start(
-  _app: App(flags, model, msg),
-  _selector: String,
-  _flags: flags,
-) -> Result(fn(Action(ClientSpa, msg)) -> Nil, Error) {
+fn do_start(_app: App(flags, model, msg), _selector: String, _flags: flags) -> Result(
+  fn(Action(ClientSpa, msg)) -> Nil,
+  Error,
+) {
   // It should never be possible for the body of this function to execute on the
   // Erlang target because the `is_browser` guard will prevent it. Instead of
   // a panic, we still return a well-typed `Error` here in the case where someone
@@ -247,10 +246,10 @@ fn do_start(
 ///
 ///
 @external(javascript, "./server-runtime.ffi.mjs", "start")
-pub fn start_server_component(
-  app: App(flags, model, msg),
-  with flags: flags,
-) -> Result(fn(Action(ServerComponent, msg)) -> Nil, Error) {
+pub fn start_server_component(app: App(flags, model, msg), with flags: flags) -> Result(
+  fn(Action(ServerComponent, msg)) -> Nil,
+  Error,
+) {
   use runtime <- result.map(start_actor(app, flags))
   actor.send(runtime, _)
 }
