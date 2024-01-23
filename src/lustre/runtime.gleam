@@ -13,7 +13,6 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element, type Patch}
 import lustre/internals/patch.{Diff, Init}
 import lustre/internals/vdom
-import gleam/io
 
 // TYPES -----------------------------------------------------------------------
 
@@ -198,10 +197,7 @@ fn run_renderers(
 }
 
 @target(erlang)
-fn run_effects(
-  effects: Effect(msg),
-  self: Subject(Action(runtime, msg)),
-) -> Nil {
+fn run_effects(effects: Effect(msg), self: Subject(Action(runtime, msg))) -> Nil {
   let dispatch = fn(msg) { actor.send(self, Dispatch(msg)) }
   let emit = fn(name, event) { actor.send(self, Emit(name, event)) }
 
@@ -243,9 +239,6 @@ fn run_renderers(
 }
 
 @target(javascript)
-fn run_effects(
-  effects: Effect(msg),
-  self: Subject(Action(runtime, msg)),
-) -> Nil {
+fn run_effects(effects: Effect(msg), self: Subject(Action(runtime, msg))) -> Nil {
   panic
 }
