@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/bool
-import gleam/dynamic.{type DecodeError, type Dynamic, DecodeError}
+import gleam/dynamic.{type DecodeError, type Dynamic, DecodeError, dynamic}
 import gleam/erlang/process.{type Selector}
 import gleam/int
 import gleam/json.{type Json}
@@ -90,14 +90,23 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
   effect.event(event, data)
 }
 
-@target(erlang)
 ///
 /// 
 pub fn selector(sel: Selector(Action(runtime, msg))) -> Effect(msg) {
+  do_selector(sel)
+}
+
+@target(erlang)
+fn do_selector(sel: Selector(Action(runtime, msg))) -> Effect(msg) {
   use _ <- effect.from
   let self = process.new_subject()
 
   process.send(self, SetSelector(sel))
+}
+
+@target(javascript)
+fn do_selector(_sel: Selector(Action(runtime, msg))) -> Effect(msg) {
+  effect.none()
 }
 
 // DECODERS --------------------------------------------------------------------
@@ -108,15 +117,11 @@ pub fn decode_action(
   dynamic.any([decode_event, decode_attrs])(dyn)
 }
 
-///
-/// 
-fn decode_event(
-  dyn: Dynamic,
-) -> Result(Action(runtime, msg), List(DecodeError)) {
+fn decode_event(dyn: Dynamic) -> Result(Action(runtime, msg), List(DecodeError)) {
   use #(kind, name, data) <- result.try(dynamic.tuple3(
     dynamic.int,
-    dynamic.dynamic,
-    dynamic.dynamic,
+    dynamic,
+    dynamic,
   )(dyn))
   use <- bool.guard(
     kind != constants.event,
@@ -133,51 +138,23 @@ fn decode_event(
   Ok(Event(name, data))
 }
 
-fn decode_attrs(
-  dyn: Dynamic,
-) -> Result(Action(runtime, msg), List(DecodeError)) {
-  use list <- result.try(dynamic.list(dynamic.dynamic)(dyn))
-  case list {
-    [kind, attrs] -> {
-      use kind <- result.try(dynamic.int(kind))
-      use <- bool.guard(
-        kind != constants.attrs,
-        Error([
-          DecodeError(
-            path: ["0"],
-            found: int.to_string(kind),
-            expected: int.to_string(constants.attrs),
-          ),
-        ]),
-      )
-      use attrs <- result.try(dynamic.list(decode_attr)(attrs))
-      Ok(Attrs(attrs))
-    }
-    _ ->
-      Error([
-        DecodeError(
-          path: [],
-          found: dynamic.classify(dyn),
-          expected: "a tuple of 2 elements",
-        ),
-      ])
-  }
+fn decode_attrs(dyn: Dynamic) -> Result(Action(runtime, msg), List(DecodeError)) {
+  use #(kind, attrs) <- result.try(dynamic.tuple2(dynamic.int, dynamic)(dyn))
+  use <- bool.guard(
+    kind != constants.attrs,
+    Error([
+      DecodeError(
+        path: ["0"],
+        found: int.to_string(kind),
+        expected: int.to_string(constants.attrs),
+      ),
+    ]),
+  )
+  use attrs <- result.try(dynamic.list(decode_attr)(attrs))
+
+  Ok(Attrs(attrs))
 }
 
 fn decode_attr(dyn: Dynamic) -> Result(#(String, Dynamic), List(DecodeError)) {
-  use list <- result.try(dynamic.list(dynamic.dynamic)(dyn))
-  case list {
-    [key, value] -> {
-      use key <- result.try(dynamic.string(key))
-      Ok(#(key, value))
-    }
-    _ ->
-      Error([
-        DecodeError(
-          path: [],
-          found: dynamic.classify(dyn),
-          expected: "a tuple of 2 elements",
-        ),
-      ])
-  }
+  dynamic.tuple2(dynamic.string, dynamic)(dyn)
 }
