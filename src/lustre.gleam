@@ -2,19 +2,24 @@
 //// Gleam. This module contains the core API for constructing and communicating
 //// with the different kinds of Lustre application.
 //// 
-//// Lustre currently has three kinds of application:
+//// Lustre currently has two kinds of application:
 //// 
-//// 1. A `Browser` single-page application: think Elm or React or Vue. These
+//// 1. A client-side single-page application: think Elm or React or Vue. These
 ////    are applications that run in the client's browser and are responsible for
 ////    rendering the entire page.
 //// 
-//// 2. A `WebComponent`: an encapsulated Lustre application that can be embedded
-////    in a larger Lustre application or bundled and used as a standard Custom
-////    Element in any other Web application.
+//// 2. A client-side component: an encapsulated Lustre application that can be
+////    rendered inside another Lustre application as a Web Component. Communication
+////    happens via attributes and event listeners, like any other encapsulated
+////    HTML element.
 //// 
-//// 3. A `ServerComponent`: A Lustre application that runs on the server and
-////    computes diffs that can be sent to a browser to be rendered. This is
-////    most-similar to Phoenix LiveView.
+//// 3. A Lustre Server Component. These are applications that run anywhere Gleam
+////    runs and communicate with any number of connected clients by sending them
+////    patches to apply to their DOM. 
+//// 
+////    On the server, these applications can be communicated with by sending them
+////    messages directly. On the client communication happens the same way as
+////    client-side components: through attributes and event listeners.
 //// 
 //// No matter where a Lustre application runs, it will always follow the same
 //// Model-View-Update architecture. Popularised by Elm (where it is known as The
@@ -67,9 +72,9 @@
 //// ❓ Wondering what that [`Effect`](./effect#effect-type) is all about? Check
 ////    out the documentation for that over in the [`effect`](./effect) module.
 //// 
-//// For many types of program, you can easily take these building blocks and
-//// construct any of Lustre's application types with little-to-no modification.
-//// We like to describe Lustre as a **universal framework**. 
+//// For many kinds of app, you can take these three building blocks and put
+//// together a Lustre application capable of running *anywhere*. We like to
+//// describe Lustre as a **universal framework**. 
 //// 
 //// To read the full documentation for this module, please visit
 //// [https://lustre.build/api/lustre](https://lustre.build/api/lustre)
@@ -92,24 +97,21 @@ import lustre/runtime
 /// Depending on the kind of application you've constructed you have a few 
 /// options:
 /// 
-/// - Use [`start`](#start) to start a `Browser` application on the client.
+/// - Use [`start`](#start) to start a single-page-application in the browser.
 /// 
-/// - Use [`start_server_component`](#start_server_component) to start a 
-///   `ServerComponent` anywhere: Erlang, Node, Deno, in the browser.
+/// - Use [`start_server_component`](#start_server_component) to start a Lustre
+///   Server Component anywhere Gleam will run: Erlang, Node, Deno, or in the
+///   browser.
 /// 
-/// - Use [`start_actor`](#start_actor) to start a `ServerComponent` specifically
-///   for the Erlang target. You'll want to use this one to properly make use of
-///   OTP features.
+/// - Use [`start_actor`](#start_actor) to start a Lustre Server Component only
+///   for the Erlang target. BEAM users should always prefer this over
+///   `start_server_component` so they can take advantage of OTP features.
 /// 
-/// - Use [`register`](#register) to register a `WebComponent` in the browser to
-///   be used as a Custom Element.
+/// - Use [`register`](#register) to register a component in the browser to be
+///   used as a Custom Element. This is useful even if you're not using Lustre
+///   to build a SPA.
 /// 
-/// 💡 That `runtime` type parameter tells you what sort of application this is.
-///    It's actually a [phantom type](https://hayleigh-dot-dev.github.io/blog/phantom-types-in-gleam/)
-///    that doesn't exist when your program is running. It's used to make sure you
-///    don't try and use a `Browser` application on the server. 
-/// 
-pub opaque type App(runtime, flags, model, msg) {
+pub opaque type App(flags, model, msg) {
   App(
     init: fn(flags) -> #(model, Effect(msg)),
     update: fn(model, msg) -> #(model, Effect(msg)),
@@ -117,6 +119,11 @@ pub opaque type App(runtime, flags, model, msg) {
     on_attribute_change: Dict(String, Decoder(msg)),
   )
 }
+
+/// The `Browser` runtime is the most typical kind of Lustre application: it's
+/// a single-page application that runs in the browser similar to React or Vue.
+/// 
+pub type ClientSpa
 
 /// A `ServerComponent` is a type of Lustre application that does not directly
 /// render anything to the DOM. Instead, it can run anywhere Gleam runs and 
@@ -128,21 +135,6 @@ pub opaque type App(runtime, flags, model, msg) {
 /// to Phoenix LiveView.
 /// 
 pub type ServerComponent
-
-/// The `Browser` runtime is the most typical kind of Lustre application: it's
-/// a single-page application that runs in the browser similar to React or Vue.
-/// 
-pub type Browser
-
-/// A `WebComponent` is an encapsulated Lustre application that runs inside a
-/// custom HTML element. These runtimes are excellent for complex stateful widgets
-/// that you don't want to manage from a `Browser` application's main update loop.
-/// 
-/// The Lustre CLI also provides a way for you to bundle a `WebComponent` (or
-/// multiple components) into a single JavaScript file that you can drop into any
-/// other Web application to use your component as a standard Custom Element.
-/// 
-pub type WebComponent
 
 /// An action represents a message that can be sent to (some types of) a running
 /// Lustre application. Like the [`App`](#App) type, the `runtime` type parameter
@@ -184,10 +176,10 @@ pub type Error {
 ///    content is always static! An element application may render a component or
 ///    server component that has its own encapsulated update loop!
 /// 
-pub fn element(element: Element(msg)) -> App(Browser, Nil, Nil, msg) {
+pub fn element(html: Element(msg)) -> App(Nil, Nil, msg) {
   let init = fn(_) { #(Nil, effect.none()) }
   let update = fn(_, _) { #(Nil, effect.none()) }
-  let view = fn(_) { element }
+  let view = fn(_) { html }
 
   application(init, update, view)
 }
@@ -198,7 +190,7 @@ pub fn simple(
   init: fn(flags) -> model,
   update: fn(model, msg) -> model,
   view: fn(model) -> Element(msg),
-) -> App(Browser, flags, model, msg) {
+) -> App(flags, model, msg) {
   let init = fn(flags) { #(init(flags), effect.none()) }
   let update = fn(model, msg) { #(update(model, msg), effect.none()) }
 
@@ -211,29 +203,18 @@ pub fn application(
   init: fn(flags) -> #(model, Effect(msg)),
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
-) -> App(Browser, flags, model, msg) {
+) -> App(flags, model, msg) {
   App(init, update, view, dict.new())
 }
 
 ///
 /// 
 pub fn component(
-  init: fn() -> #(model, Effect(msg)),
-  update: fn(model, msg) -> #(model, Effect(msg)),
-  view: fn(model) -> Element(msg),
-  on_attribute_change: Dict(String, Decoder(msg)),
-) -> App(WebComponent, Nil, model, msg) {
-  App(fn(_) { init() }, update, view, on_attribute_change)
-}
-
-///
-/// 
-pub fn server_component(
   init: fn(flags) -> #(model, Effect(msg)),
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
   on_attribute_change: Dict(String, Decoder(msg)),
-) -> App(ServerComponent, flags, model, msg) {
+) -> App(flags, model, msg) {
   App(init, update, view, on_attribute_change)
 }
 
@@ -242,19 +223,20 @@ pub fn server_component(
 ///
 /// 
 pub fn start(
-  app: App(Browser, flags, model, msg),
-  selector: String,
-  flags: flags,
-) -> Result(fn(Action(Browser, msg)) -> Nil, Error) {
+  app: App(flags, model, msg),
+  onto selector: String,
+  with flags: flags,
+) -> Result(fn(Action(ClientSpa, msg)) -> Nil, Error) {
   use <- bool.guard(!is_browser(), Error(NotABrowser))
   do_start(app, selector, flags)
 }
 
 @external(javascript, "./client-runtime.ffi.mjs", "start")
-fn do_start(_app: App(Browser, flags, model, msg), _selector: String, _flags: flags) -> Result(
-  fn(Action(Browser, msg)) -> Nil,
-  Error,
-) {
+fn do_start(
+  _app: App(flags, model, msg),
+  _selector: String,
+  _flags: flags,
+) -> Result(fn(Action(ClientSpa, msg)) -> Nil, Error) {
   // It should never be possible for the body of this function to execute on the
   // Erlang target because the `is_browser` guard will prevent it. Instead of
   // a panic, we still return a well-typed `Error` here in the case where someone
@@ -265,10 +247,10 @@ fn do_start(_app: App(Browser, flags, model, msg), _selector: String, _flags: fl
 ///
 ///
 @external(javascript, "./server-runtime.ffi.mjs", "start")
-pub fn start_server_component(app: App(ServerComponent, flags, model, msg), flags: flags) -> Result(
-  fn(Action(ServerComponent, msg)) -> Nil,
-  Error,
-) {
+pub fn start_server_component(
+  app: App(flags, model, msg),
+  with flags: flags,
+) -> Result(fn(Action(ServerComponent, msg)) -> Nil, Error) {
   use runtime <- result.map(start_actor(app, flags))
   actor.send(runtime, _)
 }
@@ -281,8 +263,8 @@ pub fn start_server_component(app: App(ServerComponent, flags, model, msg), flag
 /// [`start_server_component`](#start_server_component) instead.
 /// 
 pub fn start_actor(
-  app: App(ServerComponent, flags, model, msg),
-  flags: flags,
+  app: App(flags, model, msg),
+  with flags: flags,
 ) -> Result(Subject(Action(ServerComponent, msg)), Error) {
   do_start_actor(app, flags)
 }
@@ -294,7 +276,7 @@ fn do_start_actor(_, _) {
 
 @target(erlang)
 fn do_start_actor(
-  app: App(ServerComponent, flags, model, msg),
+  app: App(flags, model, msg),
   flags: flags,
 ) -> Result(Subject(Action(ServerComponent, msg)), Error) {
   app.init(flags)
@@ -302,13 +284,24 @@ fn do_start_actor(
   |> result.map_error(ActorError)
 }
 
-///
+/// Register a Lustre application as a Web Component. This lets you render that
+/// application in another Lustre application's view or use it as a Custom Element
+/// outside of Lustre entirely.
+/// 
+/// 💡 The provided application can only have `Nil` flags, because there is no way
+/// to specify flags when the component is first rendered.
+/// 
+/// 💡 There are [some rules](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define#valid_custom_element_names)
+/// for what names are valid for a Custom Element. The most important one is that
+/// the name *must* contain a hypen so that it can be distinguished from standard
+/// HTML elements.
+/// 
+/// 🚨 This function is only meaningful when running in the browser. For server
+/// contexts, you can render a Lustre Server Component using `start_server_component`
+/// or `start_actor` instead.
 /// 
 @external(javascript, "./client-component.ffi.mjs", "register")
-pub fn register(_app: App(WebComponent, Nil, model, msg), _name: String) -> Result(
-  Nil,
-  Error,
-) {
+pub fn register(app: App(Nil, model, msg), name: String) -> Result(Nil, Error) {
   Error(NotABrowser)
 }
 
@@ -339,14 +332,24 @@ pub fn shutdown() -> Action(runtime, msg) {
 
 // UTILS -----------------------------------------------------------------------
 
-///
+/// Gleam's conditional compilation makes it possible to have different implementations
+/// of a function for different targets, but it's not possible to know what runtime
+/// you're targetting at compile-time. 
+/// 
+/// This is problematic if you're using Lustre Server Components with a JavaScript
+/// backend because you'll want to know whether you're currently running on your
+/// server or in the browser: this function tells you that! 
+/// 
 @external(javascript, "./client-runtime.ffi.mjs", "is_browser")
 pub fn is_browser() -> Bool {
   False
 }
 
-///
+/// Check if the given component name has already been registered as a Custom
+/// Element. This is particularly useful in contexts where _other web components_
+/// may have been registered and you must avoid collisions.
+/// 
 @external(javascript, "./client-runtime.ffi.mjs", "is_registered")
-pub fn is_registered(_name: String) -> Bool {
+pub fn is_registered(name: String) -> Bool {
   False
 }
