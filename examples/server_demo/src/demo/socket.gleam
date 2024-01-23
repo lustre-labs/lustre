@@ -30,12 +30,7 @@ type Model(flags, model, msg) {
 
 fn init(_) {
   let assert Ok(app) =
-    lustre.server_component(
-      app.init,
-      app.update,
-      app.view,
-      app.on_attribute_change(),
-    )
+    lustre.component(app.init, app.update, app.view, app.on_attribute_change())
     |> lustre.start_actor(0)
   let self = process.new_subject()
   let model = Model(self, app)
