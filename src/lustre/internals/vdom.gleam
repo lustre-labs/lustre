@@ -27,11 +27,6 @@ pub type Attribute(msg) {
   Event(String, fn(Dynamic) -> Result(msg, Nil))
 }
 
-pub type Patch(msg) {
-  Morph(Element(msg))
-  Diff
-}
-
 // QUERIES ---------------------------------------------------------------------
 
 pub fn handlers(
