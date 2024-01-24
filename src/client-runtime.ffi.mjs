@@ -82,8 +82,8 @@ export class LustreClientApplication {
     while (this.#queue.length) {
       const [next, effects] = this.#update(this.#model, this.#queue.shift());
 
+      this.#didUpdate ||= !isEqual(this.#model, next);
       this.#model = next;
-      this.#didUpdate ||= isEqual(this.#model, next);
       this.#effects = this.#effects.concat(effects.all.toArray());
     }
 
