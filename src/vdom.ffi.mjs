@@ -43,7 +43,7 @@ export function morph(prev, curr, dispatch, parent) {
       "function should only be called internally by lustre's runtime: if you think",
       "this is an error, please open an issue at",
       "https://github.com/hayleigh-dot-dev/gleam-lustre/issues/new",
-    ].join(" ")
+    ].join(" "),
   );
 }
 
@@ -187,25 +187,21 @@ function morphElement(prev, curr, dispatch, parent) {
     ) {
       currAttrs.set(
         currAttr[0],
-        `${currAttrs.get("dangerous-unescaped-html")} ${currAttr[1]}`
+        `${currAttrs.get("dangerous-unescaped-html")} ${currAttr[1]}`,
       );
     } else if (currAttr[0] !== "") {
       currAttrs.set(currAttr[0], currAttr[1]);
     }
   }
 
-  // TODO: Event listeners aren't currently removed when they are removed from
-  // the attributes list. This is a bug!
-  for (const { name, value: prevValue } of prevAttrs) {
+  for (const { name } of prevAttrs) {
     if (!currAttrs.has(name)) {
       prev.removeAttribute(name);
     } else {
       const value = currAttrs.get(name);
 
-      if (value !== prevValue) {
-        morphAttr(prev, name, value, dispatch);
-        currAttrs.delete(name);
-      }
+      morphAttr(prev, name, value, dispatch);
+      currAttrs.delete(name);
     }
   }
 
@@ -317,9 +313,13 @@ function morphAttr(el, name, value, dispatch) {
     }
 
     case "string":
-      if (el.getAttribute(name) !== value) el.setAttribute(name, value);
-      if (value === "") el.removeAttribute(name);
-      if (name === "value" && el.value !== value) el.value = value;
+      if (name === "value") el.value = value;
+      if (value === "") {
+        el.removeAttribute(name);
+      } else {
+        el.setAttribute(name, value);
+      }
+
       break;
 
     // Event listeners need to be handled slightly differently because we need

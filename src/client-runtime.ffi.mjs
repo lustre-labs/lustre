@@ -61,21 +61,19 @@ export class LustreClientApplication {
         bubbles: true,
         detail: data,
         composed: true,
-      })
+      }),
     );
   }
 
   #tick() {
     this.#flush_queue();
 
-    if (this.#didUpdate) {
-      const vdom = this.#view(this.#model);
+    const vdom = this.#view(this.#model);
 
-      this.#didUpdate = false;
-      this.#root = morph(this.#root, vdom, (msg) => {
-        this.send(new Dispatch(msg));
-      });
-    }
+    this.#didUpdate = false;
+    this.#root = morph(this.#root, vdom, (msg) => {
+      this.send(new Dispatch(msg));
+    });
   }
 
   #flush_queue(iterations = 0) {
@@ -90,7 +88,7 @@ export class LustreClientApplication {
     while (this.#effects.length) {
       this.#effects.shift()(
         (msg) => this.send(new Dispatch(msg)),
-        (event, data) => this.emit(event, data)
+        (event, data) => this.emit(event, data),
       );
     }
 
@@ -121,7 +119,7 @@ export const start = (app, selector, flags) =>
     selector,
     app.init,
     app.update,
-    app.view
+    app.view,
   );
 
 // UTILS -----------------------------------------------------------------------
