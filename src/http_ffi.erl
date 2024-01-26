@@ -36,7 +36,7 @@ serve({options, Host, Port, IncludeStyles}, OnStart, OnPortTaken) ->
             "  </script>\n"
             "</head>\n"
             "<body>\n"
-            "  <div data-lustre-app></div>\n"
+            "  <div id=\"app\"></div>\n"
             "</body>\n"
             "</html>"
         >>,
