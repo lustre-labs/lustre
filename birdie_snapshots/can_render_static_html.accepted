@@ -1,0 +1,5 @@
+---
+version: 1.0.1
+title: Can render static HTML
+---
+<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><img src="https://source.unsplash.com/random"></body></html>

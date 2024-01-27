@@ -1,0 +1,5 @@
+---
+version: 1.0.1
+title: Can render an application's initial state.
+---
+<div><p>0</p><button>-</button><button>+</button></div>
