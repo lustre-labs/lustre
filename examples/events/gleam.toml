@@ -1,7 +1,0 @@
-name = "events"
-version = "1.0.0"
-target = "javascript"
-
-[dependencies]
-gleam_stdlib = "~> 0.34"
-lustre = { path = "../../" }
