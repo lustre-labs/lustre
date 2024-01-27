@@ -31,12 +31,13 @@ type State(runtime, model, msg) {
   )
 }
 
-/// 
-/// 
+///
+///
 pub type Action(runtime, msg) {
   AddRenderer(Dynamic, fn(Patch(msg)) -> Nil)
   Attrs(List(#(String, Dynamic)))
   Batch(List(msg), Effect(msg))
+  Debug(DebugAction)
   Dispatch(msg)
   Emit(String, Json)
   Event(String, Dynamic)
@@ -45,11 +46,16 @@ pub type Action(runtime, msg) {
   Shutdown
 }
 
+pub type DebugAction {
+  Model(reply: fn(Dynamic) -> Nil)
+  View(reply: fn(Element(Dynamic)) -> Nil)
+}
+
 // ACTOR -----------------------------------------------------------------------
 
 @target(erlang)
 ///
-/// 
+///
 pub fn start(
   init: #(model, Effect(msg)),
   update: fn(model, msg) -> #(model, Effect(msg)),
@@ -135,6 +141,16 @@ fn loop(
       loop(Batch(rest, effect.batch([effects, other_effects])), next)
     }
 
+    Debug(Model(reply)) -> {
+      reply(dynamic.from(state.model))
+      actor.continue(state)
+    }
+
+    Debug(View(reply)) -> {
+      reply(element.map(state.html, dynamic.from))
+      actor.continue(state)
+    }
+
     Dispatch(msg) -> {
       let #(model, effects) = state.update(state.model, msg)
       let html = state.view(model)
@@ -206,7 +222,7 @@ fn run_effects(effects: Effect(msg), self: Subject(Action(runtime, msg))) -> Nil
 
 // Empty implementations of every function in this module are required because we
 // need to be able to build the codebase *locally* with the JavaScript target to
-// bundle the server component runtime. 
+// bundle the server component runtime.
 //
 // For *consumers* of Lustre this is not a problem, Gleam will see this module is
 // never included in any path reachable from JavaScript but when we're *inside the
