@@ -10,7 +10,7 @@ import gleeunit
 import lustre
 import lustre/element
 import lustre/internals/patch
-import lustre/runtime.{Debug, Dispatch, Shutdown, View}
+import lustre/internals/runtime.{Debug, Dispatch, Shutdown, View}
 
 // MAIN ------------------------------------------------------------------------
 

@@ -89,7 +89,7 @@ import gleam/otp/actor.{type StartError}
 import gleam/result
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, type Patch}
-import lustre/runtime
+import lustre/internals/runtime
 
 // TYPES -----------------------------------------------------------------------
 
