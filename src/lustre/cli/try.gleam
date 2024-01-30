@@ -1,15 +1,11 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam_community/ansi
-import gleam/bool
 import gleam/int
 import gleam/io
 import gleam/result
-import gleam/string
 import glint.{type Command, CommandInput}
 import glint/flag
-import simplifile
-import tom
 import lustre/cli/project
 
 // TYPES -----------------------------------------------------------------------
@@ -104,6 +100,3 @@ fn serve(
   on_start: fn(Int) -> Nil,
   on_port_taken: fn(Int) -> Nil,
 ) -> Nil
-
-@external(erlang, "lustre_try_ffi", "exec")
-fn exec(command: String) -> String

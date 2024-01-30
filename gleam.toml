@@ -28,6 +28,7 @@ argv = "~> 1.0"
 simplifile = "~> 1.1"
 tom = "~> 0.3"
 justin = "~> 1.0"
+shellout = "~> 1.5"
 
 [dev-dependencies]
 birdie = "~> 1.0"

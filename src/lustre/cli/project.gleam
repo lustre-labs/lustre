@@ -1,6 +1,7 @@
 import gleam/dict.{type Dict}
-import gleam/string
+import gleam/result
 import filepath
+import shellout
 import simplifile
 import tom.{type Toml}
 
@@ -10,20 +11,22 @@ pub type Configuration {
 }
 
 /// A proof that the project was compiled successfully.
-/// 
+///
 pub opaque type Compiled {
   Compiled
 }
 
 /// Compile the current project running the `gleam build` command.
-/// 
+///
 pub fn build() -> Result(Compiled, Nil) {
-  let stdout = exec("gleam build --target javascript")
-  let compilation_failed = string.contains(stdout, "error:")
-  case compilation_failed {
-    True -> Error(Nil)
-    False -> Ok(Compiled)
-  }
+  shellout.command(
+    run: "gleam build",
+    in: ".",
+    with: [" --target javascript"],
+    opt: [],
+  )
+  |> result.nil_error()
+  |> result.replace(Compiled)
 }
 
 /// Read the project configuration in the `gleam.toml` file.
@@ -35,7 +38,7 @@ pub fn read_configuration(_compiled: Compiled) -> Configuration {
   // bound to be a `gleam.toml` file somewhere in the current directory (or in
   // its parent directories). So we can safely call `recursive_lookup` without
   // it looping indefinitely.
-  let configuration_path = recursive_lookup("gleam.toml")
+  let configuration_path = filepath.join(root_folder(), "gleam.toml")
   // All these operations are safe to assert because the Gleam project wouldn't
   // compile if any of this stuff was invalid.
   let assert Ok(configuration) = simplifile.read(configuration_path)
@@ -45,17 +48,16 @@ pub fn read_configuration(_compiled: Compiled) -> Configuration {
   Configuration(name: name, version: version, toml: toml)
 }
 
-/// Find the path of a file starting from a base path and recursively looking
-/// into parent directories until the file is found.
-/// 
-fn recursive_lookup(file: String) -> String {
-  case simplifile.is_file(file) {
-    False -> recursive_lookup(filepath.join("..", file))
-    True -> file
-  }
+/// Finds the path leading to the project's root folder.
+///
+pub fn root_folder() -> String {
+  do_root_folder(".")
 }
 
-// EXTERNALS -------------------------------------------------------------------
-
-@external(erlang, "lustre_build_ffi", "exec")
-fn exec(command: String) -> String
+fn do_root_folder(path: String) -> String {
+  let toml = filepath.join(path, "gleam.toml")
+  case simplifile.verify_is_file(toml) {
+    Ok(False) | Error(_) -> do_root_folder(filepath.join("..", path))
+    Ok(True) -> path
+  }
+}
