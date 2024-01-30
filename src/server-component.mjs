@@ -63,22 +63,26 @@ export class LustreServerComponent extends HTMLElement {
 
           this.#socket?.close();
           this.#socket = new WebSocket(`ws://${window.location.host}${route}`);
-          this.#socket.addEventListener("message", ({ data }) => {
-            const [kind, ...payload] = JSON.parse(data);
-
-            switch (kind) {
-              case Constants.diff:
-                return this.diff(payload);
-
-              case Constants.emit:
-                return this.emit(payload);
-
-              case Constants.init:
-                return this.init(payload);
-            }
-          });
+          this.#socket.addEventListener("message", (message) =>
+            this.messageReceivedCallback(message),
+          );
         }
       }
+    }
+  }
+
+  messageReceivedCallback({ data }) {
+    const [kind, ...payload] = JSON.parse(data);
+
+    switch (kind) {
+      case Constants.diff:
+        return this.diff(payload);
+
+      case Constants.emit:
+        return this.emit(payload);
+
+      case Constants.init:
+        return this.init(payload);
     }
   }
 
@@ -107,7 +111,7 @@ export class LustreServerComponent extends HTMLElement {
 
           if (prev !== value) {
             this.#socket?.send(
-              JSON.stringify([Constants.attrs, [[attr, value]]])
+              JSON.stringify([Constants.attrs, [[attr, value]]]),
             );
           }
         },

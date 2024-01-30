@@ -1,5 +1,5 @@
 import { ElementNotFound, NotABrowser } from "./lustre.mjs";
-import { Dispatch, Shutdown } from "./lustre/runtime.mjs";
+import { Dispatch, Shutdown } from "./lustre/internals/runtime.mjs";
 import { morph } from "./vdom.ffi.mjs";
 import { Ok, Error, isEqual } from "./gleam.mjs";
 
