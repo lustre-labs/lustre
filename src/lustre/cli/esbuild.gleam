@@ -22,9 +22,7 @@ pub type Error {
 }
 
 pub opaque type Executable {
-  // We hold onto the path to the downloaded executable so that we can use that
-  // to run `esbuild` without having to look for the project's root each time.
-  Executable(path: String)
+  Executable
 }
 
 // DOWNLOAD ESBUILD ------------------------------------------------------------
@@ -104,18 +102,37 @@ pub fn download(
     |> result.map_error(SimplifileError(_, esbuild_path)),
   )
 
-  Ok(Executable(path: esbuild_path))
+  Ok(Executable)
 }
 
 // BUNDLE ----------------------------------------------------------------------
 
-pub fn bundle(esbuild: Executable, minify: Bool) -> Result(Nil, Nil) {
-  let options = ["--bundle"]
+/// Bundles the given contents. The command will run in the project's root.
+///
+pub fn bundle(
+  _esbuild: Executable,
+  input_file: String,
+  output_file: String,
+  minify: Bool,
+) -> Result(Nil, Nil) {
+  let flags = [
+    "--bundle",
+    // The format is always "esm", we're not encouraging "cjs".
+    "--format=\"esm\"",
+    "--outfile=\"" <> output_file <> "\"",
+  ]
+
   let options = case minify {
-    True -> ["--minify", ..options]
-    False -> options
+    True -> [input_file, "--minify", ..flags]
+    False -> [input_file, ..flags]
   }
-  shellout.command(run: esbuild.path, in: ".", with: options, opt: [])
+
+  shellout.command(
+    run: filepath.join(filepath.join(".", "priv"), "esbuild"),
+    in: project.root_folder(),
+    with: options,
+    opt: [],
+  )
   |> result.replace(Nil)
   |> result.nil_error
 }

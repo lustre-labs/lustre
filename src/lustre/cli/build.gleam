@@ -8,6 +8,8 @@ import gleam/list
 import gleam/string
 import glint.{type Command, CommandInput}
 import glint/flag.{type Flag}
+import filepath
+import simplifile
 import lustre/cli/project
 import lustre/cli/esbuild
 
@@ -25,6 +27,8 @@ type Error {
   CompileError
   CannotDownloadEsbuild(error: esbuild.Error)
   CannotBundleComponents
+  CannotPerformCleanup(temp_file: String)
+  CannotWriteTempFile(reason: simplifile.FileError, temp_file: String)
 }
 
 // MAIN ------------------------------------------------------------------------
@@ -60,6 +64,8 @@ fn build_component(
   let compile = result.replace_error(project.build(), CompileError)
   use compiled <- result.try(compile)
 
+  let configuration = project.read_configuration(compiled)
+
   // Download the esbuild executable.
   use esbuild <- result.try(
     esbuild.download(None, None)
@@ -70,7 +76,6 @@ fn build_component(
     [] -> {
       // If no module was provided as a command line argument we just bundle
       // the component in the module with the same name as the project.
-      let configuration = project.read_configuration(compiled)
       [configuration.name]
     }
     [_, ..] ->
@@ -82,13 +87,44 @@ fn build_component(
   // `register` function needed to register a component.
   use _ <- result.try(list.try_each(modules_to_bundle, check_can_be_bundled))
 
-  // Now we're good and can bundle things together
-  // TODO: how should the script provided to esbuild look?
-  //       From what I can gather I need to have a single `app.jsx` (?) file
-  //       where I import all those functions and then call esbuild and let it
-  //       do its magic `esbuild app.jsx --bundle --minify --outfile=...`
-  esbuild.bundle(esbuild, minify)
-  |> result.replace_error(CannotBundleComponents)
+  // Figure out the outfile name based on the number of modules to bundle.
+  // TODO: this could be configurable via flag.
+  let output_file_name = case modules_to_bundle {
+    // This is really unsatisfactory, but is it really worth it to add
+    // `non_empty_list` as a dependency and the extra complexity?
+    [] -> panic as "the modules are always going to be at least one"
+    [module] -> {
+      let component_name = string.replace(module, each: "/", with: "_")
+      configuration.name <> "-" <> component_name
+    }
+    [_, ..] -> configuration.name <> "-components"
+  }
+
+  let priv = filepath.join(project.root_folder(), "priv")
+  let output_file = join_all([priv, "components", output_file_name])
+  let input_file = filepath.join(priv, "temp-bundle-input")
+  let contents = todo as "I have to generate the actual script to bundle"
+
+  use _ <- result.try(
+    simplifile.write(contents, to: input_file)
+    |> result.map_error(CannotWriteTempFile(_, input_file)),
+  )
+
+  let bundle_result =
+    esbuild.bundle(esbuild, input_file, output_file, minify)
+    |> result.replace_error(CannotBundleComponents)
+
+  // Regardless of the result of the bundling process we delete the temporary
+  // input file.
+  case bundle_result {
+    Ok(Nil) ->
+      simplifile.delete(input_file)
+      |> result.replace_error(CannotPerformCleanup(input_file))
+    Error(error) -> {
+      let _ = simplifile.delete(input_file)
+      Error(error)
+    }
+  }
 }
 
 fn check_can_be_bundled(_module_name: String) -> Result(Nil, Error) {
@@ -110,16 +146,16 @@ fn check_can_be_bundled(_module_name: String) -> Result(Nil, Error) {
 
 // UTILS -----------------------------------------------------------------------
 
+fn join_all(paths: List(String)) -> String {
+  case paths {
+    [] -> ""
+    [path, ..rest] -> list.fold(over: rest, from: path, with: filepath.join)
+  }
+}
+
 fn explain(error: Error) -> Nil {
   case error {
-    CannotBundleComponents(..) -> todo
-    CannotDownloadEsbuild(..) -> todo
-    CompileError -> todo
-    MissingModule(..) -> todo
-    MissingRegisterFunction(..) -> todo
-    RegisterFunctionWithWrongType(..) -> todo
-    MissingComponentPath ->
-      "🚨 Missing component argument. I need to know what module to build! "
+    _ -> todo as "explain all the errors"
   }
   |> string.pad_right(78, ".")
   |> string.append(" ❌")
