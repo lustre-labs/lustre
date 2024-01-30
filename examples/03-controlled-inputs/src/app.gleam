@@ -43,6 +43,7 @@ fn update(model: Model, msg: Msg) -> Model {
   case msg {
     GotInput(value) -> {
       let length = string.length(value)
+
       case length <= model.max {
         True -> Model(..model, value: value, length: length)
         False -> model
@@ -55,8 +56,9 @@ fn update(model: Model, msg: Msg) -> Model {
 // VIEW ------------------------------------------------------------------------
 
 fn view(model: Model) -> Element(Msg) {
-  let styles = [#("width", "100vw"), #("height", "100vh")]
+  let styles = [#("width", "100vw"), #("height", "100vh"), #("padding", "1rem")]
   let length = int.to_string(model.length)
+  let max = int.to_string(model.max)
 
   ui.centre(
     [attribute.style(styles)],
@@ -66,7 +68,7 @@ fn view(model: Model) -> Element(Msg) {
         [],
         [element.text("Write a message:")],
         ui.input([attribute.value(model.value), event.on_input(GotInput)]),
-        [element.text(length <> "/10")],
+        [element.text(length <> "/" <> max)],
       ),
       ui.button([event.on_click(Reset)], [element.text("Reset")]),
     ),
