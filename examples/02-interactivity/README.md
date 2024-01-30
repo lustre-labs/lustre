@@ -94,7 +94,9 @@ _exhaustiveness checking_ to ensure we handle all possible messages.
 
 ### View
 
-
+Because state management is handled in our `update` function, our `view` becomes
+a simple function that takes a model and returns some HTML in the form of a
+Lustre `Element`.
 
 ```gleam
 fn view(model: Model) -> Element(Msg) {
@@ -102,6 +104,16 @@ fn view(model: Model) -> Element(Msg) {
 }
 ```
 
+In Lustre we call _all_ functions that return an `Element` "view functions": there's
+nothing special about the `view` that takes your model.
+
+Folks coming from frameworks like React might notice the absence of components
+with local encapsulated state. Lustre _does_ have components like this, but unlike
+other frameworks these are a fairly advanced use of the library and are typically
+used for larger pieces of UI like an entire form or a table. We'll cover how
+components fit into Lustre in later examples, but for now resist the urge to think
+in terms of "components" and "state" and try to think of your UI as a composition
+of _view functions_.
 
 ## Creating a dynamic Lustre application
 

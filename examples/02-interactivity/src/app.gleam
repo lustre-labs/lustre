@@ -50,8 +50,8 @@ fn update(model: Model, msg: Msg) -> Model {
 // VIEW ------------------------------------------------------------------------
 
 fn view(model: Model) -> Element(Msg) {
+  let styles = [#("width", "100vw"), #("height", "100vh"), #("padding", "1rem")]
   let count = int.to_string(model)
-  let styles = [#("width", "100vw"), #("height", "100vh")]
 
   ui.centre(
     [attribute.style(styles)],
