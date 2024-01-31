@@ -1,3 +1,5 @@
+![](./header.png)
+
 # 02 Interactivity
 
 In this example we show the basic structure of all Lustre applications with a
@@ -19,32 +21,32 @@ These three pieces come together to form a self-contained update loop. You produ
 an initial model, render it as HTML, and convert any user interactions into
 messages to handle in the update function.
 
- ```text
-                                        +--------+
-                                        |        |
-                                        | update |
-                                        |        |
-                                        +--------+
-                                          ^    |
-                                          |    |
-                                      Msg |    | Model
-                                          |    |
-                                          |    v
+```text
+                                       +--------+
+                                       |        |
+                                       | update |
+                                       |        |
+                                       +--------+
+                                         ^    |
+                                         |    |
+                                     Msg |    | Model
+                                         |    |
+                                         |    v
 +------+                         +------------------------+
 |      |          Model          |                        |
 | init |------------------------>|     Lustre Runtime     |
 |      |                         |                        |
 +------+                         +------------------------+
-                                          ^    |
-                                          |    |
-                                      Msg |    | Model
-                                          |    |
-                                          |    v
-                                        +--------+
-                                        |        |
-                                        |  view  |
-                                        |        |
-                                        +--------+
+                                         ^    |
+                                         |    |
+                                     Msg |    | Model
+                                         |    |
+                                         |    v
+                                       +--------+
+                                       |        |
+                                       |  view  |
+                                       |        |
+                                       +--------+
 ```
 
 ### Model
