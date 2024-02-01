@@ -143,7 +143,7 @@ pub fn autocomplete(name: String) -> Attribute(msg) {
 
 ///
 pub fn autofocus(should_autofocus: Bool) -> Attribute(msg) {
-  property("autoFocus", should_autofocus)
+  property("autofocus", should_autofocus)
 }
 
 ///
