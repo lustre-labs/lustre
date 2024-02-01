@@ -29,8 +29,8 @@ simplifile = "~> 1.1"
 tom = "~> 0.3"
 justin = "~> 1.0"
 shellout = "~> 1.5"
+filepath = "~> 0.1"
 
 [dev-dependencies]
 birdie = "~> 1.0"
 gleeunit = "~> 1.0"
-filepath = "~> 0.1"
