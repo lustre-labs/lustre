@@ -25,10 +25,10 @@ type Error {
 
 pub fn run() -> Command(Nil) {
   glint.command(fn(input) {
-    let CommandInput(_, flags) = input
-    let assert Ok(port) = flag.get_int(flags, "port")
-    let assert Ok(host) = flag.get_string(flags, "host")
-    let assert Ok(no_styles) = flag.get_bool(flags, "no-styles")
+    let CommandInput(_, flags, _) = input
+    let assert Ok(port) = flag.get_int(flags, port_flag_name)
+    let assert Ok(host) = flag.get_string(flags, host_flag_name)
+    let assert Ok(no_styles) = flag.get_bool(flags, no_styles_flag_name)
 
     let result = {
       let compile = result.replace_error(project.build(), CompileError)
@@ -44,9 +44,9 @@ pub fn run() -> Command(Nil) {
       Error(error) -> explain(error)
     }
   })
-  |> glint.flag("host", host_flag())
-  |> glint.flag("port", port_flag())
-  |> glint.flag("no-styles", no_styles_flag())
+  |> glint.flag(host_flag_name, host_flag())
+  |> glint.flag(port_flag_name, port_flag())
+  |> glint.flag(no_styles_flag_name, no_styles_flag())
 }
 
 // UTILS -----------------------------------------------------------------------
@@ -59,17 +59,23 @@ fn explain(error: Error) -> Nil {
 
 // GLINT FLAGS -----------------------------------------------------------------
 
+const host_flag_name = "host"
+
 fn host_flag() {
   flag.string()
   |> flag.default("localhost")
   |> flag.description("The host to run the server on.")
 }
 
+const port_flag_name = "port"
+
 fn port_flag() {
   flag.int()
   |> flag.default(1234)
   |> flag.description("The port to run the server on.")
 }
+
+const no_styles_flag_name = "no-styles"
 
 fn no_styles_flag() {
   flag.bool()

@@ -10,37 +10,35 @@ import lustre/cli/esbuild
 
 // MAIN ------------------------------------------------------------------------
 
-pub fn run() -> Command(Nil) {
+pub fn esbuild() -> Command(Nil) {
   glint.command(fn(input) {
-    let CommandInput(args, flags) = input
+    let CommandInput(args: _, flags: flags, named_args: _) = input
+    let os = option.from_result(flag.get_string(flags, os_flag_name))
+    let cpu = option.from_result(flag.get_string(flags, cpu_flag_name))
 
-    case args {
-      ["esbuild", ..] -> {
-        let os = option.from_result(flag.get_string(flags, os_flag_name))
-        let cpu = option.from_result(flag.get_string(flags, cpu_flag_name))
-
-        esbuild.download(os, cpu)
-        |> result.map_error(explain)
-        |> result.replace(Nil)
-        |> result.unwrap_both
-      }
-
-      _ ->
-        io.println(
-          "🚨 Unrecognised argument. Currently `add` can only install esbuild:
-
-USAGE:
-        gleam run -m lustre add esbuild [ --cpu=<STRING> --os=<STRING> ]
-
-FLAGS:
-        --cpu=<STRING>          The port to run the server on
-        --os=<STRING>           The host to run the server on
-          ",
-        )
-    }
+    esbuild.download(os, cpu)
+    |> result.map_error(explain)
+    |> result.replace(Nil)
+    |> result.unwrap_both
   })
   |> glint.flag(os_flag_name, os_flag())
   |> glint.flag(cpu_flag_name, cpu_flag())
+}
+
+// GLINT FLAGS -----------------------------------------------------------------
+
+const os_flag_name = "os"
+
+fn os_flag() {
+  flag.string()
+  |> flag.description("The host to run the server on")
+}
+
+const cpu_flag_name = "cpu"
+
+fn cpu_flag() {
+  flag.string()
+  |> flag.description("The port to run the server on")
 }
 
 // UTILS -----------------------------------------------------------------------
@@ -66,20 +64,4 @@ fn explain(error: esbuild.Error) -> Nil {
       |> string.append(" ❌")
   }
   |> io.println
-}
-
-// GLINT FLAGS -----------------------------------------------------------------
-
-const os_flag_name = "os"
-
-fn os_flag() {
-  flag.string()
-  |> flag.description("The host to run the server on")
-}
-
-const cpu_flag_name = "cpu"
-
-fn cpu_flag() {
-  flag.string()
-  |> flag.description("The port to run the server on")
 }

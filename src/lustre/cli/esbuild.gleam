@@ -80,7 +80,7 @@ pub fn download(
     project.root_folder()
     |> filepath.join("priv")
     |> filepath.join("bin")
-  let esbuild_path = filepath.join(destination_folder, "esbuild")
+  let esbuild_path = filepath.join(destination_folder, executable_name)
 
   let _ = simplifile.create_directory_all(destination_folder)
   use esbuild <- result.try(unzip_esbuild(tarball))
@@ -128,7 +128,7 @@ pub fn bundle(
   }
 
   shellout.command(
-    run: filepath.join(filepath.join(".", "priv"), "esbuild"),
+    run: filepath.join(filepath.join(".", "priv"), executable_name),
     in: project.root_folder(),
     with: options,
     opt: [],

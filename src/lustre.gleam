@@ -93,25 +93,29 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element, type Patch}
 import lustre/internals/runtime
 import lustre/cli/add
+import lustre/cli/build
 import lustre/cli/try
 
 // MAIN ------------------------------------------------------------------------
 
 /// This function exists so you can run helpful Lustre utilities from the command
 /// line using `gleam run -m lustre`. For a proper help message run:
-/// 
+///
 /// ```sh
 /// gleam run -m lustre -- --help
 /// ```
-/// 
+///
 /// 🚨 If you're just using Lustre as a library, *you can ignore this function*.
-/// 
+///
 pub fn main() {
   let args = argv.load().arguments
 
   glint.new()
-  |> glint.with_name("gleam run -m lustre")
-  |> glint.add(at: ["add"], do: add.run())
+  |> glint.as_gleam_module
+  |> glint.with_name("lustre")
+  |> glint.add(at: ["add", "esbuild"], do: add.esbuild())
+  |> glint.add(at: ["build", "app"], do: build.app())
+  |> glint.add(at: ["build", "component"], do: build.component())
   |> glint.add(at: ["try"], do: try.run())
   |> glint.run(args)
 }

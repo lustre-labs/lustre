@@ -2,7 +2,7 @@
 
 import gleam/dict.{type Dict}
 import gleam/io
-import gleam/option.{None}
+import gleam/option.{type Option, None}
 import gleam/result
 import gleam/list
 import gleam/string
@@ -33,98 +33,76 @@ type Error {
 
 // MAIN ------------------------------------------------------------------------
 
-pub fn run() -> Command(Nil) {
+pub fn component() -> Command(Nil) {
   glint.command(fn(input) {
-    let CommandInput(args, flags) = input
+    let CommandInput(args: args, flags: flags, named_args: _) = input
+    let assert Ok(minify) = flag.get_bool(flags, minify_flag_name)
 
-    case args {
-      [] -> todo
-      ["component", ..rest] ->
-        build_component(rest, flags)
-        |> result.map_error(explain)
-        |> result.unwrap(Nil)
-
-      ["app", ..rest] -> todo
-
-      _ -> todo
-    }
+    build_component(args, minify)
+    |> result.map_error(explain)
+    |> result.unwrap(Nil)
   })
   |> glint.flag(minify_flag_name, minify_flag())
+  |> glint.count_args(glint.MinArgs(1))
+}
+
+pub fn app() -> Command(Nil) {
+  glint.command(fn(input) {
+    let CommandInput(args: _, flags: flags, named_args: named_args) = input
+    let assert Ok(minify) = flag.get_bool(flags, minify_flag_name)
+    let module = option.from_result(dict.get(named_args, module_named_arg))
+
+    build_app(module, minify)
+    |> result.map_error(explain)
+    |> result.unwrap(Nil)
+  })
+  |> glint.flag(minify_flag_name, minify_flag())
+  |> glint.named_args([module_named_arg])
+}
+
+// GLINT FLAGS -----------------------------------------------------------------
+
+const module_named_arg = "module"
+
+const minify_flag_name = "minify"
+
+fn minify_flag() -> flag.FlagBuilder(Bool) {
+  flag.bool()
+  |> flag.default(False)
+  |> flag.description(string.join(
+    [
+      "A minified bundle renames variables to shorter names and obfuscates the code.",
+      "Minified bundles are always emitted with the `.min.mjs` extension.",
+    ],
+    " ",
+  ))
 }
 
 // BUILD COMPONENT -------------------------------------------------------------
 
-fn build_component(
-  args: List(String),
-  flags: Dict(String, Flag),
-) -> Result(Nil, Error) {
-  let assert Ok(minify) = flag.get_bool(flags, minify_flag_name)
-
+fn build_component(modules: List(String), minify: Bool) -> Result(Nil, Error) {
   // Build the project to make sure it doesn't have any compile errors.
   let compile = result.replace_error(project.build(), CompileError)
   use compiled <- result.try(compile)
-
   let configuration = project.read_configuration(compiled)
-
-  // Download the esbuild executable.
-  use esbuild <- result.try(
-    esbuild.download(None, None)
-    |> result.map_error(CannotDownloadEsbuild),
-  )
-
-  let modules_to_bundle = case args {
-    [] -> {
-      // If no module was provided as a command line argument we just bundle
-      // the component in the module with the same name as the project.
-      [configuration.name]
-    }
-    [_, ..] ->
-      // TODO: Here I should expand any * but I'll just skip that for now
-      args
-  }
 
   // Ensure that all modules we're going to bundle actually expose the correct
   // `register` function needed to register a component.
-  use _ <- result.try(list.try_each(modules_to_bundle, check_can_be_bundled))
+  use _ <- result.try(list.try_each(modules, check_can_be_bundled))
 
   // Figure out the outfile name based on the number of modules to bundle.
-  // TODO: this could be configurable via flag.
-  let output_file_name = case modules_to_bundle {
-    // This is really unsatisfactory, but is it really worth it to add
-    // `non_empty_list` as a dependency and the extra complexity?
-    [] -> panic as "the modules are always going to be at least one"
+  let output_file_name = case modules {
     [module] -> {
       let component_name = string.replace(module, each: "/", with: "_")
       configuration.name <> "-" <> component_name
     }
-    [_, ..] -> configuration.name <> "-components"
+    _ -> configuration.name <> "-components"
   }
 
   let priv = filepath.join(project.root_folder(), "priv")
-  let output_file = join_all([priv, "components", output_file_name])
-  let input_file = filepath.join(priv, "temp-bundle-input")
-  let contents = todo as "I have to generate the actual script to bundle"
 
-  use _ <- result.try(
-    simplifile.write(contents, to: input_file)
-    |> result.map_error(CannotWriteTempFile(_, input_file)),
-  )
-
-  let bundle_result =
-    esbuild.bundle(esbuild, input_file, output_file, minify)
-    |> result.replace_error(CannotBundleComponents)
-
-  // Regardless of the result of the bundling process we delete the temporary
-  // input file.
-  case bundle_result {
-    Ok(Nil) ->
-      simplifile.delete(input_file)
-      |> result.replace_error(CannotPerformCleanup(input_file))
-    Error(error) -> {
-      let _ = simplifile.delete(input_file)
-      Error(error)
-    }
-  }
+  components_script(configuration.name, modules)
+  |> bundle_script(minify, in: priv, named: output_file_name)
 }
 
 fn check_can_be_bundled(_module_name: String) -> Result(Nil, Error) {
@@ -144,36 +122,104 @@ fn check_can_be_bundled(_module_name: String) -> Result(Nil, Error) {
   Ok(Nil)
 }
 
-// UTILS -----------------------------------------------------------------------
+/// Generates the script that will be bundled, exposing the `register` function
+/// of each one of the provided modules.
+///
+fn components_script(project_name: String, modules: List(String)) -> String {
+  use script, module <- list.fold(over: modules, from: "")
+  let module_path =
+    "./build/dev/javascript/" <> project_name <> "/" <> module <> ".mjs"
 
-fn join_all(paths: List(String)) -> String {
-  case paths {
-    [] -> ""
-    [path, ..rest] -> list.fold(over: rest, from: path, with: filepath.join)
-  }
+  let alias = "register-" <> string.replace(each: "\\", with: "-", in: module)
+  let export = "export { register as " <> alias <> " } from " <> module_path
+  let register = alias <> "();"
+  script <> "\n" <> export <> "\n" <> register
 }
+
+// BUILD APP -------------------------------------------------------------------
+
+fn build_app(module: Option(String), minify: Bool) -> Result(Nil, Error) {
+  // Build the project to make sure it doesn't have any compile errors.
+  let compile = result.replace_error(project.build(), CompileError)
+  use compiled <- result.try(compile)
+  let configuration = project.read_configuration(compiled)
+
+  // If the module is missing we use the module with the same name as the
+  // project as a fallback.
+  let module = option.lazy_unwrap(module, fn() { configuration.name })
+  use _ <- result.try(check_app_can_be_bundled(module))
+
+  let priv = filepath.join(project.root_folder(), "priv")
+
+  app_script(configuration.name, module)
+  |> bundle_script(minify, in: priv, named: module <> "-app")
+}
+
+fn check_app_can_be_bundled(_module: String) -> Result(Nil, Error) {
+  // Once we have the package interface we'll be able to check if the module
+  // actually exposes a function with the appropriate type etc.
+  // For now we just assume the user knows what they're doing.
+  Ok(Nil)
+}
+
+fn app_script(project_name: String, module: String) -> String {
+  let module_path =
+    "./build/dev/javascript/" <> project_name <> "/" <> module <> ".mjs"
+  let import_main = "import { main } from " <> module_path
+  let invoke_main = "main();"
+
+  import_main <> "\n" <> invoke_main
+}
+
+// UTILS -----------------------------------------------------------------------
 
 fn explain(error: Error) -> Nil {
   case error {
-    _ -> todo as "explain all the errors"
+    _ -> {
+      io.debug(error)
+      todo as "explain the error"
+    }
   }
   |> string.pad_right(78, ".")
   |> string.append(" ❌")
   |> io.println
 }
 
-// GLINT FLAGS -----------------------------------------------------------------
+fn bundle_script(
+  script: String,
+  minify: Bool,
+  in folder: String,
+  named output_file: String,
+) -> Result(Nil, Error) {
+  // First, let's make sure there's the esbuild executable that can be used.
+  use esbuild <- result.try(
+    esbuild.download(None, None)
+    |> result.map_error(CannotDownloadEsbuild),
+  )
 
-const minify_flag_name = "minify"
+  let output_file = filepath.join(folder, output_file)
 
-fn minify_flag() -> flag.FlagBuilder(Bool) {
-  flag.bool()
-  |> flag.default(False)
-  |> flag.description(string.join(
-    [
-      "A minified bundle renames variables to shorter names and obfuscates the code.",
-      "Minified bundles are always emitted with the `.min.mjs` extension.",
-    ],
-    " ",
-  ))
+  // Write the script to bundle to a temporary file that is going to be bundled
+  // by escript.
+  let temp_file = filepath.join(folder, "temp-bundle-input")
+  use _ <- result.try(
+    simplifile.write(script, to: temp_file)
+    |> result.map_error(CannotWriteTempFile(_, temp_file)),
+  )
+
+  let bundle_result =
+    esbuild.bundle(esbuild, temp_file, output_file, minify)
+    |> result.replace_error(CannotBundleComponents)
+
+  // Regardless of the result of the bundling process we delete the temporary
+  // input file.
+  case bundle_result {
+    Ok(Nil) ->
+      simplifile.delete(temp_file)
+      |> result.replace_error(CannotPerformCleanup(temp_file))
+    Error(error) -> {
+      let _ = simplifile.delete(temp_file)
+      Error(error)
+    }
+  }
 }
