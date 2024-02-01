@@ -26,7 +26,7 @@ type Error {
   RegisterFunctionWithWrongType(type_: String)
   CompileError
   CannotDownloadEsbuild(error: esbuild.Error)
-  CannotBundleComponents
+  CannotBundleComponents(error: esbuild.Error)
   CannotPerformCleanup(temp_file: String)
   CannotWriteTempFile(reason: simplifile.FileError, temp_file: String)
 }
@@ -128,10 +128,11 @@ fn check_can_be_bundled(_module_name: String) -> Result(Nil, Error) {
 fn components_script(project_name: String, modules: List(String)) -> String {
   use script, module <- list.fold(over: modules, from: "")
   let module_path =
-    "./build/dev/javascript/" <> project_name <> "/" <> module <> ".mjs"
+    "../build/dev/javascript/" <> project_name <> "/" <> module <> ".mjs"
 
   let alias = "register-" <> string.replace(each: "\\", with: "-", in: module)
-  let export = "export { register as " <> alias <> " } from " <> module_path
+  let export =
+    "export { register as " <> alias <> " } from \"" <> module_path <> "\""
   let register = alias <> "();"
   script <> "\n" <> export <> "\n" <> register
 }
@@ -164,8 +165,8 @@ fn check_app_can_be_bundled(_module: String) -> Result(Nil, Error) {
 
 fn app_script(project_name: String, module: String) -> String {
   let module_path =
-    "./build/dev/javascript/" <> project_name <> "/" <> module <> ".mjs"
-  let import_main = "import { main } from " <> module_path
+    "../build/dev/javascript/" <> project_name <> "/" <> module <> ".mjs"
+  let import_main = "import { main } from \"" <> module_path <> "\""
   let invoke_main = "main();"
 
   import_main <> "\n" <> invoke_main
@@ -209,7 +210,7 @@ fn bundle_script(
 
   let bundle_result =
     esbuild.bundle(esbuild, temp_file, output_file, minify)
-    |> result.replace_error(CannotBundleComponents)
+    |> result.map_error(CannotBundleComponents)
 
   // Regardless of the result of the bundling process we delete the temporary
   // input file.

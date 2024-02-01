@@ -19,6 +19,7 @@ pub type Error {
   SimplifileError(reason: simplifile.FileError, path: String)
   UnknownPlatform(os: String, cpu: String)
   UnzipError(Dynamic)
+  BundleError(message: String)
 }
 
 pub opaque type Executable {
@@ -114,12 +115,12 @@ pub fn bundle(
   input_file: String,
   output_file: String,
   minify: Bool,
-) -> Result(Nil, Nil) {
+) -> Result(Nil, Error) {
   let flags = [
     "--bundle",
     // The format is always "esm", we're not encouraging "cjs".
-    "--format=\"esm\"",
-    "--outfile=\"" <> output_file <> "\"",
+    "--format=esm",
+    "--outfile=" <> output_file,
   ]
 
   let options = case minify {
@@ -128,13 +129,15 @@ pub fn bundle(
   }
 
   shellout.command(
-    run: filepath.join(filepath.join(".", "priv"), executable_name),
+    run: filepath.join(".", "priv")
+    |> filepath.join("bin")
+    |> filepath.join(executable_name),
     in: project.root_folder(),
     with: options,
     opt: [],
   )
   |> result.replace(Nil)
-  |> result.nil_error
+  |> result.map_error(fn(error) { BundleError(error.1) })
 }
 
 // EXTERNALS -------------------------------------------------------------------

@@ -20,9 +20,9 @@ pub opaque type Compiled {
 ///
 pub fn build() -> Result(Compiled, Nil) {
   shellout.command(
-    run: "gleam build",
+    run: "gleam",
     in: ".",
-    with: [" --target javascript"],
+    with: ["build", "--target=js"],
     opt: [],
   )
   |> result.nil_error()
