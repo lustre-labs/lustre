@@ -38,9 +38,9 @@ fn view(model) {
   let count = int.to_string(model)
 
   div([], [
-    button([on_click(Decr)], [text(" + ")]),
+    button([on_click(Incr)], [text(" + ")]),
     p([], [text(count)]),
-    button([on_click(Incr)], [text(" - ")])
+    button([on_click(Decr)], [text(" - ")])
   ])
 }
 ```
