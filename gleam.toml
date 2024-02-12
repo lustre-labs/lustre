@@ -1,5 +1,5 @@
 name = "lustre"
-version = "3.1.3"
+version = "3.1.4"
 
 description = "An Elm-inspired framework for building web apps in Gleam!"
 licences = ["MIT"]
