@@ -9,16 +9,34 @@
 //// is great but we still need to perform side effects at some point, so how do
 //// we do that?
 ////
-//// The answer is through the `Effect` type. An application's `init` and `update`
-//// functions typically return a tuple of `#(model, Effect(msg))`. The `Effect`
-//// type is a way of describing to the runtime some side effects that should be
-//// performed.
-////
+//// The answer is through the `Effect` type that treats side effects as *data*.
+//// This approach is known as having **managed effects**: you pass data that
+//// describes a side effect to Lustre's runtime and it takes care of performing
+//// that effect and potentially sending messages back to your program for you.
 //// By going through this abstraction we discourage side effects from being
-//// performed in the middle of our program. Furthermore they provide a mechanism
-//// for effects to send messages *back* to the main program loop so you can, for
-//// example, fire off an HTTP request and turn the response into a message that
-//// can be handled by your `update` function.
+//// performed in the middle of our program.
+////
+//// ## Examples
+////
+//// For folks coming from other languages (or other Gleam code!) where side
+//// effects are often performed in-place, this can feel a bit strange. A couple
+//// of the examples in the repo tackle effects:
+////
+//// - [`05-http-requests`](https://github.com/lustre-labs/lustre/tree/main/examples/05-http-requests)
+//// - [`06-custom-effects`](https://github.com/lustre-labs/lustre/tree/main/examples/06-custom-effects)
+////
+//// This list of examples is likely to grow over time, so be sure to check back
+//// every now and then to see what's new!
+////
+//// ## Getting help
+////
+//// If you're having trouble with Lustre or not sure what the right way to do
+//// something is, the best place to get help is the [Gleam Discord server](https://discord.gg/Fm8Pwmy).
+//// You could also open an issue on the [Lustre GitHub repository](https://github.com/lustre-labs/lustre/issues).
+////
+//// While our docs are still a work in progress, the official [Elm guide](https://guide.elm-lang.org)
+//// is also a great resource for learning about the Model-View-Update architecture
+//// and the kinds of patterns that Lustre is built around.
 ////
 
 // IMPORTS ---------------------------------------------------------------------
@@ -29,6 +47,14 @@ import gleam/function
 
 // TYPES -----------------------------------------------------------------------
 
+/// The `Effect` type treats side effects as data and is a way of saying "Hey
+/// Lustre, do this thing for me." Each effect specifies two things:
+///
+/// 1. The side effects for the runtime to perform.
+///
+/// 2. The type of messages that (might) be sent back to the program in response.
+///
+/// 
 ///
 pub opaque type Effect(msg) {
   Effect(all: List(fn(fn(msg) -> Nil, fn(String, Json) -> Nil) -> Nil))
@@ -36,6 +62,9 @@ pub opaque type Effect(msg) {
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
+/// Construct your own reusable effect from a custom callback. This callback is
+/// called with a `dispatch` function you can use to send messages back to your
+/// application's `update` function.
 ///
 pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
   // Effects constructed with `effect.from` only get told about the `dispatch`
@@ -51,13 +80,15 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 /// of Lustre's components, but in rare cases it may be useful to emit custom
 /// events from the DOM node that your Lustre application is mounted to.
 ///
+/// 
+/// 
 pub fn event(name: String, data: Json) -> Effect(msg) {
   Effect([fn(_, emit) { emit(name, data) }])
 }
 
-/// Typically our app's `update` function needs to return a tuple of
-/// `#(model, Effect(msg))`. When we don't need to perform any side effects we
-/// can just return `none()`!
+/// Most Lustre applications need to return a tuple of `#(model, Effect(msg))`
+/// from their `init` and `update` functions. If you don't want to perform any
+/// side effects, you can use `none` to tell the runtime there's no work to do.
 ///
 pub fn none() -> Effect(msg) {
   Effect([])
@@ -65,7 +96,17 @@ pub fn none() -> Effect(msg) {
 
 // MANIPULATIONS ---------------------------------------------------------------
 
-///
+/// Batch multiple effects to be performed at the same time.
+/// 
+/// **Note:** The runtime makes no guarantees about the order on which effects
+/// are performed! If you need to chain or sequence effects together, you have
+/// two broad options:
+/// 
+/// 1. Create variants of your `msg` type to represent each step in the sequence
+///    and fire off the next effect in response to the previous one.
+/// 
+/// 2. If you're defining effects yourself, consider whether or not you can handle
+///    the sequencing inside the effect itself.
 ///
 pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
   Effect({
@@ -74,7 +115,11 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
   })
 }
 
-///
+/// Transform the result of an effect. This is useful for mapping over effects
+/// produced by other libraries or modules.
+/// 
+/// **Note:** Remember that effects are not _required_ to dispatch any messages.
+/// Your mapping function may never be called!
 ///
 pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
   Effect({
@@ -88,10 +133,13 @@ pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
   })
 }
 
-/// Perform a side effect by supplying your own `dispatch` function. This is
-/// primarily used internally by the server runtime, but it is also useful for
-/// testing.
+/// Perform a side effect by supplying your own `dispatch` and `emit`functions.
+/// This is primarily used internally by the server component runtime, but it is
+/// may also useful for testing.
 ///
+/// **Note:** You should not consider this function a part of the public API. It
+/// may be removed in a future minor or patch release.
+/// 
 pub fn perform(
   effect: Effect(a),
   dispatch: fn(a) -> Nil,
