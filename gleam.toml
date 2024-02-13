@@ -14,6 +14,7 @@ internal_modules = [
   "lustre/internals",
   "lustre/internals/*",
   "lustre/try",
+  "lustre/cli/*",
 ]
 
 [dependencies]
@@ -22,8 +23,13 @@ gleam_json = "~> 0.7"
 gleam_otp = "~> 0.8"
 gleam_stdlib = "~> 0.34"
 gleam_community_ansi = "~> 1.4"
-glint = "~> 0.14"
+glint = "~> 0.15.0-rc1"
 argv = "~> 1.0"
+simplifile = "~> 1.1"
+tom = "~> 0.3"
+justin = "~> 1.0"
+shellout = "~> 1.5"
+filepath = "~> 0.1"
 
 [dev-dependencies]
 birdie = "~> 1.0"
