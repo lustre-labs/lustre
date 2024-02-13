@@ -11,7 +11,7 @@ import lustre/event
 // here:
 //
 //   https://hexdocs.pm/lustre_http/index.html
-import lustre_http.{type HttpOrJsonError}
+import lustre_http.{type HttpError}
 // These examples are written with lustre_ui in mind. They'll work regardless,
 // but to see what lustre_ui can do make sure to run each of these examples with
 // the `--include-styles` flag:
@@ -33,7 +33,11 @@ pub fn main() {
 // MODEL -----------------------------------------------------------------------
 
 type Model {
-  Model(quote: Option(String))
+  Model(quote: Option(Quote))
+}
+
+type Quote {
+  Quote(author: String, content: String)
 }
 
 fn init(_) -> #(Model, Effect(Msg)) {
@@ -44,7 +48,7 @@ fn init(_) -> #(Model, Effect(Msg)) {
 
 pub opaque type Msg {
   Refresh
-  GotQuote(Result(String, HttpOrJsonError))
+  GotQuote(Result(Quote, HttpError))
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
@@ -57,15 +61,20 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
 fn get_quote() -> Effect(Msg) {
   let url = "https://api.quotable.io/random"
-  let decoder = dynamic.field("content", dynamic.string)
+  let decoder =
+    dynamic.decode2(
+      Quote,
+      dynamic.field("author", dynamic.string),
+      dynamic.field("content", dynamic.string),
+    )
 
-  lustre_http.get_as_json(url, GotQuote, decoder)
+  lustre_http.get(url, lustre_http.expect_json(decoder, GotQuote))
 }
 
 // VIEW ------------------------------------------------------------------------
 
 fn view(model: Model) -> Element(Msg) {
-  let styles = [#("width", "100vw"), #("height", "100vh")]
+  let styles = [#("width", "100vw"), #("height", "100vh"), #("padding", "1rem")]
 
   ui.centre(
     [attribute.style(styles)],
@@ -77,13 +86,13 @@ fn view(model: Model) -> Element(Msg) {
   )
 }
 
-fn view_quote(quote: Option(String)) -> Element(msg) {
+fn view_quote(quote: Option(Quote)) -> Element(msg) {
   case quote {
     Some(quote) ->
       ui.stack([], [
-        element.text("Someone once said..."),
+        element.text(quote.author <> " once said..."),
         html.p([attribute.style([#("font-style", "italic")])], [
-          element.text(quote),
+          element.text(quote.content),
         ]),
       ])
     None -> html.p([], [element.text("Click the button to get a quote!")])

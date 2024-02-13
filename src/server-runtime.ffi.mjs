@@ -5,7 +5,7 @@ import {
   Event,
   RemoveRenderer,
   Shutdown,
-} from "./lustre/runtime.mjs";
+} from "./lustre/internals/runtime.mjs";
 
 export class LustreServerApplication {
   #queue = [];
@@ -107,7 +107,7 @@ export class LustreServerApplication {
     while (this.#effects.length) {
       this.#effects.shift()(
         (msg) => this.send(new Dispatch(msg)),
-        (event, data) => this.emit(event, data)
+        (event, data) => this.emit(event, data),
       );
     }
 
@@ -139,5 +139,5 @@ export const start = (app, selector, flags) =>
     selector,
     app.init,
     app.update,
-    app.view
+    app.view,
   );

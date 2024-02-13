@@ -13,7 +13,7 @@ import lustre/element/html
 import lustre/ui
 
 pub fn main() {
-  let styles = [#("width", "100vw"), #("height", "100vh")]
+  let styles = [#("width", "100vw"), #("height", "100vh"), #("padding", "1rem")]
   let app =
     lustre.element(ui.centre(
       [attribute.style(styles)],

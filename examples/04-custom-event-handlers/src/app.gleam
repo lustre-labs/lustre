@@ -1,4 +1,6 @@
+import gleam/dynamic
 import gleam/int
+import gleam/result
 import gleam/string
 import lustre
 import lustre/attribute
@@ -43,7 +45,6 @@ fn update(model: Model, msg: Msg) -> Model {
   case msg {
     GotInput(value) -> {
       let length = string.length(value)
-
       case length <= model.max {
         True -> Model(..model, value: value, length: length)
         False -> model
@@ -59,6 +60,17 @@ fn view(model: Model) -> Element(Msg) {
   let styles = [#("width", "100vw"), #("height", "100vh"), #("padding", "1rem")]
   let length = int.to_string(model.length)
   let max = int.to_string(model.max)
+  let on_input = fn(event) {
+    use target <- result.try(dynamic.field("target", dynamic.dynamic)(event))
+    use value <- result.try(dynamic.field("value", dynamic.string)(target))
+
+    // Decoding the `value` from anevent target is so common we provider a decoder
+    // for it already:
+    //
+    // use value <- result.try(event.value(event))
+
+    Ok(GotInput(value))
+  }
 
   ui.centre(
     [attribute.style(styles)],
@@ -67,7 +79,7 @@ fn view(model: Model) -> Element(Msg) {
       ui.field(
         [],
         [element.text("Write a message:")],
-        ui.input([attribute.value(model.value), event.on_input(GotInput)]),
+        ui.input([attribute.value(model.value), event.on("input", on_input)]),
         [element.text(length <> "/" <> max)],
       ),
       ui.button([event.on_click(Reset)], [element.text("Reset")]),
