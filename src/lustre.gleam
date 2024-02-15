@@ -161,7 +161,7 @@
 import argv
 import gleam/bool
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Decoder, type Dynamic}
+import gleam/dynamic.{type Decoder}
 import gleam/erlang/process.{type Subject}
 import gleam/otp/actor.{type StartError}
 import gleam/result

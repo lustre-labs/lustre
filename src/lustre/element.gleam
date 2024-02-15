@@ -17,6 +17,11 @@ import lustre/internals/patch
 pub type Element(msg) =
   vdom.Element(msg)
 
+/// Patches are sent by server components to any connected renderers. Because
+/// server components are not opinionated about your network layer or how your
+/// wider application is organised, it is your responsibility to make sure a `Patch`
+/// makes its way to the server component client runtime.
+/// 
 pub type Patch(msg) =
   patch.Patch(msg)
 
@@ -135,6 +140,12 @@ fn escape(escaped: String, content: String) -> String {
 
 // MANIPULATIONS ---------------------------------------------------------------
 
+/// The `Element` type is parameterised by the type of messages it can produce
+/// from events. Sometimes you might end up with a fragment of HTML from another
+/// library or module that produces a different type of message: this function lets
+/// you map the messages produced from one type to another.
+/// 
+/// Think of it like `list.map` or `result.map` but for HTML events!
 /// 
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
   case element {
