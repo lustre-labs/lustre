@@ -95,16 +95,6 @@ var Error = class extends Result {
     return false;
   }
 };
-function makeError(variant, module, line, fn, message, extra) {
-  let error = new globalThis.Error(message);
-  error.gleam_error = variant;
-  error.module = module;
-  error.line = line;
-  error.fn = fn;
-  for (let k in extra)
-    error[k] = extra[k];
-  return error;
-}
 
 // build/dev/javascript/gleam_stdlib/dict.mjs
 var tempDataView = new DataView(new ArrayBuffer(8));
@@ -119,18 +109,9 @@ function map2(result, fun) {
   if (result.isOk()) {
     let x = result[0];
     return new Ok(fun(x));
-  } else if (!result.isOk()) {
+  } else {
     let e = result[0];
     return new Error(e);
-  } else {
-    throw makeError(
-      "case_no_match",
-      "gleam/result",
-      67,
-      "map",
-      "No case clause matched",
-      { values: [result] }
-    );
   }
 }
 
@@ -264,15 +245,13 @@ function morphElement(prev, curr, dispatch, parent) {
       currAttrs.set(currAttr[0], currAttr[1]);
     }
   }
-  for (const { name, value: prevValue } of prevAttrs) {
+  for (const { name } of prevAttrs) {
     if (!currAttrs.has(name)) {
       prev.removeAttribute(name);
     } else {
       const value = currAttrs.get(name);
-      if (value !== prevValue) {
-        morphAttr(prev, name, value, dispatch);
-        currAttrs.delete(name);
-      }
+      morphAttr(prev, name, value, dispatch);
+      currAttrs.delete(name);
     }
   }
   for (const name of prev.$lustre.__registered_events) {
@@ -363,12 +342,13 @@ function morphAttr(el, name, value, dispatch) {
       break;
     }
     case "string":
-      if (el.getAttribute(name) !== value)
-        el.setAttribute(name, value);
-      if (value === "")
-        el.removeAttribute(name);
-      if (name === "value" && el.value !== value)
+      if (name === "value")
         el.value = value;
+      if (value === "") {
+        el.removeAttribute(name);
+      } else {
+        el.setAttribute(name, value);
+      }
       break;
     case (name.startsWith("on") && "function"): {
       if (el.$lustre[name] === value)
@@ -479,19 +459,23 @@ var LustreServerComponent = class extends HTMLElement {
           const route = next + (id ? `?id=${id}` : "");
           this.#socket?.close();
           this.#socket = new WebSocket(`ws://${window.location.host}${route}`);
-          this.#socket.addEventListener("message", ({ data }) => {
-            const [kind, ...payload] = JSON.parse(data);
-            switch (kind) {
-              case diff:
-                return this.diff(payload);
-              case emit:
-                return this.emit(payload);
-              case init:
-                return this.init(payload);
-            }
-          });
+          this.#socket.addEventListener(
+            "message",
+            (message) => this.messageReceivedCallback(message)
+          );
         }
       }
+    }
+  }
+  messageReceivedCallback({ data }) {
+    const [kind, ...payload] = JSON.parse(data);
+    switch (kind) {
+      case diff:
+        return this.diff(payload);
+      case emit:
+        return this.emit(payload);
+      case init:
+        return this.init(payload);
     }
   }
   init([attrs2, vdom]) {
