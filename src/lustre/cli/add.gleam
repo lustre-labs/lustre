@@ -62,6 +62,10 @@ fn explain(error: esbuild.Error) -> Nil {
       "🚨 An unknown error occured while extracting the archive "
       |> string.pad_right(78, ".")
       |> string.append(" ❌")
+    esbuild.BundleError(message) ->
+      { "🚨 " <> message }
+      |> string.pad_right(78, ".")
+      |> string.append(" ❌")
   }
   |> io.println
 }
