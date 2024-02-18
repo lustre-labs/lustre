@@ -52,30 +52,10 @@ import lustre/element/html.{div, p}
 ...
 ```
 
-## Starting a Lustre application
-
-Starting a Lustre application with `lustre.start` requires three things:
-
-- A configured `Application` (that's what we used `lustre.element` for).
-
-- A [CSS selector](https://developer.mozilla.org/en-US/docs/Web/API/Document_object_model/Locating_DOM_elements_using_selectors)
-  to locate the DOM node to mount the application on to. As in other frameworks,
-  it's common to use an element with the id "app": for that you'd write the
-  selector as `#app`.
-
-- Some initial data to pass to the application's `init` function. Because applications
-  constructed with `lustre.element` are not dynamic there's nothing meaningful
-  to pass in here, so we just use `Nil`.
-
-Starting an application could fail for a number of reasons, so this function
-returns a `Result`. The `Ok` value is a function you can use to send messages to
-your running application from the outside world: we'll see more of that in later
-examples!
-
 ## Seeing the result
 
 Lustre ships with a very simple development server to help you look through these
-examples. You can run `gleam run -m lustre/try` in any of these examples to start
+examples. You can run `gleam run -m lustre try` in any of these examples to start
 this development server and head over to `localhost:1234` to see what it produces.
 
 If you're coming from a more mature Web development setup, you should know that
@@ -83,9 +63,9 @@ this preview server is _not_ a replacement for a more robust development setup!
 While we work on building this into Lustre we recommend using [vite](https://vitejs.dev)
 with the [vite-gleam](https://www.npmjs.com/package/vite-gleam) plugin.
 
-### Enabling lustre_ui
+### Enabling lustre/ui
 
-[Lustre_ui](https://hexdocs.pm/lustre_ui/) is a separate package published by us
+[`lustre/ui`](https://hexdocs.pm/lustre_ui/) is a separate package published by us
 to provide a collection of robust styled elements for folks that want to get working
 with Lustre ASAP. Each of these examples have been written to use elements from
 that package.
@@ -94,11 +74,8 @@ The lustre/try preview server can be configured to include the lustre_ui stylesh
 by passing the `--include-styles` flag:
 
 ```sh
-$ gleam run -m lustre/try -- --include-styles
+$ gleam run -m lustre try --include-styles
 ```
-
-Note that the first `--` is necessary so the Gleam binary knows this is a flag
-that should be passed to lustre/try!
 
 It's not necessary to use lustre_ui to use Lustre or to check out any of these
 examples, but the option is there if you want it.

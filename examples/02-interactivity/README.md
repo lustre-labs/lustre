@@ -120,6 +120,24 @@ of _view functions_.
 ## Creating a dynamic Lustre application
 
 In the previous example we used the `lustre.element` function to construct a
-static Lustre app. To construct a simple interactive app we can use `lustre.simple`
+static Lustre app. To introduce the basic MVU loop, we can use `lustre.simple`
 instead. From now on we'll see that all the different ways to construct a Lustre
 application all take the same three `init`, `update`, and `view` functions.
+
+Starting a Lustre application with `lustre.start` requires three things:
+
+- A configured `Application` (that's what we used `lustre.element` for).
+
+- A [CSS selector](https://developer.mozilla.org/en-US/docs/Web/API/Document_object_model/Locating_DOM_elements_using_selectors)
+  to locate the DOM node to mount the application on to. As in other frameworks,
+  it's common to use an element with the id "app": for that you'd write the
+  selector as `#app`.
+
+- Some initial data to pass to the application's `init` function. Because applications
+  constructed with `lustre.element` are not dynamic there's nothing meaningful
+  to pass in here, so we just use `Nil`.
+
+Starting an application could fail for a number of reasons, so this function
+returns a `Result`. The `Ok` value is a function you can use to send messages to
+your running application from the outside world: we'll see more of that in later
+examples!

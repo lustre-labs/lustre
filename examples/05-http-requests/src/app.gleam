@@ -12,13 +12,13 @@ import lustre/event
 //
 //   https://hexdocs.pm/lustre_http/index.html
 import lustre_http.{type HttpError}
-// These examples are written with lustre_ui in mind. They'll work regardless,
-// but to see what lustre_ui can do make sure to run each of these examples with
+// These examples are written with `lustre/ui` in mind. They'll work regardless,
+// but to see what `lustre/ui` can do make sure to run each of these examples with
 // the `--include-styles` flag:
 //
-//   $ gleam run -m lustre/try -- --include-styles
+//   $ gleam run -m lustre dev --include-styles
 //
-// In your own apps, make sure to add the `lustre_ui` dependency and include the
+// In your own apps, make sure to add the `lustre/ui` dependency and include the
 // stylesheet somewhere.
 import lustre/ui
 import lustre/ui/aside
