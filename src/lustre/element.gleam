@@ -1,56 +1,81 @@
-//// To read the full documentation for this module, please visit
-//// [https://lustre.build/api/lustre/element](https://lustre.build/api/lustre/element)
+//// Lustre wouldn't be much use as a frontend framework if it didn't provide a
+//// way to create HTML elements. This module contains 
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/json.{type Json}
 import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
 import lustre/attribute.{type Attribute, attribute}
 import lustre/internals/vdom.{Element, Text}
-import lustre/internals/patch
 
 // TYPES -----------------------------------------------------------------------
 
+/// The `Element` type is how Lustre represents chunks of HTML. The `msg` type
+/// variable is used to represent the types of messages that can be produced from
+/// events on the element or its children.
+/// 
+/// **Note:** Just because an element _can_ produces messages of a given type,
+/// doesn't mean that it _will_! The `msg` type variable is used to represent the
+/// potential for messages to be produced, not a guarantee.
+/// 
+/// The most basic ways to create elements are:
+/// 
+/// - The [`element`](#element) function to construct arbitrary HTML elements.
+///   You can also use this render Custom Elements (like those registered as
+///   Lustre components).
+/// 
+/// - The [`text`](#text) function to turn a Gleam string into a text node.
+/// 
+/// - The [`none`](#none) function to render nothing - useful for conditional
+///   rendering.
+/// 
+/// If you have more complex needs, there are two more-advanced functions:
+/// 
+/// - The [`namespaced`](#namespaced) function to create elements in a specific
+///   XML namespace. This is useful for SVG or MathML elements, for example.
+/// 
+/// - The [`advanced`](#advanced) function to create elements with more control
+///   over how the element is rendered when converted to a string. This is
+///   necessary because some HTML, SVG, and MathML elements are self-closing or
+///   void elements, and Lustre needs to know how to render them correctly!
+/// 
+/// For most applications, you'll only need to use the simpler functions; usually
+/// the [`text`](#text) and [`none`](#none) functions are enough. This is because
+/// Lustre already provides a module with all the standard HTML and SVG elements
+/// ready to use in [`lustre/element/html`](./element/html) and
+/// [`lustre/element/svg`](./element/svg).
 /// 
 pub type Element(msg) =
   vdom.Element(msg)
-
-/// Patches are sent by server components to any connected renderers. Because
-/// server components are not opinionated about your network layer or how your
-/// wider application is organised, it is your responsibility to make sure a `Patch`
-/// makes its way to the server component client runtime.
-/// 
-pub type Patch(msg) =
-  patch.Patch(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
 /// 
 /// 
-/// 🚨 Because Lustre is primarily used to create HTML, this function spcieal-cases
-///    the following tags to be self-closing:
+/// **Note:** Because Lustre is primarily used to create HTML, this function
+/// spcieal-cases the following tags render as
+/// [void elements](https://developer.mozilla.org/en-US/docs/Glossary/Void_element):
 /// 
-///    - area
-///    - base
-///    - br
-///    - col
-///    - embed
-///    - hr
-///    - img
-///    - input
-///    - link
-///    - meta
-///    - param
-///    - source
-///    - track
-///    - wbr
+///   - area
+///   - base
+///   - br
+///   - col
+///   - embed
+///   - hr
+///   - img
+///   - input
+///   - link
+///   - meta
+///   - param
+///   - source
+///   - track
+///   - wbr
 /// 
-///    This will only affect the output of `to_string` and `to_string_builder`!
-///    If you need to render any of these tags with children, *or* you want to
-///    render some other tag as self-closing or void, use [`advanced`](#advanced)
-///    instead.
+///  This will only affect the output of `to_string` and `to_string_builder`!
+///  If you need to render any of these tags with children, *or* you want to
+///  render some other tag as self-closing or void, use [`advanced`](#advanced)
+///  to construct the element instead.
 /// 
 pub fn element(
   tag: String,
@@ -171,12 +196,4 @@ pub fn to_string(element: Element(msg)) -> String {
 
 pub fn to_string_builder(element: Element(msg)) -> StringBuilder {
   vdom.element_to_string_builder(element)
-}
-
-pub fn encode(element: Element(msg)) -> Json {
-  vdom.element_to_json(element)
-}
-
-pub fn encode_patch(patch: Patch(msg)) -> Json {
-  patch.patch_to_json(patch)
 }

@@ -11,6 +11,17 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element, element}
 import lustre/internals/constants
 import lustre/internals/runtime.{type Action, Attrs, Event, SetSelector}
+import lustre/internals/patch
+
+// TYPES -----------------------------------------------------------------------
+
+/// Patches are sent by server components to any connected renderers. Because
+/// server components are not opinionated about your network layer or how your
+/// wider application is organised, it is your responsibility to make sure a `Patch`
+/// makes its way to the server component client runtime.
+/// 
+pub type Patch(msg) =
+  patch.Patch(msg)
 
 // ELEMENTS --------------------------------------------------------------------
 
@@ -92,12 +103,12 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
 
 ///
 ///
-pub fn selector(sel: Selector(Action(runtime, msg))) -> Effect(msg) {
-  do_selector(sel)
+pub fn set_selector(sel: Selector(Action(runtime, msg))) -> Effect(msg) {
+  do_set_selector(sel)
 }
 
 @target(erlang)
-fn do_selector(sel: Selector(Action(runtime, msg))) -> Effect(msg) {
+fn do_set_selector(sel: Selector(Action(runtime, msg))) -> Effect(msg) {
   use _ <- effect.from
   let self = process.new_subject()
 
@@ -105,12 +116,14 @@ fn do_selector(sel: Selector(Action(runtime, msg))) -> Effect(msg) {
 }
 
 @target(javascript)
-fn do_selector(_sel: Selector(Action(runtime, msg))) -> Effect(msg) {
+fn do_set_selector(_sel: Selector(Action(runtime, msg))) -> Effect(msg) {
   effect.none()
 }
 
 // DECODERS --------------------------------------------------------------------
 
+/// 
+/// 
 pub fn decode_action(
   dyn: Dynamic,
 ) -> Result(Action(runtime, msg), List(DecodeError)) {
@@ -157,4 +170,12 @@ fn decode_attrs(dyn: Dynamic) -> Result(Action(runtime, msg), List(DecodeError))
 
 fn decode_attr(dyn: Dynamic) -> Result(#(String, Dynamic), List(DecodeError)) {
   dynamic.tuple2(dynamic.string, dynamic)(dyn)
+}
+
+// ENCODERS --------------------------------------------------------------------
+
+///
+/// 
+pub fn encode_patch(patch: Patch(msg)) -> Json {
+  patch.patch_to_json(patch)
 }
