@@ -1,71 +1,53 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/io
-import gleam/option
-import gleam/result
-import gleam/string
 import glint.{type Command, CommandInput}
 import glint/flag
 import lustre/cli/esbuild
 
-// MAIN ------------------------------------------------------------------------
+// COMMANDS --------------------------------------------------------------------
 
 pub fn esbuild() -> Command(Nil) {
+  let description =
+    "
+Download a platform-appropriate version of the esbuild binary. Lustre uses this
+to bundle applications and act as a development server.
+    "
+
   glint.command(fn(input) {
-    let CommandInput(args: _, flags: flags, named_args: _) = input
-    let os = option.from_result(flag.get_string(flags, os_flag_name))
-    let cpu = option.from_result(flag.get_string(flags, cpu_flag_name))
+    let CommandInput(flags: flags, ..) = input
+    let assert Ok(os) = flag.get_string(flags, "os")
+    let assert Ok(cpu) = flag.get_string(flags, "cpu")
+    let result = esbuild.download(os, cpu)
 
-    esbuild.download(os, cpu)
-    |> result.map_error(explain)
-    |> result.replace(Nil)
-    |> result.unwrap_both
+    case result {
+      Ok(_) -> Nil
+      Error(error) -> esbuild.explain(error)
+    }
   })
-  |> glint.flag(os_flag_name, os_flag())
-  |> glint.flag(cpu_flag_name, cpu_flag())
+  |> glint.description(description)
+  |> glint.count_args(glint.EqArgs(0))
+  |> glint.flag("os", {
+    let description = ""
+    let default = get_os()
+
+    flag.string()
+    |> flag.default(default)
+    |> flag.description(description)
+  })
+  |> glint.flag("cpu", {
+    let description = ""
+    let default = get_cpu()
+
+    flag.string()
+    |> flag.default(default)
+    |> flag.description(description)
+  })
 }
 
-// GLINT FLAGS -----------------------------------------------------------------
+// EXTERNALS -------------------------------------------------------------------
 
-const os_flag_name = "os"
+@external(erlang, "cli_ffi", "get_os")
+fn get_os() -> String
 
-fn os_flag() {
-  flag.string()
-  |> flag.description("The host to run the server on")
-}
-
-const cpu_flag_name = "cpu"
-
-fn cpu_flag() {
-  flag.string()
-  |> flag.description("The port to run the server on")
-}
-
-// UTILS -----------------------------------------------------------------------
-
-fn explain(error: esbuild.Error) -> Nil {
-  case error {
-    esbuild.NetworkError(_) ->
-      "🚨 A network error occured. Check your connection and try again "
-      |> string.pad_right(78, ".")
-      |> string.append(" ❌")
-    esbuild.SimplifileError(_error, path) ->
-      "🚨 An unknown error occured while writing the executable to `{path}` "
-      |> string.replace(each: "{path}", with: path)
-      |> string.pad_right(78, ".")
-      |> string.append(" ❌")
-    esbuild.UnknownPlatform(os, cpu) ->
-      { "🚨 Could not locate download url for " <> os <> "/" <> cpu <> " " }
-      |> string.pad_right(78, ".")
-      |> string.append(" ❌")
-    esbuild.UnzipError(_error) ->
-      "🚨 An unknown error occured while extracting the archive "
-      |> string.pad_right(78, ".")
-      |> string.append(" ❌")
-    esbuild.BundleError(message) ->
-      { "🚨 " <> message }
-      |> string.pad_right(78, ".")
-      |> string.append(" ❌")
-  }
-  |> io.println
-}
+@external(erlang, "cli_ffi", "get_cpu")
+fn get_cpu() -> String

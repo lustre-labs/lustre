@@ -1,48 +1,114 @@
+// IMPORTS ---------------------------------------------------------------------
+
+import filepath
+import gleam/bool
 import gleam/dynamic.{type Dynamic}
-import gleam/option.{type Option}
+import gleam/function
+import gleam/io
+import gleam/list
+import gleam/pair
 import gleam/result
 import gleam/set
 import gleam/string
-import filepath
+import lustre/cli/project
+import lustre/cli/utils.{keep, map, replace, try}
 import shellout
 import simplifile.{type FilePermissions, Execute, FilePermissions, Read, Write}
-import lustre/cli/project
 
-// CONSTANTS -------------------------------------------------------------------
+// COMMANDS --------------------------------------------------------------------
 
-pub const executable_name = "esbuild"
+pub fn download(os: String, cpu: String) -> Result(Nil, Error) {
+  let outdir = filepath.join(project.root(), "build/.lustre/bin")
+  let outfile = filepath.join(outdir, "esbuild")
 
-// TYPES -----------------------------------------------------------------------
+  use <- bool.guard(check_esbuild_exists(outfile), Ok(Nil))
 
-pub type Error {
-  NetworkError(Dynamic)
-  SimplifileError(reason: simplifile.FileError, path: String)
-  UnknownPlatform(os: String, cpu: String)
-  UnzipError(Dynamic)
-  BundleError(message: String)
+  io.println("\nInstalling esbuild...")
+  io.println(" ├ detecting platform")
+  use url <- result.try(get_download_url(os, cpu))
+
+  io.println(" ├ downloading from " <> url)
+  use tarball <- try(get_esbuild(url), NetworkError)
+
+  io.println(" ├ unpacking")
+  use bin <- try(unzip_esbuild(tarball), UnzipError)
+  use _ <- try(write_esbuild(bin, outdir, outfile), SimplifileError(_, outfile))
+  use _ <- try(set_filepermissions(outfile), SimplifileError(_, outfile))
+
+  io.println(" ├ installed!")
+  Ok(Nil)
 }
 
-pub opaque type Executable {
-  Executable
+pub fn bundle(
+  input_file: String,
+  output_file: String,
+  minify: Bool,
+) -> Result(Nil, Error) {
+  use _ <- try(download(get_os(), get_cpu()), keep)
+  use _ <- try(project.build(), replace(BuildError))
+
+  io.println("\nBundling with esbuild...")
+  io.println(" ├ configuring tree shaking")
+  let root = project.root()
+  use _ <- try(configure_node_tree_shaking(root), map(SimplifileError(_, root)))
+
+  let flags = [
+    "--bundle",
+    "--external:node:*",
+    "--format=esm",
+    "--outfile=" <> output_file,
+  ]
+  let options = case minify {
+    True -> [input_file, "--minify", ..flags]
+    False -> [input_file, ..flags]
+  }
+
+  use _ <- try(
+    shellout.command(
+      run: "./build/.lustre/bin/esbuild",
+      in: root,
+      with: options,
+      opt: [],
+    ),
+    on_error: map(function.compose(pair.second, BundleError)),
+  )
+
+  io.println(" ├ bundle produced at " <> output_file)
+  Ok(Nil)
 }
 
-// DOWNLOAD ESBUILD ------------------------------------------------------------
+pub fn serve(host: String, port: String) -> Result(Nil, Error) {
+  use _ <- try(download(get_os(), get_cpu()), keep)
+  let root = project.root()
+  let flags = [
+    "--serve=" <> host <> ":" <> port,
+    "--servedir=" <> filepath.join(root, "build/.lustre"),
+  ]
 
-/// Download the esbuild executable for the given os and cpu. If those options
-/// are not provided it tries detecting the system's os and cpu.
-///
-/// The executable will be at the project's root in the `priv/bin/esbuild`
-/// folder.
-///
-/// Returns a proof that esbuild was successfully downloaded that can be used
-/// to run all sort of things.
-///
-pub fn download(
-  os: Option(String),
-  cpu: Option(String),
-) -> Result(Executable, Error) {
-  let os = option.unwrap(os, get_os())
-  let cpu = option.unwrap(cpu, get_cpu())
+  io.println("\nStarting dev server at " <> host <> ":" <> port <> "...")
+  use _ <- try(
+    shellout.command(
+      run: "./build/.lustre/bin/esbuild",
+      in: root,
+      with: flags,
+      opt: [],
+    ),
+    on_error: map(function.compose(pair.second, BundleError)),
+  )
+
+  Ok(Nil)
+}
+
+// STEPS -----------------------------------------------------------------------
+
+fn check_esbuild_exists(path) {
+  case simplifile.verify_is_file(path) {
+    Ok(True) -> True
+    Ok(False) | Error(_) -> False
+  }
+}
+
+fn get_download_url(os, cpu) {
   let base = "https://registry.npmjs.org/@esbuild/"
   let path = case os, cpu {
     "android", "arm" -> Ok("android-arm/-/android-arm-0.19.10.tgz")
@@ -74,82 +140,78 @@ pub fn download(
 
     _, _ -> Error(UnknownPlatform(os, cpu))
   }
-  use url <- result.try(result.map(path, string.append(base, _)))
-  use tarball <- result.try(get_esbuild(url))
 
-  let destination_folder =
-    project.root_folder()
-    |> filepath.join("priv")
-    |> filepath.join("bin")
-  let esbuild_path = filepath.join(destination_folder, executable_name)
+  result.map(path, string.append(base, _))
+}
 
-  let _ = simplifile.create_directory_all(destination_folder)
-  use esbuild <- result.try(unzip_esbuild(tarball))
-  use _ <- result.try(
-    esbuild_path
-    |> simplifile.write_bits(esbuild)
-    |> result.map_error(SimplifileError(_, esbuild_path)),
-  )
+fn write_esbuild(bin, outdir, outfile) {
+  let _ = simplifile.create_directory_all(outdir)
 
+  simplifile.write_bits(outfile, bin)
+}
+
+fn set_filepermissions(file) {
   let permissions =
     FilePermissions(
       user: set.from_list([Read, Write, Execute]),
       group: set.from_list([Read, Execute]),
       other: set.from_list([Read, Execute]),
     )
-  use _ <- result.try(
-    esbuild_path
-    |> simplifile.set_permissions(permissions)
-    |> result.map_error(SimplifileError(_, esbuild_path)),
-  )
 
-  Ok(Executable)
+  simplifile.set_permissions(file, permissions)
 }
 
-// BUNDLE ----------------------------------------------------------------------
+fn configure_node_tree_shaking(root) {
+  // This whole chunk of code is to force tree shaking on dependencies that esbuild
+  // has a habit of including because it thinks their imports might have side
+  // effects.
+  //
+  // This is a really grim hack but it's the only way I've found to get esbuild to
+  // ignore unused deps like `shellout` that import node stuff but aren't used in
+  // app code.
+  let force_tree_shaking = "{ \"sideEffects\": false }"
+  let assert Ok(_) =
+    simplifile.write(
+      filepath.join(root, "build/dev/javascript/package.json"),
+      force_tree_shaking,
+    )
+  let pure_deps = ["lustre", "glint", "simplifile", "shellout"]
 
-/// Bundles the given contents. The command will run in the project's root.
-///
-pub fn bundle(
-  _esbuild: Executable,
-  input_file: String,
-  output_file: String,
-  minify: Bool,
-) -> Result(Nil, Error) {
-  let flags = [
-    "--bundle",
-    // The format is always "esm", we're not encouraging "cjs".
-    "--format=esm",
-    "--outfile=" <> output_file,
-  ]
+  list.try_each(pure_deps, fn(dep) {
+    root
+    |> filepath.join("build/dev/javascript/" <> dep)
+    |> filepath.join("package.json")
+    |> simplifile.write(force_tree_shaking)
+  })
+}
 
-  let options = case minify {
-    True -> [input_file, "--minify", ..flags]
-    False -> [input_file, ..flags]
-  }
+// ERROR HANDLING --------------------------------------------------------------
 
-  shellout.command(
-    run: filepath.join(".", "priv")
-    |> filepath.join("bin")
-    |> filepath.join(executable_name),
-    in: project.root_folder(),
-    with: options,
-    opt: [],
-  )
-  |> result.replace(Nil)
-  |> result.map_error(fn(error) { BundleError(error.1) })
+pub type Error {
+  BuildError
+  BundleError(message: String)
+  NetworkError(Dynamic)
+  SimplifileError(reason: simplifile.FileError, path: String)
+  UnknownPlatform(os: String, cpu: String)
+  UnzipError(Dynamic)
+}
+
+pub fn explain(error: Error) -> Nil {
+  error
+  |> string.inspect
+  |> io.println
 }
 
 // EXTERNALS -------------------------------------------------------------------
 
-@external(erlang, "lustre_add_ffi", "get_os")
+@external(erlang, "cli_ffi", "get_os")
 fn get_os() -> String
 
-@external(erlang, "lustre_add_ffi", "get_cpu")
+@external(erlang, "cli_ffi", "get_cpu")
 fn get_cpu() -> String
 
-@external(erlang, "lustre_add_ffi", "get_esbuild")
-fn get_esbuild(url: String) -> Result(BitArray, Error)
+@external(erlang, "cli_ffi", "get_esbuild")
+fn get_esbuild(url: String) -> Result(BitArray, Dynamic)
 
-@external(erlang, "lustre_add_ffi", "unzip_esbuild")
-fn unzip_esbuild(tarball: BitArray) -> Result(BitArray, Error)
+@external(erlang, "cli_ffi", "unzip_esbuild")
+fn unzip_esbuild(tarball: BitArray) -> Result(BitArray, Dynamic)
