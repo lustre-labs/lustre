@@ -158,20 +158,22 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import argv
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Decoder}
 import gleam/erlang/process.{type Subject}
+import gleam/option.{type Option, None, Some}
 import gleam/otp/actor.{type StartError}
 import gleam/result
+import lustre/effect.{type Effect}
+import lustre/element.{type Element}
+import lustre/internals/runtime
+import lustre/server.{type Patch}
+import argv
 import glint
 import lustre/cli/add
 import lustre/cli/build
-import lustre/cli/try
-import lustre/effect.{type Effect}
-import lustre/element.{type Element, type Patch}
-import lustre/internals/runtime
+import lustre/cli/dev
 
 // MAIN ------------------------------------------------------------------------
 
@@ -193,7 +195,7 @@ pub fn main() {
   |> glint.add(at: ["add", "esbuild"], do: add.esbuild())
   |> glint.add(at: ["build", "app"], do: build.app())
   |> glint.add(at: ["build", "component"], do: build.component())
-  |> glint.add(at: ["try"], do: try.run())
+  |> glint.add(at: ["dev"], do: dev.run())
   |> glint.run(args)
 }
 
@@ -230,7 +232,14 @@ pub opaque type App(flags, model, msg) {
     init: fn(flags) -> #(model, Effect(msg)),
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
-    on_attribute_change: Dict(String, Decoder(msg)),
+    // The `dict.mjs` module in the standard library is huge (20+kb!). For folks
+    // that don't ever build components and don't use a dictionary in any of their
+    // code we'd rather not thrust that increase in bundle size on them just to
+    // call `dict.new()`.
+    //
+    // Using `Option` here at least lets us say `None` for the empty case in the
+    // `application` constructor.
+    on_attribute_change: Option(Dict(String, Decoder(msg))),
   )
 }
 
@@ -341,7 +350,7 @@ pub fn application(
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
 ) -> App(flags, model, msg) {
-  App(init, update, view, dict.new())
+  App(init, update, view, None)
 }
 
 /// A `component` is a type of Lustre application designed to be embedded within
@@ -368,7 +377,7 @@ pub fn component(
   view: fn(model) -> Element(msg),
   on_attribute_change: Dict(String, Decoder(msg)),
 ) -> App(flags, model, msg) {
-  App(init, update, view, on_attribute_change)
+  App(init, update, view, Some(on_attribute_change))
 }
 
 // EFFECTS ---------------------------------------------------------------------
@@ -456,8 +465,10 @@ fn do_start_actor(
   app: App(flags, model, msg),
   flags: flags,
 ) -> Result(Subject(Action(msg, ServerComponent)), Error) {
+  let on_attribute_change = option.unwrap(app.on_attribute_change, dict.new())
+
   app.init(flags)
-  |> runtime.start(app.update, app.view, app.on_attribute_change)
+  |> runtime.start(app.update, app.view, on_attribute_change)
   |> result.map_error(ActorError)
 }
 

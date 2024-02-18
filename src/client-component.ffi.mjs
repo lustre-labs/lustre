@@ -16,7 +16,7 @@ export function register({ init, update, view, on_attribute_change }, name) {
 
   window.customElements.define(
     name,
-    makeComponent(init, update, view, on_attribute_change),
+    makeComponent(init, update, view, on_attribute_change)
   );
 
   return new Ok(undefined);
@@ -28,7 +28,7 @@ function makeComponent(init, update, view, on_attribute_change) {
     #application = null;
 
     static get observedAttributes() {
-      return on_attribute_change.entries().map(([name, _]) => name);
+      return on_attribute_change[0]?.entries().map(([name, _]) => name) ?? [];
     }
 
     constructor() {
@@ -47,7 +47,7 @@ function makeComponent(init, update, view, on_attribute_change) {
               this.#application
                 ? this.#application.send(new Dispatch(decoded[0]))
                 : window.requestAnimationFrame(() =>
-                    this.#application.send(new Dispatch(decoded[0])),
+                    this.#application.send(new Dispatch(decoded[0]))
                   );
             }
 
@@ -66,7 +66,7 @@ function makeComponent(init, update, view, on_attribute_change) {
         init(),
         update,
         view,
-        this.#root,
+        this.#root
       );
       this.appendChild(this.#root);
     }
