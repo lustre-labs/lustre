@@ -10,8 +10,8 @@ import gleam/option.{Some}
 import gleam/otp/actor.{type Next, type StartError, Spec}
 import gleam/result
 import lustre/effect.{type Effect}
-import lustre/element.{type Element, type Patch}
-import lustre/internals/patch.{Diff, Init}
+import lustre/element.{type Element}
+import lustre/internals/patch.{type Patch, Diff, Init}
 import lustre/internals/vdom
 
 // TYPES -----------------------------------------------------------------------
