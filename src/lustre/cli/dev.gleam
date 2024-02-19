@@ -20,7 +20,6 @@ import simplifile
 pub fn run() -> Command(Nil) {
   let description =
     "
-
     "
 
   glint.command(fn(input) {
@@ -82,7 +81,7 @@ pub fn run() -> Command(Nil) {
     }
   })
   |> glint.description(description)
-  |> glint.count_args(glint.EqArgs(0))
+  |> glint.unnamed_args(glint.EqArgs(0))
   |> glint.flag("host", {
     let description = ""
     let default = "0.0.0.0"

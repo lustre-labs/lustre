@@ -25,7 +25,7 @@ to bundle applications and act as a development server.
     }
   })
   |> glint.description(description)
-  |> glint.count_args(glint.EqArgs(0))
+  |> glint.unnamed_args(glint.EqArgs(0))
   |> glint.flag("os", {
     let description = ""
     let default = get_os()

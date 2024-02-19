@@ -76,7 +76,7 @@ JavaScript module for you to host or distribute.
     }
   })
   |> glint.description(description)
-  |> glint.count_args(glint.EqArgs(0))
+  |> glint.unnamed_args(glint.EqArgs(0))
   |> glint.flag("minify", {
     let description = "Minify the output"
     let default = False
@@ -150,7 +150,7 @@ present.
   })
   |> glint.description(description)
   |> glint.named_args(["module_path"])
-  |> glint.count_args(glint.EqArgs(1))
+  |> glint.unnamed_args(glint.EqArgs(1))
   |> glint.flag("minify", {
     let description = "Minify the output"
     let default = False
