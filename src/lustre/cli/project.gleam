@@ -76,15 +76,13 @@ pub fn interface() -> Result(Interface, String) {
 }
 
 /// Read the project configuration in the `gleam.toml` file.
-/// To call this function it's necessary to provide a proof that the project
-/// was successfully built. To do so you can use the `build` function.
 ///
 pub fn config() -> Result(Config, String) {
   use _ <- result.try(build())
 
-  // Since we have proof that the project could compile we're sure that there is
+  // Since we made sure that the project could compile we're sure that there is
   // bound to be a `gleam.toml` file somewhere in the current directory (or in
-  // its parent directories). So we can safely call `recursive_lookup` without
+  // its parent directories). So we can safely call `root()` without
   // it looping indefinitely.
   let configuration_path = filepath.join(root(), "gleam.toml")
 
@@ -101,7 +99,7 @@ pub fn config() -> Result(Config, String) {
 // ERROR HANDLING --------------------------------------------------------------
 
 ///
-/// 
+///
 pub type Error {
   BuildError
 }
@@ -115,7 +113,7 @@ pub fn explain(error: Error) -> Nil {
 // UTILS -----------------------------------------------------------------------
 
 /// Finds the path leading to the project's root folder. This recursively walks
-/// up from the current directory until it finds a `gleam.toml`. 
+/// up from the current directory until it finds a `gleam.toml`.
 ///
 pub fn root() -> String {
   find_root(".")
