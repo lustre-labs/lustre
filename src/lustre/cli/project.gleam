@@ -35,6 +35,7 @@ pub type Type {
   Named(name: String, package: String, module: String, parameters: List(Type))
   Variable(id: Int)
   Fn(parameters: List(Type), return: Type)
+  Tuple(elements: List(Type))
 }
 
 // COMMANDS --------------------------------------------------------------------
@@ -153,7 +154,7 @@ fn decode_module(dyn: Dynamic) -> Result(Module, List(DecodeError)) {
 fn decode_function(dyn: Dynamic) -> Result(Function, List(DecodeError)) {
   dynamic.decode2(
     Function,
-    dynamic.field("parameters", dynamic.list(decode_type)),
+    dynamic.field("parameters", dynamic.list(decode_labelled_argument)),
     dynamic.field("return", decode_type),
   )(dyn)
 }
@@ -165,6 +166,7 @@ fn decode_type(dyn: Dynamic) -> Result(Type, List(DecodeError)) {
     "named" -> decode_named_type(dyn)
     "variable" -> decode_variable_type(dyn)
     "fn" -> decode_fn_type(dyn)
+    "tuple" -> decode_tuple_type(dyn)
 
     _ ->
       Error([
@@ -195,4 +197,16 @@ fn decode_fn_type(dyn: Dynamic) -> Result(Type, List(DecodeError)) {
     dynamic.field("parameters", dynamic.list(decode_type)),
     dynamic.field("return", decode_type),
   )(dyn)
+}
+
+fn decode_tuple_type(dyn: Dynamic) -> Result(Type, List(DecodeError)) {
+  dynamic.decode1(Tuple, dynamic.field("elements", dynamic.list(decode_type)))(
+    dyn,
+  )
+}
+
+fn decode_labelled_argument(dyn: Dynamic) -> Result(Type, List(DecodeError)) {
+  // In this case we don't really care about the label, so we're just ignoring
+  // it and returning the argument's type.
+  dynamic.field("type", decode_type)(dyn)
 }
