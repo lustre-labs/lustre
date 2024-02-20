@@ -30,6 +30,7 @@ justin = "~> 1.0"
 shellout = "~> 1.5"
 simplifile = "~> 1.4"
 tom = "~> 0.3"
+spinner = "~> 1.1"
 
 [dev-dependencies]
 birdie = "~> 1.0"

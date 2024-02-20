@@ -11,7 +11,10 @@ import glint/flag
 import lustre/cli/esbuild
 import lustre/cli/project.{type Module, type Type, Named, Variable}
 import lustre/cli/utils.{map, replace, try}
+import lustre/cli/step
 import simplifile
+import spinner
+import gleam_community/ansi
 
 // COMMANDS --------------------------------------------------------------------
 
@@ -31,25 +34,23 @@ JavaScript module for you to host or distribute.
     let assert Ok(minify) = flag.get_bool(flags, "minify")
 
     let result = {
-      use _ <- result.try(prepare_esbuild())
+      use <- step.new("Building your project")
+      use project_name <- step.try(get_project_name())
+      use module <- step.try(get_module_interface(project_name))
+      use _ <- step.try(check_main_function(project_name, module))
+      use <- step.done("✅ Project compiled successfully")
 
-      io.println("\nPreparing build...")
-      io.println(" ├ reading project config")
-      use project_name <- result.try(get_project_name())
-      use module <- result.try(get_module_interface(project_name))
-      use _ <- result.try(check_main_function(project_name, module))
+      write_app_entry_file(project_name)
 
-      io.println(" ├ generating entry file")
       let root = project.root()
       let tempdir = filepath.join(root, "build/.lustre")
       let outdir = filepath.join(root, "priv/static")
-
       let _ = simplifile.create_directory_all(tempdir)
       let _ = simplifile.create_directory_all(outdir)
       let entry =
         "import { main } from '../dev/javascript/${project_name}/${project_name}.mjs';
 
-         main();
+          main();
         "
         |> string.replace("${project_name}", project_name)
 
@@ -65,15 +66,17 @@ JavaScript module for you to host or distribute.
         |> filepath.join(outdir, _)
 
       let assert Ok(_) = simplifile.write(entryfile, entry)
-      use _ <- result.try(bundle(entry, tempdir, outfile, minify))
+      use _ <- step.try(bundle(entry, tempdir, outfile, minify))
 
-      Ok(Nil)
+      // Ok(Nil)
+      todo
     }
 
-    case result {
-      Ok(_) -> Nil
-      Error(error) -> explain(error)
-    }
+    //case result {
+    //  Ok(_) -> Nil
+    //  Error(error) -> explain(error)
+    //}
+    Nil
   })
   |> glint.description(description)
   |> glint.unnamed_args(glint.EqArgs(0))
@@ -101,13 +104,18 @@ present.
     let assert Ok(minify) = flag.get_bool(flags, "minify")
 
     let result = {
-      io.println("\nPreparing build...")
-      io.println(" ├ reading project config")
+      let spinner =
+        spinner.new("Preparing build")
+        |> spinner.with_frames(spinner.snake_frames)
+        |> spinner.with_colour(ansi.yellow)
+        |> spinner.start
+
+      spinner.set_text(spinner, "Building your project")
       use module <- result.try(get_module_interface(module_path))
       use _ <- result.try(check_component_name(module_path, module))
       use component <- result.try(find_component(module_path, module))
 
-      io.println(" ├ generating entry file")
+      spinner.set_text(spinner, "Generating entry file")
       let root = project.root()
       let tempdir = filepath.join(root, "build/.lustre")
       let outdir = filepath.join(root, "priv/static")
@@ -119,7 +127,7 @@ present.
       let entry =
         "import { register } from '../dev/javascript/lustre/client-component.ffi.mjs';
          import { name, ${component} as component } from '../dev/javascript/${project_name}/${module_path}.mjs';
-      
+
          register(component(), name);
         "
         |> string.replace("${component}", component)
@@ -140,6 +148,7 @@ present.
       let assert Ok(_) = simplifile.write(entryfile, entry)
       use _ <- result.try(bundle(entry, tempdir, outfile, minify))
 
+      spinner.stop(spinner)
       Ok(Nil)
     }
 
@@ -180,11 +189,6 @@ fn explain(error: Error) -> Nil {
 }
 
 // STEPS -----------------------------------------------------------------------
-
-fn prepare_esbuild() -> Result(Nil, Error) {
-  esbuild.download(get_os(), get_cpu())
-  |> result.replace_error(BuildError)
-}
 
 fn get_project_name() -> Result(String, Error) {
   use config <- try(project.config(), replace(with: BuildError))
@@ -288,11 +292,3 @@ fn is_compatible_app_type(t: Type) -> Bool {
     _ -> False
   }
 }
-
-// EXTERNALS -------------------------------------------------------------------
-
-@external(erlang, "cli_ffi", "get_os")
-fn get_os() -> String
-
-@external(erlang, "cli_ffi", "get_cpu")
-fn get_cpu() -> String

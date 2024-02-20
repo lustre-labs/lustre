@@ -72,7 +72,6 @@ pub fn interface() -> Result(Interface, String) {
 
   let assert Ok(json) = simplifile.read(out)
   let assert Ok(interface) = json.decode(json, decode_interface)
-
   Ok(interface)
 }
 

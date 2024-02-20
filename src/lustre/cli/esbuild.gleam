@@ -10,10 +10,12 @@ import gleam/pair
 import gleam/result
 import gleam/set
 import gleam/string
+import gleam_community/ansi
 import lustre/cli/project
 import lustre/cli/utils.{keep, map, replace, try}
 import shellout
 import simplifile.{type FilePermissions, Execute, FilePermissions, Read, Write}
+import spinner
 
 // COMMANDS --------------------------------------------------------------------
 
@@ -21,21 +23,31 @@ pub fn download(os: String, cpu: String) -> Result(Nil, Error) {
   let outdir = filepath.join(project.root(), "build/.lustre/bin")
   let outfile = filepath.join(outdir, "esbuild")
 
-  use <- bool.guard(check_esbuild_exists(outfile), Ok(Nil))
+  let spinner =
+    spinner.new("Downloading esbuild")
+    |> spinner.with_frames(spinner.snake_frames)
+    |> spinner.with_colour(ansi.yellow)
+    |> spinner.start
 
-  io.println("\nInstalling esbuild...")
-  io.println(" ├ detecting platform")
+  use <- bool.lazy_guard(check_esbuild_exists(outfile), fn() {
+    spinner.stop(spinner)
+    io.println(ansi.green("✅ Esbuild already installed!"))
+    Ok(Nil)
+  })
+
+  spinner.set_text(spinner, "Detecting platform")
   use url <- result.try(get_download_url(os, cpu))
 
-  io.println(" ├ downloading from " <> url)
+  spinner.set_text(spinner, "Downloading from " <> url)
   use tarball <- try(get_esbuild(url), NetworkError)
 
-  io.println(" ├ unpacking")
+  spinner.set_text(spinner, "Unzipping esbuild")
   use bin <- try(unzip_esbuild(tarball), UnzipError)
   use _ <- try(write_esbuild(bin, outdir, outfile), SimplifileError(_, outfile))
   use _ <- try(set_filepermissions(outfile), SimplifileError(_, outfile))
 
-  io.println(" ├ installed!")
+  spinner.stop(spinner)
+  io.println(ansi.green("✅ Esbuild installed!"))
   Ok(Nil)
 }
 
@@ -47,8 +59,13 @@ pub fn bundle(
   use _ <- try(download(get_os(), get_cpu()), keep)
   use _ <- try(project.build(), replace(BuildError))
 
-  io.println("\nBundling with esbuild...")
-  io.println(" ├ configuring tree shaking")
+  let spinner =
+    spinner.new("Bundling with esbuild")
+    |> spinner.with_frames(spinner.snake_frames)
+    |> spinner.with_colour(ansi.yellow)
+    |> spinner.start
+
+  spinner.set_text(spinner, "Getting everything ready for tree shaking")
   let root = project.root()
   use _ <- try(configure_node_tree_shaking(root), map(SimplifileError(_, root)))
 
@@ -63,6 +80,7 @@ pub fn bundle(
     False -> [input_file, ..flags]
   }
 
+  spinner.set_text(spinner, "Bundling with esbuild")
   use _ <- try(
     shellout.command(
       run: "./build/.lustre/bin/esbuild",
@@ -73,7 +91,8 @@ pub fn bundle(
     on_error: map(function.compose(pair.second, BundleError)),
   )
 
-  io.println(" ├ bundle produced at " <> output_file)
+  spinner.stop(spinner)
+  io.println(ansi.green("✅ Bundle produced at `" <> output_file <> "`"))
   Ok(Nil)
 }
 
