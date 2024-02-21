@@ -3,8 +3,10 @@
 import filepath
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type DecodeError, type Dynamic, DecodeError}
+import gleam/int
 import gleam/io
 import gleam/json
+import gleam/list
 import gleam/pair
 import gleam/result
 import gleam/string
@@ -72,7 +74,6 @@ pub fn interface() -> Result(Interface, String) {
 
   let assert Ok(json) = simplifile.read(out)
   let assert Ok(interface) = json.decode(json, decode_interface)
-
   Ok(interface)
 }
 
@@ -106,9 +107,13 @@ pub type Error {
 }
 
 pub fn explain(error: Error) -> Nil {
-  error
-  |> string.inspect
-  |> io.println
+  case error {
+    BuildError ->
+      "
+It looks like your project has some compilation errors that need to be addressed
+before I can do anything."
+      |> io.println
+  }
 }
 
 // UTILS -----------------------------------------------------------------------
@@ -126,6 +131,29 @@ fn find_root(path: String) -> String {
   case simplifile.verify_is_file(toml) {
     Ok(False) | Error(_) -> find_root(filepath.join("..", path))
     Ok(True) -> path
+  }
+}
+
+pub fn type_to_string(type_: Type) -> String {
+  case type_ {
+    Tuple(elements) -> {
+      let elements = list.map(elements, type_to_string)
+      "#(" <> string.join(elements, with: ", ") <> ")"
+    }
+
+    Fn(params, return) -> {
+      let params = list.map(params, type_to_string)
+      let return = type_to_string(return)
+      "fn(" <> string.join(params, with: ", ") <> ") -> " <> return
+    }
+
+    Named(name, _package, _module, []) -> name
+    Named(name, _package, _module, params) -> {
+      let params = list.map(params, type_to_string)
+      name <> "(" <> string.join(params, with: ", ") <> ")"
+    }
+
+    Variable(id) -> "a_" <> int.to_string(id)
   }
 }
 

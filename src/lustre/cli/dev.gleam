@@ -3,14 +3,14 @@
 import filepath
 import gleam/dict
 import gleam/io
-import gleam/result
 import gleam/string
 import glint.{type Command, CommandInput}
 import glint/flag
 import lustre/attribute.{attribute}
 import lustre/cli/esbuild
 import lustre/cli/project.{type Module, type Type, Fn, Named, Variable}
-import lustre/cli/utils.{guard, map, replace, try}
+import lustre/cli/step
+import lustre/cli/utils.{guard, keep, map, replace, try}
 import lustre/element
 import lustre/element/html.{html}
 import simplifile
@@ -28,14 +28,17 @@ pub fn run() -> Command(Nil) {
     let assert Ok(port) = flag.get_string(flags, "port")
     let assert Ok(include_styles) = flag.get_bool(flags, "include-styles")
 
-    let result = {
-      use interface <- try(project.interface(), replace(BuildError))
-      use module <- try(
+    let script = {
+      use <- step.new("Building your project")
+      use interface <- step.try(project.interface(), replace(BuildError))
+      use module <- step.try(
         dict.get(interface.modules, interface.name),
         replace(ModuleMissing(interface.name)),
       )
-      use is_app <- result.try(check_is_lustre_app(interface.name, module))
+      use is_app <- step.try(check_is_lustre_app(interface.name, module), keep)
+      use <- step.done("✅ Project compiled successfully")
 
+      use <- step.new("Creating the application entry point")
       let root = project.root()
       let tempdir = filepath.join(root, "build/.lustre")
       let _ = simplifile.create_directory_all(tempdir)
@@ -50,7 +53,7 @@ pub fn run() -> Command(Nil) {
             "
           False ->
             " import { main } from '../dev/javascript/${app_name}/${app_name}.mjs';
-        
+
               main();
           "
         }
@@ -62,7 +65,7 @@ pub fn run() -> Command(Nil) {
       let assert Ok(_) = simplifile.write(tempdir <> "/entry.mjs", entry)
       let assert Ok(_) = simplifile.write(tempdir <> "/index.html", html)
 
-      use _ <- try(
+      use _ <- step.run(
         esbuild.bundle(
           filepath.join(tempdir, "entry.mjs"),
           filepath.join(tempdir, "index.mjs"),
@@ -70,12 +73,11 @@ pub fn run() -> Command(Nil) {
         ),
         map(BundleError),
       )
-      use _ <- try(esbuild.serve(host, port), map(BundleError))
-
-      Ok(Nil)
+      use _ <- step.run(esbuild.serve(host, port), map(BundleError))
+      step.return(Nil)
     }
 
-    case result {
+    case step.execute(script) {
       Ok(_) -> Nil
       Error(error) -> explain(error)
     }
@@ -120,9 +122,37 @@ type Error {
 }
 
 fn explain(error: Error) -> Nil {
-  error
-  |> string.inspect
-  |> io.println
+  case error {
+    BuildError -> project.explain(project.BuildError)
+
+    BundleError(error) -> esbuild.explain(error)
+
+    MainMissing(module) -> io.println("
+Module `" <> module <> "` doesn't have a public `main` function I can preview.")
+
+    MainIncorrectType(module, type_) -> io.println("
+I cannot preview the `main` function exposed by module `" <> module <> "`.
+To start a preview server I need it to take no arguments and return a Lustre
+`App`.
+The one I found has type `" <> project.type_to_string(type_) <> "`.")
+
+    // TODO: maybe this could have useful links to `App`/flags...
+    MainBadAppType(module, type_) -> io.println("
+I cannot preview the `main` function exposed by module `" <> module <> "`.
+To start a preview server I need it to return a Lustre `App` that doesn't need
+any flags.
+The one I found has type `" <> project.type_to_string(type_) <> "`.
+
+Its return type should look something like this:
+
+  import lustre.{type App}
+  pub fn main() -> App(flags, model, msg) {
+    todo as \"your Lustre application to preview\"
+  }")
+
+    ModuleMissing(module) -> io.println("
+I couldn't find a public module called `" <> module <> "` in your project.")
+  }
 }
 
 // STEPS -----------------------------------------------------------------------

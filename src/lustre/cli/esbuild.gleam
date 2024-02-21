@@ -3,54 +3,59 @@
 import filepath
 import gleam/bool
 import gleam/dynamic.{type Dynamic}
-import gleam/function
 import gleam/io
 import gleam/list
-import gleam/pair
 import gleam/result
 import gleam/set
 import gleam/string
 import lustre/cli/project
-import lustre/cli/utils.{keep, map, replace, try}
+import lustre/cli/step.{type Step}
+import lustre/cli/utils.{keep, replace}
 import shellout
 import simplifile.{type FilePermissions, Execute, FilePermissions, Read, Write}
 
 // COMMANDS --------------------------------------------------------------------
 
-pub fn download(os: String, cpu: String) -> Result(Nil, Error) {
+pub fn download(os: String, cpu: String) -> Step(Nil, Error) {
+  use <- step.new("Downloading esbuild")
+
   let outdir = filepath.join(project.root(), "build/.lustre/bin")
   let outfile = filepath.join(outdir, "esbuild")
 
-  use <- bool.guard(check_esbuild_exists(outfile), Ok(Nil))
+  use <- bool.guard(check_esbuild_exists(outfile), {
+    use <- step.done("✅ Esbuild already installed!")
+    step.return(Nil)
+  })
 
-  io.println("\nInstalling esbuild...")
-  io.println(" ├ detecting platform")
-  use url <- result.try(get_download_url(os, cpu))
+  use <- step.new("Detecting platform")
+  use url <- step.try(get_download_url(os, cpu), keep)
 
-  io.println(" ├ downloading from " <> url)
-  use tarball <- try(get_esbuild(url), NetworkError)
+  use <- step.new("Downloading from " <> url)
+  use tarball <- step.try(get_esbuild(url), NetworkError)
 
-  io.println(" ├ unpacking")
-  use bin <- try(unzip_esbuild(tarball), UnzipError)
-  use _ <- try(write_esbuild(bin, outdir, outfile), SimplifileError(_, outfile))
-  use _ <- try(set_filepermissions(outfile), SimplifileError(_, outfile))
+  use <- step.new("Unzipping esbuild")
+  use bin <- step.try(unzip_esbuild(tarball), UnzipError)
+  let write_esbuild =
+    write_esbuild(bin, outdir, outfile)
+    |> result.map_error(SimplifileError(_, outfile))
+  use _ <- step.try(write_esbuild, keep)
+  use _ <- step.try(set_filepermissions(outfile), SimplifileError(_, outfile))
 
-  io.println(" ├ installed!")
-  Ok(Nil)
+  use <- step.done("✅ Esbuild installed!")
+  step.return(Nil)
 }
 
 pub fn bundle(
   input_file: String,
   output_file: String,
   minify: Bool,
-) -> Result(Nil, Error) {
-  use _ <- try(download(get_os(), get_cpu()), keep)
-  use _ <- try(project.build(), replace(BuildError))
+) -> Step(Nil, Error) {
+  use _ <- step.run(download(get_os(), get_cpu()), keep)
+  use _ <- step.try(project.build(), replace(BuildError))
+  use <- step.new("Getting everything ready for tree shaking")
 
-  io.println("\nBundling with esbuild...")
-  io.println(" ├ configuring tree shaking")
   let root = project.root()
-  use _ <- try(configure_node_tree_shaking(root), map(SimplifileError(_, root)))
+  use _ <- step.try(configure_node_tree_shaking(root), SimplifileError(_, root))
 
   let flags = [
     "--bundle",
@@ -63,40 +68,41 @@ pub fn bundle(
     False -> [input_file, ..flags]
   }
 
-  use _ <- try(
+  use <- step.new("Bundling with esbuild")
+  use _ <- step.try(
     shellout.command(
       run: "./build/.lustre/bin/esbuild",
       in: root,
       with: options,
       opt: [],
     ),
-    on_error: map(function.compose(pair.second, BundleError)),
+    on_error: fn(pair) { BundleError(pair.1) },
   )
 
-  io.println(" ├ bundle produced at " <> output_file)
-  Ok(Nil)
+  use <- step.done("✅ Bundle produced at `" <> output_file <> "`")
+  step.return(Nil)
 }
 
-pub fn serve(host: String, port: String) -> Result(Nil, Error) {
-  use _ <- try(download(get_os(), get_cpu()), keep)
+pub fn serve(host: String, port: String) -> Step(Nil, Error) {
+  use _ <- step.run(download(get_os(), get_cpu()), keep)
   let root = project.root()
   let flags = [
     "--serve=" <> host <> ":" <> port,
     "--servedir=" <> filepath.join(root, "build/.lustre"),
   ]
 
-  io.println("\nStarting dev server at " <> host <> ":" <> port <> "...")
-  use _ <- try(
+  use <- step.done("\nStarting dev server at " <> host <> ":" <> port <> "...")
+  use _ <- step.try(
     shellout.command(
       run: "./build/.lustre/bin/esbuild",
       in: root,
       with: flags,
       opt: [],
     ),
-    on_error: map(function.compose(pair.second, BundleError)),
+    on_error: fn(pair) { BundleError(pair.1) },
   )
 
-  Ok(Nil)
+  step.return(Nil)
 }
 
 // STEPS -----------------------------------------------------------------------
@@ -197,9 +203,37 @@ pub type Error {
 }
 
 pub fn explain(error: Error) -> Nil {
-  error
-  |> string.inspect
-  |> io.println
+  case error {
+    BuildError -> project.explain(project.BuildError)
+
+    BundleError(message) -> io.println("
+I ran into an error while trying to create a bundle with esbuild:
+" <> message)
+
+    // TODO: Is there a better way to deal with this dynamic error?
+    NetworkError(_dynamic) ->
+      io.println(
+        "
+There was a network error!",
+      )
+
+    // TODO: this could give a better error for some common reason like Enoent.
+    SimplifileError(reason, path) -> io.println("
+I ran into the following error at path `" <> path <> "`:" <> string.inspect(
+          reason,
+        ) <> ".")
+
+    UnknownPlatform(os, cpu) -> io.println("
+I couldn't figure out the correct esbuild version for your
+os (" <> os <> ") and cpu (" <> cpu <> ").")
+
+    // TODO: Is there a better way to deal with this dynamic error?
+    UnzipError(_dynamic) ->
+      io.println(
+        "
+I couldn't unzip the esbuild executable!",
+      )
+  }
 }
 
 // EXTERNALS -------------------------------------------------------------------

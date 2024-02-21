@@ -3,6 +3,7 @@
 import glint.{type Command, CommandInput}
 import glint/flag
 import lustre/cli/esbuild
+import lustre/cli/step
 
 // COMMANDS --------------------------------------------------------------------
 
@@ -17,9 +18,8 @@ to bundle applications and act as a development server.
     let CommandInput(flags: flags, ..) = input
     let assert Ok(os) = flag.get_string(flags, "os")
     let assert Ok(cpu) = flag.get_string(flags, "cpu")
-    let result = esbuild.download(os, cpu)
-
-    case result {
+    let script = esbuild.download(os, cpu)
+    case step.execute(script) {
       Ok(_) -> Nil
       Error(error) -> esbuild.explain(error)
     }
