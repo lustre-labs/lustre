@@ -1,20 +1,42 @@
 name = "lustre"
 version = "3.1.3"
+gleam = ">= 0.33.0"
 
 description = "An Elm-inspired framework for building single page applications and server-rendered components in Gleam!"
-licences = ["MIT"]
 repository = { type = "github", user = "lustre-labs", repo = "lustre" }
+licences = ["MIT"]
+
 links = [
   { title = "Website", href = "https://lustre.build" },
+  { title = "Examples", href = "https://github.com/lustre-labs/lustre/tree/main/examples" },
   { title = "Sponsor", href = "https://github.com/sponsors/hayleigh-dot-dev" },
 ]
-gleam = ">= 0.33.0"
 
 internal_modules = [
   "lustre/cli",
   "lustre/cli/*",
   "lustre/internals",
   "lustre/internals/*",
+]
+
+[documentation]
+pages = [
+  { title = "CLI reference", path = "#", source = "" },
+  { title = " ", path = "#", source = "" },
+  { title = "Quickstart guide", path = "guide/01-quickstart.html", source = "./docs/guide/01-quickstart.md" },
+  { title = "Managing state", path = "#", source = "" },
+  { title = "Side effects", path = "#", source = "" },
+  { title = "Server-side rendering", path = "#", source = "" },
+  { title = "Components", path = "#", source = "" },
+  { title = "Server components", path = "#", source = "" },
+  { title = " ", path = "#", source = "" },
+  { title = "Using with Wisp", path = "#", source = "" },
+  { title = "Using with Glen", path = "#", source = "" },
+  { title = "Using with Mist", path = "#", source = "" },
+  { title = " ", path = "#", source = "" },
+  { title = "For Elm developers", path = "#", source = "" },
+  { title = "For React developers", path = "#", source = "" },
+  { title = "For LiveView developers", path = "#", source = "" },
 ]
 
 [dependencies]
