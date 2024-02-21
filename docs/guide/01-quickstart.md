@@ -295,7 +295,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   case msg {
     Increment -> #(Model(..model, count: model.count + 1), get_cat())
     Decrement -> #(Model(..model, count: model.count - 1), effect.none())
-    GotCat(Ok(cat)) -> #(Model(..model, [cat, ..model.cats]), effect.none())
+    GotCat(Ok(cat)) -> #(Model(..model, cats: [cat, ..model.cats]), effect.none())
     GotCat(Error(_)) -> #(model, effect.none())
   }
 }
@@ -307,6 +307,11 @@ fn get_cat() -> effect.Effect(Msg) {
   lustre_http.get("https://cataas.com/cat?json=true", expect)
 }
 ```
+
+**Note**: The `get_cat` function returns an `Effect` that tells the runtime how
+to fetch a cat image. It's important to know that the `get_cat` function doesn't
+perform the request directly! This is why we need to add the `GotCat` message
+variant: the runtime needs to know what to do with the response when it arrives.
 
 This model of managed effects can feel cumbersome at first, but it comes with some
 benefits. Forcing side effects to produce a message means our message type naturally
