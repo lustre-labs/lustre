@@ -90,7 +90,7 @@
 //// different kinds of applications. If you're just getting started with Lustre
 //// or frontend development, we recommend reading through them in order:
 ////
-////
+//// - [`01-quickstart`](/guide/01-quickstart)
 ////
 //// This list of guides is likely to grow over time, so be sure to check back
 //// every now and then to see what's new!
