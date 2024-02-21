@@ -201,6 +201,15 @@ pub fn view(model: Model) -> lustre.Element(Msg) {
 }
 ```
 
+The above snippet attaches two click event listeners that produce an `Increment`
+or `Decrement` message when clicked. The Lustre runtime is responsible for
+attaching these event listeners and calling your `update` function with the
+resulting message.
+
+**Note**: notice that the return type of `view` is `lustre.Element(Msg)`. The
+type parameter `Msg` tells us the kinds of messages this element might produce
+from events: type safety to the rescue!
+
 This forms the core of every Lustre application:
 
 - A model produces some view.
