@@ -36,19 +36,19 @@ runtime. Some of Lustre's core features include:
 To get started, let's create a new Gleam application and add Lustre as a dependency.
 
 ```sh
-$ gleam new app && gleam add lustre
+$ gleam new app && cd app && gleam add lustre
 ```
 
 By default, Gleam builds projects for the Erlang target unless told otherwise. We
 can change this by adding a `target` field to the `gleam.toml` file generated in
 the root of the project.
 
-```toml
-name = "app"
-target = "javascript"
-version = "1.0.0"
+```diff
+  name = "app"
++ target = "javascript"
+  version = "1.0.0"
 
-...
+  ...
 ```
 
 The simplest type of Lustre application is constructed with the `element` function.
@@ -216,7 +216,7 @@ world – whether that's fetching data from an API, setting up a WebSocket conne
 or even just setting a timer.
 
 Lustre manages these side effects through an abstraction called an `Effect`. In
-essense, effects are any functions that talk with the outside world and might
+essence, effects are any functions that talk with the outside world and might
 want to send messages back to your application. Lustre lets you write your own
 effects, but for now we'll use a community package called
 [`lustre_http`](https://hexdocs.pm/lustre_http/index.html) to fetch a new cat image
