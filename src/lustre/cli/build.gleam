@@ -10,11 +10,9 @@ import glint.{type Command, CommandInput}
 import glint/flag
 import lustre/cli/esbuild
 import lustre/cli/project.{type Module, type Type, Named, Variable}
-import lustre/cli/utils.{map, replace, try}
-import lustre/cli/step
+import lustre/cli/utils.{keep, replace, try}
+import lustre/cli/step.{type Step}
 import simplifile
-import spinner
-import gleam_community/ansi
 
 // COMMANDS --------------------------------------------------------------------
 
@@ -33,15 +31,15 @@ JavaScript module for you to host or distribute.
     let CommandInput(flags: flags, ..) = input
     let assert Ok(minify) = flag.get_bool(flags, "minify")
 
-    let result = {
+    let script = {
       use <- step.new("Building your project")
-      use project_name <- step.try(get_project_name())
-      use module <- step.try(get_module_interface(project_name))
-      use _ <- step.try(check_main_function(project_name, module))
+      use project_name <- step.try(get_project_name(), keep)
       use <- step.done("✅ Project compiled successfully")
+      use <- step.new("Checking if I can bundle your application")
+      use module <- step.try(get_module_interface(project_name), keep)
+      use _ <- step.try(check_main_function(project_name, module), keep)
 
-      write_app_entry_file(project_name)
-
+      use <- step.new("Creating the bundle entry file")
       let root = project.root()
       let tempdir = filepath.join(root, "build/.lustre")
       let outdir = filepath.join(root, "priv/static")
@@ -50,7 +48,7 @@ JavaScript module for you to host or distribute.
       let entry =
         "import { main } from '../dev/javascript/${project_name}/${project_name}.mjs';
 
-          main();
+         main();
         "
         |> string.replace("${project_name}", project_name)
 
@@ -66,17 +64,15 @@ JavaScript module for you to host or distribute.
         |> filepath.join(outdir, _)
 
       let assert Ok(_) = simplifile.write(entryfile, entry)
-      use _ <- step.try(bundle(entry, tempdir, outfile, minify))
 
-      // Ok(Nil)
-      todo
+      use _ <- step.run(bundle(entry, tempdir, outfile, minify), keep)
+      step.return(Nil)
     }
 
-    //case result {
-    //  Ok(_) -> Nil
-    //  Error(error) -> explain(error)
-    //}
-    Nil
+    case step.execute(script) {
+      Ok(_) -> Nil
+      Error(error) -> explain(error)
+    }
   })
   |> glint.description(description)
   |> glint.unnamed_args(glint.EqArgs(0))
@@ -103,27 +99,22 @@ present.
     let assert Ok(module_path) = dict.get(args, "module_path")
     let assert Ok(minify) = flag.get_bool(flags, "minify")
 
-    let result = {
-      let spinner =
-        spinner.new("Preparing build")
-        |> spinner.with_frames(spinner.snake_frames)
-        |> spinner.with_colour(ansi.yellow)
-        |> spinner.start
+    let script = {
+      use <- step.new("Building your project")
+      use module <- step.try(get_module_interface(module_path), keep)
+      use <- step.done("✅ Project compiled successfully")
+      use <- step.new("Checking if I can bundle your component")
+      use _ <- step.try(check_component_name(module_path, module), keep)
+      use component <- step.try(find_component(module_path, module), keep)
 
-      spinner.set_text(spinner, "Building your project")
-      use module <- result.try(get_module_interface(module_path))
-      use _ <- result.try(check_component_name(module_path, module))
-      use component <- result.try(find_component(module_path, module))
-
-      spinner.set_text(spinner, "Generating entry file")
+      use <- step.new("Creating the bundle entry file")
       let root = project.root()
       let tempdir = filepath.join(root, "build/.lustre")
       let outdir = filepath.join(root, "priv/static")
-
       let _ = simplifile.create_directory_all(tempdir)
       let _ = simplifile.create_directory_all(outdir)
 
-      use project_name <- result.try(get_project_name())
+      use project_name <- step.try(get_project_name(), keep)
       let entry =
         "import { register } from '../dev/javascript/lustre/client-component.ffi.mjs';
          import { name, ${component} as component } from '../dev/javascript/${project_name}/${module_path}.mjs';
@@ -146,20 +137,18 @@ present.
         |> result.map(filepath.join(outdir, _))
 
       let assert Ok(_) = simplifile.write(entryfile, entry)
-      use _ <- result.try(bundle(entry, tempdir, outfile, minify))
-
-      spinner.stop(spinner)
-      Ok(Nil)
+      use _ <- step.run(bundle(entry, tempdir, outfile, minify), keep)
+      step.return(Nil)
     }
 
-    case result {
+    case step.execute(script) {
       Ok(_) -> Nil
       Error(error) -> explain(error)
     }
   })
   |> glint.description(description)
   |> glint.named_args(["module_path"])
-  |> glint.unnamed_args(glint.EqArgs(1))
+  |> glint.unnamed_args(glint.EqArgs(0))
   |> glint.flag("minify", {
     let description = "Minify the output"
     let default = False
@@ -183,9 +172,45 @@ type Error {
 }
 
 fn explain(error: Error) -> Nil {
-  error
-  |> string.inspect
-  |> io.println
+  case error {
+    BuildError -> project.explain(project.BuildError)
+
+    BundleError(error) -> esbuild.explain(error)
+
+    ComponentMissing(module) -> io.println("
+Module `" <> module <> "` doesn't have any public function I can use to bundle
+a component.
+
+To bundle a component your module should have a public function that returns a
+Lustre `App`:
+
+  import lustre.{type App}
+  pub fn my_component() -> App(flags, model, msg) {
+    todo as \"your Lustre component to bundle\"
+  }
+")
+
+    MainMissing(module) -> io.println("
+Module `" <> module <> "` doesn't have a public `main` function I can use as
+the bundle entry point.")
+
+    ModuleMissing(module) -> io.println("
+I couldn't find a public module called `" <> module <> "` in your project.")
+
+    NameIncorrectType(module, type_) -> io.println("
+I can't use the `name` constant exposed by module `" <> module <> "`
+to give a name to the component I'm bundling.
+I was expecting `name` to be a `String`,
+but it has type `" <> project.type_to_string(type_) <> "`.")
+
+    NameMissing(module) -> io.println("
+Module `" <> module <> "` doesn't have a public `name` constant.
+That is required so that I can give a proper name to the component I'm bundling.
+
+Try adding a `name` constant to your module like this:
+
+  const name: String = \"component-name\"")
+  }
 }
 
 // STEPS -----------------------------------------------------------------------
@@ -246,16 +271,11 @@ fn bundle(
   tempdir: String,
   outfile: String,
   minify: Bool,
-) -> Result(Nil, Error) {
+) -> Step(Nil, Error) {
   let entryfile = filepath.join(tempdir, "entry.mjs")
   let assert Ok(_) = simplifile.write(entryfile, entry)
-
-  use _ <- try(
-    esbuild.bundle(entryfile, outfile, minify),
-    map(with: BundleError),
-  )
-
-  Ok(Nil)
+  use _ <- step.run(esbuild.bundle(entryfile, outfile, minify), BundleError)
+  step.return(Nil)
 }
 
 // UTILS -----------------------------------------------------------------------

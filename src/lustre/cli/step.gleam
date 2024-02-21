@@ -1,77 +1,100 @@
 import gleam/io
+import gleam_community/ansi
 import spinner.{type Spinner}
 
-pub opaque type Env {
-  Env(spinner: Spinner)
+type SpinnerStatus {
+  Running(message: String)
+  Stopped
+}
+
+type Env {
+  Env(spinner: Spinner, spinner_status: SpinnerStatus)
 }
 
 pub opaque type Step(a, e) {
-  Step(run: fn(Env) -> Result(a, e))
+  Step(run: fn(Env) -> #(Env, Result(a, e)))
 }
 
-pub fn do(step: Step(a, e), then: fn(a) -> Step(b, e)) -> Step(b, e) {
-  fn(env) {
-    case step.run(env) {
-      Ok(a) -> then(a).run(env)
-      Error(e) -> Error(e)
+/// Replace the current spinner label with a new one.
+///
+pub fn new(message: String, then continue: fn() -> Step(a, e)) -> Step(a, e) {
+  use Env(spinner, spinner_status) <- Step
+  case spinner_status {
+    Running(_) -> {
+      spinner.set_text(spinner, message)
+      continue().run(Env(spinner, Running(message)))
+    }
+    Stopped -> {
+      let new_spinner =
+        spinner.new(message)
+        |> spinner.with_frames(spinner.snake_frames)
+        |> spinner.start
+      continue().run(Env(new_spinner, Running(message)))
     }
   }
-  |> Step
 }
 
-// --- USING RESULTS INSIDE A STEP ---------------------------------------------
+/// Stops the current spinner and prints out the given message.
+///
+pub fn done(message: String, then continue: fn() -> Step(b, e)) -> Step(b, e) {
+  use Env(spinner, spinner_status) <- Step
+  case spinner_status {
+    Running(_) -> spinner.stop(spinner)
+    Stopped -> Nil
+  }
+  io.println(ansi.green(message))
+  continue().run(Env(spinner, Stopped))
+}
 
-pub fn try(result: Result(a, e), then run: fn(a) -> Step(b, e)) -> Step(b, e) {
-  fn(env) {
-    case result {
-      Ok(a) -> run(a).run(env)
-      Error(e) -> Error(e)
+/// Runs another step as part of this one. The step will use the same spinner
+/// as the previous one overriding its content.
+///
+pub fn run(
+  step: Step(a, e),
+  on_error map_error: fn(e) -> e1,
+  then continue: fn(a) -> Step(b, e1),
+) -> Step(b, e1) {
+  use env <- Step
+  case step.run(env) {
+    #(new_env, Ok(res)) -> continue(res).run(new_env)
+    #(new_env, Error(e)) -> #(new_env, Error(map_error(e)))
+  }
+}
+
+/// If the result is `Ok` will continue by passing its wrapped value to the
+/// `continue` function; otherwise will result in an error stopping the stepwise
+/// execution.
+///
+pub fn try(
+  result: Result(a, e),
+  on_error map_error: fn(e) -> e1,
+  then continue: fn(a) -> Step(b, e1),
+) -> Step(b, e1) {
+  Step(fn(env) { #(env, result) })
+  |> run(map_error, continue)
+}
+
+/// Returns a value without changing the state of any spinner.
+/// Any running spinner will still be running.
+///
+pub fn return(value: a) -> Step(a, e) {
+  use env <- Step
+  #(env, Ok(value))
+}
+
+pub fn execute(step: Step(a, e)) -> Result(a, e) {
+  let initial_spinner =
+    spinner.new("")
+    |> spinner.with_frames(spinner.snake_frames)
+    |> spinner.start
+
+  let #(Env(spinner, status), res) = step.run(Env(initial_spinner, Running("")))
+  case status {
+    Running(message) -> {
+      spinner.stop(spinner)
+      io.println("❌ " <> ansi.red(message))
     }
+    Stopped -> Nil
   }
-  |> Step
-}
-
-pub fn run(step: Step(a, e), then run: fn(a) -> Step(b, e)) -> Step(b, e) {
-  Step(fn(env) {
-    case step.run(env) {
-      Ok(a) -> run(a).run(env)
-      Error(e) -> Error(e)
-    }
-  })
-}
-
-// --- CHANGING THE SPINNER ----------------------------------------------------
-
-pub fn start(message: String, then run: fn() -> Step(a, e)) -> Step(a, e) {
-  fn(env: Env) {
-    // Stop the previous spinner and start a new one.
-    spinner.stop(env.spinner)
-    let new_env =
-      spinner.new(message)
-      |> spinner.with_frames(spinner.snake_frames)
-      |> spinner.start
-      |> Env
-
-    run().run(new_env)
-  }
-  |> Step
-}
-
-pub fn complete(message message: String, return value: a) -> Step(a, e) {
-  fn(env: Env) {
-    spinner.stop(env.spinner)
-    io.println(message)
-    Ok(value)
-  }
-  |> Step
-}
-
-// --- ACCESSING THE ENVIRONMENT -----------------------------------------------
-
-pub fn env() -> Step(Env, e) {
-  Step(fn(env) { Ok(env) })
-}
-
-pub fn spinner() -> Step(Spinner, e) {
-  Step(fn(env: Env) { Ok(env.spinner) })
+  res
 }
