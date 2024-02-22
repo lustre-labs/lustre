@@ -58,14 +58,16 @@
 
 ## Features
 
-- A declarative, functional API for constructing HTML. No templates, no macros
+- A **declarative**, functional API for constructing HTML. No templates, no macros,
   just Gleam.
 
-- An Erlang and Elm-inspired architecture for managing state.
+- An Erlang and Elm-inspired architecture for **managing state**.
 
-- Managed side effects for predictable, testable code.
+- **Managed side effects** for predictable, testable code.
 
-- Universal components. Write once, run anywhere. Elm meets Phoenix LiveView.
+- Universal components. **Write once, run anywhere**. Elm meets Phoenix LiveView.
+
+- A **batteries-included CLI** that makes scaffolding and building apps a breeze.
 
 ## Example
 
@@ -111,6 +113,27 @@ fn view(model) {
 ```
 
 ## Philosophy
+
+Lustre is an _opinionated_ framework for building small-to-medium-sized Web
+applications. Modern frontend development is hard and complex. Some of that
+complexity is necessary, but a lot of it is accidental or comes from having far
+too many options. Lustre has the same design philosophy as Gleam: where possible,
+there should be only one way to do things.
+
+That means shipping with a single state management system out of the box, modelled
+after Elm and Erlang/OTP. Open any any Lustre application and you should feel
+right at home.
+
+It also means we encourage simple approaches to constructing views over complex
+ones. Lustre _does_ have a way to create encapsulated stateful components (something
+we sorely missed in Elm) but it shouldn't be the default. Prefer simple functions
+to stateful components.
+
+Where components _are_ necessary, lean into the fact that Lustre components can
+run _anywhere_. Lustre gives you the tools to write components that can run inside
+an existing Lustre application, export them as a standalone Web Component, or run
+them on the server with a minimal runtime for patching the DOM. Lustre calls these
+**universal components** and they're written with Gleam's multiple targets in mind.
 
 ## Installation
 
