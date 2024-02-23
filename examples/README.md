@@ -5,11 +5,11 @@ that demonstrates a particular feature or concept of the library. For newcomers,
 we recommend looking through them in order, as each example tends to build on
 the previous ones. Feel free to jump in to any example that interests you, though!
 
-**Note**: these examples all use [`lustre/ui`](https://github.com/lustre-labs/ui)
-to show off something a little more visually interesting than unstyled HTML. None
-of the ideas in these examples are specific to `lustre/ui`, though, and you should
-know that you can follow along with any of these examples using only the standard
-`lustre/element/html` module.
+> **Note**: these examples all use [`lustre/ui`](https://github.com/lustre-labs/ui)
+> to show off something a little more visually interesting than unstyled HTML. None
+> of the ideas in these examples are specific to `lustre/ui`, though, and you should
+> know that you can follow along with any of these examples using only the standard
+> `lustre/element/html` module.
 
 ## Examples
 
