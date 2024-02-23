@@ -1,3 +1,9 @@
+//// > **Note**: this is a _release candidate_ for v4.0.0 and documentation is still
+//// > a work in progress. If you spot an issue with docs or the library, or would
+//// > like to get involved, please [open an issue](https://github.com/lustre-labs/lustre/issues/new)
+//// > or a pull request.
+////
+
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Dynamic}
@@ -58,9 +64,9 @@ pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
 
 ///
 ///
-/// **Note**: unlike most attributes, multiple `style` attributes are merged
-/// with any existing other styles on an element. Styles added _later_ in the
-/// list will override styles added earlier.
+/// > **Note**: unlike most attributes, multiple `style` attributes are merged
+/// > with any existing other styles on an element. Styles added _later_ in the
+/// > list will override styles added earlier.
 ///
 pub fn style(properties: List(#(String, String))) -> Attribute(msg) {
   attribute("style", {
@@ -71,8 +77,8 @@ pub fn style(properties: List(#(String, String))) -> Attribute(msg) {
 
 ///
 ///
-/// **Note**: unlike most attributes, multiple `class` attributes are merged
-/// with any existing other classes on an element.
+/// > **Note**: unlike most attributes, multiple `class` attributes are merged
+/// > with any existing other classes on an element.
 ///
 pub fn class(name: String) -> Attribute(msg) {
   attribute("class", name)

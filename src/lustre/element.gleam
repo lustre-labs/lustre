@@ -1,3 +1,8 @@
+//// > **Note**: this is a _release candidate_ for v4.0.0 and documentation is still
+//// > a work in progress. If you spot an issue with docs or the library, or would
+//// > like to get involved, please [open an issue](https://github.com/lustre-labs/lustre/issues/new)
+//// > or a pull request.
+////
 //// Lustre wouldn't be much use as a frontend framework if it didn't provide a
 //// way to create HTML elements. This module contains the basic functions
 //// necessary to construct and manipulate different HTML elements.
