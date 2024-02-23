@@ -206,9 +206,9 @@ or `Decrement` message when clicked. The Lustre runtime is responsible for
 attaching these event listeners and calling your `update` function with the
 resulting message.
 
-**Note**: notice that the return type of `view` is `lustre.Element(Msg)`. The
-type parameter `Msg` tells us the kinds of messages this element might produce
-from events: type safety to the rescue!
+> **Note**: notice that the return type of `view` is `lustre.Element(Msg)`. The
+> type parameter `Msg` tells us the kinds of messages this element might produce
+> from events: type safety to the rescue!
 
 This forms the core of every Lustre application:
 
@@ -317,10 +317,10 @@ fn get_cat() -> effect.Effect(Msg) {
 }
 ```
 
-**Note**: The `get_cat` function returns an `Effect` that tells the runtime how
-to fetch a cat image. It's important to know that the `get_cat` function doesn't
-perform the request directly! This is why we need to add the `GotCat` message
-variant: the runtime needs to know what to do with the response when it arrives.
+> **Note**: The `get_cat` function returns an `Effect` that tells the runtime how
+> to fetch a cat image. It's important to know that the `get_cat` function doesn't
+> perform the request directly! This is why we need to add the `GotCat` message
+> variant: the runtime needs to know what to do with the response when it arrives.
 
 This model of managed effects can feel cumbersome at first, but it comes with some
 benefits. Forcing side effects to produce a message means our message type naturally
