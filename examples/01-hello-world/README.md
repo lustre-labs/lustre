@@ -54,14 +54,10 @@ import lustre/element/html.{div, p}
 
 ## Seeing the result
 
-Lustre ships with a very simple development server to help you look through these
-examples. You can run `gleam run -m lustre try` in any of these examples to start
-this development server and head over to `localhost:1234` to see what it produces.
-
-If you're coming from a more mature Web development setup, you should know that
-this preview server is _not_ a replacement for a more robust development setup!
-While we work on building this into Lustre we recommend using [vite](https://vitejs.dev)
-with the [vite-gleam](https://www.npmjs.com/package/vite-gleam) plugin.
+Lustre ships with a simple development server to help you look through these
+examples or get started with your own apps quickly. You can run
+`gleam run -m lustre dev` in any of these examples to start this development
+server and head over to `localhost:1234` to see what it produces.
 
 ### Enabling lustre/ui
 
@@ -70,14 +66,14 @@ to provide a collection of robust styled elements for folks that want to get wor
 with Lustre ASAP. Each of these examples have been written to use elements from
 that package.
 
-The lustre/try preview server can be configured to include the lustre_ui stylesheet
+Lustre's development server can be configured to include the `lustre/ui` stylesheet
 by passing the `--include-styles` flag:
 
 ```sh
-$ gleam run -m lustre try --include-styles
+$ gleam run -m lustre dev --include-styles
 ```
 
-It's not necessary to use lustre_ui to use Lustre or to check out any of these
+It's not necessary to use `lustre/ui` to use Lustre or to check out any of these
 examples, but the option is there if you want it.
 
 ## Getting help
