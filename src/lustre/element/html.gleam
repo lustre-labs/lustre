@@ -1,14 +1,11 @@
-//// To read the full documentation for this module, please visit
-//// [https://lustre.build/api/lustre/element/html](https://lustre.build/api/lustre/element/html)
-
 // IMPORTS ---------------------------------------------------------------------
 
-import lustre/element.{type Element, element, namespaced, text}
+import lustre/element.{type Element, element, namespaced}
 import lustre/attribute.{type Attribute}
 
 // HTML ELEMENTS: MAIN ROOT ----------------------------------------------------
 
-/// 
+///
 pub fn html(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -16,14 +13,18 @@ pub fn html(
   element("html", attrs, children)
 }
 
+pub fn text(content: String) -> Element(msg) {
+  element.text(content)
+}
+
 // HTML ELEMENTS: DOCUMENT METADATA --------------------------------------------
 
-/// 
+///
 pub fn base(attrs: List(Attribute(msg))) -> Element(msg) {
   element("base", attrs, [])
 }
 
-/// 
+///
 pub fn head(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -31,29 +32,29 @@ pub fn head(
   element("head", attrs, children)
 }
 
-/// 
+///
 pub fn link(attrs: List(Attribute(msg))) -> Element(msg) {
   element("link", attrs, [])
 }
 
-/// 
+///
 pub fn meta(attrs: List(Attribute(msg))) -> Element(msg) {
   element("meta", attrs, [])
 }
 
-/// 
+///
 pub fn style(attrs: List(Attribute(msg)), css: String) -> Element(msg) {
   element("style", attrs, [text(css)])
 }
 
-/// 
+///
 pub fn title(attrs: List(Attribute(msg)), content: String) -> Element(msg) {
   element("title", attrs, [text(content)])
 }
 
 // HTML ELEMENTS: SECTIONING ROOT -----------------------------------------------
 
-/// 
+///
 pub fn body(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -63,7 +64,7 @@ pub fn body(
 
 // HTML ELEMENTS: CONTENT SECTIONING -------------------------------------------
 
-/// 
+///
 pub fn address(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -71,7 +72,7 @@ pub fn address(
   element("address", attrs, children)
 }
 
-/// 
+///
 pub fn article(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -79,7 +80,7 @@ pub fn article(
   element("article", attrs, children)
 }
 
-/// 
+///
 pub fn aside(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -87,7 +88,7 @@ pub fn aside(
   element("aside", attrs, children)
 }
 
-/// 
+///
 pub fn footer(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -95,7 +96,7 @@ pub fn footer(
   element("footer", attrs, children)
 }
 
-/// 
+///
 pub fn header(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -103,7 +104,7 @@ pub fn header(
   element("header", attrs, children)
 }
 
-/// 
+///
 pub fn h1(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -111,7 +112,7 @@ pub fn h1(
   element("h1", attrs, children)
 }
 
-/// 
+///
 pub fn h2(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -119,7 +120,7 @@ pub fn h2(
   element("h2", attrs, children)
 }
 
-/// 
+///
 pub fn h3(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -127,7 +128,7 @@ pub fn h3(
   element("h3", attrs, children)
 }
 
-/// 
+///
 pub fn h4(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -135,7 +136,7 @@ pub fn h4(
   element("h4", attrs, children)
 }
 
-/// 
+///
 pub fn h5(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -143,7 +144,7 @@ pub fn h5(
   element("h5", attrs, children)
 }
 
-/// 
+///
 pub fn h6(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -151,7 +152,7 @@ pub fn h6(
   element("h6", attrs, children)
 }
 
-/// 
+///
 pub fn hgroup(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -159,7 +160,7 @@ pub fn hgroup(
   element("hgroup", attrs, children)
 }
 
-/// 
+///
 pub fn main(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -167,7 +168,7 @@ pub fn main(
   element("main", attrs, children)
 }
 
-/// 
+///
 pub fn nav(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -175,7 +176,7 @@ pub fn nav(
   element("nav", attrs, children)
 }
 
-/// 
+///
 pub fn section(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -183,7 +184,7 @@ pub fn section(
   element("section", attrs, children)
 }
 
-/// 
+///
 pub fn search(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -193,7 +194,7 @@ pub fn search(
 
 // HTML ELEMENTS: TEXT CONTENT -------------------------------------------------
 
-/// 
+///
 pub fn blockquote(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -201,7 +202,7 @@ pub fn blockquote(
   element("blockquote", attrs, children)
 }
 
-/// 
+///
 pub fn dd(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -209,7 +210,7 @@ pub fn dd(
   element("dd", attrs, children)
 }
 
-/// 
+///
 pub fn div(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -217,7 +218,7 @@ pub fn div(
   element("div", attrs, children)
 }
 
-/// 
+///
 pub fn dl(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -225,7 +226,7 @@ pub fn dl(
   element("dl", attrs, children)
 }
 
-/// 
+///
 pub fn dt(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -233,7 +234,7 @@ pub fn dt(
   element("dt", attrs, children)
 }
 
-/// 
+///
 pub fn figcaption(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -241,7 +242,7 @@ pub fn figcaption(
   element("figcaption", attrs, children)
 }
 
-/// 
+///
 pub fn figure(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -249,12 +250,12 @@ pub fn figure(
   element("figure", attrs, children)
 }
 
-/// 
+///
 pub fn hr(attrs: List(Attribute(msg))) -> Element(msg) {
   element("hr", attrs, [])
 }
 
-/// 
+///
 pub fn li(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -262,7 +263,7 @@ pub fn li(
   element("li", attrs, children)
 }
 
-/// 
+///
 pub fn menu(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -278,7 +279,7 @@ pub fn ol(
   element("ol", attrs, children)
 }
 
-/// 
+///
 pub fn p(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -286,7 +287,7 @@ pub fn p(
   element("p", attrs, children)
 }
 
-/// 
+///
 pub fn pre(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -294,7 +295,7 @@ pub fn pre(
   element("pre", attrs, children)
 }
 
-/// 
+///
 pub fn ul(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -304,7 +305,7 @@ pub fn ul(
 
 // HTML ELEMENTS: INLINE TEXT SEMANTICS ----------------------------------------
 
-/// 
+///
 pub fn a(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -312,7 +313,7 @@ pub fn a(
   element("a", attrs, children)
 }
 
-/// 
+///
 pub fn abbr(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -320,7 +321,7 @@ pub fn abbr(
   element("abbr", attrs, children)
 }
 
-/// 
+///
 pub fn b(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -328,7 +329,7 @@ pub fn b(
   element("b", attrs, children)
 }
 
-/// 
+///
 pub fn bdi(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -336,7 +337,7 @@ pub fn bdi(
   element("bdi", attrs, children)
 }
 
-/// 
+///
 pub fn bdo(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -344,12 +345,12 @@ pub fn bdo(
   element("bdo", attrs, children)
 }
 
-/// 
+///
 pub fn br(attrs: List(Attribute(msg))) -> Element(msg) {
   element("br", attrs, [])
 }
 
-/// 
+///
 pub fn cite(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -357,7 +358,7 @@ pub fn cite(
   element("cite", attrs, children)
 }
 
-/// 
+///
 pub fn code(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -365,7 +366,7 @@ pub fn code(
   element("code", attrs, children)
 }
 
-/// 
+///
 pub fn data(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -373,7 +374,7 @@ pub fn data(
   element("data", attrs, children)
 }
 
-/// 
+///
 pub fn dfn(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -381,7 +382,7 @@ pub fn dfn(
   element("dfn", attrs, children)
 }
 
-/// 
+///
 pub fn em(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -389,7 +390,7 @@ pub fn em(
   element("em", attrs, children)
 }
 
-/// 
+///
 pub fn i(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -397,7 +398,7 @@ pub fn i(
   element("i", attrs, children)
 }
 
-/// 
+///
 pub fn kbd(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -405,7 +406,7 @@ pub fn kbd(
   element("kbd", attrs, children)
 }
 
-/// 
+///
 pub fn mark(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -413,7 +414,7 @@ pub fn mark(
   element("mark", attrs, children)
 }
 
-/// 
+///
 pub fn q(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -421,7 +422,7 @@ pub fn q(
   element("q", attrs, children)
 }
 
-/// 
+///
 pub fn rp(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -429,7 +430,7 @@ pub fn rp(
   element("rp", attrs, children)
 }
 
-/// 
+///
 pub fn rt(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -437,7 +438,7 @@ pub fn rt(
   element("rt", attrs, children)
 }
 
-/// 
+///
 pub fn ruby(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -445,7 +446,7 @@ pub fn ruby(
   element("ruby", attrs, children)
 }
 
-/// 
+///
 pub fn s(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -453,7 +454,7 @@ pub fn s(
   element("s", attrs, children)
 }
 
-/// 
+///
 pub fn samp(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -461,7 +462,7 @@ pub fn samp(
   element("samp", attrs, children)
 }
 
-/// 
+///
 pub fn small(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -469,7 +470,7 @@ pub fn small(
   element("small", attrs, children)
 }
 
-/// 
+///
 pub fn span(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -477,7 +478,7 @@ pub fn span(
   element("span", attrs, children)
 }
 
-/// 
+///
 pub fn strong(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -485,7 +486,7 @@ pub fn strong(
   element("strong", attrs, children)
 }
 
-/// 
+///
 pub fn sub(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -493,7 +494,7 @@ pub fn sub(
   element("sub", attrs, children)
 }
 
-/// 
+///
 pub fn sup(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -501,7 +502,7 @@ pub fn sup(
   element("sup", attrs, children)
 }
 
-/// 
+///
 pub fn time(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -509,7 +510,7 @@ pub fn time(
   element("time", attrs, children)
 }
 
-/// 
+///
 pub fn u(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -517,7 +518,7 @@ pub fn u(
   element("u", attrs, children)
 }
 
-/// 
+///
 pub fn var(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -525,19 +526,19 @@ pub fn var(
   element("var", attrs, children)
 }
 
-/// 
+///
 pub fn wbr(attrs: List(Attribute(msg))) -> Element(msg) {
   element("wbr", attrs, [])
 }
 
 // HTML ELEMENTS: IMAGE AND MULTIMEDIA -----------------------------------------
 
-/// 
+///
 pub fn area(attrs: List(Attribute(msg))) -> Element(msg) {
   element("area", attrs, [])
 }
 
-/// 
+///
 pub fn audio(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -545,13 +546,13 @@ pub fn audio(
   element("audio", attrs, children)
 }
 
-/// 
+///
 pub fn img(attrs: List(Attribute(msg))) -> Element(msg) {
   element("img", attrs, [])
 }
 
 /// Used with <area> elements to define an image map (a clickable link area).
-/// 
+///
 pub fn map(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -559,12 +560,12 @@ pub fn map(
   element("map", attrs, children)
 }
 
-/// 
+///
 pub fn track(attrs: List(Attribute(msg))) -> Element(msg) {
   element("track", attrs, [])
 }
 
-/// 
+///
 pub fn video(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -574,22 +575,22 @@ pub fn video(
 
 // HTML ELEMENTS: EMBEDDED CONTENT ---------------------------------------------
 
-/// 
+///
 pub fn embed(attrs: List(Attribute(msg))) -> Element(msg) {
   element("embed", attrs, [])
 }
 
-/// 
+///
 pub fn iframe(attrs: List(Attribute(msg))) -> Element(msg) {
   element("iframe", attrs, [])
 }
 
-/// 
+///
 pub fn object(attrs: List(Attribute(msg))) -> Element(msg) {
   element("object", attrs, [])
 }
 
-/// 
+///
 pub fn picture(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -597,19 +598,19 @@ pub fn picture(
   element("picture", attrs, children)
 }
 
-/// 
+///
 pub fn portal(attrs: List(Attribute(msg))) -> Element(msg) {
   element("portal", attrs, [])
 }
 
-/// 
+///
 pub fn source(attrs: List(Attribute(msg))) -> Element(msg) {
   element("source", attrs, [])
 }
 
 // HTML ELEMENTS: SVG AND MATHML -----------------------------------------------
 
-/// 
+///
 pub fn svg(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -617,7 +618,7 @@ pub fn svg(
   namespaced("http://www.w3.org/2000/svg", "svg", attrs, children)
 }
 
-/// 
+///
 pub fn math(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -627,12 +628,12 @@ pub fn math(
 
 // HTML ELEMENTS: SCRIPTING ----------------------------------------------------
 
-/// 
+///
 pub fn canvas(attrs: List(Attribute(msg))) -> Element(msg) {
   element("canvas", attrs, [])
 }
 
-/// 
+///
 pub fn noscript(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -640,14 +641,14 @@ pub fn noscript(
   element("noscript", attrs, children)
 }
 
-/// 
+///
 pub fn script(attrs: List(Attribute(msg)), js: String) -> Element(msg) {
   element("script", attrs, [text(js)])
 }
 
 // HTML ELEMENTS: DEMARCATING EDITS ---------------------------------------------
 
-/// 
+///
 pub fn del(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -655,7 +656,7 @@ pub fn del(
   element.element("del", attrs, children)
 }
 
-/// 
+///
 pub fn ins(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -665,7 +666,7 @@ pub fn ins(
 
 // HTML ELEMENTS: TABLE CONTENT ------------------------------------------------
 
-/// 
+///
 pub fn caption(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -673,12 +674,12 @@ pub fn caption(
   element.element("caption", attrs, children)
 }
 
-/// 
+///
 pub fn col(attrs: List(Attribute(msg))) -> Element(msg) {
   element.element("col", attrs, [])
 }
 
-/// 
+///
 pub fn colgroup(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -686,7 +687,7 @@ pub fn colgroup(
   element.element("colgroup", attrs, children)
 }
 
-/// 
+///
 pub fn table(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -694,7 +695,7 @@ pub fn table(
   element.element("table", attrs, children)
 }
 
-/// 
+///
 pub fn tbody(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -702,7 +703,7 @@ pub fn tbody(
   element.element("tbody", attrs, children)
 }
 
-/// 
+///
 pub fn td(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -710,7 +711,7 @@ pub fn td(
   element.element("td", attrs, children)
 }
 
-/// 
+///
 pub fn tfoot(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -718,7 +719,7 @@ pub fn tfoot(
   element.element("tfoot", attrs, children)
 }
 
-/// 
+///
 pub fn th(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -726,7 +727,7 @@ pub fn th(
   element.element("th", attrs, children)
 }
 
-/// 
+///
 pub fn thead(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -734,7 +735,7 @@ pub fn thead(
   element.element("thead", attrs, children)
 }
 
-/// 
+///
 pub fn tr(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -744,7 +745,7 @@ pub fn tr(
 
 // HTML ELEMENTS: FORMS --------------------------------------------------------
 
-/// 
+///
 pub fn button(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -752,7 +753,7 @@ pub fn button(
   element.element("button", attrs, children)
 }
 
-/// 
+///
 pub fn datalist(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -760,7 +761,7 @@ pub fn datalist(
   element.element("datalist", attrs, children)
 }
 
-/// 
+///
 pub fn fieldset(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -768,7 +769,7 @@ pub fn fieldset(
   element.element("fieldset", attrs, children)
 }
 
-/// 
+///
 pub fn form(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -776,12 +777,12 @@ pub fn form(
   element.element("form", attrs, children)
 }
 
-/// 
+///
 pub fn input(attrs: List(Attribute(msg))) -> Element(msg) {
   element.element("input", attrs, [])
 }
 
-/// 
+///
 pub fn label(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -789,7 +790,7 @@ pub fn label(
   element.element("label", attrs, children)
 }
 
-/// 
+///
 pub fn legend(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -797,7 +798,7 @@ pub fn legend(
   element.element("legend", attrs, children)
 }
 
-/// 
+///
 pub fn meter(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -805,7 +806,7 @@ pub fn meter(
   element.element("meter", attrs, children)
 }
 
-/// 
+///
 pub fn optgroup(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -813,12 +814,12 @@ pub fn optgroup(
   element.element("optgroup", attrs, children)
 }
 
-/// 
+///
 pub fn option(attrs: List(Attribute(msg))) -> Element(msg) {
   element.element("option", attrs, [])
 }
 
-/// 
+///
 pub fn output(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -826,7 +827,7 @@ pub fn output(
   element.element("output", attrs, children)
 }
 
-/// 
+///
 pub fn progress(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -834,7 +835,7 @@ pub fn progress(
   element.element("progress", attrs, children)
 }
 
-/// 
+///
 pub fn select(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -842,14 +843,14 @@ pub fn select(
   element.element("select", attrs, children)
 }
 
-/// 
+///
 pub fn textarea(attrs: List(Attribute(msg))) -> Element(msg) {
   element.element("textarea", attrs, [])
 }
 
 // HTML ELEMENTS: INTERACTIVE ELEMENTS -----------------------------------------
 
-/// 
+///
 pub fn details(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -857,7 +858,7 @@ pub fn details(
   element.element("details", attrs, children)
 }
 
-/// 
+///
 pub fn dialog(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -865,7 +866,7 @@ pub fn dialog(
   element.element("dialog", attrs, children)
 }
 
-/// 
+///
 pub fn summary(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
@@ -880,7 +881,7 @@ pub fn slot(attrs: List(Attribute(msg))) -> Element(msg) {
   element.element("slot", attrs, [])
 }
 
-/// 
+///
 pub fn template(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),

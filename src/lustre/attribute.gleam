@@ -1,6 +1,3 @@
-//// To read the full documentation for this module, please visit
-//// [https://lustre.build/api/lustre/attribute](https://lustre.build/api/lustre/attribute)
-
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Dynamic}
@@ -13,7 +10,8 @@ import lustre/internals/vdom.{Attribute, Event}
 
 // TYPES -----------------------------------------------------------------------
 
-///
+/// The `Attribute` type encompasses HTML attributes, DOM properties, and
+/// event listeners.
 pub type Attribute(msg) =
   vdom.Attribute(msg)
 
@@ -24,7 +22,7 @@ pub fn attribute(name: String, value: String) -> Attribute(msg) {
   Attribute(name, dynamic.from(value), as_property: False)
 }
 
-/// 
+///
 pub fn property(name: String, value: any) -> Attribute(msg) {
   Attribute(name, dynamic.from(value), as_property: True)
 }
@@ -39,12 +37,16 @@ pub fn on(
 
 ///
 pub fn none() -> Attribute(msg) {
-  Attribute("", dynamic.from(""), as_property: False)
+  class("")
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
 
-/// 
+/// The `Attribute` type is parameterised by the type of messages it can produce
+/// from events handlers. Sometimes you might end up with an attribute from a
+/// library or module that produces a different type of message: this function lets
+/// you map the messages produced from one type to another.
+///
 pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
   case attr {
     Attribute(name, value, as_property) -> Attribute(name, value, as_property)
@@ -55,6 +57,11 @@ pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
 // COMMON ATTRIBUTES -----------------------------------------------------------
 
 ///
+///
+/// **Note**: unlike most attributes, multiple `style` attributes are merged
+/// with any existing other styles on an element. Styles added _later_ in the
+/// list will override styles added earlier.
+///
 pub fn style(properties: List(#(String, String))) -> Attribute(msg) {
   attribute("style", {
     use styles, #(name, value) <- list.fold(properties, "")
@@ -62,6 +69,10 @@ pub fn style(properties: List(#(String, String))) -> Attribute(msg) {
   })
 }
 
+///
+///
+/// **Note**: unlike most attributes, multiple `class` attributes are merged
+/// with any existing other classes on an element.
 ///
 pub fn class(name: String) -> Attribute(msg) {
   attribute("class", name)
@@ -100,7 +111,7 @@ pub fn type_(name: String) -> Attribute(msg) {
 }
 
 ///
-pub fn value(val: any) -> Attribute(msg) {
+pub fn value(val: String) -> Attribute(msg) {
   property("value", dynamic.from(val))
 }
 

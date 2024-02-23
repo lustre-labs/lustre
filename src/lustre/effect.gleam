@@ -54,7 +54,7 @@ import gleam/function
 ///
 /// 2. The type of messages that (might) be sent back to the program in response.
 ///
-/// 
+///
 ///
 pub opaque type Effect(msg) {
   Effect(all: List(fn(fn(msg) -> Nil, fn(String, Json) -> Nil) -> Nil))
@@ -80,8 +80,8 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 /// of Lustre's components, but in rare cases it may be useful to emit custom
 /// events from the DOM node that your Lustre application is mounted to.
 ///
-/// 
-/// 
+///
+///
 pub fn event(name: String, data: Json) -> Effect(msg) {
   Effect([fn(_, emit) { emit(name, data) }])
 }
@@ -97,14 +97,14 @@ pub fn none() -> Effect(msg) {
 // MANIPULATIONS ---------------------------------------------------------------
 
 /// Batch multiple effects to be performed at the same time.
-/// 
+///
 /// **Note:** The runtime makes no guarantees about the order on which effects
 /// are performed! If you need to chain or sequence effects together, you have
 /// two broad options:
-/// 
+///
 /// 1. Create variants of your `msg` type to represent each step in the sequence
 ///    and fire off the next effect in response to the previous one.
-/// 
+///
 /// 2. If you're defining effects yourself, consider whether or not you can handle
 ///    the sequencing inside the effect itself.
 ///
@@ -117,7 +117,7 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
 
 /// Transform the result of an effect. This is useful for mapping over effects
 /// produced by other libraries or modules.
-/// 
+///
 /// **Note:** Remember that effects are not _required_ to dispatch any messages.
 /// Your mapping function may never be called!
 ///
@@ -137,9 +137,12 @@ pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
 /// This is primarily used internally by the server component runtime, but it is
 /// may also useful for testing.
 ///
-/// **Note:** You should not consider this function a part of the public API. It
-/// may be removed in a future minor or patch release.
-/// 
+/// **Note:** For now, you should **not** consider this function a part of the
+/// public API. It may be removed in a future minor or patch release. If you have
+/// a specific use case for this function, we'd love to hear about it! Please
+/// reach out on the [Gleam Discord](https://discord.gg/Fm8Pwmy) or
+/// [open an issue](https://github.com/lustre-labs/lustre/issues/new)!
+///
 pub fn perform(
   effect: Effect(a),
   dispatch: fn(a) -> Nil,

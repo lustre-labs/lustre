@@ -1,6 +1,3 @@
-//// To read the full documentation for this module, please visit
-//// [https://lustre.build/api/lustre/element/svg](https://lustre.build/api/lustre/element/svg)
-
 // IMPORTS ---------------------------------------------------------------------
 
 import lustre/element.{type Element, namespaced, text as inline_text}
