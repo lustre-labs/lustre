@@ -1,3 +1,10 @@
+////
+////
+//// **Note**: while Lustre v4 is in release candidate status, server components
+//// **will not reliably work on Gleam's JavaScript target**. Until this message
+//// goes away, consider server components as being supported **only** on Erlang.
+////
+
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/bool
@@ -19,7 +26,7 @@ import lustre/internals/patch
 /// server components are not opinionated about your network layer or how your
 /// wider application is organised, it is your responsibility to make sure a `Patch`
 /// makes its way to the server component client runtime.
-/// 
+///
 pub type Patch(msg) =
   patch.Patch(msg)
 
@@ -122,8 +129,8 @@ fn do_set_selector(_sel: Selector(Action(runtime, msg))) -> Effect(msg) {
 
 // DECODERS --------------------------------------------------------------------
 
-/// 
-/// 
+///
+///
 pub fn decode_action(
   dyn: Dynamic,
 ) -> Result(Action(runtime, msg), List(DecodeError)) {
@@ -175,7 +182,7 @@ fn decode_attr(dyn: Dynamic) -> Result(#(String, Dynamic), List(DecodeError)) {
 // ENCODERS --------------------------------------------------------------------
 
 ///
-/// 
+///
 pub fn encode_patch(patch: Patch(msg)) -> Json {
   patch.patch_to_json(patch)
 }
