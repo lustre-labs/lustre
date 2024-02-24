@@ -256,7 +256,7 @@ pub fn main() {
 }
 ```
 
-If you edited your previous counter app, you'll notice the prorgam no longer
+If you edited your previous counter app, you'll notice the program no longer
 compiles. Specifically, the type of our `init` and `update` functions are wrong
 for the new `lustre.application` constructor!
 
@@ -297,7 +297,7 @@ pub type Msg {
 ```
 
 Finally, we can modify our `update` function to also fetch a cat image when the
-counter is incremeneted and handle the response:
+counter is incremented and handle the response:
 
 ```gleam
 pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
