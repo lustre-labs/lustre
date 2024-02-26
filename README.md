@@ -25,7 +25,7 @@
     </a>
     <span> | </span>
     -->
-    <a href="https://github.com/lustre-labs/lustre/docs/guide/01-quickstart.md">
+    <a href="https://hexdocs.pm/lustre/4.0.0-rc1/guide/01-quickstart.html">
       Quickstart
     </a>
     <span> | </span>
@@ -165,7 +165,7 @@ end
 
 ## Where next
 
-To get up to speed with Lustre, check out the [quickstart guide](./guide/01-quickstart).
+To get up to speed with Lustre, check out the [quickstart guide](https://hexdocs.pm/lustre/4.0.0-rc1/guide/01-quickstart).
 If you prefer to see some code, the [examples](https://github.com/lustre-labs/lustre/tree/main/examples)
 directory contains a handful of small applications that demonstrate different
 aspects of the framework.

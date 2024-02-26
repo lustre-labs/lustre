@@ -23,7 +23,7 @@ internal_modules = [
 pages = [
   # { title = "CLI reference", path = "#", source = "" },
   # { title = " ", path = "#", source = "" },
-  { title = "Quickstart guide", path = "guide/01-quickstart.html", source = "./docs/guide/01-quickstart.md" },
+  { title = "Quickstart guide", path = "guide/01-quickstart.html", source = "./pages/guide/01-quickstart.md" },
   # { title = "Managing state", path = "#", source = "" },
   # { title = "Side effects", path = "#", source = "" },
   # { title = "Server-side rendering", path = "#", source = "" },
