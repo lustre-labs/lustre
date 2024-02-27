@@ -163,6 +163,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import argv
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Decoder}
@@ -170,15 +171,14 @@ import gleam/erlang/process.{type Subject}
 import gleam/option.{type Option, None, Some}
 import gleam/otp/actor.{type StartError}
 import gleam/result
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/internals/runtime
-import lustre/server.{type Patch}
-import argv
 import glint
 import lustre/cli/add
 import lustre/cli/build
 import lustre/cli/dev
+import lustre/effect.{type Effect}
+import lustre/element.{type Element}
+import lustre/internals/patch
+import lustre/internals/runtime
 
 // MAIN ------------------------------------------------------------------------
 
@@ -287,6 +287,14 @@ pub type ServerComponent
 ///
 pub type Action(msg, runtime) =
   runtime.Action(msg, runtime)
+
+/// Patches are sent by server components to any connected renderers. Because
+/// server components are not opinionated about your network layer or how your
+/// wider application is organised, it is your responsibility to make sure a `Patch`
+/// makes its way to the server component client runtime.
+///
+pub type Patch(msg) =
+  patch.Patch(msg)
 
 /// Starting a Lustre application might fail for a number of reasons. This error
 /// type enumerates all those reasons, even though some of them are only possible
@@ -505,21 +513,6 @@ pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error)
 
 // ACTIONS ---------------------------------------------------------------------
 
-/// A [`ServerComponent`](#ServerComponent) broadcasts patches to be applied to
-/// the DOM to any connected clients. This action is used to add a new client to
-/// a running server component.
-///
-/// The `id` should be a unique identifier for the client, but it can be any type
-/// you want. This is only used if you want to remove the client in the future
-/// using [`remove_renderer`](#remove_renderer).
-///
-pub fn add_renderer(
-  id: any,
-  renderer: fn(Patch(msg)) -> Nil,
-) -> Action(msg, ServerComponent) {
-  runtime.AddRenderer(dynamic.from(id), renderer)
-}
-
 /// Dispatch a message to a running application's `update` function. This can be
 /// used as a way for the outside world to communicate with a Lustre app without
 /// the app needing to initiate things with an effect.
@@ -529,13 +522,6 @@ pub fn add_renderer(
 ///
 pub fn dispatch(msg: msg) -> Action(msg, runtime) {
   runtime.Dispatch(msg)
-}
-
-/// Remove a registered renderer from a server component. If no renderer with the
-/// given id is found, this action has no effect.
-///
-pub fn remove_renderer(id: any) -> Action(msg, ServerComponent) {
-  runtime.RemoveRenderer(dynamic.from(id))
 }
 
 /// Instruct a running application to shut down. For client SPAs this will stop

@@ -16,22 +16,13 @@ import gleam/erlang/process.{type Selector}
 import gleam/int
 import gleam/json.{type Json}
 import gleam/result
+import lustre.{type Patch, type ServerComponent}
 import lustre/attribute.{type Attribute, attribute}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, element}
 import lustre/internals/constants
 import lustre/internals/runtime.{type Action, Attrs, Event, SetSelector}
 import lustre/internals/patch
-
-// TYPES -----------------------------------------------------------------------
-
-/// Patches are sent by server components to any connected renderers. Because
-/// server components are not opinionated about your network layer or how your
-/// wider application is organised, it is your responsibility to make sure a `Patch`
-/// makes its way to the server component client runtime.
-///
-pub type Patch(msg) =
-  patch.Patch(msg)
 
 // ELEMENTS --------------------------------------------------------------------
 
@@ -103,6 +94,26 @@ pub fn include(properties: List(String)) -> Attribute(msg) {
   |> attribute("data-lustre-include", _)
 }
 
+// ACTIONS ---------------------------------------------------------------------
+
+/// A [`ServerComponent`](../lustre#ServerComponent) broadcasts patches to be applied
+/// to the DOM to any connected clients. This action is used to add a new client
+/// to a running server component.
+///
+pub fn subscribe(
+  id: String,
+  renderer: fn(Patch(msg)) -> Nil,
+) -> Action(msg, ServerComponent) {
+  runtime.Subscribe(id, renderer)
+}
+
+/// Remove a registered renderer from a server component. If no renderer with the
+/// given id is found, this action has no effect.
+///
+pub fn unsubscribe(id: String) -> Action(msg, ServerComponent) {
+  runtime.Unsubscribe(id)
+}
+
 // EFFECTS ---------------------------------------------------------------------
 
 ///
@@ -136,7 +147,7 @@ fn do_set_selector(_sel: Selector(Action(runtime, msg))) -> Effect(msg) {
 ///
 pub fn decode_action(
   dyn: Dynamic,
-) -> Result(Action(runtime, msg), List(DecodeError)) {
+) -> Result(Action(runtime, ServerComponent), List(DecodeError)) {
   dynamic.any([decode_event, decode_attrs])(dyn)
 }
 

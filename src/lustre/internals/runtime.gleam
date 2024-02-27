@@ -25,7 +25,7 @@ type State(model, msg, runtime) {
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
     html: Element(msg),
-    renderers: Dict(Dynamic, fn(Patch(msg)) -> Nil),
+    renderers: Dict(String, fn(Patch(msg)) -> Nil),
     handlers: Dict(String, fn(Dynamic) -> Result(msg, Nil)),
     on_attribute_change: Dict(String, Decoder(msg)),
   )
@@ -34,16 +34,16 @@ type State(model, msg, runtime) {
 ///
 ///
 pub type Action(msg, runtime) {
-  AddRenderer(Dynamic, fn(Patch(msg)) -> Nil)
   Attrs(List(#(String, Dynamic)))
   Batch(List(msg), Effect(msg))
   Debug(DebugAction)
   Dispatch(msg)
   Emit(String, Json)
   Event(String, Dynamic)
-  RemoveRenderer(Dynamic)
   SetSelector(Selector(Action(msg, runtime)))
   Shutdown
+  Subscribe(String, fn(Patch(msg)) -> Nil)
+  Unsubscribe(String)
 }
 
 pub type DebugAction {
@@ -104,14 +104,6 @@ fn loop(
       })
       |> Batch(effect.none())
       |> loop(state)
-    }
-
-    AddRenderer(id, renderer) -> {
-      let renderers = dict.insert(state.renderers, id, renderer)
-      let next = State(..state, renderers: renderers)
-
-      renderer(Init(dict.keys(state.on_attribute_change), state.html))
-      actor.continue(next)
     }
 
     Batch([], _) -> actor.continue(state)
@@ -189,7 +181,15 @@ fn loop(
       }
     }
 
-    RemoveRenderer(id) -> {
+    Subscribe(id, renderer) -> {
+      let renderers = dict.insert(state.renderers, id, renderer)
+      let next = State(..state, renderers: renderers)
+
+      renderer(Init(dict.keys(state.on_attribute_change), state.html))
+      actor.continue(next)
+    }
+
+    Unsubscribe(id) -> {
       let renderers = dict.delete(state.renderers, id)
       let next = State(..state, renderers: renderers)
 
