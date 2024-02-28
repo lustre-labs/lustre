@@ -363,11 +363,11 @@ how you like to learn:
   if the Lustre repository that gradually introduce more complex applications
   and ideas.
 
-- The [rest of this guide](/guide/02-state-management) also continues to teach
+- The [rest of this guide](./02-state-management) also continues to teach
   Lustre's high-level concepts and best-practices.
 
 - If you're coming from LiveView or have heard about Lustre's server components
-  and want to learn more, you can skip to the [server components](/guide/05-server-components)
+  and want to learn more, you can skip to the [server components](./05-server-components)
   section of the guide to learn about how to run Lustre applications on the backend.
 
 - Of course, if you want to dive in and start making things straight away, the
