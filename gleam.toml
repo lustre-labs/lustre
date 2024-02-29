@@ -1,6 +1,6 @@
 name = "lustre"
 version = "4.0.0-rc.2"
-gleam = ">= 0.34"
+gleam = ">= 0.34.0"
 
 description = "An Elm-inspired framework for building single page applications and server-rendered components in Gleam!"
 repository = { type = "github", user = "lustre-labs", repo = "lustre" }
