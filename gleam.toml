@@ -53,6 +53,7 @@ shellout = "~> 1.6"
 simplifile = "~> 1.4"
 spinner = "~> 1.1"
 tom = "~> 0.3"
+gleam_package_interface = "~> 1.0"
 
 [dev-dependencies]
 birdie = "~> 1.0"

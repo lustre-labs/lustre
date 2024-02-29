@@ -11,6 +11,7 @@ packages = [
   { name = "gleam_erlang", version = "0.24.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_erlang", source = "hex", outer_checksum = "26BDB52E61889F56A291CB34167315780EE4AA20961917314446542C90D1C1A0" },
   { name = "gleam_json", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "thoas"], otp_app = "gleam_json", source = "hex", outer_checksum = "8B197DD5D578EA6AC2C0D4BDC634C71A5BCA8E7DB5F47091C263ECB411A60DF3" },
   { name = "gleam_otp", version = "0.9.0", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_stdlib"], otp_app = "gleam_otp", source = "hex", outer_checksum = "5FADBBEC5ECF3F8B6BE91101D432758503192AE2ADBAD5602158977341489F71" },
+  { name = "gleam_package_interface", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_json", "gleam_stdlib"], otp_app = "gleam_package_interface", source = "hex", outer_checksum = "52A721BCA972C8099BB881195D821AAA64B9F2655BECC102165D5A1097731F01" },
   { name = "gleam_stdlib", version = "0.34.0", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "1FB8454D2991E9B4C0C804544D8A9AD0F6184725E20D63C3155F0AEB4230B016" },
   { name = "glearray", version = "0.2.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "glearray", source = "hex", outer_checksum = "908154F695D330E06A37FAB2C04119E8F315D643206F8F32B6A6C14A8709FFF4" },
   { name = "gleeunit", version = "1.0.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "D364C87AFEB26BDB4FB8A5ABDE67D635DC9FA52D6AB68416044C35B096C6882D" },
@@ -34,11 +35,12 @@ gleam_community_ansi = { version = "~> 1.4" }
 gleam_erlang = { version = "~> 0.24" }
 gleam_json = { version = "~> 1.0" }
 gleam_otp = { version = "~> 0.9" }
+gleam_package_interface = { version = "~> 1.0"}
 gleam_stdlib = { version = "~> 0.34 or ~> 1.0" }
 gleeunit = { version = "~> 1.0" }
 glint = { version = "0.16.0" }
 justin = { version = "~> 1.0" }
-shellout = { version = "~> 1.6"}
+shellout = { version = "~> 1.6" }
 simplifile = { version = "~> 1.4" }
 spinner = { version = "~> 1.1" }
 tom = { version = "~> 0.3" }

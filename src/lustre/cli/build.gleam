@@ -4,12 +4,13 @@ import filepath
 import gleam/dict
 import gleam/io
 import gleam/list
+import gleam/package_interface.{type Type, Named, Variable}
 import gleam/result
 import gleam/string
 import glint.{type Command, CommandInput}
 import glint/flag
 import lustre/cli/esbuild
-import lustre/cli/project.{type Module, type Type, Named, Variable}
+import lustre/cli/project.{type Module}
 import lustre/cli/utils.{keep, replace, try}
 import lustre/cli/step.{type Step}
 import simplifile
@@ -167,7 +168,7 @@ type Error {
   ComponentMissing(module: String)
   MainMissing(module: String)
   ModuleMissing(module: String)
-  NameIncorrectType(module: String, got: project.Type)
+  NameIncorrectType(module: String, got: Type)
   NameMissing(module: String)
 }
 
