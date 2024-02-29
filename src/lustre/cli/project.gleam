@@ -2,11 +2,12 @@
 
 import filepath
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type DecodeError, type Dynamic, DecodeError}
+import gleam/dynamic.{type DecodeError, type Decoder, type Dynamic, DecodeError}
 import gleam/int
 import gleam/io
 import gleam/json
 import gleam/list
+import gleam/package_interface.{type Type, Fn, Named, Tuple, Variable}
 import gleam/pair
 import gleam/result
 import gleam/string
@@ -31,13 +32,6 @@ pub type Module {
 
 pub type Function {
   Function(parameters: List(Type), return: Type)
-}
-
-pub type Type {
-  Named(name: String, package: String, module: String, parameters: List(Type))
-  Variable(id: Int)
-  Fn(parameters: List(Type), return: Type)
-  Tuple(elements: List(Type))
 }
 
 // COMMANDS --------------------------------------------------------------------
@@ -73,7 +67,7 @@ pub fn interface() -> Result(Interface, String) {
   )
 
   let assert Ok(json) = simplifile.read(out)
-  let assert Ok(interface) = json.decode(json, decode_interface)
+  let assert Ok(interface) = json.decode(json, interface_decoder)
   Ok(interface)
 }
 
@@ -159,82 +153,40 @@ pub fn type_to_string(type_: Type) -> String {
 
 // DECODERS --------------------------------------------------------------------
 
-fn decode_interface(dyn: Dynamic) -> Result(Interface, List(DecodeError)) {
+fn interface_decoder(dyn: Dynamic) -> Result(Interface, List(DecodeError)) {
   dynamic.decode3(
     Interface,
     dynamic.field("name", dynamic.string),
     dynamic.field("version", dynamic.string),
-    dynamic.field("modules", dynamic.dict(dynamic.string, decode_module)),
+    dynamic.field("modules", string_dict(module_decoder)),
   )(dyn)
 }
 
-fn decode_module(dyn: Dynamic) -> Result(Module, List(DecodeError)) {
+fn module_decoder(dyn: Dynamic) -> Result(Module, List(DecodeError)) {
   dynamic.decode2(
     Module,
     dynamic.field(
       "constants",
-      dynamic.dict(dynamic.string, dynamic.field("type", decode_type)),
+      string_dict(dynamic.field("type", package_interface.type_decoder)),
     ),
-    dynamic.field("functions", dynamic.dict(dynamic.string, decode_function)),
+    dynamic.field("functions", string_dict(function_decoder)),
   )(dyn)
 }
 
-fn decode_function(dyn: Dynamic) -> Result(Function, List(DecodeError)) {
+fn function_decoder(dyn: Dynamic) -> Result(Function, List(DecodeError)) {
   dynamic.decode2(
     Function,
-    dynamic.field("parameters", dynamic.list(decode_labelled_argument)),
-    dynamic.field("return", decode_type),
+    dynamic.field("parameters", dynamic.list(labelled_argument_decoder)),
+    dynamic.field("return", package_interface.type_decoder),
   )(dyn)
 }
 
-fn decode_type(dyn: Dynamic) -> Result(Type, List(DecodeError)) {
-  use kind <- result.try(dynamic.field("kind", dynamic.string)(dyn))
-
-  case kind {
-    "named" -> decode_named_type(dyn)
-    "variable" -> decode_variable_type(dyn)
-    "fn" -> decode_fn_type(dyn)
-    "tuple" -> decode_tuple_type(dyn)
-
-    _ ->
-      Error([
-        DecodeError(found: kind, expected: "'named' | 'variable' | 'fn'", path: [
-          "kind",
-        ]),
-      ])
-  }
-}
-
-fn decode_named_type(dyn: Dynamic) -> Result(Type, List(DecodeError)) {
-  dynamic.decode4(
-    Named,
-    dynamic.field("name", dynamic.string),
-    dynamic.field("package", dynamic.string),
-    dynamic.field("module", dynamic.string),
-    dynamic.field("parameters", dynamic.list(decode_type)),
-  )(dyn)
-}
-
-fn decode_variable_type(dyn: Dynamic) -> Result(Type, List(DecodeError)) {
-  dynamic.decode1(Variable, dynamic.field("id", dynamic.int))(dyn)
-}
-
-fn decode_fn_type(dyn: Dynamic) -> Result(Type, List(DecodeError)) {
-  dynamic.decode2(
-    Fn,
-    dynamic.field("parameters", dynamic.list(decode_type)),
-    dynamic.field("return", decode_type),
-  )(dyn)
-}
-
-fn decode_tuple_type(dyn: Dynamic) -> Result(Type, List(DecodeError)) {
-  dynamic.decode1(Tuple, dynamic.field("elements", dynamic.list(decode_type)))(
-    dyn,
-  )
-}
-
-fn decode_labelled_argument(dyn: Dynamic) -> Result(Type, List(DecodeError)) {
+fn labelled_argument_decoder(dyn: Dynamic) -> Result(Type, List(DecodeError)) {
   // In this case we don't really care about the label, so we're just ignoring
   // it and returning the argument's type.
-  dynamic.field("type", decode_type)(dyn)
+  dynamic.field("type", package_interface.type_decoder)(dyn)
+}
+
+fn string_dict(values: Decoder(a)) -> Decoder(Dict(String, a)) {
+  dynamic.dict(dynamic.string, values)
 }

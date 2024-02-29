@@ -3,12 +3,13 @@
 import filepath
 import gleam/dict
 import gleam/io
+import gleam/package_interface.{type Type, Fn, Named, Variable}
 import gleam/string
 import glint.{type Command, CommandInput}
 import glint/flag
 import lustre/attribute.{attribute}
 import lustre/cli/esbuild
-import lustre/cli/project.{type Module, type Type, Fn, Named, Variable}
+import lustre/cli/project.{type Module}
 import lustre/cli/step
 import lustre/cli/utils.{guard, keep, map, replace, try}
 import lustre/element
@@ -116,8 +117,8 @@ type Error {
   BuildError
   BundleError(esbuild.Error)
   MainMissing(module: String)
-  MainIncorrectType(module: String, got: project.Type)
-  MainBadAppType(module: String, got: project.Type)
+  MainIncorrectType(module: String, got: Type)
+  MainBadAppType(module: String, got: Type)
   ModuleMissing(module: String)
 }
 
