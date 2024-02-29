@@ -183,13 +183,24 @@ import lustre/internals/runtime
 // MAIN ------------------------------------------------------------------------
 
 /// This function exists so you can run helpful Lustre utilities from the command
-/// line using `gleam run -m lustre`. For a proper help message run:
+/// line using `gleam run -m lustre`. Here's a brief overview of the different
+/// subcommands you can run:
+///
+/// - `add` can be used to add useful binaries like `esbuild` to your project.
+///
+/// - `build` has additional subcommands for building Lustre applications or
+///   packaging Web Components.
+///
+/// - `dev` starts a development server that automatically loads your Lustre app.
+///
+///  For a proper help message run:
 ///
 /// ```sh
 /// gleam run -m lustre -- --help
 /// ```
 ///
-/// 🚨 If you're just using Lustre as a library, *you can ignore this function*.
+/// **Note**: If you're just using Lustre as a library, *you can ignore this
+/// function*.
 ///
 pub fn main() {
   let args = argv.load().arguments
@@ -244,6 +255,7 @@ pub opaque type App(flags, model, msg) {
     //
     // Using `Option` here at least lets us say `None` for the empty case in the
     // `application` constructor.
+    //
     on_attribute_change: Option(Dict(String, Decoder(msg))),
   )
 }
