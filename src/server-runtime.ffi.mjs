@@ -1,9 +1,9 @@
 import { Ok, isEqual } from "./gleam.mjs";
 import {
-  AddRenderer,
+  Subscribe,
   Dispatch,
   Event,
-  RemoveRenderer,
+  Unsubscribe,
   Shutdown,
 } from "./lustre/internals/runtime.mjs";
 
@@ -41,7 +41,7 @@ export class LustreServerApplication {
 
   send(action) {
     switch (true) {
-      case action instanceof AddRenderer: {
+      case action instanceof Subscribe: {
         this.#renderers.add(action[0]);
         return;
       }
@@ -66,7 +66,7 @@ export class LustreServerApplication {
         }
       }
 
-      case action instanceof RemoveRenderer: {
+      case action instanceof Unsubscribe: {
         this.#renderers.delete(action[0]);
         return;
       }
