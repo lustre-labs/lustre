@@ -5,6 +5,17 @@ Model View Update (MVU) architecture. This means that the state of the applicati
 is stored in a single, immutable data structure called the model, and updated as
 messages are dispatched to the runtime.
 
+## Messages not actions
+
+Lustre is not the first frontend framework to use the MVU architecture or to
+focus on dispatching messages to update state. State management libraries like
+Redux and Zustand follow a very similar pattern. The devil is in the details
+though, and these libraries often talk in terms of _actions_ but you'll see
+Elm and Lustre prefer the term _message_.
+
+Actions frame incoming events as _things to do_: "add a new todo", "make an HTTP
+request", etc.
+
 ## View functions not components
 
 Although Lustre does have a way to create encapsulated stateful components (something
@@ -21,11 +32,25 @@ there are some tangible benefits to this approach:
 
 - **Favouring view functions forces us to be intentional with state.**
 
-  ...
+  Frameworks often make it easy to add state to components, which in turn makes
+  it easy to add state without really thinking about whether we need it or whether
+  we're taking the best approach.
+
+  View functions on the other hand _only_ have arguments, and adding a new argument
+  is a much more deliberate act. This gives us a chance to consider whether we're
+  modelling things the right way or whether we're trying to do too much.
 
 - **Components are bad for code organisation.**
 
-  ...
+  It can be tempting to use components as a way to organise code. You might see
+  this commonly in React and Vue codebases: you have a folder for components, a
+  folder for hooks, and so on. Using components as a means of organisation often
+  leads to us drawing weird boundaries around our code and spreading out things
+  that should be together.
+
+  By sticking to view functions we're much more likely to keep code grouped based
+  on _what it does_ rather than what it _is_ and this approach is much more idiomatic
+  to Gleam on the whole, and also an approach favoured by Elm and Elixir alike.
 
 - **Avoiding components makes your code easier to test.**
 
@@ -52,7 +77,7 @@ there are some tangible benefits to this approach:
   managing the state further up the component tree so moving things around is
   much less painful.
 
-- **Creating components requires boilerplate.**
+- **Creating components is more boilerplate.**
 
   Components share the same shape as any other Lustre application. That means for
   any component you want to create, you also need to define an `init`, `update`,
