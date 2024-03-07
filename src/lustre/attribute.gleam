@@ -311,26 +311,26 @@ pub fn novalidate(value: Bool) -> Attribute(msg) {
 }
 
 ///
-pub fn formaction(action: String) -> Attribute(msg) {
+pub fn form_action(action: String) -> Attribute(msg) {
   attribute("formaction", action)
 }
 
 ///
-pub fn formenctype(value: String) -> Attribute(msg) {
+pub fn form_enctype(value: String) -> Attribute(msg) {
   attribute("formenctype", value)
 }
 
 ///
-pub fn formmethod(method: String) -> Attribute(msg) {
+pub fn form_method(method: String) -> Attribute(msg) {
   attribute("formmethod", method)
 }
 
 ///
-pub fn formnovalidate(value: Bool) -> Attribute(msg) {
+pub fn form_novalidate(value: Bool) -> Attribute(msg) {
   property("formnovalidate", value)
 }
 
 ///
-pub fn formtarget(target: String) -> Attribute(msg) {
+pub fn form_target(target: String) -> Attribute(msg) {
   attribute("formtarget", target)
 }
