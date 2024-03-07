@@ -287,3 +287,50 @@ pub fn controls(visible: Bool) -> Attribute(msg) {
 pub fn loop(should_loop: Bool) -> Attribute(msg) {
   property("loop", should_loop)
 }
+
+// FORMS -----------------------------------------------------------------------
+
+///
+pub fn action(url: String) -> Attribute(msg) {
+  attribute("action", url)
+}
+
+///
+pub fn enctype(value: String) -> Attribute(msg) {
+  attribute("enctype", value)
+}
+
+///
+pub fn method(method: String) -> Attribute(msg) {
+  attribute("method", method)
+}
+
+///
+pub fn novalidate(value: Bool) -> Attribute(msg) {
+  property("novalidate", value)
+}
+
+///
+pub fn form_action(action: String) -> Attribute(msg) {
+  attribute("formaction", action)
+}
+
+///
+pub fn form_enctype(value: String) -> Attribute(msg) {
+  attribute("formenctype", value)
+}
+
+///
+pub fn form_method(method: String) -> Attribute(msg) {
+  attribute("formmethod", method)
+}
+
+///
+pub fn form_novalidate(value: Bool) -> Attribute(msg) {
+  property("formnovalidate", value)
+}
+
+///
+pub fn form_target(target: String) -> Attribute(msg) {
+  attribute("formtarget", target)
+}
