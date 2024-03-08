@@ -64,7 +64,13 @@ type PublicModel {
 Here, we a model that represents our application as either having a logged in user
 or just one of the public routes. This pushes us towards the great practice of
 [making impossible states impossible](https://github.com/stereobooster/pragmatic-types/blob/master/posts/making-impossible-states-impossible.md).
-Now, we can write separate
+Now, we can write separate update and view functions that only handle the states
+they care about.
+
+Another option is to use a _type alias_ to represent some state using existing
+Gleam types. It's important to remember that your model represents _application_
+state and not necessarily _page_ state. This can manifest as simple as aliasing
+Gleam's `Result` type or maybe a `Dict` representing loaded posts.
 
 ## Messages not actions
 
@@ -164,3 +170,13 @@ there are some tangible benefits to this approach:
   and `view` function, a `Model` type, and a `Msg` type. If you find yourself
   thinking "wow, this is a lot of boilerplate just to do X" then listen to your
   gut!
+
+## Getting help
+
+If you're having trouble with Lustre or not sure what the right way to do
+something is, the best place to get help is the [Gleam Discord server](https://discord.gg/Fm8Pwmy).
+You could also open an issue on the [Lustre GitHub repository](https://github.com/lustre-labs/lustre/issues).
+
+While our docs are still a work in progress, the official [Elm guide](https://guide.elm-lang.org)
+is also a great resource for learning about the Model-View-Update architecture
+and the kinds of patterns that Lustre is built around.
