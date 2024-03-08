@@ -39,6 +39,10 @@ To get started, let's create a new Gleam application and add Lustre as a depende
 $ gleam new app && cd app && gleam add lustre
 ```
 
+> **Note**: this guide is written for Lustre v4. The latest stable release of
+> Lustre is v3. To follow along with this guide, you need to _manually_ edit your
+> `gleam.toml` and change the required version of lustre to `"4.0.0-rc.2"`.
+
 By default, Gleam builds projects for the Erlang target unless told otherwise. We
 can change this by adding a `target` field to the `gleam.toml` file generated in
 the root of the project.

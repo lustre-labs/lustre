@@ -2,6 +2,10 @@
 
 # 02 Interactivity
 
+> **Note**: this guide is written for Lustre v4. The latest stable release of
+> Lustre is v3. To follow along with this guide, you need to _manually_ edit your
+> `gleam.toml` and change the required version of lustre to `"4.0.0-rc.2"`.
+
 In this example we show the basic structure of all Lustre applications with a
 classic counter example.
 

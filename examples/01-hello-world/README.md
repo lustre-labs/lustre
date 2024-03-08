@@ -2,6 +2,10 @@
 
 # 01 Hello World
 
+> **Note**: this guide is written for Lustre v4. The latest stable release of
+> Lustre is v3. To follow along with this guide, you need to _manually_ edit your
+> `gleam.toml` and change the required version of lustre to `"4.0.0-rc.2"`.
+
 This hello world example is a tiny example of what you need to put together to
 get a Lustre application running. In later examples we'll touch on server-side
 rendering and Lustre Universal Components but for these first examples we'll

@@ -1,5 +1,9 @@
 # 06 Custom Effects
 
+> **Note**: this guide is written for Lustre v4. The latest stable release of
+> Lustre is v3. To follow along with this guide, you need to _manually_ edit your
+> `gleam.toml` and change the required version of lustre to `"4.0.0-rc.2"`.
+
 We haven't quite got round to documenting this example yet. If you know a little
 bit about Lustre or Elm and want to help out, we'd love to have your help! Please
 [open an issue](https://github.com/lustre-labs/lustre/issues/new) if you have any
