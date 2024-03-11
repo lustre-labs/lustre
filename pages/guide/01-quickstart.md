@@ -247,13 +247,16 @@ Now we are introducing side effects, we need to graduate from `lustre.simple` to
 the more powerful `lustre.application` constructor.
 
 ```gleam
+import gleam/dynamic
 import gleam/int
+import gleam/list
 import lustre
-import lustre_http
 import lustre/attribute
+import lustre/effect
 import lustre/element
 import lustre/element/html
 import lustre/event
+import lustre_http
 
 pub fn main() {
   lustre.application(init, update, view)
