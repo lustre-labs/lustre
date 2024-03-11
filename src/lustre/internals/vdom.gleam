@@ -32,17 +32,15 @@ pub type Attribute(msg) {
 
 // QUERIES ---------------------------------------------------------------------
 
-pub fn handlers(
-  element: Element(msg),
-) -> Dict(String, fn(Dynamic) -> Result(msg, Nil)) {
+pub fn handlers(element: Element(msg)) -> Dict(String, Decoder(msg)) {
   do_handlers(element, dict.new(), "0")
 }
 
 fn do_handlers(
   element: Element(msg),
-  handlers: Dict(String, fn(Dynamic) -> Result(msg, Nil)),
+  handlers: Dict(String, Decoder(msg)),
   key: String,
-) -> Dict(String, fn(Dynamic) -> Result(msg, Nil)) {
+) -> Dict(String, Decoder(msg)) {
   case element {
     Text(_) -> handlers
     Map(subtree) -> do_handlers(subtree(), handlers, key)

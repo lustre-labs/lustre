@@ -6,7 +6,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{type DecodeError, type Dynamic}
+import gleam/dynamic.{type DecodeError, type Decoder, type Dynamic}
 import gleam/json.{type Json}
 import gleam/result
 import lustre/attribute.{type Attribute}
@@ -39,10 +39,7 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
 /// If you're listening for non-standard events (like those emitted by a custom
 /// element) their event names might be slightly different.
 ///
-pub fn on(
-  name: String,
-  handler: fn(Dynamic) -> Result(msg, error),
-) -> Attribute(msg) {
+pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
   attribute.on(name, handler)
 }
 

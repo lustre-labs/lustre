@@ -25,7 +25,7 @@ type State(model, msg, runtime) {
     view: fn(model) -> Element(msg),
     html: Element(msg),
     renderers: Dict(String, fn(Patch(msg)) -> Nil),
-    handlers: Dict(String, fn(Dynamic) -> Result(msg, Nil)),
+    handlers: Dict(String, Decoder(msg)),
     on_attribute_change: Dict(String, Decoder(msg)),
   )
 }

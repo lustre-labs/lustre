@@ -2,7 +2,7 @@
 
 import gleam/bool
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
+import gleam/dynamic.{type Decoder}
 import gleam/int
 import gleam/json.{type Json}
 import gleam/list
@@ -27,7 +27,7 @@ pub type ElementDiff(msg) {
     created: Dict(String, Element(msg)),
     removed: Set(String),
     updated: Dict(String, AttributeDiff(msg)),
-    handlers: Dict(String, fn(Dynamic) -> Result(msg, Nil)),
+    handlers: Dict(String, Decoder(msg)),
   )
 }
 
@@ -35,7 +35,7 @@ pub type AttributeDiff(msg) {
   AttributeDiff(
     created: Set(Attribute(msg)),
     removed: Set(String),
-    handlers: Dict(String, fn(Dynamic) -> Result(msg, Nil)),
+    handlers: Dict(String, Decoder(msg)),
   )
 }
 
@@ -330,7 +330,7 @@ fn attribute_dict(
 
 fn event_handler(
   attribute: Attribute(msg),
-) -> Result(#(String, fn(Dynamic) -> Result(msg, Nil)), Nil) {
+) -> Result(#(String, Decoder(msg)), Nil) {
   case attribute {
     Attribute(_, _, _) -> Error(Nil)
     Event(name, handler) -> {
@@ -342,10 +342,10 @@ fn event_handler(
 }
 
 fn fold_event_handlers(
-  handlers: Dict(String, fn(Dynamic) -> Result(msg, Nil)),
+  handlers: Dict(String, Decoder(msg)),
   element: Element(msg),
   key: String,
-) -> Dict(String, fn(Dynamic) -> Result(msg, Nil)) {
+) -> Dict(String, Decoder(msg)) {
   case element {
     Text(_) -> handlers
     Map(subtree) -> fold_event_handlers(handlers, subtree(), key)
