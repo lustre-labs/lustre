@@ -48,7 +48,6 @@
 
 import gleam/json.{type Json}
 import gleam/list
-import gleam/function
 
 // TYPES -----------------------------------------------------------------------
 
@@ -128,13 +127,8 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
 ///
 pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
   Effect({
-    list.map(effect.all, fn(effect) {
-      fn(dispatch, emit) {
-        let dispatch = function.compose(f, dispatch)
-
-        effect(dispatch, emit)
-      }
-    })
+    use eff <- list.map(effect.all)
+    fn(dispatch, emit) { eff(fn(msg) { dispatch(f(msg)) }, emit) }
   })
 }
 

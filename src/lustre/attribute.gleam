@@ -6,7 +6,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{type Dynamic}
+import gleam/dynamic.{type Decoder, type Dynamic}
 import gleam/function
 import gleam/int
 import gleam/list
@@ -34,11 +34,8 @@ pub fn property(name: String, value: any) -> Attribute(msg) {
 }
 
 ///
-pub fn on(
-  name: String,
-  handler: fn(Dynamic) -> Result(msg, error),
-) -> Attribute(msg) {
-  Event("on" <> name, function.compose(handler, result.replace_error(_, Nil)))
+pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
+  Event("on" <> name, handler)
 }
 
 ///

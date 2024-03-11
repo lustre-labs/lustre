@@ -1,7 +1,3 @@
-// IMPORTS ---------------------------------------------------------------------
-
-import gleam/function
-
 // CHAINING RESULTS ------------------------------------------------------------
 
 pub fn try(
@@ -26,7 +22,9 @@ pub fn map(with f: fn(x) -> e) -> ErrorStrategy(x, e) {
   f
 }
 
-pub const keep: ErrorStrategy(e, e) = function.identity
+pub fn keep(err: e) -> e {
+  err
+}
 
 // BOOLEAN GUARDS --------------------------------------------------------------
 

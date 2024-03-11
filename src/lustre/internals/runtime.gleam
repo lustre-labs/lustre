@@ -3,7 +3,6 @@
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Decoder, type Dynamic}
 import gleam/erlang/process.{type Selector, type Subject}
-import gleam/function.{identity}
 import gleam/list
 import gleam/json.{type Json}
 import gleam/option.{Some}
@@ -78,7 +77,8 @@ pub fn start(
         handlers,
         on_attribute_change,
       )
-    let selector = process.selecting(process.new_selector(), self, identity)
+    let selector =
+      process.selecting(process.new_selector(), self, fn(msg) { msg })
 
     run_effects(init.1, self)
     actor.Ready(state, selector)
