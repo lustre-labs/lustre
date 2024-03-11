@@ -11,8 +11,7 @@ import gleam/package_interface.{type Type, Fn, Named, Tuple, Variable}
 import gleam/pair
 import gleam/result
 import gleam/string
-import lustre/cli/utils.{map, try}
-import shellout
+import lustre/cli/utils.{exec, map, try}
 import simplifile
 import tom.{type Toml}
 
@@ -40,12 +39,7 @@ pub type Function {
 ///
 pub fn build() -> Result(Nil, String) {
   use _ <- try(
-    shellout.command(
-      run: "gleam",
-      in: ".",
-      with: ["build", "--target=js"],
-      opt: [],
-    ),
+    exec(run: "gleam", in: ".", with: ["build", "--target=js"]),
     on_error: map(with: pair.second),
   )
 
@@ -57,12 +51,12 @@ pub fn interface() -> Result(Interface, String) {
   let out = filepath.join(dir, "package-interface.json")
 
   use _ <- try(
-    shellout.command(
-      run: "gleam",
-      in: ".",
-      with: ["export", "package-interface", "--out", out],
-      opt: [],
-    ),
+    exec(run: "gleam", in: ".", with: [
+      "export",
+      "package-interface",
+      "--out",
+      out,
+    ]),
     on_error: map(with: pair.second),
   )
 

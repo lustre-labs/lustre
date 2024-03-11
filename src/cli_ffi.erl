@@ -3,7 +3,8 @@
     get_cpu/0,
     get_esbuild/1,
     get_os/0,
-    unzip_esbuild/1
+    unzip_esbuild/1,
+    exec/3
 ]).
 
 get_os() ->
@@ -46,4 +47,29 @@ unzip_esbuild(Zip) ->
         {ok, [{_, Esbuild}]} -> {ok, Esbuild};
         {ok, Res} -> {error, Res};
         {error, Err} -> {error, Err}
+    end.
+
+exec(Command, Args, Cwd) ->
+    Command_ = binary_to_list(Command),
+    Args_ = lists:map(fun(Arg) -> binary_to_list(Arg) end, Args),
+    Cwd_ = binary_to_list(Cwd),
+
+    Name = case Command_ of
+      "./" ++ _ -> {spawn_executable, Command_};
+      "/" ++ _ -> {spawn_executable, Command_};
+      _ -> {spawn_executable, os:find_executable(Command_)}
+    end,
+
+    Port = open_port(Name, [exit_status, binary, hide, stream,
+        {args, Args_},
+        {cd, Cwd_}
+    ]),
+
+    do_exec(Port, []).
+
+do_exec(Port, Acc) ->
+    receive
+        {Port, {data, Data}} -> do_exec(Port, [Data | Acc]);
+        {Port, {exit_status, 0}} -> {ok, lists:reverse(Acc)};
+        {Port, {exit_status, Code}} -> {error, {Code, lists:reverse(Acc)}}
     end.

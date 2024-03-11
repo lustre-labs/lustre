@@ -10,8 +10,7 @@ import gleam/set
 import gleam/string
 import lustre/cli/project
 import lustre/cli/step.{type Step}
-import lustre/cli/utils.{keep, replace}
-import shellout
+import lustre/cli/utils.{exec, keep, replace}
 import simplifile.{type FilePermissions, Execute, FilePermissions, Read, Write}
 
 // COMMANDS --------------------------------------------------------------------
@@ -70,12 +69,7 @@ pub fn bundle(
 
   use <- step.new("Bundling with esbuild")
   use _ <- step.try(
-    shellout.command(
-      run: "./build/.lustre/bin/esbuild",
-      in: root,
-      with: options,
-      opt: [],
-    ),
+    exec(run: "./build/.lustre/bin/esbuild", in: root, with: options),
     on_error: fn(pair) { BundleError(pair.1) },
   )
 
@@ -93,12 +87,7 @@ pub fn serve(host: String, port: String) -> Step(Nil, Error) {
 
   use <- step.done("\nStarting dev server at " <> host <> ":" <> port <> "...")
   use _ <- step.try(
-    shellout.command(
-      run: "./build/.lustre/bin/esbuild",
-      in: root,
-      with: flags,
-      opt: [],
-    ),
+    exec(run: "./build/.lustre/bin/esbuild", in: root, with: flags),
     on_error: fn(pair) { BundleError(pair.1) },
   )
 
@@ -173,7 +162,7 @@ fn configure_node_tree_shaking(root) {
   // effects.
   //
   // This is a really grim hack but it's the only way I've found to get esbuild to
-  // ignore unused deps like `shellout` that import node stuff but aren't used in
+  // ignore unused deps like `glint` that imports node stuff but aren't used in
   // app code.
   let force_tree_shaking = "{ \"sideEffects\": false }"
   let assert Ok(_) =
@@ -181,7 +170,7 @@ fn configure_node_tree_shaking(root) {
       filepath.join(root, "build/dev/javascript/package.json"),
       force_tree_shaking,
     )
-  let pure_deps = ["lustre", "glint", "simplifile", "shellout"]
+  let pure_deps = ["lustre", "glint", "simplifile"]
 
   list.try_each(pure_deps, fn(dep) {
     root
