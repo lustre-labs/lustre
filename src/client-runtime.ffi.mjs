@@ -71,8 +71,12 @@ export class LustreClientApplication {
     const vdom = this.#view(this.#model);
 
     this.#didUpdate = false;
-    this.#root = morph(this.#root, vdom, (msg) => {
-      this.send(new Dispatch(msg));
+    this.#root = morph(this.#root, vdom, (handler) => (e) => {
+      const result = handler(e);
+
+      if (result.isOk()) {
+        this.send(new Dispatch(result[0]));
+      }
     });
   }
 

@@ -1,7 +1,10 @@
 import { Empty } from "./gleam.mjs";
-import { map as result_map } from "../gleam_stdlib/gleam/result.mjs";
 
 export function morph(prev, curr, dispatch, parent) {
+  if (curr?.subtree) {
+    return morph(prev, curr.subtree(), dispatch, parent);
+  }
+
   // The current node is an `Element` and the previous DOM node is also a DOM
   // element.
   if (curr?.tag && prev?.nodeType === 1) {
@@ -296,7 +299,7 @@ function morphAttr(el, name, value, dispatch) {
       if (el.hasAttribute(name)) break;
 
       const event = name.slice(15).toLowerCase();
-      const handler = (e) => dispatch(serverEventHandler(e));
+      const handler = dispatch(serverEventHandler);
 
       if (el.$lustre[`${name}Handler`]) {
         el.removeEventListener(event, el.$lustre[`${name}Handler`]);
@@ -328,7 +331,7 @@ function morphAttr(el, name, value, dispatch) {
       if (el.$lustre[name] === value) break;
 
       const event = name.slice(2).toLowerCase();
-      const handler = (e) => result_map(value(e), dispatch);
+      const handler = dispatch(value);
 
       if (el.$lustre[`${name}Handler`]) {
         el.removeEventListener(event, el.$lustre[`${name}Handler`]);

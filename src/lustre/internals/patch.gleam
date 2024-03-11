@@ -11,7 +11,7 @@ import gleam/set.{type Set}
 import gleam/string
 import lustre/internals/constants
 import lustre/internals/vdom.{
-  type Attribute, type Element, Attribute, Element, Event, Text,
+  type Attribute, type Element, Attribute, Element, Event, Map, Text,
 }
 
 // TYPES -----------------------------------------------------------------------
@@ -68,6 +68,10 @@ fn do_elements(
 
     Some(old), Some(new) -> {
       case old, new {
+        Map(old_subtree), Map(new_subtree) ->
+          do_elements(diff, Some(old_subtree()), Some(new_subtree()), key)
+        Map(subtree), _ -> do_elements(diff, Some(subtree()), Some(new), key)
+        _, Map(subtree) -> do_elements(diff, Some(old), Some(subtree()), key)
         Text(old), Text(new) if old == new -> diff
         // We have two text nodes but their text content is not the same. We could
         // be *really* granular here and compute a diff of the text content itself
@@ -130,7 +134,7 @@ fn do_elements(
         }
 
         // When we have two elements, but their namespaces or their tags differ,
-        // there is nothing to diff. We mark the new element as created and 
+        // there is nothing to diff. We mark the new element as created and
         // extract any event handlers.
         Element(_, _, _, _, _, _), Element(_, _, _, _, _, _) as new ->
           ElementDiff(
@@ -344,6 +348,7 @@ fn fold_event_handlers(
 ) -> Dict(String, fn(Dynamic) -> Result(msg, Nil)) {
   case element {
     Text(_) -> handlers
+    Map(subtree) -> fold_event_handlers(handlers, subtree(), key)
     Element(_, _, attrs, children, _, _) -> {
       let handlers =
         list.fold(attrs, handlers, fn(handlers, attr) {

@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
+import gleam/dynamic.{type Decoder, type Dynamic}
 import gleam/int
 import gleam/json.{type Json}
 import gleam/list
@@ -20,11 +20,14 @@ pub type Element(msg) {
     self_closing: Bool,
     void: Bool,
   )
+  // The lambda here defers the creation of the mapped subtree until it is necessary.
+  // This means we pay the cost of mapping multiple times only *once* during rendering.
+  Map(subtree: fn() -> Element(msg))
 }
 
 pub type Attribute(msg) {
   Attribute(String, Dynamic, as_property: Bool)
-  Event(String, fn(Dynamic) -> Result(msg, Nil))
+  Event(String, Decoder(msg))
 }
 
 // QUERIES ---------------------------------------------------------------------
@@ -42,6 +45,7 @@ fn do_handlers(
 ) -> Dict(String, fn(Dynamic) -> Result(msg, Nil)) {
   case element {
     Text(_) -> handlers
+    Map(subtree) -> do_handlers(subtree(), handlers, key)
     Element(_, _, attrs, children, _, _) -> {
       let handlers =
         list.fold(attrs, handlers, fn(handlers, attr) {
@@ -68,7 +72,7 @@ pub fn element_to_json(element: Element(msg)) -> Json {
 fn do_element_to_json(element: Element(msg), key: String) -> Json {
   case element {
     Text(content) -> json.object([#("content", json.string(content))])
-
+    Map(subtree) -> do_element_to_json(subtree(), key)
     Element(namespace, tag, attrs, children, self_closing, void) -> {
       let attrs =
         json.preprocessed_array({
@@ -172,6 +176,8 @@ fn do_element_to_string_builder(
     Text("") -> string_builder.new()
     Text(content) if raw_text -> string_builder.from_string(content)
     Text(content) -> string_builder.from_string(escape("", content))
+
+    Map(subtree) -> do_element_to_string_builder(subtree(), raw_text)
 
     Element(namespace, tag, attrs, _, self_closing, _) if self_closing -> {
       let html = string_builder.from_string("<" <> tag)
@@ -331,7 +337,7 @@ fn attribute_to_string_parts(
 
         // For everything else, we care whether or not the attribute is actually
         // a property. Properties are *Javascript* values that aren't necessarily
-        // reflected in the DOM. 
+        // reflected in the DOM.
         _ if as_property -> Error(Nil)
         _ -> Ok(#(name, string.inspect(value)))
       }
@@ -342,7 +348,7 @@ fn attribute_to_string_parts(
 
 pub fn attribute_to_event_handler(
   attribute: Attribute(msg),
-) -> Result(#(String, fn(Dynamic) -> Result(msg, Nil)), Nil) {
+) -> Result(#(String, Decoder(msg)), Nil) {
   case attribute {
     Attribute(_, _, _) -> Error(Nil)
     Event(name, handler) -> {

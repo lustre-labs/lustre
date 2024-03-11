@@ -17,7 +17,7 @@ import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
 import lustre/attribute.{type Attribute, attribute}
-import lustre/internals/vdom.{Element, Text}
+import lustre/internals/vdom.{Element, Map, Text}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -201,15 +201,18 @@ fn escape(escaped: String, content: String) -> String {
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
   case element {
     Text(content) -> Text(content)
+    Map(subtree) -> Map(fn() { map(subtree(), f) })
     Element(namespace, tag, attrs, children, self_closing, void) ->
-      Element(
-        namespace,
-        tag,
-        list.map(attrs, attribute.map(_, f)),
-        list.map(children, map(_, f)),
-        self_closing,
-        void,
-      )
+      Map(fn() {
+        Element(
+          namespace: namespace,
+          tag: tag,
+          attrs: list.map(attrs, attribute.map(_, f)),
+          children: list.map(children, map(_, f)),
+          self_closing: self_closing,
+          void: void,
+        )
+      })
   }
 }
 
