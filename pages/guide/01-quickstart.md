@@ -190,15 +190,15 @@ Each time a message is produced from an event listener, Lustre will call your
 will be the new application state that is then passed to the `view` function:
 
 ```gleam
-pub fn view(model: Model) -> lustre.Element(Msg) {
+pub fn view(model: Model) -> element.Element(Msg) {
   let count = int.to_string(model)
 
   html.div([], [
-    html.button([event.click(Increment)], [
+    html.button([event.on_click(Increment)], [
       element.text("+")
     ]),
     element.text(count),
-    html.button([event.click(Decrement)], [
+    html.button([event.on_click(Decrement)], [
       element.text("-")
     ])
   ])
@@ -342,11 +342,11 @@ pub fn view(model: Model) -> lustre.Element(Msg) {
   let count = int.to_string(model.count)
 
   html.div([], [
-    html.button([event.click(Increment)], [
+    html.button([event.on_click(Increment)], [
       element.text("+")
     ]),
     element.text(count),
-    html.button([event.click(Decrement)], [
+    html.button([event.on_click(Decrement)], [
       element.text("-")
     ]),
     html.div([], list.map(model.cats, fn(cat) {
