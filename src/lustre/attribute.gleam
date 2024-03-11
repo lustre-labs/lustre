@@ -6,8 +6,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{type Decoder, type Dynamic}
-import gleam/function
+import gleam/dynamic.{type Decoder}
 import gleam/int
 import gleam/list
 import gleam/result
