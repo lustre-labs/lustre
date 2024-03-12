@@ -210,7 +210,7 @@ or `Decrement` message when clicked. The Lustre runtime is responsible for
 attaching these event listeners and calling your `update` function with the
 resulting message.
 
-> **Note**: notice that the return type of `view` is `lustre.Element(Msg)`. The
+> **Note**: notice that the return type of `view` is `element.Element(Msg)`. The
 > type parameter `Msg` tells us the kinds of messages this element might produce
 > from events: type safety to the rescue!
 
@@ -341,7 +341,7 @@ Before we forget, let's also update our `view` function to actually display the
 cat images we're fetching:
 
 ```gleam
-pub fn view(model: Model) -> lustre.Element(Msg) {
+pub fn view(model: Model) -> element.Element(Msg) {
   let count = int.to_string(model.count)
 
   html.div([], [
