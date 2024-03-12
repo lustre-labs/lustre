@@ -25,7 +25,7 @@
     </a>
     <span> | </span>
     -->
-    <a href="https://hexdocs.pm/lustre/4.0.0-rc1/guide/01-quickstart.html">
+    <a href="https://hexdocs.pm/lustre/4.0.0-rc.2/guide/01-quickstart.html">
       Quickstart
     </a>
     <span> | </span>
@@ -145,6 +145,10 @@ your Gleam projects from the command line:
 ```sh
 $ gleam add lustre
 ```
+
+> **Note**: this guide is written for Lustre v4, which is currently in release
+> candidate status. To follow along with this guide, you need to _manually_ edit
+> your `gleam.toml` and change the required version of lustre to `"4.0.0-rc.2"`.
 
 If you're using a different build tool, like Rebar3 or Mix, you can add Lustre
 to your `rebar.config` or `mix.exs` file respectively.
