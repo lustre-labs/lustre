@@ -352,9 +352,12 @@ pub fn view(model: Model) -> element.Element(Msg) {
     html.button([event.on_click(Decrement)], [
       element.text("-")
     ]),
-    html.div([], list.map(model.cats, fn(cat) {
-      html.img([attribute.src(cat)])
-    }))
+    html.div(
+      [],
+      list.map(model.cats, fn(cat) {
+        html.img([attribute.src("https://cataas.com/cat/" <> cat)])
+      }),
+    ),
   ])
 }
 ```
