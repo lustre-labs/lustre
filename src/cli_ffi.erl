@@ -60,7 +60,7 @@ exec(Command, Args, Cwd) ->
       _ -> {spawn_executable, os:find_executable(Command_)}
     end,
 
-    Port = open_port(Name, [exit_status, binary, hide, stream,
+    Port = open_port(Name, [exit_status, binary, hide, stream, eof,
         {args, Args_},
         {cd, Cwd_}
     ]),
@@ -70,6 +70,6 @@ exec(Command, Args, Cwd) ->
 do_exec(Port, Acc) ->
     receive
         {Port, {data, Data}} -> do_exec(Port, [Data | Acc]);
-        {Port, {exit_status, 0}} -> {ok, lists:reverse(Acc)};
-        {Port, {exit_status, Code}} -> {error, {Code, lists:reverse(Acc)}}
+        {Port, {exit_status, 0}} -> {ok, list_to_binary(lists:reverse(Acc))};
+        {Port, {exit_status, Code}} -> {error, {Code, list_to_binary(lists:reverse(Acc))}}
     end.
