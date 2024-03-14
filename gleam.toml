@@ -21,10 +21,10 @@ internal_modules = [
 
 [documentation]
 pages = [
-  # { title = "CLI reference", path = "#", source = "" },
-  # { title = " ", path = "#", source = "" },
+  { title = "CLI reference", path = "cli.html", source = "./pages/reference/cli.md" },
+  { title = " ", path = "#", source = "" },
   { title = "Quickstart guide", path = "guide/01-quickstart.html", source = "./pages/guide/01-quickstart.md" },
-  # { title = "Managing state", path = "#", source = "" },
+  { title = "Managing state", path = "guide/02-state-management.html", source = "./pages/guide/02-state-management.md" },
   # { title = "Side effects", path = "#", source = "" },
   # { title = "Server-side rendering", path = "#", source = "" },
   # { title = "Components", path = "#", source = "" },
