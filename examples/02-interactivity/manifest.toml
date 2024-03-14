@@ -29,4 +29,4 @@ packages = [
 gleam_stdlib = { version = "~> 0.34 or ~> 1.0" }
 gleeunit = { version = "~> 1.0" }
 lustre = { path = "../../" }
-lustre_ui = { version = "~> 0.3" }
+lustre_ui = { version = "~> 0.4" }
