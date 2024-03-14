@@ -46,7 +46,7 @@ export function morph(prev, curr, dispatch, parent) {
       "function should only be called internally by lustre's runtime: if you think",
       "this is an error, please open an issue at",
       "https://github.com/hayleigh-dot-dev/gleam-lustre/issues/new",
-    ].join(" "),
+    ].join(" ")
   );
 }
 
@@ -190,7 +190,7 @@ function morphElement(prev, curr, dispatch, parent) {
     ) {
       currAttrs.set(
         currAttr[0],
-        `${currAttrs.get("dangerous-unescaped-html")} ${currAttr[1]}`,
+        `${currAttrs.get("dangerous-unescaped-html")} ${currAttr[1]}`
       );
     } else if (currAttr[0] !== "") {
       currAttrs.set(currAttr[0], currAttr[1]);
@@ -317,11 +317,7 @@ function morphAttr(el, name, value, dispatch) {
 
     case "string":
       if (name === "value") el.value = value;
-      if (value === "") {
-        el.removeAttribute(name);
-      } else {
-        el.setAttribute(name, value);
-      }
+      el.setAttribute(name, value);
 
       break;
 
