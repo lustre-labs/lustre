@@ -265,13 +265,18 @@ fn attributes_to_string_builder(
         html,
         class,
         style,
-        inner_html
-        <> val,
+        inner_html <> val,
       )
       Ok(#("class", val)) if class == "" -> #(html, val, style, inner_html)
       Ok(#("class", val)) -> #(html, class <> " " <> val, style, inner_html)
       Ok(#("style", val)) if style == "" -> #(html, class, val, inner_html)
       Ok(#("style", val)) -> #(html, class, style <> " " <> val, inner_html)
+      Ok(#(key, "")) -> #(
+        string_builder.append(html, " " <> key),
+        class,
+        style,
+        inner_html,
+      )
       Ok(#(key, val)) -> #(
         string_builder.append(html, " " <> key <> "=\"" <> val <> "\""),
         class,
@@ -321,17 +326,19 @@ fn attribute_to_string_parts(
     Attribute("", _, _) -> Error(Nil)
     Attribute("dangerous-unescaped-html", _, _) -> Error(Nil)
     Attribute(name, value, as_property) -> {
+      let true_atom = dynamic.from(True)
+
       case dynamic.classify(value) {
         "String" -> Ok(#(name, dynamic.unsafe_coerce(value)))
 
         // Boolean attributes are determined based on their presence, eg we don't
         // want to render `disabled="false"` if the value is `false` we simply
         // want to omit the attribute altogether.
-        "Boolean" ->
-          case dynamic.unsafe_coerce(value) {
-            True -> Ok(#(name, name))
-            False -> Error(Nil)
-          }
+        //
+        // On the Erlang target, booleans are actually just the atoms `true` and
+        // `false`!
+        "Atom" | "Boolean" if value == true_atom -> Ok(#(name, ""))
+        "Atom" | "Boolean" -> Error(Nil)
 
         // For everything else, we care whether or not the attribute is actually
         // a property. Properties are *Javascript* values that aren't necessarily
