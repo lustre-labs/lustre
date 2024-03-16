@@ -154,7 +154,14 @@ pub fn advanced(
   self_closing: Bool,
   void: Bool,
 ) -> Element(msg) {
-  Element(tag, namespace, attrs, children, self_closing, void)
+  Element(
+    namespace: namespace,
+    tag: tag,
+    attrs: attrs,
+    children: children,
+    self_closing: self_closing,
+    void: void,
+  )
 }
 
 /// A function for turning a Gleam string into a text node. Gleam doesn't have
