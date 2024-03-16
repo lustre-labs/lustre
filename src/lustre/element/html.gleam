@@ -850,8 +850,8 @@ pub fn select(
 }
 
 ///
-pub fn textarea(attrs: List(Attribute(msg))) -> Element(msg) {
-  element.element("textarea", attrs, [])
+pub fn textarea(attrs: List(Attribute(msg)), content: String) -> Element(msg) {
+  element.element("textarea", attrs, [element.text(content)])
 }
 
 // HTML ELEMENTS: INTERACTIVE ELEMENTS -----------------------------------------
