@@ -77,7 +77,7 @@ pub fn bundle(
   step.return(Nil)
 }
 
-pub fn serve(host: String, port: String) -> Step(Nil, Error) {
+pub fn serve(host: String, port: String, spa: Bool) -> Step(Nil, Error) {
   use _ <- step.run(download(get_os(), get_cpu()), keep)
   let root = project.root()
   let flags = [
@@ -85,9 +85,17 @@ pub fn serve(host: String, port: String) -> Step(Nil, Error) {
     "--servedir=" <> filepath.join(root, "build/.lustre"),
   ]
 
+  let options = case spa {
+    True -> [
+      "--serve-fallback=" <> filepath.join(root, "build/.lustre/index.html"),
+      ..flags
+    ]
+    False -> flags
+  }
+
   use <- step.done("\nStarting dev server at " <> host <> ":" <> port <> "...")
   use _ <- step.try(
-    exec(run: "./build/.lustre/bin/esbuild", in: root, with: flags),
+    exec(run: "./build/.lustre/bin/esbuild", in: root, with: options),
     on_error: fn(pair) { BundleError(pair.1) },
   )
 
@@ -210,8 +218,8 @@ There was a network error!",
     // TODO: this could give a better error for some common reason like Enoent.
     SimplifileError(reason, path) -> io.println("
 I ran into the following error at path `" <> path <> "`:" <> string.inspect(
-        reason,
-      ) <> ".")
+          reason,
+        ) <> ".")
 
     UnknownPlatform(os, cpu) -> io.println("
 I couldn't figure out the correct esbuild version for your

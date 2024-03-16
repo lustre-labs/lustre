@@ -7,13 +7,10 @@ import gleam/package_interface.{type Type, Fn, Named, Variable}
 import gleam/string
 import glint.{type Command, CommandInput}
 import glint/flag
-import lustre/attribute.{attribute}
 import lustre/cli/esbuild
 import lustre/cli/project.{type Module}
 import lustre/cli/step
 import lustre/cli/utils.{guard, keep, map, replace, template, try}
-import lustre/element
-import lustre/element/html.{html}
 import simplifile
 
 // COMMANDS --------------------------------------------------------------------
@@ -27,7 +24,8 @@ pub fn run() -> Command(Nil) {
     let CommandInput(flags: flags, ..) = input
     let assert Ok(host) = flag.get_string(flags, "host")
     let assert Ok(port) = flag.get_string(flags, "port")
-    let assert Ok(include_styles) = flag.get_bool(flags, "include-styles")
+    let assert Ok(use_lustre_ui) = flag.get_bool(flags, "use-lustre-ui")
+    let assert Ok(spa) = flag.get_bool(flags, "spa")
 
     let script = {
       use <- step.new("Building your project")
@@ -52,7 +50,7 @@ pub fn run() -> Command(Nil) {
         |> string.replace("{app_name}", interface.name)
 
       let html =
-        template(case include_styles {
+        template(case use_lustre_ui {
           True -> "index-with-lustre-ui.html"
           False -> "index.html"
         })
@@ -69,7 +67,7 @@ pub fn run() -> Command(Nil) {
         ),
         map(BundleError),
       )
-      use _ <- step.run(esbuild.serve(host, port), map(BundleError))
+      use _ <- step.run(esbuild.serve(host, port, spa), map(BundleError))
       step.return(Nil)
     }
 
@@ -97,6 +95,14 @@ pub fn run() -> Command(Nil) {
     |> flag.description(description)
   })
   |> glint.flag("use-lustre-ui", {
+    let description = ""
+    let default = False
+
+    flag.bool()
+    |> flag.default(default)
+    |> flag.description(description)
+  })
+  |> glint.flag("spa", {
     let description = ""
     let default = False
 
@@ -183,39 +189,6 @@ fn check_is_lustre_app(
 }
 
 // UTILS -----------------------------------------------------------------------
-
-fn index_html(
-  app_name: String,
-  container_id: String,
-  include_styles: Bool,
-) -> String {
-  let styles = case include_styles {
-    True ->
-      html.link([
-        attribute.rel("stylesheet"),
-        attribute.href(
-          "https://cdn.jsdelivr.net/gh/lustre-labs/ui/priv/styles.css",
-        ),
-      ])
-    False -> element.none()
-  }
-
-  html([], [
-    html.head([], [
-      html.meta([attribute("charset", "utf-8")]),
-      html.meta([
-        attribute("name", "viewport"),
-        attribute("content", "width=device-width, initial-scale=1"),
-      ]),
-      html.title([], app_name),
-      html.script([attribute.type_("module"), attribute.src("./index.mjs")], ""),
-      styles,
-    ]),
-    html.body([], [html.div([attribute.id(container_id)], [])]),
-  ])
-  |> element.to_string
-  |> string.append("<!DOCTYPE html>", _)
-}
 
 fn is_nil_type(t: Type) -> Bool {
   case t {
