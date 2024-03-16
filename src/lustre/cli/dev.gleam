@@ -96,7 +96,7 @@ pub fn run() -> Command(Nil) {
     |> flag.default(default)
     |> flag.description(description)
   })
-  |> glint.flag("include-styles", {
+  |> glint.flag("use-lustre-ui", {
     let description = ""
     let default = False
 

@@ -71,10 +71,10 @@ with Lustre ASAP. Each of these examples have been written to use elements from
 that package.
 
 Lustre's development server can be configured to include the `lustre/ui` stylesheet
-by passing the `--include-styles` flag:
+by passing the `--use-lustre-ui` flag:
 
 ```sh
-$ gleam run -m lustre dev --include-styles
+$ gleam run -m lustre dev --use-lustre-ui
 ```
 
 It's not necessary to use `lustre/ui` to use Lustre or to check out any of these

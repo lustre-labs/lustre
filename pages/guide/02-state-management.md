@@ -18,6 +18,34 @@ The MVU architecture is an example of _unidirectional data flow_:
 
 - The UI re-renders based on the new state.
 
+```text
+                                       +--------+
+                                       |        |
+                                       | update |
+                                       |        |
+                                       +--------+
+                                         ^    |
+                                         |    |
+                                     Msg |    | Model
+                                         |    |
+                                         |    v
++------+                         +------------------------+
+|      |          Model          |                        |
+| init |------------------------>|     Lustre Runtime     |
+|      |                         |                        |
++------+                         +------------------------+
+                                         ^    |
+                                         |    |
+                                     Msg |    | Model
+                                         |    |
+                                         |    v
+                                       +--------+
+                                       |        |
+                                       |  view  |
+                                       |        |
+                                       +--------+
+```
+
 This is in contrast to _bidirectional_ approaches to state management, where the
 UI can modify state directly. For some developers this can be a difficult idea
 to get used to, but it brings a number of benefits:

@@ -8,9 +8,9 @@ import lustre/element.{type Element}
 import lustre/event
 // These examples are written with `lustre/ui` in mind. They'll work regardless,
 // but to see what `lustre/ui` can do make sure to run each of these examples with
-// the `--include-styles` flag:
+// the `--use-lustre-ui` flag:
 //
-//   $ gleam run -m lustre dev --include-styles
+//   $ gleam run -m lustre dev --use-lustre-ui
 //
 // In your own apps, make sure to add the `lustre/ui` dependency and include the
 // stylesheet somewhere.

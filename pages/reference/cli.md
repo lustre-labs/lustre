@@ -142,7 +142,7 @@ Flags:
 - `--host` - The host to serve the project on. Defaults to `0.0.0.0` and is
   accessible on localhosts and any other devices on the same network.
 
-- `--include-styles` - Include the stylesheet from
+- `--use-lustre-ui` - Include the stylesheet from
   [lustre/ui](https://hexdocs.pm/lustre_ui/). This is mainly used in the example
   projects, but you may use this option to quickly experiment with the library
   yourself.
@@ -150,7 +150,7 @@ Flags:
 Example:
 
 ```sh
-gleam run -m lustre dev --port=8080 --include-styles
+gleam run -m lustre dev --port=8080 --use-lustre-ui
 ```
 
 ## Getting help
