@@ -118,6 +118,7 @@ fn get_download_url(os, cpu) {
     "freebsd", "arm64" -> Ok("freebsd-arm64/-/freebsd-arm64-0.19.10.tgz")
     "freebsd", "x64" -> Ok("freebsd-x64/-/freebsd-x64-0.19.10.tgz")
 
+    "linux", "aarch64" -> Ok("linux-arm64/-/linux-arm64-0.19.10.tgz")
     "linux", "arm" -> Ok("linux-arm/-/linux-arm-0.19.10.tgz")
     "linux", "arm64" -> Ok("linux-arm64/-/linux-arm64-0.19.10.tgz")
     "linux", "ia32" -> Ok("linux-ia32/-/linux-ia32-0.19.10.tgz")
@@ -209,8 +210,8 @@ There was a network error!",
     // TODO: this could give a better error for some common reason like Enoent.
     SimplifileError(reason, path) -> io.println("
 I ran into the following error at path `" <> path <> "`:" <> string.inspect(
-          reason,
-        ) <> ".")
+        reason,
+      ) <> ".")
 
     UnknownPlatform(os, cpu) -> io.println("
 I couldn't figure out the correct esbuild version for your
