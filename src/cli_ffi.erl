@@ -37,6 +37,17 @@ get_esbuild(Url) ->
         {error, Err} -> {error, Err}
     end.
 
+get_tailwind(Url) ->
+    inets:start(),
+    ssl:start(),
+
+    case httpc:request(get, {Url, []}, [], [{body_format, binary}]) of
+        {ok, {{_, 200, _}, _, Bin}} -> {ok, Bin};
+        {ok, Res} -> {error, Res};
+        {error, Err} -> {error, Err}
+    end.
+
+
 unzip_esbuild(Zip) ->
     Result =
         erl_tar:extract({binary, Zip}, [
