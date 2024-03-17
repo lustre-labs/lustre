@@ -71,6 +71,8 @@
 
 - A **batteries-included CLI** that makes scaffolding and building apps a breeze.
 
+- **Server-side rendering** for static HTML templating.
+
 ## Example
 
 ```gleam
