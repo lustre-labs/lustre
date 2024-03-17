@@ -4,6 +4,7 @@ import filepath
 import gleam/dict
 import gleam/io
 import gleam/package_interface.{type Type, Fn, Named, Variable}
+import gleam/result
 import gleam/string
 import glint.{type Command, CommandInput}
 import glint/flag
@@ -26,6 +27,7 @@ pub fn run() -> Command(Nil) {
     let assert Ok(port) = flag.get_string(flags, "port")
     let assert Ok(use_lustre_ui) = flag.get_bool(flags, "use-lustre-ui")
     let assert Ok(spa) = flag.get_bool(flags, "spa")
+    let custom_html = flag.get_string(flags, "html")
 
     let script = {
       use <- step.new("Building your project")
@@ -49,12 +51,30 @@ pub fn run() -> Command(Nil) {
         })
         |> string.replace("{app_name}", interface.name)
 
-      let html =
-        template(case use_lustre_ui {
-          True -> "index-with-lustre-ui.html"
-          False -> "index.html"
-        })
-        |> string.replace("{app_name}", interface.name)
+      use html <- step.try(
+        case custom_html {
+          Ok(custom_html_path) ->
+            custom_html_path
+            |> simplifile.read
+            |> result.map_error(CouldntOpenCustomHtml(_, custom_html_path))
+            |> result.map(string.replace(
+              _,
+              "<script type=\"application/lustre\">",
+              "<script type=\"module\" src=\"./index.mjs\">",
+            ))
+
+          Error(_) if use_lustre_ui ->
+            template("index-with-lustre-ui.html")
+            |> string.replace("{app_name}", interface.name)
+            |> Ok
+
+          _ ->
+            template("index.html")
+            |> string.replace("{app_name}", interface.name)
+            |> Ok
+        },
+        keep,
+      )
 
       let assert Ok(_) = simplifile.write(tempdir <> "/entry.mjs", entry)
       let assert Ok(_) = simplifile.write(tempdir <> "/index.html", html)
@@ -80,7 +100,7 @@ pub fn run() -> Command(Nil) {
   |> glint.unnamed_args(glint.EqArgs(0))
   |> glint.flag("host", {
     let description = ""
-    let default = "0.0.0.0"
+    let default = "localhost"
 
     flag.string()
     |> flag.default(default)
@@ -95,7 +115,7 @@ pub fn run() -> Command(Nil) {
     |> flag.description(description)
   })
   |> glint.flag("use-lustre-ui", {
-    let description = ""
+    let description = "Inject lustre/ui's stylesheet. Ignored if --html is set."
     let default = False
 
     flag.bool()
@@ -103,11 +123,23 @@ pub fn run() -> Command(Nil) {
     |> flag.description(description)
   })
   |> glint.flag("spa", {
-    let description = ""
+    let description =
+      "Serve your app on any route. Useful for apps that do client-side routing."
     let default = False
 
     flag.bool()
     |> flag.default(default)
+    |> flag.description(description)
+  })
+  |> glint.flag("html", {
+    let description =
+      "Supply a custom HTML file to use as the entry point.
+To inject the Lustre bundle, make sure it includes the following empty script: 
+<script type=\"application/lustre\"></script>
+ "
+      |> string.trim_right
+
+    flag.string()
     |> flag.description(description)
   })
 }
@@ -117,6 +149,7 @@ pub fn run() -> Command(Nil) {
 type Error {
   BuildError
   BundleError(esbuild.Error)
+  CouldntOpenCustomHtml(error: simplifile.FileError, path: String)
   MainMissing(module: String)
   MainIncorrectType(module: String, got: Type)
   MainBadAppType(module: String, got: Type)
@@ -128,6 +161,9 @@ fn explain(error: Error) -> Nil {
     BuildError -> project.explain(project.BuildError)
 
     BundleError(error) -> esbuild.explain(error)
+
+    CouldntOpenCustomHtml(_, path) -> io.println("
+I couldn't open the custom HTML file at `" <> path <> "`.")
 
     MainMissing(module) -> io.println("
 Module `" <> module <> "` doesn't have a public `main` function I can preview.")
