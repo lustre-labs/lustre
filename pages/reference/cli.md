@@ -142,10 +142,25 @@ Flags:
 - `--host` - The host to serve the project on. Defaults to `0.0.0.0` and is
   accessible on localhosts and any other devices on the same network.
 
+- `--spa` - Serve the `index.html` file for all routes. This is useful for single
+  page applications where the frontend handles routing.
+
+- `--html` - Provide a custom HTML file to serve. This is useful if you want to
+  include your own styles or scripts.
+
+  To make sure the Lustre bundle can be loaded, you must include the following
+  script tag somewhere in your HTML file:
+
+  ```html
+  <script type="application/lustre"></script>
+  ```
+
 - `--use-lustre-ui` - Include the stylesheet from
   [lustre/ui](https://hexdocs.pm/lustre_ui/). This is mainly used in the example
   projects, but you may use this option to quickly experiment with the library
   yourself.
+
+  If the `--html` flag is provided, this flag will be ignored.
 
 Example:
 
