@@ -208,6 +208,7 @@ pub fn main() {
   glint.new()
   |> glint.as_gleam_module
   |> glint.with_name("lustre")
+  |> glint.with_pretty_help(glint.default_pretty_help())
   |> glint.add(at: ["add", "esbuild"], do: add.esbuild())
   |> glint.add(at: ["build", "app"], do: build.app())
   |> glint.add(at: ["build", "component"], do: build.component())
