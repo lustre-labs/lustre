@@ -235,6 +235,24 @@ pub fn to_string(element: Element(msg)) -> String {
   vdom.element_to_string(element)
 }
 
+/// Converts an element to a string like [`to_string`](#to_string), but prepends
+/// a `<!doctype html>` declaration to the string. This is useful for rendering
+/// complete HTML documents.
+/// 
+/// If the provided element is not an `html` element, it will be wrapped in both
+/// a `html` and `body` element. 
+/// 
+pub fn to_document_string(el: Element(msg)) -> String {
+  vdom.element_to_string(case el {
+    Element(tag: "html", ..) -> el
+    Element(tag: "head", ..) | Element(tag: "body", ..) ->
+      element("html", [], [el])
+
+    _ -> element("html", [], [element("body", [], [el])])
+  })
+  |> string.append("<!doctype html>\n", _)
+}
+
 /// Convert a Lustre `Element` to a `StringBuilder`. This is _not_ pretty-printed,
 /// so there are no newlines or indentation. If you need to pretty-print an element,
 /// reach out on the [Gleam Discord](https://discord.gg/Fm8Pwmy) or
@@ -243,4 +261,22 @@ pub fn to_string(element: Element(msg)) -> String {
 ///
 pub fn to_string_builder(element: Element(msg)) -> StringBuilder {
   vdom.element_to_string_builder(element)
+}
+
+/// Converts an element to a `StringBuilder` like [`to_string_builder`](#to_string_builder),
+/// but prepends a `<!doctype html>` declaration. This is useful for rendering
+/// complete HTML documents.
+/// 
+/// If the provided element is not an `html` element, it will be wrapped in both
+/// a `html` and `body` element. 
+/// 
+pub fn to_document_string_builder(el: Element(msg)) -> StringBuilder {
+  vdom.element_to_string_builder(case el {
+    Element(tag: "html", ..) -> el
+    Element(tag: "head", ..) | Element(tag: "body", ..) ->
+      element("html", [], [el])
+
+    _ -> element("html", [], [element("body", [], [el])])
+  })
+  |> string_builder.prepend("<!doctype html>\n")
 }
