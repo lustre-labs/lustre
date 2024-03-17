@@ -11,7 +11,7 @@ import glint.{type Command, CommandInput}
 import glint/flag
 import lustre/cli/esbuild
 import lustre/cli/project.{type Module}
-import lustre/cli/utils.{keep, replace, try}
+import lustre/cli/utils.{keep, replace, template, try}
 import lustre/cli/step.{type Step}
 import simplifile
 
@@ -47,11 +47,8 @@ JavaScript module for you to host or distribute.
       let _ = simplifile.create_directory_all(tempdir)
       let _ = simplifile.create_directory_all(outdir)
       let entry =
-        "import { main } from '../dev/javascript/${project_name}/${project_name}.mjs';
-
-         main();
-        "
-        |> string.replace("${project_name}", project_name)
+        template("entry-with-main.mjs")
+        |> string.replace("{app_name}", project_name)
 
       let entryfile = filepath.join(tempdir, "entry.mjs")
       let ext = case minify {
@@ -117,14 +114,10 @@ present.
 
       use project_name <- step.try(get_project_name(), keep)
       let entry =
-        "import { register } from '../dev/javascript/lustre/client-component.ffi.mjs';
-         import { name, ${component} as component } from '../dev/javascript/${project_name}/${module_path}.mjs';
-
-         register(component(), name);
-        "
-        |> string.replace("${component}", component)
-        |> string.replace("${project_name}", project_name)
-        |> string.replace("${module_path}", module_path)
+        template("component-entry.mjs")
+        |> string.replace("{component_name}", component)
+        |> string.replace("{app_name}", project_name)
+        |> string.replace("{module_path}", module_path)
 
       let entryfile = filepath.join(tempdir, "entry.mjs")
       let ext = case minify {
