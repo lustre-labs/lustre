@@ -11,7 +11,7 @@ import lustre/attribute.{attribute}
 import lustre/cli/esbuild
 import lustre/cli/project.{type Module}
 import lustre/cli/step
-import lustre/cli/utils.{guard, keep, map, replace, try}
+import lustre/cli/utils.{guard, keep, map, replace, template, try}
 import lustre/element
 import lustre/element/html.{html}
 import simplifile
@@ -45,23 +45,18 @@ pub fn run() -> Command(Nil) {
       let _ = simplifile.create_directory_all(tempdir)
 
       let entry =
-        case is_app {
-          True ->
-            " import { start } from '../dev/javascript/lustre/lustre.mjs';
-              import { main } from '../dev/javascript/${app_name}/${app_name}.mjs';
+        template(case is_app {
+          True -> "entry-with-start.mjs"
+          False -> "entry-with-main.mjs"
+        })
+        |> string.replace("{app_name}", interface.name)
 
-              start(main(), ${container_id});
-            "
-          False ->
-            " import { main } from '../dev/javascript/${app_name}/${app_name}.mjs';
-
-              main();
-          "
-        }
-        |> string.replace("${app_name}", interface.name)
-        |> string.replace("${container_id}", "app")
-
-      let html = index_html(interface.name, "app", include_styles)
+      let html =
+        template(case include_styles {
+          True -> "index-with-lustre-ui.html"
+          False -> "index.html"
+        })
+        |> string.replace("{app_name}", interface.name)
 
       let assert Ok(_) = simplifile.write(tempdir <> "/entry.mjs", entry)
       let assert Ok(_) = simplifile.write(tempdir <> "/index.html", html)

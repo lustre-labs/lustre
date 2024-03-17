@@ -1,3 +1,13 @@
+import simplifile
+import gleam/erlang
+
+pub fn template(name: String) -> String {
+  let assert Ok(priv) = erlang.priv_directory("lustre")
+  let assert Ok(file) = simplifile.read(priv <> "/templates/" <> name)
+
+  file
+}
+
 @external(erlang, "cli_ffi", "exec")
 pub fn exec(
   run command: String,
