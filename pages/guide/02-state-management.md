@@ -61,7 +61,7 @@ to get used to, but it brings a number of benefits:
 
 - State updates are **pure**. We will learn more about this in the [next guide](./03-side-effects),
   but for now it is enough to know that this means testing your state changes is
-  much easier because mocking messages is simpler tham mocking side effects!
+  much easier because mocking messages is simpler than mocking side effects!
 
 The rest of this guide contains some learned-wisdom and best practices for managing
 state in Lustre applications.
@@ -89,8 +89,8 @@ type PublicModel {
 }
 ```
 
-Here, we a model that represents our application as either having a logged in user
-or just one of the public routes. This pushes us towards the great practice of
+Here, we have a model that represents our application as either having a logged in
+user or just one of the public routes. This pushes us towards the great practice of
 [making impossible states impossible](https://github.com/stereobooster/pragmatic-types/blob/master/posts/making-impossible-states-impossible.md).
 Now, we can write separate update and view functions that only handle the states
 they care about.
@@ -182,7 +182,7 @@ there are some tangible benefits to this approach:
   Imagine you have a table component with tabs to switch between different views.
   If some time in the future you decide to pull the tabs out so they can be
   rendered elsewhere on the page you'll discover that the tabs' state was tightly
-  couple to the table. Now we are forced to refactore the table component so the
+  couple to the table. Now we are forced to refactor the table component so the
   tab state can be passed in as an attribute. We'll also need to refactor the
   _parent_ to contain the state of the tabs so it can be passed down to both
   components.
