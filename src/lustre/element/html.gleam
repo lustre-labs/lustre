@@ -821,8 +821,8 @@ pub fn optgroup(
 }
 
 ///
-pub fn option(attrs: List(Attribute(msg))) -> Element(msg) {
-  element.element("option", attrs, [])
+pub fn option(attrs: List(Attribute(msg)), label: String) -> Element(msg) {
+  element.element("option", attrs, [element.text(label)])
 }
 
 ///
