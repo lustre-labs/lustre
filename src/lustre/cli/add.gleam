@@ -56,7 +56,7 @@ Download a platform-appropriate version of the Tailwind binary.
     let assert Ok(os) = flag.get_string(flags, "os")
     let assert Ok(cpu) = flag.get_string(flags, "cpu")
 
-    let script = tailwind.setup(os, cpu, "v3.4.1")
+    let script = tailwind.setup(os, cpu)
     case step.execute(script) {
       Ok(_) -> Nil
       Error(error) -> tailwind.explain(error)

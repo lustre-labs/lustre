@@ -2,6 +2,7 @@
 -export([
     get_cpu/0,
     get_esbuild/1,
+    get_tailwind/1,
     get_os/0,
     unzip_esbuild/1,
     exec/3

@@ -12,10 +12,12 @@ import lustre/cli/step.{type Step}
 import lustre/cli/utils.{keep}
 import simplifile.{type FilePermissions, Execute, FilePermissions, Read, Write}
 
+const tailwind_version = "v3.4.1"
+
 // COMMANDS --------------------------------------------------------------------
 
-pub fn setup(os: String, cpu: String, version: String) -> Step(Nil, Error) {
-  use _ <- step.run(download(os, cpu, version), on_error: keep)
+pub fn setup(os: String, cpu: String) -> Step(Nil, Error) {
+  use _ <- step.run(download(os, cpu, tailwind_version), on_error: keep)
   use _ <- step.run(write_tailwind_config(), on_error: keep)
   step.return(Nil)
 }
@@ -55,8 +57,14 @@ fn download(os: String, cpu: String, version: String) -> Step(Nil, Error) {
 
 fn write_tailwind_config() -> Step(Nil, Error) {
   let config_filename = "tailwind.config.js"
-  use <- step.new("Writing `" <> config_filename <> "`")
   let config_outfile = filepath.join(project.root(), config_filename)
+  let config_already_exists =
+    simplifile.verify_is_file(config_outfile)
+    |> result.unwrap(False)
+
+  // If there already is a configuration file, we make sure not to override it.
+  use <- bool.guard(when: config_already_exists, return: step.return(Nil))
+  use <- step.new("Writing `" <> config_filename <> "`")
   let write_config =
     simplifile.write(
       to: config_outfile,
@@ -133,6 +141,7 @@ pub type Error {
   CannotSetPermissions(reason: simplifile.FileError, path: String)
   CannotWriteConfig(reason: simplifile.FileError, path: String)
   UnknownPlatform(os: String, cpu: String)
+  BundleError(reason: String)
 }
 
 pub fn explain(error: Error) -> Nil {
@@ -163,6 +172,10 @@ I ran into an error (" <> string.inspect(reason) <> ") when trying
 to write the Tailwind binary to
   `" <> path <> "`.
 ")
+
+    BundleError(reason) -> io.println("
+I ran into an error while trying to create a bundle with Tailwind:
+" <> reason)
   }
 }
 
