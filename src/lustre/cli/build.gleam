@@ -68,10 +68,7 @@ JavaScript module for you to host or distribute.
       use _ <- step.run(bundle(entry, tempdir, outfile, minify), keep)
 
       // Tailwind bundling
-      let entry =
-        "@tailwind base;
-         @tailwind components;
-         @tailwind utilities;"
+      let entry = template("entry.css")
       let outfile =
         filepath.strip_extension(outfile)
         |> string.append(".css")
@@ -151,10 +148,7 @@ present.
       use _ <- step.run(bundle(entry, tempdir, outfile, minify), keep)
 
       // Tailwind bundling
-      let entry =
-        "@tailwind base;
-         @tailwind components;
-         @tailwind utilities;"
+      let entry = template("entry.css")
       let outfile =
         filepath.strip_extension(outfile)
         |> string.append(".css")
