@@ -2,6 +2,7 @@
 -export([
     get_cpu/0,
     get_esbuild/1,
+    get_tailwind/1,
     get_os/0,
     unzip_esbuild/1,
     exec/3
@@ -36,6 +37,17 @@ get_esbuild(Url) ->
         {ok, Res} -> {error, Res};
         {error, Err} -> {error, Err}
     end.
+
+get_tailwind(Url) ->
+    inets:start(),
+    ssl:start(),
+
+    case httpc:request(get, {Url, []}, [], [{body_format, binary}]) of
+        {ok, {{_, 200, _}, _, Bin}} -> {ok, Bin};
+        {ok, Res} -> {error, Res};
+        {error, Err} -> {error, Err}
+    end.
+
 
 unzip_esbuild(Zip) ->
     Result =

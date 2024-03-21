@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import filepath
+import gleam/bool
 import gleam/dict
 import gleam/io
 import gleam/list
@@ -11,8 +12,9 @@ import glint.{type Command, CommandInput}
 import glint/flag
 import lustre/cli/esbuild
 import lustre/cli/project.{type Module}
-import lustre/cli/utils.{keep, replace, template, try}
+import lustre/cli/utils.{exec, keep, replace, template, try}
 import lustre/cli/step.{type Step}
+import lustre/cli/tailwind
 import simplifile
 
 // COMMANDS --------------------------------------------------------------------
@@ -64,6 +66,16 @@ JavaScript module for you to host or distribute.
       let assert Ok(_) = simplifile.write(entryfile, entry)
 
       use _ <- step.run(bundle(entry, tempdir, outfile, minify), keep)
+
+      // Tailwind bundling
+      let entry = template("entry.css")
+      let outfile =
+        filepath.strip_extension(outfile)
+        |> string.append(".css")
+
+      let bundle = bundle_tailwind(entry, tempdir, outfile, minify)
+      use _ <- step.run(bundle, on_error: TailwindBundleError)
+
       step.return(Nil)
     }
 
@@ -113,6 +125,8 @@ present.
       let _ = simplifile.create_directory_all(outdir)
 
       use project_name <- step.try(get_project_name(), keep)
+
+      // Esbuild bundling
       let entry =
         template("component-entry.mjs")
         |> string.replace("{component_name}", component)
@@ -132,6 +146,15 @@ present.
 
       let assert Ok(_) = simplifile.write(entryfile, entry)
       use _ <- step.run(bundle(entry, tempdir, outfile, minify), keep)
+
+      // Tailwind bundling
+      let entry = template("entry.css")
+      let outfile =
+        filepath.strip_extension(outfile)
+        |> string.append(".css")
+
+      let bundle = bundle_tailwind(entry, tempdir, outfile, minify)
+      use _ <- step.run(bundle, on_error: TailwindBundleError)
       step.return(Nil)
     }
 
@@ -158,6 +181,7 @@ present.
 type Error {
   BuildError
   BundleError(esbuild.Error)
+  TailwindBundleError(tailwind.Error)
   ComponentMissing(module: String)
   MainMissing(module: String)
   ModuleMissing(module: String)
@@ -170,6 +194,8 @@ fn explain(error: Error) -> Nil {
     BuildError -> project.explain(project.BuildError)
 
     BundleError(error) -> esbuild.explain(error)
+
+    TailwindBundleError(error) -> tailwind.explain(error)
 
     ComponentMissing(module) -> io.println("
 Module `" <> module <> "` doesn't have any public function I can use to bundle
@@ -272,6 +298,38 @@ fn bundle(
   step.return(Nil)
 }
 
+fn bundle_tailwind(
+  entry: String,
+  tempdir: String,
+  outfile: String,
+  minify: Bool,
+) -> Step(Nil, tailwind.Error) {
+  // We first check if there's a `tailwind.config.js` at the project's root.
+  // If not present we do nothing; otherwise we go on with bundling.
+  let root = project.root()
+  let tailwind_config_file = filepath.join(root, "tailwind.config.js")
+  let has_tailwind_config =
+    simplifile.verify_is_file(tailwind_config_file)
+    |> result.unwrap(False)
+  use <- bool.guard(when: !has_tailwind_config, return: step.return(Nil))
+
+  use _ <- step.run(tailwind.setup(get_os(), get_cpu()), keep)
+
+  use <- step.new("Bundling with Tailwind")
+  let entryfile = filepath.join(tempdir, "entry.css")
+  let assert Ok(_) = simplifile.write(entryfile, entry)
+
+  let flags = ["--input=" <> entryfile, "--output=" <> outfile]
+  let options = case minify {
+    True -> ["--minify", ..flags]
+    False -> flags
+  }
+  let bundle = exec("./build/.lustre/bin/tailwind", in: root, with: options)
+  use _ <- step.try(bundle, on_error: fn(pair) { tailwind.BundleError(pair.1) })
+  use <- step.done("✅ Bundle produced at `" <> outfile <> "`")
+  step.return(Nil)
+}
+
 // UTILS -----------------------------------------------------------------------
 
 fn is_string_type(t: Type) -> Bool {
@@ -306,3 +364,11 @@ fn is_compatible_app_type(t: Type) -> Bool {
     _ -> False
   }
 }
+
+// EXTERNALS -------------------------------------------------------------------
+
+@external(erlang, "cli_ffi", "get_os")
+fn get_os() -> String
+
+@external(erlang, "cli_ffi", "get_cpu")
+fn get_cpu() -> String
