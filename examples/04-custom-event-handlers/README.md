@@ -44,9 +44,9 @@ In javascript, input event handlers often look something like this:
   }
 ```
 
-This is very convenient! But it's not type-safe. We have no guarantee that _`event`_ has a property named _`target`_ which itself has a property named _`value`_. Developers very often don't write code to handle that error condition, and this leads to many runtime crashes.
+This is very convenient! But it's not type-safe. From the function's perspective, there is no guarantee that _`event`_ is an object with a property named _`target`_ which itself has a property named _`value`_. In a more complex app, we might even pass it a numeric or boolean value on accident. The failure to handle such error conditions leads to many `Uncaught TypeError` crashes.
 
-Here's how we can extract the event's dynamic value in a type-safe way with Lustre:
+Here's how we can extract the event's dynamic value in a type-safe way in Lustre:
 
 ```gleam
   let on_input = fn(event: dynamic.Dynamic) -> Result(Msg, dynamic.DecodeErrors) {
@@ -72,8 +72,6 @@ This is such a common use case that Lustre's `event` module has a helper functio
 ## Make it Loud
 
 In this [example code](./src/app.gleam#L63), we define a custom input handler called `make_it_loud`, which calls `string.uppercase` to make sure all our input is LOUD. Then in our [view function](./src/app.gleam#L79), instead of calling `event.on_input(GotInput)` like we did in the last example, we can just call `event.on("input", make_it_loud)`.
-
-With custom event handlers, you can run any kind of tranformation or input-masking you need.
 
 ## Getting help
 
