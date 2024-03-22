@@ -60,16 +60,13 @@ fn view(model: Model) -> Element(Msg) {
   let styles = [#("width", "100vw"), #("height", "100vh"), #("padding", "1rem")]
   let length = int.to_string(model.length)
   let max = int.to_string(model.max)
-  let on_input = fn(event) {
+  let make_it_loud = fn(event) -> Result(Msg, List(dynamic.DecodeError)) {
     use target <- result.try(dynamic.field("target", dynamic.dynamic)(event))
     use value <- result.try(dynamic.field("value", dynamic.string)(target))
 
-    // Decoding the `value` from anevent target is so common we provider a decoder
-    // for it already:
-    //
-    // use value <- result.try(event.value(event))
+    let loud = string.uppercase(value)
 
-    Ok(GotInput(value))
+    Ok(GotInput(loud))
   }
 
   ui.centre(
@@ -78,8 +75,8 @@ fn view(model: Model) -> Element(Msg) {
       [aside.content_first(), aside.align_centre()],
       ui.field(
         [],
-        [element.text("Write a message:")],
-        ui.input([attribute.value(model.value), event.on("input", on_input)]),
+        [element.text("Write a LOUD message:")],
+        ui.input([attribute.value(model.value), event.on("input", make_it_loud)]),
         [element.text(length <> "/" <> max)],
       ),
       ui.button([event.on_click(Reset)], [element.text("Reset")]),
