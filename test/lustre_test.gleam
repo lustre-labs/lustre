@@ -35,8 +35,8 @@ pub fn counter_init_test() {
     process.call(
       runtime,
       function.curry2(process.send)
-      |> function.compose(View)
-      |> function.compose(Debug),
+        |> function.compose(View)
+        |> function.compose(Debug),
       100,
     )
 
@@ -57,8 +57,8 @@ pub fn counter_update_test() {
     process.call(
       runtime,
       function.curry2(process.send)
-      |> function.compose(View)
-      |> function.compose(Debug),
+        |> function.compose(View)
+        |> function.compose(Debug),
       100,
     )
 
@@ -75,8 +75,8 @@ pub fn counter_diff_test() {
     process.call(
       runtime,
       function.curry2(process.send)
-      |> function.compose(View)
-      |> function.compose(Debug),
+        |> function.compose(View)
+        |> function.compose(Debug),
       100,
     )
 
@@ -88,8 +88,8 @@ pub fn counter_diff_test() {
     process.call(
       runtime,
       function.curry2(process.send)
-      |> function.compose(View)
-      |> function.compose(Debug),
+        |> function.compose(View)
+        |> function.compose(Debug),
       100,
     )
 
