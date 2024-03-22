@@ -31,7 +31,7 @@ ui.input([
 
 Central to Lustre's architecture is the idea that your model is the single source
 of truth for your application's UI. This opens up the door to things like serialising
-progam state to load in the future, time-travel debugging, and rehydrating your
+program state to load in the future, time-travel debugging, and rehydrating your
 app's state from a server.
 
 It also gives you tighter control of when and how to update your UI in response
