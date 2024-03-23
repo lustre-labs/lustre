@@ -324,7 +324,6 @@ fn attribute_to_string_parts(
 ) -> Result(#(String, String), Nil) {
   case attr {
     Attribute("", _, _) -> Error(Nil)
-    Attribute("dangerous-unescaped-html", _, _) -> Error(Nil)
     Attribute(name, value, as_property) -> {
       let true_atom = dynamic.from(True)
 
