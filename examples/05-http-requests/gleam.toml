@@ -4,9 +4,9 @@ target = "javascript"
 
 [dependencies]
 gleam_stdlib = "~> 0.34 or ~> 1.0"
-lustre = { path = "../../" }
+lustre = "4.0.0-rc.1" 
 lustre_ui = "~> 0.4"
-lustre_http = "~> 0.5"
+lustre_http = "~> 0.5.2"
 
 [dev-dependencies]
 gleeunit = "~> 1.0"
