@@ -2,17 +2,13 @@
 
 # 04 Custom Event Handlers
 
-> **Note**: this guide is written for Lustre v4. The latest stable release of
-> Lustre is v3. To follow along with this guide, you need to _manually_ edit your
-> `gleam.toml` and change the required version of lustre to `"4.0.0-rc.2"`.
+While Lustre's built-in event handlers can cover most of your basic needs, in practice you will often need to provide more advanced functionality. For this, we can reach for the `event.on("eventname", handler)` function to generate attributes that can provide custom event handling.
 
-While Lustre's built-in event handlers can cover most of your basic needs, in practice you will often need to provide more advanced functionality. For this, we can reach for the `event.on("eventname", handler)` function to generate attributes that can provide custom event handling. 
-
-But first, let's take a look under the hood to see what event handlers actually _do_. 
+But first, let's take a look under the hood to see what event handlers actually _do_.
 
 ## Decoding Dynamic Data
 
-Lustre is a type-safe framework, but the DOM allows HTML elements to generate events containing values of any arbitrary type and structure. In Gleam, such data is referred to as _dynamic_, and is handled by the `gleam/dynamic` library. `gleam/dynamic` is used for decoding everything from unpredictable JSON input to Lustre's DOM events. 
+Lustre is a type-safe framework, but the DOM allows HTML elements to generate events containing values of any arbitrary type and structure. In Gleam, such data is referred to as _dynamic_, and is handled by the `gleam/dynamic` library. `gleam/dynamic` is used for decoding everything from unpredictable JSON input to Lustre's DOM events.
 
 If you peek at [the gleam\dynamic documentation](https://hexdocs.pm/gleam_stdlib/0.17.1/gleam/dynamic/#module-types), you'll quickly see it exports four types:
 
@@ -38,10 +34,10 @@ Therefore, Lustre event handlers are simply an implementation of the `Decoder` f
 In javascript, input event handlers often look something like this:
 
 ```js
-  function onInput(event) {
-    const input = event.target.value
-    // do your stuff!
-  }
+function onInput(event) {
+  const input = event.target.value;
+  // do your stuff!
+}
 ```
 
 This is very convenient! But it's not type-safe. From the function's perspective, there is no guarantee that _`event`_ is an object with a property named _`target`_ which itself has a property named _`value`_. In a more complex app, we might even pass it a numeric or boolean value on accident. The failure to handle such error conditions leads to many `Uncaught TypeError` crashes.
@@ -59,7 +55,7 @@ Here's how we can extract the event's dynamic value in a type-safe way in Lustre
 
 First we extract the `target` field from our `event`, which is expected to be of the type `dynamic.dynamic`. Because the target is itself dynamic, we can again use the dynamic library to extract its `value` field, which is expected to be of type `dynamic.string`. If either of those expectations are not met, the function will return an error, and nothing more will happen.
 
-This is such a common use case that Lustre's `event` module has a helper function for it. Here is a far less verbose version that provides the exact same type-safe guarantees: 
+This is such a common use case that Lustre's `event` module has a helper function for it. Here is a far less verbose version that provides the exact same type-safe guarantees:
 
 ```gleam
   let on_input = fn(event) {

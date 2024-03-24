@@ -2,10 +2,6 @@
 
 # 01 Hello World
 
-> **Note**: this guide is written for Lustre v4. The latest stable release of
-> Lustre is v3. To follow along with this guide, you need to _manually_ edit your
-> `gleam.toml` and change the required version of lustre to `"4.0.0-rc.2"`.
-
 This hello world example is a tiny example of what you need to put together to
 get a Lustre application running. In later examples we'll touch on server-side
 rendering and Lustre Universal Components but for these first examples we'll
@@ -58,10 +54,11 @@ import lustre/element/html.{div, p}
 
 ## Seeing the result
 
-Lustre ships with a simple development server to help you look through these
-examples or get started with your own apps quickly. You can run
-`gleam run -m lustre dev` in any of these examples to start this development
-server and head over to `localhost:1234` to see what it produces.
+Lustre has a companion package containing development tooling called
+[lustre_dev_tools](https://hexdocs.pm/lustre_dev_tools/). It's already included
+in this and all the other example. You can run `gleam run -m lustre/dev start`
+in any of these examples to start a development server and head over to
+`localhost:1234` to see what it produces.
 
 ### Enabling lustre/ui
 
@@ -71,21 +68,18 @@ with Lustre ASAP. Each of these examples have been written to use elements from
 that package.
 
 Lustre's development server can be configured to include the `lustre/ui` stylesheet
-by passing the `--use-lustre-ui` flag:
+by passing the `--use-example-styles` flag:
 
 ```sh
-$ gleam run -m lustre dev --use-lustre-ui
+gleam run -m lustre/dev start --use-example-styles
 ```
 
 It's not necessary to use `lustre/ui` to use Lustre or to check out any of these
-examples, but the option is there if you want it.
+examples, but we've built these examples using the package so things look a little
+more interesting.
 
 ## Getting help
 
 If you're having trouble with Lustre or not sure what the right way to do
 something is, the best place to get help is the [Gleam Discord server](https://discord.gg/Fm8Pwmy).
 You could also open an issue on the [Lustre GitHub repository](https://github.com/lustre-labs/lustre/issues).
-
-While our docs are still a work in progress, the official [Elm guide](https://guide.elm-lang.org)
-is also a great resource for learning about the Model-View-Update architecture
-and the kinds of patterns that Lustre is built around.

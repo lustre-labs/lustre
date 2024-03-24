@@ -2,9 +2,7 @@
 
 # 05 HTTP Requests
 
-> **Note**: this guide is written for Lustre v4. The latest stable release of
-> Lustre is v3. To follow along with this guide, you need to _manually_ edit your
-> `gleam.toml` and change the required version of lustre to `"4.0.0-rc.2"`.
+Up until now, all the logic in our examples has run neatly in a self-contained `Init -> Update 🔁 View` loop. But our applications often need to interact with the outside world, whether through browser APIs or HTTP requests.
 
 Up until now, we've seen Lustre applications constructed with the `lustre.simple`
 constructor. These kinds of applications are great for introducing the Model-View-Update
