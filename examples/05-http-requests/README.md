@@ -6,38 +6,61 @@
 > Lustre is v3. To follow along with this guide, you need to _manually_ edit your
 > `gleam.toml` and change the required version of lustre to `"4.0.0-rc.2"`.
 
-Up until now, all the logic in our examples has run neatly in a self-contained `Init -> Update 🔁 View` loop. But our applications often need to interact with the outside world, whether through browser APIs or HTTP requests. 
+Up until now, we've seen Lustre applications constructed with the `lustre.simple`
+constructor. These kinds of applications are great for introducing the Model-View-Update
+(MVU) pattern, but for most real-world applications we'll need a way to talk to
+the outside world.
 
-For this, Lustre provides an `Effect` system. You should [read the docs on Lustre Effects](https://hexdocs.pm/lustre/4.0.0-rc1/lustre/effect.html) before continuing here. 
+Lustre's runtime includes _managed effects_, which allow us to perform side effects
+like HTTP requests and communicate the results back to our application's `update`
+function. To learn more about Lustre's effect system and why it's useful, check
+out the [side effects guide](https://hexdocs.pm/lustre/guide/side-effects.html),
+or the docs for the [lustre/effect module](https://hexdocs.pm/lustre/lustre/effect.html)
+For now, we will focus on how to send HTTP requests in a Lustre application: a
+pretty important thing to know!
 
-... did you read the docs? Ok, let's move on!
+## Moving on from `lustre.simple`
 
-## The #(model, effect) Tuple
-You'll notice that running a Lustre app with side effects _changes the signature_ of our [`init`](src/app.gleam#L43) and [`update`](src/app.gleam#L54) functions. Instead of returning just a model, we return a tuple containing both a model and an `Effect(Msg)` value. The effect value specifies any further updates we might want the Lustre runtime to execute before the next invocation of the `view` function.
+From now on, the rest of these examples will use a different application constructor:
+[`lustre.application`]. Let's compare the type of both functions:
 
 ```gleam
-fn init(_) -> #(Model, Effect(Msg)) {
-  #(Model(quote: None), effect.none())
-}
+pub fn simple(
+  init: fn(flags) -> model,
+  update: fn(model, msg) -> model,
+  view: fn(model) -> Element(msg),
+) -> App(flags, model, msg)
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
-    Refresh -> #(model, get_quote())
-    GotQuote(Ok(quote)) -> #(Model(quote: Some(quote)), effect.none())
-    GotQuote(Error(_)) -> #(model, effect.none())
-  }
-}
-
-fn get_quote() -> Effect(Msg) { ... }
+pub fn application(
+  init: fn(flags) -> #(model, Effect(msg)),
+  update: fn(model, msg) -> #(model, Effect(msg)),
+  view: fn(model) -> Element(msg),
+) -> App(flags, model, msg)
 ```
 
-> **Note:** Even in an app with side effects, the `view` function signature does not change. In Lustre, the view function is always [pure](https://en.wikipedia.org/wiki/Pure_function), accepting only a `Model` and returning only an `Element` without triggering any effects itself.
+All that's changed is the return type of our `init` and `update` functions. Instead
+of returning just a new model, they now return a tuple containing both a model and
+any side effects we want the runtime to perform.
 
-## HTTP Requests are Effects
+You'll notice that running a Lustre app with side effects _changes the signature_
+of our [`init`](src/app.gleam#L43) and [`update`](src/app.gleam#L54) functions.
+Instead of returning just a model, we return a tuple containing both a model an
+an `Effect(Msg)` value. The effect value specifies any further updates we might
+want the Lustre runtime to execute before the next invocation of the `view`
+function.
 
-As we touched on before, an HTTP Request is a form of effect, because it means our program needs to interact with the outside world. 
+> **Note**: notice how the type of `view` remains the same. In Lustre, your `view`
+> is always a [_pure function_](https://en.wikipedia.org/wiki/Pure_function) that
+> takes a model and returns the UI to be rendered: we never perform side effects
+> in the `view` function itself.
 
-In this example, we use the great community library `lustre_http` to fetch a random quote whenever the user clicks the "New Quote" button. [Check out the lustre_http docs here.](https://hexdocs.pm/lustre_http/lustre_http.html)
+## HTTP requests as side effects
+
+The community library [`lustre_http`](https://hexdocs.pm/lustre_http/) gives us
+a way to model HTTP requests as Lustre `Effect`s. Crucially, when we call
+`lustre_http.get` we are _not_ performing the request! We're constructing a
+description of the side effect that we can hand off to the Lustre runtime to
+perform.
 
 ```gleam
 fn get_quote() -> Effect(Msg) {
@@ -53,8 +76,19 @@ fn get_quote() -> Effect(Msg) {
 }
 ```
 
-The `lustre_http.get(...)` function does a _lot_. That second parameter specifies not only what type of response to expect, but also how to decode it, what type to decode it _into_, as well as the `Msg` type that should be sent back to the Lustre runtime after it successfully executes.
+To construct HTTP requests, we need a few different things:
 
+- The `url` to send the request to.
+
+- A description of what we _expect_ the result to be. There are a few options:
+  `expect_anything`, `expect_text`, `expect_json`. In this example we say we're
+  expecting a JSON response and provide a decode.
+
+- A long with what we expect the response to be, we also need to provide a way
+  to turn that response into a `Msg` value that our `update` function can handle.
+
+The same applies for post requests too, but there you also need to provide the
+JSON body of the request.
 
 ## Getting help
 
