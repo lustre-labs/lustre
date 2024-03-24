@@ -1,11 +1,7 @@
-//// > **Note**: this is a _release candidate_ for v4.0.0 and documentation is still
-//// > a work in progress. If you spot an issue with docs or the library, or would
-//// > like to get involved, please [open an issue](https://github.com/lustre-labs/lustre/issues/new)
-//// > or a pull request.
-////
-//// > **Note**: while Lustre v4 is in release candidate status, server components
-//// > **will not reliably work on Gleam's JavaScript target**. Until this message
-//// > goes away, consider server components as being supported **only** on Erlang.
+//// > **Note**: server components are currently only supported on the **erlang**
+//// > target. If it's important to you that they work on the javascript target,
+//// > [open an issue](https://github.com/lustre-labs/lustre/issues/new) and tell
+//// > us why it's important to you!
 ////
 
 // IMPORTS ---------------------------------------------------------------------

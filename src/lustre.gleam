@@ -1,8 +1,3 @@
-//// > **Note**: this is a _release candidate_ for v4.0.0 and documentation is still
-//// > a work in progress. If you spot an issue with docs or the library, or would
-//// > like to get involved, please [open an issue](https://github.com/lustre-labs/lustre/issues/new)
-//// > or a pull request.
-////
 //// Lustre is a framework for rendering Web applications and components using
 //// Gleam. This module contains the core API for constructing and communicating
 //// with Lustre applications. If you're new to Lustre or frontend development in

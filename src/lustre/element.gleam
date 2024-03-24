@@ -1,8 +1,3 @@
-//// > **Note**: this is a _release candidate_ for v4.0.0 and documentation is still
-//// > a work in progress. If you spot an issue with docs or the library, or would
-//// > like to get involved, please [open an issue](https://github.com/lustre-labs/lustre/issues/new)
-//// > or a pull request.
-////
 //// Lustre wouldn't be much use as a frontend framework if it didn't provide a
 //// way to create HTML elements. This module contains the basic functions
 //// necessary to construct and manipulate different HTML elements.
@@ -238,10 +233,10 @@ pub fn to_string(element: Element(msg)) -> String {
 /// Converts an element to a string like [`to_string`](#to_string), but prepends
 /// a `<!doctype html>` declaration to the string. This is useful for rendering
 /// complete HTML documents.
-/// 
+///
 /// If the provided element is not an `html` element, it will be wrapped in both
-/// a `html` and `body` element. 
-/// 
+/// a `html` and `body` element.
+///
 pub fn to_document_string(el: Element(msg)) -> String {
   vdom.element_to_string(case el {
     Element(tag: "html", ..) -> el
@@ -266,10 +261,10 @@ pub fn to_string_builder(element: Element(msg)) -> StringBuilder {
 /// Converts an element to a `StringBuilder` like [`to_string_builder`](#to_string_builder),
 /// but prepends a `<!doctype html>` declaration. This is useful for rendering
 /// complete HTML documents.
-/// 
+///
 /// If the provided element is not an `html` element, it will be wrapped in both
-/// a `html` and `body` element. 
-/// 
+/// a `html` and `body` element.
+///
 pub fn to_document_string_builder(el: Element(msg)) -> StringBuilder {
   vdom.element_to_string_builder(case el {
     Element(tag: "html", ..) -> el
