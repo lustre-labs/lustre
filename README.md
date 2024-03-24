@@ -25,7 +25,7 @@
     </a>
     <span> | </span>
     -->
-    <a href="https://hexdocs.pm/lustre/4.0.0-rc.2/guide/01-quickstart.html">
+    <a href="https://hexdocs.pm/lustre/guide/01-quickstart.html">
       Quickstart
     </a>
     <span> | </span>
@@ -145,12 +145,15 @@ Lustre is published on [Hex](https://hex.pm/packages/lustre)! You can add it to
 your Gleam projects from the command line:
 
 ```sh
-$ gleam add lustre
+gleam add lustre
 ```
 
-> **Note**: this guide is written for Lustre v4, which is currently in release
-> candidate status. To follow along with this guide, you need to _manually_ edit
-> your `gleam.toml` and change the required version of lustre to `"4.0.0-rc.2"`.
+Lustre also has a companion package containing development tooling that you might
+like to isntall:
+
+```sh
+gleam add --dev lustre_dev_tools
+```
 
 If you're using a different build tool, like Rebar3 or Mix, you can add Lustre
 to your `rebar.config` or `mix.exs` file respectively.
@@ -171,7 +174,7 @@ end
 
 ## Where next
 
-To get up to speed with Lustre, check out the [quickstart guide](https://hexdocs.pm/lustre/4.0.0-rc1/guide/01-quickstart.html).
+To get up to speed with Lustre, check out the [quickstart guide](https://hexdocs.pm/lustre/guide/01-quickstart.html).
 If you prefer to see some code, the [examples](https://github.com/lustre-labs/lustre/tree/main/examples)
 directory contains a handful of small applications that demonstrate different
 aspects of the framework.
