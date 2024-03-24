@@ -36,12 +36,8 @@ runtime. Some of Lustre's core features include:
 To get started, let's create a new Gleam application and add Lustre as a dependency.
 
 ```sh
-$ gleam new app && cd app && gleam add lustre
+gleam new app && cd app && gleam add lustre
 ```
-
-> **Note**: this guide is written for Lustre v4. The latest stable release of
-> Lustre is v3. To follow along with this guide, you need to _manually_ edit your
-> `gleam.toml` and change the required version of lustre to `"4.0.0-rc.2"`.
 
 By default, Gleam builds projects for the Erlang target unless told otherwise. We
 can change this by adding a `target` field to the `gleam.toml` file generated in
@@ -71,11 +67,21 @@ pub fn main() {
 }
 ```
 
-Lustre includes tooling like a server to serve your application in development.
-You can start that server by running:
+Lustre has some official development tooling published in the
+[`lustre_dev_tools`](https://hexdocs.pm/lustre_dev_tools/) package. Most projects
+will probably want to add those too!
 
 ```sh
-$ gleam run -m lustre dev
+gleam add --dev lustre_dev_tools
+```
+
+It's important to make sure the development tooling is added as a `--dev`
+dependency. This ensures they're never included in production builds of your app.
+
+To start a development server, we can run:
+
+```sh
+gleam run -m lustre/dev start
 ```
 
 The first time you run this command might take a little while, but subsequent runs
@@ -373,11 +379,11 @@ how you like to learn:
   if the Lustre repository that gradually introduce more complex applications
   and ideas.
 
-- The [rest of this guide](./02-state-management) also continues to teach
+- The [rest of this guide](./02-state-management.html) also continues to teach
   Lustre's high-level concepts and best-practices.
 
 - If you're coming from LiveView or have heard about Lustre's server components
-  and want to learn more, you can skip to the [server components](./05-server-components)
+  and want to learn more, you can skip to the [server components](./05-server-components.html)
   section of the guide to learn about how to run Lustre applications on the backend.
 
 - Of course, if you want to dive in and start making things straight away, the

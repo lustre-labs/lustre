@@ -59,7 +59,7 @@ to get used to, but it brings a number of benefits:
   history of state updates and can be serialised and logged for debugging or
   testing purposes.
 
-- State updates are **pure**. We will learn more about this in the [next guide](./03-side-effects),
+- State updates are **pure**. We will learn more about this in the [next guide](./03-side-effects.html),
   but for now it is enough to know that this means testing your state changes is
   much easier because mocking messages is simpler than mocking side effects!
 
