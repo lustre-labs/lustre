@@ -12,7 +12,9 @@ jobs:
       - uses: erlef/setup-beam@v1.16.0
         with:
           otp-version: "26.0.2"
+          rebar3-version: "3"
           gleam-version: "1.0.0"
+
       - run: cargo install tomlq
       - run: |
           if [ "v$(tomlq version -f gleam.toml)" == "${{ github.ref_name }}" ]; then
