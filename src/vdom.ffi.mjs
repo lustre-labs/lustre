@@ -46,7 +46,7 @@ export function morph(prev, curr, dispatch, parent) {
       "function should only be called internally by lustre's runtime: if you think",
       "this is an error, please open an issue at",
       "https://github.com/hayleigh-dot-dev/gleam-lustre/issues/new",
-    ].join(" ")
+    ].join(" "),
   );
 }
 
@@ -190,7 +190,7 @@ function morphElement(prev, curr, dispatch, parent) {
     ) {
       currAttrs.set(
         currAttr[0],
-        `${currAttrs.get("dangerous-unescaped-html")} ${currAttr[1]}`
+        `${currAttrs.get("dangerous-unescaped-html")} ${currAttr[1]}`,
       );
     } else if (currAttr[0] !== "") {
       currAttrs.set(currAttr[0], currAttr[1]);
@@ -387,20 +387,23 @@ function serverEventHandler(event) {
 
   return {
     tag,
-    data: include.reduce((data, property) => {
-      const path = property.split(".");
+    data: include.reduce(
+      (data, property) => {
+        const path = property.split(".");
 
-      for (let i = 0, o = data, e = event; i < path.length; i++) {
-        if (i === path.length - 1) {
-          o[path[i]] = e[path[i]];
-        } else {
-          o[path[i]] ??= {};
-          e = e[path[i]];
-          o = o[path[i]];
+        for (let i = 0, o = data, e = event; i < path.length; i++) {
+          if (i === path.length - 1) {
+            o[path[i]] = e[path[i]];
+          } else {
+            o[path[i]] ??= {};
+            e = e[path[i]];
+            o = o[path[i]];
+          }
         }
-      }
 
-      return data;
-    }, data),
+        return data;
+      },
+      { data },
+    ),
   };
 }
