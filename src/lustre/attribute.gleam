@@ -11,16 +11,28 @@ import lustre/internals/vdom.{Attribute, Event}
 
 /// The `Attribute` type encompasses HTML attributes, DOM properties, and
 /// event listeners.
+///
 pub type Attribute(msg) =
   vdom.Attribute(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
+/// Create an HTML attribute. This is like saying `element.setAttribute("class", "wibble")`
+/// in JavaScript. Attributes will be rendered when calling [`element.to_string`](./element.html#to_string).
+///
+/// **Note**: there is a subtle difference between attributes and properties. You
+/// can read more about the implications of this [here](https://javascript.info/dom-attributes-and-properties).
 ///
 pub fn attribute(name: String, value: String) -> Attribute(msg) {
   Attribute(name, dynamic.from(value), as_property: False)
 }
 
+/// Create a DOM property. This is like saying `element.className = "wibble"` in
+/// JavaScript. Properties will be **not** be rendered when calling
+/// [`element.to_string`](./element.html#to_string).
+///
+/// **Note**: there is a subtle difference between attributes and properties. You
+/// can read more about the implications of this [here](https://javascript.info/dom-attributes-and-properties).
 ///
 pub fn property(name: String, value: any) -> Attribute(msg) {
   Attribute(name, dynamic.from(value), as_property: True)
@@ -31,6 +43,9 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
   Event("on" <> name, handler)
 }
 
+/// Create an empty attribute. This is not added to the DOM and not rendered when
+/// calling [`element.to_string`](./element.html#to_string), but it is useful for
+/// _conditionally_ adding attributes to an element.
 ///
 pub fn none() -> Attribute(msg) {
   class("")
