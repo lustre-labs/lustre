@@ -17,7 +17,7 @@ packages = [
   { name = "glearray", version = "0.2.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "glearray", source = "hex", outer_checksum = "908154F695D330E06A37FAB2C04119E8F315D643206F8F32B6A6C14A8709FFF4" },
   { name = "gleeunit", version = "1.0.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "D364C87AFEB26BDB4FB8A5ABDE67D635DC9FA52D6AB68416044C35B096C6882D" },
   { name = "glint", version = "0.18.0", build_tools = ["gleam"], requirements = ["gleam_community_ansi", "gleam_community_colour", "gleam_stdlib", "snag"], otp_app = "glint", source = "hex", outer_checksum = "BB0F14643CC51C069A5DC6E9082EAFCD9967AFD1C9CC408803D1A40A3FD43B54" },
-  { name = "lustre", version = "4.0.0-rc.2", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_json", "gleam_otp", "gleam_stdlib"], source = "local", path = "../.." },
+  { name = "lustre", version = "4.0.0", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_json", "gleam_otp", "gleam_stdlib"], otp_app = "lustre", source = "hex", outer_checksum = "1D40C1378279F7015687F8C9DB739D6880BB0B843F4428B85C61EDDA8BF21FC6" },
   { name = "lustre_dev_tools", version = "1.0.0", build_tools = ["gleam"], requirements = ["argv", "filepath", "gleam_community_ansi", "gleam_erlang", "gleam_json", "gleam_otp", "gleam_package_interface", "gleam_stdlib", "glint", "simplifile", "spinner", "tom"], otp_app = "lustre_dev_tools", source = "hex", outer_checksum = "66142ADDCA3D6C63A89E016CF6C21E07D06D6DC92479325182A07C360BD026D3" },
   { name = "lustre_http", version = "0.5.2", build_tools = ["gleam"], requirements = ["gleam_fetch", "gleam_http", "gleam_javascript", "gleam_json", "gleam_stdlib", "lustre"], otp_app = "lustre_http", source = "hex", outer_checksum = "FB0478CBFA6B16DBE8ECA326DAE2EC15645E04900595EF2C4F039ABFA0512ABA" },
   { name = "lustre_ui", version = "0.5.0", build_tools = ["gleam"], requirements = ["gleam_community_colour", "gleam_json", "gleam_stdlib", "lustre"], otp_app = "lustre_ui", source = "hex", outer_checksum = "7ECB5414BE926082401891C62FAAA21221FC0B7A2F0568A492349F48DC2B02A0" },
@@ -30,9 +30,9 @@ packages = [
 ]
 
 [requirements]
-gleam_stdlib = { version = "~> 0.34 or ~> 1.0" }
+gleam_stdlib = { version = "~> 0.36" }
 gleeunit = { version = "~> 1.0" }
-lustre = { path = "../../" }
-lustre_dev_tools = { version = "~> 1.0"}
+lustre = { version = "~> 4.0" }
+lustre_dev_tools = { version = "~> 1.0" }
 lustre_http = { version = "~> 0.5.2" }
 lustre_ui = { version = "~> 0.4" }

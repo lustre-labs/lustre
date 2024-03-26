@@ -10,11 +10,11 @@ version = "1.0.0"
 # links = [{ title = "Website", href = "https://gleam.run" }]
 #
 # For a full reference of all the available options, you can have a look at
-# https://gleam.run/writing-gleam/gleam-toml/. 
+# https://gleam.run/writing-gleam/gleam-toml/.
 
 [dependencies]
-gleam_stdlib = "~> 0.34 or ~> 1.0"
-lustre = { path = "../../" }
+gleam_stdlib = "~> 0.36"
+lustre = "~> 4.0"
 mist = "~> 0.17"
 gleam_erlang = "~> 0.24"
 gleam_otp = "~> 0.10"
