@@ -7,22 +7,14 @@ repository = { type = "github", user = "lustre-labs", repo = "lustre" }
 licences = ["MIT"]
 
 links = [
-  # { title = "Website", href = "https://lustre.build" },
   { title = "Examples", href = "https://github.com/lustre-labs/lustre/tree/main/examples" },
   { title = "Sponsor", href = "https://github.com/sponsors/hayleigh-dot-dev" },
 ]
 
-internal_modules = [
-  "lustre/cli",
-  "lustre/cli/*",
-  "lustre/internals",
-  "lustre/internals/*",
-]
+internal_modules = ["lustre/internals", "lustre/internals/*"]
 
 [documentation]
 pages = [
-  { title = "CLI reference", path = "cli.html", source = "./pages/reference/cli.md" },
-  { title = " ", path = "#", source = "" },
   { title = "Quickstart guide", path = "guide/01-quickstart.html", source = "./pages/guide/01-quickstart.md" },
   { title = "Managing state", path = "guide/02-state-management.html", source = "./pages/guide/02-state-management.md" },
   # { title = "Side effects", path = "#", source = "" },
@@ -43,7 +35,7 @@ pages = [
 gleam_erlang = "~> 0.24"
 gleam_json = "~> 1.0"
 gleam_otp = "~> 0.9"
-gleam_stdlib = "~> 0.34 or ~> 1.0"
+gleam_stdlib = "~> 0.36"
 
 [dev-dependencies]
 birdie = "~> 1.0"
