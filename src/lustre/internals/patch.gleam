@@ -97,13 +97,13 @@ fn do_elements(
         // the case, we can dif their attributes to see what (if anything) has
         // changed, and then recursively diff their children.
         Element(old_ns, old_tag, old_attrs, old_children, _, _), Element(
-          new_ns,
-          new_tag,
-          new_attrs,
-          new_children,
-          _,
-          _,
-        ) if old_ns == new_ns && old_tag == new_tag -> {
+            new_ns,
+            new_tag,
+            new_attrs,
+            new_children,
+            _,
+            _,
+          ) if old_ns == new_ns && old_tag == new_tag -> {
           let attribute_diff = attributes(old_attrs, new_attrs)
           let handlers = {
             use handlers, name, handler <- dict.fold(
@@ -301,8 +301,8 @@ fn attribute_dict(
           let classes =
             dynamic.from(
               dynamic.unsafe_coerce(classes)
-                <> " "
-                <> dynamic.unsafe_coerce(value),
+              <> " "
+              <> dynamic.unsafe_coerce(value),
             )
           dict.insert(dict, "class", Attribute("class", classes, False))
         }
