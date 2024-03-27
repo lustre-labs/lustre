@@ -123,12 +123,42 @@ A recursive update function makes it difficult to see the consequences of any on
 message as you need to trace through the recursive calls in your head to understand
 which messages are being dispatched and in what order.
 
-It is important to note that on occasion, framing messages as actions _does_ make
-more sense. In the [interactivity example](https://github.com/lustre-labs/lustre/tree/main/examples/02-interactivity)
-we have messages like `Incr` and `Decr`. These messages don't get any clearer if
-we opt for a name like `IncrButtonClicked` but as the examples grow in complexity,
-such as the [HTTP example](https://github.com/lustre-labs/lustre/tree/main/examples/05-http-requests),
-message names tend to be more descriptive – `GotMessage` – and less action-oriented.
+Instead, we recommend you name your messages according to a **Subject Verb Object**
+pattern. This frames messages based on who (or what) sent them, what state or
+"thing" they're working on, and what they did or want to do. Imagine a password
+reset form, the user can type in a new password and submit it and our app waits
+for a response. As a first-pass we might end up with something like this:
+
+```gleam
+type Msg {
+  SetPassword(String)
+  ResetPassword
+  PasswordReset(Result(Nil, String))
+}
+```
+
+This is quite muddled, and is compounded as we add more messages to our app
+(especially if they also relate to the password!). It's hard to tell from looking
+at our messages what our app might _really_ be doing: we'd have to dig into our
+`update` function and possibly our `view` to work out what our intent was. One
+super power of the MVU pattern is that we can look at our messages to get a
+holistic view of what our app can handle. Things become much clearer if we refactor
+this example to the Subject Verb Object naming pattern:
+
+```gleam
+type Msg {
+  UserUpdatedPassword(String)
+  UserRequestPasswordReset
+  BackendResetPassword(Result(Nil, String))
+}
+```
+
+It's now immediately obvious at a glance:
+
+1. Where these messages are coming from (user interaction, the network, ...)
+2. What sort of event or intention they represent
+
+As our apps grow in size, we'll be thankful for this clarity!
 
 ## View functions not components
 
@@ -199,12 +229,16 @@ there are some tangible benefits to this approach:
   thinking "wow, this is a lot of boilerplate just to do X" then listen to your
   gut!
 
+## Related examples
+
+If you'd like to see some of the ideas in action, we have a number of examples
+that demonstrate how to use Lustre in practice:
+
+- [`02-interactivity`](https://github.com/lustre-labs/lustre/tree/main/examples/02-interactivity)
+- [`03-controlled-inputs`](https://github.com/lustre-labs/lustre/tree/main/examples/03-controlled-inputs)
+
 ## Getting help
 
 If you're having trouble with Lustre or not sure what the right way to do
 something is, the best place to get help is the [Gleam Discord server](https://discord.gg/Fm8Pwmy).
 You could also open an issue on the [Lustre GitHub repository](https://github.com/lustre-labs/lustre/issues).
-
-While our docs are still a work in progress, the official [Elm guide](https://guide.elm-lang.org)
-is also a great resource for learning about the Model-View-Update architecture
-and the kinds of patterns that Lustre is built around.
