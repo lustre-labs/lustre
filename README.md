@@ -15,6 +15,10 @@
     <img src="https://img.shields.io/hexpm/v/lustre"
       alt="Available on Hex" />
   </a>
+  <a href="https://hexdocs.pm/lustre">
+    <img src="https://img.shields.io/badge/hex-docs-ffaff3"
+      alt="Documentation" />
+  </a>
 </div>
 
 <div align="center">
