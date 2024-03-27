@@ -1,0 +1,14 @@
+name = "app"
+version = "1.0.0"
+target = "javascript"
+
+[dependencies]
+gleam_stdlib = "~> 0.36"
+lustre = "~> 4.0"
+lustre_ui = "~> 0.4"
+lustre_http = "~> 0.5.2"
+modem = "~> 1.0"
+
+[dev-dependencies]
+gleeunit = "~> 1.0"
+lustre_dev_tools = "~> 1.0"
