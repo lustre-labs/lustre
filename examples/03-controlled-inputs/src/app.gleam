@@ -35,13 +35,13 @@ fn init(_) -> Model {
 // UPDATE ----------------------------------------------------------------------
 
 pub opaque type Msg {
-  GotInput(value: String)
-  Reset
+  UserUpdatedMessage(value: String)
+  UserResetMessage
 }
 
 fn update(model: Model, msg: Msg) -> Model {
   case msg {
-    GotInput(value) -> {
+    UserUpdatedMessage(value) -> {
       let length = string.length(value)
 
       case length <= model.max {
@@ -49,7 +49,7 @@ fn update(model: Model, msg: Msg) -> Model {
         False -> model
       }
     }
-    Reset -> Model(..model, value: "", length: 0)
+    UserResetMessage -> Model(..model, value: "", length: 0)
   }
 }
 
@@ -67,10 +67,13 @@ fn view(model: Model) -> Element(Msg) {
       ui.field(
         [],
         [element.text("Write a message:")],
-        ui.input([attribute.value(model.value), event.on_input(GotInput)]),
+        ui.input([
+          attribute.value(model.value),
+          event.on_input(UserUpdatedMessage),
+        ]),
         [element.text(length <> "/" <> max)],
       ),
-      ui.button([event.on_click(Reset)], [element.text("Reset")]),
+      ui.button([event.on_click(UserResetMessage)], [element.text("Reset")]),
     ),
   )
 }

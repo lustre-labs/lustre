@@ -45,15 +45,15 @@ fn init(_) -> #(Model, Effect(Msg)) {
 // UPDATE ----------------------------------------------------------------------
 
 pub opaque type Msg {
-  Refresh
-  GotQuote(Result(Quote, HttpError))
+  UserClickedRefresh
+  ApiUpdatedQuote(Result(Quote, HttpError))
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
-    Refresh -> #(model, get_quote())
-    GotQuote(Ok(quote)) -> #(Model(quote: Some(quote)), effect.none())
-    GotQuote(Error(_)) -> #(model, effect.none())
+    UserClickedRefresh -> #(model, get_quote())
+    ApiUpdatedQuote(Ok(quote)) -> #(Model(quote: Some(quote)), effect.none())
+    ApiUpdatedQuote(Error(_)) -> #(model, effect.none())
   }
 }
 
@@ -66,7 +66,7 @@ fn get_quote() -> Effect(Msg) {
       dynamic.field("content", dynamic.string),
     )
 
-  lustre_http.get(url, lustre_http.expect_json(decoder, GotQuote))
+  lustre_http.get(url, lustre_http.expect_json(decoder, ApiUpdatedQuote))
 }
 
 // VIEW ------------------------------------------------------------------------
@@ -79,7 +79,9 @@ fn view(model: Model) -> Element(Msg) {
     ui.aside(
       [aside.min_width(70), attribute.style([#("width", "60ch")])],
       view_quote(model.quote),
-      ui.button([event.on_click(Refresh)], [element.text("New quote")]),
+      ui.button([event.on_click(UserClickedRefresh)], [
+        element.text("New quote"),
+      ]),
     ),
   )
 }

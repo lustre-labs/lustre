@@ -18,8 +18,9 @@ two things:
 ui.input([
   // Input's value is fixed to the model's `value` field
   attribute.value(model.value),
-  // Whenever the input changes, we send a `GotInput` message with the new value
-  event.on_input(GotInput)
+  // Whenever the input changes, we send a `UserUpdatedMessage` message with the
+  // new value
+  event.on_input(UserUpdatedMessage)
 ])
 ```
 
@@ -36,7 +37,7 @@ value is less than 10 characters long.
 
 ```gleam
 case msg {
-  GotInput(value) -> {
+  UserUpdatedMessage(value) -> {
     let length = string.length(value)
 
     case length <= model.max {
@@ -47,6 +48,20 @@ case msg {
 
   ...
 ```
+
+## A note on message naming
+
+In our [state management guide](https://hexdocs.pm/lustre/guide/02-state-management.html)
+we touch on the idea of "messages not actions." We think the best way to name your
+messages is following a "Subject Verb Object" pattern: `UserUpdatedMessage` not
+`SetMessage` and so on.
+
+This approach to message naming can feel a cumbersome at first, especially for
+small examples like this. One of Lustre's super powers is that as your app grows
+in size, your `Msg` type becomes a very helpful overview of all the different
+events your app can handle. When they take the form of `Subject Verb Object` it
+gives you an immediate sense of the different things that speak to your app: how
+much is coming from your backend, how much is user input, and so on.
 
 ## Getting help
 

@@ -28,34 +28,34 @@ type Model {
 }
 
 fn init(_) -> #(Model, Effect(Msg)) {
-  #(Model(message: None), read_localstorage("message", GotMessage))
+  #(Model(message: None), read_localstorage("message"))
 }
 
 // UPDATE ----------------------------------------------------------------------
 
 pub opaque type Msg {
-  GotInput(String)
-  GotMessage(Result(String, Nil))
+  UserUpdatedMessage(String)
+  CacheUpdatedMessage(Result(String, Nil))
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
-    GotInput(input) -> #(
+    UserUpdatedMessage(input) -> #(
       Model(message: Some(input)),
       write_localstorage("message", input),
     )
-    GotMessage(Ok(message)) -> #(Model(message: Some(message)), effect.none())
-    GotMessage(Error(_)) -> #(model, effect.none())
+    CacheUpdatedMessage(Ok(message)) -> #(
+      Model(message: Some(message)),
+      effect.none(),
+    )
+    CacheUpdatedMessage(Error(_)) -> #(model, effect.none())
   }
 }
 
-fn read_localstorage(
-  key: String,
-  to_msg: fn(Result(String, Nil)) -> msg,
-) -> Effect(msg) {
+fn read_localstorage(key: String) -> Effect(Msg) {
   effect.from(fn(dispatch) {
     do_read_localstorage(key)
-    |> to_msg
+    |> CacheUpdatedMessage
     |> dispatch
   })
 }
@@ -85,7 +85,7 @@ fn view(model: Model) -> Element(Msg) {
     ui.field(
       [],
       [],
-      ui.input([attribute.value(message), event.on_input(GotInput)]),
+      ui.input([attribute.value(message), event.on_input(UserUpdatedMessage)]),
       [element.text("Type a message and refresh the page")],
     ),
   )

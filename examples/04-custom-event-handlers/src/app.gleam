@@ -37,20 +37,20 @@ fn init(_) -> Model {
 // UPDATE ----------------------------------------------------------------------
 
 pub opaque type Msg {
-  GotInput(value: String)
-  Reset
+  UserUpdatedMessage(value: String)
+  UserResetMessage
 }
 
 fn update(model: Model, msg: Msg) -> Model {
   case msg {
-    GotInput(value) -> {
+    UserUpdatedMessage(value) -> {
       let length = string.length(value)
       case length <= model.max {
         True -> Model(..model, value: value, length: length)
         False -> model
       }
     }
-    Reset -> Model(..model, value: "", length: 0)
+    UserResetMessage -> Model(..model, value: "", length: 0)
   }
 }
 
@@ -66,7 +66,7 @@ fn view(model: Model) -> Element(Msg) {
 
     let loud = string.uppercase(value)
 
-    Ok(GotInput(loud))
+    Ok(UserUpdatedMessage(loud))
   }
 
   ui.centre(
@@ -79,7 +79,7 @@ fn view(model: Model) -> Element(Msg) {
         ui.input([attribute.value(model.value), event.on("input", make_it_loud)]),
         [element.text(length <> "/" <> max)],
       ),
-      ui.button([event.on_click(Reset)], [element.text("Reset")]),
+      ui.button([event.on_click(UserResetMessage)], [element.text("Reset")]),
     ),
   )
 }

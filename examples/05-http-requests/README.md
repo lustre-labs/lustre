@@ -2,25 +2,28 @@
 
 # 05 HTTP Requests
 
-Up until now, all the logic in our examples has run neatly in a self-contained `Init -> Update 🔁 View` loop. But our applications often need to interact with the outside world, whether through browser APIs or HTTP requests.
-
-Up until now, we've seen Lustre applications constructed with the `lustre.simple`
-constructor. These kinds of applications are great for introducing the Model-View-Update
-(MVU) pattern, but for most real-world applications we'll need a way to talk to
-the outside world.
+In the previous examples, we've seen Lustre applications constructed with the
+[`lustre.simple`](https://hexdocs.pm/lustre/lustre.html#simple) constructor.
+These kinds of applications are great for introducing the Model-View-Update (MVU)
+pattern, but for most real-world applications we'll need a way to talk to the
+outside world.
 
 Lustre's runtime includes _managed effects_, which allow us to perform side effects
 like HTTP requests and communicate the results back to our application's `update`
 function. To learn more about Lustre's effect system and why it's useful, check
 out the [side effects guide](https://hexdocs.pm/lustre/guide/side-effects.html),
-or the docs for the [lustre/effect module](https://hexdocs.pm/lustre/lustre/effect.html)
-For now, we will focus on how to send HTTP requests in a Lustre application: a
-pretty important thing to know!
+or the docs for the [`lustre/effect` module](https://hexdocs.pm/lustre/lustre/effect.html).
+
+This example is a practical look at what effects mean in Lustre, and we'll look
+at how to send HTTP requests in a Lustre application: a pretty important thing to
+know!
 
 ## Moving on from `lustre.simple`
 
-From now on, the rest of these examples will use a different application constructor:
-[`lustre.application`]. Let's compare the type of both functions:
+From this example onwards, we will use a new application constructor:
+[`lustre.application`](https://hexdocs.pm/lustre/lustre.html#application). Full Lustre
+applications have the ability to communicate to the runtime. Let's compare the type
+of both the `simple` and `application` functions:
 
 ```gleam
 pub fn simple(
@@ -70,7 +73,7 @@ fn get_quote() -> Effect(Msg) {
       dynamic.field("content", dynamic.string),
     )
 
-  lustre_http.get(url, lustre_http.expect_json(decoder, GotQuote))
+  lustre_http.get(url, lustre_http.expect_json(decoder, ApiUpdatedQuote))
 }
 ```
 
@@ -80,20 +83,55 @@ To construct HTTP requests, we need a few different things:
 
 - A description of what we _expect_ the result to be. There are a few options:
   `expect_anything`, `expect_text`, `expect_json`. In this example we say we're
-  expecting a JSON response and provide a decode.
+  expecting a JSON response and provide a decoder.
 
-- A long with what we expect the response to be, we also need to provide a way
+- Along with what we expect the response to be, we also need to provide a way
   to turn that response into a `Msg` value that our `update` function can handle.
 
 The same applies for post requests too, but there you also need to provide the
 JSON body of the request.
+
+## Tying it together
+
+We now have a function that can create an `Effect` for us, but we need to hand it
+to the runtime to be executed. The only way we can do that is by returning it from
+our `update` (or `init`) function! We attach an event listener on a button, and
+when the user clicks that button we'll return the `Effect` we want to perform as
+the second element of a tuple:
+
+```gleam
+fn view(model: Model) -> Element(Msg) {
+  ui.centre([],
+    ui.button([event.on_click(UserClickedRefresh)], [
+      element.text("New quote"),
+    ]),
+  )
+}
+
+fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
+  case msg {
+    UserClickedRefresh -> #(model, get_quote())
+    ...
+  }
+}
+```
+
+Of course, we need to handle responses from the quote API in our `update` function
+too. When there are no side effects we want the runtime to perform for us, we need
+to call `effect.none()`:
+
+```gleam
+fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
+  case msg {
+    ...
+    ApiUpdatedQuote(Ok(quote)) -> #(Model(quote: Some(quote)), effect.none())
+    ApiUpdatedQuote(Error(_)) -> #(model, effect.none())
+  }
+}
+```
 
 ## Getting help
 
 If you're having trouble with Lustre or not sure what the right way to do
 something is, the best place to get help is the [Gleam Discord server](https://discord.gg/Fm8Pwmy).
 You could also open an issue on the [Lustre GitHub repository](https://github.com/lustre-labs/lustre/issues).
-
-While our docs are still a work in progress, the official [Elm guide](https://guide.elm-lang.org)
-is also a great resource for learning about the Model-View-Update architecture
-and the kinds of patterns that Lustre is built around.
