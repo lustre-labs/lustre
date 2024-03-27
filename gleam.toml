@@ -7,7 +7,6 @@ repository = { type = "github", user = "lustre-labs", repo = "lustre" }
 licences = ["MIT"]
 
 links = [
-  { title = "Examples", href = "https://github.com/lustre-labs/lustre/tree/main/examples" },
   { title = "Sponsor", href = "https://github.com/sponsors/hayleigh-dot-dev" },
 ]
 
@@ -15,6 +14,8 @@ internal_modules = ["lustre/internals", "lustre/internals/*"]
 
 [documentation]
 pages = [
+  { title = "Examples directory", path = "reference/examples.html", source = "./pages/reference/examples.md" },
+  { title = " ", path = "#", source = "" },
   { title = "Quickstart guide", path = "guide/01-quickstart.html", source = "./pages/guide/01-quickstart.md" },
   { title = "Managing state", path = "guide/02-state-management.html", source = "./pages/guide/02-state-management.md" },
   # { title = "Side effects", path = "#", source = "" },
