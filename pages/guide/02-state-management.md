@@ -1,6 +1,6 @@
 # 02 State management
 
-We saw in the qucikstart guide that all Lustre applications are built around the
+We saw in the quickstart guide that all Lustre applications are built around the
 Model-View-Update (MVU) architecture. This means that the state of the application
 is stored in a single, immutable data structure called the model, and updated as
 messages are dispatched to the runtime.
@@ -54,7 +54,7 @@ to get used to, but it brings a number of benefits:
   application. State management is lifted _out_ of UI code, letting it focus just
   on presentation and making it easier to test and refactor.
 
-- Message-driven **declarative state updates** give you a hollistic view of how
+- Message-driven **declarative state updates** give you a holistic view of how
   your application can change over time. Tracking incoming messages gives you a
   history of state updates and can be serialised and logged for debugging or
   testing purposes.
@@ -212,7 +212,7 @@ there are some tangible benefits to this approach:
   Imagine you have a table component with tabs to switch between different views.
   If some time in the future you decide to pull the tabs out so they can be
   rendered elsewhere on the page you'll discover that the tabs' state was tightly
-  couple to the table. Now we are forced to refactor the table component so the
+  coupled to the table. Now we are forced to refactor the table component so the
   tab state can be passed in as an attribute. We'll also need to refactor the
   _parent_ to contain the state of the tabs so it can be passed down to both
   components.
