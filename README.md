@@ -153,7 +153,7 @@ gleam add lustre
 ```
 
 Lustre also has a companion package containing development tooling that you might
-like to isntall:
+like to install:
 
 ```sh
 gleam add --dev lustre_dev_tools
