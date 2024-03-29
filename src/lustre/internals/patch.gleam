@@ -142,6 +142,8 @@ fn do_elements(
             created: dict.insert(diff.created, key, new),
             handlers: fold_event_handlers(diff.handlers, new, key),
           )
+
+        _, _ -> todo
       }
     }
   }
@@ -365,6 +367,7 @@ fn fold_event_handlers(
 
       fold_event_handlers(handlers, child, key)
     }
+    _ -> todo
   }
 }
 

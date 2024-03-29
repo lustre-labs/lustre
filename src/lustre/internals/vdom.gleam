@@ -20,6 +20,15 @@ pub type Element(msg) {
     self_closing: Bool,
     void: Bool,
   )
+  Keyed(
+    key: String,
+    namespace: String,
+    tag: String,
+    attrs: List(Attribute(msg)),
+    children: List(Element(msg)),
+    self_closing: Bool,
+    void: Bool,
+  )
   // The lambda here defers the creation of the mapped subtree until it is necessary.
   // This means we pay the cost of mapping multiple times only *once* during rendering.
   Map(subtree: fn() -> Element(msg))
@@ -44,7 +53,7 @@ fn do_handlers(
   case element {
     Text(_) -> handlers
     Map(subtree) -> do_handlers(subtree(), handlers, key)
-    Element(_, _, attrs, children, _, _) -> {
+    Keyed(_, _, _, attrs, children, _, _) | Element(_, _, attrs, children, _, _) -> {
       let handlers =
         list.fold(attrs, handlers, fn(handlers, attr) {
           case attribute_to_event_handler(attr) {
@@ -71,7 +80,8 @@ fn do_element_to_json(element: Element(msg), key: String) -> Json {
   case element {
     Text(content) -> json.object([#("content", json.string(content))])
     Map(subtree) -> do_element_to_json(subtree(), key)
-    Element(namespace, tag, attrs, children, self_closing, void) -> {
+    Keyed(_, namespace, tag, attrs, children, self_closing, void)
+    | Element(namespace, tag, attrs, children, self_closing, void) -> {
       let attrs =
         json.preprocessed_array({
           attrs
@@ -177,7 +187,8 @@ fn do_element_to_string_builder(
 
     Map(subtree) -> do_element_to_string_builder(subtree(), raw_text)
 
-    Element(namespace, tag, attrs, _, self_closing, _) if self_closing -> {
+    Keyed(_, namespace, tag, attrs, _, self_closing, _)
+      | Element(namespace, tag, attrs, _, self_closing, _) if self_closing -> {
       let html = string_builder.from_string("<" <> tag)
       let #(attrs, _) =
         attributes_to_string_builder(case namespace {
@@ -190,7 +201,8 @@ fn do_element_to_string_builder(
       |> string_builder.append("/>")
     }
 
-    Element(namespace, tag, attrs, _, _, void) if void -> {
+    Keyed(_, namespace, tag, attrs, _, _, void)
+      | Element(namespace, tag, attrs, _, _, void) if void -> {
       let html = string_builder.from_string("<" <> tag)
       let #(attrs, _) =
         attributes_to_string_builder(case namespace {
@@ -217,7 +229,8 @@ fn do_element_to_string_builder(
       |> string_builder.append("</" <> tag <> ">")
     }
 
-    Element(namespace, tag, attrs, children, _, _) -> {
+    Keyed(_, namespace, tag, attrs, children, _, _)
+    | Element(namespace, tag, attrs, children, _, _) -> {
       let html = string_builder.from_string("<" <> tag)
       let #(attrs, inner_html) =
         attributes_to_string_builder(case namespace {

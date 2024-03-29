@@ -12,7 +12,7 @@ import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
 import lustre/attribute.{type Attribute, attribute}
-import lustre/internals/vdom.{Element, Map, Text}
+import lustre/internals/vdom.{Element, Keyed, Map, Text}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -117,6 +117,19 @@ pub fn element(
   }
 }
 
+///
+///
+pub fn keyed(key: String, el: Element(msg)) -> Element(msg) {
+  case el {
+    Keyed(_, namespace, tag, attrs, children, self_closing, void) ->
+      Keyed(key, namespace, tag, attrs, children, self_closing, void)
+    Element(namespace, tag, attrs, children, self_closing, void) ->
+      Keyed(key, namespace, tag, attrs, children, self_closing, void)
+    Text(_) -> el
+    Map(subtree) -> Map(fn() { keyed(key, subtree()) })
+  }
+}
+
 /// A function for constructing elements in a specific XML namespace. This can
 /// be used to construct SVG or MathML elements, for example.
 ///
@@ -207,6 +220,18 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
     Element(namespace, tag, attrs, children, self_closing, void) ->
       Map(fn() {
         Element(
+          namespace: namespace,
+          tag: tag,
+          attrs: list.map(attrs, attribute.map(_, f)),
+          children: list.map(children, map(_, f)),
+          self_closing: self_closing,
+          void: void,
+        )
+      })
+    Keyed(key, namespace, tag, attrs, children, self_closing, void) ->
+      Map(fn() {
+        Keyed(
+          key: key,
           namespace: namespace,
           tag: tag,
           attrs: list.map(attrs, attribute.map(_, f)),
