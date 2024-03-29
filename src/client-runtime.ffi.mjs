@@ -8,6 +8,7 @@ export class LustreClientApplication {
   #queue = [];
   #effects = [];
   #didUpdate = false;
+  #isComponent = false;
 
   #model = null;
   #update = null;
@@ -25,13 +26,20 @@ export class LustreClientApplication {
     return new Ok((msg) => app.send(msg));
   }
 
-  constructor([model, effects], update, view, root = document.body) {
+  constructor(
+    [model, effects],
+    update,
+    view,
+    root = document.body,
+    isComponent = false,
+  ) {
     this.#model = model;
     this.#update = update;
     this.#view = view;
     this.#root = root;
     this.#effects = effects.all.toArray();
     this.#didUpdate = true;
+    this.#isComponent = isComponent;
 
     window.requestAnimationFrame(() => this.#tick());
   }
@@ -69,15 +77,16 @@ export class LustreClientApplication {
     this.#flush_queue();
 
     const vdom = this.#view(this.#model);
-
-    this.#didUpdate = false;
-    this.#root = morph(this.#root, vdom, (handler) => (e) => {
+    const dispatch = (handler) => (e) => {
       const result = handler(e);
 
       if (result.isOk()) {
         this.send(new Dispatch(result[0]));
       }
-    });
+    };
+
+    this.#didUpdate = false;
+    this.#root = morph(this.#root, vdom, dispatch, this.#isComponent);
   }
 
   #flush_queue(iterations = 0) {

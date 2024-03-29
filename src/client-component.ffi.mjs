@@ -27,6 +27,8 @@ function makeComponent(init, update, view, on_attribute_change) {
     #root = document.createElement("div");
     #application = null;
 
+    slotContent = [];
+
     static get observedAttributes() {
       return on_attribute_change[0]?.entries().map(([name, _]) => name) ?? [];
     }
@@ -67,6 +69,7 @@ function makeComponent(init, update, view, on_attribute_change) {
         update,
         view,
         this.#root,
+        true,
       );
       this.appendChild(this.#root);
     }
