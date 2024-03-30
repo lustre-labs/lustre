@@ -47,7 +47,7 @@ function morph(prev, next, dispatch, isComponent = false) {
 function patch(root, diff2, dispatch) {
   const rootParent = root.parentNode;
   for (const created of diff2[0]) {
-    const key = created[0];
+    const key = created[0].split("-");
     const next = created[1];
     const prev = getDeepChild(rootParent, key);
     let result;
@@ -64,12 +64,12 @@ function patch(root, diff2, dispatch) {
     }
   }
   for (const removed of diff2[1]) {
-    const key = removed[0];
+    const key = removed[0].split("-");
     const deletedNode = getDeepChild(rootParent, key);
     deletedNode.remove();
   }
   for (const updated of diff2[2]) {
-    const key = updated[0];
+    const key = updated[0].split("-");
     const patches = updated[1];
     const prev = getDeepChild(rootParent, key);
     const handlersForEl = registeredHandlers.get(prev);
@@ -244,17 +244,14 @@ function lustreGenericEventHandler(event2) {
     event2.target.removeEventListener(event2.type, lustreGenericEventHandler);
     return;
   }
-  console.log(event2.target);
   const handlersForEventTarget = registeredHandlers.get(event2.target);
   if (!handlersForEventTarget.has(event2.type)) {
     event2.target.removeEventListener(event2.type, lustreGenericEventHandler);
     return;
   }
-  console.log(handlersForEventTarget);
   handlersForEventTarget.get(event2.type)(event2);
 }
 function lustreServerEventHandler(event2) {
-  console.log(event2);
   const el2 = event2.target;
   const tag = el2.getAttribute(`data-lustre-on-${event2.type}`);
   const data = JSON.parse(el2.getAttribute("data-lustre-data") || "{}");
