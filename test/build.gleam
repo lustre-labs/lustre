@@ -79,7 +79,7 @@ fn read_script() {
 }
 
 fn read_module() {
-  simplifile.read("./src/lustre/server.gleam")
+  simplifile.read("./src/lustre/server_component.gleam")
 }
 
 fn inject_script(script, module) {
@@ -89,7 +89,7 @@ fn inject_script(script, module) {
   let assert [before, after] = regex.split(re, module)
 
   simplifile.write(
-    "./src/lustre/server.gleam",
+    "./src/lustre/server_component.gleam",
     before
       <> "// <<INJECT RUNTIME>>\n    element.text(\""
       <> script
