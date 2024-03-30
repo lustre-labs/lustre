@@ -13,14 +13,6 @@ import gleam/string_builder.{type StringBuilder}
 pub type Element(msg) {
   Text(content: String)
   Element(
-    namespace: String,
-    tag: String,
-    attrs: List(Attribute(msg)),
-    children: List(Element(msg)),
-    self_closing: Bool,
-    void: Bool,
-  )
-  Keyed(
     key: String,
     namespace: String,
     tag: String,
@@ -53,7 +45,7 @@ fn do_handlers(
   case element {
     Text(_) -> handlers
     Map(subtree) -> do_handlers(subtree(), handlers, key)
-    Keyed(_, _, _, attrs, children, _, _) | Element(_, _, attrs, children, _, _) -> {
+    Element(_, _, _, attrs, children, _, _) -> {
       let handlers =
         list.fold(attrs, handlers, fn(handlers, attr) {
           case attribute_to_event_handler(attr) {
@@ -80,8 +72,7 @@ fn do_element_to_json(element: Element(msg), key: String) -> Json {
   case element {
     Text(content) -> json.object([#("content", json.string(content))])
     Map(subtree) -> do_element_to_json(subtree(), key)
-    Keyed(_, namespace, tag, attrs, children, self_closing, void)
-    | Element(namespace, tag, attrs, children, self_closing, void) -> {
+    Element(_, namespace, tag, attrs, children, self_closing, void) -> {
       let attrs =
         json.preprocessed_array({
           attrs
@@ -187,8 +178,7 @@ fn do_element_to_string_builder(
 
     Map(subtree) -> do_element_to_string_builder(subtree(), raw_text)
 
-    Keyed(_, namespace, tag, attrs, _, self_closing, _)
-      | Element(namespace, tag, attrs, _, self_closing, _) if self_closing -> {
+    Element(_, namespace, tag, attrs, _, self_closing, _) if self_closing -> {
       let html = string_builder.from_string("<" <> tag)
       let #(attrs, _) =
         attributes_to_string_builder(case namespace {
@@ -201,8 +191,7 @@ fn do_element_to_string_builder(
       |> string_builder.append("/>")
     }
 
-    Keyed(_, namespace, tag, attrs, _, _, void)
-      | Element(namespace, tag, attrs, _, _, void) if void -> {
+    Element(_, namespace, tag, attrs, _, _, void) if void -> {
       let html = string_builder.from_string("<" <> tag)
       let #(attrs, _) =
         attributes_to_string_builder(case namespace {
@@ -217,8 +206,8 @@ fn do_element_to_string_builder(
 
     // Style and script tags are special beacuse they need to contain unescape
     // text content and not escaped HTML content.
-    Element("", "style" as tag, attrs, children, False, False)
-    | Element("", "script" as tag, attrs, children, False, False) -> {
+    Element(_, "", "style" as tag, attrs, children, False, False)
+    | Element(_, "", "script" as tag, attrs, children, False, False) -> {
       let html = string_builder.from_string("<" <> tag)
       let #(attrs, _) = attributes_to_string_builder(attrs)
 
@@ -229,8 +218,7 @@ fn do_element_to_string_builder(
       |> string_builder.append("</" <> tag <> ">")
     }
 
-    Keyed(_, namespace, tag, attrs, children, _, _)
-    | Element(namespace, tag, attrs, children, _, _) -> {
+    Element(_, namespace, tag, attrs, children, _, _) -> {
       let html = string_builder.from_string("<" <> tag)
       let #(attrs, inner_html) =
         attributes_to_string_builder(case namespace {

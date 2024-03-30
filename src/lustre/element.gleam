@@ -12,7 +12,7 @@ import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
 import lustre/attribute.{type Attribute, attribute}
-import lustre/internals/vdom.{Element, Keyed, Map, Text}
+import lustre/internals/vdom.{Element, Map, Text}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -104,9 +104,20 @@ pub fn element(
     | "param"
     | "source"
     | "track"
-    | "wbr" -> Element("", tag, attrs, [], False, True)
+    | "wbr" ->
+      Element(
+        key: "",
+        namespace: "",
+        tag: tag,
+        attrs: attrs,
+        children: [],
+        self_closing: False,
+        void: True,
+      )
+
     _ ->
       Element(
+        key: "",
         namespace: "",
         tag: tag,
         attrs: attrs,
@@ -121,10 +132,8 @@ pub fn element(
 ///
 pub fn keyed(key: String, el: Element(msg)) -> Element(msg) {
   case el {
-    Keyed(_, namespace, tag, attrs, children, self_closing, void) ->
-      Keyed(key, namespace, tag, attrs, children, self_closing, void)
-    Element(namespace, tag, attrs, children, self_closing, void) ->
-      Keyed(key, namespace, tag, attrs, children, self_closing, void)
+    Element(_, namespace, tag, attrs, children, self_closing, void) ->
+      Element(key, namespace, tag, attrs, children, self_closing, void)
     Text(_) -> el
     Map(subtree) -> Map(fn() { keyed(key, subtree()) })
   }
@@ -140,6 +149,7 @@ pub fn namespaced(
   children: List(Element(msg)),
 ) -> Element(msg) {
   Element(
+    key: "",
     namespace: namespace,
     tag: tag,
     attrs: attrs,
@@ -163,6 +173,7 @@ pub fn advanced(
   void: Bool,
 ) -> Element(msg) {
   Element(
+    key: "",
     namespace: namespace,
     tag: tag,
     attrs: attrs,
@@ -217,20 +228,9 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
   case element {
     Text(content) -> Text(content)
     Map(subtree) -> Map(fn() { map(subtree(), f) })
-    Element(namespace, tag, attrs, children, self_closing, void) ->
+    Element(key, namespace, tag, attrs, children, self_closing, void) ->
       Map(fn() {
         Element(
-          namespace: namespace,
-          tag: tag,
-          attrs: list.map(attrs, attribute.map(_, f)),
-          children: list.map(children, map(_, f)),
-          self_closing: self_closing,
-          void: void,
-        )
-      })
-    Keyed(key, namespace, tag, attrs, children, self_closing, void) ->
-      Map(fn() {
-        Keyed(
           key: key,
           namespace: namespace,
           tag: tag,

@@ -194,7 +194,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
   // morphed in case someone has keyed an element *and* set the attribute themselves.
   //
   // The key stored on the vdom node always takes precedence over the attribute.
-  if (next.key) {
+  if (next.key !== undefined && next.key !== "") {
     el.setAttribute("data-lustre-key", next.key);
   }
 
@@ -211,10 +211,17 @@ function createElementNode({ prev, next, dispatch, stack }) {
   let seenKeys = null;
   let keyedChildren = null;
   let incomingKeyedChildren = null;
+  let firstChild = next.children[Symbol.iterator]().next().value;
 
   // All children are expected to be keyed if any of them are keyed, so just peeking
   // the first child is enough to determine if we need to do a keyed diff.
-  if (next.children[Symbol.iterator]().next().value?.key) {
+  if (
+    firstChild !== undefined &&
+    // Explicit checks are more verbose but truthy checks force a bunch of comparisons
+    // we don't care about: it's never gonna be a number etc.
+    firstChild.key !== undefined &&
+    firstChild.key !== ""
+  ) {
     seenKeys = new Set();
     keyedChildren = getKeyedChildren(prev);
     incomingKeyedChildren = getKeyedChildren(next);
