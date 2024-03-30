@@ -80,7 +80,7 @@ export class LustreClientApplication {
     const dispatch = (handler) => (e) => {
       const result = handler(e);
 
-      if (result.isOk()) {
+      if (result instanceof Ok) {
         this.send(new Dispatch(result[0]));
       }
     };
