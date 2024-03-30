@@ -76,7 +76,7 @@ export function patch(root, diff, dispatch) {
   const rootParent = root.parentNode;
 
   for (const created of diff[0]) {
-    const key = created[0];
+    const key = created[0].split("-");
     const next = created[1];
     const prev = getDeepChild(rootParent, key);
 
@@ -99,13 +99,13 @@ export function patch(root, diff, dispatch) {
   }
 
   for (const removed of diff[1]) {
-    const key = removed[0];
+    const key = removed[0].split("-");
     const deletedNode = getDeepChild(rootParent, key);
     deletedNode.remove();
   }
 
   for (const updated of diff[2]) {
-    const key = updated[0];
+    const key = updated[0].split("-");
     const patches = updated[1];
     const prev = getDeepChild(rootParent, key);
     const handlersForEl = registeredHandlers.get(prev);

@@ -56,7 +56,7 @@ fn do_handlers(
         })
 
       use handlers, child, index <- list.index_fold(children, handlers)
-      let key = key <> int.to_string(index)
+      let key = key <> "-" <> int.to_string(index)
       do_handlers(child, handlers, key)
     }
   }
@@ -80,7 +80,7 @@ fn do_element_to_json(element: Element(msg), key: String) -> Json {
       let children =
         json.preprocessed_array({
           use child, index <- list.index_map(children)
-          let key = key <> int.to_string(index)
+          let key = key <> "-" <> int.to_string(index)
           do_element_to_json(child, key)
         })
 

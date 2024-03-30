@@ -129,7 +129,7 @@ fn do_elements(
           // sizes and zips them together, padding the shorter list with `None`.
           let children = zip(old_children, new_children)
           use diff, #(old, new), pos <- list.index_fold(children, diff)
-          let key = key <> int.to_string(pos)
+          let key = key <> "-" <> int.to_string(pos)
 
           do_elements(diff, old, new, key)
         }
@@ -362,7 +362,7 @@ fn fold_event_handlers(
           }
         })
       use handlers, child, index <- list.index_fold(children, handlers)
-      let key = key <> int.to_string(index)
+      let key = key <> "-" <> int.to_string(index)
 
       fold_event_handlers(handlers, child, key)
     }
