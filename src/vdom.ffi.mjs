@@ -72,6 +72,78 @@ export function morph(prev, next, dispatch, isComponent = false) {
   return out;
 }
 
+export function patch(root, diff, dispatch) {
+  const rootParent = root.parentNode;
+
+  for (const created of diff[0]) {
+    const key = created[0];
+    const next = created[1];
+    const prev = getDeepChild(rootParent, key);
+
+    let result;
+
+    if (prev !== null && prev !== rootParent) {
+      result = morph(prev, next, dispatch);
+    } else {
+      const parent = getDeepChild(rootParent, key.slice(0, -1));
+      const temp = document.createTextNode("");
+      parent.appendChild(temp);
+      result = morph(temp, next, dispatch);
+    }
+
+    // Patching the root node means we might end up replacing it entirely so we
+    // need to reassign the root node if the key is "0".
+    if (key === "0") {
+      root = result;
+    }
+  }
+
+  for (const removed of diff[1]) {
+    const key = removed[0];
+    const deletedNode = getDeepChild(rootParent, key);
+    deletedNode.remove();
+  }
+
+  for (const updated of diff[2]) {
+    const key = updated[0];
+    const patches = updated[1];
+    const prev = getDeepChild(rootParent, key);
+    const handlersForEl = registeredHandlers.get(prev);
+
+    for (const created of patches[0]) {
+      const name = created[0];
+      const value = created[1];
+
+      if (name.startsWith("data-lustre-on-")) {
+        const eventName = name.slice(15);
+        const callback = dispatch(lustreServerEventHandler);
+
+        if (!handlersForEl.has(eventName)) {
+          el.addEventListener(eventName, lustreGenericEventHandler);
+        }
+
+        handlersForEl.set(eventName, callback);
+        el.setAttribute(name, value);
+      } else {
+        prev.setAttribute(name, value);
+        prev[name] = value;
+      }
+    }
+
+    for (const removed of patches[1]) {
+      if (removed[0].startsWith("data-lustre-on-")) {
+        const eventName = removed[0].slice(15);
+        prev.removeEventListener(eventName, lustreGenericEventHandler);
+        handlersForEl.delete(eventName);
+      } else {
+        prev.removeAttribute(removed[0]);
+      }
+    }
+  }
+
+  return root;
+}
+
 // CREATING ELEMENTS -----------------------------------------------------------
 //
 // @todo do we need to special-case `<input>`, `<option>` and `<textarea>` elements
@@ -141,12 +213,27 @@ function createElementNode({ prev, next, dispatch, stack }) {
       const eventName = name.slice(2);
       const callback = dispatch(value);
 
+      if (!handlersForEl.has(eventName)) {
+        el.addEventListener(eventName, lustreGenericEventHandler);
+      }
+
       handlersForEl.set(eventName, callback);
-      el.addEventListener(eventName, lustreGenericEventHandler);
       // If we're morphing an element we remove this event's name from the set of
       // event handlers that were on the previous render so we don't remove it in
       // the next step.
       if (canMorph) prevHandlers.delete(eventName);
+    }
+    //
+    else if (name.startsWith("data-lustre-on-")) {
+      const eventName = name.slice(15);
+      const callback = dispatch(lustreServerEventHandler);
+
+      if (!handlersForEl.has(eventName)) {
+        el.addEventListener(eventName, lustreGenericEventHandler);
+      }
+
+      handlersForEl.set(eventName, callback);
+      el.setAttribute(name, value);
     }
     // These attributes are special-cased as explained above.
     else if (name === "class") {
@@ -337,6 +424,42 @@ function lustreGenericEventHandler(event) {
   handlersForEventTarget.get(event.type)(event);
 }
 
+function lustreServerEventHandler(event) {
+  const el = event.target;
+  const tag = el.getAttribute(`data-lustre-on-${event.type}`);
+  const data = JSON.parse(el.getAttribute("data-lustre-data") || "{}");
+  const include = JSON.parse(el.getAttribute("data-lustre-include") || "[]");
+
+  switch (event.type) {
+    case "input":
+    case "change":
+      include.push("target.value");
+      break;
+  }
+
+  return {
+    tag,
+    data: include.reduce(
+      (data, property) => {
+        const path = property.split(".");
+
+        for (let i = 0, o = data, e = event; i < path.length; i++) {
+          if (i === path.length - 1) {
+            o[path[i]] = e[path[i]];
+          } else {
+            o[path[i]] ??= {};
+            e = e[path[i]];
+            o = o[path[i]];
+          }
+        }
+
+        return data;
+      },
+      { data },
+    ),
+  };
+}
+
 // UTILS -----------------------------------------------------------------------
 
 function getKeyedChildren(el) {
@@ -348,4 +471,17 @@ function getKeyedChildren(el) {
   }
 
   return keyedChildren;
+}
+
+function getDeepChild(el, path) {
+  let n;
+  let rest;
+  let child = el;
+
+  while ((([n, ...rest] = path), n !== undefined)) {
+    child = child.childNodes.item(n);
+    path = rest;
+  }
+
+  return child;
 }
