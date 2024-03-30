@@ -75,9 +75,7 @@ fn do_element_to_json(element: Element(msg), key: String) -> Json {
     Element(_, namespace, tag, attrs, children, self_closing, void) -> {
       let attrs =
         json.preprocessed_array({
-          attrs
-          |> list.prepend(Attribute("data-lustre-key", dynamic.from(key), False))
-          |> list.filter_map(attribute_to_json(_, key))
+          list.filter_map(attrs, attribute_to_json(_, key))
         })
       let children =
         json.preprocessed_array({

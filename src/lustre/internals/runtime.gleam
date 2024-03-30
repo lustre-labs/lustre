@@ -52,7 +52,7 @@ pub type DebugAction {
 
 // ACTOR -----------------------------------------------------------------------
 
-// @target(erlang)
+@target(erlang)
 ///
 ///
 pub fn start(
@@ -87,7 +87,7 @@ pub fn start(
   actor.start_spec(Spec(init, timeout, loop))
 }
 
-// @target(erlang)
+@target(erlang)
 fn loop(
   message: Action(msg, runtime),
   state: State(model, msg, runtime),
@@ -203,7 +203,7 @@ fn loop(
 
 // UTILS -----------------------------------------------------------------------
 
-// @target(erlang)
+@target(erlang)
 fn run_renderers(
   renderers: Dict(any, fn(Patch(msg)) -> Nil),
   patch: Patch(msg),
@@ -212,7 +212,7 @@ fn run_renderers(
   renderer(patch)
 }
 
-// @target(erlang)
+@target(erlang)
 fn run_effects(effects: Effect(msg), self: Subject(Action(msg, runtime))) -> Nil {
   let dispatch = fn(msg) { actor.send(self, Dispatch(msg)) }
   let emit = fn(name, event) { actor.send(self, Emit(name, event)) }
