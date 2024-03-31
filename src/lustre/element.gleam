@@ -164,21 +164,25 @@ pub fn keyed(
 ) -> Element(msg) {
   el({
     use #(key, child) <- list.map(children)
-
-    case child {
-      Element(_, namespace, tag, attrs, children, self_closing, void) ->
-        Element(
-          key: key,
-          namespace: namespace,
-          tag: tag,
-          attrs: attrs,
-          children: children,
-          self_closing: self_closing,
-          void: void,
-        )
-      _ -> child
-    }
+    do_keyed(child, key)
   })
+}
+
+fn do_keyed(el: Element(msg), key: String) -> Element(msg) {
+  case el {
+    Element(_, namespace, tag, attrs, children, self_closing, void) ->
+      Element(
+        key: key,
+        namespace: namespace,
+        tag: tag,
+        attrs: attrs,
+        children: children,
+        self_closing: self_closing,
+        void: void,
+      )
+    Map(subtree) -> Map(fn() { do_keyed(subtree(), key) })
+    _ -> el
+  }
 }
 
 /// A function for constructing elements in a specific XML namespace. This can
