@@ -115,9 +115,9 @@ function createElementNode({ prev, next, dispatch, stack }) {
   }
   const prevHandlers = canMorph ? new Set(handlersForEl.keys()) : null;
   const prevAttributes = canMorph ? new Set(Array.from(prev.attributes, (a) => a.name)) : null;
-  let className = "";
-  let style = "";
-  let innerHTML = "";
+  let className = null;
+  let style = null;
+  let innerHTML = null;
   for (const attr of next.attrs) {
     const name = attr[0];
     const value = attr[1];
@@ -142,9 +142,9 @@ function createElementNode({ prev, next, dispatch, stack }) {
       handlersForEl.set(eventName, callback);
       el2.setAttribute(name, value);
     } else if (name === "class") {
-      className = className ? className + " " + value : value;
+      className = className === null ? value : className + " " + value;
     } else if (name === "style") {
-      style += value;
+      style = style === null ? value : style + value;
     } else if (name === "dangerous-unescaped-html") {
       innerHTML = value;
     } else {
@@ -154,12 +154,12 @@ function createElementNode({ prev, next, dispatch, stack }) {
         prevAttributes.delete(name);
     }
   }
-  if (className !== "") {
+  if (className !== null) {
     el2.setAttribute("class", className);
     if (canMorph)
       prevAttributes.delete("class");
   }
-  if (style !== "") {
+  if (style !== null) {
     el2.setAttribute("style", style);
     if (canMorph)
       prevAttributes.delete("style");
@@ -174,7 +174,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
   }
   if (next.key !== void 0 && next.key !== "") {
     el2.setAttribute("data-lustre-key", next.key);
-  } else if (innerHTML) {
+  } else if (innerHTML !== null) {
     el2.innerHTML = innerHTML;
     return el2;
   }
@@ -284,10 +284,12 @@ function lustreServerEventHandler(event2) {
 }
 function getKeyedChildren(el2) {
   const keyedChildren = /* @__PURE__ */ new Map();
-  for (const child of el2.children) {
-    const key = child.key || child?.getAttribute("data-lustre-key");
-    if (key)
-      keyedChildren.set(key, child);
+  if (el2) {
+    for (const child of el2.children) {
+      const key = child.key || child?.getAttribute("data-lustre-key");
+      if (key)
+        keyedChildren.set(key, child);
+    }
   }
   return keyedChildren;
 }
