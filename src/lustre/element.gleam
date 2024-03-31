@@ -20,7 +20,7 @@ import lustre/internals/vdom.{Element, Map, Text}
 /// variable is used to represent the types of messages that can be produced from
 /// events on the element or its children.
 ///
-/// **Note:** Just because an element _can_ produces messages of a given type,
+/// **Note**: Just because an element _can_ produces messages of a given type,
 /// doesn't mean that it _will_! The `msg` type variable is used to represent the
 /// potential for messages to be produced, not a guarantee.
 ///
@@ -61,7 +61,7 @@ pub type Element(msg) =
 /// function is particularly handing when constructing custom elements, either
 /// from your own Lustre components or from external JavaScript libraries.
 ///
-/// **Note:** Because Lustre is primarily used to create HTML, this function
+/// **Note**: Because Lustre is primarily used to create HTML, this function
 /// spcieal-cases the following tags render as
 /// [void elements](https://developer.mozilla.org/en-US/docs/Glossary/Void_element):
 ///
@@ -128,15 +128,57 @@ pub fn element(
   }
 }
 
+/// Keying elements is an optimisation that helps the runtime reuse existing DOM
+/// nodes in cases where children are reordered or removed from a list. Maybe you
+/// have a list of elements that can be filtered or sorted in some way, or additions
+/// to the front are common. In these cases, keying elements can help Lustre avoid
+/// unecessary DOM manipulations by pairing the DOM nodes with the elements in the
+/// list that share the same key.
+///
+/// You can easily take an element from `lustre/element/html` and key its children
+/// by making use of Gleam's [function capturing syntax](https://tour.gleam.run/functions/function-captures/):
+///
+/// ```gleam
+/// import gleam/list
+/// import lustre/element
+/// import lustre/element/html
+///
+/// fn example() {
+///   element.keyed(html.ul([], _), {
+///     use item <- list.map(todo_list)
+///     let child = html.li([], [view_item(item)])
+///
+///     #(item.id, child)
+///   })
+/// }
+/// ```
+///
+/// **Note**: The key must be unique within the list of children, but it doesn't
+/// have to be unique across the whole application. It's fine to use the same key
+/// in different lists.
 ///
 ///
-pub fn keyed(key: String, el: Element(msg)) -> Element(msg) {
-  case el {
-    Element(_, namespace, tag, attrs, children, self_closing, void) ->
-      Element(key, namespace, tag, attrs, children, self_closing, void)
-    Text(_) -> el
-    Map(subtree) -> Map(fn() { keyed(key, subtree()) })
-  }
+pub fn keyed(
+  el: fn(List(Element(msg))) -> Element(msg),
+  children: List(#(String, Element(msg))),
+) -> Element(msg) {
+  el({
+    use #(key, child) <- list.map(children)
+
+    case child {
+      Element(_, namespace, tag, attrs, children, self_closing, void) ->
+        Element(
+          key: key,
+          namespace: namespace,
+          tag: tag,
+          attrs: attrs,
+          children: children,
+          self_closing: self_closing,
+          void: void,
+        )
+      _ -> child
+    }
+  })
 }
 
 /// A function for constructing elements in a specific XML namespace. This can
