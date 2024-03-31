@@ -149,7 +149,8 @@ function createElementNode({ prev, next, dispatch, stack }) {
       innerHTML = value;
     } else {
       el2.setAttribute(name, value);
-      el2[name] = value;
+      if (name in el2)
+        el2[name] = value;
       if (canMorph)
         prevAttributes.delete(name);
     }
