@@ -5,391 +5,258 @@ var init = 2;
 var event = 4;
 var attrs = 5;
 
-// build/dev/javascript/prelude.mjs
-var CustomType = class {
-  withFields(fields) {
-    let properties = Object.keys(this).map(
-      (label) => label in fields ? fields[label] : this[label]
-    );
-    return new this.constructor(...properties);
-  }
-};
-var List = class {
-  static fromArray(array, tail) {
-    let t = tail || new Empty();
-    return array.reduceRight((xs, x) => new NonEmpty(x, xs), t);
-  }
-  [Symbol.iterator]() {
-    return new ListIterator(this);
-  }
-  toArray() {
-    return [...this];
-  }
-  atLeastLength(desired) {
-    for (let _ of this) {
-      if (desired <= 0)
-        return true;
-      desired--;
-    }
-    return desired <= 0;
-  }
-  hasLength(desired) {
-    for (let _ of this) {
-      if (desired <= 0)
-        return false;
-      desired--;
-    }
-    return desired === 0;
-  }
-  countLength() {
-    let length2 = 0;
-    for (let _ of this)
-      length2++;
-    return length2;
-  }
-};
-var ListIterator = class {
-  #current;
-  constructor(current) {
-    this.#current = current;
-  }
-  next() {
-    if (this.#current instanceof Empty) {
-      return { done: true };
-    } else {
-      let { head, tail } = this.#current;
-      this.#current = tail;
-      return { value: head, done: false };
-    }
-  }
-};
-var Empty = class extends List {
-};
-var NonEmpty = class extends List {
-  constructor(head, tail) {
-    super();
-    this.head = head;
-    this.tail = tail;
-  }
-};
-var Result = class _Result extends CustomType {
-  static isResult(data) {
-    return data instanceof _Result;
-  }
-};
-var Ok = class extends Result {
-  constructor(value) {
-    super();
-    this[0] = value;
-  }
-  isOk() {
-    return true;
-  }
-};
-var Error = class extends Result {
-  constructor(detail) {
-    super();
-    this[0] = detail;
-  }
-  isOk() {
-    return false;
-  }
-};
-
-// build/dev/javascript/gleam_stdlib/dict.mjs
-var tempDataView = new DataView(new ArrayBuffer(8));
-var SHIFT = 5;
-var BUCKET_SIZE = Math.pow(2, SHIFT);
-var MASK = BUCKET_SIZE - 1;
-var MAX_INDEX_NODE = BUCKET_SIZE / 2;
-var MIN_ARRAY_NODE = BUCKET_SIZE / 4;
-
-// build/dev/javascript/gleam_stdlib/gleam/result.mjs
-function map2(result, fun) {
-  if (result.isOk()) {
-    let x = result[0];
-    return new Ok(fun(x));
-  } else {
-    let e = result[0];
-    return new Error(e);
-  }
-}
-
 // build/dev/javascript/lustre/vdom.ffi.mjs
-function morph(prev, curr, dispatch, parent) {
-  if (curr?.tag && prev?.nodeType === 1) {
-    const nodeName = curr.tag.toUpperCase();
-    const ns = curr.namespace || "http://www.w3.org/1999/xhtml";
-    if (prev.nodeName === nodeName && prev.namespaceURI == ns) {
-      return morphElement(prev, curr, dispatch, parent);
-    } else {
-      return createElement(prev, curr, dispatch, parent);
+function morph(prev, next, dispatch, isComponent = false) {
+  let out;
+  let stack = [{ prev, next, parent: prev.parentNode }];
+  while (stack.length) {
+    let { prev: prev2, next: next2, parent } = stack.pop();
+    if (next2.subtree !== void 0)
+      next2 = next2.subtree();
+    if (next2.content !== void 0) {
+      if (!prev2) {
+        const created = document.createTextNode(next2.content);
+        parent.appendChild(created);
+        out ??= created;
+      } else if (prev2.nodeType === Node.TEXT_NODE) {
+        prev2.textContent = next2.content;
+        out ??= prev2;
+      } else {
+        const created = document.createTextNode(next2.content);
+        parent.replaceChild(created, prev2);
+        out ??= created;
+      }
+    } else if (next2.tag !== void 0) {
+      const created = createElementNode({
+        prev: prev2,
+        next: next2,
+        dispatch,
+        stack,
+        isComponent
+      });
+      if (!prev2) {
+        parent.appendChild(created);
+      } else if (prev2 !== created) {
+        parent.replaceChild(created, prev2);
+      }
+      out ??= created;
     }
   }
-  if (curr?.tag) {
-    return createElement(prev, curr, dispatch, parent);
-  }
-  if (typeof curr?.content === "string") {
-    return prev?.nodeType === 3 ? morphText(prev, curr) : createText(prev, curr);
-  }
-  return document.createComment(
-    [
-      "[internal lustre error] I couldn't work out how to render this element. This",
-      "function should only be called internally by lustre's runtime: if you think",
-      "this is an error, please open an issue at",
-      "https://github.com/hayleigh-dot-dev/gleam-lustre/issues/new"
-    ].join(" ")
-  );
+  return out;
 }
 function patch(root, diff2, dispatch) {
+  const rootParent = root.parentNode;
   for (const created of diff2[0]) {
-    const key = created[0];
-    if (key === "0") {
-      morph(root, created[1], dispatch, root.parentNode);
+    const key = created[0].split("-");
+    const next = created[1];
+    const prev = getDeepChild(rootParent, key);
+    let result;
+    if (prev !== null && prev !== rootParent) {
+      result = morph(prev, next, dispatch);
     } else {
-      const segments = Array.from(key);
-      const parentKey = segments.slice(0, -1).join("");
-      const indexKey = segments.slice(-1)[0];
-      const prev = root.querySelector(`[data-lustre-key="${key}"]`) ?? root.querySelector(`[data-lustre-key="${parentKey}"]`).childNodes[indexKey];
-      morph(prev, created[1], dispatch, prev.parentNode);
+      const parent = getDeepChild(rootParent, key.slice(0, -1));
+      const temp = document.createTextNode("");
+      parent.appendChild(temp);
+      result = morph(temp, next, dispatch);
+    }
+    if (key === "0") {
+      root = result;
     }
   }
   for (const removed of diff2[1]) {
-    const key = removed[0];
-    const segments = Array.from(key);
-    const parentKey = segments.slice(0, -1).join("");
-    const indexKey = segments.slice(-1)[0];
-    const prev = root.querySelector(`[data-lustre-key="${key}"]`) ?? root.querySelector(`[data-lustre-key="${parentKey}"]`).childNodes[indexKey];
-    prev.remove();
+    const key = removed[0].split("-");
+    const deletedNode = getDeepChild(rootParent, key);
+    deletedNode.remove();
   }
   for (const updated of diff2[2]) {
-    const key = updated[0];
-    const prev = key === "0" ? root : root.querySelector(`[data-lustre-key="${key}"]`);
-    prev.$lustre ??= { __registered_events: /* @__PURE__ */ new Set() };
-    for (const created of updated[0]) {
-      morphAttr(prev, created.name, created.value, dispatch);
-    }
-    for (const removed of updated[1]) {
-      if (prev.$lustre.__registered_events.has(removed)) {
-        const event2 = removed.slice(2).toLowerCase();
-        prev.removeEventListener(event2, prev.$lustre[`${removed}Handler`]);
-        prev.$lustre.__registered_events.delete(removed);
-        delete prev.$lustre[removed];
-        delete prev.$lustre[`${removed}Handler`];
+    const key = updated[0].split("-");
+    const patches = updated[1];
+    const prev = getDeepChild(rootParent, key);
+    const handlersForEl = registeredHandlers.get(prev);
+    for (const created of patches[0]) {
+      const name = created[0];
+      const value = created[1];
+      if (name.startsWith("data-lustre-on-")) {
+        const eventName = name.slice(15);
+        const callback = dispatch(lustreServerEventHandler);
+        if (!handlersForEl.has(eventName)) {
+          el.addEventListener(eventName, lustreGenericEventHandler);
+        }
+        handlersForEl.set(eventName, callback);
+        el.setAttribute(name, value);
       } else {
-        prev.removeAttribute(removed);
+        prev.setAttribute(name, value);
+        prev[name] = value;
+      }
+    }
+    for (const removed of patches[1]) {
+      if (removed[0].startsWith("data-lustre-on-")) {
+        const eventName = removed[0].slice(15);
+        prev.removeEventListener(eventName, lustreGenericEventHandler);
+        handlersForEl.delete(eventName);
+      } else {
+        prev.removeAttribute(removed[0]);
       }
     }
   }
   return root;
 }
-function createElement(prev, curr, dispatch, parent = null) {
-  const el = curr.namespace ? document.createElementNS(curr.namespace, curr.tag) : document.createElement(curr.tag);
-  el.$lustre = {
-    __registered_events: /* @__PURE__ */ new Set()
-  };
-  let dangerousUnescapedHtml = "";
-  for (const attr of curr.attrs) {
-    if (attr[0] === "class") {
-      morphAttr(el, attr[0], `${el.className} ${attr[1]}`);
-    } else if (attr[0] === "style") {
-      morphAttr(el, attr[0], `${el.style.cssText} ${attr[1]}`);
-    } else if (attr[0] === "dangerous-unescaped-html") {
-      dangerousUnescapedHtml += attr[1];
-    } else if (attr[0] !== "") {
-      morphAttr(el, attr[0], attr[1], dispatch);
-    }
-  }
-  if (customElements.get(curr.tag)) {
-    el._slot = curr.children;
-  } else if (curr.tag === "slot") {
-    let children = new Empty();
-    let parentWithSlot = parent;
-    while (parentWithSlot) {
-      if (parentWithSlot._slot) {
-        children = parentWithSlot._slot;
-        break;
-      } else {
-        parentWithSlot = parentWithSlot.parentNode;
-      }
-    }
-    for (const child of children) {
-      el.appendChild(morph(null, child, dispatch, el));
-    }
-  } else if (dangerousUnescapedHtml) {
-    el.innerHTML = dangerousUnescapedHtml;
+function createElementNode({ prev, next, dispatch, stack }) {
+  const namespace = next.namespace || "http://www.w3.org/1999/xhtml";
+  const canMorph = prev && prev.nodeType === Node.ELEMENT_NODE && prev.localName === next.tag && prev.namespaceURI === (next.namespace || "http://www.w3.org/1999/xhtml");
+  const el2 = canMorph ? prev : namespace ? document.createElementNS(namespace, next.tag) : document.createElement(next.tag);
+  let handlersForEl;
+  if (!registeredHandlers.has(el2)) {
+    const emptyHandlers = /* @__PURE__ */ new Map();
+    registeredHandlers.set(el2, emptyHandlers);
+    handlersForEl = emptyHandlers;
   } else {
-    for (const child of curr.children) {
-      el.appendChild(morph(null, child, dispatch, el));
-    }
+    handlersForEl = registeredHandlers.get(el2);
   }
-  if (prev)
-    prev.replaceWith(el);
-  return el;
-}
-function morphElement(prev, curr, dispatch, parent) {
-  const prevAttrs = prev.attributes;
-  const currAttrs = /* @__PURE__ */ new Map();
-  prev.$lustre ??= { __registered_events: /* @__PURE__ */ new Set() };
-  for (const currAttr of curr.attrs) {
-    if (currAttr[0] === "class" && currAttrs.has("class")) {
-      currAttrs.set(currAttr[0], `${currAttrs.get("class")} ${currAttr[1]}`);
-    } else if (currAttr[0] === "style" && currAttrs.has("style")) {
-      currAttrs.set(currAttr[0], `${currAttrs.get("style")} ${currAttr[1]}`);
-    } else if (currAttr[0] === "dangerous-unescaped-html" && currAttrs.has("dangerous-unescaped-html")) {
-      currAttrs.set(
-        currAttr[0],
-        `${currAttrs.get("dangerous-unescaped-html")} ${currAttr[1]}`
-      );
-    } else if (currAttr[0] !== "") {
-      currAttrs.set(currAttr[0], currAttr[1]);
-    }
-  }
-  for (const { name } of prevAttrs) {
-    if (!currAttrs.has(name)) {
-      prev.removeAttribute(name);
+  const prevHandlers = canMorph ? new Set(handlersForEl.keys()) : null;
+  const prevAttributes = canMorph ? new Set(Array.from(prev.attributes, (a) => a.name)) : null;
+  let className = null;
+  let style = null;
+  let innerHTML = null;
+  for (const attr of next.attrs) {
+    const name = attr[0];
+    const value = attr[1];
+    const isProperty = attr[2];
+    if (isProperty) {
+      el2[name] = value;
+    } else if (name.startsWith("on")) {
+      const eventName = name.slice(2);
+      const callback = dispatch(value);
+      if (!handlersForEl.has(eventName)) {
+        el2.addEventListener(eventName, lustreGenericEventHandler);
+      }
+      handlersForEl.set(eventName, callback);
+      if (canMorph)
+        prevHandlers.delete(eventName);
+    } else if (name.startsWith("data-lustre-on-")) {
+      const eventName = name.slice(15);
+      const callback = dispatch(lustreServerEventHandler);
+      if (!handlersForEl.has(eventName)) {
+        el2.addEventListener(eventName, lustreGenericEventHandler);
+      }
+      handlersForEl.set(eventName, callback);
+      el2.setAttribute(name, value);
+    } else if (name === "class") {
+      className = className === null ? value : className + " " + value;
+    } else if (name === "style") {
+      style = style === null ? value : style + value;
+    } else if (name === "dangerous-unescaped-html") {
+      innerHTML = value;
     } else {
-      const value = currAttrs.get(name);
-      morphAttr(prev, name, value, dispatch);
-      currAttrs.delete(name);
-    }
-  }
-  for (const name of prev.$lustre.__registered_events) {
-    if (!currAttrs.has(name)) {
-      const event2 = name.slice(2).toLowerCase();
-      prev.removeEventListener(event2, prev.$lustre[`${name}Handler`]);
-      prev.$lustre.__registered_events.delete(name);
-      delete prev.$lustre[name];
-      delete prev.$lustre[`${name}Handler`];
-    }
-  }
-  for (const [name, value] of currAttrs) {
-    morphAttr(prev, name, value, dispatch);
-  }
-  if (customElements.get(curr.tag)) {
-    prev._slot = curr.children;
-  } else if (curr.tag === "slot") {
-    let prevChild = prev.firstChild;
-    let currChild = new Empty();
-    let parentWithSlot = parent;
-    while (parentWithSlot) {
-      if (parentWithSlot._slot) {
-        currChild = parentWithSlot._slot;
-        break;
-      } else {
-        parentWithSlot = parentWithSlot.parentNode;
-      }
-    }
-    while (prevChild) {
-      if (Array.isArray(currChild) && currChild.length) {
-        morph(prevChild, currChild.shift(), dispatch, prev);
-      } else if (currChild.head) {
-        morph(prevChild, currChild.head, dispatch, prev);
-        currChild = currChild.tail;
-      }
-      prevChild = prevChild.nextSibling;
-    }
-    for (const child of currChild) {
-      prev.appendChild(morph(null, child, dispatch, prev));
-    }
-  } else if (currAttrs.has("dangerous-unescaped-html")) {
-    prev.innerHTML = currAttrs.get("dangerous-unescaped-html");
-  } else {
-    let prevChild = prev.firstChild;
-    let currChild = curr.children;
-    while (prevChild) {
-      if (Array.isArray(currChild) && currChild.length) {
-        const next = prevChild.nextSibling;
-        morph(prevChild, currChild.shift(), dispatch, prev);
-        prevChild = next;
-      } else if (currChild.head) {
-        const next = prevChild.nextSibling;
-        morph(prevChild, currChild.head, dispatch, prev);
-        currChild = currChild.tail;
-        prevChild = next;
-      } else {
-        const next = prevChild.nextSibling;
-        prevChild.remove();
-        prevChild = next;
-      }
-    }
-    for (const child of currChild) {
-      prev.appendChild(morph(null, child, dispatch, prev));
-    }
-  }
-  return prev;
-}
-function morphAttr(el, name, value, dispatch) {
-  switch (typeof value) {
-    case (name.startsWith("data-lustre-on-") && "string"): {
-      if (!value) {
-        el.removeAttribute(name);
-        el.removeEventListener(event2, el.$lustre[`${name}Handler`]);
-        break;
-      }
-      if (el.hasAttribute(name))
-        break;
-      const event2 = name.slice(15).toLowerCase();
-      const handler = (e) => dispatch(serverEventHandler(e));
-      if (el.$lustre[`${name}Handler`]) {
-        el.removeEventListener(event2, el.$lustre[`${name}Handler`]);
-      }
-      el.addEventListener(event2, handler);
-      el.$lustre[name] = value;
-      el.$lustre[`${name}Handler`] = handler;
-      el.$lustre.__registered_events.add(name);
-      el.setAttribute(name, value);
-      break;
-    }
-    case "string":
+      el2.setAttribute(name, value);
       if (name === "value")
-        el.value = value;
-      if (value === "") {
-        el.removeAttribute(name);
-      } else {
-        el.setAttribute(name, value);
-      }
-      break;
-    case (name.startsWith("on") && "function"): {
-      if (el.$lustre[name] === value)
-        break;
-      const event2 = name.slice(2).toLowerCase();
-      const handler = (e) => map2(value(e), dispatch);
-      if (el.$lustre[`${name}Handler`]) {
-        el.removeEventListener(event2, el.$lustre[`${name}Handler`]);
-      }
-      el.addEventListener(event2, handler);
-      el.$lustre[name] = value;
-      el.$lustre[`${name}Handler`] = handler;
-      el.$lustre.__registered_events.add(name);
-      break;
+        el2[name] = value;
+      if (canMorph)
+        prevAttributes.delete(name);
     }
-    default:
-      el[name] = value;
   }
-}
-function createText(prev, curr) {
-  const el = document.createTextNode(curr.content);
-  if (prev)
-    prev.replaceWith(el);
-  return el;
-}
-function morphText(prev, curr) {
-  const prevValue = prev.nodeValue;
-  const currValue = curr.content;
-  if (!currValue) {
-    prev?.remove();
-    return null;
+  if (className !== null) {
+    el2.setAttribute("class", className);
+    if (canMorph)
+      prevAttributes.delete("class");
   }
-  if (prevValue !== currValue)
-    prev.nodeValue = currValue;
-  return prev;
+  if (style !== null) {
+    el2.setAttribute("style", style);
+    if (canMorph)
+      prevAttributes.delete("style");
+  }
+  if (canMorph) {
+    for (const attr of prevAttributes) {
+      el2.removeAttribute(attr);
+    }
+    for (const eventName of prevHandlers) {
+      el2.removeEventListener(eventName, lustreGenericEventHandler);
+    }
+  }
+  if (next.key !== void 0 && next.key !== "") {
+    el2.setAttribute("data-lustre-key", next.key);
+  } else if (innerHTML !== null) {
+    el2.innerHTML = innerHTML;
+    return el2;
+  }
+  let prevChild = el2.firstChild;
+  let seenKeys = null;
+  let keyedChildren = null;
+  let incomingKeyedChildren = null;
+  let firstChild = next.children[Symbol.iterator]().next().value;
+  if (firstChild !== void 0 && // Explicit checks are more verbose but truthy checks force a bunch of comparisons
+  // we don't care about: it's never gonna be a number etc.
+  firstChild.key !== void 0 && firstChild.key !== "") {
+    seenKeys = /* @__PURE__ */ new Set();
+    keyedChildren = getKeyedChildren(prev);
+    incomingKeyedChildren = getKeyedChildren(next);
+  }
+  for (const child of next.children) {
+    if (child.key !== void 0 && seenKeys !== null) {
+      while (prevChild && !incomingKeyedChildren.has(prevChild.getAttribute("data-lustre-key"))) {
+        const nextChild = prevChild.nextSibling;
+        el2.removeChild(prevChild);
+        prevChild = nextChild;
+      }
+      if (keyedChildren.size === 0) {
+        stack.unshift({ prev: prevChild, next: child, parent: el2 });
+        prevChild = prevChild?.nextSibling;
+        continue;
+      }
+      if (seenKeys.has(child.key)) {
+        console.warn(`Duplicate key found in Lustre vnode: ${child.key}`);
+        stack.unshift({ prev: null, next: child, parent: el2 });
+        continue;
+      }
+      seenKeys.add(child.key);
+      const keyedChild = keyedChildren.get(child.key);
+      if (!keyedChild && !prevChild) {
+        stack.unshift({ prev: null, next: child, parent: el2 });
+        continue;
+      }
+      if (!keyedChild && prevChild !== null) {
+        const placeholder = document.createTextNode("");
+        el2.insertBefore(placeholder, prevChild);
+        stack.unshift({ prev: placeholder, next: child, parent: el2 });
+        continue;
+      }
+      if (!keyedChild || keyedChild === prevChild) {
+        stack.unshift({ prev: prevChild, next: child, parent: el2 });
+        prevChild = prevChild?.nextSibling;
+        continue;
+      }
+      el2.insertBefore(keyedChild, prevChild);
+      stack.unshift({ prev: keyedChild, next: child, parent: el2 });
+    } else {
+      stack.unshift({ prev: prevChild, next: child, parent: el2 });
+      prevChild = prevChild?.nextSibling;
+    }
+  }
+  while (prevChild) {
+    const next2 = prevChild.nextSibling;
+    el2.removeChild(prevChild);
+    prevChild = next2;
+  }
+  return el2;
 }
-function serverEventHandler(event2) {
-  const el = event2.target;
-  const tag = el.getAttribute(`data-lustre-on-${event2.type}`);
-  const data = JSON.parse(el.getAttribute("data-lustre-data") || "{}");
-  const include = JSON.parse(el.getAttribute("data-lustre-include") || "[]");
+var registeredHandlers = /* @__PURE__ */ new WeakMap();
+function lustreGenericEventHandler(event2) {
+  if (!registeredHandlers.has(event2.target)) {
+    event2.target.removeEventListener(event2.type, lustreGenericEventHandler);
+    return;
+  }
+  const handlersForEventTarget = registeredHandlers.get(event2.target);
+  if (!handlersForEventTarget.has(event2.type)) {
+    event2.target.removeEventListener(event2.type, lustreGenericEventHandler);
+    return;
+  }
+  handlersForEventTarget.get(event2.type)(event2);
+}
+function lustreServerEventHandler(event2) {
+  const el2 = event2.target;
+  const tag = el2.getAttribute(`data-lustre-on-${event2.type}`);
+  const data = JSON.parse(el2.getAttribute("data-lustre-data") || "{}");
+  const include = JSON.parse(el2.getAttribute("data-lustre-include") || "[]");
   switch (event2.type) {
     case "input":
     case "change":
@@ -398,20 +265,44 @@ function serverEventHandler(event2) {
   }
   return {
     tag,
-    data: include.reduce((data2, property) => {
-      const path = property.split(".");
-      for (let i = 0, o = data2, e = event2; i < path.length; i++) {
-        if (i === path.length - 1) {
-          o[path[i]] = e[path[i]];
-        } else {
-          o[path[i]] ??= {};
-          e = e[path[i]];
-          o = o[path[i]];
+    data: include.reduce(
+      (data2, property) => {
+        const path = property.split(".");
+        for (let i = 0, o = data2, e = event2; i < path.length; i++) {
+          if (i === path.length - 1) {
+            o[path[i]] = e[path[i]];
+          } else {
+            o[path[i]] ??= {};
+            e = e[path[i]];
+            o = o[path[i]];
+          }
         }
-      }
-      return data2;
-    }, data)
+        return data2;
+      },
+      { data }
+    )
   };
+}
+function getKeyedChildren(el2) {
+  const keyedChildren = /* @__PURE__ */ new Map();
+  if (el2) {
+    for (const child of el2.children) {
+      const key = child.key || child?.getAttribute("data-lustre-key");
+      if (key)
+        keyedChildren.set(key, child);
+    }
+  }
+  return keyedChildren;
+}
+function getDeepChild(el2, path) {
+  let n;
+  let rest;
+  let child = el2;
+  while ([n, ...rest] = path, n !== void 0) {
+    child = child.childNodes.item(n);
+    path = rest;
+  }
+  return child;
 }
 
 // src/server-component.mjs
@@ -520,12 +411,14 @@ var LustreServerComponent = class extends HTMLElement {
     }
   }
   morph(vdom) {
-    this.#root = morph(this.#root, vdom, (msg) => {
+    this.#root = morph(this.#root, vdom, (handler) => (event2) => {
+      const msg = handler(event2);
       this.#socket?.send(JSON.stringify([event, msg.tag, msg.data]));
     });
   }
   diff([diff2]) {
-    this.#root = patch(this.#root, diff2, (msg) => {
+    this.#root = patch(this.#root, diff2, (handler) => (event2) => {
+      const msg = handler(event2);
       this.#socket?.send(JSON.stringify([event, msg.tag, msg.data]));
     });
   }

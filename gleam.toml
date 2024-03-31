@@ -1,6 +1,6 @@
 name = "lustre"
-version = "4.0.0"
-gleam = ">= 0.34.0"
+version = "4.1.2"
+gleam = ">= 1.0.0"
 
 description = "An Elm-inspired framework for building HTML templates, single page applications, and server-rendered components in Gleam!"
 repository = { type = "github", user = "lustre-labs", repo = "lustre" }
@@ -18,7 +18,7 @@ pages = [
   { title = " ", path = "#", source = "" },
   { title = "Quickstart guide", path = "guide/01-quickstart.html", source = "./pages/guide/01-quickstart.md" },
   { title = "Managing state", path = "guide/02-state-management.html", source = "./pages/guide/02-state-management.md" },
-  # { title = "Side effects", path = "#", source = "" },
+  { title = "Side effects", path = "guide/03-side-effects.html", source = "./pages/guide/03-side-effects.md" },
   # { title = "Server-side rendering", path = "#", source = "" },
   # { title = "Components", path = "#", source = "" },
   # { title = "Server components", path = "#", source = "" },

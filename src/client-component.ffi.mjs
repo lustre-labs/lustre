@@ -27,6 +27,8 @@ function makeComponent(init, update, view, on_attribute_change) {
     #root = document.createElement("div");
     #application = null;
 
+    slotContent = [];
+
     static get observedAttributes() {
       return on_attribute_change[0]?.entries().map(([name, _]) => name) ?? [];
     }
@@ -43,7 +45,7 @@ function makeComponent(init, update, view, on_attribute_change) {
             const prev = this[name];
             const decoded = decoder(value);
 
-            if (decoded.isOk() && !isEqual(prev, value)) {
+            if (decoded instanceof Ok && !isEqual(prev, value)) {
               this.#application
                 ? this.#application.send(new Dispatch(decoded[0]))
                 : window.requestAnimationFrame(() =>
@@ -67,6 +69,7 @@ function makeComponent(init, update, view, on_attribute_change) {
         update,
         view,
         this.#root,
+        true,
       );
       this.appendChild(this.#root);
     }

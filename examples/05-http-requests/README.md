@@ -51,8 +51,8 @@ want the Lustre runtime to execute before the next invocation of the `view`
 function.
 
 > **Note**: notice how the type of `view` remains the same. In Lustre, your `view`
-> is always a [_pure function_](https://en.wikipedia.org/wiki/Pure_function) that
-> takes a model and returns the UI to be rendered: we never perform side effects
+> is always a [_pure function_](https://github.com/lustre-labs/lustre/blob/main/pages/hints/pure-functions.md)
+> that takes a model and returns the UI to be rendered: we never perform side effects
 > in the `view` function itself.
 
 ## HTTP requests as side effects

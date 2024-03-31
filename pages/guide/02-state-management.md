@@ -10,8 +10,8 @@ The MVU architecture is an example of _unidirectional data flow_:
 - Your model describes the entire state of your application at a given point in
   time.
 
-- The UI is a pure function of that model: if the model doesn't change, the UI
-  doesn't change.
+- The UI is a [pure](https://github.com/lustre-labs/lustre/blob/main/pages/hints/pure-functions.md))
+  function of that model: if the model doesn't change, the UI doesn't change.
 
 - Events from the outside world – user interaction, HTTP responses, ... – send
   messages to an update function that constructs a new model.

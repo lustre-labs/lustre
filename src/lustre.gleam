@@ -343,7 +343,7 @@ pub fn application(
 /// other HTML element. This dictionary of decoders allows you to specify how to
 /// decode those attributes into messages your component's update loop can handle.
 ///
-/// **Note:** Lustre components are conceptually a lot "heavier" than components
+/// **Note**: Lustre components are conceptually a lot "heavier" than components
 /// in frameworks like React. They should be used for more complex UI widgets
 /// like a combobox with complex keyboard interactions rather than simple things
 /// like buttons or text inputs. Where possible try to think about how to build
@@ -406,7 +406,7 @@ fn do_start(
 /// A server component will keep running until the program is terminated or the
 /// [`shutdown`](#shutdown) action is sent to it.
 ///
-/// **Note:** Users running their application on the BEAM should use [`start_actor`](#start_actor)
+/// **Note**: Users running their application on the BEAM should use [`start_actor`](#start_actor)
 /// instead to make use of Gleam's OTP abstractions.
 ///
 @external(javascript, "./server-runtime.ffi.mjs", "start")
@@ -423,7 +423,7 @@ pub fn start_server_component(
 /// a [`Subject`](https://hexdocs.pm/gleam_erlang/gleam/erlang/process.html#Subject)
 ///
 ///
-/// **Note:** This function is only meaningful on the Erlang target. Attempts to
+/// **Note**: This function is only meaningful on the Erlang target. Attempts to
 /// call it on the JavaScript will result in the `NotErlang` error. If you're running
 /// a Lustre server component on Node or Deno, use [`start_server_component`](#start_server_component)
 /// instead.
@@ -463,12 +463,12 @@ fn do_start_actor(
 /// with the name `my-component`, you'd use it in HTML by writing `<my-component>`
 /// or in Lustre by rendering `element("my-component", [], [])`.
 ///
-/// **Note:** There are [some rules](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define#valid_custom_element_names)
+/// **Note**: There are [some rules](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define#valid_custom_element_names)
 /// for what names are valid for a Custom Element. The most important one is that
 /// the name *must* contain a hypen so that it can be distinguished from standard
 /// HTML elements.
 ///
-/// **Note:** This function is only meaningful when running in the browser and will
+/// **Note**: This function is only meaningful when running in the browser and will
 /// produce a `NotABrowser` error if called anywhere else. For server contexts,
 /// you can render a Lustre server component using [`start_server_component`](#start_server_component)
 /// or [`start_actor`](#start_actor) instead.
