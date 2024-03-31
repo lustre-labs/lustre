@@ -10,6 +10,10 @@ import gleam/string_builder.{type StringBuilder}
 
 // TYPES -----------------------------------------------------------------------
 
+pub opaque type Identifier {
+  FragmentIdentifier(String)
+}
+
 pub type Element(msg) {
   Text(content: String)
   Element(
@@ -23,11 +27,26 @@ pub type Element(msg) {
   // The lambda here defers the creation of the mapped subtree until it is necessary.
   // This means we pay the cost of mapping multiple times only *once* during rendering.
   Map(subtree: fn() -> Element(msg))
+  // The opaque Identifier is used in the runtime, more info below
+  // The fragment could potentially be modeled as an Element
+  Fragment(identifier: Identifier, elements: List(Element(msg)))
 }
 
 pub type Attribute(msg) {
   Attribute(String, Dynamic, as_property: Bool)
   Event(String, Decoder(msg))
+}
+
+// OPAQUE CONSTRUCTORS ----------------------------------------------------------
+
+/// A function to wrap multiple elements to be rendered without wrapping them in a container
+/// 
+pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
+  // The identifier is checked in the runtime to process fragment
+  // - Skips the element itself and attaches children to the fragment parent
+  // - If identifier is public then a user could break the fragment implmentation
+  // - It could just check values if this was tuple, but that seems more confusing?
+  Fragment(FragmentIdentifier("fragment"), elements)
 }
 
 // QUERIES ---------------------------------------------------------------------
@@ -54,11 +73,20 @@ fn do_handlers(
           }
         })
 
-      use handlers, child, index <- list.index_fold(children, handlers)
-      let key = key <> int.to_string(index)
-      do_handlers(child, handlers, key)
+      do_element_list_handlers(children, handlers, key)
     }
+    Fragment(_, elements) -> do_element_list_handlers(elements, handlers, key)
   }
+}
+
+fn do_element_list_handlers(
+  elements: List(Element(msg)),
+  handlers: Dict(String, Decoder(msg)),
+  key: String,
+) {
+  use handlers, element, index <- list.index_fold(elements, handlers)
+  let key = key <> int.to_string(index)
+  do_handlers(element, handlers, key)
 }
 
 // CONVERSIONS: JSON -----------------------------------------------------------
@@ -78,12 +106,7 @@ fn do_element_to_json(element: Element(msg), key: String) -> Json {
           |> list.prepend(Attribute("data-lustre-key", dynamic.from(key), False))
           |> list.filter_map(attribute_to_json(_, key))
         })
-      let children =
-        json.preprocessed_array({
-          use child, index <- list.index_map(children)
-          let key = key <> int.to_string(index)
-          do_element_to_json(child, key)
-        })
+      let children = do_element_list_to_json(children, key)
 
       json.object([
         #("namespace", json.string(namespace)),
@@ -94,7 +117,16 @@ fn do_element_to_json(element: Element(msg), key: String) -> Json {
         #("void", json.bool(void)),
       ])
     }
+    Fragment(_, elements) -> do_element_list_to_json(elements, key)
   }
+}
+
+fn do_element_list_to_json(elements: List(Element(msg)), key: String) {
+  json.preprocessed_array({
+    use element, index <- list.index_map(elements)
+    let key = key <> int.to_string(index)
+    do_element_to_json(element, key)
+  })
 }
 
 pub fn attribute_to_json(
@@ -238,6 +270,8 @@ fn do_element_to_string_builder(
           |> string_builder.append(">" <> inner_html <> "</" <> tag <> ">")
       }
     }
+    Fragment(_, elements) ->
+      children_to_string_builder(string_builder.new(), elements, raw_text)
   }
 }
 

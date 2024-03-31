@@ -12,7 +12,7 @@ import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
 import lustre/attribute.{type Attribute, attribute}
-import lustre/internals/vdom.{Element, Map, Text}
+import lustre/internals/vdom.{Element, Fragment, Map, Text}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -176,6 +176,12 @@ pub fn none() -> Element(msg) {
   Text("")
 }
 
+/// A function to wrap multiple elements to be rendered without wrapping them in a container
+/// 
+pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
+  vdom.fragment(elements)
+}
+
 fn escape(escaped: String, content: String) -> String {
   case content {
     "<" <> rest -> escape(escaped <> "&lt;", rest)
@@ -215,6 +221,9 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
           void: void,
         )
       })
+    Fragment(identifier, elements) -> {
+      Map(fn() { Fragment(identifier, list.map(elements, map(_, f))) })
+    }
   }
 }
 

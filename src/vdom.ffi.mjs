@@ -1,8 +1,35 @@
 import { Empty } from "./gleam.mjs";
 
+const FRAGMENT_IDENTIFIER = "fragment";
+
 export function morph(prev, curr, dispatch, parent) {
   if (curr?.subtree) {
     return morph(prev, curr.subtree(), dispatch, parent);
+  }
+
+  if (curr?.identifier?.[0] === FRAGMENT_IDENTIFIER) {
+    // If there is no parent, then the fragment is the root element returned from `view`
+    // which will not render unless there is a root container since root is replaced by the
+    // element returned here - instead the fragment will become the new root container (a div)
+    // theoretically if the fragment only contains one element instead of creating a new root
+    // this could use that single element as the new root
+    if (!parent) {
+      curr = {
+        attrs: [["id", "lustre-fragment-root"]],
+        children: curr.elements,
+        tag: "div",
+      }
+    } else {
+      // fragmentEl will be appended to its parent el but will not create
+      // an actual dom element this is just used as a container for the children
+      // while processing the children this fragment contains
+      const fragmentEl = new DocumentFragment();
+      for (const child of curr.elements) {
+        fragmentEl.appendChild(morph(prev, child, dispatch, fragmentEl));
+      }
+  
+      return fragmentEl;
+    }
   }
 
   // The current node is an `Element` and the previous DOM node is also a DOM
@@ -36,7 +63,7 @@ export function morph(prev, curr, dispatch, parent) {
       ? morphText(prev, curr)
       : createText(prev, curr);
   }
-
+  
   // If someone was naughty and tried to pass in something other than a Lustre
   // element (or if there is an actual bug with the runtime!) we'll render a
   // comment and ask them to report the issue.
@@ -259,17 +286,29 @@ function morphElement(prev, curr, dispatch, parent) {
   } else {
     let prevChild = prev.firstChild;
     let currChild = curr.children;
+    let nextChild = [];
 
     while (prevChild) {
       if (Array.isArray(currChild) && currChild.length) {
         const next = prevChild.nextSibling;
         morph(prevChild, currChild.shift(), dispatch, prev);
         prevChild = next;
+      // Ignore fragment itself, instead extract its elements
+      } else if (currChild.head?.identifier?.[0] === FRAGMENT_IDENTIFIER) {
+        // skipping the fragment element breaks the links,
+        // add the sibling(s) to stack of unprocessed children in order to
+        // resume morph chain after processing immediate elements
+        nextChild.push(currChild.tail);
+        currChild = currChild.head.elements;
       } else if (currChild.head) {
         const next = prevChild.nextSibling;
         morph(prevChild, currChild.head, dispatch, prev);
         currChild = currChild.tail;
         prevChild = next;
+      } else if (nextChild.length > 0) {
+        // No more children to process in the current path, pop child from
+        // stack in order to get the child following a fragment
+        currChild = nextChild.pop();
       } else {
         const next = prevChild.nextSibling;
         prevChild.remove();
