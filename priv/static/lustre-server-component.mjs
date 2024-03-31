@@ -149,7 +149,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
       innerHTML = value;
     } else {
       el2.setAttribute(name, value);
-      if (name in el2)
+      if (name === "value")
         el2[name] = value;
       if (canMorph)
         prevAttributes.delete(name);
@@ -179,7 +179,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
     el2.innerHTML = innerHTML;
     return el2;
   }
-  let prevChild = prev?.firstChild;
+  let prevChild = el2.firstChild;
   let seenKeys = null;
   let keyedChildren = null;
   let incomingKeyedChildren = null;
