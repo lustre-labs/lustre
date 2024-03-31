@@ -188,9 +188,9 @@ function createElementNode({ prev, next, dispatch, stack }) {
   // `class` and `style` because we want to _accumulate_ them, and `innerHTML`
   // because it's a special Lustre attribute that allows you to render a HTML
   // string directly into an element.
-  let className = "";
-  let style = "";
-  let innerHTML = "";
+  let className = null;
+  let style = null;
+  let innerHTML = null;
 
   // In Gleam custom type fields have numeric indexes if they aren't labelled
   // but they *aren't* able to be destructured, so we have to do normal array
@@ -237,9 +237,9 @@ function createElementNode({ prev, next, dispatch, stack }) {
     }
     // These attributes are special-cased as explained above.
     else if (name === "class") {
-      className = className ? className + " " + value : value;
+      className = className === null ? value : className + " " + value;
     } else if (name === "style") {
-      style += value;
+      style = style === null ? value : style + value;
     } else if (name === "dangerous-unescaped-html") {
       innerHTML = value;
     }
@@ -256,12 +256,12 @@ function createElementNode({ prev, next, dispatch, stack }) {
     }
   }
 
-  if (className !== "") {
+  if (className !== null) {
     el.setAttribute("class", className);
     if (canMorph) prevAttributes.delete("class");
   }
 
-  if (style !== "") {
+  if (style !== null) {
     el.setAttribute("style", style);
     if (canMorph) prevAttributes.delete("style");
   }
@@ -287,7 +287,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
 
   // If we have an `innerHTML` string then we don't bother morphing the children
   // at all, we just set the `innerHTML` property and move on.
-  else if (innerHTML) {
+  else if (innerHTML !== null) {
     el.innerHTML = innerHTML;
     return el;
   }
