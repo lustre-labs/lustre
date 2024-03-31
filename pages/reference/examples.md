@@ -43,7 +43,3 @@ the previous ones. Feel free to jump in to any example that interests you, thoug
 If you're having trouble with Lustre or not sure what the right way to do
 something is, the best place to get help is the [Gleam Discord server](https://discord.gg/Fm8Pwmy).
 You could also open an issue on the [Lustre GitHub repository](https://github.com/lustre-labs/lustre/issues).
-
-While our docs are still a work in progress, the official [Elm guide](https://guide.elm-lang.org)
-is also a great resource for learning about the Model-View-Update architecture
-and the kinds of patterns that Lustre is built around.

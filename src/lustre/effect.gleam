@@ -97,7 +97,7 @@ pub fn none() -> Effect(msg) {
 
 /// Batch multiple effects to be performed at the same time.
 ///
-/// **Note:** The runtime makes no guarantees about the order on which effects
+/// **Note**: The runtime makes no guarantees about the order on which effects
 /// are performed! If you need to chain or sequence effects together, you have
 /// two broad options:
 ///
@@ -117,7 +117,7 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
 /// Transform the result of an effect. This is useful for mapping over effects
 /// produced by other libraries or modules.
 ///
-/// **Note:** Remember that effects are not _required_ to dispatch any messages.
+/// **Note**: Remember that effects are not _required_ to dispatch any messages.
 /// Your mapping function may never be called!
 ///
 pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
@@ -131,7 +131,7 @@ pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
 /// This is primarily used internally by the server component runtime, but it is
 /// may also useful for testing.
 ///
-/// **Note:** For now, you should **not** consider this function a part of the
+/// **Note**: For now, you should **not** consider this function a part of the
 /// public API. It may be removed in a future minor or patch release. If you have
 /// a specific use case for this function, we'd love to hear about it! Please
 /// reach out on the [Gleam Discord](https://discord.gg/Fm8Pwmy) or
