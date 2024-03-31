@@ -268,7 +268,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
     // that all attributes should be set as properties too.
     else {
       el.setAttribute(name, value);
-      if (name in el) el[name] = value;
+      if (name === "value") el[name] = value;
       // If we're morphing an element we remove this attribute's name from the set
       // of attributes that were on the previous render so we don't remove it in
       // the next step.
@@ -312,7 +312,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
     return el;
   }
 
-  let prevChild = prev?.firstChild;
+  let prevChild = el.firstChild;
   // These variables are set up for keyed children diffs. When children are keyed
   // we can effeciently reuse DOM nodes even if they've moved around in the list.
   let seenKeys = null;
