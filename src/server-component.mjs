@@ -136,13 +136,15 @@ export class LustreServerComponent extends HTMLElement {
   }
 
   morph(vdom) {
-    this.#root = morph(this.#root, vdom, (msg) => {
+    this.#root = morph(this.#root, vdom, (handler) => (event) => {
+      const msg = handler(event);
       this.#socket?.send(JSON.stringify([Constants.event, msg.tag, msg.data]));
     });
   }
 
   diff([diff]) {
-    this.#root = patch(this.#root, diff, (msg) => {
+    this.#root = patch(this.#root, diff, (handler) => (event) => {
+      const msg = handler(event);
       this.#socket?.send(JSON.stringify([Constants.event, msg.tag, msg.data]));
     });
   }

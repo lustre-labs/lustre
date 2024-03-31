@@ -82,10 +82,10 @@ fn do_elements(
         // We previously had an element node but now we have a text node. All we
         // need to do is mark the new one as created and it will replace the old
         // element during patching.
-        Element(_, _, _, _, _, _), Text(_) ->
+        Element(_, _, _, _, _, _, _), Text(_) ->
           ElementDiff(..diff, created: dict.insert(diff.created, key, new))
 
-        Text(_), Element(_, _, _, _, _, _) as new ->
+        Text(_), Element(_, _, _, _, _, _, _) as new ->
           ElementDiff(
             ..diff,
             created: dict.insert(diff.created, key, new),
@@ -96,7 +96,8 @@ fn do_elements(
         // for both their namespaces and their tags to be the same. If that is
         // the case, we can dif their attributes to see what (if anything) has
         // changed, and then recursively diff their children.
-        Element(old_ns, old_tag, old_attrs, old_children, _, _), Element(
+        Element(_, old_ns, old_tag, old_attrs, old_children, _, _), Element(
+            _,
             new_ns,
             new_tag,
             new_attrs,
@@ -128,7 +129,7 @@ fn do_elements(
           // sizes and zips them together, padding the shorter list with `None`.
           let children = zip(old_children, new_children)
           use diff, #(old, new), pos <- list.index_fold(children, diff)
-          let key = key <> int.to_string(pos)
+          let key = key <> "-" <> int.to_string(pos)
 
           do_elements(diff, old, new, key)
         }
@@ -136,7 +137,7 @@ fn do_elements(
         // When we have two elements, but their namespaces or their tags differ,
         // there is nothing to diff. We mark the new element as created and
         // extract any event handlers.
-        Element(_, _, _, _, _, _), Element(_, _, _, _, _, _) as new ->
+        Element(_, _, _, _, _, _, _), Element(_, _, _, _, _, _, _) as new ->
           ElementDiff(
             ..diff,
             created: dict.insert(diff.created, key, new),
@@ -349,7 +350,7 @@ fn fold_event_handlers(
   case element {
     Text(_) -> handlers
     Map(subtree) -> fold_event_handlers(handlers, subtree(), key)
-    Element(_, _, attrs, children, _, _) -> {
+    Element(_, _, _, attrs, children, _, _) -> {
       let handlers =
         list.fold(attrs, handlers, fn(handlers, attr) {
           case event_handler(attr) {
@@ -361,7 +362,7 @@ fn fold_event_handlers(
           }
         })
       use handlers, child, index <- list.index_fold(children, handlers)
-      let key = key <> int.to_string(index)
+      let key = key <> "-" <> int.to_string(index)
 
       fold_event_handlers(handlers, child, key)
     }
