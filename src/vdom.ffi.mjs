@@ -75,6 +75,17 @@ export function morph(prev, next, dispatch, isComponent = false) {
 export function patch(root, diff, dispatch) {
   const rootParent = root.parentNode;
 
+  // A diff is a tuple of three arrays: created, removed, updated. Each of these
+  // arrays contains tuples of slightly differing shape. You'll have to go peek
+  // at `src/lustre/internals/patch.gleam` to work out the exact shape.
+
+  // A `created` diff is a tuple of `[key, element]` where the `key` is a path
+  // to the element in the VDOM tree and the `element` is the VDOM node itself.
+  // Nodes don't have any optimised encoding so they can be passed to `morph`
+  // without any processing.
+  //
+  // We get a created diff if the element is brand new *or* if it changed the tag
+  // of the element.
   for (const created of diff[0]) {
     const key = created[0].split("-");
     const next = created[1];
@@ -82,9 +93,14 @@ export function patch(root, diff, dispatch) {
 
     let result;
 
+    // If there was a previous node then we can morph the new node into it.
     if (prev !== null && prev !== rootParent) {
       result = morph(prev, next, dispatch);
-    } else {
+    }
+    // Otherwise, we create a temporary node to hold the new node's place in the
+    // tree. This can happen because we might get a patch that tells us some node
+    // was created at a path that doesn't exist yet.
+    else {
       const parent = getDeepChild(rootParent, key.slice(0, -1));
       const temp = document.createTextNode("");
       parent.appendChild(temp);
@@ -98,12 +114,16 @@ export function patch(root, diff, dispatch) {
     }
   }
 
+  // A `removed` diff is just a one-element tuple (for consistency) of the key of
+  // the removed element.
   for (const removed of diff[1]) {
     const key = removed[0].split("-");
     const deletedNode = getDeepChild(rootParent, key);
     deletedNode.remove();
   }
 
+  // An `updated` diff is all about *attributes*. It's a tuple of `[key, patches]`
+  // where patches is another list of diffs.
   for (const updated of diff[2]) {
     const key = updated[0].split("-");
     const patches = updated[1];
@@ -465,9 +485,11 @@ function lustreServerEventHandler(event) {
 function getKeyedChildren(el) {
   const keyedChildren = new Map();
 
-  for (const child of el.children) {
-    const key = child.key || child?.getAttribute("data-lustre-key");
-    if (key) keyedChildren.set(key, child);
+  if (el) {
+    for (const child of el.children) {
+      const key = child.key || child?.getAttribute("data-lustre-key");
+      if (key) keyedChildren.set(key, child);
+    }
   }
 
   return keyedChildren;
