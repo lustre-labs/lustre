@@ -429,15 +429,17 @@ function createElementNode({ prev, next, dispatch, stack }) {
 const registeredHandlers = new WeakMap();
 
 function lustreGenericEventHandler(event) {
-  if (!registeredHandlers.has(event.target)) {
-    event.target.removeEventListener(event.type, lustreGenericEventHandler);
+  const target = event.currentTarget;
+
+  if (!registeredHandlers.has(target)) {
+    target.removeEventListener(event.type, lustreGenericEventHandler);
     return;
   }
 
-  const handlersForEventTarget = registeredHandlers.get(event.target);
+  const handlersForEventTarget = registeredHandlers.get(target);
 
   if (!handlersForEventTarget.has(event.type)) {
-    event.target.removeEventListener(event.type, lustreGenericEventHandler);
+    target.removeEventListener(event.type, lustreGenericEventHandler);
     return;
   }
 
