@@ -19,7 +19,8 @@ function morph(prev, next, dispatch, isComponent = false) {
         parent.appendChild(created);
         out ??= created;
       } else if (prev2.nodeType === Node.TEXT_NODE) {
-        prev2.textContent = next2.content;
+        if (prev2.textContent !== next2.content)
+          prev2.textContent = next2.content;
         out ??= prev2;
       } else {
         const created = document.createTextNode(next2.content);
