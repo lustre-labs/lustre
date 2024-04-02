@@ -19,7 +19,8 @@ function morph(prev, next, dispatch, isComponent = false) {
         parent.appendChild(created);
         out ??= created;
       } else if (prev2.nodeType === Node.TEXT_NODE) {
-        prev2.textContent = next2.content;
+        if (prev2.textContent !== next2.content)
+          prev2.textContent = next2.content;
         out ??= prev2;
       } else {
         const created = document.createTextNode(next2.content);
@@ -241,13 +242,14 @@ function createElementNode({ prev, next, dispatch, stack }) {
 }
 var registeredHandlers = /* @__PURE__ */ new WeakMap();
 function lustreGenericEventHandler(event2) {
-  if (!registeredHandlers.has(event2.target)) {
-    event2.target.removeEventListener(event2.type, lustreGenericEventHandler);
+  const target = event2.currentTarget;
+  if (!registeredHandlers.has(target)) {
+    target.removeEventListener(event2.type, lustreGenericEventHandler);
     return;
   }
-  const handlersForEventTarget = registeredHandlers.get(event2.target);
+  const handlersForEventTarget = registeredHandlers.get(target);
   if (!handlersForEventTarget.has(event2.type)) {
-    event2.target.removeEventListener(event2.type, lustreGenericEventHandler);
+    target.removeEventListener(event2.type, lustreGenericEventHandler);
     return;
   }
   handlersForEventTarget.get(event2.type)(event2);

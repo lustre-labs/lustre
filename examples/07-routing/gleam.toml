@@ -11,4 +11,4 @@ modem = "~> 1.0"
 
 [dev-dependencies]
 gleeunit = "~> 1.0"
-lustre_dev_tools = "~> 1.0"
+lustre_dev_tools = "~> 1.1"

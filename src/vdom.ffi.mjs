@@ -36,7 +36,7 @@ export function morph(prev, next, dispatch, isComponent = false) {
         parent.appendChild(created);
         out ??= created;
       } else if (prev.nodeType === Node.TEXT_NODE) {
-        prev.textContent = next.content;
+        if (prev.textContent !== next.content) prev.textContent = next.content;
         out ??= prev;
       } else {
         const created = document.createTextNode(next.content);
@@ -431,15 +431,17 @@ function createElementNode({ prev, next, dispatch, stack }) {
 const registeredHandlers = new WeakMap();
 
 function lustreGenericEventHandler(event) {
-  if (!registeredHandlers.has(event.target)) {
-    event.target.removeEventListener(event.type, lustreGenericEventHandler);
+  const target = event.currentTarget;
+
+  if (!registeredHandlers.has(target)) {
+    target.removeEventListener(event.type, lustreGenericEventHandler);
     return;
   }
 
-  const handlersForEventTarget = registeredHandlers.get(event.target);
+  const handlersForEventTarget = registeredHandlers.get(target);
 
   if (!handlersForEventTarget.has(event.type)) {
-    event.target.removeEventListener(event.type, lustreGenericEventHandler);
+    target.removeEventListener(event.type, lustreGenericEventHandler);
     return;
   }
 
