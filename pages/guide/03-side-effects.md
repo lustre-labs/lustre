@@ -35,7 +35,7 @@ this:
 
 Well what does managed effects mean, exactly? In Lustre, we expect your `init`,
 `update`, and `view` functions to be [_pure_](https://github.com/lustre-labs/lustre/blob/main/pages/hints/pure-functions.md).
-That means they shouldn't perform side effects like making a HTTP request or writing
+That means they shouldn't perform side effects like making an HTTP request or writing
 to local storage: we should be able to run your functions 100 times with the same
 input and get the same output every time!
 
@@ -43,13 +43,13 @@ Of course, in real applications performing HTTP requests and writing to local
 storage turn out to be quite useful things to do. If we shouldn't perform side
 effects in our code how do we do them then? Lustre has an [`Effect`](https://hexdocs.pm/lustre/lustre/effect.html)
 type that _tells the runtime what side effects to perform_. So we say "Hey, I
-want to make a HTTP request to this URL and when you get the response, dispatch
+want to make an HTTP request to this URL and when you get the response, dispatch
 this message to me". The runtime takes care of performing the side effect and
 turning the result into something our `update` function understands.
 
 ## Why managed effects?
 
-This can feel like a lot of ceremony to go through just to make a HTTP request.
+This can feel like a lot of ceremony to go through just to make an HTTP request.
 The natural question is: why not just let us make these requests ourselves?
 
 Managed effects have a number of benefits that come from _separating our programs
@@ -189,7 +189,7 @@ call to ensure the DOM has had a chance to update first.
 So far, we have seen side effects that are expected to _return something_ to our
 program. If we fire an HTTP request, it wouldn't be much use if we couldn't get
 the response back! Sometimes folks wrongly assume effects _must_ use the `dispatch`
-function their given, but this isn't true!
+function they're given, but this isn't true!
 
 It's also totally valid to write effects that don't dispatch any messages. Earlier
 we saw an example of how to read from local storage, we might also want an effect

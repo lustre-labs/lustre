@@ -26,7 +26,7 @@ fn f(x) {
 Functions like this are _pure_. They take an input, perform some computation, and
 return an output. The output is _only_ determined by the input, and the function
 doesn't change anything about the outside world like writing to a file or making
-a HTTP request.
+an HTTP request.
 
 **Lustre assumes your `init`, `update`, and `view` functions are pure** and breaking
 this assumption can lead to unexpected behaviour. It is _really_ important to

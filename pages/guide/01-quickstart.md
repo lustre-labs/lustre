@@ -246,7 +246,7 @@ While we're here, we'll also add `gleam_json` so we can decode the response from
 the cat API:
 
 ```sh
-$ gleam add gleam_json lustre_http
+$ gleam add lustre_http
 ```
 
 Now we are introducing side effects, we need to graduate from `lustre.simple` to
