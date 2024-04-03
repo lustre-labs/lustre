@@ -148,7 +148,7 @@ this example to the Subject Verb Object naming pattern:
 ```gleam
 type Msg {
   UserUpdatedPassword(String)
-  UserRequestPasswordReset
+  UserRequestedPasswordReset
   BackendResetPassword(Result(Nil, String))
 }
 ```
