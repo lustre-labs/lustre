@@ -1,4 +1,4 @@
-# 01 Quickstart Guide
+# 01 Quickstart guide
 
 Welcome to the Lustre quickstart guide! This document should get you up to speed
 with the core ideas that underpin every Lustre application as well as how to get
@@ -163,7 +163,7 @@ model can be an `Int` and our `init` function will initialise it to `0`:
 ```gleam
 pub type Model = Int
 
-fn init(_) -> Model {
+fn init(_flags) -> Model {
   0
 }
 ```
@@ -282,7 +282,7 @@ pub type Model {
   Model(count: Int, cats: List(String))
 }
 
-fn init(_) -> #(Model, effect.Effect(Msg)) {
+fn init(_flags) -> #(Model, effect.Effect(Msg)) {
   #(Model(0, []), effect.none())
 }
 ```

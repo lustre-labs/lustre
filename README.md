@@ -93,7 +93,7 @@ pub fn main() {
   Nil
 }
 
-fn init(_) {
+fn init(_flags) {
   0
 }
 

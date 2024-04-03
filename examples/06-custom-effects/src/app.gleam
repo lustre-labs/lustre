@@ -27,7 +27,7 @@ type Model {
   Model(message: Option(String))
 }
 
-fn init(_) -> #(Model, Effect(Msg)) {
+fn init(_flags) -> #(Model, Effect(Msg)) {
   #(Model(message: None), read_localstorage("message"))
 }
 
