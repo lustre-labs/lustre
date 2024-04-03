@@ -137,10 +137,10 @@ fn do_elements(
             created: dict.insert(diff.created, key, new),
             handlers: fold_event_handlers(diff.handlers, new, key),
           )
-        Fragment(_, old_elements), Fragment(_, new_elements) ->
+        Fragment(old_elements), Fragment(new_elements) ->
           do_element_list(diff, old_elements, new_elements, key)
         // Other element is not a fragment, take new element in both cases
-        _, Fragment(_, _) | Fragment(_, _), _ ->
+        _, Fragment(_) | Fragment(_), _ ->
           ElementDiff(
             ..diff,
             created: dict.insert(diff.created, key, new),
@@ -159,9 +159,9 @@ fn do_element_list(
 ) {
   // This local `zip` function takes two lists of potentially different
   // sizes and zips them together, padding the shorter list with `None`.
-  let elements = zip(old_elements, new_elements)
-  use diff, #(old, new), pos <- list.index_fold(elements, diff)
-  let key = key <> int.to_string(pos)
+  let children = zip(old_elements, new_elements)
+  use diff, #(old, new), pos <- list.index_fold(children, diff)
+  let key = key <> "-" <> int.to_string(pos)
 
   do_elements(diff, old, new, key)
 }
@@ -381,7 +381,7 @@ fn fold_event_handlers(
         })
       fold_element_list_event_handlers(handlers, children, key)
     }
-    Fragment(_, elements) ->
+    Fragment(elements) ->
       fold_element_list_event_handlers(handlers, elements, key)
   }
 }

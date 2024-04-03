@@ -66,8 +66,12 @@ export function morph(prev, next, dispatch, isComponent = false) {
       }
 
       out ??= created;
-    } else if () {
-      
+    // If this happens, then the top level Element is a Fragment `prev`should be
+    // the first element of the given fragment. Functionally, a fragment as the 
+    // first child means that document -> body will be the parent of the first level
+    // of children
+    } else if (next.elements !== undefined) {
+      processFragment(prev, next, parent, stack);
     }
   }
 
@@ -358,8 +362,17 @@ function createElementNode({ prev, next, dispatch, stack }) {
       // insert the incoming child at the current position (and diff against whatever
       // is already there).
       if (keyedChildren.size === 0) {
-        stack.unshift({ prev: prevChild, next: child, parent: el });
-        prevChild = prevChild?.nextSibling;
+        if (child.elements !== undefined) {
+          // Consider a child fragment to be just be a logical group of children with
+          // the same parent as the fragments' siblings. This iterates over its children
+          // flattening as it goes, adding to the stack to be processed as if they were
+          // just children. prevChild will be undefined, or the element after going
+          // through the siblings, the same as if this were just a list of children
+          prevChild = processFragment(prevChild, child, el, stack);
+        } else {
+          stack.unshift({ prev: prevChild, next: child, parent: el });
+          prevChild = prevChild?.nextSibling;
+        }
         continue;
       }
 
@@ -410,6 +423,8 @@ function createElementNode({ prev, next, dispatch, stack }) {
       // Note that we're *not* updating the `prevChild` pointer.
       el.insertBefore(keyedChild, prevChild);
       stack.unshift({ prev: keyedChild, next: child, parent: el });
+    } else if (child.elements !== undefined) {
+      prevChild = processFragment(prevChild, child, el, stack);
     } else {
       stack.unshift({ prev: prevChild, next: child, parent: el });
       prevChild = prevChild?.nextSibling;
@@ -510,4 +525,45 @@ function getDeepChild(el, path) {
   }
 
   return child;
+}
+
+/* Iterate over a fragment's elements while flattening child fragments
+Need to test existing keys
+Flatten fragments: element.fragment([
+  html.p([],[]),
+  element.fragment([
+    html.p([],[])])
+  ]) -> element.fragment([html.p([],[]), html.p([],[])])
+*/
+function* getFragmentIterator(fragment) {
+  // If no elements, this should just not iterate
+  if (!fragment.elements) {
+    return;
+  }
+
+  const elementsToProcess = [fragment.elements];
+  while (elementsToProcess.length) {
+    const elementToProcess = elementsToProcess.pop();
+    
+    for (const fragmentElement of elementToProcess) {
+      if (fragmentElement.elements !== undefined) {
+        elementsToProcess.unshift(fragmentElement.elements);
+      } else {
+        yield fragmentElement;
+      }
+    }
+  }
+
+  return;
+}
+
+function processFragment(prev, fragment, parent, stack) {
+  const fragmentIterator = getFragmentIterator(fragment);
+  
+  for (const fragmentElement of fragmentIterator) {
+    stack.unshift({ prev, next: fragmentElement, parent });
+    prev = prev?.nextSibling
+  }
+
+  return prev;
 }

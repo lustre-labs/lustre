@@ -249,7 +249,7 @@ pub fn none() -> Element(msg) {
 /// A function to wrap multiple elements to be rendered without wrapping them in a container
 /// 
 pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
-  vdom.fragment(elements)
+  Fragment(elements)
 }
 
 fn escape(escaped: String, content: String) -> String {
@@ -292,8 +292,8 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
           void: void,
         )
       })
-    Fragment(identifier, elements) -> {
-      Map(fn() { Fragment(identifier, list.map(elements, map(_, f))) })
+    Fragment(elements) -> {
+      Map(fn() { Fragment(list.map(elements, map(_, f))) })
     }
   }
 }
