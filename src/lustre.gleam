@@ -239,7 +239,7 @@ pub type ServerComponent
 
 /// An action represents a message that can be sent to a running Lustre application.
 /// Code that is orchestrating an application where Lustre is only one part of the
-/// system will likely want to send actions to the ustre runtime. For most kinds of
+/// system will likely want to send actions to the Lustre runtime. For most kinds of
 /// application, you can usually ignore actions entirely.
 ///
 /// The `msg` type parameter is the kind of messages you can send to the runtime's
