@@ -3,15 +3,87 @@
 Up until now, we have focused on Lustre's ability as a framework for building
 Single Page Applications (SPAs). While Lustre's development and feature set is
 primarily focused on SPA development, that doesn't mean it can't be used on the
-backend as well! In this guide we'll set up a small [wisp](https://hexdocs.pm/wisp/)
+backend as well! In this guide we'll set up a small [mist](https://hexdocs.pm/mist/)
 server that renders some static HTML using Lustre.
 
 ## Setting up the project
 
-Wisp is a Web server framework for Gleam, but it lets you bring your own HTTP
-server. In this guide we'll use [mist](https://hexdocs.pm/mist/), a fast HTTP
-server written for Gleam.
+We'll start by adding the dependencies we need and scaffolding the HTTP server.
+Besides Lustre and Mist, we also need `gleam_erlang` (to keep our application
+alive) and `gleam_http` (for types and functions to work with HTTP requests and
+responses):
 
 ```sh
-gleam new app && cd app && gleam add lustre mist wisp
+gleam new app && cd app && gleam add gleam_erlang gleam_http lustre mist
 ```
+
+Besides imports for `mist` and `gleam_http` modules, we also need to import some
+modules to render HTML with Lustre. Importantly, we _don't_ need anything from the
+main `lustre` module: we're not building an application with a runtime!
+
+```gleam
+import gleam/bytes_builder
+import gleam/http/request.{type Request}
+import gleam/http/response.{type Response}
+import lustre/element.{type Element}
+import lustre/element/html.{html}
+import mist.{type Connection, type ResponseData}
+```
+
+We'll modify Mist's example and write a simple request handler that responds to
+requests to `/greet/:name` with a greeting message:
+
+```gleam
+pub fn main() {
+  let empty_body = mist.Bytes(bytes_builder.new())
+  let not_found = response.set_body(response.new(404), empty_body)
+
+  let assert Ok(_) =
+    fn(req: Request(Connection)) -> Response(ResponseData) {
+      case request.path_segments(req) {
+        ["greet", name] -> greet(name)
+        _ -> not_found
+      }
+    }
+    |> mist.new
+    |> mist.port(3000)
+    |> mist.start_http
+
+  process.sleep_forever()
+}
+```
+
+Let's take a peek inside that `greet` function:
+
+```gleam
+fn greet(name: String) -> Response(ResponseData) {
+  let res = response.new(200)
+  let html =
+    html([], [
+      html.head([], [html.title([], "Greetings!")]),
+      html.body([], [
+        html.h1([], [html.text("Hey there, " <> name <> "!")])
+      ])
+    ])
+
+  response.set_body(res,
+    html
+    |> element.to_document_string
+    |> bytes_builder.from_string
+    |> mist.Bytes
+  )
+}
+```
+
+The `lustre/element` module has functions for rendering Lustre elements to a
+string (or string builder); the `to_document_string` function helpfully prepends
+the `<!DOCTYPE html>` declaration to the output.
+
+It's important to realise that `element.to_string` and `element.to_document_string`
+can render _any_ Lustre element! This means you could take the `view` function
+from your client-side SPA and render it server-side, too.
+
+## Hydration
+
+If we know we can render our apps server-side, the next logical question is how
+do we handle _hydration_?
