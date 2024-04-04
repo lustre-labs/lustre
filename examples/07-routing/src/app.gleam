@@ -30,7 +30,7 @@ pub fn main() {
 // MODEL -----------------------------------------------------------------------
 
 type Model {
-  Model(current: Route, guests: List(Guest), new_guest_name: String)
+  Model(current_route: Route, guests: List(Guest), new_guest_name: String)
 }
 
 type Route {
@@ -45,7 +45,7 @@ type Guest {
 fn init(_) -> #(Model, Effect(Msg)) {
   #(
     Model(
-      current: Home,
+      current_route: Home,
       guests: [
         Guest(slug: "chihiro", name: "Chihiro"),
         Guest(slug: "totoro", name: "Totoro"),
@@ -73,7 +73,10 @@ pub opaque type Msg {
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
-    OnRouteChange(route) -> #(Model(..model, current: route), effect.none())
+    OnRouteChange(route) -> #(
+      Model(..model, current_route: route),
+      effect.none(),
+    )
     UserUpdatedNewGuestName(name) -> #(
       Model(..model, new_guest_name: name),
       effect.none(),
@@ -94,36 +97,18 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 fn view(model: Model) -> Element(Msg) {
   let styles = [#("margin", "15vh")]
 
-  let page = case model.current {
-    WelcomeGuest(name) -> render_welcome(model, name)
+  let page = case model.current_route {
     Home -> render_home(model)
+    WelcomeGuest(name) -> render_welcome(model, name)
   }
 
   ui.stack([attribute.style(styles)], [render_nav(model), page])
 }
 
-fn render_nav(model: Model) -> Element(a) {
-  let item_styles = [#("margin", "15px"), #("text-decoration", "underline")]
-
-  let nav_item = fn(path, text) {
-    html.a([attribute.href("/" <> path), attribute.style(item_styles)], [
-      element.text(text),
-    ])
-  }
-
-  let guests =
-    model.guests
-    |> list.map(fn(guest: Guest) {
-      nav_item("welcome/" <> guest.slug, guest.name)
-    })
-
-  html.nav([], [nav_item("", "Home"), ..guests])
-}
-
 fn render_home(model: Model) {
   let new_guest_input = fn(event) {
-    use code <- result.try(dynamic.field("key", dynamic.string)(event))
-    case code {
+    use key_code <- result.try(dynamic.field("key", dynamic.string)(event))
+    case key_code {
       "Enter" -> {
         let guest_slug =
           model.new_guest_name
@@ -139,17 +124,15 @@ fn render_home(model: Model) {
       }
     }
   }
-  ui.centre(
-    [attribute.style([#("margin-top", "10vh")])],
-    ui.stack([], [
-      to_title("Welcome to the Party 🏡"),
-      html.label([], [element.text("Please sign the guest book:")]),
-      ui.input([
-        event.on("keyup", new_guest_input),
-        attribute.value(model.new_guest_name),
-      ]),
+
+  render_body([
+    render_title("Welcome to the Party 🏡"),
+    html.p([], [element.text("Please sign the guest book:")]),
+    ui.input([
+      event.on("keyup", new_guest_input),
+      attribute.value(model.new_guest_name),
     ]),
-  )
+  ])
 }
 
 fn render_welcome(model: Model, slug) -> Element(a) {
@@ -158,16 +141,41 @@ fn render_welcome(model: Model, slug) -> Element(a) {
     |> list.find(fn(guest: Guest) { guest.slug == slug })
 
   let title = case guest {
-    Ok(guest) -> to_title("Hello, " <> guest.name <> "! 🎉")
-    _ -> to_title("Sorry ... didn't quite catch that.")
+    Ok(guest) -> render_title("Hello, " <> guest.name <> "! 🎉")
+    _ -> render_title("Sorry ... didn't quite catch that.")
   }
 
-  ui.centre([attribute.style([#("margin-top", "10vh")])], title)
+  render_body([title])
 }
 
-fn to_title(text) {
+fn render_nav(model: Model) -> Element(a) {
+  let item_styles = [#("margin", "1rem"), #("text-decoration", "underline")]
+
+  let render_nav_item = fn(path, text) {
+    html.a([attribute.href("/" <> path), attribute.style(item_styles)], [
+      element.text(text),
+    ])
+  }
+
+  let guest_nav_items =
+    model.guests
+    |> list.map(fn(guest: Guest) {
+      render_nav_item("welcome/" <> guest.slug, guest.name)
+    })
+
+  html.nav([], [render_nav_item("", "Home"), ..guest_nav_items])
+}
+
+fn render_body(children) {
+  ui.centre(
+    [attribute.style([#("margin-top", "10vh")])],
+    ui.stack([], children),
+  )
+}
+
+fn render_title(text) {
   html.h1(
-    [attribute.style([#("font-size", "36px"), #("font-weight", "bold")])],
+    [attribute.style([#("font-size", "2.25rem"), #("font-weight", "bold")])],
     [element.text(text)],
   )
 }
