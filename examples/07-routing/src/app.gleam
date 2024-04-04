@@ -19,6 +19,7 @@ import modem
 // In your own apps, make sure to add the `lustre/ui` dependency and include the
 // stylesheet somewhere.
 import lustre/ui
+import lustre/ui/util/cn
 
 // MAIN ------------------------------------------------------------------------
 
@@ -98,14 +99,14 @@ fn view(model: Model) -> Element(Msg) {
   let styles = [#("margin", "15vh")]
 
   let page = case model.current_route {
-    Home -> render_home(model)
-    WelcomeGuest(name) -> render_welcome(model, name)
+    Home -> view_home(model)
+    WelcomeGuest(name) -> view_welcome(model, name)
   }
 
-  ui.stack([attribute.style(styles)], [render_nav(model), page])
+  ui.stack([attribute.style(styles)], [view_nav(model), page])
 }
 
-fn render_home(model: Model) {
+fn view_home(model: Model) {
   let new_guest_input = fn(event) {
     use key_code <- result.try(dynamic.field("key", dynamic.string)(event))
     case key_code {
@@ -125,8 +126,8 @@ fn render_home(model: Model) {
     }
   }
 
-  render_body([
-    render_title("Welcome to the Party 🏡"),
+  view_body([
+    view_title("Welcome to the Party 🏡"),
     html.p([], [element.text("Please sign the guest book:")]),
     ui.input([
       event.on("keyup", new_guest_input),
@@ -135,23 +136,23 @@ fn render_home(model: Model) {
   ])
 }
 
-fn render_welcome(model: Model, slug) -> Element(a) {
+fn view_welcome(model: Model, slug) -> Element(a) {
   let guest =
     model.guests
     |> list.find(fn(guest: Guest) { guest.slug == slug })
 
   let title = case guest {
-    Ok(guest) -> render_title("Hello, " <> guest.name <> "! 🎉")
-    _ -> render_title("Sorry ... didn't quite catch that.")
+    Ok(guest) -> view_title("Hello, " <> guest.name <> "! 🎉")
+    _ -> view_title("Sorry ... didn't quite catch that.")
   }
 
-  render_body([title])
+  view_body([title])
 }
 
-fn render_nav(model: Model) -> Element(a) {
+fn view_nav(model: Model) -> Element(a) {
   let item_styles = [#("margin", "1rem"), #("text-decoration", "underline")]
 
-  let render_nav_item = fn(path, text) {
+  let view_nav_item = fn(path, text) {
     html.a([attribute.href("/" <> path), attribute.style(item_styles)], [
       element.text(text),
     ])
@@ -160,22 +161,18 @@ fn render_nav(model: Model) -> Element(a) {
   let guest_nav_items =
     model.guests
     |> list.map(fn(guest: Guest) {
-      render_nav_item("welcome/" <> guest.slug, guest.name)
+      view_nav_item("welcome/" <> guest.slug, guest.name)
     })
 
-  html.nav([], [render_nav_item("", "Home"), ..guest_nav_items])
+  ui.cluster([], [html.nav([], [view_nav_item("", "Home"), ..guest_nav_items])])
 }
 
-fn render_body(children) {
-  ui.centre(
-    [attribute.style([#("margin-top", "10vh")])],
-    ui.stack([], children),
-  )
+fn view_body(children) {
+  ui.centre([cn.mt_xl()], ui.stack([], children))
 }
 
-fn render_title(text) {
-  html.h1(
-    [attribute.style([#("font-size", "2.25rem"), #("font-weight", "bold")])],
-    [element.text(text)],
-  )
+fn view_title(text) {
+  html.h1([cn.text_2xl(), attribute.style([#("font-weight", "bold")])], [
+    element.text(text),
+  ])
 }

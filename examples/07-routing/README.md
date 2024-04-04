@@ -14,7 +14,7 @@ Modem uses [custom side effects](../06-custom-effects/) and external Javascript 
 
 Inside our `on_route_change` function, we match URI path segment patterns to our routes:
 
-```rust
+```gleam
   fn on_route_change(uri: Uri) -> Msg {
     case uri.path_segments(uri.path) {
       ["welcome", guest] -> OnRouteChange(WelcomeGuest(guest))
@@ -25,7 +25,7 @@ Inside our `on_route_change` function, we match URI path segment patterns to our
 
 In our `update` function, we assign the matched route to `model.current_route`:
 
-```rust
+```gleam
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     OnRouteChange(route) -> #(
@@ -38,7 +38,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
 And in our `view` function, we use `model.current_route` to determine what to display to the user:
 
-```rust
+```gleam
 fn view(model: Model) -> Element(Msg) {
   let page = case model.current_route {
     Home -> render_home(model)
@@ -50,13 +50,11 @@ fn view(model: Model) -> Element(Msg) {
 
 ## Views: They're just functions!
 
-In keeping with the Gleam philosophy of avoiding unecessary complexity, Lustre doesn't provide a traditional HTML or JSX-style templating engine.
+Lustre doesn't provide a traditional HTML or JSX-style templating engine, and this is by design.
 
-Since the `view` portion of this example is a bit more involved than our previous ones have been, it should start to give more of a feel for how views in Lustre truly are _just functions_.
+Since the `view` portion of this example is a bit more involved than our previous ones have been, it should start to give you more of a feel for how views in Lustre truly are _just functions_. The layout is a function. Each page view is a function. The nav is a function, and each individual nav _item_ is a function too.
 
-Nav? It's a function. Nav _items_? Those are functions too. The "body" portion of our layout? Also a function. Individual pages are functions as well. The `view` function defines our layout by passing a list of function outputs to the `ui.stack` function.
-
-In this way, Lustre lets you build a type safe, unbreakable UI made entirely of [pure functions](https://github.com/lustre-labs/lustre/blob/main/pages/hints/pure-functions.md) written in Gleam.
+This means we can build up our entire UI while without ever leaving behind the benefits of Gleam's functional syntax, including features like exhaustive pattern matching based on our routes. Since our views are [pure functions](https://github.com/lustre-labs/lustre/blob/main/pages/hints/pure-functions.md), the fact that they pass Gleam's compiler checks tells us with mathematical certainty that they'll always render reliably in the wild.
 
 ## Getting help
 
