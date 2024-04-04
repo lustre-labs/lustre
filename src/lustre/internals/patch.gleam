@@ -137,10 +137,10 @@ fn do_elements(
             created: dict.insert(diff.created, key, new),
             handlers: fold_event_handlers(diff.handlers, new, key),
           )
-        Fragment(old_elements), Fragment(new_elements) ->
+        Fragment(old_elements, _), Fragment(new_elements, _) ->
           do_element_list(diff, old_elements, new_elements, key)
         // Other element is not a fragment, take new element in both cases
-        _, Fragment(_) | Fragment(_), _ ->
+        _, Fragment(_, _) | Fragment(_, _), _ ->
           ElementDiff(
             ..diff,
             created: dict.insert(diff.created, key, new),
@@ -381,7 +381,7 @@ fn fold_event_handlers(
         })
       fold_element_list_event_handlers(handlers, children, key)
     }
-    Fragment(elements) ->
+    Fragment(elements, _) ->
       fold_element_list_event_handlers(handlers, elements, key)
   }
 }

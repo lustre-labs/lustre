@@ -8,6 +8,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/int
 import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
@@ -181,6 +182,21 @@ fn do_keyed(el: Element(msg), key: String) -> Element(msg) {
         void: void,
       )
     Map(subtree) -> Map(fn() { do_keyed(subtree(), key) })
+    Fragment(elements, _) ->
+      elements
+      |> list.index_map(fn(element, idx) {
+        case element {
+          Element(el_key, _, _, _, _, _, _) -> {
+            let new_key = case el_key {
+              "" -> key <> "-" <> int.to_string(idx)
+              _ -> key <> "-" <> el_key
+            }
+            do_keyed(element, new_key)
+          }
+          _ -> do_keyed(element, key)
+        }
+      })
+      |> Fragment(key)
     _ -> el
   }
 }
@@ -249,7 +265,7 @@ pub fn none() -> Element(msg) {
 /// A function to wrap multiple elements to be rendered without wrapping them in a container
 /// 
 pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
-  Fragment(elements)
+  Fragment(elements, "")
 }
 
 fn escape(escaped: String, content: String) -> String {
@@ -292,8 +308,8 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
           void: void,
         )
       })
-    Fragment(elements) -> {
-      Map(fn() { Fragment(list.map(elements, map(_, f))) })
+    Fragment(elements, key) -> {
+      Map(fn() { Fragment(list.map(elements, map(_, f)), key) })
     }
   }
 }

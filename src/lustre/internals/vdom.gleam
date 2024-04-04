@@ -24,7 +24,7 @@ pub type Element(msg) {
   // The lambda here defers the creation of the mapped subtree until it is necessary.
   // This means we pay the cost of mapping multiple times only *once* during rendering.
   Map(subtree: fn() -> Element(msg))
-  Fragment(elements: List(Element(msg)))
+  Fragment(elements: List(Element(msg)), key: String)
 }
 
 pub type Attribute(msg) {
@@ -58,7 +58,7 @@ fn do_handlers(
 
       do_element_list_handlers(children, handlers, key)
     }
-    Fragment(elements) -> do_element_list_handlers(elements, handlers, key)
+    Fragment(elements, _) -> do_element_list_handlers(elements, handlers, key)
   }
 }
 
@@ -98,7 +98,7 @@ fn do_element_to_json(element: Element(msg), key: String) -> Json {
         #("void", json.bool(void)),
       ])
     }
-    Fragment(elements) -> do_element_list_to_json(elements, key)
+    Fragment(elements, _) -> do_element_list_to_json(elements, key)
   }
 }
 
@@ -251,7 +251,7 @@ fn do_element_to_string_builder(
           |> string_builder.append(">" <> inner_html <> "</" <> tag <> ">")
       }
     }
-    Fragment(elements) ->
+    Fragment(elements, _) ->
       children_to_string_builder(string_builder.new(), elements, raw_text)
   }
 }
