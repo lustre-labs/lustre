@@ -292,6 +292,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
     }
 
     for (const eventName of prevHandlers) {
+      handlersForEl.delete(eventName);
       el.removeEventListener(eventName, lustreGenericEventHandler);
     }
   }
