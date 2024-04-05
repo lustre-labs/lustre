@@ -28,7 +28,7 @@ type Model {
   Model(value: String, length: Int, max: Int)
 }
 
-fn init(_) -> Model {
+fn init(_flags) -> Model {
   Model(value: "", length: 0, max: 10)
 }
 

@@ -44,7 +44,7 @@ type Guest {
   Guest(slug: String, name: String)
 }
 
-fn init(_) -> #(Model, Effect(Msg)) {
+fn init(_flags) -> #(Model, Effect(Msg)) {
   #(
     Model(
       current_route: Home,
