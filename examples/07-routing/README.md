@@ -52,9 +52,11 @@ fn view(model: Model) -> Element(Msg) {
 
 Lustre doesn't provide a traditional HTML or JSX-style templating engine, and this is by design.
 
-Since the `view` portion of this example is a bit more involved than our previous ones have been, it should start to give you more of a feel for how views in Lustre truly are _just functions_. The layout is a function. Each page view is a function. The nav is a function, and each individual nav _item_ is a function too.
+Since the `view` portion of this example is a bit more involved than our previous ones have been, it should start to give you more of a feel for how views in Lustre are _just functions_. The layout is a function. Each page view is a function. The nav is a function, and each individual nav _item_ is a function too.
 
-This means we can build up our entire UI while without ever leaving behind the benefits of Gleam's functional syntax, including features like exhaustive pattern matching based on our routes. Since our views are [pure functions](https://github.com/lustre-labs/lustre/blob/main/pages/hints/pure-functions.md), the fact that they pass Gleam's compiler checks tells us with mathematical certainty that they'll always render reliably in the wild.
+This means we can build up our entire UI using Gleam's functional syntax, benefiting from features like exhaustive pattern matching based on our routes.
+
+Since our views are [pure functions](https://github.com/lustre-labs/lustre/blob/main/pages/hints/pure-functions.md), we know they'll always render reliably.
 
 ## Getting help
 

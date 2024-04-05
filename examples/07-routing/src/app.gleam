@@ -19,6 +19,7 @@ import modem
 // In your own apps, make sure to add the `lustre/ui` dependency and include the
 // stylesheet somewhere.
 import lustre/ui
+import lustre/ui/layout/cluster
 import lustre/ui/util/cn
 
 // MAIN ------------------------------------------------------------------------
@@ -150,7 +151,7 @@ fn view_welcome(model: Model, slug) -> Element(a) {
 }
 
 fn view_nav(model: Model) -> Element(a) {
-  let item_styles = [#("margin", "1rem"), #("text-decoration", "underline")]
+  let item_styles = [#("text-decoration", "underline")]
 
   let view_nav_item = fn(path, text) {
     html.a([attribute.href("/" <> path), attribute.style(item_styles)], [
@@ -164,7 +165,7 @@ fn view_nav(model: Model) -> Element(a) {
       view_nav_item("welcome/" <> guest.slug, guest.name)
     })
 
-  ui.cluster([], [html.nav([], [view_nav_item("", "Home"), ..guest_nav_items])])
+  cluster.of(html.nav, [], [view_nav_item("", "Home"), ..guest_nav_items])
 }
 
 fn view_body(children) {
@@ -172,7 +173,5 @@ fn view_body(children) {
 }
 
 fn view_title(text) {
-  html.h1([cn.text_2xl(), attribute.style([#("font-weight", "bold")])], [
-    element.text(text),
-  ])
+  html.h1([cn.text_xl()], [element.text(text)])
 }
