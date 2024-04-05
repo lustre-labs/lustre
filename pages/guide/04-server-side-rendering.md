@@ -103,3 +103,117 @@ same model, no matter how many times we call it.
 Let's use that to our advantage! We know our app's `init` function is responsible
 for producing the initial model, so all we need is a way to make sure the initial
 model on the client is the same as whate the server used to render the page.
+
+```gleam
+pub fn view(model: Int) -> Element(Msg) {
+  let count = int.to_string(model)
+
+  html.div([], [
+    html.button([event.on_click(Decr)], [html.text("-")]),
+    html.button([event.on_click(Incr)], [html.text("+")]),
+    html.p([], [html.text("Count: " <> count)])
+  ])
+}
+```
+
+We've seen the counter example a thousand times over now, but it's a good example
+to show off how simple hydration can be. The `view` function produces some HTML
+with events attached, but we already know Lustre can render _any_ element to a
+string so that shouldn't be a problem.
+
+Let's imagine our HTTP server responds with the following HTML:
+
+```gleam
+import app/counter
+import gleam/bytes_builder
+import gleam/http/response.{type Response}
+import gleam/json
+import lustre/attribute
+import lustre/element.{type Element}
+import lustre/element/html.{html}
+import mist.{type ResponseData}
+
+fn app() -> Response(ResponseData) {
+  let res = response.new(200)
+
+  let model = 5
+  let html =
+    html([], [
+      html.head([], [
+        html.script([attribute.type_("module"), attribute.src("...")], ""),
+        html.script([attribute.type_("application/json"), attribute.id("model")],
+          json.int(model)
+          |> json.to_string
+        )
+      ]),
+      html.body([], [
+        html.div([attribute.id("app")], [
+          counter.view(model)
+        ])
+      ])
+    ])
+
+  response.set_body(res,
+    html
+    |> element.to_document_string
+    |> bytes_builder.from_string
+    |> mist.Bytes
+  )
+}
+```
+
+We've rendered the shell of our application, as well as the counter using `5` as
+the initial model. Importantly, we've included a `<script>` tag with the initial
+model encoded as JSON (it might just be an `Int` in this example, but it could
+be anything).
+
+On the client, it's a matter of reading that JSON and decoding it as our initial
+model. The [plinth](https://hexdocs.pm/plinth/plinth.html) package provides
+bindings to many browser APIs, we can use that to read the JSON out of the script
+tag:
+
+```gleam
+import gleam/dynamic
+import gleam/json
+import gleam/result
+import lustre
+import plinth/browser/document
+import plinth/browser/element
+
+pub fn main() {
+  let json =
+    document.query_selector("#model")
+    |> result.map(element.inner_text)
+
+  let flags =
+    case json.decode_string(json, dynamic.int) {
+      Ok(count) -> count
+      Error(_) -> 0
+    }
+
+  let app = lustre.application(init, update, view)
+  let assert Ok(_) = lustre.start(app, "#app", flags)
+}
+```
+
+Hey that wasn't so bad! We made sure to fall back to an initial count of `0` if
+we failed to decode the JSON: this lets us handle cases where the server might
+not want us to hydrate.
+
+If you were to set this all up, run it, and check your browser's developer tools,
+you'd see that the existing HTML was not replaced and the app is fully interactive!
+
+For many cases serialising the entire model will work just fine. But remember
+that Lustre's super power is that pure `view` function. If you're smart, you can
+reduce the amount of data you serialise and _derive_ the rest of your model from
+that.
+
+We brushed over quite a few details showing how hydration could work here, but in
+the [next guide](https://hexdocs.pm/lustre/guide/05-full-stack-applications.html)
+we'll go into a lot more detail on how to set up and run a full-stack Lustre app.
+
+## Getting help
+
+If you're having trouble with Lustre or not sure what the right way to do
+something is, the best place to get help is the [Gleam Discord server](https://discord.gg/Fm8Pwmy).
+You could also open an issue on the [Lustre GitHub repository](https://github.com/lustre-labs/lustre/issues).
