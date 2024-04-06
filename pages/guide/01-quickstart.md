@@ -84,6 +84,9 @@ To start a development server, we can run:
 gleam run -m lustre/dev start
 ```
 
+> **Note**: This development server does *not* currently watch your files for changes.
+> [Watchexec](https://github.com/watchexec/watchexec?tab=readme-ov-file) is a popular tool you can use to restart the server when files change.
+
 The first time you run this command might take a little while, but subsequent runs
 should be much faster!
 
