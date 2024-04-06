@@ -25,6 +25,8 @@ root.render(<h1>Hello, world</h1>);
 
 To run the project you could use Vite's development server with `npx vite`.
 
+---
+
 **In Lustre** you need to install the `lustre` package with `gleam add lustre`.
 Most Lustre projects will add the dev tools too with `gleam add --dev lustre_dev_tools`.
 A simple hello world might look like this:
@@ -50,6 +52,8 @@ into your markup. Here's an example:
 <button className="primary">Click me</button>
 ```
 
+---
+
 **In Lustre** HTML is rendered by calling functions (this is what JSX compiles to
 as well).
 
@@ -63,44 +67,90 @@ button([class("primary")], [text("Click me")])
 just writing it in your JSX:
 
 ```jsx
-Hello;
+<span>Hello</span>
 ```
 
 To concatenate text with other variables or expressions, you can use curly braces:
 
 ```jsx
-Hello {name}
+<span>Hello {name}</span>
 ```
+
+---
 
 **In Lustre** because of Gleam's type system, all elements must be Lustre's `Element`
 type. To render text you need to use the `text` function:
 
 ```gleam
-text("Hello")
-text("Hello" <> name)
+span([], [
+  text("Hello"),
+  text("Hello" <> name),
+])
 ```
 
 ### Manage state
 
-**In React**...
+**In React** you have many options for state management. Hooks like `useState` and
+`useReducer`, context, or libraries like Zustand or Redux are all viable choices.
 
-**In Lustre**...
+```jsx
+const [count, setCount] = useState(0);
+```
+
+---
+
+**In Lustre** all state is stored in a single `Model` type and updates happen
+through a central `update` function much like Redux, `useReducer`, or `Elm`.
+
+```gleam
+fn init(_) {
+  0
+}
+
+type Msg {
+  Incr
+  Decr
+}
+
+fn update(model, msg) {
+  case msg {
+    Incr -> model + 1
+    Decr -> model - 1
+  }
+}
+```
+
+You can read more about this approach in the [state management guide](https://hexdocs.pm/lustre/guide/02-state-management.html).
 
 ### Handle events
 
 **In React**...
 
-**In Lustre**...
+---
+
+**In Lustre** event handlers decoders for event objects. When the decoder succeeds,
+that value is passed to your `update` function. Lustre provides functions to handle
+most common events:
+
+```gleam
+button([onClick(Decr)], [text("-")])
+input([onInput(UpdateInput)])
+div([on("mousemove", fn(event) {  })], [])
+```
 
 ### Write a component
 
 **In React**...
+
+---
 
 **In Lustre**...
 
 ### Fetch data
 
 **In React**...
+
+---
 
 **In Lustre**...
 
