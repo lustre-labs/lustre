@@ -66,12 +66,12 @@ export function morph(prev, next, dispatch, isComponent = false) {
       }
 
       out ??= created;
-    // If this happens, then the top level Element is a Fragment `prev`should be
+    // If this happens, then the top level Element is a Fragment `prev` should be
     // the first element of the given fragment. Functionally, a fragment as the 
     // first child means that document -> body will be the parent of the first level
     // of children
     } else if (next.elements !== undefined) {
-      iterateFragment(next, (fragmentElement) => {
+      iterateElement(next, (fragmentElement) => {
         stack.unshift({ prev, next: fragmentElement, parent });
         prev = prev?.nextSibling
       });
@@ -343,30 +343,17 @@ function createElementNode({ prev, next, dispatch, stack }) {
     incomingKeyedChildren = getKeyedChildren(next);
   }
   for (const child of next.children) {
-    // A keyed morph has more complex logic to handle: we need to be grabbing
-    // same-key nodes from the previous render and moving them to the correct
-    // position in the DOM.
-    if (child.key !== undefined && seenKeys !== null) {
-      if (child.elements) {
-        // A keyed fragment will have children which are keyed, each element needs to
-        // be diffed and treated as a child of the current element. The fragment itself
-        // is the only element which requires a key, a fragment will assign keys if not
-        // provided. 
-        iterateFragment(child, (fragmentElement) => {
-          prevChild = diffKeyedChild(prevChild, fragmentElement, el, stack, incomingKeyedChildren, keyedChildren, seenKeys);
-        });
+    iterateElement(child, (currElement) => {
+      // A keyed morph has more complex logic to handle: we need to be grabbing
+      // same-key nodes from the previous render and moving them to the correct
+      // position in the DOM.
+      if (child.key !== undefined && seenKeys !== null) {
+        prevChild = diffKeyedChild(prevChild, currElement, el, stack, incomingKeyedChildren, keyedChildren, seenKeys);
       } else {
-        prevChild = diffKeyedChild(prevChild, child, el, stack, incomingKeyedChildren, keyedChildren, seenKeys);
+        stack.unshift({ prev: prevChild, next: currElement, parent: el });
+        prevChild = prevChild?.nextSibling;
       }
-    } else if (child.elements !== undefined) {
-      iterateFragment(child, (fragmentElement) => {
-        stack.unshift({ prev: prevChild, next: fragmentElement, parent: el });
-        prevChild = prevChild?.nextSibling
-      });
-    } else {
-      stack.unshift({ prev: prevChild, next: child, parent: el });
-      prevChild = prevChild?.nextSibling;
-    }
+    });
   }
 
   // Any remaining children in the previous render can be removed at this point.
@@ -446,7 +433,7 @@ function getKeyedChildren(el) {
     for (const child of el.children) {
       if (child.elements) {
         // This is a fragment, the keyed children will be the set of flattened fragment elements
-        iterateFragment(child, (fragmentElement) => {
+        iterateElement(child, (fragmentElement) => {
           if (fragmentElement.key) keyedChildren.set(fragmentElement.key, fragmentElement)
         });
       } else {
@@ -490,20 +477,10 @@ function diffKeyedChild(prevChild, child, el, stack, incomingKeyedChildren, keye
   // insert the incoming child at the current position (and diff against whatever
   // is already there).
   if (keyedChildren.size === 0) {
-    if (child.elements !== undefined) {
-      // Consider a child fragment to be just be a logical group of children with
-      // the same parent as the fragments' siblings. This iterates over its children
-      // flattening as it goes, adding to the stack to be processed as if they were
-      // just children. prevChild will be undefined, or the element after going
-      // through the siblings, the same as if this were just a list of children
-      iterateFragment(child, (fragmentElement) => {
-        stack.unshift({ prev: prevChild, next: fragmentElement, parent: el });
-        prevChild = prevChild?.nextSibling
-      });
-    } else {
-      stack.unshift({ prev: prevChild, next: child, parent: el });
-      prevChild = prevChild?.nextSibling;
-    }
+    iterateElement(child, (currChild) => {
+          stack.unshift({ prev: prevChild, next: currChild, parent: el });
+          prevChild = prevChild?.nextSibling
+    });
     return prevChild;
   }
 
@@ -558,37 +535,16 @@ function diffKeyedChild(prevChild, child, el, stack, incomingKeyedChildren, keye
 }
 
 /*
-  Iterate over a fragment's elements while flattening child fragments.
-  Takes a fragment, and adds children with elements to queue to provide the
-  processFragment callback with a single Element.
-
-  Flatten a fragment, basically:
-  element.fragment([
-    html.p([],[]),
-    element.fragment([
-      html.p([],[])])
-  ]) -> [html.p([],[]), html.p([],[])]
-
-  processFragment: (Element(a)) -> void
+ Iterate element, helper to apply the same functions to a standard "Element" or "Fragment" transparently
+ 1. If single element, call callback for that element
+ 2. If fragment, call callback for every child element. Fragment constructor guarantees no Fragment children
 */
-function iterateFragment(fragment, processFragment) {
-  // If no elements, this should just not iterate
-  if (!fragment.elements) {
-    return;
-  }
-
-  const elementsToProcess = [fragment.elements];
-  while (elementsToProcess.length) {
-    const elementToProcess = elementsToProcess.pop();
-    
-    for (const fragmentElement of elementToProcess) {
-      if (fragmentElement.elements !== undefined) {
-        elementsToProcess.unshift(fragmentElement.elements);
-      } else {
-        processFragment(fragmentElement);
-      }
+function iterateElement(element, processElement) {
+  if (element.elements !== undefined) {
+    for (const currElement of element.elements) {
+      processElement(currElement);
     }
+  } else {
+    processElement(element);
   }
-
-  return;
 }

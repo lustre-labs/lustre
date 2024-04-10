@@ -265,7 +265,22 @@ pub fn none() -> Element(msg) {
 /// A function to wrap multiple elements to be rendered without wrapping them in a container
 /// 
 pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
-  Fragment(elements, "")
+  // remove redundant fragments to simplify rendering
+  flatten_fragment_elements(elements)
+  |> Fragment("")
+}
+
+fn flatten_fragment_elements(elements: List(Element(msg))) {
+  list.fold(elements, [], fn(new_elements, element) {
+    case element {
+      // Only flatten one level, the runtime handles next level children
+      // alternatively, this could flatten deeply, but it doesn't save
+      // iteration later given a fragment is iterated the same as an equivalent
+      // list of chidlren
+      Fragment(fr_elements, _) -> list.append(new_elements, fr_elements)
+      el -> list.append(new_elements, [el])
+    }
+  })
 }
 
 fn escape(escaped: String, content: String) -> String {
