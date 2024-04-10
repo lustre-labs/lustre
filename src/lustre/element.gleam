@@ -313,6 +313,7 @@ pub fn to_document_string(el: Element(msg)) -> String {
     Element(tag: "html", ..) -> el
     Element(tag: "head", ..) | Element(tag: "body", ..) ->
       element("html", [], [el])
+    Map(subtree) -> subtree()
 
     _ -> element("html", [], [element("body", [], [el])])
   })
@@ -341,6 +342,7 @@ pub fn to_document_string_builder(el: Element(msg)) -> StringBuilder {
     Element(tag: "html", ..) -> el
     Element(tag: "head", ..) | Element(tag: "body", ..) ->
       element("html", [], [el])
+    Map(subtree) -> subtree()
 
     _ -> element("html", [], [element("body", [], [el])])
   })
