@@ -218,10 +218,9 @@ function createElementNode({ prev, next, dispatch, stack }) {
   for (const attr of next.attrs) {
     const name = attr[0];
     const value = attr[1];
-    const isProperty = attr[2];
 
     // Properties are set directly on the DOM node.
-    if (isProperty) {
+    if (attr.as_property) {
       el[name] = value;
     }
     // Event handlers require some special treatment. We have a generic event
@@ -267,8 +266,8 @@ function createElementNode({ prev, next, dispatch, stack }) {
     // tell which attributes are mirrored as properties on the DOM node we assume
     // that all attributes should be set as properties too.
     else {
-      el.setAttribute(name, value);
-      if (name === "value") el[name] = value;
+      if (typeof value === "string") el.setAttribute(name, value);
+      if (name === "value" || name === "selected") el[name] = value;
       // If we're morphing an element we remove this attribute's name from the set
       // of attributes that were on the previous render so we don't remove it in
       // the next step.
