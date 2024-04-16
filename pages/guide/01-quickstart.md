@@ -63,7 +63,10 @@ import lustre
 import lustre/element
 
 pub fn main() {
-  lustre.element(element.text("Hello, world!"))
+  let app = lustre.element(element.text("Hello, world!"))
+  let assert Ok(_) = lustre.start(app, "#app", Nil)
+
+  Nil
 }
 ```
 
@@ -106,15 +109,19 @@ import lustre/element
 import lustre/element/html
 
 pub fn main() {
-  lustre.element(
-    html.div([], [
-      html.h1([], [element.text("Hello, world!")]),
-      html.figure([], [
-        html.img([attribute.src("https://cataas.com/cat")]),
-        html.figcaption([], [element.text("A cat!")])
+  let app =
+    lustre.element(
+      html.div([], [
+        html.h1([], [element.text("Hello, world!")]),
+        html.figure([], [
+          html.img([attribute.src("https://cataas.com/cat")]),
+          html.figcaption([], [element.text("A cat!")])
+        ])
       ])
-    ])
-  )
+    )
+  let assert Ok(_) = lustre.start(app, "#app", Nil)
+
+  Nil
 }
 ```
 
@@ -142,7 +149,10 @@ import lustre/element/html
 import lustre/event
 
 pub fn main() {
-  lustre.simple(init, update, view)
+  let app = lustre.simple(init, update, view)
+  let assert Ok(_) = lustre.start(app, "#app", Nil)
+
+  Nil
 }
 ```
 
@@ -265,7 +275,10 @@ import lustre/event
 import lustre_http
 
 pub fn main() {
-  lustre.application(init, update, view)
+  let app = lustre.application(init, update, view)
+  let assert Ok(_) = lustre.start(app, "#app", Nil)
+
+  Nil
 }
 ```
 
@@ -303,11 +316,14 @@ to modify our `Msg` type to include a new variant for the response:
 
 ```gleam
 pub type Msg {
-  Increment
-  Decrement
-  GotCat(Result(String, lustre_http.HttpError))
+  UserIncrementedCount
+  UserDecrementedCount
+  ApiReturnedCat(Result(String, lustre_http.HttpError))
 }
 ```
+
+> **Note**: Concerned your message type is too verbose? Read our thoughts on why
+> this is a good thing in our [state management guide](./02-state-management.html).
 
 Finally, we can modify our `update` function to also fetch a cat image when the
 counter is incremented and handle the response:
@@ -315,16 +331,16 @@ counter is incremented and handle the response:
 ```gleam
 pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   case msg {
-    Increment -> #(Model(..model, count: model.count + 1), get_cat())
-    Decrement -> #(Model(..model, count: model.count - 1), effect.none())
-    GotCat(Ok(cat)) -> #(Model(..model, cats: [cat, ..model.cats]), effect.none())
-    GotCat(Error(_)) -> #(model, effect.none())
+    UserIncrementedCount -> #(Model(..model, count: model.count + 1), get_cat())
+    UserDecrementedCount -> #(Model(..model, count: model.count - 1), effect.none())
+    ApiReturnedCat(Ok(cat)) -> #(Model(..model, cats: [cat, ..model.cats]), effect.none())
+    ApiReturnedCat(Error(_)) -> #(model, effect.none())
   }
 }
 
 fn get_cat() -> effect.Effect(Msg) {
   let decoder = dynamic.field("_id", dynamic.string)
-  let expect = lustre_http.expect_json(decoder, GotCat)
+  let expect = lustre_http.expect_json(decoder, ApiReturnedCat)
 
   lustre_http.get("https://cataas.com/cat?json=true", expect)
 }
@@ -351,11 +367,11 @@ pub fn view(model: Model) -> element.Element(Msg) {
   let count = int.to_string(model.count)
 
   html.div([], [
-    html.button([event.on_click(Increment)], [
+    html.button([event.on_click(UserIncrementedCount)], [
       element.text("+")
     ]),
     element.text(count),
-    html.button([event.on_click(Decrement)], [
+    html.button([event.on_click(UserDecrementedCount)], [
       element.text("-")
     ]),
     html.div(

@@ -6,20 +6,13 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
+
 // Lustre_http is a community package that provides a simple API for making
 // HTTP requests from your update function. You can find the docs for the package
 // here: https://hexdocs.pm/lustre_http/index.html
-import lustre_http.{type HttpError}
-// These examples are written with `lustre/ui` in mind. They'll work regardless,
-// but to see what `lustre/ui` can do make sure to run each of these examples with
-// the `--use-example-styles` flag:
-//
-//   $ gleam run -m lustre/dev start --use-example-styles
-//
-// In your own apps, make sure to add the `lustre/ui` dependency and include the
-// stylesheet somewhere.
 import lustre/ui
-import lustre/ui/aside
+import lustre/ui/layout/aside
+import lustre_http.{type HttpError}
 
 // MAIN ------------------------------------------------------------------------
 
