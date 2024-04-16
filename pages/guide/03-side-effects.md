@@ -120,7 +120,7 @@ We can, for example, launch an HTTP request on application start by using `lustr
 in our `init` function:
 
 ```gleam
-fn init(_) {
+fn init(_flags) {
   let model = Model(...)
   let get_ip = lustre_http.get(
     "https://api.ipify.org",

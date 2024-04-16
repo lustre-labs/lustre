@@ -301,6 +301,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
     }
 
     for (const eventName of prevHandlers) {
+      handlersForEl.delete(eventName);
       el.removeEventListener(eventName, lustreGenericEventHandler);
     }
   }
@@ -332,6 +333,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
   // All children are expected to be keyed if any of them are keyed, so just peeking
   // the first child is enough to determine if we need to do a keyed diff.
   if (
+    canMorph &&
     firstChild !== undefined &&
     // Explicit checks are more verbose but truthy checks force a bunch of comparisons
     // we don't care about: it's never gonna be a number etc.

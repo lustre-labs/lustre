@@ -1,8 +1,8 @@
-import gleam/int
-import gleam/string
+import gleam/list
 import lustre
 import lustre/attribute
-import lustre/element.{type Element}
+import lustre/element.{type Element, element}
+import lustre/element/html
 import lustre/event
 // These examples are written with `lustre/ui` in mind. They'll work regardless,
 // but to see what `lustre/ui` can do make sure to run each of these examples with
@@ -13,7 +13,6 @@ import lustre/event
 // In your own apps, make sure to add the `lustre/ui` dependency and include the
 // stylesheet somewhere.
 import lustre/ui
-import lustre/ui/aside
 
 // MAIN ------------------------------------------------------------------------
 
@@ -24,56 +23,46 @@ pub fn main() {
 
 // MODEL -----------------------------------------------------------------------
 
-type Model {
-  Model(value: String, length: Int, max: Int)
-}
+type Model =
+  Bool
 
 fn init(_flags) -> Model {
-  Model(value: "", length: 0, max: 10)
+  False
 }
 
 // UPDATE ----------------------------------------------------------------------
 
 pub opaque type Msg {
-  UserUpdatedMessage(value: String)
-  UserResetMessage
+  Swap
 }
 
 fn update(model: Model, msg: Msg) -> Model {
   case msg {
-    UserUpdatedMessage(value) -> {
-      let length = string.length(value)
-
-      case length <= model.max {
-        True -> Model(..model, value: value, length: length)
-        False -> model
-      }
-    }
-    UserResetMessage -> Model(..model, value: "", length: 0)
+    Swap -> !model
   }
 }
 
 // VIEW ------------------------------------------------------------------------
 
+const names = ["hayleigh", "jak", "john"]
+
 fn view(model: Model) -> Element(Msg) {
   let styles = [#("width", "100vw"), #("height", "100vh"), #("padding", "1rem")]
-  let length = int.to_string(model.length)
-  let max = int.to_string(model.max)
 
   ui.centre(
     [attribute.style(styles)],
-    ui.aside(
-      [aside.content_first(), aside.align_centre()],
-      ui.field(
-        [],
-        [element.text("Write a message:")],
-        ui.input([
-          attribute.value(model.value),
-          event.on_input(UserUpdatedMessage),
-        ]),
-        [element.text(length <> "/" <> max)],
-      ),
-      ui.button([event.on_click(UserResetMessage)], [element.text("Reset")]),
-    ),
+    ui.stack([], [
+      ui.button([event.on_click(Swap)], [element.text("toggle content")]),
+      case model {
+        True ->
+          element.keyed(
+            ui.stack([], _),
+            list.map(names, fn(name) {
+              #(name, html.span([], [html.text(name)]))
+            }),
+          )
+        False -> element.none()
+      },
+    ]),
   )
 }

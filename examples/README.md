@@ -33,6 +33,9 @@ the previous ones. Feel free to jump in to any example that interests you, thoug
 - [`06-custom-effects`](./06-custom-effects) builds on the previous example and
   shows you how to write your own side effects for Lustre to perform.
 
+- [`07-routing`](./07-routing) shows you how to use [`modem`](https://hexdocs.pm/modem/)
+  to set up routing and navigating between pages in a Lustre app.
+
 ## Getting help
 
 If you're having trouble with Lustre or not sure what the right way to do

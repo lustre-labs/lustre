@@ -93,7 +93,7 @@ pub fn main() {
   Nil
 }
 
-fn init(_) {
+fn init(_flags) {
   0
 }
 
@@ -129,7 +129,7 @@ too many options. Lustre has the same design philosophy as Gleam: where possible
 there should be only one way to do things.
 
 That means shipping with a single state management system out of the box, modelled
-after Elm and Erlang/OTP. Open any any Lustre application and you should feel
+after Elm and Erlang/OTP. Open any Lustre application and you should feel
 right at home.
 
 It also means we encourage simple approaches to constructing views over complex

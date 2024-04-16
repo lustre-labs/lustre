@@ -26,7 +26,7 @@ pub fn main() {
 type Model =
   String
 
-fn init(_) -> Model {
+fn init(_flags) -> Model {
   "div"
 }
 

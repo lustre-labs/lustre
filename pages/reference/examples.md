@@ -23,20 +23,20 @@ the previous ones. Feel free to jump in to any example that interests you, thoug
   demonstrates the most common way to handle `<input />` elements in Lustre.
 
 - [`04-custom-event-handlers`](https://github.com/lustre-labs/lustre/tree/main/examples/04-custom-event-handlers)
-  shows you how to write your own event handlers and decoders, instead of relying on the ones provided
-  by `lustre/event`.
+  shows you how to write your own event handlers and decoders, instead of relying
+  on the ones provided by `lustre/event`.
 
 - [`05-http-requests`](https://github.com/lustre-labs/lustre/tree/main/examples/05-http-requests)
   demonstrates how side effects are handled in Lustre, using the third-party
   [`lustre_http`](https://hexdocs.pm/lustre_http/) package.
 
 - [`06-custom-effects`](https://github.com/lustre-labs/lustre/tree/main/examples/06-custom-effects)
-  builds on the previous example and shows you how to write your own side effects for Lustre to
-  perform.
+  builds on the previous example and shows you how to write your own side effects
+  for Lustre to perform.
 
-- [`07-routing`](https://github.com/lustre-labs/lustre/tree/main/examples/07-routing) shows how to use
-  the routing package [`modem`](https://hexdocs.pm/modem/) to handle client-side routing in a Lustre
-  application.
+- [`07-routing`](https://github.com/lustre-labs/lustre/tree/main/examples/07-routing)
+  shows how to use [`modem`](https://hexdocs.pm/modem/) to set up routing and
+  navigating between pages in a Lustre app.
 
 ## Getting help
 
