@@ -84,11 +84,11 @@ import lustre/attribute.{type Attribute, attribute}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, element}
 import lustre/internals/constants
+import lustre/internals/patch
 @target(erlang)
 import lustre/internals/runtime.{type Action, Attrs, Event, SetSelector}
 @target(javascript)
 import lustre/internals/runtime.{type Action, Attrs, Event}
-import lustre/internals/patch
 
 // ELEMENTS --------------------------------------------------------------------
 
