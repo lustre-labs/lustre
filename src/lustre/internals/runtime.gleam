@@ -3,8 +3,8 @@
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Decoder, type Dynamic}
 import gleam/erlang/process.{type Selector, type Subject}
-import gleam/list
 import gleam/json.{type Json}
+import gleam/list
 import gleam/option.{Some}
 import gleam/otp/actor.{type Next, type StartError, Spec}
 import gleam/result
@@ -46,6 +46,7 @@ pub type Action(msg, runtime) {
 }
 
 pub type DebugAction {
+  ForceModel(Dynamic)
   Model(reply: fn(Dynamic) -> Nil)
   View(reply: fn(Element(Dynamic)) -> Nil)
 }
@@ -131,6 +132,21 @@ fn loop(
         State(..state, model: model, html: html, handlers: diff.handlers)
 
       loop(Batch(rest, effect.batch([effects, other_effects])), next)
+    }
+
+    Debug(ForceModel(model)) -> {
+      let model = dynamic.unsafe_coerce(model)
+      let html = state.view(model)
+      let diff = patch.elements(state.html, html)
+      let next =
+        State(..state, model: model, html: html, handlers: diff.handlers)
+
+      case patch.is_empty_element_diff(diff) {
+        True -> Nil
+        False -> run_renderers(state.renderers, Diff(diff))
+      }
+
+      actor.continue(next)
     }
 
     Debug(Model(reply)) -> {
