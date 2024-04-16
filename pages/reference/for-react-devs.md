@@ -95,6 +95,21 @@ span([], [
 
 ```jsx
 const [count, setCount] = useState(0);
+const incr = () => setCount(count + 1);
+const decr = () => setCount(count - 1);
+```
+
+```jsx
+const dispatch = useReducer((state, action) => {
+  switch (action.type) {
+    case "increment":
+      return state + 1;
+    case "decrement":
+      return state - 1;
+    default:
+      return state;
+  }
+}, 0);
 ```
 
 ---
@@ -124,7 +139,23 @@ You can read more about this approach in the [state management guide](https://he
 
 ### Handle events
 
-**In React**...
+**In React** event handlers are functions that receive an event object and can
+do anything you want. Event handlers are not expected to return a value, and
+instead typically call `setState` or other side-effecting functions.
+
+```jsx
+<button onClick={() => dispatch({ type: "decrement" })}>-</button>
+```
+
+```jsx
+<input onChange={(event) => setInput(event.target.value)} />
+```
+
+```jsx
+<div onMouseMove={(event) => {
+  ...
+}}/>
+```
 
 ---
 
@@ -133,18 +164,37 @@ that value is passed to your `update` function. Lustre provides functions to han
 most common events:
 
 ```gleam
-button([onClick(Decr)], [text("-")])
-input([onInput(UpdateInput)])
-div([on("mousemove", fn(event) {  })], [])
+button([on_click(Decr)], [text("-")])
+```
+
+```gleam
+input([on_input(UpdateInput)])
+```
+
+```gleam
+div([on("mousemove", fn(event) {
+  ...
+}], [...])
 ```
 
 ### Write a component
 
-**In React**...
+**In React** components are functions that take a single `props` argument and
+return a React element. Inside a component, hooks like `useState` and `useEffect`
+can be used to manage state and side effects.
+
+```jsx
+function Counter({ initialCount }) {
+  const [count, setCount] = useState(initialCount);
+
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+```
 
 ---
 
-**In Lustre**...
+**In Lustre** components are more commonly referred to as "view functions". They
+are regular Gleam functions
 
 ### Fetch data
 
