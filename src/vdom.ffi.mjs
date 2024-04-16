@@ -349,7 +349,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
       // A keyed morph has more complex logic to handle: we need to be grabbing
       // same-key nodes from the previous render and moving them to the correct
       // position in the DOM.
-      if (child.key !== undefined && seenKeys !== null) {
+      if (currElement.key !== undefined && seenKeys !== null) {
         prevChild = diffKeyedChild(prevChild, currElement, el, stack, incomingKeyedChildren, keyedChildren, seenKeys);
       } else {
         stack.unshift({ prev: prevChild, next: currElement, parent: el });
@@ -433,15 +433,10 @@ function getKeyedChildren(el) {
 
   if (el) {
     for (const child of el.children) {
-      if (child.elements) {
-        // This is a fragment, the keyed children will be the set of flattened fragment elements
-        iterateElement(child, (fragmentElement) => {
-          if (fragmentElement.key) keyedChildren.set(fragmentElement.key, fragmentElement)
-        });
-      } else {
-        const key = child.key || child?.getAttribute("data-lustre-key");
-        if (key) keyedChildren.set(key, child);
-      }
+      iterateElement(child, (currElement) => {
+        const key = currElement?.key || currElement?.getAttribute?.("data-lustre-key");
+        if (key) keyedChildren.set(key, currElement);
+      });
     }
   }
 
