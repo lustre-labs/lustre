@@ -276,7 +276,7 @@ fn flatten_fragment_elements(elements: List(Element(msg))) {
       // Only flatten one level, the runtime handles next level children
       // alternatively, this could flatten deeply, but it doesn't save
       // iteration later given a fragment is iterated the same as an equivalent
-      // list of chidlren
+      // list of children
       Fragment(fr_elements, _) -> list.append(new_elements, fr_elements)
       el -> list.append(new_elements, [el])
     }
