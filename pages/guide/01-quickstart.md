@@ -403,7 +403,7 @@ how you like to learn:
   section of the guide to learn about how to run Lustre applications on the backend.
 
 - Of course, if you want to dive in and start making things straight away, the
-  [API documentation](/lustre) is always handy to keep open.
+  [API documentation](https://hexdocs.pm/lustre/lustre.html) is always handy to keep open.
 
 ## Getting help
 
