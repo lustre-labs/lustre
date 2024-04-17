@@ -127,7 +127,7 @@ export class LustreClientApplication {
   #debug(action) {
     switch (true) {
       case action instanceof ForceModel: {
-        const vdom = this.#view(this.#model);
+        const vdom = this.#view(action[0]);
         const dispatch = (handler) => (e) => {
           const result = handler(e);
 
