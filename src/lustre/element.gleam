@@ -49,8 +49,8 @@ import lustre/internals/vdom.{Element, Fragment, Map, Text}
 /// For most applications, you'll only need to use the simpler functions; usually
 /// the [`text`](#text) and [`none`](#none) functions are enough. This is because
 /// Lustre already provides a module with all the standard HTML and SVG elements
-/// ready to use in [`lustre/element/html`](./element/html) and
-/// [`lustre/element/svg`](./element/svg).
+/// ready to use in [`lustre/element/html`](./element/html.html) and
+/// [`lustre/element/svg`](./element/svg.html).
 ///
 pub type Element(msg) =
   vdom.Element(msg)
@@ -58,8 +58,8 @@ pub type Element(msg) =
 // CONSTRUCTORS ----------------------------------------------------------------
 
 /// A general function for constructing any kind of element. In most cases you
-/// will want to use the [`lustre/element/html`](./element/html) instead but this
-/// function is particularly handy when constructing custom elements, either
+/// will want to use the [`lustre/element/html`](./element/html.html) instead but this
+/// function is particularly handing when constructing custom elements, either
 /// from your own Lustre components or from external JavaScript libraries.
 ///
 /// **Note**: Because Lustre is primarily used to create HTML, this function
@@ -356,6 +356,7 @@ pub fn to_document_string(el: Element(msg)) -> String {
     Element(tag: "html", ..) -> el
     Element(tag: "head", ..) | Element(tag: "body", ..) ->
       element("html", [], [el])
+    Map(subtree) -> subtree()
 
     _ -> element("html", [], [element("body", [], [el])])
   })
@@ -384,6 +385,7 @@ pub fn to_document_string_builder(el: Element(msg)) -> StringBuilder {
     Element(tag: "html", ..) -> el
     Element(tag: "head", ..) | Element(tag: "body", ..) ->
       element("html", [], [el])
+    Map(subtree) -> subtree()
 
     _ -> element("html", [], [element("body", [], [el])])
   })

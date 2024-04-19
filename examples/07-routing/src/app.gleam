@@ -1,26 +1,18 @@
-import gleam/uri.{type Uri}
-import gleam/list
-import gleam/string
-import gleam/result
 import gleam/dynamic
+import gleam/list
+import gleam/result
+import gleam/string
+import gleam/uri.{type Uri}
 import lustre
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
-import modem
-// These examples are written with `lustre/ui` in mind. They'll work regardless,
-// but to see what `lustre/ui` can do make sure to run each of these examples with
-// the `--use-example-styles` flag:
-//
-//   $ gleam run -m lustre/dev start --use-example-styles
-//
-// In your own apps, make sure to add the `lustre/ui` dependency and include the
-// stylesheet somewhere.
 import lustre/ui
 import lustre/ui/layout/cluster
 import lustre/ui/util/cn
+import modem
 
 // MAIN ------------------------------------------------------------------------
 

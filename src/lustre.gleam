@@ -25,7 +25,7 @@
 ////
 ////    The server component runtime can run anywhere Gleam does, but the
 ////    client-side runtime must be run in a browser. To use it either render the
-////    [provided script element](./lustre/server#script) or use the script files
+////    [provided script element](./lustre/server_component.html#script) or use the script files
 ////    from Lustre's `priv/` directory directly.
 ////
 //// No matter where a Lustre application runs, it will always follow the same
@@ -78,7 +78,7 @@
 ////
 //// The `Effect` type here encompasses things like HTTP requests and other kinds
 //// of communication with the "outside world". You can read more about effects
-//// and their purpose in the [`effect`](./effect) module.
+//// and their purpose in the [`effect`](./effect.html) module.
 ////
 //// For many kinds of app, you can take these three building blocks and put
 //// together a Lustre application capable of running *anywhere*. Beacuse of that,
@@ -90,7 +90,7 @@
 //// different kinds of applications. If you're just getting started with Lustre
 //// or frontend development, we recommend reading through them in order:
 ////
-//// - [`01-quickstart`](/guide/01-quickstart)
+//// - [`01-quickstart`](/guide/01-quickstart.html)
 ////
 //// This list of guides is likely to grow over time, so be sure to check back
 //// every now and then to see what's new!
@@ -196,7 +196,7 @@ import lustre/internals/runtime
 ///
 /// If you're only interested in using Lustre as a HTML templating engine, you
 /// don't need an `App` at all! You can render an element directly using the
-/// [`element.to_string`](./lustre/element#to_string) function.
+/// [`element.to_string`](./lustre/element.html#to_string) function.
 ///
 pub opaque type App(flags, model, msg) {
   App(
@@ -322,7 +322,7 @@ pub fn simple(
 /// Lustre applications will use this constructor.
 ///
 /// To learn more about effects and their purpose, take a look at the
-/// [`effect`](./lustre/effect) module or the
+/// [`effect`](./lustre/effect.html) module or the
 /// [HTTP requests example](https://github.com/lustre-labs/lustre/tree/main/examples/05-http-requests).
 ///
 pub fn application(
@@ -347,7 +347,7 @@ pub fn application(
 /// in frameworks like React. They should be used for more complex UI widgets
 /// like a combobox with complex keyboard interactions rather than simple things
 /// like buttons or text inputs. Where possible try to think about how to build
-/// your UI with simple view functions (functions that return [Elements](./lustre/element#Element))
+/// your UI with simple view functions (functions that return [Elements](./lustre/element.html#Element))
 /// and only reach for components when you really need to encapsulate that update
 /// loop.
 ///

@@ -96,15 +96,10 @@ fn do_elements(
         // for both their namespaces and their tags to be the same. If that is
         // the case, we can dif their attributes to see what (if anything) has
         // changed, and then recursively diff their children.
-        Element(_, old_ns, old_tag, old_attrs, old_children, _, _), Element(
-            _,
-            new_ns,
-            new_tag,
-            new_attrs,
-            new_children,
-            _,
-            _,
-          ) if old_ns == new_ns && old_tag == new_tag -> {
+        Element(_, old_ns, old_tag, old_attrs, old_children, _, _),
+          Element(_, new_ns, new_tag, new_attrs, new_children, _, _) if old_ns
+          == new_ns
+          && old_tag == new_tag -> {
           let attribute_diff = attributes(old_attrs, new_attrs)
           let handlers = {
             use handlers, name, handler <- dict.fold(

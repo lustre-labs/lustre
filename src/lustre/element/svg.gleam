@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import lustre/element.{type Element, namespaced, text as inline_text}
 import lustre/attribute.{type Attribute}
+import lustre/element.{type Element, namespaced, text as inline_text}
 
 // CONSTANTS -------------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import lustre/element.{type Element, element, namespaced}
 import lustre/attribute.{type Attribute}
+import lustre/element.{type Element, element, namespaced}
 
 // HTML ELEMENTS: MAIN ROOT ----------------------------------------------------
 

@@ -1,5 +1,10 @@
 import { ElementNotFound, NotABrowser } from "./lustre.mjs";
-import { Dispatch, Shutdown } from "./lustre/internals/runtime.mjs";
+import {
+  Dispatch,
+  Shutdown,
+  Debug,
+  ForceModel,
+} from "./lustre/internals/runtime.mjs";
 import { morph } from "./vdom.ffi.mjs";
 import { Ok, Error, isEqual } from "./gleam.mjs";
 
@@ -58,6 +63,11 @@ export class LustreClientApplication {
         return;
       }
 
+      case action instanceof Debug: {
+        this.#debug(action[0]);
+        return;
+      }
+
       default:
         return;
     }
@@ -110,6 +120,26 @@ export class LustreClientApplication {
         this.#flush_queue(++iterations);
       } else {
         window.requestAnimationFrame(() => this.#tick());
+      }
+    }
+  }
+
+  #debug(action) {
+    switch (true) {
+      case action instanceof ForceModel: {
+        const vdom = this.#view(action[0]);
+        const dispatch = (handler) => (e) => {
+          const result = handler(e);
+
+          if (result instanceof Ok) {
+            this.send(new Dispatch(result[0]));
+          }
+        };
+
+        this.#queue = [];
+        this.#effects = [];
+        this.#didUpdate = false;
+        this.#root = morph(this.#root, vdom, dispatch, this.#isComponent);
       }
     }
   }
