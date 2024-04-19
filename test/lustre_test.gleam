@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import apps/counter
+import apps/fragment
 import apps/static
 import birdie
 import gleam/erlang/process
@@ -83,6 +84,56 @@ pub fn counter_diff_test() {
   process.send(runtime, Dispatch(counter.Increment))
   process.send(runtime, Dispatch(counter.Increment))
   process.send(runtime, Dispatch(counter.Increment))
+
+  let next =
+    process.call(
+      runtime,
+      function.curry2(process.send)
+        |> function.compose(View)
+        |> function.compose(Debug),
+      100,
+    )
+
+  let diff = patch.elements(prev, next)
+
+  birdie.snap(json.to_string(patch.element_diff_to_json(diff)), title)
+  process.send(runtime, Shutdown)
+}
+
+pub fn fragment_init_test() {
+  let title = "Can render an application's initial state when using fragments"
+  let app = lustre.simple(fragment.init, fragment.update, fragment.view)
+  let assert Ok(runtime) = lustre.start_actor(app, 0)
+  let el =
+    process.call(
+      runtime,
+      function.curry2(process.send)
+        |> function.compose(View)
+        |> function.compose(Debug),
+      100,
+    )
+
+  birdie.snap(element.to_string(el), title)
+  process.send(runtime, Shutdown)
+}
+
+pub fn fragment_counter_diff_test() {
+  let title = "Can compute a diff from one render to the next with fragments"
+  let app = lustre.simple(fragment.init, fragment.update, fragment.view)
+  let assert Ok(runtime) = lustre.start_actor(app, 0)
+
+  let prev =
+    process.call(
+      runtime,
+      function.curry2(process.send)
+        |> function.compose(View)
+        |> function.compose(Debug),
+      100,
+    )
+
+  process.send(runtime, Dispatch(fragment.Increment))
+  process.send(runtime, Dispatch(fragment.Increment))
+  process.send(runtime, Dispatch(fragment.Increment))
 
   let next =
     process.call(

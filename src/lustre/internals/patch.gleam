@@ -11,7 +11,7 @@ import gleam/set.{type Set}
 import gleam/string
 import lustre/internals/constants
 import lustre/internals/vdom.{
-  type Attribute, type Element, Attribute, Element, Event, Map, Text,
+  type Attribute, type Element, Attribute, Element, Event, Fragment, Map, Text,
 }
 
 // TYPES -----------------------------------------------------------------------
@@ -120,13 +120,7 @@ fn do_elements(
               handlers: handlers,
             )
 
-          // This local `zip` function takes two lists of potentially different
-          // sizes and zips them together, padding the shorter list with `None`.
-          let children = zip(old_children, new_children)
-          use diff, #(old, new), pos <- list.index_fold(children, diff)
-          let key = key <> "-" <> int.to_string(pos)
-
-          do_elements(diff, old, new, key)
+          do_element_list(diff, old_children, new_children, key)
         }
 
         // When we have two elements, but their namespaces or their tags differ,
@@ -138,9 +132,33 @@ fn do_elements(
             created: dict.insert(diff.created, key, new),
             handlers: fold_event_handlers(diff.handlers, new, key),
           )
+        Fragment(old_elements, _), Fragment(new_elements, _) ->
+          do_element_list(diff, old_elements, new_elements, key)
+        // Other element is not a fragment, take new element in both cases
+        _, Fragment(_, _) | Fragment(_, _), _ ->
+          ElementDiff(
+            ..diff,
+            created: dict.insert(diff.created, key, new),
+            handlers: fold_event_handlers(diff.handlers, new, key),
+          )
       }
     }
   }
+}
+
+fn do_element_list(
+  diff: ElementDiff(msg),
+  old_elements: List(Element(msg)),
+  new_elements: List(Element(msg)),
+  key: String,
+) {
+  // This local `zip` function takes two lists of potentially different
+  // sizes and zips them together, padding the shorter list with `None`.
+  let children = zip(old_elements, new_elements)
+  use diff, #(old, new), pos <- list.index_fold(children, diff)
+  let key = key <> "-" <> int.to_string(pos)
+
+  do_elements(diff, old, new, key)
 }
 
 pub fn attributes(
@@ -356,12 +374,22 @@ fn fold_event_handlers(
             Error(_) -> handlers
           }
         })
-      use handlers, child, index <- list.index_fold(children, handlers)
-      let key = key <> "-" <> int.to_string(index)
-
-      fold_event_handlers(handlers, child, key)
+      fold_element_list_event_handlers(handlers, children, key)
     }
+    Fragment(elements, _) ->
+      fold_element_list_event_handlers(handlers, elements, key)
   }
+}
+
+fn fold_element_list_event_handlers(
+  handlers: Dict(String, Decoder(msg)),
+  elements: List(Element(msg)),
+  key: String,
+) {
+  use handlers, element, index <- list.index_fold(elements, handlers)
+  let key = key <> int.to_string(index)
+
+  fold_event_handlers(handlers, element, key)
 }
 
 pub fn is_empty_element_diff(diff: ElementDiff(msg)) -> Bool {

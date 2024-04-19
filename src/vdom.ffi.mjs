@@ -66,6 +66,15 @@ export function morph(prev, next, dispatch, isComponent = false) {
       }
 
       out ??= created;
+    // If this happens, then the top level Element is a Fragment `prev` should be
+    // the first element of the given fragment. Functionally, a fragment as the 
+    // first child means that document -> body will be the parent of the first level
+    // of children
+    } else if (next.elements !== undefined) {
+      iterateElement(next, (fragmentElement) => {
+        stack.unshift({ prev, next: fragmentElement, parent });
+        prev = prev?.nextSibling
+      });
     }
   }
 
@@ -334,85 +343,18 @@ function createElementNode({ prev, next, dispatch, stack }) {
     keyedChildren = getKeyedChildren(prev);
     incomingKeyedChildren = getKeyedChildren(next);
   }
-
   for (const child of next.children) {
-    // A keyed morph has more complex logic to handle: we need to be grabbing
-    // same-key nodes from the previous render and moving them to the correct
-    // position in the DOM.
-    if (child.key !== undefined && seenKeys !== null) {
-      // If the existing child doesn't have a key, or it is keyed but not present
-      // in the incoming children, then we remove it. We keep doing this until we
-      // find a keyed child that we should preserve and then move on with the
-      // morph as normal.
-      while (
-        prevChild &&
-        !incomingKeyedChildren.has(prevChild.getAttribute("data-lustre-key"))
-      ) {
-        const nextChild = prevChild.nextSibling;
-        el.removeChild(prevChild);
-        prevChild = nextChild;
-      }
-
-      // If there were no keyed children in the previous render then we can just
-      // insert the incoming child at the current position (and diff against whatever
-      // is already there).
-      if (keyedChildren.size === 0) {
-        stack.unshift({ prev: prevChild, next: child, parent: el });
+    iterateElement(child, (currElement) => {
+      // A keyed morph has more complex logic to handle: we need to be grabbing
+      // same-key nodes from the previous render and moving them to the correct
+      // position in the DOM.
+      if (currElement.key !== undefined && seenKeys !== null) {
+        prevChild = diffKeyedChild(prevChild, currElement, el, stack, incomingKeyedChildren, keyedChildren, seenKeys);
+      } else {
+        stack.unshift({ prev: prevChild, next: currElement, parent: el });
         prevChild = prevChild?.nextSibling;
-        continue;
       }
-
-      // If we come across a child that has the same key as something else this
-      // render then we can't do any meaningful morphing. We throw a warning and
-      // fall back to inserting the new node.
-      if (seenKeys.has(child.key)) {
-        console.warn(`Duplicate key found in Lustre vnode: ${child.key}`);
-        stack.unshift({ prev: null, next: child, parent: el });
-        continue;
-      }
-
-      // The `seenKeys` set is how we track duplicate keys.
-      seenKeys.add(child.key);
-      // If we make it this far then there is potentially a keyed child we can
-      // reuse from the previous render.
-      const keyedChild = keyedChildren.get(child.key);
-
-      // This case is hit when the previous render had *no* children at all. In
-      // that case we can just insert the incoming child.
-      if (!keyedChild && !prevChild) {
-        stack.unshift({ prev: null, next: child, parent: el });
-        continue;
-      }
-
-      // This is a new keyed child that wasn't in the previous render. Because we
-      // can't guarantee things won't get moved around we insert a placeholder node
-      // that preserves the position of the incoming child.
-      if (!keyedChild && prevChild !== null) {
-        const placeholder = document.createTextNode("");
-        el.insertBefore(placeholder, prevChild);
-        stack.unshift({ prev: placeholder, next: child, parent: el });
-        continue;
-      }
-
-      // This is the same as the unkeyed case: we don't have to do any special
-      // handling, just diff against the previous child and move on.
-      if (!keyedChild || keyedChild === prevChild) {
-        stack.unshift({ prev: prevChild, next: child, parent: el });
-        prevChild = prevChild?.nextSibling;
-        continue;
-      }
-
-      // If we get this far then we did find a keyed child to diff against but
-      // it's somewhere else in the tree. This `insertBefore` moves the old child
-      // into the correct position.
-      //
-      // Note that we're *not* updating the `prevChild` pointer.
-      el.insertBefore(keyedChild, prevChild);
-      stack.unshift({ prev: keyedChild, next: child, parent: el });
-    } else {
-      stack.unshift({ prev: prevChild, next: child, parent: el });
-      prevChild = prevChild?.nextSibling;
-    }
+    });
   }
 
   // Any remaining children in the previous render can be removed at this point.
@@ -490,8 +432,10 @@ function getKeyedChildren(el) {
 
   if (el) {
     for (const child of el.children) {
-      const key = child.key || child?.getAttribute("data-lustre-key");
-      if (key) keyedChildren.set(key, child);
+      iterateElement(child, (currElement) => {
+        const key = currElement?.key || currElement?.getAttribute?.("data-lustre-key");
+        if (key) keyedChildren.set(key, currElement);
+      });
     }
   }
 
@@ -509,4 +453,94 @@ function getDeepChild(el, path) {
   }
 
   return child;
+}
+
+function diffKeyedChild(prevChild, child, el, stack, incomingKeyedChildren, keyedChildren, seenKeys) {
+  // If the existing child doesn't have a key, or it is keyed but not present
+  // in the incoming children, then we remove it. We keep doing this until we
+  // find a keyed child that we should preserve and then move on with the
+  // morph as normal.
+  while (
+    prevChild &&
+    !incomingKeyedChildren.has(prevChild.getAttribute("data-lustre-key"))
+  ) {
+    const nextChild = prevChild.nextSibling;
+    el.removeChild(prevChild);
+    prevChild = nextChild;
+  }
+
+  // If there were no keyed children in the previous render then we can just
+  // insert the incoming child at the current position (and diff against whatever
+  // is already there).
+  if (keyedChildren.size === 0) {
+    iterateElement(child, (currChild) => {
+          stack.unshift({ prev: prevChild, next: currChild, parent: el });
+          prevChild = prevChild?.nextSibling
+    });
+    return prevChild;
+  }
+
+  // If we come across a child that has the same key as something else this
+  // render then we can't do any meaningful morphing. We throw a warning and
+  // fall back to inserting the new node.
+  if (seenKeys.has(child.key)) {
+    console.warn(`Duplicate key found in Lustre vnode: ${child.key}`);
+    stack.unshift({ prev: null, next: child, parent: el });
+    return prevChild;
+  }
+
+  // The `seenKeys` set is how we track duplicate keys.
+  seenKeys.add(child.key);
+  // If we make it this far then there is potentially a keyed child we can
+  // reuse from the previous render.
+  const keyedChild = keyedChildren.get(child.key);
+
+  // This case is hit when the previous render had *no* children at all. In
+  // that case we can just insert the incoming child.
+  if (!keyedChild && !prevChild) {
+    stack.unshift({ prev: null, next: child, parent: el });
+    return prevChild;
+  }
+
+  // This is a new keyed child that wasn't in the previous render. Because we
+  // can't guarantee things won't get moved around we insert a placeholder node
+  // that preserves the position of the incoming child.
+  if (!keyedChild && prevChild !== null) {
+    const placeholder = document.createTextNode("");
+    el.insertBefore(placeholder, prevChild);
+    stack.unshift({ prev: placeholder, next: child, parent: el });
+    return prevChild;
+  }
+
+  // This is the same as the unkeyed case: we don't have to do any special
+  // handling, just diff against the previous child and move on.
+  if (!keyedChild || keyedChild === prevChild) {
+    stack.unshift({ prev: prevChild, next: child, parent: el });
+    prevChild = prevChild?.nextSibling;
+    return prevChild;
+  }
+
+  // If we get this far then we did find a keyed child to diff against but
+  // it's somewhere else in the tree. This `insertBefore` moves the old child
+  // into the correct position.
+  //
+  // Note that we're *not* updating the `prevChild` pointer.
+  el.insertBefore(keyedChild, prevChild);
+  stack.unshift({ prev: keyedChild, next: child, parent: el });
+  return prevChild;
+}
+
+/*
+ Iterate element, helper to apply the same functions to a standard "Element" or "Fragment" transparently
+ 1. If single element, call callback for that element
+ 2. If fragment, call callback for every child element. Fragment constructor guarantees no Fragment children
+*/
+function iterateElement(element, processElement) {
+  if (element.elements !== undefined) {
+    for (const currElement of element.elements) {
+      processElement(currElement);
+    }
+  } else {
+    processElement(element);
+  }
 }

@@ -24,6 +24,7 @@ pub type Element(msg) {
   // The lambda here defers the creation of the mapped subtree until it is necessary.
   // This means we pay the cost of mapping multiple times only *once* during rendering.
   Map(subtree: fn() -> Element(msg))
+  Fragment(elements: List(Element(msg)), key: String)
 }
 
 pub type Attribute(msg) {
@@ -55,11 +56,20 @@ fn do_handlers(
           }
         })
 
-      use handlers, child, index <- list.index_fold(children, handlers)
-      let key = key <> "-" <> int.to_string(index)
-      do_handlers(child, handlers, key)
+      do_element_list_handlers(children, handlers, key)
     }
+    Fragment(elements, _) -> do_element_list_handlers(elements, handlers, key)
   }
+}
+
+fn do_element_list_handlers(
+  elements: List(Element(msg)),
+  handlers: Dict(String, Decoder(msg)),
+  key: String,
+) {
+  use handlers, element, index <- list.index_fold(elements, handlers)
+  let key = key <> int.to_string(index)
+  do_handlers(element, handlers, key)
 }
 
 // CONVERSIONS: JSON -----------------------------------------------------------
@@ -77,12 +87,7 @@ fn do_element_to_json(element: Element(msg), key: String) -> Json {
         json.preprocessed_array({
           list.filter_map(attrs, attribute_to_json(_, key))
         })
-      let children =
-        json.preprocessed_array({
-          use child, index <- list.index_map(children)
-          let key = key <> "-" <> int.to_string(index)
-          do_element_to_json(child, key)
-        })
+      let children = do_element_list_to_json(children, key)
 
       json.object([
         #("namespace", json.string(namespace)),
@@ -93,7 +98,16 @@ fn do_element_to_json(element: Element(msg), key: String) -> Json {
         #("void", json.bool(void)),
       ])
     }
+    Fragment(elements, _) -> do_element_list_to_json(elements, key)
   }
+}
+
+fn do_element_list_to_json(elements: List(Element(msg)), key: String) {
+  json.preprocessed_array({
+    use element, index <- list.index_map(elements)
+    let key = key <> int.to_string(index)
+    do_element_to_json(element, key)
+  })
 }
 
 pub fn attribute_to_json(
@@ -237,6 +251,8 @@ fn do_element_to_string_builder(
           |> string_builder.append(">" <> inner_html <> "</" <> tag <> ">")
       }
     }
+    Fragment(elements, _) ->
+      children_to_string_builder(string_builder.new(), elements, raw_text)
   }
 }
 

@@ -8,11 +8,12 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/int
 import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
 import lustre/attribute.{type Attribute, attribute}
-import lustre/internals/vdom.{Element, Map, Text}
+import lustre/internals/vdom.{Element, Fragment, Map, Text}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -62,7 +63,7 @@ pub type Element(msg) =
 /// from your own Lustre components or from external JavaScript libraries.
 ///
 /// **Note**: Because Lustre is primarily used to create HTML, this function
-/// spcieal-cases the following tags render as
+/// special-cases the following tags which render as
 /// [void elements](https://developer.mozilla.org/en-US/docs/Glossary/Void_element):
 ///
 ///   - area
@@ -181,6 +182,21 @@ fn do_keyed(el: Element(msg), key: String) -> Element(msg) {
         void: void,
       )
     Map(subtree) -> Map(fn() { do_keyed(subtree(), key) })
+    Fragment(elements, _) ->
+      elements
+      |> list.index_map(fn(element, idx) {
+        case element {
+          Element(el_key, _, _, _, _, _, _) -> {
+            let new_key = case el_key {
+              "" -> key <> "-" <> int.to_string(idx)
+              _ -> key <> "-" <> el_key
+            }
+            do_keyed(element, new_key)
+          }
+          _ -> do_keyed(element, key)
+        }
+      })
+      |> Fragment(key)
     _ -> el
   }
 }
@@ -246,6 +262,30 @@ pub fn none() -> Element(msg) {
   Text("")
 }
 
+/// A function for wrapping elements to be rendered within a parent container without
+/// specififying the container on definition. Allows the treatment of List(Element(msg))
+/// as if it were Element(msg). Useful when generating a list of elements from data but
+/// used downstream.
+/// 
+pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
+  // remove redundant fragments to simplify rendering
+  flatten_fragment_elements(elements)
+  |> Fragment("")
+}
+
+fn flatten_fragment_elements(elements: List(Element(msg))) {
+  list.fold_right(elements, [], fn(new_elements, element) {
+    case element {
+      // Only flatten one level, the runtime handles next level children
+      // alternatively, this could flatten deeply, but it doesn't save
+      // iteration later given a fragment is iterated the same as an equivalent
+      // list of children
+      Fragment(fr_elements, _) -> list.append(fr_elements, new_elements)
+      el -> [el, ..new_elements]
+    }
+  })
+}
+
 fn escape(escaped: String, content: String) -> String {
   case content {
     "<" <> rest -> escape(escaped <> "&lt;", rest)
@@ -286,6 +326,9 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
           void: void,
         )
       })
+    Fragment(elements, key) -> {
+      Map(fn() { Fragment(list.map(elements, map(_, f)), key) })
+    }
   }
 }
 
