@@ -59,11 +59,11 @@ pub type Element(msg) =
 
 /// A general function for constructing any kind of element. In most cases you
 /// will want to use the [`lustre/element/html`](./element/html) instead but this
-/// function is particularly handing when constructing custom elements, either
+/// function is particularly handy when constructing custom elements, either
 /// from your own Lustre components or from external JavaScript libraries.
 ///
 /// **Note**: Because Lustre is primarily used to create HTML, this function
-/// spcieal-cases the following tags render as
+/// special-cases the following tags which render as
 /// [void elements](https://developer.mozilla.org/en-US/docs/Glossary/Void_element):
 ///
 ///   - area
@@ -262,7 +262,10 @@ pub fn none() -> Element(msg) {
   Text("")
 }
 
-/// A function to wrap multiple elements to be rendered without wrapping them in a container
+/// A function for wrapping elements to be rendered within a parent container without
+/// specififying the container on definition. Allows the treatment of List(Element(msg))
+/// as if it were Element(msg). Useful when generating a list of elements from data but
+/// used downstream.
 /// 
 pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
   // remove redundant fragments to simplify rendering
