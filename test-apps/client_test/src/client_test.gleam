@@ -1,5 +1,6 @@
 import gleam/int
 import gleam/list
+import lustre/attribute
 import lustre/element
 import lustre/element/html
 
@@ -56,4 +57,8 @@ pub fn keyed_test() {
       ])
     #(id, child)
   })
+}
+
+pub fn disabled_attr_test(is_disabled: Bool) {
+  html.div([], [html.input([attribute.disabled(is_disabled)])])
 }

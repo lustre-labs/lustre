@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { setupDOM } from "../utils";
 
 import {
+  disabled_attr_test,
   dynamic_content_test,
   fragment_test,
   keyed_test,
@@ -99,6 +100,54 @@ describe("vdom morph", () => {
 
     expect(updatedState).toContain("56");
     expect(updatedState).toContain("updated_name");
+  });
+});
+
+describe("vdom morph attribute", () => {
+  describe("disabled", () => {
+    test("should not be disabled when is_disabled is false", () => {
+      const template = disabled_attr_test(false);
+  
+      appEl = morph(appEl, template);
+      
+      const domResult = document.toString();
+
+      expect(domResult).toContain("input");
+      expect(domResult).not.toContain("disabled");
+    });
+  
+    test("should be disabled when is_disabled is true", () => {
+      const template = disabled_attr_test(true);
+  
+      appEl = morph(appEl, template);
+      
+      const domResult = document.toString();
+
+      expect(domResult).toContain("input");
+      expect(domResult).toContain("disabled");
+    });
+
+
+    // this fails today
+    test("should be stable when disabled attribute does not change", () => {
+      const template = disabled_attr_test(true);
+  
+      appEl = morph(appEl, template);
+  
+      const initialState = document.toString();
+      console.log("initialState", initialState);
+  
+      const states = [];
+      for (let i = 0; i < 5; i++) {
+        appEl = morph(appEl, template);
+        states.push(document.toString());
+      }
+  
+      states.forEach((state) => {
+        console.log("state", state);
+        expect(state).toEqual(initialState);
+      });
+    });
   });
 });
 
