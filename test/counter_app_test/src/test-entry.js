@@ -1,0 +1,1 @@
+export { main } from "../../../examples/02-interactivity/build/dev/javascript/app/app.mjs";

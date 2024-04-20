@@ -1,0 +1,19 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`counter example > should render initially 1`] = `
+"<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>🚧 {app_name}</title>
+
+  </head>
+
+  <body>
+    <div style="width:100vw;height:100vh;padding:1rem;" class="lustre-ui-centre"><div class="lustre-ui-stack"><button class="lustre-ui-button" type="button">+</button><p style="text-align:center;">0</p><button class="lustre-ui-button" type="button">-</button></div></div>
+  </body>
+</html>"
+`;

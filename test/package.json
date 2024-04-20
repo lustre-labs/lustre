@@ -1,0 +1,41 @@
+{
+  "name": "lustre-client-test",
+  "version": "0.1.0",
+  "description": "testing for client scripts, and using vitest experimental bench",
+  "scripts": {
+    "bench": "run-s build:bench bench:vitest",
+    "bench:vitest": "vitest bench --config ./vitest.config.ts",
+
+    "build": "run-p build:test:**",
+  
+    "build:bench": "run-s build:bench:template build:bench:entry",
+    "build:bench:entry": "cd bench && esbuild --bundle --format=esm --outdir=build --allow-overwrite src/test-entry.js",
+    "build:bench:template": "run-s build:vdom:templates",
+
+    "build:test:counter": "run-s build:counter:**",
+    "build:counter:example": "cd ../examples/02-interactivity && gleam build",
+    "build:counter:test-bundle": "cd counter_app_test && esbuild --bundle --format=esm --outdir=build --allow-overwrite src/test-entry.js",
+
+    "build:test:vdom": "run-s build:vdom:**",
+    "build:vdom:templates": "cd ../test-apps/vdom-test-templates && gleam build",
+    "build:vdom:test-bundle": "cd vdom_test && esbuild --bundle --format=esm --outdir=build --allow-overwrite src/test-entry.js",
+
+    "run:vitest": "vitest --config ./vitest.config.ts",
+
+    "test": "run-s build \"run:vitest -- --run\"",
+    "test:vdom": "run-s build:test:vdom \"run:vitest -- --run vdom.ffi \"",
+    "test:counter": "run-s build:test:counter \"run:vitest -- --run counter-app.test\"",
+    
+    "watch:test": "run-p \"watch:init:**\"",
+    "watch:init:build": "run-p build:test:**",
+    "watch:init:vitest": "run-s run:vitest"
+  },
+  "author": "Jacob Scearcy",
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.20.2",
+    "linkedom": "^0.16.11",
+    "npm-run-all": "^4.1.5",
+    "vitest": "^1.5.0"
+  }
+}
