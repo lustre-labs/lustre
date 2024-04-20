@@ -128,14 +128,13 @@ describe("vdom morph attribute", () => {
     });
 
 
-    // this fails today
+    // this fails todayqqq
     test("should be stable when disabled attribute does not change", () => {
       const template = disabled_attr_test(true);
   
       appEl = morph(appEl, template);
   
       const initialState = document.toString();
-      console.log("initialState", initialState);
   
       const states = [];
       for (let i = 0; i < 5; i++) {
@@ -144,7 +143,6 @@ describe("vdom morph attribute", () => {
       }
   
       states.forEach((state) => {
-        console.log("state", state);
         expect(state).toEqual(initialState);
       });
     });
