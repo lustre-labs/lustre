@@ -23,9 +23,10 @@ main `lustre` module: we're not building an application with a runtime!
 
 ```gleam
 import gleam/bytes_builder
+import gleam/erlang/process
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
-import lustre/element.{type Element}
+import lustre/element
 import lustre/element/html.{html}
 import mist.{type Connection, type ResponseData}
 ```
