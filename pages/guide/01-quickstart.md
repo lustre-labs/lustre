@@ -348,7 +348,7 @@ fn get_cat() -> effect.Effect(Msg) {
 
 > **Note**: The `get_cat` function returns an `Effect` that tells the runtime how
 > to fetch a cat image. It's important to know that the `get_cat` function doesn't
-> perform the request directly! This is why we need to add the `GotCat` message
+> perform the request directly! This is why we need to add the `ApiReturnedCat` message
 > variant: the runtime needs to know what to do with the response when it arrives.
 
 This model of managed effects can feel cumbersome at first, but it comes with some
