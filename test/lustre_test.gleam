@@ -27,6 +27,7 @@ pub fn static_test() {
   birdie.snap(element.to_string(el), title)
 }
 
+@target(erlang)
 pub fn counter_init_test() {
   let title = "Can render an application's initial state."
   let app = lustre.simple(counter.init, counter.update, counter.view)
@@ -46,6 +47,7 @@ pub fn counter_init_test() {
   process.send(runtime, Shutdown)
 }
 
+@target(erlang)
 pub fn counter_update_test() {
   let title = "Can render an application's state after some updates."
   let app = lustre.simple(counter.init, counter.update, counter.view)
@@ -70,6 +72,7 @@ pub fn counter_update_test() {
   process.send(runtime, Shutdown)
 }
 
+@target(erlang)
 pub fn counter_diff_test() {
   let title = "Can compute a diff from one render to the next"
   let app = lustre.simple(counter.init, counter.update, counter.view)
@@ -107,6 +110,7 @@ pub fn counter_diff_test() {
   process.send(runtime, Shutdown)
 }
 
+@target(erlang)
 pub fn fragment_init_test() {
   let title = "Can render an application's initial state when using fragments"
   let app = lustre.simple(fragment.init, fragment.update, fragment.view)
@@ -126,6 +130,7 @@ pub fn fragment_init_test() {
   process.send(runtime, Shutdown)
 }
 
+@target(erlang)
 pub fn fragment_counter_diff_test() {
   let title = "Can compute a diff from one render to the next with fragments"
   let app = lustre.simple(fragment.init, fragment.update, fragment.view)
