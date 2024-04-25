@@ -1,6 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import lustre/attribute.{attribute, disabled, src}
+import lustre/attribute.{attribute, class, disabled, src, style}
 import lustre/element.{text}
 import lustre/element/html.{body, div, h1, head, html, img, input, title}
 
@@ -18,5 +18,12 @@ pub fn view() {
 }
 
 pub fn escaped_attribute() {
-  div([attribute("example", "{\"mykey\": \"myvalue\"}")], [])
+  div(
+    [
+      class("'badquotes'"),
+      style([#("background", "\"><script>alert`1`</script>")]),
+      attribute("example", "{\"mykey\": \"myvalue\"}"),
+    ],
+    [],
+  )
 }

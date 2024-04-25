@@ -282,10 +282,30 @@ fn attributes_to_string_builder(
         style,
         inner_html <> val,
       )
-      Ok(#("class", val)) if class == "" -> #(html, val, style, inner_html)
-      Ok(#("class", val)) -> #(html, class <> " " <> val, style, inner_html)
-      Ok(#("style", val)) if style == "" -> #(html, class, val, inner_html)
-      Ok(#("style", val)) -> #(html, class, style <> " " <> val, inner_html)
+      Ok(#("class", val)) if class == "" -> #(
+        html,
+        escape("", val),
+        style,
+        inner_html,
+      )
+      Ok(#("class", val)) -> #(
+        html,
+        class <> " " <> escape("", val),
+        style,
+        inner_html,
+      )
+      Ok(#("style", val)) if style == "" -> #(
+        html,
+        class,
+        escape("", val),
+        inner_html,
+      )
+      Ok(#("style", val)) -> #(
+        html,
+        class,
+        style <> " " <> escape("", val),
+        inner_html,
+      )
       Ok(#(key, "")) -> #(
         string_builder.append(html, " " <> key),
         class,
