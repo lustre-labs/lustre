@@ -66,14 +66,15 @@ export function morph(prev, next, dispatch, isComponent = false) {
       }
 
       out ??= created;
+    }
     // If this happens, then the top level Element is a Fragment `prev` should be
-    // the first element of the given fragment. Functionally, a fragment as the 
+    // the first element of the given fragment. Functionally, a fragment as the
     // first child means that document -> body will be the parent of the first level
     // of children
-    } else if (next.elements !== undefined) {
+    else if (next.elements !== undefined) {
       iterateElement(next, (fragmentElement) => {
         stack.unshift({ prev, next: fragmentElement, parent });
-        prev = prev?.nextSibling
+        prev = prev?.nextSibling;
       });
     }
   }
@@ -349,7 +350,15 @@ function createElementNode({ prev, next, dispatch, stack }) {
       // same-key nodes from the previous render and moving them to the correct
       // position in the DOM.
       if (currElement.key !== undefined && seenKeys !== null) {
-        prevChild = diffKeyedChild(prevChild, currElement, el, stack, incomingKeyedChildren, keyedChildren, seenKeys);
+        prevChild = diffKeyedChild(
+          prevChild,
+          currElement,
+          el,
+          stack,
+          incomingKeyedChildren,
+          keyedChildren,
+          seenKeys,
+        );
       } else {
         stack.unshift({ prev: prevChild, next: currElement, parent: el });
         prevChild = prevChild?.nextSibling;
@@ -433,7 +442,8 @@ function getKeyedChildren(el) {
   if (el) {
     for (const child of el.children) {
       iterateElement(child, (currElement) => {
-        const key = currElement?.key || currElement?.getAttribute?.("data-lustre-key");
+        const key =
+          currElement?.key || currElement?.getAttribute?.("data-lustre-key");
         if (key) keyedChildren.set(key, currElement);
       });
     }
@@ -455,7 +465,15 @@ function getDeepChild(el, path) {
   return child;
 }
 
-function diffKeyedChild(prevChild, child, el, stack, incomingKeyedChildren, keyedChildren, seenKeys) {
+function diffKeyedChild(
+  prevChild,
+  child,
+  el,
+  stack,
+  incomingKeyedChildren,
+  keyedChildren,
+  seenKeys,
+) {
   // If the existing child doesn't have a key, or it is keyed but not present
   // in the incoming children, then we remove it. We keep doing this until we
   // find a keyed child that we should preserve and then move on with the
@@ -474,8 +492,8 @@ function diffKeyedChild(prevChild, child, el, stack, incomingKeyedChildren, keye
   // is already there).
   if (keyedChildren.size === 0) {
     iterateElement(child, (currChild) => {
-          stack.unshift({ prev: prevChild, next: currChild, parent: el });
-          prevChild = prevChild?.nextSibling
+      stack.unshift({ prev: prevChild, next: currChild, parent: el });
+      prevChild = prevChild?.nextSibling;
     });
     return prevChild;
   }
