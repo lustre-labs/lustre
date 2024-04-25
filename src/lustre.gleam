@@ -368,8 +368,8 @@ pub fn component(
 ///
 /// The second argument is a [CSS selector](https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector)
 /// used to locate the DOM element where the application will be mounted on to.
-/// The most common selectors are `"#app"` to target an element an id of `app` or
-/// `[data-lustre-app]` to target an element with a `data-lustre-app` attribute.
+/// The most common selectors are `"#app"` to target an element with an id of `app`
+/// or `[data-lustre-app]` to target an element with a `data-lustre-app` attribute.
 ///
 /// The third argument is the starting data for the application. This is passed
 /// to the application's `init` function.
