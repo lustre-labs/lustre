@@ -293,7 +293,10 @@ fn attributes_to_string_builder(
         inner_html,
       )
       Ok(#(key, val)) -> #(
-        string_builder.append(html, " " <> key <> "=\"" <> val <> "\""),
+        string_builder.append(
+          html,
+          " " <> key <> "=\"" <> escape("", val) <> "\"",
+        ),
         class,
         style,
         inner_html,

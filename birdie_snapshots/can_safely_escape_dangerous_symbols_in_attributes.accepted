@@ -1,0 +1,5 @@
+---
+version: 1.1.2
+title: Can safely escape dangerous symbols in attributes
+---
+<div example="{&quot;mykey&quot;: &quot;myvalue&quot;}"></div>

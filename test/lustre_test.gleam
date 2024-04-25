@@ -149,3 +149,9 @@ pub fn fragment_counter_diff_test() {
   birdie.snap(json.to_string(patch.element_diff_to_json(diff)), title)
   process.send(runtime, Shutdown)
 }
+
+pub fn escaped_attribute_test() {
+  let title = "Can safely escape dangerous symbols in attributes"
+  let el = static.escaped_attribute()
+  birdie.snap(element.to_string(el), title)
+}
