@@ -41,6 +41,11 @@ function morph(prev, next, dispatch, isComponent = false) {
         parent.replaceChild(created, prev2);
       }
       out ??= created;
+    } else if (next2.elements !== void 0) {
+      iterateElement(next2, (fragmentElement) => {
+        stack.unshift({ prev: prev2, next: fragmentElement, parent });
+        prev2 = prev2?.nextSibling;
+      });
     }
   }
   return out;
@@ -122,8 +127,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
   for (const attr of next.attrs) {
     const name = attr[0];
     const value = attr[1];
-    const isProperty = attr[2];
-    if (isProperty) {
+    if (attr.as_property) {
       el2[name] = value;
     } else if (name.startsWith("on")) {
       const eventName = name.slice(2);
@@ -149,8 +153,9 @@ function createElementNode({ prev, next, dispatch, stack }) {
     } else if (name === "dangerous-unescaped-html") {
       innerHTML = value;
     } else {
-      el2.setAttribute(name, value);
-      if (name === "value")
+      if (typeof value === "string")
+        el2.setAttribute(name, value);
+      if (name === "value" || name === "selected")
         el2[name] = value;
       if (canMorph)
         prevAttributes.delete(name);
@@ -171,6 +176,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
       el2.removeAttribute(attr);
     }
     for (const eventName of prevHandlers) {
+      handlersForEl.delete(eventName);
       el2.removeEventListener(eventName, lustreGenericEventHandler);
     }
   }
@@ -185,7 +191,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
   let keyedChildren = null;
   let incomingKeyedChildren = null;
   let firstChild = next.children[Symbol.iterator]().next().value;
-  if (firstChild !== void 0 && // Explicit checks are more verbose but truthy checks force a bunch of comparisons
+  if (canMorph && firstChild !== void 0 && // Explicit checks are more verbose but truthy checks force a bunch of comparisons
   // we don't care about: it's never gonna be a number etc.
   firstChild.key !== void 0 && firstChild.key !== "") {
     seenKeys = /* @__PURE__ */ new Set();
@@ -193,45 +199,22 @@ function createElementNode({ prev, next, dispatch, stack }) {
     incomingKeyedChildren = getKeyedChildren(next);
   }
   for (const child of next.children) {
-    if (child.key !== void 0 && seenKeys !== null) {
-      while (prevChild && !incomingKeyedChildren.has(prevChild.getAttribute("data-lustre-key"))) {
-        const nextChild = prevChild.nextSibling;
-        el2.removeChild(prevChild);
-        prevChild = nextChild;
-      }
-      if (keyedChildren.size === 0) {
-        stack.unshift({ prev: prevChild, next: child, parent: el2 });
+    iterateElement(child, (currElement) => {
+      if (currElement.key !== void 0 && seenKeys !== null) {
+        prevChild = diffKeyedChild(
+          prevChild,
+          currElement,
+          el2,
+          stack,
+          incomingKeyedChildren,
+          keyedChildren,
+          seenKeys
+        );
+      } else {
+        stack.unshift({ prev: prevChild, next: currElement, parent: el2 });
         prevChild = prevChild?.nextSibling;
-        continue;
       }
-      if (seenKeys.has(child.key)) {
-        console.warn(`Duplicate key found in Lustre vnode: ${child.key}`);
-        stack.unshift({ prev: null, next: child, parent: el2 });
-        continue;
-      }
-      seenKeys.add(child.key);
-      const keyedChild = keyedChildren.get(child.key);
-      if (!keyedChild && !prevChild) {
-        stack.unshift({ prev: null, next: child, parent: el2 });
-        continue;
-      }
-      if (!keyedChild && prevChild !== null) {
-        const placeholder = document.createTextNode("");
-        el2.insertBefore(placeholder, prevChild);
-        stack.unshift({ prev: placeholder, next: child, parent: el2 });
-        continue;
-      }
-      if (!keyedChild || keyedChild === prevChild) {
-        stack.unshift({ prev: prevChild, next: child, parent: el2 });
-        prevChild = prevChild?.nextSibling;
-        continue;
-      }
-      el2.insertBefore(keyedChild, prevChild);
-      stack.unshift({ prev: keyedChild, next: child, parent: el2 });
-    } else {
-      stack.unshift({ prev: prevChild, next: child, parent: el2 });
-      prevChild = prevChild?.nextSibling;
-    }
+    });
   }
   while (prevChild) {
     const next2 = prevChild.nextSibling;
@@ -289,9 +272,11 @@ function getKeyedChildren(el2) {
   const keyedChildren = /* @__PURE__ */ new Map();
   if (el2) {
     for (const child of el2.children) {
-      const key = child.key || child?.getAttribute("data-lustre-key");
-      if (key)
-        keyedChildren.set(key, child);
+      iterateElement(child, (currElement) => {
+        const key = currElement?.key || currElement?.getAttribute?.("data-lustre-key");
+        if (key)
+          keyedChildren.set(key, currElement);
+      });
     }
   }
   return keyedChildren;
@@ -301,10 +286,59 @@ function getDeepChild(el2, path) {
   let rest;
   let child = el2;
   while ([n, ...rest] = path, n !== void 0) {
+    console.log({ n, rest, child, path });
     child = child.childNodes.item(n);
     path = rest;
   }
   return child;
+}
+function diffKeyedChild(prevChild, child, el2, stack, incomingKeyedChildren, keyedChildren, seenKeys) {
+  while (prevChild && !incomingKeyedChildren.has(prevChild.getAttribute("data-lustre-key"))) {
+    const nextChild = prevChild.nextSibling;
+    el2.removeChild(prevChild);
+    prevChild = nextChild;
+  }
+  if (keyedChildren.size === 0) {
+    iterateElement(child, (currChild) => {
+      stack.unshift({ prev: prevChild, next: currChild, parent: el2 });
+      prevChild = prevChild?.nextSibling;
+    });
+    return prevChild;
+  }
+  if (seenKeys.has(child.key)) {
+    console.warn(`Duplicate key found in Lustre vnode: ${child.key}`);
+    stack.unshift({ prev: null, next: child, parent: el2 });
+    return prevChild;
+  }
+  seenKeys.add(child.key);
+  const keyedChild = keyedChildren.get(child.key);
+  if (!keyedChild && !prevChild) {
+    stack.unshift({ prev: null, next: child, parent: el2 });
+    return prevChild;
+  }
+  if (!keyedChild && prevChild !== null) {
+    const placeholder = document.createTextNode("");
+    el2.insertBefore(placeholder, prevChild);
+    stack.unshift({ prev: placeholder, next: child, parent: el2 });
+    return prevChild;
+  }
+  if (!keyedChild || keyedChild === prevChild) {
+    stack.unshift({ prev: prevChild, next: child, parent: el2 });
+    prevChild = prevChild?.nextSibling;
+    return prevChild;
+  }
+  el2.insertBefore(keyedChild, prevChild);
+  stack.unshift({ prev: keyedChild, next: child, parent: el2 });
+  return prevChild;
+}
+function iterateElement(element, processElement) {
+  if (element.elements !== void 0) {
+    for (const currElement of element.elements) {
+      processElement(currElement);
+    }
+  } else {
+    processElement(element);
+  }
 }
 
 // src/server-component.mjs
