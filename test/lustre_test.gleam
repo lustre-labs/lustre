@@ -5,7 +5,6 @@ import apps/fragment
 import apps/static
 import birdie
 import gleam/erlang/process
-import gleam/function
 import gleam/json
 import gleeunit
 import lustre
@@ -35,9 +34,11 @@ pub fn counter_init_test() {
   let el =
     process.call(
       runtime,
-      function.curry2(process.send)
-        |> function.compose(View)
-        |> function.compose(Debug),
+      fn(reply) {
+        process.send(reply, _)
+        |> View
+        |> Debug
+      },
       100,
     )
 
@@ -57,9 +58,11 @@ pub fn counter_update_test() {
   let el =
     process.call(
       runtime,
-      function.curry2(process.send)
-        |> function.compose(View)
-        |> function.compose(Debug),
+      fn(reply) {
+        process.send(reply, _)
+        |> View
+        |> Debug
+      },
       100,
     )
 
@@ -75,9 +78,11 @@ pub fn counter_diff_test() {
   let prev =
     process.call(
       runtime,
-      function.curry2(process.send)
-        |> function.compose(View)
-        |> function.compose(Debug),
+      fn(reply) {
+        process.send(reply, _)
+        |> View
+        |> Debug
+      },
       100,
     )
 
@@ -88,9 +93,11 @@ pub fn counter_diff_test() {
   let next =
     process.call(
       runtime,
-      function.curry2(process.send)
-        |> function.compose(View)
-        |> function.compose(Debug),
+      fn(reply) {
+        process.send(reply, _)
+        |> View
+        |> Debug
+      },
       100,
     )
 
@@ -107,9 +114,11 @@ pub fn fragment_init_test() {
   let el =
     process.call(
       runtime,
-      function.curry2(process.send)
-        |> function.compose(View)
-        |> function.compose(Debug),
+      fn(reply) {
+        process.send(reply, _)
+        |> View
+        |> Debug
+      },
       100,
     )
 
@@ -125,9 +134,11 @@ pub fn fragment_counter_diff_test() {
   let prev =
     process.call(
       runtime,
-      function.curry2(process.send)
-        |> function.compose(View)
-        |> function.compose(Debug),
+      fn(reply) {
+        process.send(reply, _)
+        |> View
+        |> Debug
+      },
       100,
     )
 
@@ -138,9 +149,11 @@ pub fn fragment_counter_diff_test() {
   let next =
     process.call(
       runtime,
-      function.curry2(process.send)
-        |> function.compose(View)
-        |> function.compose(Debug),
+      fn(reply) {
+        process.send(reply, _)
+        |> View
+        |> Debug
+      },
       100,
     )
 
