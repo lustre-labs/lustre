@@ -340,8 +340,8 @@ pub fn path(attrs: List(Attribute(msg))) -> Element(msg) {
 }
 
 ///
-pub fn text(attrs: List(Attribute(msg))) -> Element(msg) {
-  namespaced(namespace, "text", attrs, [])
+pub fn text(attrs: List(Attribute(msg)), content: String) -> Element(msg) {
+  namespaced(namespace, "text", attrs, [element.text(content)])
 }
 
 ///
