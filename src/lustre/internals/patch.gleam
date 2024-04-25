@@ -85,7 +85,7 @@ fn do_elements(
         Element(_, _, _, _, _, _, _), Text(_) ->
           ElementDiff(..diff, created: dict.insert(diff.created, key, new))
 
-        Text(_), Element(_, _, _, _, _, _, _) as new ->
+        Text(_), Element(_, _, _, _, _, _, _) ->
           ElementDiff(
             ..diff,
             created: dict.insert(diff.created, key, new),
@@ -126,7 +126,7 @@ fn do_elements(
         // When we have two elements, but their namespaces or their tags differ,
         // there is nothing to diff. We mark the new element as created and
         // extract any event handlers.
-        Element(_, _, _, _, _, _, _), Element(_, _, _, _, _, _, _) as new ->
+        Element(_, _, _, _, _, _, _), Element(_, _, _, _, _, _, _) ->
           ElementDiff(
             ..diff,
             created: dict.insert(diff.created, key, new),
@@ -238,34 +238,38 @@ pub fn patch_to_json(patch: Patch(msg)) -> Json {
 
 pub fn element_diff_to_json(diff: ElementDiff(msg)) -> Json {
   json.preprocessed_array([
-    json.preprocessed_array({
-      use array, key, element <- dict.fold(diff.created, [])
-      let json =
-        json.preprocessed_array([
-          json.string(key),
-          vdom.element_to_json(element),
-        ])
+    json.preprocessed_array(
+      list.reverse({
+        use array, key, element <- dict.fold(diff.created, [])
+        let json =
+          json.preprocessed_array([
+            json.string(key),
+            vdom.element_to_json(element),
+          ])
 
-      [json, ..array]
-    }),
+        [json, ..array]
+      }),
+    ),
     json.preprocessed_array({
       use array, key <- set.fold(diff.removed, [])
       let json = json.preprocessed_array([json.string(key)])
 
       [json, ..array]
     }),
-    json.preprocessed_array({
-      use array, key, diff <- dict.fold(diff.updated, [])
-      use <- bool.guard(is_empty_attribute_diff(diff), array)
+    json.preprocessed_array(
+      list.reverse({
+        use array, key, diff <- dict.fold(diff.updated, [])
+        use <- bool.guard(is_empty_attribute_diff(diff), array)
 
-      let json =
-        json.preprocessed_array([
-          json.string(key),
-          attribute_diff_to_json(diff, key),
-        ])
+        let json =
+          json.preprocessed_array([
+            json.string(key),
+            attribute_diff_to_json(diff, key),
+          ])
 
-      [json, ..array]
-    }),
+        [json, ..array]
+      }),
+    ),
   ])
 }
 
@@ -387,7 +391,7 @@ fn fold_element_list_event_handlers(
   key: String,
 ) {
   use handlers, element, index <- list.index_fold(elements, handlers)
-  let key = key <> int.to_string(index)
+  let key = key <> "-" <> int.to_string(index)
 
   fold_event_handlers(handlers, element, key)
 }
