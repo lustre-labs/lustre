@@ -1,8 +1,8 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import lustre/attribute.{disabled, src}
+import lustre/attribute.{attribute, class, disabled, src, style}
 import lustre/element.{text}
-import lustre/element/html.{body, h1, head, html, img, input, title}
+import lustre/element/html.{body, div, h1, head, html, img, input, title}
 
 // VIEW ------------------------------------------------------------------------
 
@@ -15,4 +15,15 @@ pub fn view() {
       img([src("https://source.unsplash.com/random")]),
     ]),
   ])
+}
+
+pub fn escaped_attribute() {
+  div(
+    [
+      class("'badquotes'"),
+      style([#("background", "\"><script>alert`1`</script>")]),
+      attribute("example", "{\"mykey\": \"myvalue\"}"),
+    ],
+    [],
+  )
 }
