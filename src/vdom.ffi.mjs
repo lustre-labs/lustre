@@ -76,6 +76,8 @@ export function morph(prev, next, dispatch, isComponent = false) {
         stack.unshift({ prev, next: fragmentElement, parent });
         prev = prev?.nextSibling;
       });
+    } else if (next.subtree !== undefined) {
+      stack.push({ prev, next, parent });
     }
   }
 
