@@ -155,7 +155,7 @@ export function read(key) {
 ```
 
 ```gleam
-fn read(key: String, to_msg: fn(Result(String, Nil) -> msg) -> Effect(msg) {
+fn read(key: String, to_msg: fn(Result(String, Nil)) -> msg) -> Effect(msg) {
   effect.from(fn(dispatch) {
     do_read(key)
     |> to_msg
