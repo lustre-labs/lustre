@@ -219,7 +219,7 @@ fn do_write(key: String, value: String) -> Nil {
 ### Effects with multiple dispatch
 
 Similar to effects that don't dispatch any messages, some folks skip over the fact
-effects can dispatch _multiple_ messages. Packages like [`lustre_websoket`](https://hexdocs.pm/lustre_websocket/)
+effects can dispatch _multiple_ messages. Packages like [`lustre_websocket`](https://hexdocs.pm/lustre_websocket/)
 and [`modem`](https://hexdocs.pm/modem/) set up effects that will dispatch many
 messages over the lifetime of your program.
 
