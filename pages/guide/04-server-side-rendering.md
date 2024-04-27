@@ -98,7 +98,7 @@ because of the way it works, it's easy to implement one yourself!
 
 We've said many times now that in Lustre, your `view` is just a
 [pure function](https://github.com/lustre-labs/lustre/blob/main/pages/hints/pure-functions.md)
-of your model. We should produce the same HTMl every time we call `view` with the
+of your model. We should produce the same HTML every time we call `view` with the
 same model, no matter how many times we call it.
 
 Let's use that to our advantage! We know our app's `init` function is responsible
