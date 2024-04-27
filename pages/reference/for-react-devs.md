@@ -25,8 +25,6 @@ root.render(<h1>Hello, world</h1>);
 
 To run the project you could use Vite's development server with `npx vite`.
 
----
-
 **In Lustre** you need to install the `lustre` package with `gleam add lustre`.
 Most Lustre projects will add the dev tools too with `gleam add --dev lustre_dev_tools`.
 A simple hello world might look like this:
@@ -52,8 +50,6 @@ into your markup. Here's an example:
 <button className="primary">Click me</button>
 ```
 
----
-
 **In Lustre** HTML is rendered by calling functions (this is what JSX compiles to
 as well).
 
@@ -67,140 +63,44 @@ button([class("primary")], [text("Click me")])
 just writing it in your JSX:
 
 ```jsx
-<span>Hello</span>
+Hello;
 ```
 
 To concatenate text with other variables or expressions, you can use curly braces:
 
 ```jsx
-<span>Hello {name}</span>
+Hello {name}
 ```
-
----
 
 **In Lustre** because of Gleam's type system, all elements must be Lustre's `Element`
 type. To render text you need to use the `text` function:
 
 ```gleam
-span([], [
-  text("Hello"),
-  text("Hello" <> name),
-])
+text("Hello")
+text("Hello" <> name)
 ```
 
 ### Manage state
 
-**In React** you have many options for state management. Hooks like `useState` and
-`useReducer`, context, or libraries like Zustand or Redux are all viable choices.
+**In React**...
 
-```jsx
-const [count, setCount] = useState(0);
-const incr = () => setCount(count + 1);
-const decr = () => setCount(count - 1);
-```
-
-```jsx
-const dispatch = useReducer((state, action) => {
-  switch (action.type) {
-    case "increment":
-      return state + 1;
-    case "decrement":
-      return state - 1;
-    default:
-      return state;
-  }
-}, 0);
-```
-
----
-
-**In Lustre** all state is stored in a single `Model` type and updates happen
-through a central `update` function much like Redux, `useReducer`, or `Elm`.
-
-```gleam
-fn init(_) {
-  0
-}
-
-type Msg {
-  Incr
-  Decr
-}
-
-fn update(model, msg) {
-  case msg {
-    Incr -> model + 1
-    Decr -> model - 1
-  }
-}
-```
-
-You can read more about this approach in the [state management guide](https://hexdocs.pm/lustre/guide/02-state-management.html).
+**In Lustre**...
 
 ### Handle events
 
-**In React** event handlers are functions that receive an event object and can
-do anything you want. Event handlers are not expected to return a value, and
-instead typically call `setState` or other side-effecting functions.
+**In React**...
 
-```jsx
-<button onClick={() => dispatch({ type: "decrement" })}>-</button>
-```
-
-```jsx
-<input onChange={(event) => setInput(event.target.value)} />
-```
-
-```jsx
-<div onMouseMove={(event) => {
-  ...
-}}/>
-```
-
----
-
-**In Lustre** event handlers decoders for event objects. When the decoder succeeds,
-that value is passed to your `update` function. Lustre provides functions to handle
-most common events:
-
-```gleam
-button([on_click(Decr)], [text("-")])
-```
-
-```gleam
-input([on_input(UpdateInput)])
-```
-
-```gleam
-div([on("mousemove", fn(event) {
-  ...
-}], [...])
-```
+**In Lustre**...
 
 ### Write a component
 
-**In React** components are functions that take a single `props` argument and
-return a React element. Inside a component, hooks like `useState` and `useEffect`
-can be used to manage state and side effects.
+**In React**...
 
-```jsx
-function Counter({ initialCount }) {
-  const [count, setCount] = useState(initialCount);
-
-  return <button onClick={() => setCount(count + 1)}>{count}</button>;
-}
-```
-
----
-
-**In Lustre** components are more commonly referred to as "view functions". They
-are regular Gleam functions
+**In Lustre**...
 
 ### Fetch data
 
 **In React**...
-
----
 
 **In Lustre**...
 
