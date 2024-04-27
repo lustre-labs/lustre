@@ -103,7 +103,7 @@ same model, no matter how many times we call it.
 
 Let's use that to our advantage! We know our app's `init` function is responsible
 for producing the initial model, so all we need is a way to make sure the initial
-model on the client is the same as whate the server used to render the page.
+model on the client is the same as what the server used to render the page.
 
 ```gleam
 pub fn view(model: Int) -> Element(Msg) {
