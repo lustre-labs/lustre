@@ -1,7 +1,7 @@
-import { bench, describe, expect } from "vitest";
-import { setupDOM } from "../utils";
-
-import { morph, smoke_test } from "./build/test-entry.js";
+import { bench, describe } from "vitest";
+import { setupDOM } from "./utils";
+import { morph } from "../src/vdom.ffi.mjs";
+import { smoke_test } from "../test-apps/vdom-test-templates/build/dev/javascript/app/client_test.mjs";
 
 // BENCH ------------------------------------------------------------------------
 

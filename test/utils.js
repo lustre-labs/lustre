@@ -1,8 +1,9 @@
 import { parseHTML } from 'linkedom';
+import { vi } from 'vitest';
 
 // Parse the starting state of the basic starting template
 export function setupDOM() {
-    const result = parseHTML(`
+  const result = parseHTML(`
 <!doctype html>
 <html lang="en">
   <head>
@@ -18,5 +19,11 @@ export function setupDOM() {
   </body>
 </html>`);
 
-    return result;
+  global.HTMLElement = result.HTMLElement;
+  global.Node = result.Node;
+  global.document = result.document;
+  global.window = result.window;
+  global.window.requestAnimationFrame = vi.fn().mockImplementation((cb) => cb());
+
+  return result;
 }

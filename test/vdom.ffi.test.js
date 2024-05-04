@@ -1,21 +1,18 @@
 import { beforeEach, describe, expect, test } from "vitest";
-import { setupDOM } from "../../utils.js";
+import { setupDOM } from "./utils.js";
 
+import { morph } from "@root/src/vdom.ffi.mjs";
 import {
   disabled_attr_test,
   dynamic_content_test,
   fragment_test,
   keyed_test,
-  morph,
   smoke_test,
-} from "../build/test-entry.js";
+} from "../test-apps/vdom-test-templates/build/dev/javascript/app/client_test.mjs";
 
 let appEl;
 beforeEach(() => {
-  const result = setupDOM();
-
-  global.Node = result.Node;
-  global.document = result.document;
+  setupDOM();
   appEl = document.getElementById("app");
 });
 

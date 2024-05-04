@@ -1,17 +1,10 @@
-import { beforeEach, describe, expect, test, vi } from "vitest";
-import { setupDOM } from "../../utils.js";
-
-import { main } from "../build/test-entry.js";
+import { beforeEach, describe, expect, test } from "vitest";
+import { setupDOM } from "./utils.js";
+import { main } from "@root/examples/02-interactivity/build/dev/javascript/app/app.mjs";
 
 let appEl;
 beforeEach(() => {
-  const result = setupDOM();
-
-  global.HTMLElement = result.HTMLElement;
-  global.Node = result.Node;
-  global.document = result.document;
-  global.window = result.window;
-  global.window.requestAnimationFrame = vi.fn().mockImplementation((cb) => cb());
+  setupDOM();
   appEl = document.getElementById("app");
 });
 
