@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { setupDOM } from "./utils.js";
 
 import { morph } from "@root/src/vdom.ffi.mjs";
+
+// built via npm script "build:test:vdom"
 import {
   disabled_attr_test,
   dynamic_content_test,

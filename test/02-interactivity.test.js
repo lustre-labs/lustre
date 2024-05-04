@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { setupDOM } from "./utils.js";
+// built via npm script "build:test:02"
 import { main } from "@root/examples/02-interactivity/build/dev/javascript/app/app.mjs";
 
 let appEl;
