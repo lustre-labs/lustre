@@ -1,0 +1,55 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`vdom morph > should render smoke test with vdom morph > smoke_test 1`] = `
+"<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>🚧 {app_name}</title>
+
+  </head>
+
+  <body>
+    <div><p>smoke test</p></div>
+  </body>
+</html>"
+`;
+
+exports[`vdom morph > should render using vdom morph with fragments > fragment_test 1`] = `
+"<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>🚧 {app_name}</title>
+
+  </head>
+
+  <body>
+    <table><head><tr><th>Person Name</th><th>Person Age</th></tr></head><body><tr><td>Person One</td><td>18</td></tr><tr><td>Person Two</td><td>24</td></tr><tr><td>Person Three</td><td>30</td></tr></body></table>
+  </body>
+</html>"
+`;
+
+exports[`vdom morph > should render using vdom morph with keys > fragment_test 1`] = `
+"<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>🚧 {app_name}</title>
+
+  </head>
+
+  <body>
+    <ul><tr data-lustre-key="1dfg"><td>Person One</td><td>18</td></tr><tr data-lustre-key="abc3"><td>Person Two</td><td>24</td></tr><tr data-lustre-key="ga4d"><td>Person Three</td><td>30</td></tr></ul>
+  </body>
+</html>"
+`;
