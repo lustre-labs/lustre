@@ -234,6 +234,8 @@ function createElementNode({ prev, next, dispatch, stack }) {
     // Properties are set directly on the DOM node.
     if (attr.as_property) {
       el[name] = value;
+
+      if (canMorph) prevAttributes.delete(name);
     }
     // Event handlers require some special treatment. We have a generic event
     // handler that is used for all event handlers attached by lustre. This way
