@@ -114,6 +114,9 @@ pub fn attribute_to_json(
   attribute: Attribute(msg),
   key: String,
 ) -> Result(Json, Nil) {
+  let true_atom = dynamic.from(True)
+  let false_atom = dynamic.from(False)
+
   case attribute {
     Attribute(_, _, True) -> Error(Nil)
     Attribute(name, value, as_property: False) -> {
@@ -126,7 +129,15 @@ pub fn attribute_to_json(
             ]),
           )
 
-        "Boolean" ->
+        "Atom" if value == true_atom || value == false_atom ->
+          Ok(
+            json.object([
+              #("0", json.string(name)),
+              #("1", json.bool(dynamic.unsafe_coerce(value))),
+            ]),
+          )
+
+        "Bool" | "Boolean" ->
           Ok(
             json.object([
               #("0", json.string(name)),
