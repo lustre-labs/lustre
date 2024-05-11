@@ -372,10 +372,13 @@ fn attribute_to_string_parts(
         // want to render `disabled="false"` if the value is `false` we simply
         // want to omit the attribute altogether.
         //
-        // On the Erlang target, booleans are actually just the atoms `true` and
-        // `false`!
-        "Atom" | "Boolean" if value == true_atom -> Ok(#(name, ""))
-        "Atom" | "Boolean" -> Error(Nil)
+        // The behaviour of `dynamic.classify` on booleans on the Erlang target
+        // depends on what version of the standard library you have. <= 0.36.0
+        // will classify `true` and `false` as `"Atom"` but >= 0.37.0 will be
+        // smarter and classify them as `"Bool"`.
+        //
+        "Atom" | "Bool" | "Boolean" if value == true_atom -> Ok(#(name, ""))
+        "Atom" | "Bool" | "Boolean" -> Error(Nil)
 
         // For everything else, we care whether or not the attribute is actually
         // a property. Properties are *Javascript* values that aren't necessarily
