@@ -53,11 +53,7 @@ function makeComponent(init, update, view, on_attribute_change) {
                   );
             }
 
-            if (typeof value === "string") {
-              this.setAttribute(name, value);
-            } else {
-              this[`_${name}`] = value;
-            }
+            this[`_${name}`] = value;
           },
         });
       });
@@ -72,6 +68,10 @@ function makeComponent(init, update, view, on_attribute_change) {
         true,
       );
       this.appendChild(this.#root);
+    }
+
+    attributeChangedCallback(key, _, next) {
+      this[key] = next;
     }
 
     disconnectedCallback() {
