@@ -164,7 +164,7 @@ As our apps grow in size, we'll be thankful for this clarity!
 
 Although Lustre does have a way to create encapsulated stateful components (something
 we sorely missed in Elm) it shouldn't be the default. The word "component" is a bit
-overloaded in the frontend world, so for clarify Lustre considers _components_
+overloaded in the frontend world, so for clarity Lustre considers _components_
 as stateful nested Model-View-Update applications and calls stateless functions
 that return `Element`s _view functions_.
 
