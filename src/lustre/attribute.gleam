@@ -339,3 +339,10 @@ pub fn form_novalidate(value: Bool) -> Attribute(msg) {
 pub fn form_target(target: String) -> Attribute(msg) {
   attribute("formtarget", target)
 }
+
+// DIALOGS ---------------------------------------------------------------------
+
+///
+pub fn open(is_open: Bool) -> Attribute(msg) {
+  property("open", is_open)
+}
