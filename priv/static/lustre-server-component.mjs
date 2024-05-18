@@ -46,6 +46,8 @@ function morph(prev, next, dispatch, isComponent = false) {
         stack.unshift({ prev: prev2, next: fragmentElement, parent });
         prev2 = prev2?.nextSibling;
       });
+    } else if (next2.subtree !== void 0) {
+      stack.push({ prev: prev2, next: next2, parent });
     }
   }
   return out;
@@ -129,6 +131,8 @@ function createElementNode({ prev, next, dispatch, stack }) {
     const value = attr[1];
     if (attr.as_property) {
       el2[name] = value;
+      if (canMorph)
+        prevAttributes.delete(name);
     } else if (name.startsWith("on")) {
       const eventName = name.slice(2);
       const callback = dispatch(value);
@@ -286,7 +290,6 @@ function getDeepChild(el2, path) {
   let rest;
   let child = el2;
   while ([n, ...rest] = path, n !== void 0) {
-    console.log({ n, rest, child, path });
     child = child.childNodes.item(n);
     path = rest;
   }

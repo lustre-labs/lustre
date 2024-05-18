@@ -7,6 +7,7 @@ import gleam/int
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/order.{type Order, Eq, Gt, Lt}
 import gleam/set.{type Set}
 import gleam/string
 import lustre/internals/constants
@@ -236,25 +237,38 @@ pub fn patch_to_json(patch: Patch(msg)) -> Json {
   }
 }
 
+import gleam/io
+
 pub fn element_diff_to_json(diff: ElementDiff(msg)) -> Json {
   json.preprocessed_array([
     json.preprocessed_array(
       list.reverse({
-        use array, key, element <- dict.fold(diff.created, [])
-        let json =
-          json.preprocessed_array([
-            json.string(key),
-            vdom.element_to_json(element),
-          ])
+        // Gleam's dictionaries are unordered, which is a bit of a problem for
+        // our runtime patching where we assume keys come in a stable order. To
+        // make our client code as fast as possible, we do the sort here rather
+        // than on the client.
+        dict.to_list(diff.created)
+        |> list.sort(fn(x, y) { key_sort(x.0, y.0) })
+        |> list.fold([], fn(array, patch) {
+          let #(key, element) = patch
+          io.debug(key)
+          let json =
+            json.preprocessed_array([
+              json.string(key),
+              vdom.element_to_json(element),
+            ])
 
-        [json, ..array]
+          [json, ..array]
+        })
       }),
     ),
     json.preprocessed_array({
-      use array, key <- set.fold(diff.removed, [])
-      let json = json.preprocessed_array([json.string(key)])
-
-      [json, ..array]
+      set.to_list(diff.removed)
+      |> list.sort(key_sort)
+      |> list.fold([], fn(array, key) {
+        let json = json.preprocessed_array([json.string(key)])
+        [json, ..array]
+      })
     }),
     json.preprocessed_array(
       list.reverse({
@@ -271,6 +285,28 @@ pub fn element_diff_to_json(diff: ElementDiff(msg)) -> Json {
       }),
     ),
   ])
+}
+
+fn key_sort(x: String, y: String) -> Order {
+  do_key_sort(string.split(x, "-"), string.split(y, "-"))
+}
+
+fn do_key_sort(xs: List(String), ys: List(String)) -> Order {
+  case xs, ys {
+    [], [] -> Eq
+    [], _ -> Lt
+    _, [] -> Gt
+    ["-", ..xs], ["-", ..ys] -> do_key_sort(xs, ys)
+    [x, ..xs], [y, ..ys] -> {
+      let assert Ok(x) = int.parse(x)
+      let assert Ok(y) = int.parse(y)
+
+      case int.compare(x, y) {
+        Eq -> do_key_sort(xs, ys)
+        order -> order
+      }
+    }
+  }
 }
 
 pub fn attribute_diff_to_json(diff: AttributeDiff(msg), key: String) -> Json {
