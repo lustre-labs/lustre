@@ -2,6 +2,7 @@
 
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Decoder, type Dynamic}
+import gleam/float
 import gleam/int
 import gleam/json.{type Json}
 import gleam/list
@@ -390,6 +391,9 @@ fn attribute_to_string_parts(
         //
         "Atom" | "Bool" | "Boolean" if value == true_atom -> Ok(#(name, ""))
         "Atom" | "Bool" | "Boolean" -> Error(Nil)
+
+        "Int" -> Ok(#(name, int.to_string(dynamic.unsafe_coerce(value))))
+        "Float" -> Ok(#(name, float.to_string(dynamic.unsafe_coerce(value))))
 
         // For everything else, we care whether or not the attribute is actually
         // a property. Properties are *Javascript* values that aren't necessarily
