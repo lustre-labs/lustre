@@ -130,7 +130,8 @@ function createElementNode({ prev, next, dispatch, stack }) {
     const name = attr[0];
     const value = attr[1];
     if (attr.as_property) {
-      el2[name] = value;
+      if (el2[name] !== value)
+        el2[name] = value;
       if (canMorph)
         prevAttributes.delete(name);
     } else if (name.startsWith("on")) {
