@@ -94,7 +94,7 @@ pub fn on_keypress(msg: fn(String) -> msg) -> Attribute(msg) {
   |> result.map(msg)
 }
 
-/// Listens for key dow events on an element, and dispatches a message with the
+/// Listens for key down events on an element, and dispatches a message with the
 /// current key being pressed.
 ///
 pub fn on_keydown(msg: fn(String) -> msg) -> Attribute(msg) {
