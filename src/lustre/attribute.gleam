@@ -263,12 +263,12 @@ pub fn src(uri: String) -> Attribute(msg) {
 
 ///
 pub fn height(val: Int) -> Attribute(msg) {
-  property("height", int.to_string(val))
+  property("height", val)
 }
 
 ///
 pub fn width(val: Int) -> Attribute(msg) {
-  property("width", int.to_string(val))
+  property("width", val)
 }
 
 ///
