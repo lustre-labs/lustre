@@ -167,7 +167,7 @@ export const start = (app, selector, flags) =>
 
 // UTILS -----------------------------------------------------------------------
 
-export const is_browser = () => window && window.document;
+export const is_browser = () => globalThis.window && window.document;
 export const is_registered = (name) =>
   is_browser() && !!window.customElements.get(name);
 export const prevent_default = (event) => event.preventDefault();
