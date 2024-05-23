@@ -24,7 +24,13 @@ export function morph(prev, next, dispatch, isComponent = false) {
   let stack = [{ prev, next, parent: prev.parentNode }];
 
   while (stack.length) {
-    let { prev, next, parent } = stack.pop();
+    let { prev, next, parent, lazy } = stack.pop();
+    // if (lazy) {
+    //   console.log("in pop lazy prev", prev);
+    //   console.log("in pop lazy next", next);
+    //   console.log("in pop lazy parent", parent);
+    //   console.log("in pop lazy lazy", lazy);
+    // }
     // If we have the `subtree` property then we're looking at a `Map` vnode that
     // is lazily evaluated. We'll force it here and then proceed with the morphing.
     if (next.subtree !== undefined) next = next.subtree();
@@ -33,13 +39,16 @@ export function morph(prev, next, dispatch, isComponent = false) {
     if (next.content !== undefined) {
       if (!prev) {
         const created = document.createTextNode(next.content);
+        setLazy(created, lazy);
         parent.appendChild(created);
         out ??= created;
       } else if (prev.nodeType === Node.TEXT_NODE) {
         if (prev.textContent !== next.content) prev.textContent = next.content;
+        setLazy(prev, lazy);
         out ??= prev;
       } else {
         const created = document.createTextNode(next.content);
+        setLazy(prev, lazy);
         parent.replaceChild(created, prev);
         out ??= created;
       }
@@ -53,6 +62,8 @@ export function morph(prev, next, dispatch, isComponent = false) {
         stack,
         isComponent,
       });
+
+      setLazy(created, lazy);
 
       if (!prev) {
         parent.appendChild(created);
@@ -72,16 +83,76 @@ export function morph(prev, next, dispatch, isComponent = false) {
     // first child means that document -> body will be the parent of the first level
     // of children
     else if (next.elements !== undefined) {
-      iterateElement(next, (fragmentElement) => {
-        stack.unshift({ prev, next: fragmentElement, parent });
-        prev = prev?.nextSibling;
-      });
+      if (next.elements.hasLength(0)) {
+        // if (prev !== undefined) parent.removeChild(prev);
+      } else {
+        iterateElement(next, prev, ({ element: fragmentElement }) => {
+          // All elements are considered lazy to be able to skip them.
+          // This happens if the fragment is behind a lazy function.
+          if (fragmentElement) {
+            stack.unshift({ prev, next: fragmentElement, parent, lazy });
+          } else {
+            while (
+              prev.isLazy &&
+              prev.lazyArg === prev.nextSibling?.lazyArg &&
+              prev.lazyView === prev.nextSibling?.lazyView
+            ) {
+              prev = prev.nextSibling;
+            }
+          }
+
+          prev = prev?.nextSibling;
+        });
+      }
     } else if (next.subtree !== undefined) {
       stack.push({ prev, next, parent });
     }
+
+    // We're in Lazy element here.
+    // else if (next.lazy_view !== undefined) {
+    //   const lazy = { arg: next.arg, view: next.lazy_view };
+    //   if (!prev || !prev.isLazy) {
+    //     let additions = [];
+    //     iterateElement(next.lazy_view(next.arg), (fragmentElement) => {
+    //       if (fragmentElement) {
+    //         additions.unshift({ prev, next: fragmentElement, parent, lazy });
+    //         while (
+    //           prev.isLazy &&
+    //           prev.lazyArg === prev.nextSibling?.lazyArg &&
+    //           prev.lazyView === prev.nextSibling?.lazyView
+    //         ) {
+    //           prev = prev.nextSibling;
+    //         }
+    //       }
+    //       prev = prev?.nextSibling;
+    //     });
+    //     stack.push(...additions);
+    //   }
+    //   else {
+    //     if (prev.lazyArg !== next.arg || prev.lazyView !== next.lazy_view) {
+    //       let additions = [];
+    //       iterateElement(next.lazy_view(next.arg), (fragmentElement) => {
+    //         additions.unshift({ prev, next: fragmentElement, parent, lazy });
+    //         prev = prev?.nextSibling;
+    //       });
+    //       stack.push(...additions);
+    //     } else {
+    //       out ??= prev;
+    //     }
+    //   }
+    //   // debugger;
+    // }
   }
 
   return out;
+}
+
+function setLazy(element, lazy) {
+  if (lazy !== undefined) {
+    element.isLazy = true;
+    element.lazyArg = lazy.arg;
+    element.lazyView = lazy.view;
+  }
 }
 
 export function patch(root, diff, dispatch) {
@@ -348,11 +419,21 @@ function createElementNode({ prev, next, dispatch, stack }) {
     incomingKeyedChildren = getKeyedChildren(next);
   }
   for (const child of next.children) {
-    iterateElement(child, (currElement) => {
+    iterateElement(child, prevChild, ({ element: currElement, lazy }) => {
+      if (!currElement) {
+        while (
+          prevChild.isLazy &&
+          prevChild.lazyArg === prevChild.nextSibling?.lazyArg &&
+          prevChild.lazyView === prevChild.nextSibling?.lazyView
+        ) {
+          prevChild = prevChild.nextSibling;
+        }
+        prevChild = prevChild.nextSibling;
+      }
       // A keyed morph has more complex logic to handle: we need to be grabbing
       // same-key nodes from the previous render and moving them to the correct
       // position in the DOM.
-      if (currElement.key !== undefined && seenKeys !== null) {
+      else if (currElement.key !== undefined && seenKeys !== null) {
         prevChild = diffKeyedChild(
           prevChild,
           currElement,
@@ -363,7 +444,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
           seenKeys,
         );
       } else {
-        stack.unshift({ prev: prevChild, next: currElement, parent: el });
+        stack.unshift({ prev: prevChild, next: currElement, parent: el, lazy });
         prevChild = prevChild?.nextSibling;
       }
     });
@@ -444,7 +525,7 @@ function getKeyedChildren(el) {
 
   if (el) {
     for (const child of el.children) {
-      iterateElement(child, (currElement) => {
+      iterateElement(child, null, ({ element: currElement }) => {
         const key =
           currElement?.key || currElement?.getAttribute?.("data-lustre-key");
         if (key) keyedChildren.set(key, currElement);
@@ -494,8 +575,8 @@ function diffKeyedChild(
   // insert the incoming child at the current position (and diff against whatever
   // is already there).
   if (keyedChildren.size === 0) {
-    iterateElement(child, (currChild) => {
-      stack.unshift({ prev: prevChild, next: currChild, parent: el });
+    iterateElement(child, null, ({ element: currChild, lazy }) => {
+      stack.unshift({ prev: prevChild, next: currChild, parent: el, lazy });
       prevChild = prevChild?.nextSibling;
     });
     return prevChild;
@@ -556,12 +637,23 @@ function diffKeyedChild(
  1. If single element, call callback for that element
  2. If fragment, call callback for every child element. Fragment constructor guarantees no Fragment children
 */
-function iterateElement(element, processElement) {
-  if (element.elements !== undefined) {
+function iterateElement(element, previousElement, processElement, lazy) {
+  if (element.lazy_view !== undefined) {
+    if (
+      previousElement?.lazyArg !== element.arg ||
+      previousElement?.lazyView !== element.lazy_view
+    ) {
+      const next = element.lazy_view(element.arg);
+      const lazy = { arg: element.arg, view: element.lazy_view };
+      iterateElement(next, previousElement, processElement, lazy);
+    } else {
+      processElement({ element: null });
+    }
+  } else if (element.elements !== undefined) {
     for (const currElement of element.elements) {
-      processElement(currElement);
+      processElement({ element: currElement, lazy });
     }
   } else {
-    processElement(element);
+    processElement({ element, lazy });
   }
 }

@@ -8,12 +8,13 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/dynamic
 import gleam/int
 import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
 import lustre/attribute.{type Attribute, attribute}
-import lustre/internals/vdom.{Element, Fragment, Map, Text}
+import lustre/internals/vdom.{Element, Fragment, Lazy, Map, Text}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -266,7 +267,7 @@ pub fn none() -> Element(msg) {
 /// specififying the container on definition. Allows the treatment of List(Element(msg))
 /// as if it were Element(msg). Useful when generating a list of elements from data but
 /// used downstream.
-/// 
+///
 pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
   // remove redundant fragments to simplify rendering
   flatten_fragment_elements(elements)
@@ -329,6 +330,7 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
     Fragment(elements, key) -> {
       Map(fn() { Fragment(list.map(elements, map(_, f)), key) })
     }
+    Lazy(arg, view) -> Map(fn() { Lazy(arg, fn(_) { map(view(arg), f) }) })
   }
 }
 
@@ -390,4 +392,8 @@ pub fn to_document_string_builder(el: Element(msg)) -> StringBuilder {
     _ -> element("html", [], [element("body", [], [el])])
   })
   |> string_builder.prepend("<!doctype html>\n")
+}
+
+pub fn lazy(arg: a, view: fn(a) -> Element(msg)) {
+  Lazy(dynamic.from(arg), dynamic.unsafe_coerce(dynamic.from(view)))
 }

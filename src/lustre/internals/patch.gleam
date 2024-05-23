@@ -12,7 +12,8 @@ import gleam/set.{type Set}
 import gleam/string
 import lustre/internals/constants
 import lustre/internals/vdom.{
-  type Attribute, type Element, Attribute, Element, Event, Fragment, Map, Text,
+  type Attribute, type Element, Attribute, Element, Event, Fragment, Lazy, Map,
+  Text,
 }
 
 // TYPES -----------------------------------------------------------------------
@@ -142,6 +143,33 @@ fn do_elements(
             created: dict.insert(diff.created, key, new),
             handlers: fold_event_handlers(diff.handlers, new, key),
           )
+        Lazy(old_arg, old_view), Lazy(new_arg, new_view) -> {
+          case old_arg == new_arg {
+            True if old_view == new_view -> diff
+            _ ->
+              do_elements(
+                diff,
+                Some(old_view(old_arg)),
+                Some(new_view(new_arg)),
+                key,
+              )
+          }
+        }
+        _, Lazy(new_arg, new_view) -> {
+          let new = new_view(new_arg)
+          ElementDiff(
+            ..diff,
+            created: dict.insert(diff.created, key, new),
+            handlers: fold_event_handlers(diff.handlers, new, key),
+          )
+        }
+        Lazy(_, _), _ -> {
+          ElementDiff(
+            ..diff,
+            created: dict.insert(diff.created, key, new),
+            handlers: fold_event_handlers(diff.handlers, new, key),
+          )
+        }
       }
     }
   }
@@ -418,6 +446,7 @@ fn fold_event_handlers(
     }
     Fragment(elements, _) ->
       fold_element_list_event_handlers(handlers, elements, key)
+    Lazy(arg, view) -> fold_event_handlers(handlers, view(arg), key)
   }
 }
 

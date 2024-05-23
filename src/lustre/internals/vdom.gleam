@@ -27,6 +27,7 @@ pub type Element(msg) {
   // This means we pay the cost of mapping multiple times only *once* during rendering.
   Map(subtree: fn() -> Element(msg))
   Fragment(elements: List(Element(msg)), key: String)
+  Lazy(arg: Dynamic, lazy_view: fn(Dynamic) -> Element(msg))
 }
 
 pub type Attribute(msg) {
@@ -61,6 +62,7 @@ fn do_handlers(
       do_element_list_handlers(children, handlers, key)
     }
     Fragment(elements, _) -> do_element_list_handlers(elements, handlers, key)
+    Lazy(arg, view) -> do_handlers(view(arg), handlers, key)
   }
 }
 
@@ -102,6 +104,7 @@ fn do_element_to_json(element: Element(msg), key: String) -> Json {
     }
     Fragment(elements, _) ->
       json.object([#("elements", do_element_list_to_json(elements, key))])
+    Lazy(arg, view) -> do_element_to_json(view(arg), key)
   }
 }
 
@@ -267,6 +270,7 @@ fn do_element_to_string_builder(
     }
     Fragment(elements, _) ->
       children_to_string_builder(string_builder.new(), elements, raw_text)
+    Lazy(arg, view) -> do_element_to_string_builder(view(arg), raw_text)
   }
 }
 
