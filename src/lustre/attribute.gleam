@@ -95,11 +95,11 @@ pub fn classes(names: List(#(String, Bool))) -> Attribute(msg) {
     "class",
     names
       |> list.filter_map(fn(class) {
-      case class.1 {
-        True -> Ok(class.0)
-        False -> Error(Nil)
-      }
-    })
+        case class.1 {
+          True -> Ok(class.0)
+          False -> Error(Nil)
+        }
+      })
       |> string.join(" "),
   )
 }
