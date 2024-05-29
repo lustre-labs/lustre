@@ -74,6 +74,12 @@ Lustre has some official development tooling published in the
 [`lustre_dev_tools`](https://hexdocs.pm/lustre_dev_tools/) package. Most projects
 will probably want to add those too!
 
+> **Note**: the lustre_dev_tools development server watches your filesystem for
+> changes to your gleam code and can automatically reload the browser. For linux
+> users this requires [inotify-tools](https://github.com/inotify-tools/inotify-tools)
+> be installed. If you do not or cannot install this, the development server will
+> still run but it will not watch your files for changes.
+
 ```sh
 gleam add --dev lustre_dev_tools
 ```
