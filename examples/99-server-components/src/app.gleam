@@ -5,7 +5,7 @@ import gleam/erlang/process.{type Selector, type Subject}
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/json
-import gleam/option.{type Option, None}
+import gleam/option.{type Option, None, Some}
 import gleam/otp/actor
 import gleam/result
 import lustre
@@ -89,7 +89,7 @@ pub fn main() {
   process.sleep_forever()
 }
 
-// 
+//
 
 type Counter =
   Subject(lustre.Action(counter.Msg, lustre.ServerComponent))
@@ -97,6 +97,7 @@ type Counter =
 fn socket_init(
   conn: WebsocketConnection,
 ) -> #(Counter, Option(Selector(lustre.Patch(counter.Msg)))) {
+  let self = process.new_subject()
   let app = counter.app()
   let assert Ok(counter) = lustre.start_actor(app, 0)
 
@@ -113,14 +114,7 @@ fn socket_init(
       // a more involved version would have us sending the patch to this socket's
       // subject, and then it could be handled (perhaps with some other work) in
       // the `mist.Custom` branch of `socket_update` below.
-      fn(patch) {
-        patch
-        |> server_component.encode_patch
-        |> json.to_string
-        |> mist.send_text_frame(conn, _)
-
-        Nil
-      },
+      process.send(self, _),
     ),
   )
 
@@ -128,15 +122,13 @@ fn socket_init(
     // we store the server component's `Subject` as this socket's state so we
     // can shut it down when the socket is closed.
     counter,
-    // the `None` here means we aren't planning on receiving any messages from
-    // elsewhere and dont need a `Selector` to handle them.
-    None,
+    Some(process.selecting(process.new_selector(), self, fn(a) { a })),
   )
 }
 
 fn socket_update(
   counter: Counter,
-  _conn: WebsocketConnection,
+  conn: WebsocketConnection,
   msg: WebsocketMessage(lustre.Patch(counter.Msg)),
 ) {
   case msg {
@@ -154,7 +146,15 @@ fn socket_update(
     }
 
     mist.Binary(_) -> actor.continue(counter)
-    mist.Custom(_) -> actor.continue(counter)
+    mist.Custom(patch) -> {
+      let assert Ok(_) =
+        patch
+        |> server_component.encode_patch
+        |> json.to_string
+        |> mist.send_text_frame(conn, _)
+
+      actor.continue(counter)
+    }
     mist.Closed | mist.Shutdown -> actor.Stop(process.Normal)
   }
 }

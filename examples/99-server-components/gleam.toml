@@ -15,7 +15,7 @@ version = "1.0.0"
 [dependencies]
 gleam_stdlib = "~> 0.36"
 lustre = "~> 4.0"
-mist = "~> 0.17"
+mist = "~> 1.0"
 gleam_erlang = "~> 0.24"
 gleam_otp = "~> 0.10"
 gleam_http = "~> 3.6"
