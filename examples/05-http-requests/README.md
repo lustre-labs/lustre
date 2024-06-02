@@ -11,7 +11,7 @@ outside world.
 Lustre's runtime includes _managed effects_, which allow us to perform side effects
 like HTTP requests and communicate the results back to our application's `update`
 function. To learn more about Lustre's effect system and why it's useful, check
-out the [side effects guide](https://hexdocs.pm/lustre/guide/side-effects.html),
+out the [side effects guide](https://hexdocs.pm/lustre/guide/03-side-effects.html),
 or the docs for the [`lustre/effect` module](https://hexdocs.pm/lustre/lustre/effect.html).
 
 This example is a practical look at what effects mean in Lustre, and we'll look
