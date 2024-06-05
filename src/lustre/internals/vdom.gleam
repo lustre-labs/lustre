@@ -8,6 +8,7 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
+import lustre/internals/escape.{escape}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -198,7 +199,7 @@ fn do_element_to_string_builder(
   case element {
     Text("") -> string_builder.new()
     Text(content) if raw_text -> string_builder.from_string(content)
-    Text(content) -> string_builder.from_string(escape("", content))
+    Text(content) -> string_builder.from_string(escape(content))
 
     Map(subtree) -> do_element_to_string_builder(subtree(), raw_text)
 
@@ -296,26 +297,26 @@ fn attributes_to_string_builder(
       )
       Ok(#("class", val)) if class == "" -> #(
         html,
-        escape("", val),
+        escape(val),
         style,
         inner_html,
       )
       Ok(#("class", val)) -> #(
         html,
-        class <> " " <> escape("", val),
+        class <> " " <> escape(val),
         style,
         inner_html,
       )
       Ok(#("style", val)) if style == "" -> #(
         html,
         class,
-        escape("", val),
+        escape(val),
         inner_html,
       )
       Ok(#("style", val)) -> #(
         html,
         class,
-        style <> " " <> escape("", val),
+        style <> " " <> escape(val),
         inner_html,
       )
       Ok(#(key, "")) -> #(
@@ -325,10 +326,7 @@ fn attributes_to_string_builder(
         inner_html,
       )
       Ok(#(key, val)) -> #(
-        string_builder.append(
-          html,
-          " " <> key <> "=\"" <> escape("", val) <> "\"",
-        ),
+        string_builder.append(html, " " <> key <> "=\"" <> escape(val) <> "\""),
         class,
         style,
         inner_html,
@@ -353,21 +351,6 @@ fn attributes_to_string_builder(
 }
 
 // UTILS -----------------------------------------------------------------------
-
-fn escape(escaped: String, content: String) -> String {
-  case content {
-    "<" <> rest -> escape(escaped <> "&lt;", rest)
-    ">" <> rest -> escape(escaped <> "&gt;", rest)
-    "&" <> rest -> escape(escaped <> "&amp;", rest)
-    "\"" <> rest -> escape(escaped <> "&quot;", rest)
-    "'" <> rest -> escape(escaped <> "&#39;", rest)
-    _ ->
-      case string.pop_grapheme(content) {
-        Ok(#(x, xs)) -> escape(escaped <> x, xs)
-        Error(_) -> escaped
-      }
-  }
-}
 
 fn attribute_to_string_parts(
   attr: Attribute(msg),
