@@ -27,7 +27,10 @@ pub type Element(msg) {
   // This means we pay the cost of mapping multiple times only *once* during rendering.
   Map(subtree: fn() -> Element(msg))
   Fragment(elements: List(Element(msg)), key: String)
-  Lazy(arg: Dynamic, lazy_view: fn(Dynamic) -> Element(msg))
+  // Because lazy elements can accept multiple arguments, `view` can take the form
+  // fn(a) -> Element(msg), or fn(a, b) -> Element(msg) and so on. It cannot be
+  // instanciated by hand, so it should always be right.
+  Lazy(params: List(Dynamic), view: Dynamic)
 }
 
 pub type Attribute(msg) {
@@ -62,7 +65,10 @@ fn do_handlers(
       do_element_list_handlers(children, handlers, key)
     }
     Fragment(elements, _) -> do_element_list_handlers(elements, handlers, key)
-    Lazy(arg, view) -> do_handlers(view(arg), handlers, key)
+    Lazy(_, _) -> {
+      let el = apply_lazy(element)
+      do_handlers(el, handlers, key)
+    }
   }
 }
 
@@ -104,7 +110,10 @@ fn do_element_to_json(element: Element(msg), key: String) -> Json {
     }
     Fragment(elements, _) ->
       json.object([#("elements", do_element_list_to_json(elements, key))])
-    Lazy(arg, view) -> do_element_to_json(view(arg), key)
+    Lazy(_, _) -> {
+      let el = apply_lazy(element)
+      do_element_to_json(el, key)
+    }
   }
 }
 
@@ -270,7 +279,10 @@ fn do_element_to_string_builder(
     }
     Fragment(elements, _) ->
       children_to_string_builder(string_builder.new(), elements, raw_text)
-    Lazy(arg, view) -> do_element_to_string_builder(view(arg), raw_text)
+    Lazy(_, _) -> {
+      let el = apply_lazy(element)
+      do_element_to_string_builder(el, raw_text)
+    }
   }
 }
 
@@ -403,5 +415,19 @@ pub fn attribute_to_event_handler(
       let name = string.drop_left(name, 2)
       Ok(#(name, handler))
     }
+  }
+}
+
+pub fn apply_lazy(element: Element(msg)) -> Element(msg) {
+  case element {
+    Lazy([a], view) -> dynamic.unsafe_coerce(view)(a)
+    Lazy([a, b], view) -> dynamic.unsafe_coerce(view)(a, b)
+    Lazy([a, b, c], view) -> dynamic.unsafe_coerce(view)(a, b, c)
+    Lazy([a, b, c, d], view) -> dynamic.unsafe_coerce(view)(a, b, c, d)
+    Lazy([a, b, c, d, e], view) -> dynamic.unsafe_coerce(view)(a, b, c, d, e)
+    Lazy([a, b, c, d, e, f], view) ->
+      dynamic.unsafe_coerce(view)(a, b, c, d, e, f)
+    Lazy(_, _) -> panic as "Unhandled lazyX"
+    _ -> element
   }
 }

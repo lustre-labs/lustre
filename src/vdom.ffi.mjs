@@ -20,8 +20,10 @@ export function morph(prev, next, dispatch, isComponent = false) {
   let out;
   // A stack of nodes to still left to morph. This will shrink and grow over the
   // course of the function. *Either* `prev` or `next` can be missing, but never
-  // both. The `parent` is *always* present.
-  let stack = [{ prev, next, parent: prev.parentNode }];
+  // both. The `parent` is *always* present. `lazy` could be present, and
+  // indicates the node comes from a `Lazy` element, and that it could be skipped
+  // in future repaint, or absent, because the node does not come from `Lazy`.
+  let stack = [{ prev, next, parent: prev.parentNode, lazy: undefined }];
 
   while (stack.length) {
     let { prev, next, parent, lazy } = stack.pop();
@@ -39,16 +41,16 @@ export function morph(prev, next, dispatch, isComponent = false) {
     if (next.content !== undefined) {
       if (!prev) {
         const created = document.createTextNode(next.content);
-        setLazy(created, lazy);
+        if (lazy) markElementAsLazy(created, lazy);
         parent.appendChild(created);
         out ??= created;
       } else if (prev.nodeType === Node.TEXT_NODE) {
         if (prev.textContent !== next.content) prev.textContent = next.content;
-        setLazy(prev, lazy);
+        if (lazy) markElementAsLazy(prev, lazy);
         out ??= prev;
       } else {
         const created = document.createTextNode(next.content);
-        setLazy(prev, lazy);
+        if (lazy) markElementAsLazy(prev, lazy);
         parent.replaceChild(created, prev);
         out ??= created;
       }
@@ -63,7 +65,7 @@ export function morph(prev, next, dispatch, isComponent = false) {
         isComponent,
       });
 
-      setLazy(created, lazy);
+      if (lazy) markElementAsLazy(created, lazy);
 
       if (!prev) {
         parent.appendChild(created);
@@ -87,19 +89,16 @@ export function morph(prev, next, dispatch, isComponent = false) {
         // if (prev !== undefined) parent.removeChild(prev);
       } else {
         iterateElement(next, prev, ({ element: fragmentElement }) => {
-          // All elements are considered lazy to be able to skip them.
-          // This happens if the fragment is behind a lazy function.
-          if (fragmentElement) {
+          // next is Lazy and should be skipped.
+          if (!fragmentElement) {
+            prev = findLastLazySibling(prev);
+          }
+          // next is Element or Fragment.
+          else {
+            // All elements are considered lazy to be able to skip them on repaint.
+            // This happens if the fragment is behind a lazy function.
+            // Otherwise, lazy will be undefined.
             stack.unshift({ prev, next: fragmentElement, parent, lazy });
-          } else {
-            while (
-              prev.isLazy &&
-              prev.lazyArg === prev.nextSibling?.lazyArg &&
-              prev.lazyView === prev.nextSibling?.lazyView &&
-              prev.lazyTimestamp === prev.nextSibling?.lazyTimestamp
-            ) {
-              prev = prev.nextSibling;
-            }
           }
 
           prev = prev?.nextSibling;
@@ -146,15 +145,6 @@ export function morph(prev, next, dispatch, isComponent = false) {
   }
 
   return out;
-}
-
-function setLazy(element, lazy) {
-  if (lazy !== undefined) {
-    element.isLazy = true;
-    element.lazyArg = lazy.arg;
-    element.lazyView = lazy.view;
-    element.lazyTimestamp = lazy.timestamp;
-  }
 }
 
 export function patch(root, diff, dispatch) {
@@ -422,16 +412,10 @@ function createElementNode({ prev, next, dispatch, stack }) {
   }
   for (const child of next.children) {
     iterateElement(child, prevChild, ({ element: currElement, lazy }) => {
+      // Lazy node should be skipped
       if (!currElement) {
-        while (
-          prevChild.isLazy &&
-          prevChild.lazyArg === prevChild.nextSibling?.lazyArg &&
-          prevChild.lazyView === prevChild.nextSibling?.lazyView &&
-          prevChild.lazyTimestamp === prevChild.nextSibling?.lazyTimestamp
-        ) {
-          prevChild = prevChild.nextSibling;
-        }
-        prevChild = prevChild.nextSibling;
+        prevChild = findLastLazySibling(prevChild);
+        prevChild = prevChild?.nextSibling;
       }
       // A keyed morph has more complex logic to handle: we need to be grabbing
       // same-key nodes from the previous render and moving them to the correct
@@ -635,29 +619,82 @@ function diffKeyedChild(
   return prevChild;
 }
 
-/*
- Iterate element, helper to apply the same functions to a standard "Element" or "Fragment" transparently
- 1. If single element, call callback for that element
- 2. If fragment, call callback for every child element. Fragment constructor guarantees no Fragment children
-*/
+/**
+ * Iterate element, helper to apply the same functions to a standard "Element",
+ * "Lazy" or "Fragment" transparently.
+ *
+ * 1. If single element, call callback for that element.
+ * 2. If lazy, check if previous node is up to date. If up to date, skip the
+ *    node (return null), else run the function, and iterate on every remaining
+ *    lazy elements.
+ * 3. If fragment, call callback for every child element. Fragment constructor
+ *    guarantees no Fragment children.
+ *
+ * `previousElement` is required to be able to skip lazy elements. In case an
+ * element is skipped, `{ element: null }` is returned. `lazy` is there to keep
+ * lazy data for new nodes.
+ */
 function iterateElement(element, previousElement, processElement, lazy) {
-  if (element.lazy_view !== undefined) {
-    if (
-      previousElement?.lazyArg !== element.arg ||
-      previousElement?.lazyView !== element.lazy_view
-    ) {
-      const next = element.lazy_view(element.arg);
+  // Element is Lazy.
+  if (element.view !== undefined) {
+    if (isLazyShouldBeRecomputed(element, previousElement)) {
+      // Lazy should be recomputed.
+      const next = element.view(...element.params);
       const timestamp = performance.now();
-      const lazy = { arg: element.arg, view: element.lazy_view, timestamp };
+      const lazy = { params: element.params, view: element.view, timestamp };
       iterateElement(next, previousElement, processElement, lazy);
     } else {
+      // Lazy don't need to be replaced, skip the element.
       processElement({ element: null });
     }
-  } else if (element.elements !== undefined) {
+  }
+
+  // Element is Fragment.
+  else if (element.elements !== undefined) {
     for (const currElement of element.elements) {
       processElement({ element: currElement, lazy });
     }
-  } else {
+  }
+
+  // element is Element.
+  else {
     processElement({ element, lazy });
   }
+}
+
+/** Because lazy element can be a node, or a fragment, when skipping a node, it
+ * should be checked that no other siblings are remaining. `lazy.timestamp` is
+ * a safe way to check the siblings, because they can be equal only if they're
+ * part of a fragment. */
+function findLastLazySibling(prev) {
+  while (
+    prev &&
+    prev.isLazy &&
+    prev.lazy.timestamp === prev.nextSibling?.lazy?.timestamp
+  ) {
+    prev = prev.nextSibling;
+  }
+  return prev;
+}
+
+/** Mark the element as lazy, to be able to skip it on repaint.
+ * `lazy` should be { view, params, timestamp }.
+ * `lazy.timestamp` is required in case there's two lazy elements with same
+ * function and arguments in the VDOM. */
+function markElementAsLazy(element, lazy) {
+  element.isLazy = true;
+  element.lazy = lazy;
+}
+
+function isLazyShouldBeRecomputed(element, previousElement) {
+  if (!previousElement?.lazy?.params) return true;
+  if (previousElement.lazy.view !== element.view) return true;
+  let params = element.params;
+  let previousParams = previousElement.lazy.params;
+  while (params.head !== undefined || previousParams.head !== undefined) {
+    if (params.head !== previousParams.head) return true;
+    params = params.tail;
+    previousParams = previousParams.tail;
+  }
+  return false;
 }

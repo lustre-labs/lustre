@@ -149,14 +149,14 @@ fn do_elements(
             _ ->
               do_elements(
                 diff,
-                Some(old_view(old_arg)),
-                Some(new_view(new_arg)),
+                Some(vdom.apply_lazy(old)),
+                Some(vdom.apply_lazy(new)),
                 key,
               )
           }
         }
-        _, Lazy(new_arg, new_view) -> {
-          let new = new_view(new_arg)
+        _, Lazy(_, _) -> {
+          let new = vdom.apply_lazy(new)
           ElementDiff(
             ..diff,
             created: dict.insert(diff.created, key, new),
@@ -446,7 +446,7 @@ fn fold_event_handlers(
     }
     Fragment(elements, _) ->
       fold_element_list_event_handlers(handlers, elements, key)
-    Lazy(arg, view) -> fold_event_handlers(handlers, view(arg), key)
+    Lazy(_, _) -> fold_event_handlers(handlers, vdom.apply_lazy(element), key)
   }
 }
 

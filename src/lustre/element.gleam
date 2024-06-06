@@ -330,7 +330,52 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
     Fragment(elements, key) -> {
       Map(fn() { Fragment(list.map(elements, map(_, f)), key) })
     }
-    Lazy(arg, view) -> Map(fn() { Lazy(arg, fn(_) { map(view(arg), f) }) })
+    Lazy(params, view) ->
+      Map(fn() {
+        case params {
+          [_] ->
+            Lazy(
+              params,
+              dynamic.from(fn(a) { map(dynamic.unsafe_coerce(view)(a), f) }),
+            )
+          [_, _] ->
+            Lazy(
+              params,
+              dynamic.from(fn(a, b) {
+                map(dynamic.unsafe_coerce(view)(a, b), f)
+              }),
+            )
+          [_, _, _] ->
+            Lazy(
+              params,
+              dynamic.from(fn(a, b, c) {
+                map(dynamic.unsafe_coerce(view)(a, b, c), f)
+              }),
+            )
+          [_, _, _, _] ->
+            Lazy(
+              params,
+              dynamic.from(fn(a, b, c, d) {
+                map(dynamic.unsafe_coerce(view)(a, b, c, d), f)
+              }),
+            )
+          [_, _, _, _, _] ->
+            Lazy(
+              params,
+              dynamic.from(fn(a, b, c, d, e) {
+                map(dynamic.unsafe_coerce(view)(a, b, c, d, e), f)
+              }),
+            )
+          [_, _, _, _, _, _] ->
+            Lazy(
+              params,
+              dynamic.from(fn(a, b, c, d, e, ff) {
+                map(dynamic.unsafe_coerce(view)(a, b, c, d, e, ff), f)
+              }),
+            )
+          _ -> panic as "Unhandled lazyX"
+        }
+      })
   }
 }
 
@@ -394,6 +439,77 @@ pub fn to_document_string_builder(el: Element(msg)) -> StringBuilder {
   |> string_builder.prepend("<!doctype html>\n")
 }
 
-pub fn lazy(arg: a, view: fn(a) -> Element(msg)) {
-  Lazy(dynamic.from(arg), dynamic.unsafe_coerce(dynamic.from(view)))
+pub fn lazy1(param: a, view: fn(a) -> Element(msg)) {
+  Lazy([dynamic.from(param)], dynamic.from(view))
+}
+
+pub fn lazy2(param1: a, param2: b, view: fn(a, b) -> Element(msg)) {
+  Lazy([dynamic.from(param1), dynamic.from(param2)], dynamic.from(view))
+}
+
+pub fn lazy3(param1: a, param2: b, param3: c, view: fn(a, b, c) -> Element(msg)) {
+  Lazy(
+    [dynamic.from(param1), dynamic.from(param2), dynamic.from(param3)],
+    dynamic.from(view),
+  )
+}
+
+pub fn lazy4(
+  param1: a,
+  param2: b,
+  param3: c,
+  param4: d,
+  view: fn(a, b, c, d) -> Element(msg),
+) {
+  Lazy(
+    [
+      dynamic.from(param1),
+      dynamic.from(param2),
+      dynamic.from(param3),
+      dynamic.from(param4),
+    ],
+    dynamic.from(view),
+  )
+}
+
+pub fn lazy5(
+  param1: a,
+  param2: b,
+  param3: c,
+  param4: d,
+  param5: e,
+  view: fn(a, b, c, d, e) -> Element(msg),
+) {
+  Lazy(
+    [
+      dynamic.from(param1),
+      dynamic.from(param2),
+      dynamic.from(param3),
+      dynamic.from(param4),
+      dynamic.from(param5),
+    ],
+    dynamic.from(view),
+  )
+}
+
+pub fn lazy6(
+  param1: a,
+  param2: b,
+  param3: c,
+  param4: d,
+  param5: e,
+  param6: f,
+  view: fn(a, b, c, d, e, f) -> Element(msg),
+) {
+  Lazy(
+    [
+      dynamic.from(param1),
+      dynamic.from(param2),
+      dynamic.from(param3),
+      dynamic.from(param4),
+      dynamic.from(param5),
+      dynamic.from(param6),
+    ],
+    dynamic.from(view),
+  )
 }
