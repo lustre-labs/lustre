@@ -95,7 +95,8 @@ export function morph(prev, next, dispatch, isComponent = false) {
             while (
               prev.isLazy &&
               prev.lazyArg === prev.nextSibling?.lazyArg &&
-              prev.lazyView === prev.nextSibling?.lazyView
+              prev.lazyView === prev.nextSibling?.lazyView &&
+              prev.lazyTimestamp === prev.nextSibling?.lazyTimestamp
             ) {
               prev = prev.nextSibling;
             }
@@ -152,6 +153,7 @@ function setLazy(element, lazy) {
     element.isLazy = true;
     element.lazyArg = lazy.arg;
     element.lazyView = lazy.view;
+    element.lazyTimestamp = lazy.timestamp;
   }
 }
 
@@ -424,7 +426,8 @@ function createElementNode({ prev, next, dispatch, stack }) {
         while (
           prevChild.isLazy &&
           prevChild.lazyArg === prevChild.nextSibling?.lazyArg &&
-          prevChild.lazyView === prevChild.nextSibling?.lazyView
+          prevChild.lazyView === prevChild.nextSibling?.lazyView &&
+          prevChild.lazyTimestamp === prevChild.nextSibling?.lazyTimestamp
         ) {
           prevChild = prevChild.nextSibling;
         }
@@ -644,7 +647,8 @@ function iterateElement(element, previousElement, processElement, lazy) {
       previousElement?.lazyView !== element.lazy_view
     ) {
       const next = element.lazy_view(element.arg);
-      const lazy = { arg: element.arg, view: element.lazy_view };
+      const timestamp = performance.now();
+      const lazy = { arg: element.arg, view: element.lazy_view, timestamp };
       iterateElement(next, previousElement, processElement, lazy);
     } else {
       processElement({ element: null });
