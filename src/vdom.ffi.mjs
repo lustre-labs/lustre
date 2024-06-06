@@ -27,12 +27,6 @@ export function morph(prev, next, dispatch, isComponent = false) {
 
   while (stack.length) {
     let { prev, next, parent, lazy } = stack.pop();
-    // if (lazy) {
-    //   console.log("in pop lazy prev", prev);
-    //   console.log("in pop lazy next", next);
-    //   console.log("in pop lazy parent", parent);
-    //   console.log("in pop lazy lazy", lazy);
-    // }
     // If we have the `subtree` property then we're looking at a `Map` vnode that
     // is lazily evaluated. We'll force it here and then proceed with the morphing.
     if (next.subtree !== undefined) next = next.subtree();
@@ -85,63 +79,37 @@ export function morph(prev, next, dispatch, isComponent = false) {
     // first child means that document -> body will be the parent of the first level
     // of children
     else if (next.elements !== undefined) {
-      if (next.elements.hasLength(0)) {
-        // if (prev !== undefined) parent.removeChild(prev);
-      } else {
-        iterateElement(next, prev, ({ element: fragmentElement }) => {
-          // next is Lazy and should be skipped.
-          if (!fragmentElement) {
-            prev = findLastLazySibling(prev);
-          }
-          // next is Element or Fragment.
-          else {
-            // All elements are considered lazy to be able to skip them on repaint.
-            // This happens if the fragment is behind a lazy function.
-            // Otherwise, lazy will be undefined.
-            stack.unshift({ prev, next: fragmentElement, parent, lazy });
-          }
+      iterateElement(next, prev, ({ element: fragmentElement }) => {
+        // next is Lazy and should be skipped.
+        if (!fragmentElement) {
+          prev = findLastLazySibling(prev);
+        }
+        // next is Element or Fragment.
+        else {
+          // All elements are considered lazy to be able to skip them on repaint.
+          // This happens if the fragment is behind a lazy function.
+          // Otherwise, lazy will be undefined.
+          stack.unshift({ prev, next: fragmentElement, parent, lazy });
+        }
 
-          prev = prev?.nextSibling;
-        });
-      }
+        prev = prev?.nextSibling;
+      });
     } else if (next.subtree !== undefined) {
       stack.push({ prev, next, parent });
     }
 
-    // We're in Lazy element here.
-    // else if (next.lazy_view !== undefined) {
-    //   const lazy = { arg: next.arg, view: next.lazy_view };
-    //   if (!prev || !prev.isLazy) {
-    //     let additions = [];
-    //     iterateElement(next.lazy_view(next.arg), (fragmentElement) => {
-    //       if (fragmentElement) {
-    //         additions.unshift({ prev, next: fragmentElement, parent, lazy });
-    //         while (
-    //           prev.isLazy &&
-    //           prev.lazyArg === prev.nextSibling?.lazyArg &&
-    //           prev.lazyView === prev.nextSibling?.lazyView
-    //         ) {
-    //           prev = prev.nextSibling;
-    //         }
-    //       }
-    //       prev = prev?.nextSibling;
-    //     });
-    //     stack.push(...additions);
-    //   }
-    //   else {
-    //     if (prev.lazyArg !== next.arg || prev.lazyView !== next.lazy_view) {
-    //       let additions = [];
-    //       iterateElement(next.lazy_view(next.arg), (fragmentElement) => {
-    //         additions.unshift({ prev, next: fragmentElement, parent, lazy });
-    //         prev = prev?.nextSibling;
-    //       });
-    //       stack.push(...additions);
-    //     } else {
-    //       out ??= prev;
-    //     }
-    //   }
-    //   // debugger;
-    // }
+    // If this happens, then the top level Element is a Lazy. `prev` should be
+    // the first element of the tree.
+    else if (next.view !== undefined) {
+      if (!prev?.isLazy || isLazyShouldBeRecomputed(next, prev)) {
+        const timestamp = performance.now();
+        const lazy = { params: next.params, view: next.view, timestamp };
+        const root = next.view(...next.params);
+        stack.unshift({ prev, next: root, parent, lazy });
+      } else {
+        out ??= prev;
+      }
+    }
   }
 
   return out;
