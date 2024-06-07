@@ -7,6 +7,8 @@
 // - https://www.zhenghao.io/posts/object-vs-map
 //
 
+import * as vdom from "./lustre/internals/vdom.mjs";
+
 // Morph turns a Lustre VDOM node into real DOM nodes. Instead of doing a VDOM
 // diff that produces a patch, we morph the VDOM into the real DOM directly.
 export function morph(prev, next, dispatch, isComponent = false) {
@@ -102,10 +104,8 @@ export function morph(prev, next, dispatch, isComponent = false) {
     // the first element of the tree.
     else if (next.view !== undefined) {
       if (!prev?.isLazy || isLazyShouldBeRecomputed(next, prev)) {
-        const timestamp = performance.now();
-        const lazy = { params: next.params, view: next.view, timestamp };
-        const root = next.view(...next.params);
-        stack.unshift({ prev, next: root, parent, lazy });
+        const { subtree: next, deps: lazy } = computeLazy(next);
+        stack.unshift({ prev, next, parent, lazy });
       } else {
         out ??= prev;
       }
@@ -607,9 +607,7 @@ function iterateElement(element, previousElement, processElement, lazy) {
   if (element.view !== undefined) {
     if (isLazyShouldBeRecomputed(element, previousElement)) {
       // Lazy should be recomputed.
-      const next = element.view(...element.params);
-      const timestamp = performance.now();
-      const lazy = { params: element.params, view: element.view, timestamp };
+      const { subtree: next, deps: lazy } = computeLazy(element);
       iterateElement(next, previousElement, processElement, lazy);
     } else {
       // Lazy don't need to be replaced, skip the element.
@@ -657,6 +655,7 @@ function markElementAsLazy(element, lazy) {
 function isLazyShouldBeRecomputed(element, previousElement) {
   if (!previousElement?.lazy?.params) return true;
   if (previousElement.lazy.view !== element.view) return true;
+  // Compare the params, to detect if we should repaint.
   let params = element.params;
   let previousParams = previousElement.lazy.params;
   while (params.head !== undefined || previousParams.head !== undefined) {
@@ -664,5 +663,29 @@ function isLazyShouldBeRecomputed(element, previousElement) {
     params = params.tail;
     previousParams = previousParams.tail;
   }
+  // Compare the mappers, to detect if we should repaint.
+  let mappers = element.mappers;
+  let previousMappers = previousElement.lazy.mappers;
+  while (mappers.head !== undefined || previousMappers.head !== undefined) {
+    if (mappers.head !== previousMappers.head) return true;
+    mappers = mappers.tail;
+    previousMappers = previousMappers.tail;
+  }
+  // Nothing changed, skip the repaint.
   return false;
+}
+
+function computeLazy(element) {
+  const node = element.view(...element.params);
+  let subtree = element.mappers
+    .toArray()
+    .reverse()
+    .reduce(vdom.apply_mapper, node);
+  const deps = {
+    params: element.params,
+    view: element.view,
+    mappers: element.mappers,
+    timestamp: performance.now(),
+  };
+  return { subtree, deps };
 }

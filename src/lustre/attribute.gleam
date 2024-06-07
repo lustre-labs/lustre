@@ -59,10 +59,7 @@ pub fn none() -> Attribute(msg) {
 /// you map the messages produced from one type to another.
 ///
 pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
-  case attr {
-    Attribute(name, value, as_property) -> Attribute(name, value, as_property)
-    Event(on, handler) -> Event(on, fn(e) { result.map(handler(e), f) })
-  }
+  vdom.map_attribute(attr, f)
 }
 
 // COMMON ATTRIBUTES -----------------------------------------------------------

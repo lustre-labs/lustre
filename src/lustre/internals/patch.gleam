@@ -143,9 +143,11 @@ fn do_elements(
             created: dict.insert(diff.created, key, new),
             handlers: fold_event_handlers(diff.handlers, new, key),
           )
-        Lazy(old_arg, old_view), Lazy(new_arg, new_view) -> {
+        Lazy(old_arg, old_view, old_mappers),
+          Lazy(new_arg, new_view, new_mappers)
+        -> {
           case old_arg == new_arg {
-            True if old_view == new_view -> diff
+            True if old_view == new_view && old_mappers == new_mappers -> diff
             _ ->
               do_elements(
                 diff,
@@ -155,7 +157,7 @@ fn do_elements(
               )
           }
         }
-        _, Lazy(_, _) -> {
+        _, Lazy(_, _, _) -> {
           let new = vdom.apply_lazy(new)
           ElementDiff(
             ..diff,
@@ -163,7 +165,7 @@ fn do_elements(
             handlers: fold_event_handlers(diff.handlers, new, key),
           )
         }
-        Lazy(_, _), _ -> {
+        Lazy(_, _, _), _ -> {
           ElementDiff(
             ..diff,
             created: dict.insert(diff.created, key, new),
@@ -446,7 +448,8 @@ fn fold_event_handlers(
     }
     Fragment(elements, _) ->
       fold_element_list_event_handlers(handlers, elements, key)
-    Lazy(_, _) -> fold_event_handlers(handlers, vdom.apply_lazy(element), key)
+    Lazy(_, _, _) ->
+      fold_event_handlers(handlers, vdom.apply_lazy(element), key)
   }
 }
 

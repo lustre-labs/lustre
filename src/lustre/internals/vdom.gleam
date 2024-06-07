@@ -1,11 +1,12 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Decoder, type Dynamic}
+import gleam/dynamic.{type Decoder, type Dynamic, from, unsafe_coerce}
 import gleam/float
 import gleam/int
 import gleam/json.{type Json}
 import gleam/list
+import gleam/result
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
 import lustre/internals/escape.{escape}
@@ -30,7 +31,7 @@ pub type Element(msg) {
   // Because lazy elements can accept multiple arguments, `view` can take the form
   // fn(a) -> Element(msg), or fn(a, b) -> Element(msg) and so on. It cannot be
   // instanciated by hand, so it should always be right.
-  Lazy(params: List(Dynamic), view: Dynamic)
+  Lazy(params: List(Dynamic), view: Dynamic, mappers: List(Dynamic))
 }
 
 pub type Attribute(msg) {
@@ -65,7 +66,7 @@ fn do_handlers(
       do_element_list_handlers(children, handlers, key)
     }
     Fragment(elements, _) -> do_element_list_handlers(elements, handlers, key)
-    Lazy(_, _) -> {
+    Lazy(_, _, _) -> {
       let el = apply_lazy(element)
       do_handlers(el, handlers, key)
     }
@@ -110,7 +111,7 @@ fn do_element_to_json(element: Element(msg), key: String) -> Json {
     }
     Fragment(elements, _) ->
       json.object([#("elements", do_element_list_to_json(elements, key))])
-    Lazy(_, _) -> {
+    Lazy(_, _, _) -> {
       let el = apply_lazy(element)
       do_element_to_json(el, key)
     }
@@ -129,8 +130,8 @@ pub fn attribute_to_json(
   attribute: Attribute(msg),
   key: String,
 ) -> Result(Json, Nil) {
-  let true_atom = dynamic.from(True)
-  let false_atom = dynamic.from(False)
+  let true_atom = from(True)
+  let false_atom = from(False)
 
   case attribute {
     Attribute(_, _, True) -> Error(Nil)
@@ -140,7 +141,7 @@ pub fn attribute_to_json(
           Ok(
             json.object([
               #("0", json.string(name)),
-              #("1", json.string(dynamic.unsafe_coerce(value))),
+              #("1", json.string(unsafe_coerce(value))),
             ]),
           )
 
@@ -148,7 +149,7 @@ pub fn attribute_to_json(
           Ok(
             json.object([
               #("0", json.string(name)),
-              #("1", json.bool(dynamic.unsafe_coerce(value))),
+              #("1", json.bool(unsafe_coerce(value))),
             ]),
           )
 
@@ -156,7 +157,7 @@ pub fn attribute_to_json(
           Ok(
             json.object([
               #("0", json.string(name)),
-              #("1", json.bool(dynamic.unsafe_coerce(value))),
+              #("1", json.bool(unsafe_coerce(value))),
             ]),
           )
 
@@ -164,7 +165,7 @@ pub fn attribute_to_json(
           Ok(
             json.object([
               #("0", json.string(name)),
-              #("1", json.int(dynamic.unsafe_coerce(value))),
+              #("1", json.int(unsafe_coerce(value))),
             ]),
           )
 
@@ -172,7 +173,7 @@ pub fn attribute_to_json(
           Ok(
             json.object([
               #("0", json.string(name)),
-              #("1", json.float(dynamic.unsafe_coerce(value))),
+              #("1", json.float(unsafe_coerce(value))),
             ]),
           )
 
@@ -221,7 +222,7 @@ fn do_element_to_string_builder(
       let #(attrs, _) =
         attributes_to_string_builder(case namespace {
           "" -> attrs
-          _ -> [Attribute("xmlns", dynamic.from(namespace), False), ..attrs]
+          _ -> [Attribute("xmlns", from(namespace), False), ..attrs]
         })
 
       html
@@ -234,7 +235,7 @@ fn do_element_to_string_builder(
       let #(attrs, _) =
         attributes_to_string_builder(case namespace {
           "" -> attrs
-          _ -> [Attribute("xmlns", dynamic.from(namespace), False), ..attrs]
+          _ -> [Attribute("xmlns", from(namespace), False), ..attrs]
         })
 
       html
@@ -261,7 +262,7 @@ fn do_element_to_string_builder(
       let #(attrs, inner_html) =
         attributes_to_string_builder(case namespace {
           "" -> attrs
-          _ -> [Attribute("xmlns", dynamic.from(namespace), False), ..attrs]
+          _ -> [Attribute("xmlns", from(namespace), False), ..attrs]
         })
 
       case inner_html {
@@ -279,7 +280,7 @@ fn do_element_to_string_builder(
     }
     Fragment(elements, _) ->
       children_to_string_builder(string_builder.new(), elements, raw_text)
-    Lazy(_, _) -> {
+    Lazy(_, _, _) -> {
       let el = apply_lazy(element)
       do_element_to_string_builder(el, raw_text)
     }
@@ -369,16 +370,46 @@ fn attributes_to_string_builder(
 
 // UTILS -----------------------------------------------------------------------
 
+pub fn map_element(element: Element(a), f: fn(a) -> b) -> Element(b) {
+  case element {
+    Text(content) -> Text(content)
+    Map(subtree) -> Map(fn() { map_element(subtree(), f) })
+    Element(key, namespace, tag, attrs, children, self_closing, void) ->
+      Map(fn() {
+        Element(
+          key: key,
+          namespace: namespace,
+          tag: tag,
+          attrs: list.map(attrs, map_attribute(_, f)),
+          children: list.map(children, map_element(_, f)),
+          self_closing: self_closing,
+          void: void,
+        )
+      })
+    Fragment(elements, key) -> {
+      Map(fn() { Fragment(list.map(elements, map_element(_, f)), key) })
+    }
+    Lazy(params, view, mappers) -> Lazy(params, view, [from(f), ..mappers])
+  }
+}
+
+pub fn map_attribute(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
+  case attr {
+    Attribute(name, value, as_property) -> Attribute(name, value, as_property)
+    Event(on, handler) -> Event(on, fn(e) { result.map(handler(e), f) })
+  }
+}
+
 fn attribute_to_string_parts(
   attr: Attribute(msg),
 ) -> Result(#(String, String), Nil) {
   case attr {
     Attribute("", _, _) -> Error(Nil)
     Attribute(name, value, as_property) -> {
-      let true_atom = dynamic.from(True)
+      let true_atom = from(True)
 
       case dynamic.classify(value) {
-        "String" -> Ok(#(name, dynamic.unsafe_coerce(value)))
+        "String" -> Ok(#(name, unsafe_coerce(value)))
 
         // Boolean attributes are determined based on their presence, eg we don't
         // want to render `disabled="false"` if the value is `false` we simply
@@ -392,8 +423,8 @@ fn attribute_to_string_parts(
         "Atom" | "Bool" | "Boolean" if value == true_atom -> Ok(#(name, ""))
         "Atom" | "Bool" | "Boolean" -> Error(Nil)
 
-        "Int" -> Ok(#(name, int.to_string(dynamic.unsafe_coerce(value))))
-        "Float" -> Ok(#(name, float.to_string(dynamic.unsafe_coerce(value))))
+        "Int" -> Ok(#(name, int.to_string(unsafe_coerce(value))))
+        "Float" -> Ok(#(name, float.to_string(unsafe_coerce(value))))
 
         // For everything else, we care whether or not the attribute is actually
         // a property. Properties are *Javascript* values that aren't necessarily
@@ -418,16 +449,34 @@ pub fn attribute_to_event_handler(
   }
 }
 
+pub fn apply_mapper(element, mapper) {
+  case map_element(element, unsafe_coerce(mapper)) {
+    Map(subtree) -> subtree()
+    el -> el
+  }
+}
+
 pub fn apply_lazy(element: Element(msg)) -> Element(msg) {
   case element {
-    Lazy([a], view) -> dynamic.unsafe_coerce(view)(a)
-    Lazy([a, b], view) -> dynamic.unsafe_coerce(view)(a, b)
-    Lazy([a, b, c], view) -> dynamic.unsafe_coerce(view)(a, b, c)
-    Lazy([a, b, c, d], view) -> dynamic.unsafe_coerce(view)(a, b, c, d)
-    Lazy([a, b, c, d, e], view) -> dynamic.unsafe_coerce(view)(a, b, c, d, e)
-    Lazy([a, b, c, d, e, f], view) ->
-      dynamic.unsafe_coerce(view)(a, b, c, d, e, f)
-    Lazy(_, _) -> panic as "Unhandled lazyX"
+    Lazy([a], view, mappers) ->
+      unsafe_coerce(view)(a)
+      |> list.fold_right(mappers, _, apply_mapper)
+    Lazy([a, b], view, mappers) ->
+      unsafe_coerce(view)(a, b)
+      |> list.fold_right(mappers, _, apply_mapper)
+    Lazy([a, b, c], view, mappers) ->
+      unsafe_coerce(view)(a, b, c)
+      |> list.fold_right(mappers, _, apply_mapper)
+    Lazy([a, b, c, d], view, mappers) ->
+      unsafe_coerce(view)(a, b, c, d)
+      |> list.fold_right(mappers, _, apply_mapper)
+    Lazy([a, b, c, d, e], view, mappers) ->
+      unsafe_coerce(view)(a, b, c, d, e)
+      |> list.fold_right(mappers, _, apply_mapper)
+    Lazy([a, b, c, d, e, f], view, mappers) ->
+      unsafe_coerce(view)(a, b, c, d, e, f)
+      |> list.fold_right(mappers, _, apply_mapper)
+    Lazy(_, _, _) -> panic as "Unhandled lazyX"
     _ -> element
   }
 }
