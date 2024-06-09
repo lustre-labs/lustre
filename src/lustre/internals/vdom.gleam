@@ -100,7 +100,8 @@ fn do_element_to_json(element: Element(msg), key: String) -> Json {
         #("void", json.bool(void)),
       ])
     }
-    Fragment(elements, _) -> do_element_list_to_json(elements, key)
+    Fragment(elements, _) ->
+      json.object([#("elements", do_element_list_to_json(elements, key))])
   }
 }
 
