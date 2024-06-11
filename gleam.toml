@@ -35,7 +35,7 @@ pages = [
 
 [dependencies]
 gleam_erlang = "~> 0.24"
-gleam_json = "~> 1.0"
+gleam_json = "~> 1.0 or ~> 2.0"
 gleam_otp = "~> 0.9"
 gleam_stdlib = "~> 0.36"
 
