@@ -402,7 +402,7 @@ function lustreGenericEventHandler(event) {
 }
 
 function lustreServerEventHandler(event) {
-  const el = event.target;
+  const el = event.currentTarget;
   const tag = el.getAttribute(`data-lustre-on-${event.type}`);
   const data = JSON.parse(el.getAttribute("data-lustre-data") || "{}");
   const include = JSON.parse(el.getAttribute("data-lustre-include") || "[]");
