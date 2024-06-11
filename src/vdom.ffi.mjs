@@ -279,7 +279,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
     // tell which attributes are mirrored as properties on the DOM node we assume
     // that all attributes should be set as properties too.
     else {
-      if (typeof value === "string") el.setAttribute(name, value);
+      if (el.getAttribute(name) !== value) el.setAttribute(name, value);
       if (name === "value" || name === "selected") el[name] = value;
       // If we're morphing an element we remove this attribute's name from the set
       // of attributes that were on the previous render so we don't remove it in
