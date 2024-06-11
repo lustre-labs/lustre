@@ -73,14 +73,11 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 }
 
 /// Emit a custom event from a component as an effect. Parents can listen to these
-/// events in their `view` function like any other HTML event.
+/// events in their `view` function like any other HTML event. Any data you pass
+/// to `effect.emit` can be accessed by event listeners through the `detail` property
+/// of the event object.
 ///
-/// You *probably* don't need to use this type of effect if you're not making use
-/// of Lustre's components, but in rare cases it may be useful to emit custom
-/// events from the DOM node that your Lustre application is mounted to.
-///
-///
-///
+@internal
 pub fn event(name: String, data: Json) -> Effect(msg) {
   Effect([fn(_, emit) { emit(name, data) }])
 }
