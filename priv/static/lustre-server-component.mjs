@@ -158,7 +158,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
     } else if (name === "dangerous-unescaped-html") {
       innerHTML = value;
     } else {
-      if (typeof value === "string")
+      if (el2.getAttribute(name) !== value)
         el2.setAttribute(name, value);
       if (name === "value" || name === "selected")
         el2[name] = value;
@@ -243,7 +243,7 @@ function lustreGenericEventHandler(event2) {
   handlersForEventTarget.get(event2.type)(event2);
 }
 function lustreServerEventHandler(event2) {
-  const el2 = event2.target;
+  const el2 = event2.currentTarget;
   const tag = el2.getAttribute(`data-lustre-on-${event2.type}`);
   const data = JSON.parse(el2.getAttribute("data-lustre-data") || "{}");
   const include = JSON.parse(el2.getAttribute("data-lustre-include") || "[]");
