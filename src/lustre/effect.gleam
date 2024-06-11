@@ -137,11 +137,9 @@ pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
 /// reach out on the [Gleam Discord](https://discord.gg/Fm8Pwmy) or
 /// [open an issue](https://github.com/lustre-labs/lustre/issues/new)!
 ///
-pub fn perform(
-  effect: Effect(a),
-  dispatch: fn(a) -> Nil,
-  emit: fn(String, Json) -> Nil,
-) -> Nil {
+@internal
+pub fn perform(effect: Effect(a), dispatch: fn(a) -> Nil, emit: fn(String, Json) ->
+  Nil) -> Nil {
   use eff <- list.each(effect.all)
 
   eff(dispatch, emit)
