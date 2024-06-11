@@ -1,5 +1,5 @@
 name = "lustre"
-version = "4.2.4"
+version = "4.2.5"
 gleam = ">= 1.0.0"
 
 description = "An Elm-inspired framework for building HTML templates, single page applications, and server-rendered components in Gleam!"
