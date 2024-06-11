@@ -6,7 +6,7 @@ import {
   ForceModel,
 } from "./lustre/internals/runtime.mjs";
 import { morph } from "./vdom.ffi.mjs";
-import { Ok, Error, isEqual } from "./gleam.mjs";
+import { Ok, Error } from "./gleam.mjs";
 
 export class LustreClientApplication {
   #root = null;
@@ -86,24 +86,26 @@ export class LustreClientApplication {
   #tick() {
     this.#flush_queue();
 
-    const vdom = this.#view(this.#model);
-    const dispatch = (handler) => (e) => {
-      const result = handler(e);
+    if (this.#didUpdate) {
+      const vdom = this.#view(this.#model);
+      const dispatch = (handler) => (e) => {
+        const result = handler(e);
 
-      if (result instanceof Ok) {
-        this.send(new Dispatch(result[0]));
-      }
-    };
+        if (result instanceof Ok) {
+          this.send(new Dispatch(result[0]));
+        }
+      };
 
-    this.#didUpdate = false;
-    this.#root = morph(this.#root, vdom, dispatch, this.#isComponent);
+      this.#didUpdate = false;
+      this.#root = morph(this.#root, vdom, dispatch, this.#isComponent);
+    }
   }
 
   #flush_queue(iterations = 0) {
     while (this.#queue.length) {
       const [next, effects] = this.#update(this.#model, this.#queue.shift());
 
-      this.#didUpdate ||= !isEqual(this.#model, next);
+      this.#didUpdate ||= this.#model === next;
       this.#model = next;
       this.#effects = this.#effects.concat(effects.all.toArray());
     }
