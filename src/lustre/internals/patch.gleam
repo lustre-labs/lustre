@@ -232,12 +232,10 @@ pub fn patch_to_json(patch: Patch(msg)) -> Json {
       json.preprocessed_array([
         json.int(constants.init),
         json.array(attrs, json.string),
-        vdom.element_to_json(element),
+        vdom.element_to_json(element, "0"),
       ])
   }
 }
-
-import gleam/io
 
 pub fn element_diff_to_json(diff: ElementDiff(msg)) -> Json {
   json.preprocessed_array([
@@ -251,11 +249,10 @@ pub fn element_diff_to_json(diff: ElementDiff(msg)) -> Json {
         |> list.sort(fn(x, y) { key_sort(x.0, y.0) })
         |> list.fold([], fn(array, patch) {
           let #(key, element) = patch
-          io.debug(key)
           let json =
             json.preprocessed_array([
               json.string(key),
-              vdom.element_to_json(element),
+              vdom.element_to_json(element, key),
             ])
 
           [json, ..array]
@@ -408,7 +405,6 @@ fn fold_event_handlers(
         list.fold(attrs, handlers, fn(handlers, attr) {
           case event_handler(attr) {
             Ok(#(name, handler)) -> {
-              let name = string.drop_left(name, 2)
               dict.insert(handlers, key <> "-" <> name, handler)
             }
             Error(_) -> handlers

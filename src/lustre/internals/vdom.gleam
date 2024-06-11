@@ -76,14 +76,10 @@ fn do_element_list_handlers(
 
 // CONVERSIONS: JSON -----------------------------------------------------------
 
-pub fn element_to_json(element: Element(msg)) -> Json {
-  do_element_to_json(element, "0")
-}
-
-fn do_element_to_json(element: Element(msg), key: String) -> Json {
+pub fn element_to_json(element: Element(msg), key: String) -> Json {
   case element {
     Text(content) -> json.object([#("content", json.string(content))])
-    Map(subtree) -> do_element_to_json(subtree(), key)
+    Map(subtree) -> element_to_json(subtree(), key)
     Element(_, namespace, tag, attrs, children, self_closing, void) -> {
       let attrs =
         json.preprocessed_array({
@@ -109,7 +105,7 @@ fn do_element_list_to_json(elements: List(Element(msg)), key: String) {
   json.preprocessed_array({
     use element, index <- list.index_map(elements)
     let key = key <> "-" <> int.to_string(index)
-    do_element_to_json(element, key)
+    element_to_json(element, key)
   })
 }
 
