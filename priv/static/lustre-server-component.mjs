@@ -388,8 +388,11 @@ var LustreServerComponent = class extends HTMLElement {
         } else if (prev !== next) {
           const id = this.getAttribute("id");
           const route = next + (id ? `?id=${id}` : "");
+          const protocol = window.location.protocol === "https:" ? "wss" : "ws";
           this.#socket?.close();
-          this.#socket = new WebSocket(`ws://${window.location.host}${route}`);
+          this.#socket = new WebSocket(
+            `${protocol}://${window.location.host}${route}`
+          );
           this.#socket.addEventListener(
             "message",
             (message) => this.messageReceivedCallback(message)
