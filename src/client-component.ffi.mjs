@@ -14,10 +14,19 @@ export function register({ init, update, view, on_attribute_change }, name) {
     return new Error(new ComponentAlreadyRegistered(name));
   }
 
-  window.customElements.define(
-    name,
-    makeComponent(init, update, view, on_attribute_change),
-  );
+  const Component = makeComponent(init, update, view, on_attribute_change);
+
+  window.customElements.define(name, Component);
+
+  for (const el of document.querySelectorAll(name)) {
+    const replaced = new Component();
+
+    for (const attr of el.attributes) {
+      replaced.setAttribute(attr.name, attr.value);
+    }
+
+    el.replaceWith(replaced);
+  }
 
   return new Ok(undefined);
 }
@@ -26,6 +35,7 @@ function makeComponent(init, update, view, on_attribute_change) {
   return class LustreClientComponent extends HTMLElement {
     #root = document.createElement("div");
     #application = null;
+    #shadow = null;
 
     slotContent = [];
 
@@ -35,6 +45,8 @@ function makeComponent(init, update, view, on_attribute_change) {
 
     constructor() {
       super();
+      this.#shadow = this.attachShadow({ mode: "closed" });
+
       on_attribute_change[0]?.forEach((decoder, name) => {
         Object.defineProperty(this, name, {
           get() {
@@ -60,6 +72,15 @@ function makeComponent(init, update, view, on_attribute_change) {
     }
 
     connectedCallback() {
+      const sheet = new CSSStyleSheet();
+
+      for (const { cssRules } of document.styleSheets) {
+        for (const rule of cssRules) {
+          sheet.insertRule(rule.cssText);
+        }
+      }
+
+      this.#shadow.adoptedStyleSheets = [sheet];
       this.#application = new LustreClientApplication(
         init(),
         update,
@@ -67,7 +88,7 @@ function makeComponent(init, update, view, on_attribute_change) {
         this.#root,
         true,
       );
-      this.appendChild(this.#root);
+      this.#shadow.append(this.#root);
     }
 
     attributeChangedCallback(key, _, next) {
@@ -76,6 +97,14 @@ function makeComponent(init, update, view, on_attribute_change) {
 
     disconnectedCallback() {
       this.#application.send(new Shutdown());
+    }
+
+    get adoptedStyleSheets() {
+      return this.#shadow.adoptedStyleSheets;
+    }
+
+    set adoptedStyleSheets(value) {
+      this.#shadow.adoptedStyleSheets = value;
     }
   };
 }
