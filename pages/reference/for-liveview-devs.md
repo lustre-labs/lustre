@@ -1,12 +1,15 @@
 # Lustre for LiveView developers
 
-Coming from LiveView, many things about Lustre will feel very familiar. But in many other ways it will be quite different. This guide is for LiveView developers who are new to Lustre and want to get up to speed quickly.
+Coming from LiveView, many things about Lustre will feel very familiar. But in many
+other ways it will be quite different. This guide is for LiveView developers who
+are new to Lustre and want to get up to speed quickly.
 
 ## How do I...?
 
 ### Setup a new project
 
-**In LiveView** you create a new Phoenix project with `mix phx.new`. A simple hello world might look like this:
+**In LiveView** you create a new Phoenix project with `mix phx.new`. A simple
+hello world might look like this:
 
 ```elixir
  # lib/my_app_web/live/hello_live.ex
@@ -29,7 +32,10 @@ To start your dev server, run `mix phx.start`
 
 ---
 
-**In Lustre**, after you've created a new Gleam project with `gleam new`, you need to install the `lustre` package with `gleam add lustre`. Most Lustre projects will add the dev tools too with `gleam add --dev lustre_dev_tools`. A simple hello world might look like this:
+**In Lustre**, after you've created a new Gleam project with `gleam new`, you need
+to install the `lustre` package with `gleam add lustre`. Most Lustre projects will
+dd the dev tools too with `gleam add --dev lustre_dev_tools`. A simple hello world
+might look like this:
 
 ```gleam
 // main.gleam
@@ -46,7 +52,8 @@ To start your dev server, run `gleam run -m lustre/dev start`
 
 ### Render some HTML
 
-**In LiveView** you use HEEx templates to render HTML elements. This looks like HTML and allows you to interpolate Elixir code and dynamic values in your template.
+**In LiveView** you use HEEx templates to render HTML elements. This looks like
+HTML and allows you to interpolate Elixir code and dynamic values in your template.
 
 ```html
 <button class="primary">Click me</button>
@@ -54,7 +61,9 @@ To start your dev server, run `gleam run -m lustre/dev start`
 
 ---
 
-**In Lustre** HTML is rendered by calling functions. Usually the first argument is a list of `Attribute` types, and the second argument a list of `Element` type children.
+**In Lustre** HTML is rendered by calling functions. Usually the first argument
+is a list of `Attribute` types, and the second argument a list of `Element` type
+children.
 
 ```gleam
 button([class("primary")], [text("Click me")])
@@ -62,7 +71,8 @@ button([class("primary")], [text("Click me")])
 
 ### Render some text
 
-**In LiveView** a string is a valid type of node, so you can render text by just writing it in your HEEx template:
+**In LiveView** a string is a valid type of node, so you can render text by just
+writing it in your HEEx template:
 
 ```html
 <span>Hello</span>
@@ -88,7 +98,9 @@ span([], [
 
 ### Manage state
 
-**In LiveView** all your state is stored in the `assigns` key of the socket. Updates happen by sending events to the LiveView process, where the event handlers will update the relevant state and return the updated socket.
+**In LiveView** all your state is stored in the `assigns` key of the socket. Updates
+happen by sending events to the LiveView process, where the event handlers will
+update the relevant state and return the updated socket.
 
 ```elixir
 def mount(_params, _session, socket) do
@@ -107,7 +119,10 @@ end
 
 ---
 
-**In Lustre** all state is stored in a single `Model` type and updates happen through a central `update` function. A notable difference here is that Gleam does not allow pattern matching in function heads, so instead you use a `case` statement to match on the different messages and handle them accordingly.
+**In Lustre** all state is stored in a single `Model` type and updates happen
+through a central `update` function. A notable difference here is that Gleam does
+not allow pattern matching in function heads, so instead you use a `case` statement
+to match on the different messages and handle them accordingly.
 
 ```gleam
 fn init(_) {
@@ -129,7 +144,11 @@ fn update(model, msg) {
 
 ### Handle events
 
-**In LiveView** you can bind messages to events in your HEEx template and define `handle_event/3` functions that receive the event name, any addtional parameters and the socket. These usually change some kind of state, and return the updated socket. LiveView provides handlers for most common events and passes the accompanying values to your event handler.
+**In LiveView** you can bind messages to events in your HEEx template and define
+`handle_event/3` functions that receive the event name, any addtional parameters
+and the socket. These usually change some kind of state, and return the updated
+socket. LiveView provides handlers for most common events and passes the accompanying
+values to your event handler.
 
 ```html
 <button phx-click="decrement">-</button>
@@ -159,7 +178,9 @@ Hooks.MouseMove = {
 
 ---
 
-**In Lustre** event handlers are decoders for event objects. When the decoders succeeds, that value is passed to your `update` function. Lustre provides functions to handle most common events.
+**In Lustre** event handlers are decoders for event objects. When the decoders
+succeeds, that value is passed to your `update` function. Lustre provides functions
+to handle most common events.
 
 ```gleam
 button([on_click(Decr)], [text("-")])
@@ -193,11 +214,13 @@ defp greet(assigns) do
 end
 ```
 
-LiveView also allows for live components that contain state, markup and events, but Lustre does not have the equivalent of these.
+LiveView also allows for live components that contain state, markup and events,
+but Lustre does not have the equivalent of these.
 
 ---
 
-**In Lustre** components are more commonly referred to as "view functions". They are regular Gleam functions.
+**In Lustre** components are more commonly referred to as "view functions". They
+are regular Gleam functions.
 
 ```gleam
 fn greet(name: String) -> Element(Msg) {
