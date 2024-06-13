@@ -353,8 +353,10 @@ var LustreServerComponent = class extends HTMLElement {
   #observer = null;
   #root = null;
   #socket = null;
+  #shadow = null;
   constructor() {
     super();
+    this.#shadow = this.attachShadow({ mode: "closed" });
     this.#observer = new MutationObserver((mutations) => {
       const changed = [];
       for (const mutation of mutations) {
@@ -377,7 +379,15 @@ var LustreServerComponent = class extends HTMLElement {
   }
   connectedCallback() {
     this.#root = document.createElement("div");
-    this.appendChild(this.#root);
+    this.#shadow.appendChild(this.#root);
+    const sheet = new CSSStyleSheet();
+    for (const { cssRules } of document.styleSheets) {
+      for (const rule of cssRules) {
+        console.log(rule);
+        sheet.insertRule(rule.cssText);
+      }
+    }
+    this.#shadow.adoptedStyleSheets = [sheet];
   }
   attributeChangedCallback(name, prev, next) {
     switch (name) {
@@ -470,6 +480,12 @@ var LustreServerComponent = class extends HTMLElement {
   }
   disconnectedCallback() {
     this.#socket?.close();
+  }
+  get adoptedStyleSheets() {
+    return this.#shadow.adoptedStyleSheets;
+  }
+  set adoptedStyleSheets(value) {
+    this.#shadow.adoptedStyleSheets = value;
   }
 };
 window.customElements.define("lustre-server-component", LustreServerComponent);
