@@ -21,7 +21,8 @@ pub type Attribute(msg) =
 /// in JavaScript. Attributes will be rendered when calling [`element.to_string`](./element.html#to_string).
 ///
 /// **Note**: there is a subtle difference between attributes and properties. You
-/// can read more about the implications of this [here](https://javascript.info/dom-attributes-and-properties).
+/// can read more about the implications of this
+/// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn attribute(name: String, value: String) -> Attribute(msg) {
   Attribute(name, dynamic.from(value), as_property: False)
@@ -32,7 +33,8 @@ pub fn attribute(name: String, value: String) -> Attribute(msg) {
 /// [`element.to_string`](./element.html#to_string).
 ///
 /// **Note**: there is a subtle difference between attributes and properties. You
-/// can read more about the implications of this [here](https://javascript.info/dom-attributes-and-properties).
+/// can read more about the implications of this
+/// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn property(name: String, value: any) -> Attribute(msg) {
   Attribute(name, dynamic.from(value), as_property: True)
