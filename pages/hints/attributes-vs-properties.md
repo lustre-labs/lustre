@@ -57,3 +57,13 @@ Conversely, if you're using Lustre's components and wrote your `on_attribute_cha
 decoders in a way that did not anticipate receiving strings you may find that
 only properties work as you intended (the [decipher](https://hexdocs.pm/decipher/decipher.html)
 package can help you decode number-like strings and booleans from attributes.)
+
+## Other resources
+
+Here are some other resources from around the Web that you might also find useful:
+
+- [Attributes and Properties](https://javascript.info/dom-attributes-and-properties)
+  from JavaScript.info.
+
+- [HTML attributes vs DOM properties](https://jakearchibald.com/2024/attributes-vs-properties/)
+  by Jake Archibald.
