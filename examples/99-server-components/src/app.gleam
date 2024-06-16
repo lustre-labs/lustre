@@ -10,7 +10,7 @@ import gleam/otp/actor
 import gleam/result
 import lustre
 import lustre/attribute
-import lustre/element
+import lustre/element.{element}
 import lustre/element/html.{html}
 import lustre/server_component
 import mist.{
@@ -73,7 +73,11 @@ pub fn main() {
                 ),
               ]),
               html.body([], [
-                server_component.component([server_component.route("/counter")]),
+                element(
+                  "lustre-server-component",
+                  [server_component.route("/counter")],
+                  [html.p([], [html.text("This is a slot")])],
+                ),
               ]),
             ])
             |> element.to_document_string_builder

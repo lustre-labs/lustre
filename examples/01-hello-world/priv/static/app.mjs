@@ -328,6 +328,12 @@ function text(content) {
 }
 
 // build/dev/javascript/lustre/lustre/internals/runtime.mjs
+var Debug = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
 var Dispatch = class extends CustomType {
   constructor(x0) {
     super();
@@ -335,6 +341,12 @@ var Dispatch = class extends CustomType {
   }
 };
 var Shutdown = class extends CustomType {
+};
+var ForceModel = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
 };
 
 // build/dev/javascript/lustre/vdom.ffi.mjs
@@ -373,6 +385,13 @@ function morph(prev, next, dispatch, isComponent = false) {
         parent.replaceChild(created, prev2);
       }
       out ??= created;
+    } else if (next2.elements !== void 0) {
+      iterateElement(next2, (fragmentElement) => {
+        stack2.unshift({ prev: prev2, next: fragmentElement, parent });
+        prev2 = prev2?.nextSibling;
+      });
+    } else if (next2.subtree !== void 0) {
+      stack2.push({ prev: prev2, next: next2, parent });
     }
   }
   return out;
@@ -397,9 +416,11 @@ function createElementNode({ prev, next, dispatch, stack: stack2 }) {
   for (const attr of next.attrs) {
     const name = attr[0];
     const value = attr[1];
-    const isProperty = attr[2];
-    if (isProperty) {
-      el2[name] = value;
+    if (attr.as_property) {
+      if (el2[name] !== value)
+        el2[name] = value;
+      if (canMorph)
+        prevAttributes.delete(name);
     } else if (name.startsWith("on")) {
       const eventName = name.slice(2);
       const callback = dispatch(value);
@@ -424,8 +445,9 @@ function createElementNode({ prev, next, dispatch, stack: stack2 }) {
     } else if (name === "dangerous-unescaped-html") {
       innerHTML = value;
     } else {
-      el2.setAttribute(name, value);
-      if (name === "value")
+      if (typeof value === "string")
+        el2.setAttribute(name, value);
+      if (name === "value" || name === "selected")
         el2[name] = value;
       if (canMorph)
         prevAttributes.delete(name);
@@ -469,45 +491,22 @@ function createElementNode({ prev, next, dispatch, stack: stack2 }) {
     incomingKeyedChildren = getKeyedChildren(next);
   }
   for (const child of next.children) {
-    if (child.key !== void 0 && seenKeys !== null) {
-      while (prevChild && !incomingKeyedChildren.has(prevChild.getAttribute("data-lustre-key"))) {
-        const nextChild = prevChild.nextSibling;
-        el2.removeChild(prevChild);
-        prevChild = nextChild;
-      }
-      if (keyedChildren.size === 0) {
-        stack2.unshift({ prev: prevChild, next: child, parent: el2 });
+    iterateElement(child, (currElement) => {
+      if (currElement.key !== void 0 && seenKeys !== null) {
+        prevChild = diffKeyedChild(
+          prevChild,
+          currElement,
+          el2,
+          stack2,
+          incomingKeyedChildren,
+          keyedChildren,
+          seenKeys
+        );
+      } else {
+        stack2.unshift({ prev: prevChild, next: currElement, parent: el2 });
         prevChild = prevChild?.nextSibling;
-        continue;
       }
-      if (seenKeys.has(child.key)) {
-        console.warn(`Duplicate key found in Lustre vnode: ${child.key}`);
-        stack2.unshift({ prev: null, next: child, parent: el2 });
-        continue;
-      }
-      seenKeys.add(child.key);
-      const keyedChild = keyedChildren.get(child.key);
-      if (!keyedChild && !prevChild) {
-        stack2.unshift({ prev: null, next: child, parent: el2 });
-        continue;
-      }
-      if (!keyedChild && prevChild !== null) {
-        const placeholder = document.createTextNode("");
-        el2.insertBefore(placeholder, prevChild);
-        stack2.unshift({ prev: placeholder, next: child, parent: el2 });
-        continue;
-      }
-      if (!keyedChild || keyedChild === prevChild) {
-        stack2.unshift({ prev: prevChild, next: child, parent: el2 });
-        prevChild = prevChild?.nextSibling;
-        continue;
-      }
-      el2.insertBefore(keyedChild, prevChild);
-      stack2.unshift({ prev: keyedChild, next: child, parent: el2 });
-    } else {
-      stack2.unshift({ prev: prevChild, next: child, parent: el2 });
-      prevChild = prevChild?.nextSibling;
-    }
+    });
   }
   while (prevChild) {
     const next2 = prevChild.nextSibling;
@@ -565,12 +564,62 @@ function getKeyedChildren(el2) {
   const keyedChildren = /* @__PURE__ */ new Map();
   if (el2) {
     for (const child of el2.children) {
-      const key = child.key || child?.getAttribute("data-lustre-key");
-      if (key)
-        keyedChildren.set(key, child);
+      iterateElement(child, (currElement) => {
+        const key = currElement?.key || currElement?.getAttribute?.("data-lustre-key");
+        if (key)
+          keyedChildren.set(key, currElement);
+      });
     }
   }
   return keyedChildren;
+}
+function diffKeyedChild(prevChild, child, el2, stack2, incomingKeyedChildren, keyedChildren, seenKeys) {
+  while (prevChild && !incomingKeyedChildren.has(prevChild.getAttribute("data-lustre-key"))) {
+    const nextChild = prevChild.nextSibling;
+    el2.removeChild(prevChild);
+    prevChild = nextChild;
+  }
+  if (keyedChildren.size === 0) {
+    iterateElement(child, (currChild) => {
+      stack2.unshift({ prev: prevChild, next: currChild, parent: el2 });
+      prevChild = prevChild?.nextSibling;
+    });
+    return prevChild;
+  }
+  if (seenKeys.has(child.key)) {
+    console.warn(`Duplicate key found in Lustre vnode: ${child.key}`);
+    stack2.unshift({ prev: null, next: child, parent: el2 });
+    return prevChild;
+  }
+  seenKeys.add(child.key);
+  const keyedChild = keyedChildren.get(child.key);
+  if (!keyedChild && !prevChild) {
+    stack2.unshift({ prev: null, next: child, parent: el2 });
+    return prevChild;
+  }
+  if (!keyedChild && prevChild !== null) {
+    const placeholder = document.createTextNode("");
+    el2.insertBefore(placeholder, prevChild);
+    stack2.unshift({ prev: placeholder, next: child, parent: el2 });
+    return prevChild;
+  }
+  if (!keyedChild || keyedChild === prevChild) {
+    stack2.unshift({ prev: prevChild, next: child, parent: el2 });
+    prevChild = prevChild?.nextSibling;
+    return prevChild;
+  }
+  el2.insertBefore(keyedChild, prevChild);
+  stack2.unshift({ prev: keyedChild, next: child, parent: el2 });
+  return prevChild;
+}
+function iterateElement(element3, processElement) {
+  if (element3.elements !== void 0) {
+    for (const currElement of element3.elements) {
+      processElement(currElement);
+    }
+  } else {
+    processElement(element3);
+  }
 }
 
 // build/dev/javascript/lustre/client-runtime.ffi.mjs
@@ -611,6 +660,10 @@ var LustreClientApplication2 = class _LustreClientApplication {
       }
       case action instanceof Shutdown: {
         this.#shutdown();
+        return;
+      }
+      case action instanceof Debug: {
+        this.#debug(action[0]);
         return;
       }
       default:
@@ -656,6 +709,23 @@ var LustreClientApplication2 = class _LustreClientApplication {
         this.#flush_queue(++iterations);
       } else {
         window.requestAnimationFrame(() => this.#tick());
+      }
+    }
+  }
+  #debug(action) {
+    switch (true) {
+      case action instanceof ForceModel: {
+        const vdom = this.#view(action[0]);
+        const dispatch = (handler) => (e) => {
+          const result = handler(e);
+          if (result instanceof Ok) {
+            this.send(new Dispatch(result[0]));
+          }
+        };
+        this.#queue = [];
+        this.#effects = [];
+        this.#didUpdate = false;
+        this.#root = morph(this.#root, vdom, dispatch, this.#isComponent);
       }
     }
   }

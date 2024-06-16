@@ -60,24 +60,6 @@ in this and all the other example. You can run `gleam run -m lustre/dev start`
 in any of these examples to start a development server and head over to
 `localhost:1234` to see what it produces.
 
-### Enabling lustre/ui
-
-[`lustre/ui`](https://hexdocs.pm/lustre_ui/) is a separate package published by us
-to provide a collection of robust styled elements for folks that want to get working
-with Lustre ASAP. Each of these examples have been written to use elements from
-that package.
-
-Lustre's development server can be configured to include the `lustre/ui` stylesheet
-by passing the `--use-example-styles` flag:
-
-```sh
-gleam run -m lustre/dev start --use-example-styles
-```
-
-It's not necessary to use `lustre/ui` to use Lustre or to check out any of these
-examples, but we've built these examples using the package so things look a little
-more interesting.
-
 ## Getting help
 
 If you're having trouble with Lustre or not sure what the right way to do

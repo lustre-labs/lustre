@@ -48,6 +48,7 @@ fn view(model: Model) -> Element(Msg) {
     [attribute.style(styles)],
     ui.stack([], [
       ui.button([event.on_click(Incr)], [element.text("+")]),
+      html.slot([]),
       html.p([attribute.style([#("text-align", "center")])], [
         element.text(count),
       ]),
