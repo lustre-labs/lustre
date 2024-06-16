@@ -80,6 +80,10 @@ will probably want to add those too!
 > be installed. If you do not or cannot install this, the development server will
 > still run but it will not watch your files for changes.
 
+> **Note**: currently one of lustre_dev_tools' dependencies is not compatible with
+> the most recent version of `gleam_json`, making it impossible to install. To fix
+> this, add `gleam_json = "1.0.1"` as a dependency in your `gleam.toml` file.
+
 ```sh
 gleam add --dev lustre_dev_tools
 ```
@@ -403,10 +407,6 @@ how you like to learn:
 
 - The [rest of this guide](./02-state-management.html) also continues to teach
   Lustre's high-level concepts and best-practices.
-
-- If you're coming from LiveView or have heard about Lustre's server components
-  and want to learn more, you can skip to the [server components](./05-server-components.html)
-  section of the guide to learn about how to run Lustre applications on the backend.
 
 - Of course, if you want to dive in and start making things straight away, the
   [API documentation](https://hexdocs.pm/lustre/lustre.html) is always handy to keep open.
