@@ -72,15 +72,16 @@ function makeComponent(init, update, view, on_attribute_change) {
     }
 
     connectedCallback() {
-      const sheet = new CSSStyleSheet();
-
-      for (const { cssRules } of document.styleSheets) {
-        for (const rule of cssRules) {
-          sheet.insertRule(rule.cssText);
+      for (const link of document.querySelectorAll("link")) {
+        if (link.rel === "stylesheet") {
+          this.#shadow.appendChild(link.cloneNode(true));
         }
       }
 
-      this.#shadow.adoptedStyleSheets = [sheet];
+      for (const style of document.querySelectorAll("style")) {
+        this.#shadow.appendChild(style.cloneNode(true));
+      }
+
       this.#application = new LustreClientApplication(
         init(),
         update,

@@ -49,19 +49,18 @@ export class LustreServerComponent extends HTMLElement {
   }
 
   connectedCallback() {
-    this.#root = document.createElement("div");
-    this.#shadow.appendChild(this.#root);
-
-    const sheet = new CSSStyleSheet();
-
-    for (const { cssRules } of document.styleSheets) {
-      for (const rule of cssRules) {
-        console.log(rule);
-        sheet.insertRule(rule.cssText);
+    for (const link of document.querySelectorAll("link")) {
+      if (link.rel === "stylesheet") {
+        this.#shadow.appendChild(link.cloneNode(true));
       }
     }
 
-    this.#shadow.adoptedStyleSheets = [sheet];
+    for (const style of document.querySelectorAll("style")) {
+      this.#shadow.appendChild(style.cloneNode(true));
+    }
+
+    this.#root = document.createElement("div");
+    this.#shadow.appendChild(this.#root);
   }
 
   attributeChangedCallback(name, prev, next) {
