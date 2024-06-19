@@ -1,5 +1,5 @@
 name = "lustre"
-version = "4.2.6"
+version = "4.3.0"
 gleam = ">= 1.0.0"
 
 description = "An Elm-inspired framework for building HTML templates, single page applications, and server-rendered components in Gleam!"
@@ -24,13 +24,16 @@ pages = [
   # { title = "Components", path = "#", source = "" },
   # { title = "Server components", path = "#", source = "" },
   # { title = " ", path = "#", source = "" },
+  # { title = "SPA deployments", path = "#", source = "" },
+  # { title = "Full-stack deployments", path = "#", source = "" },
+  # { title = " ", path = "#", source = "" },
   # { title = "Using with Wisp", path = "#", source = "" },
   # { title = "Using with Glen", path = "#", source = "" },
   # { title = "Using with Mist", path = "#", source = "" },
   # { title = " ", path = "#", source = "" },
-  # { title = "For Elm developers", path = "#", source = "" },
-  # { title = "For React developers", path = "#", source = "" },
-  # { title = "For LiveView developers", path = "#", source = "" },
+  { title = "For Elm developers", path = "cheatsheets/elm", source = "./pages/reference/for-elm-devs.md" },
+  { title = "For React developers", path = "cheatsheets/react", source = "./pages/reference/for-react-devs.md" },
+  { title = "For LiveView developers", path = "cheatsheets/liveview", source = "./pages/reference/for-liveview-devs.md" },
 ]
 
 [dependencies]
