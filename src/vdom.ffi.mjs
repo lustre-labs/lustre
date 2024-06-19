@@ -84,7 +84,7 @@ export function morph(prev, next, dispatch, isComponent = false) {
   return out;
 }
 
-export function patch(root, diff, dispatch) {
+export function patch(root, diff, dispatch, stylesOffset = 0) {
   const rootParent = root.parentNode;
 
   // A diff is a tuple of three arrays: created, removed, updated. Each of these
@@ -101,7 +101,7 @@ export function patch(root, diff, dispatch) {
   for (const created of diff[0]) {
     const key = created[0].split("-");
     const next = created[1];
-    const prev = getDeepChild(rootParent, key);
+    const prev = getDeepChild(rootParent, key, stylesOffset);
 
     let result;
 
@@ -113,7 +113,7 @@ export function patch(root, diff, dispatch) {
     // tree. This can happen because we might get a patch that tells us some node
     // was created at a path that doesn't exist yet.
     else {
-      const parent = getDeepChild(rootParent, key.slice(0, -1));
+      const parent = getDeepChild(rootParent, key.slice(0, -1), stylesOffset);
       const temp = document.createTextNode("");
       parent.appendChild(temp);
       result = morph(temp, next, dispatch);
@@ -130,7 +130,7 @@ export function patch(root, diff, dispatch) {
   // the removed element.
   for (const removed of diff[1]) {
     const key = removed[0].split("-");
-    const deletedNode = getDeepChild(rootParent, key);
+    const deletedNode = getDeepChild(rootParent, key, stylesOffset);
     deletedNode.remove();
   }
 
@@ -139,7 +139,7 @@ export function patch(root, diff, dispatch) {
   for (const updated of diff[2]) {
     const key = updated[0].split("-");
     const patches = updated[1];
-    const prev = getDeepChild(rootParent, key);
+    const prev = getDeepChild(rootParent, key, stylesOffset);
     const handlersForEl = registeredHandlers.get(prev);
 
     for (const created of patches[0]) {
@@ -455,13 +455,15 @@ function getKeyedChildren(el) {
   return keyedChildren;
 }
 
-function getDeepChild(el, path) {
+function getDeepChild(el, path, stylesOffset) {
   let n;
   let rest;
   let child = el;
+  let isFirstInPath = true;
 
   while ((([n, ...rest] = path), n !== undefined)) {
-    child = child.childNodes.item(n);
+    child = child.childNodes.item(isFirstInPath ? n + stylesOffset : n);
+    isFirstInPath = false;
     path = rest;
   }
 

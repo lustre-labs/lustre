@@ -19,6 +19,7 @@ export class LustreServerComponent extends HTMLElement {
   #root = null;
   #socket = null;
   #shadow = null;
+  #stylesOffset = 0;
 
   constructor() {
     super();
@@ -52,11 +53,13 @@ export class LustreServerComponent extends HTMLElement {
     for (const link of document.querySelectorAll("link")) {
       if (link.rel === "stylesheet") {
         this.#shadow.appendChild(link.cloneNode(true));
+        this.#stylesOffset++;
       }
     }
 
     for (const style of document.querySelectorAll("style")) {
       this.#shadow.appendChild(style.cloneNode(true));
+      this.#stylesOffset++;
     }
 
     this.#root = document.createElement("div");
@@ -152,16 +155,27 @@ export class LustreServerComponent extends HTMLElement {
 
   morph(vdom) {
     this.#root = morph(this.#root, vdom, (handler) => (event) => {
+      const data = JSON.parse(this.getAttribute("data-lustre-data") || "{}");
       const msg = handler(event);
+
+      msg.data = merge(data, msg.data);
+
       this.#socket?.send(JSON.stringify([Constants.event, msg.tag, msg.data]));
     });
   }
 
   diff([diff]) {
-    this.#root = patch(this.#root, diff, (handler) => (event) => {
-      const msg = handler(event);
-      this.#socket?.send(JSON.stringify([Constants.event, msg.tag, msg.data]));
-    });
+    this.#root = patch(
+      this.#root,
+      diff,
+      (handler) => (event) => {
+        const msg = handler(event);
+        this.#socket?.send(
+          JSON.stringify([Constants.event, msg.tag, msg.data]),
+        );
+      },
+      this.#stylesOffset,
+    );
   }
 
   emit([event, data]) {
@@ -182,3 +196,15 @@ export class LustreServerComponent extends HTMLElement {
 }
 
 window.customElements.define("lustre-server-component", LustreServerComponent);
+
+// UTILS -----------------------------------------------------------------------
+
+function merge(target, source) {
+  for (const key in source) {
+    if (source[key] instanceof Object)
+      Object.assign(source[key], merge(target[key], source[key]));
+  }
+
+  Object.assign(target || {}, source);
+  return target;
+}
