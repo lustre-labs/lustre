@@ -52,17 +52,17 @@ function morph(prev, next, dispatch, isComponent = false) {
   }
   return out;
 }
-function patch(root, diff2, dispatch) {
+function patch(root, diff2, dispatch, stylesOffset = 0) {
   const rootParent = root.parentNode;
   for (const created of diff2[0]) {
     const key = created[0].split("-");
     const next = created[1];
-    const prev = getDeepChild(rootParent, key);
+    const prev = getDeepChild(rootParent, key, stylesOffset);
     let result;
     if (prev !== null && prev !== rootParent) {
       result = morph(prev, next, dispatch);
     } else {
-      const parent = getDeepChild(rootParent, key.slice(0, -1));
+      const parent = getDeepChild(rootParent, key.slice(0, -1), stylesOffset);
       const temp = document.createTextNode("");
       parent.appendChild(temp);
       result = morph(temp, next, dispatch);
@@ -73,13 +73,13 @@ function patch(root, diff2, dispatch) {
   }
   for (const removed of diff2[1]) {
     const key = removed[0].split("-");
-    const deletedNode = getDeepChild(rootParent, key);
+    const deletedNode = getDeepChild(rootParent, key, stylesOffset);
     deletedNode.remove();
   }
   for (const updated of diff2[2]) {
     const key = updated[0].split("-");
     const patches = updated[1];
-    const prev = getDeepChild(rootParent, key);
+    const prev = getDeepChild(rootParent, key, stylesOffset);
     const handlersForEl = registeredHandlers.get(prev);
     for (const created of patches[0]) {
       const name = created[0];
@@ -286,12 +286,14 @@ function getKeyedChildren(el2) {
   }
   return keyedChildren;
 }
-function getDeepChild(el2, path) {
+function getDeepChild(el2, path, stylesOffset) {
   let n;
   let rest;
   let child = el2;
+  let isFirstInPath = true;
   while ([n, ...rest] = path, n !== void 0) {
-    child = child.childNodes.item(n);
+    child = child.childNodes.item(isFirstInPath ? n + stylesOffset : n);
+    isFirstInPath = false;
     path = rest;
   }
   return child;
@@ -354,6 +356,7 @@ var LustreServerComponent = class extends HTMLElement {
   #root = null;
   #socket = null;
   #shadow = null;
+  #stylesOffset = 0;
   constructor() {
     super();
     this.#shadow = this.attachShadow({ mode: "closed" });
@@ -378,16 +381,18 @@ var LustreServerComponent = class extends HTMLElement {
     });
   }
   connectedCallback() {
-    this.#root = document.createElement("div");
-    this.#shadow.appendChild(this.#root);
-    const sheet = new CSSStyleSheet();
-    for (const { cssRules } of document.styleSheets) {
-      for (const rule of cssRules) {
-        console.log(rule);
-        sheet.insertRule(rule.cssText);
+    for (const link of document.querySelectorAll("link")) {
+      if (link.rel === "stylesheet") {
+        this.#shadow.appendChild(link.cloneNode(true));
+        this.#stylesOffset++;
       }
     }
-    this.#shadow.adoptedStyleSheets = [sheet];
+    for (const style of document.querySelectorAll("style")) {
+      this.#shadow.appendChild(style.cloneNode(true));
+      this.#stylesOffset++;
+    }
+    this.#root = document.createElement("div");
+    this.#shadow.appendChild(this.#root);
   }
   attributeChangedCallback(name, prev, next) {
     switch (name) {
@@ -465,15 +470,24 @@ var LustreServerComponent = class extends HTMLElement {
   }
   morph(vdom) {
     this.#root = morph(this.#root, vdom, (handler) => (event2) => {
+      const data = JSON.parse(this.getAttribute("data-lustre-data") || "{}");
       const msg = handler(event2);
+      msg.data = merge(data, msg.data);
       this.#socket?.send(JSON.stringify([event, msg.tag, msg.data]));
     });
   }
   diff([diff2]) {
-    this.#root = patch(this.#root, diff2, (handler) => (event2) => {
-      const msg = handler(event2);
-      this.#socket?.send(JSON.stringify([event, msg.tag, msg.data]));
-    });
+    this.#root = patch(
+      this.#root,
+      diff2,
+      (handler) => (event2) => {
+        const msg = handler(event2);
+        this.#socket?.send(
+          JSON.stringify([event, msg.tag, msg.data])
+        );
+      },
+      this.#stylesOffset
+    );
   }
   emit([event2, data]) {
     this.dispatchEvent(new CustomEvent(event2, { detail: data }));
@@ -489,6 +503,14 @@ var LustreServerComponent = class extends HTMLElement {
   }
 };
 window.customElements.define("lustre-server-component", LustreServerComponent);
+function merge(target, source) {
+  for (const key in source) {
+    if (source[key] instanceof Object)
+      Object.assign(source[key], merge(target[key], source[key]));
+  }
+  Object.assign(target || {}, source);
+  return target;
+}
 export {
   LustreServerComponent
 };
