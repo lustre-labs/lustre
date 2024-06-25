@@ -209,10 +209,6 @@ that Lustre's super power is that pure `view` function. If you're smart, you can
 reduce the amount of data you serialise and _derive_ the rest of your model from
 that.
 
-We brushed over quite a few details showing how hydration could work here, but in
-the [next guide](https://hexdocs.pm/lustre/guide/05-full-stack-applications.html)
-we'll go into a lot more detail on how to set up and run a full-stack Lustre app.
-
 ## Getting help
 
 If you're having trouble with Lustre or not sure what the right way to do
