@@ -553,16 +553,19 @@ function diffKeyedChild(
   return prevChild;
 }
 
-/*
- Iterate element, helper to apply the same functions to a standard "Element" or "Fragment" transparently
- 1. If single element, call callback for that element
- 2. If fragment, call callback for every child element. Fragment constructor guarantees no Fragment children
+/**
+ Iterate element, helper to apply the same functions to a standard `Element`, `Fragment` or `Map` transparently
+ 1. If single `Element`, call callback for that element
+ 2. If `Fragment`, call callback for every child element. Fragment constructor guarantees no Fragment children
+ 3. If `Map`, compute the subtree and call callback for every child element. This case happens when using an `element.map` on a `Fragment`.
 */
 function iterateElement(element, processElement) {
   if (element.elements !== undefined) {
     for (const currElement of element.elements) {
       processElement(currElement);
     }
+  } else if (element.subtree !== undefined) {
+    iterateElement(element.subtree(), processElement);
   } else {
     processElement(element);
   }
