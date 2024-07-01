@@ -342,8 +342,14 @@ counter is incremented and handle the response:
 pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   case msg {
     UserIncrementedCount -> #(Model(..model, count: model.count + 1), get_cat())
-    UserDecrementedCount -> #(Model(..model, count: model.count - 1), effect.none())
-    ApiReturnedCat(Ok(cat)) -> #(Model(..model, cats: [cat, ..model.cats]), effect.none())
+    UserDecrementedCount -> #(
+      Model(cats: list.drop(model.cats, 1), count: model.count - 1),
+      effect.none(),
+    )
+    ApiReturnedCat(Ok(cat)) -> #(
+      Model(..model, cats: [cat, ..model.cats]),
+      effect.none(),
+    )
     ApiReturnedCat(Error(_)) -> #(model, effect.none())
   }
 }
