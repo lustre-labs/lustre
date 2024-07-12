@@ -1,4 +1,4 @@
-# 04 Server-side rendering
+# 05 Server-side rendering
 
 Up until now, we have focused on Lustre's ability as a framework for building
 Single Page Applications (SPAs). While Lustre's development and feature set is
@@ -210,7 +210,7 @@ reduce the amount of data you serialise and _derive_ the rest of your model from
 that.
 
 We brushed over quite a few details showing how hydration could work here, but in
-the [next guide](https://hexdocs.pm/lustre/guide/05-full-stack-applications.html)
+the [next guide](https://hexdocs.pm/lustre/guide/06-full-stack-applications.html)
 we'll go into a lot more detail on how to set up and run a full-stack Lustre app.
 
 ## Getting help

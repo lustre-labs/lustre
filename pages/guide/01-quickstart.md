@@ -80,10 +80,6 @@ will probably want to add those too!
 > be installed. If you do not or cannot install this, the development server will
 > still run but it will not watch your files for changes.
 
-> **Note**: currently one of lustre_dev_tools' dependencies is not compatible with
-> the most recent version of `gleam_json`, making it impossible to install. To fix
-> this, add `gleam_json = "1.0.1"` as a dependency in your `gleam.toml` file.
-
 ```sh
 gleam add --dev lustre_dev_tools
 ```
