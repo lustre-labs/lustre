@@ -61,7 +61,7 @@ pub type MyButtonProps(msg) {
     label: String,
     msg: msg,
     colour: Colour,
-    variant: Variant,
+    variant: MyButtonVariant,
     icon: Option(Icon)
   )
 }
