@@ -1,11 +1,11 @@
-import { Ok, Error, isEqual } from "./gleam.mjs";
-import { Dispatch, Shutdown } from "./lustre/internals/runtime.mjs";
+import { LustreClientApplication, is_browser } from "./client-runtime.ffi.mjs";
+import { Error, Ok, isEqual } from "./gleam.mjs";
 import {
-  ComponentAlreadyRegistered,
   BadComponentName,
+  ComponentAlreadyRegistered,
   NotABrowser,
 } from "./lustre.mjs";
-import { LustreClientApplication, is_browser } from "./client-runtime.ffi.mjs";
+import { Dispatch, Shutdown } from "./lustre/internals/runtime.mjs";
 
 export function register({ init, update, view, on_attribute_change }, name) {
   if (!is_browser()) return new Error(new NotABrowser());
@@ -58,11 +58,14 @@ function makeComponent(init, update, view, on_attribute_change) {
             const decoded = decoder(value);
 
             if (decoded instanceof Ok && !isEqual(prev, value)) {
-              this.#application
-                ? this.#application.send(new Dispatch(decoded[0]))
-                : window.requestAnimationFrame(() =>
-                    this.#application.send(new Dispatch(decoded[0])),
-                  );
+              const run = () => {
+                if (this.#application) {
+                  this.#application.send(new Dispatch(decoded[0]));
+                } else {
+                  window.requestAnimationFrame(() => run());
+                }
+              };
+              run();
             }
 
             this[`_${name}`] = value;
@@ -72,24 +75,37 @@ function makeComponent(init, update, view, on_attribute_change) {
     }
 
     connectedCallback() {
-      for (const link of document.querySelectorAll("link")) {
-        if (link.rel === "stylesheet") {
-          this.#shadow.appendChild(link.cloneNode(true));
-        }
-      }
-
-      for (const style of document.querySelectorAll("style")) {
-        this.#shadow.appendChild(style.cloneNode(true));
-      }
-
-      this.#application = new LustreClientApplication(
-        init(),
-        update,
-        view,
-        this.#root,
-        true,
-      );
-      this.#shadow.append(this.#root);
+      new Promise(async (resolve) => {
+        const links = [...document.querySelectorAll("link")].map(
+          async (link) => {
+            if (link.rel === "stylesheet") {
+              const res = await fetch(link.href);
+              const content = await res.text();
+              const styleSheet = new CSSStyleSheet();
+              await styleSheet.replace(content);
+              this.#shadow.adoptedStyleSheets.push(styleSheet);
+            }
+          },
+        );
+        const styles = [...document.querySelectorAll("style")].map(
+          async (style) => {
+            const styleSheet = new CSSStyleSheet();
+            await styleSheet.replace(style.innerHTML);
+            this.#shadow.adoptedStyleSheets.push(styleSheet);
+          },
+        );
+        await Promise.all([...links, ...styles]);
+        resolve();
+      }).then(() => {
+        this.#application = new LustreClientApplication(
+          init(),
+          update,
+          view,
+          this.#root,
+          true,
+        );
+        this.#shadow.append(this.#root);
+      });
     }
 
     attributeChangedCallback(key, _, next) {
