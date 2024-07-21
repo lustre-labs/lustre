@@ -266,7 +266,7 @@ pub fn none() -> Element(msg) {
 /// specififying the container on definition. Allows the treatment of List(Element(msg))
 /// as if it were Element(msg). Useful when generating a list of elements from data but
 /// used downstream.
-/// 
+///
 pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
   // remove redundant fragments to simplify rendering
   flatten_fragment_elements(elements)
@@ -284,21 +284,6 @@ fn flatten_fragment_elements(elements: List(Element(msg))) {
       el -> [el, ..new_elements]
     }
   })
-}
-
-fn escape(escaped: String, content: String) -> String {
-  case content {
-    "<" <> rest -> escape(escaped <> "&lt;", rest)
-    ">" <> rest -> escape(escaped <> "&gt;", rest)
-    "&" <> rest -> escape(escaped <> "&amp;", rest)
-    "\"" <> rest -> escape(escaped <> "&quot;", rest)
-    "'" <> rest -> escape(escaped <> "&#39;", rest)
-    _ ->
-      case string.pop_grapheme(content) {
-        Ok(#(x, xs)) -> escape(escaped <> x, xs)
-        Error(_) -> escaped
-      }
-  }
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
