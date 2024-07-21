@@ -65,6 +65,16 @@ pub opaque type Effect(msg) {
 /// called with a `dispatch` function you can use to send messages back to your
 /// application's `update` function.
 ///
+/// Example using the `window` module from the `plinth` library to dispatch a
+/// message on the browser window object's `"visibilitychange"` event.
+///
+/// ```gleam
+/// from(fn(dispatch) {
+///   window.add_event_listener("visibilitychange", fn(_event) {
+///     dispatch(FetchState)
+///   })
+/// })
+/// ```
 pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
   // Effects constructed with `effect.from` only get told about the `dispatch`
   // function. If users want to emit events from a component they should use
