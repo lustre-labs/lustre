@@ -19,7 +19,7 @@ export class LustreServerComponent extends HTMLElement {
   #root = null;
   #socket = null;
   #shadow = null;
-  #stylesOffset = 0;
+  #styles = [];
 
   constructor() {
     super();
@@ -49,21 +49,11 @@ export class LustreServerComponent extends HTMLElement {
     });
   }
 
-  connectedCallback() {
-    for (const link of document.querySelectorAll("link")) {
-      if (link.rel === "stylesheet") {
-        this.#shadow.appendChild(link.cloneNode(true));
-        this.#stylesOffset++;
-      }
-    }
-
-    for (const style of document.querySelectorAll("style")) {
-      this.#shadow.appendChild(style.cloneNode(true));
-      this.#stylesOffset++;
-    }
-
-    this.#root = document.createElement("div");
-    this.#shadow.appendChild(this.#root);
+  async connectedCallback() {
+    this.#adoptStyleSheets().finally(() => {
+      this.#root = document.createElement("div");
+      this.#shadow.append(this.#root);
+    });
   }
 
   attributeChangedCallback(name, prev, next) {
@@ -174,7 +164,7 @@ export class LustreServerComponent extends HTMLElement {
           JSON.stringify([Constants.event, msg.tag, msg.data]),
         );
       },
-      this.#stylesOffset,
+      this.#styles.length,
     );
   }
 
@@ -186,12 +176,46 @@ export class LustreServerComponent extends HTMLElement {
     this.#socket?.close();
   }
 
-  get adoptedStyleSheets() {
-    return this.#shadow.adoptedStyleSheets;
+  #adoptStyleSheets() {
+    // Remove any existing style or link nodes that we've added to the shadow
+    // root
+    while (this.#styles.length) this.#styles.shift().remove();
+
+    const pending = [];
+
+    // Adopt any stylesheets that are present in the parent root
+    //
+    this.#shadow.adoptedStyleSheets = this.getRootNode().adoptedStyleSheets;
+
+    // Iterate over all the stylesheets in the document and add them to the
+    // shadow root. If the stylesheet is cross-origin, we need to clone the
+    // node and add it to the shadow root instead.
+    //
+    for (const sheet of document.styleSheets) {
+      try {
+        this.#shadow.adoptedStyleSheets.push(sheet);
+      } catch {
+        const node = sheet.ownerNode.cloneNode();
+
+        this.#shadow.appendChild(node);
+        pending.push(
+          new Promise((resolve, reject) => {
+            node.onload = resolve;
+            node.onerror = reject;
+          }),
+        );
+      }
+    }
+
+    return Promise.allSettled(pending);
   }
 
-  set adoptedStyleSheets(value) {
-    this.#shadow.adoptedStyleSheets = value;
+  adoptStyleSheet(sheet) {
+    this.#shadow.adoptedStyleSheets.push(sheet);
+  }
+
+  get adoptedStyleSheets() {
+    return this.#shadow.adoptedStyleSheets;
   }
 }
 
