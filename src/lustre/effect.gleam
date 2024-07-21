@@ -69,11 +69,27 @@ pub opaque type Effect(msg) {
 /// message on the browser window object's `"visibilitychange"` event.
 ///
 /// ```gleam
-/// from(fn(dispatch) {
-///   window.add_event_listener("visibilitychange", fn(_event) {
-///     dispatch(FetchState)
-///   })
-/// })
+/// import lustre/effect.{type Effect}
+/// import plinth/browser/window
+///
+/// type Model {
+///   Model(Int)
+/// }
+///
+/// type Msg {
+///   FetchState
+/// }
+///
+/// fn init(_flags) -> #(Model, Effect(Msg)) {
+///   #(
+///     Model(0),
+///     effect.from(fn(dispatch) {
+///       window.add_event_listener("visibilitychange", fn(_event) {
+///         dispatch(FetchState)
+///       })
+///     }),
+///   )
+/// }
 /// ```
 pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
   // Effects constructed with `effect.from` only get told about the `dispatch`
