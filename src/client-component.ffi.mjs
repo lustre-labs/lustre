@@ -56,7 +56,11 @@ function makeComponent(init, update, view, on_attribute_change) {
             const prev = this[name];
             const decoded = decoder(value);
 
-            if (decoded instanceof Ok && !isEqual(prev, value)) {
+            const shouldDispatch =
+              decoded instanceof Ok &&
+              (!this.#application || !isEqual(prev, value));
+
+            if (shouldDispatch) {
               this.#application
                 ? this.#application.send(new Dispatch(decoded[0]))
                 : window.requestAnimationFrame(() =>
