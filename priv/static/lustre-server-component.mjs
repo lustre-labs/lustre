@@ -342,6 +342,8 @@ function iterateElement(element, processElement) {
     for (const currElement of element.elements) {
       processElement(currElement);
     }
+  } else if (element.subtree !== void 0) {
+    iterateElement(element.subtree(), processElement);
   } else {
     processElement(element);
   }
@@ -356,7 +358,7 @@ var LustreServerComponent = class extends HTMLElement {
   #root = null;
   #socket = null;
   #shadow = null;
-  #stylesOffset = 0;
+  #styles = [];
   constructor() {
     super();
     this.#shadow = this.attachShadow({ mode: "closed" });
@@ -380,19 +382,11 @@ var LustreServerComponent = class extends HTMLElement {
       }
     });
   }
-  connectedCallback() {
-    for (const link of document.querySelectorAll("link")) {
-      if (link.rel === "stylesheet") {
-        this.#shadow.appendChild(link.cloneNode(true));
-        this.#stylesOffset++;
-      }
-    }
-    for (const style of document.querySelectorAll("style")) {
-      this.#shadow.appendChild(style.cloneNode(true));
-      this.#stylesOffset++;
-    }
-    this.#root = document.createElement("div");
-    this.#shadow.appendChild(this.#root);
+  async connectedCallback() {
+    this.#adoptStyleSheets().finally(() => {
+      this.#root = document.createElement("div");
+      this.#shadow.append(this.#root);
+    });
   }
   attributeChangedCallback(name, prev, next) {
     switch (name) {
@@ -486,7 +480,7 @@ var LustreServerComponent = class extends HTMLElement {
           JSON.stringify([event, msg.tag, msg.data])
         );
       },
-      this.#stylesOffset
+      this.#styles.length
     );
   }
   emit([event2, data]) {
@@ -495,11 +489,32 @@ var LustreServerComponent = class extends HTMLElement {
   disconnectedCallback() {
     this.#socket?.close();
   }
+  #adoptStyleSheets() {
+    while (this.#styles.length)
+      this.#styles.shift().remove();
+    const pending = [];
+    this.#shadow.adoptedStyleSheets = this.getRootNode().adoptedStyleSheets;
+    for (const sheet of document.styleSheets) {
+      try {
+        this.#shadow.adoptedStyleSheets.push(sheet);
+      } catch {
+        const node = sheet.ownerNode.cloneNode();
+        this.#shadow.appendChild(node);
+        pending.push(
+          new Promise((resolve, reject) => {
+            node.onload = resolve;
+            node.onerror = reject;
+          })
+        );
+      }
+    }
+    return Promise.allSettled(pending);
+  }
+  adoptStyleSheet(sheet) {
+    this.#shadow.adoptedStyleSheets.push(sheet);
+  }
   get adoptedStyleSheets() {
     return this.#shadow.adoptedStyleSheets;
-  }
-  set adoptedStyleSheets(value) {
-    this.#shadow.adoptedStyleSheets = value;
   }
 };
 window.customElements.define("lustre-server-component", LustreServerComponent);
