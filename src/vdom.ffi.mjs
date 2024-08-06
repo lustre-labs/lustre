@@ -562,7 +562,7 @@ function diffKeyedChild(
 function iterateElement(element, processElement) {
   if (element.elements !== undefined) {
     for (const currElement of element.elements) {
-      processElement(currElement);
+      iterateElement(currElement, processElement);
     }
   } else if (element.subtree !== undefined) {
     iterateElement(element.subtree(), processElement);
