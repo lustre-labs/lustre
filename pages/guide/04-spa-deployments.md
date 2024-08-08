@@ -9,7 +9,7 @@ probably don't want to follow this guide!
 
 ## Deploying with Cloudflare Pages
 
-There are multiple ways to deploy a Lustre SPA with Cloudflare Pages. For this guide we will focus on automated deployments using GitHub Actions. We will opt out of "Automatic Deployments" since it does not support Gleam and/or Lustre. Instead, we build our application with `lustre_dev_tools` use the Wrangler action to deploy our application.
+There are multiple ways to deploy a Lustre SPA with Cloudflare Pages. For this guide we will focus on automated deployments using GitHub Actions. We will opt out of "Automatic Deployments" since it does not support Gleam and/or Lustre. Instead, we build our application with `lustre_dev_tools` and use the Wrangler action to deploy our application.
 
 First, in this guide we assume that you build your Lustre application with:
 
@@ -19,7 +19,7 @@ gleam run -m lustre/dev build app
 
 and that this results in a `priv/static` directory in your repository root. The built application is then loaded in a `<script>` tag in your HTML file (`index.html`), also located in your repository root directory.
 
-In other words, this setup closely resembels the [Hello World example](https://github.com/lustre-labs/lustre/tree/main/examples/01-hello-world).
+In other words, this setup closely resembles the [Hello World example](https://github.com/lustre-labs/lustre/tree/main/examples/01-hello-world).
 
 ### Setting up Cloudflare Pages
 
@@ -27,10 +27,9 @@ In other words, this setup closely resembels the [Hello World example](https://g
 
 1. Go to the Cloudflare dashboard.
 2. Navigate to the "Workers & Pages" section.
-3. Create a new project.
-4. Create a new project and connect it to your GitHub repository.
-5. During setup, select the appropriate branch (for example `main`) to deploy from.
-6. Ignore the build settings for now.
+3. Create a new project and connect it to your GitHub repository.
+4. During setup, select the appropriate branch (e.g. `main`) to deploy from.
+5. Ignore the build settings for now.
 
 #### Disable Automatic Deployments:
 
@@ -49,7 +48,7 @@ In other words, this setup closely resembels the [Hello World example](https://g
 4. Add a new `CLOUDFLARE_API_TOKEN` secret based on:
    - Go to "My Profile" from the top right dropdown menu.
    - Navigate to the "API Tokens" section.
-   - Create a new custom API token with the `Cloudflare Pages`: `Edit` permission.
+   - Create a new custom API token with the `Cloudflare Pages: Edit` permission.
    - Copy the API token and paste it as the secret value.
 
 #### Create a GitHub Actions Workflow
