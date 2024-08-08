@@ -100,10 +100,11 @@ jobs:
 Make sure to replace `<YOUR_PROJECT_NAME>` with the name of your Cloudflare Pages project and also to update the Gleam and OTP versions to match your project's requirements.
 
 This workflow:
-  - Installs Gleam and its dependencies.
-  - Builds the Lustre application.
-  - Copies the built application to a `dist/` directory.
-  - Deploys the `dist/` directory to Cloudflare Pages using Wrangler.
+
+- Installs Gleam and its dependencies.
+- Builds the Lustre application.
+- Copies the built application to a `dist/` directory.
+- Deploys the `dist/` directory to Cloudflare Pages using Wrangler.
 
 ### Deploying
 
