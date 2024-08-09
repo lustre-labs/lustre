@@ -2,8 +2,7 @@
 
 If you have built a Lustre application that doesn't have a backend you need to deploy, you can use a number of static hosting services to get your SPA online. In this guide we'll look at two options, GitHub Pages and Cloudflare Pages, but the principles can be applied to other services as well.
 
-If you are planning on building and deploying a full stack Gleam project, you
-probably don't want to follow this guide!
+If you are planning on building and deploying a full stack Gleam project, you probably don't want to follow this guide!
 
 ## Prerequisites
 
@@ -70,7 +69,7 @@ jobs:
       - name: Copy output to dist
         run: |
           mkdir -p dist
-          cp index.github.html dist/index.html
+          cp index.html dist/index.html
           cp -r priv dist/priv
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -83,7 +82,7 @@ jobs:
         uses: actions/deploy-pages@v4
 ```
 
-Make sure to update the Gleam and OTP versions to match your project's requirements.
+> **Note**: Make sure to update the Gleam and OTP versions to match your project's requirements.
 
 This workflow:
 
@@ -178,7 +177,7 @@ jobs:
           command: pages deploy dist --project-name <YOUR_PROJECT_NAME>
 ```
 
-Make sure to replace `<YOUR_PROJECT_NAME>` with the name of your Cloudflare Pages project and also to update the Gleam and OTP versions to match your project's requirements.
+> **Note**: Make sure to replace `<YOUR_PROJECT_NAME>` with the name of your Cloudflare Pages project and also to update the Gleam and OTP versions to match your project's requirements.
 
 This workflow:
 
