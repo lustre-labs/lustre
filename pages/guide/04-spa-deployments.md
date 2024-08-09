@@ -104,7 +104,7 @@ There are multiple ways to deploy a Lustre SPA with Cloudflare Pages. For this g
 
 ### Setting up Cloudflare Pages
 
-#### Create a Cloudflare Pages Project:
+#### Create a Cloudflare Pages Project
 
 1. Go to the Cloudflare dashboard.
 2. Navigate to the "Workers & Pages" section.
@@ -112,7 +112,7 @@ There are multiple ways to deploy a Lustre SPA with Cloudflare Pages. For this g
 4. During setup, select the appropriate branch (e.g. `main`) to deploy from.
 5. Ignore the build settings for now.
 
-#### Disable Automatic Deployments:
+#### Disable Automatic Deployments
 
 1. After creating the project, navigate to the project settings.
 2. Under "Builds & Deployments", disable "Automatic Deployments" for production and preview branches.
