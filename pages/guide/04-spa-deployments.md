@@ -58,11 +58,12 @@ In other words, this project setup closely resembles the [Hello World example](h
 Create a new file in your repository at `.github/workflows/deploy.yml` and use the following template as a starting point:
 
 ```yaml
+name: Deploy to Cloudflare Pages
+
 on:
   push:
     branches:
       - main
-  pull_request:
 
 jobs:
   deploy:
@@ -72,11 +73,9 @@ jobs:
       contents: read
       deployments: write
     steps:
-      - name: Checkout
-        id: checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
       - name: Set up Gleam
-        id: setup-gleam
         uses: erlef/setup-beam@v1
         with:
           otp-version: "27.0"
@@ -87,15 +86,16 @@ jobs:
       - name: Build app
         run: gleam run -m lustre/dev build app --minify
       - name: Copy output to dist
-        run: mkdir dist && cp index.html dist/index.html && cp -r priv dist/priv
+        run: |
+          mkdir -p dist
+          cp index.html dist/index.html
+          cp -r priv dist/priv
       - name: Deploy with Wrangler
-        id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name <YOUR_PROJECT_NAME>
-        if: github.ref == 'refs/heads/main'
 ```
 
 Make sure to replace `<YOUR_PROJECT_NAME>` with the name of your Cloudflare Pages project and also to update the Gleam and OTP versions to match your project's requirements.
