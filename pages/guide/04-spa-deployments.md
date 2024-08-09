@@ -83,7 +83,7 @@ jobs:
       - name: Install dependencies
         run: gleam deps download
       - name: Build app
-        run: gleam run -m lustre/dev build app
+        run: gleam run -m lustre/dev build app --minify
       - name: Copy output to dist
         run: mkdir dist && cp index.html dist/index.html && cp -r priv dist/priv
       - name: Deploy with Wrangler
