@@ -96,7 +96,7 @@ The `flyctl deploy` command will build a Docker image of your application and de
 
 In this section, we will learn how to set up automated deployments for a Lustre full-stack application using GitHub Actions.
 
-### Setting `fly.toml`
+### Setting Up `fly.toml`
 
 If you did not set up a `fly.toml` configuration file during the manual deployment process, you can create one by running the following command in your project root directory:
 
@@ -128,6 +128,7 @@ on:
   push:
     branches:
       - main
+
 jobs:
   deploy:
     name: Deploy to Fly.io
