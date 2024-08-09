@@ -21,7 +21,7 @@ and that this results in a `priv/static` directory in your repository root direc
 
 In other words, this project setup closely resembles the [Hello World example](https://github.com/lustre-labs/lustre/tree/main/examples/01-hello-world).
 
-> **Note**: when using the `--minify` flag in the build command, remember to update your `<script>` tag in `index.html` to point to the minified file. In the Hello World example, this would be `/priv/static/app.min.js` instead of `/priv/static/app.js`.
+> **Note**: when using the `--minify` flag in the build command, remember to update your `<script>` tag in `index.html` to point to the minified file. In the Hello World example, this would be `/priv/static/app.min.mjs` instead of `/priv/static/app.mjs`.
 
 ### Setting up Cloudflare Pages
 
