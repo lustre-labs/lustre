@@ -9,17 +9,17 @@ probably don't want to follow this guide!
 
 ## Deploying with Cloudflare Pages
 
-There are multiple ways to deploy a Lustre SPA with Cloudflare Pages. For this guide we will focus on automated deployments using GitHub Actions. We will opt out of "Automatic Deployments" since it does not support Gleam and/or Lustre. Instead, we build our application with `lustre_dev_tools` and use the Wrangler action to deploy our application.
+There are multiple ways to deploy a Lustre SPA with Cloudflare Pages. For this guide we will focus on automated deployments using GitHub Actions. We will opt out of Cloudflare's "Automatic Deployments" since it does not support Gleam and/or Lustre. Instead, we build our application with `lustre_dev_tools` and use the Wrangler action to deploy our application.
 
-First, in this guide we assume that you build your Lustre application with:
+In this guide we also assume that you build your Lustre application with:
 
 ```
 gleam run -m lustre/dev build app
 ```
 
-and that this results in a `priv/static` directory in your repository root. The built application is then loaded in a `<script>` tag in your HTML file (`index.html`), also located in your repository root directory.
+and that this results in a `priv/static` directory in your repository root directory. The built application is then loaded in a `<script>` tag in your HTML file (`index.html`), located in your repository root directory.
 
-In other words, this setup closely resembles the [Hello World example](https://github.com/lustre-labs/lustre/tree/main/examples/01-hello-world).
+In other words, this project setup closely resembles the [Hello World example](https://github.com/lustre-labs/lustre/tree/main/examples/01-hello-world).
 
 ### Setting up Cloudflare Pages
 
