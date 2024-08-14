@@ -24,6 +24,8 @@ Finally, we also assume that you have a GitHub repository set up for your Lustre
 
 There are multiple ways to deploy a Lustre SPA with GitHub Pages. For this guide we will focus on automated deployments using GitHub Actions. We will build our application with `lustre_dev_tools` and use the GitHub Actions workflow to deploy our application.
 
+> **Note**: when deploying with GitHub Pages, remember that your application will be served at `https://<username>.github.io/<repository>`. The `<repository>` part of the URL is important as you will need to update the `<script>` tag in `index.html` to point to the correct file. In the Hello World example, this would be `/<repository>/priv/static/app.mjs`. Otherwise, your application will not load and you will see a 404 error in the browser console.
+
 ### Setting up GitHub Pages
 
 1. Go to your repository settings on GitHub.
