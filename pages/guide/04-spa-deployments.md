@@ -12,11 +12,11 @@ In this guide we assume that you can build your Lustre SPA with `lustre_dev_tool
 gleam run -m lustre/dev build app --minify
 ```
 
-and that this results in an application `priv/static` directory in your repository root directory. The built application is then loaded in a `<script>` tag in an HTML file `index.html` located in your repository root directory.
+and that this results in an application in your `priv/static` directory in your repository root directory. The built application is then loaded in a `<script>` tag in an HTML file `index.html` located in your repository root directory.
 
 In other words, this project setup closely resembles the [Hello World example](https://github.com/lustre-labs/lustre/tree/main/examples/01-hello-world).
 
-> **Note**: when using the `--minify` flag in the build command, remember to update your `<script>` tag in `index.html` to point to the minified file. In the Hello World example, this would be `/priv/static/app.min.mjs` instead of `/priv/static/app.mjs`.
+> **Note**: when using the `--minify` flag in the build command, we need to update the `<script>` tag in `index.html` to point to the minified file. In the Hello World example, this would be `/priv/static/app.min.mjs` instead of `/priv/static/app.mjs`. In the GitHub Action workflows below we have automated this step with a `sed`-command. In this command, we also assumed that your app is called `app` just like in the Hello World example, so if your app has a different name you need to update the command accordingly.
 
 Finally, we also assume that you have a GitHub repository set up for your Lustre application.
 
@@ -73,6 +73,8 @@ jobs:
           mkdir -p dist
           cp index.html dist/index.html
           cp -r priv dist/priv
+      - name: Update path in index.html to use minified app
+        run: sed -i 's|priv/static/app.mjs|priv/static/app.min.mjs|' dist/index.html
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
@@ -84,7 +86,7 @@ jobs:
         uses: actions/deploy-pages@v4
 ```
 
-> **Note**: Make sure to update the Gleam and OTP versions to match your project's requirements.
+> **Note**: Make sure to update the Gleam and OTP versions to match your project's requirements. Also verify that the app name used in the `sed`-command matches the name of your application.
 
 This workflow:
 
@@ -171,6 +173,8 @@ jobs:
           mkdir -p dist
           cp index.html dist/index.html
           cp -r priv dist/priv
+      - name: Update path in index.html to use minified app
+        run: sed -i 's|priv/static/app.mjs|priv/static/app.min.mjs|' dist/index.html
       - name: Deploy with Wrangler
         uses: cloudflare/wrangler-action@v3
         with:
@@ -179,7 +183,7 @@ jobs:
           command: pages deploy dist --project-name <YOUR_PROJECT_NAME>
 ```
 
-> **Note**: Make sure to replace `<YOUR_PROJECT_NAME>` with the name of your Cloudflare Pages project and also to update the Gleam and OTP versions to match your project's requirements.
+> **Note**: Make sure to replace `<YOUR_PROJECT_NAME>` with the name of your Cloudflare Pages project and also to update the Gleam and OTP versions to match your project's requirements. Also verify that the app name used in the `sed`-command matches the name of your application.
 
 This workflow:
 
