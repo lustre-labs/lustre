@@ -152,7 +152,7 @@ pub fn selected(is_selected: Bool) -> Attribute(msg) {
 
 ///
 pub fn accept(types: List(String)) -> Attribute(msg) {
-  attribute("accept", string.join(types, " "))
+  attribute("accept", string.join(types, ","))
 }
 
 ///
