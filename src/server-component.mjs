@@ -20,13 +20,14 @@ export class LustreServerComponent extends HTMLElement {
   #socket = null;
   /** @type {ShadowRoot} */
   #shadow;
-  /** @type {Array<Node|CSSStyleSheet>} */
+  /** @type {Array<Node>} */
   #styles = [];
 
   constructor() {
     super();
 
     this.#shadow = this.attachShadow({ mode: "closed" });
+    this.#root = document.createElement("div");
     this.#observer = new MutationObserver((mutations) => {
       const changed = [];
 
@@ -51,9 +52,8 @@ export class LustreServerComponent extends HTMLElement {
     });
   }
 
-  async connectedCallback() {
-    this.#adoptStyleSheets().finally(() => {
-      this.#root = document.createElement("div");
+  connectedCallback() {
+    this.adoptStyleSheets().finally(() => {
       this.#shadow.append(this.#root);
     });
   }
@@ -178,15 +178,30 @@ export class LustreServerComponent extends HTMLElement {
     this.#socket?.close();
   }
 
-  #adoptStyleSheets() {
+  async adoptStyleSheets() {
+    // There might be stylesheets in the document that have not loaded by the
+    // time our component mounts. If that's the case we'd miss them when trying
+    // to adopt all appropriate styles, so we do some work here to detect any
+    // stylesheets currently loading and wait for them all before we continue.
+    const pendingParentStylesheets = [];
+    const documentStyleSheets = [...document.styleSheets];
+
+    for (const link of document.querySelectorAll("link[rel=stylesheet]")) {
+      if (documentStyleSheets.includes(link.sheet)) continue;
+
+      pendingParentStylesheets.push(
+        new Promise((resolve, reject) => {
+          link.addEventListener("load", resolve);
+          link.addEventListener("error", reject);
+        }),
+      );
+    }
+
+    await Promise.allSettled(pendingParentStylesheets);
+
     // Remove any existing style or link nodes that we've added to the shadow
     // root
-    while (this.#styles.length) {
-      const item = this.#styles.pop();
-      if (item && item instanceof Node) {
-        this.#shadow.removeChild(item);
-      }
-    }
+    while (this.#styles.length) this.#styles.shift().remove();
 
     const pending = [];
 
@@ -201,11 +216,21 @@ export class LustreServerComponent extends HTMLElement {
     for (const sheet of document.styleSheets) {
       try {
         this.#shadow.adoptedStyleSheets.push(sheet);
-        this.#styles.push(sheet);
+        continue;
+      } catch {}
+
+      try {
+        const adoptedSheet = new CSSStyleSheet();
+
+        for (const rule of sheet.cssRules) {
+          adoptedSheet.insertRule(rule.cssText);
+        }
+
+        this.#shadow.adoptedStyleSheets.push(adoptedSheet);
       } catch {
         const node = sheet.ownerNode.cloneNode();
 
-        this.#shadow.appendChild(node);
+        this.#shadow.prepend(node);
         this.#styles.push(node);
         pending.push(
           new Promise((resolve, reject) => {
@@ -221,7 +246,6 @@ export class LustreServerComponent extends HTMLElement {
 
   adoptStyleSheet(sheet) {
     this.#shadow.adoptedStyleSheets.push(sheet);
-    this.#styles.push(sheet);
   }
 
   get adoptedStyleSheets() {

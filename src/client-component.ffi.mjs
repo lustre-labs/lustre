@@ -35,7 +35,10 @@ function makeComponent(init, update, view, on_attribute_change) {
   return class LustreClientComponent extends HTMLElement {
     #root = document.createElement("div");
     #application = null;
+    #initialActions = [];
+    /** @type {ShadowRoot} */
     #shadow = null;
+    /** @type {Array<Node>} */
     #styles = [];
 
     static get observedAttributes() {
@@ -63,9 +66,7 @@ function makeComponent(init, update, view, on_attribute_change) {
             if (shouldDispatch) {
               this.#application
                 ? this.#application.send(new Dispatch(decoded[0]))
-                : window.requestAnimationFrame(() =>
-                    this.#application.send(new Dispatch(decoded[0])),
-                  );
+                : this.#initialActions.push(new Dispatch(decoded[0]));
             }
 
             this[`_${name}`] = value;
@@ -75,16 +76,19 @@ function makeComponent(init, update, view, on_attribute_change) {
     }
 
     connectedCallback() {
-      this.#application = new LustreClientApplication(
-        init(),
-        update,
-        view,
-        this.#root,
-        true,
-      );
-
       this.#adoptStyleSheets().finally(() => {
         this.#shadow.append(this.#root);
+        this.#application = new LustreClientApplication(
+          init(),
+          update,
+          view,
+          this.#root,
+          true,
+        );
+
+        while (this.#initialActions.length) {
+          this.#application.send(this.#initialActions.shift());
+        }
       });
     }
 
@@ -96,7 +100,23 @@ function makeComponent(init, update, view, on_attribute_change) {
       this.#application.send(new Shutdown());
     }
 
-    #adoptStyleSheets() {
+    async #adoptStyleSheets() {
+      const pendingParentStylesheets = [];
+      const documentStyleSheets = [...document.styleSheets];
+
+      for (const link of document.querySelectorAll("link[rel=stylesheet]")) {
+        if (documentStyleSheets.includes(link.sheet)) continue;
+
+        pendingParentStylesheets.push(
+          new Promise((resolve, reject) => {
+            link.addEventListener("load", resolve);
+            link.addEventListener("error", reject);
+          }),
+        );
+      }
+
+      await Promise.allSettled(pendingParentStylesheets);
+
       // Remove any existing style or link nodes that we've added to the shadow
       // root
       while (this.#styles.length) this.#styles.shift().remove();
@@ -114,10 +134,20 @@ function makeComponent(init, update, view, on_attribute_change) {
       for (const sheet of document.styleSheets) {
         try {
           this.#shadow.adoptedStyleSheets.push(sheet);
+        } catch {}
+
+        try {
+          const adoptedSheet = new CSSStyleSheet();
+          for (const rule of sheet.cssRules) {
+            adoptedSheet.insertRule(rule.cssText);
+          }
+
+          this.#shadow.adoptedStyleSheets;
         } catch {
           const node = sheet.ownerNode.cloneNode();
 
-          this.#shadow.appendChild(node);
+          this.#shadow.prepend(node);
+          this.#styles.push(node);
           pending.push(
             new Promise((resolve, reject) => {
               node.onload = resolve;
