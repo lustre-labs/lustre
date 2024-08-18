@@ -18,7 +18,9 @@ export class LustreServerComponent extends HTMLElement {
   #observer = null;
   #root = null;
   #socket = null;
-  #shadow = null;
+  /** @type {ShadowRoot} */
+  #shadow;
+  /** @type {Array<Node|CSSStyleSheet>} */
   #styles = [];
 
   constructor() {
@@ -179,7 +181,12 @@ export class LustreServerComponent extends HTMLElement {
   #adoptStyleSheets() {
     // Remove any existing style or link nodes that we've added to the shadow
     // root
-    while (this.#styles.length) this.#styles.shift().remove();
+    while (this.#styles.length) {
+      const item = this.#styles.pop();
+      if (item && item instanceof Node) {
+        this.#shadow.removeChild(item);
+      }
+    }
 
     const pending = [];
 
@@ -194,10 +201,12 @@ export class LustreServerComponent extends HTMLElement {
     for (const sheet of document.styleSheets) {
       try {
         this.#shadow.adoptedStyleSheets.push(sheet);
+        this.#styles.push(sheet);
       } catch {
         const node = sheet.ownerNode.cloneNode();
 
         this.#shadow.appendChild(node);
+        this.#styles.push(node);
         pending.push(
           new Promise((resolve, reject) => {
             node.onload = resolve;
@@ -212,6 +221,7 @@ export class LustreServerComponent extends HTMLElement {
 
   adoptStyleSheet(sheet) {
     this.#shadow.adoptedStyleSheets.push(sheet);
+    this.#styles.push(sheet);
   }
 
   get adoptedStyleSheets() {
