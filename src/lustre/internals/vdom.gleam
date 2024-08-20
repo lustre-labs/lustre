@@ -358,7 +358,7 @@ fn attribute_to_string_parts(
       let true_atom = dynamic.from(True)
 
       case dynamic.classify(value) {
-        "String" -> Ok(#(name, dynamic.unsafe_coerce(value)))
+        "String" -> Ok(#(name, unsafe_coerce(value)))
 
         // Boolean attributes are determined based on their presence, eg we don't
         // want to render `disabled="false"` if the value is `false` we simply
@@ -372,8 +372,8 @@ fn attribute_to_string_parts(
         "Atom" | "Bool" | "Boolean" if value == true_atom -> Ok(#(name, ""))
         "Atom" | "Bool" | "Boolean" -> Error(Nil)
 
-        "Int" -> Ok(#(name, int.to_string(dynamic.unsafe_coerce(value))))
-        "Float" -> Ok(#(name, float.to_string(dynamic.unsafe_coerce(value))))
+        "Int" -> Ok(#(name, int.to_string(unsafe_coerce(value))))
+        "Float" -> Ok(#(name, float.to_string(unsafe_coerce(value))))
 
         // For everything else, we care whether or not the attribute is actually
         // a property. Properties are *Javascript* values that aren't necessarily
