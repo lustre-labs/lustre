@@ -124,7 +124,7 @@ pub fn attribute_to_json(
           Ok(
             json.object([
               #("0", json.string(name)),
-              #("1", json.string(dynamic.unsafe_coerce(value))),
+              #("1", json.string(unsafe_coerce(value))),
             ]),
           )
 
@@ -132,7 +132,7 @@ pub fn attribute_to_json(
           Ok(
             json.object([
               #("0", json.string(name)),
-              #("1", json.bool(dynamic.unsafe_coerce(value))),
+              #("1", json.bool(unsafe_coerce(value))),
             ]),
           )
 
@@ -140,7 +140,7 @@ pub fn attribute_to_json(
           Ok(
             json.object([
               #("0", json.string(name)),
-              #("1", json.bool(dynamic.unsafe_coerce(value))),
+              #("1", json.bool(unsafe_coerce(value))),
             ]),
           )
 
@@ -148,7 +148,7 @@ pub fn attribute_to_json(
           Ok(
             json.object([
               #("0", json.string(name)),
-              #("1", json.int(dynamic.unsafe_coerce(value))),
+              #("1", json.int(unsafe_coerce(value))),
             ]),
           )
 
@@ -156,7 +156,7 @@ pub fn attribute_to_json(
           Ok(
             json.object([
               #("0", json.string(name)),
-              #("1", json.float(dynamic.unsafe_coerce(value))),
+              #("1", json.float(unsafe_coerce(value))),
             ]),
           )
 
@@ -397,3 +397,9 @@ pub fn attribute_to_event_handler(
     }
   }
 }
+
+// FFI -------------------------------------------------------------------------
+
+@external(erlang, "lustre_escape_ffi", "coerce")
+@external(javascript, "../../../lustre-escape.ffi.mjs", "coerce")
+fn unsafe_coerce(value: a) -> b

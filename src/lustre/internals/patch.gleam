@@ -350,11 +350,7 @@ fn attribute_dict(
       case dict.get(dict, "class") {
         Ok(Attribute(_, classes, _)) -> {
           let classes =
-            dynamic.from(
-              dynamic.unsafe_coerce(classes)
-              <> " "
-              <> dynamic.unsafe_coerce(value),
-            )
+            dynamic.from(unsafe_coerce(classes) <> " " <> unsafe_coerce(value))
           dict.insert(dict, "class", Attribute("class", classes, False))
         }
 
@@ -366,8 +362,8 @@ fn attribute_dict(
         Ok(Attribute(_, styles, _)) -> {
           let styles =
             dynamic.from(list.append(
-              dynamic.unsafe_coerce(styles),
-              dynamic.unsafe_coerce(value),
+              unsafe_coerce(styles),
+              unsafe_coerce(value),
             ))
           dict.insert(dict, "style", Attribute("style", styles, False))
         }
@@ -437,3 +433,9 @@ pub fn is_empty_element_diff(diff: ElementDiff(msg)) -> Bool {
 fn is_empty_attribute_diff(diff: AttributeDiff(msg)) -> Bool {
   diff.created == set.new() && diff.removed == set.new()
 }
+
+// FFI -------------------------------------------------------------------------
+
+@external(erlang, "lustre_escape_ffi", "coerce")
+@external(javascript, "../../../lustre-escape.ffi.mjs", "coerce")
+fn unsafe_coerce(value: a) -> b

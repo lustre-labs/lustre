@@ -9,3 +9,7 @@ export function first(string) {
 export function drop_first(string) {
   return string.slice(1);
 }
+
+export function coerce(x) {
+  return x;
+}

@@ -135,7 +135,7 @@ fn loop(
     }
 
     Debug(ForceModel(model)) -> {
-      let model = dynamic.unsafe_coerce(model)
+      let model = unsafe_coerce(model)
       let html = state.view(model)
       let diff = patch.elements(state.html, html)
       let next =
@@ -235,3 +235,9 @@ fn run_effects(effects: Effect(msg), self: Subject(Action(msg, runtime))) -> Nil
 
   effect.perform(effects, dispatch, emit)
 }
+
+// FFI -------------------------------------------------------------------------
+
+@external(erlang, "lustre_escape_ffi", "coerce")
+@external(javascript, "../../../lustre-escape.ffi.mjs", "coerce")
+fn unsafe_coerce(value: a) -> b
