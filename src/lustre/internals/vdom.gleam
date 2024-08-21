@@ -401,5 +401,5 @@ pub fn attribute_to_event_handler(
 // FFI -------------------------------------------------------------------------
 
 @external(erlang, "lustre_escape_ffi", "coerce")
-@external(javascript, "../../../lustre-escape.ffi.mjs", "coerce")
+@external(javascript, "../../lustre-escape.ffi.mjs", "coerce")
 fn unsafe_coerce(value: a) -> b
