@@ -47,7 +47,7 @@ function makeComponent(init, update, view, on_attribute_change) {
 
     constructor() {
       super();
-      this.#shadow = this.attachShadow({ mode: "closed" });
+      this.#shadow = this.attachShadow({ mode: "open" });
 
       on_attribute_change[0]?.forEach((decoder, name) => {
         Object.defineProperty(this, name, {
