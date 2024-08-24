@@ -1,5 +1,5 @@
 name = "lustre"
-version = "4.3.5"
+version = "4.3.6"
 gleam = ">= 1.0.0"
 
 description = "An Gleam web framework for building HTML templates, single page applications, and real-time server components."
@@ -7,29 +7,29 @@ repository = { type = "github", user = "lustre-labs", repo = "lustre" }
 licences = ["MIT"]
 
 links = [
-  { title = "Sponsor", href = "https://github.com/sponsors/hayleigh-dot-dev" },
+    { title = "Sponsor", href = "https://github.com/sponsors/hayleigh-dot-dev" },
 ]
 
 internal_modules = ["lustre/internals", "lustre/internals/*"]
 
 [documentation]
 pages = [
-  { title = "Examples directory", path = "reference/examples.html", source = "./pages/reference/examples.md" },
-  { title = " ", path = "#", source = "" },
-  { title = "Quickstart guide", path = "guide/01-quickstart.html", source = "./pages/guide/01-quickstart.md" },
-  { title = "Managing state", path = "guide/02-state-management.html", source = "./pages/guide/02-state-management.md" },
-  { title = "Side effects", path = "guide/03-side-effects.html", source = "./pages/guide/03-side-effects.md" },
-  { title = "Server side rendering", path = "guide/05-server-side-rendering.html", source = "./pages/guide/05-server-side-rendering.md" },
-  { title = "Full stack applications", path = "guide/06-full-stack-applications.html", source = "./pages/guide/06-full-stack-applictations.md" },
-  { title = "Components", path = "guide/08-components.html", source = "./pages/guide/08-components.md" },
-  { title = "Server components", path = "guide/09-server-components.html", source = "./pages/guide/09-server-components.md" },
-  { title = " ", path = "#", source = "" },
-  { title = "SPA deployments", path = "guide/04-spa-deployments.html", source = "./pages/guide/04-spa-deployments.md" },
-  { title = "Full stack deployments", path = "guide/07-full-stack-deployments.html", source = "./pages/guide/07-full-stack-deployments.md" },
-  { title = " ", path = "#", source = "" },
-  { title = "For Elm developers", path = "cheatsheets/elm.html", source = "./pages/reference/for-elm-devs.md" },
-  { title = "For React developers", path = "cheatsheets/react.html", source = "./pages/reference/for-react-devs.md" },
-  { title = "For LiveView developers", path = "cheatsheets/liveview.html", source = "./pages/reference/for-liveview-devs.md" },
+    { title = "Examples directory", path = "reference/examples.html", source = "./pages/reference/examples.md" },
+    { title = " ", path = "#", source = "" },
+    { title = "Quickstart guide", path = "guide/01-quickstart.html", source = "./pages/guide/01-quickstart.md" },
+    { title = "Managing state", path = "guide/02-state-management.html", source = "./pages/guide/02-state-management.md" },
+    { title = "Side effects", path = "guide/03-side-effects.html", source = "./pages/guide/03-side-effects.md" },
+    { title = "Server side rendering", path = "guide/05-server-side-rendering.html", source = "./pages/guide/05-server-side-rendering.md" },
+    { title = "Full stack applications", path = "guide/06-full-stack-applications.html", source = "./pages/guide/06-full-stack-applictations.md" },
+    { title = "Components", path = "guide/08-components.html", source = "./pages/guide/08-components.md" },
+    { title = "Server components", path = "guide/09-server-components.html", source = "./pages/guide/09-server-components.md" },
+    { title = " ", path = "#", source = "" },
+    { title = "SPA deployments", path = "guide/04-spa-deployments.html", source = "./pages/guide/04-spa-deployments.md" },
+    { title = "Full stack deployments", path = "guide/07-full-stack-deployments.html", source = "./pages/guide/07-full-stack-deployments.md" },
+    { title = " ", path = "#", source = "" },
+    { title = "For Elm developers", path = "cheatsheets/elm.html", source = "./pages/reference/for-elm-devs.md" },
+    { title = "For React developers", path = "cheatsheets/react.html", source = "./pages/reference/for-react-devs.md" },
+    { title = "For LiveView developers", path = "cheatsheets/liveview.html", source = "./pages/reference/for-liveview-devs.md" },
 ]
 
 [dependencies]
