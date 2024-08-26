@@ -80,8 +80,8 @@
 //// of communication with the "outside world". You can read more about effects
 //// and their purpose in the [`effect`](./effect.html) module.
 ////
-//// For many kinds of app, you can take these three building blocks and put
-//// together a Lustre application capable of running *anywhere*. Beacuse of that,
+//// For many kinds of apps, you can take these three building blocks and put
+//// together a Lustre application capable of running *anywhere*. Because of that,
 //// we like to describe Lustre as a **universal framework**.
 ////
 //// ## Guides
@@ -504,7 +504,7 @@ pub fn shutdown() -> Action(msg, runtime) {
 
 /// Gleam's conditional compilation makes it possible to have different implementations
 /// of a function for different targets, but it's not possible to know what runtime
-/// you're targetting at compile-time.
+/// you're targeting at compile-time.
 ///
 /// This is problematic if you're using server components with a JavaScript
 /// backend because you'll want to know whether you're currently running on your
