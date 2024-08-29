@@ -76,6 +76,14 @@ export function morph(prev, next, dispatch, isComponent = false) {
         stack.unshift({ prev, next: fragmentElement, parent });
         prev = prev?.nextSibling;
       });
+      // Remove extra elements no longer in use from the top-level fragment elements
+      // if next is Fragment([div,div,div]) and prev is <div></div><div></div><div></div><div></div>
+      // this will remove the elements that would be unused
+      while (prev) {
+        const currPrev = prev;
+        prev = currPrev.nextSibling;
+        currPrev.remove();
+      }
     } else if (next.subtree !== undefined) {
       stack.push({ prev, next, parent });
     }
