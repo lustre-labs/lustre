@@ -7,27 +7,74 @@
 // - https://www.zhenghao.io/posts/object-vs-map
 //
 
-// Morph turns a Lustre VDOM node into real DOM nodes. Instead of doing a VDOM
-// diff that produces a patch, we morph the VDOM into the real DOM directly.
-export function morph(prev, next, dispatch, isComponent = false) {
-  // This function eventually returns the morphed root node. Because the morphing
-  // process might involve _removing_ the root in some cases, we can't simply return
-  // `prev` and hope for the best.
-  //
-  // We've also unfolded the recursive implementation into a stack-based iterative
-  // one so we cant just rely on good ol' recursion to return the root node. Instead
-  // we track it here and make sure to only set it once.
+/**
+ *
+ * @typedef {VText | VElement | VMap | VFragment } VNode
+ *
+ * @typedef {Object} VText
+ * @property {string} content
+ *
+ * @typedef {Object} VElement
+ * @property {string} key
+ * @property {string} namespace
+ * @property {tag} string
+ * @property {Iterable<VAttribute | VEvent>} attrs
+ * @property {Iterable<VElement>} children
+ * @property {boolean} self_closing
+ * @property {boolean} void
+ *
+ * @typedef {Object} VMap
+ * @property {() => VElement} subtree
+ *
+ * @typedef {Object} VFragment
+ * @property {Iterable<VElement>} elements
+ * @property {string} key
+ *
+ * @typedef {{ 0: string, 1: any, as_property: boolean }} VAttribute
+ * @typedef {{ 0: string, 1: Function }} VEvent
+ *
+ */
+
+/**
+ * Morph turns a Lustre VDOM node into real DOM nodes. Instead of doing a VDOM
+ * diff that produces a patch, we morph the VDOM into the real DOM directly.
+ *
+ * @param {Element} prev
+ * @param {VNode} next
+ * @param {Function} dispatch
+ *
+ */
+export function morph(prev, next, dispatch) {
+  /**
+   * This function eventually returns the morphed root node. Because the morphing
+   * process might involve _removing_ the root in some cases, we can't simply return
+   * `prev` and hope for the best.
+   *
+   * We've also unfolded the recursive implementation into a stack-based iterative
+   * one so we cant just rely on good ol' recursion to return the root node. Instead
+   * we track it here and make sure to only set it once.
+   *
+   * @type {Element}
+   *
+   */
   let out;
-  // A stack of nodes to still left to morph. This will shrink and grow over the
-  // course of the function. *Either* `prev` or `next` can be missing, but never
-  // both. The `parent` is *always* present.
+
+  /**
+   * A stack of nodes to still left to morph. This will shrink and grow over the
+   * course of the function. *Either* `prev` or `next` can be missing, but never
+   * both. The `parent` is *always* present.
+   *
+   * @type {{ prev: Element | null, next: VNode, parent: Element | null }[]}
+   */
   let stack = [{ prev, next, parent: prev.parentNode }];
 
   while (stack.length) {
+    /** @type {{ prev: Element | null, next: VNode, parent: Element | null }} */
     let { prev, next, parent } = stack.pop();
+
     // If we have the `subtree` property then we're looking at a `Map` vnode that
     // is lazily evaluated. We'll force it here and then proceed with the morphing.
-    if (next.subtree !== undefined) next = next.subtree();
+    while (next.subtree !== undefined) next = next.subtree();
 
     // Text nodes:
     if (next.content !== undefined) {
@@ -44,6 +91,7 @@ export function morph(prev, next, dispatch, isComponent = false) {
         out ??= created;
       }
     }
+
     // Element nodes:
     else if (next.tag !== undefined) {
       const created = createElementNode({
@@ -51,7 +99,6 @@ export function morph(prev, next, dispatch, isComponent = false) {
         next,
         dispatch,
         stack,
-        isComponent,
       });
 
       if (!prev) {
@@ -67,17 +114,16 @@ export function morph(prev, next, dispatch, isComponent = false) {
 
       out ??= created;
     }
+
     // If this happens, then the top level Element is a Fragment `prev` should be
     // the first element of the given fragment. Functionally, a fragment as the
     // first child means that document -> body will be the parent of the first level
     // of children
     else if (next.elements !== undefined) {
-      iterateElement(next, (fragmentElement) => {
+      for (const fragmentElement of children(next)) {
         stack.unshift({ prev, next: fragmentElement, parent });
         prev = prev?.nextSibling;
-      });
-    } else if (next.subtree !== undefined) {
-      stack.push({ prev, next, parent });
+      }
     }
   }
 
@@ -177,11 +223,18 @@ export function patch(root, diff, dispatch, stylesOffset = 0) {
 }
 
 // CREATING ELEMENTS -----------------------------------------------------------
-//
-// @todo do we need to special-case `<input>`, `<option>` and `<textarea>` elements
-// like morphdom does? Things seem to be working as expected so far.
-//
 
+/**
+ *
+ * @param {Object} data
+ * @param {Element | null} data.prev
+ * @param {VElement} data.next
+ * @param {Function} data.dispatch
+ * @param {{ prev: Element, next: VNode, parent: Element | null }[]} data.stack
+ *
+ * @returns {Element}
+ *
+ */
 function createElementNode({ prev, next, dispatch, stack }) {
   const namespace = next.namespace || "http://www.w3.org/1999/xhtml";
   // When we morph a node we keep the previous one alive in the DOM tree and just
@@ -191,16 +244,23 @@ function createElementNode({ prev, next, dispatch, stack }) {
     prev.nodeType === Node.ELEMENT_NODE &&
     prev.localName === next.tag &&
     prev.namespaceURI === (next.namespace || "http://www.w3.org/1999/xhtml");
+
+  /** @type {Element} */
   const el = canMorph
     ? prev
     : namespace
       ? document.createElementNS(namespace, next.tag)
       : document.createElement(next.tag);
 
-  // We keep track of all event handlers registered on an element across renders.
-  // If this is the first time we're rendering this element, or we're morphing a
-  // DOM node we didn't create then we need to set up that `Map` now.
+  /**
+   * We keep track of all event handlers registered on an element across renders.
+   * If this is the first time we're rendering this element, or we're morphing a
+   * DOM node we didn't create then we need to set up that `Map` now.
+   *
+   * @type {Map<string, Function>}
+   */
   let handlersForEl;
+
   if (!registeredHandlers.has(el)) {
     const emptyHandlers = new Map();
     registeredHandlers.set(el, emptyHandlers);
@@ -220,8 +280,12 @@ function createElementNode({ prev, next, dispatch, stack }) {
   // `class` and `style` because we want to _accumulate_ them, and `innerHTML`
   // because it's a special Lustre attribute that allows you to render a HTML
   // string directly into an element.
+
+  /** @type {string | null} */
   let className = null;
+  /** @type {string | null} */
   let style = null;
+  /** @type {string | null} */
   let innerHTML = null;
 
   // In Gleam custom type fields have numeric indexes if they aren't labelled
@@ -243,7 +307,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
     // subsequent renders swap out the callback stored in `handlersForEl`.
     else if (name.startsWith("on")) {
       const eventName = name.slice(2);
-      const callback = dispatch(value);
+      const callback = dispatch(value, eventName === "input");
 
       if (!handlersForEl.has(eventName)) {
         el.addEventListener(eventName, lustreGenericEventHandler);
@@ -331,7 +395,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
   let seenKeys = null;
   let keyedChildren = null;
   let incomingKeyedChildren = null;
-  let firstChild = next.children[Symbol.iterator]().next().value;
+  let firstChild = children(next).next().value;
 
   // All children are expected to be keyed if any of them are keyed, so just peeking
   // the first child is enough to determine if we need to do a keyed diff.
@@ -346,27 +410,26 @@ function createElementNode({ prev, next, dispatch, stack }) {
     seenKeys = new Set();
     keyedChildren = getKeyedChildren(prev);
     incomingKeyedChildren = getKeyedChildren(next);
-  }
-  for (const child of next.children) {
-    iterateElement(child, (currElement) => {
+
+    for (const child of children(next)) {
       // A keyed morph has more complex logic to handle: we need to be grabbing
       // same-key nodes from the previous render and moving them to the correct
       // position in the DOM.
-      if (currElement.key !== undefined && seenKeys !== null) {
-        prevChild = diffKeyedChild(
-          prevChild,
-          currElement,
-          el,
-          stack,
-          incomingKeyedChildren,
-          keyedChildren,
-          seenKeys,
-        );
-      } else {
-        stack.unshift({ prev: prevChild, next: currElement, parent: el });
-        prevChild = prevChild?.nextSibling;
-      }
-    });
+      prevChild = diffKeyedChild(
+        prevChild,
+        child,
+        el,
+        stack,
+        incomingKeyedChildren,
+        keyedChildren,
+        seenKeys,
+      );
+    }
+  } else {
+    for (const child of children(next)) {
+      stack.unshift({ prev: prevChild, next: child, parent: el });
+      prevChild = prevChild?.nextSibling;
+    }
   }
 
   // Any remaining children in the previous render can be removed at this point.
@@ -439,22 +502,35 @@ function lustreServerEventHandler(event) {
 
 // UTILS -----------------------------------------------------------------------
 
+/**
+ *
+ * @param {Element | null} el
+ *
+ * @returns {Map<string, Element>}
+ *
+ */
 function getKeyedChildren(el) {
   const keyedChildren = new Map();
 
   if (el) {
-    for (const child of el.children) {
-      iterateElement(child, (currElement) => {
-        const key =
-          currElement?.key || currElement?.getAttribute?.("data-lustre-key");
-        if (key) keyedChildren.set(key, currElement);
-      });
+    for (const child of children(el)) {
+      const key = child?.key || child?.getAttribute?.("data-lustre-key");
+      if (key) keyedChildren.set(key, child);
     }
   }
 
   return keyedChildren;
 }
 
+/**
+ *
+ * @param {Element} el
+ * @param {number[]} path
+ * @param {number} stylesOffset
+ *
+ * @returns {Element}
+ *
+ **/
 function getDeepChild(el, path, stylesOffset) {
   let n;
   let rest;
@@ -496,10 +572,11 @@ function diffKeyedChild(
   // insert the incoming child at the current position (and diff against whatever
   // is already there).
   if (keyedChildren.size === 0) {
-    iterateElement(child, (currChild) => {
+    for (const currChild of children(child)) {
       stack.unshift({ prev: prevChild, next: currChild, parent: el });
       prevChild = prevChild?.nextSibling;
-    });
+    }
+
     return prevChild;
   }
 
@@ -554,19 +631,33 @@ function diffKeyedChild(
 }
 
 /**
- Iterate element, helper to apply the same functions to a standard `Element`, `Fragment` or `Map` transparently
- 1. If single `Element`, call callback for that element
- 2. If `Fragment`, call callback for every child element. Fragment constructor guarantees no Fragment children
- 3. If `Map`, compute the subtree and call callback for every child element. This case happens when using an `element.map` on a `Fragment`.
-*/
-function iterateElement(element, processElement) {
+ *
+ * @generator
+ * @param {VNode} element
+ * @yields {VNode}
+ *
+ */
+function* children(element) {
+  for (const child of element.children) {
+    yield* forceChild(child);
+  }
+}
+
+/**
+ *
+ * @generator
+ * @param {VNode} element
+ * @yields {VNode}
+ *
+ */
+function* forceChild(element) {
   if (element.elements !== undefined) {
-    for (const currElement of element.elements) {
-      iterateElement(currElement, processElement);
+    for (const inner of element.elements) {
+      yield* forceChild(inner);
     }
   } else if (element.subtree !== undefined) {
-    iterateElement(element.subtree(), processElement);
+    yield* forceChild(element.subtree());
   } else {
-    processElement(element);
+    yield element;
   }
 }
