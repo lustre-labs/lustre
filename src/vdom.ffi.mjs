@@ -288,6 +288,23 @@ function createElementNode({ prev, next, dispatch, stack }) {
   /** @type {string | null} */
   let innerHTML = null;
 
+  // Unlike <input>s, <textarea>'s often update their child text content directly
+  // instead of setting a `value` property. If we're morphing an existing element,
+  // we want to make sure any changes in text content are reflected in the element's
+  // `value` property.
+  //
+  // We do this *before* diffing attributes in case the user has *also* set the
+  // value property explicitly, for smoe reason. That should take precedence.
+  //
+  if (canMorph && next.tag === "textarea") {
+    // Lustre's html api enforces that textareas only have a single text vnode
+    // as its children, but someone may go and render the element directly themselves
+    // so `innerText` here *may* end up undefined.
+    const innertText = next.children[Symbol.iterator]().next().value?.content;
+
+    if (innertText !== undefined) el.value = innertText;
+  }
+
   // In Gleam custom type fields have numeric indexes if they aren't labelled
   // but they *aren't* able to be destructured, so we have to do normal array
   // access below.
