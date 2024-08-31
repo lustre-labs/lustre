@@ -383,7 +383,7 @@ pub fn start(
   do_start(app, selector, flags)
 }
 
-@external(javascript, "./client-runtime.ffi.mjs", "start")
+@external(javascript, "./lustre.ffi.mjs", "start")
 fn do_start(
   _app: App(flags, model, msg),
   _selector: String,
@@ -409,7 +409,7 @@ fn do_start(
 /// **Note**: Users running their application on the BEAM should use [`start_actor`](#start_actor)
 /// instead to make use of Gleam's OTP abstractions.
 ///
-@external(javascript, "./server-runtime.ffi.mjs", "start")
+@external(javascript, "./lustre.ffi.mjs", "start_server_application")
 pub fn start_server_component(
   app: App(flags, model, msg),
   with flags: flags,
@@ -473,7 +473,7 @@ fn do_start_actor(
 /// you can render a Lustre server component using [`start_server_component`](#start_server_component)
 /// or [`start_actor`](#start_actor) instead.
 ///
-@external(javascript, "./client-component.ffi.mjs", "register")
+@external(javascript, "./lustre.ffi.mjs", "make_lustre_client_component")
 pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error) {
   Error(NotABrowser)
 }
@@ -510,7 +510,7 @@ pub fn shutdown() -> Action(msg, runtime) {
 /// backend because you'll want to know whether you're currently running on your
 /// server or in the browser: this function tells you that!
 ///
-@external(javascript, "./client-runtime.ffi.mjs", "is_browser")
+@external(javascript, "./lustre.ffi.mjs", "is_browser")
 pub fn is_browser() -> Bool {
   False
 }
@@ -519,7 +519,7 @@ pub fn is_browser() -> Bool {
 /// Element. This is particularly useful in contexts where _other web components_
 /// may have been registered and you must avoid collisions.
 ///
-@external(javascript, "./client-runtime.ffi.mjs", "is_registered")
+@external(javascript, "./lustre.ffi.mjs", "is_registered")
 pub fn is_registered(_name: String) -> Bool {
   False
 }
