@@ -11,7 +11,7 @@ function morph(prev, next, dispatch) {
   let stack = [{ prev, next, parent: prev.parentNode }];
   while (stack.length) {
     let { prev: prev2, next: next2, parent } = stack.pop();
-    if (next2.subtree !== void 0)
+    while (next2.subtree !== void 0)
       next2 = next2.subtree();
     if (next2.content !== void 0) {
       if (!prev2) {
@@ -41,12 +41,10 @@ function morph(prev, next, dispatch) {
       }
       out ??= created;
     } else if (next2.elements !== void 0) {
-      iterateElement(next2, (fragmentElement) => {
+      for (const fragmentElement of children(next2)) {
         stack.unshift({ prev: prev2, next: fragmentElement, parent });
         prev2 = prev2?.nextSibling;
-      });
-    } else if (next2.subtree !== void 0) {
-      stack.push({ prev: prev2, next: next2, parent });
+      }
     }
   }
   return out;
@@ -125,6 +123,11 @@ function createElementNode({ prev, next, dispatch, stack }) {
   let className = null;
   let style = null;
   let innerHTML = null;
+  if (canMorph && next.tag === "textarea") {
+    const innertText = next.children[Symbol.iterator]().next().value?.content;
+    if (innertText !== void 0)
+      el2.value = innertText;
+  }
   for (const attr of next.attrs) {
     const name = attr[0];
     const value = attr[1];
@@ -194,31 +197,29 @@ function createElementNode({ prev, next, dispatch, stack }) {
   let seenKeys = null;
   let keyedChildren = null;
   let incomingKeyedChildren = null;
-  let firstChild = next.children[Symbol.iterator]().next().value;
+  let firstChild = children(next).next().value;
   if (canMorph && firstChild !== void 0 && // Explicit checks are more verbose but truthy checks force a bunch of comparisons
   // we don't care about: it's never gonna be a number etc.
   firstChild.key !== void 0 && firstChild.key !== "") {
     seenKeys = /* @__PURE__ */ new Set();
     keyedChildren = getKeyedChildren(prev);
     incomingKeyedChildren = getKeyedChildren(next);
-  }
-  for (const child of next.children) {
-    iterateElement(child, (currElement) => {
-      if (currElement.key !== void 0 && seenKeys !== null) {
-        prevChild = diffKeyedChild(
-          prevChild,
-          currElement,
-          el2,
-          stack,
-          incomingKeyedChildren,
-          keyedChildren,
-          seenKeys
-        );
-      } else {
-        stack.unshift({ prev: prevChild, next: currElement, parent: el2 });
-        prevChild = prevChild?.nextSibling;
-      }
-    });
+    for (const child of children(next)) {
+      prevChild = diffKeyedChild(
+        prevChild,
+        child,
+        el2,
+        stack,
+        incomingKeyedChildren,
+        keyedChildren,
+        seenKeys
+      );
+    }
+  } else {
+    for (const child of children(next)) {
+      stack.unshift({ prev: prevChild, next: child, parent: el2 });
+      prevChild = prevChild?.nextSibling;
+    }
   }
   while (prevChild) {
     const next2 = prevChild.nextSibling;
@@ -275,12 +276,10 @@ function lustreServerEventHandler(event2) {
 function getKeyedChildren(el2) {
   const keyedChildren = /* @__PURE__ */ new Map();
   if (el2) {
-    for (const child of el2.children) {
-      iterateElement(child, (currElement) => {
-        const key = currElement?.key || currElement?.getAttribute?.("data-lustre-key");
-        if (key)
-          keyedChildren.set(key, currElement);
-      });
+    for (const child of children(el2)) {
+      const key = child?.key || child?.getAttribute?.("data-lustre-key");
+      if (key)
+        keyedChildren.set(key, child);
     }
   }
   return keyedChildren;
@@ -304,10 +303,10 @@ function diffKeyedChild(prevChild, child, el2, stack, incomingKeyedChildren, key
     prevChild = nextChild;
   }
   if (keyedChildren.size === 0) {
-    iterateElement(child, (currChild) => {
+    for (const currChild of children(child)) {
       stack.unshift({ prev: prevChild, next: currChild, parent: el2 });
       prevChild = prevChild?.nextSibling;
-    });
+    }
     return prevChild;
   }
   if (seenKeys.has(child.key)) {
@@ -336,15 +335,20 @@ function diffKeyedChild(prevChild, child, el2, stack, incomingKeyedChildren, key
   stack.unshift({ prev: keyedChild, next: child, parent: el2 });
   return prevChild;
 }
-function iterateElement(element, processElement) {
+function* children(element) {
+  for (const child of element.children) {
+    yield* forceChild(child);
+  }
+}
+function* forceChild(element) {
   if (element.elements !== void 0) {
-    for (const currElement of element.elements) {
-      iterateElement(currElement, processElement);
+    for (const inner of element.elements) {
+      yield* forceChild(inner);
     }
   } else if (element.subtree !== void 0) {
-    iterateElement(element.subtree(), processElement);
+    yield* forceChild(element.subtree());
   } else {
-    processElement(element);
+    yield element;
   }
 }
 
@@ -518,11 +522,11 @@ var LustreServerComponent = class extends HTMLElement {
       childList: false,
       subtree: false
     });
-    const prev = nthChild(this.shadowRoot, this.#adoptedStyleElements.length) ?? this.shadowRoot.appendChild(document.createTextNode(""));
+    const prev = nth_child(this.shadowRoot, this.#adoptedStyleElements.length) ?? this.shadowRoot.appendChild(document.createTextNode(""));
     const dispatch = (handler) => (event2) => {
       const data = JSON.parse(this.getAttribute("data-lustre-data") || "{}");
       const msg = handler(event2);
-      msg.data = deepMerge(data, msg.data);
+      msg.data = deep_merge(data, msg.data);
       this.#socket?.send(JSON.stringify([event, msg.tag, msg.data]));
     };
     morph(prev, vdom, dispatch);
@@ -531,7 +535,7 @@ var LustreServerComponent = class extends HTMLElement {
     }
   }
   #diff([diff2]) {
-    const prev = nthChild(this.shadowRoot, this.#adoptedStyleElements.length) ?? this.shadowRoot.appendChild(document.createTextNode(""));
+    const prev = nth_child(this.shadowRoot, this.#adoptedStyleElements.length) ?? this.shadowRoot.appendChild(document.createTextNode(""));
     const dispatch = (handler) => (event2) => {
       const msg = handler(event2);
       this.#socket?.send(JSON.stringify([event, msg.tag, msg.data]));
@@ -568,7 +572,7 @@ var LustreServerComponent = class extends HTMLElement {
       try {
         const adoptedSheet = new CSSStyleSheet();
         for (const rule of sheet.cssRules) {
-          adoptedSheet.insertRule(rule.cssText);
+          adoptedSheet.insertRule(rule.cssText, adoptedSheet.cssRules.length);
         }
         this.shadowRoot.adoptedStyleSheets.push(adoptedSheet);
       } catch {
@@ -587,16 +591,17 @@ var LustreServerComponent = class extends HTMLElement {
   }
 };
 window.customElements.define("lustre-server-component", LustreServerComponent);
-var nthChild = (root, n) => {
+var nth_child = (root, n) => {
   let child = root.firstChild;
-  while (child && n > 0)
+  while (child && n > 0) {
     child = child.nextSibling;
+  }
   return child;
 };
-var deepMerge = (target, source) => {
+var deep_merge = (target, source) => {
   for (const key in source) {
     if (source[key] instanceof Object)
-      Object.assign(source[key], deepMerge(target[key], source[key]));
+      Object.assign(source[key], deep_merge(target[key], source[key]));
   }
   Object.assign(target || {}, source);
   return target;
