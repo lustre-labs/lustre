@@ -31,12 +31,12 @@ pub fn main() {
 
 // CONSTANTS -------------------------------------------------------------------
 
-const esbuild = "./build/.lustre/bin/esbuild"
+const esbuild = "./build/dev/bin/package/bin/esbuild"
 
 // STEPS -----------------------------------------------------------------------
 
 fn verify_esbuild() {
-  simplifile.verify_is_file(esbuild)
+  simplifile.is_file(esbuild)
 }
 
 fn build_for_javascript() {
