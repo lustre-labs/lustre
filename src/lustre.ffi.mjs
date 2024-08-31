@@ -228,8 +228,9 @@ export class LustreClientApplication {
             composed: true,
           }),
         );
+      const select = () => {};
 
-      effect(dispatch, emit);
+      effect({ dispatch, emit, select });
     }
 
     // If any effects immediately dispatched a message we can process it
@@ -492,8 +493,9 @@ export const make_lustre_client_component = (
               composed: true,
             }),
           );
+        const select = () => {};
 
-        effect(dispatch, emit);
+        effect({ dispatch, emit, select });
       }
 
       // If any effects immediately dispatched a message we can process it
@@ -698,8 +700,9 @@ export class LustreServerApplication {
             composed: true,
           }),
         );
+      const select = () => {};
 
-      effect(dispatch, emit);
+      effect({ dispatch, emit, select });
     }
 
     // If any effects immediately dispatched a message we can process it

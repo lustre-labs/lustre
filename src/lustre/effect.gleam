@@ -41,6 +41,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/erlang/process.{type Selector}
 import gleam/json.{type Json}
 import gleam/list
 
@@ -56,7 +57,15 @@ import gleam/list
 ///
 ///
 pub opaque type Effect(msg) {
-  Effect(all: List(fn(fn(msg) -> Nil, fn(String, Json) -> Nil) -> Nil))
+  Effect(all: List(fn(Actions(msg)) -> Nil))
+}
+
+type Actions(msg) {
+  Actions(
+    dispatch: fn(msg) -> Nil,
+    emit: fn(String, Json) -> Nil,
+    select: fn(Selector(msg)) -> Nil,
+  )
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -92,10 +101,9 @@ pub opaque type Effect(msg) {
 /// }
 /// ```
 pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  // Effects constructed with `effect.from` only get told about the `dispatch`
-  // function. If users want to emit events from a component they should use
-  // `event.emit` instead!
-  Effect([fn(dispatch, _) { effect(dispatch) }])
+  use dispatch, _, _ <- custom
+
+  effect(dispatch)
 }
 
 /// Emit a custom event from a component as an effect. Parents can listen to these
@@ -105,7 +113,23 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 ///
 @internal
 pub fn event(name: String, data: Json) -> Effect(msg) {
-  Effect([fn(_, emit) { emit(name, data) }])
+  use _, emit, _ <- custom
+
+  emit(name, data)
+}
+
+///
+///
+@internal
+pub fn custom(
+  run: fn(fn(msg) -> Nil, fn(String, Json) -> Nil, fn(Selector(msg)) -> Nil) ->
+    Nil,
+) -> Effect(msg) {
+  Effect([
+    fn(actions: Actions(msg)) {
+      run(actions.dispatch, actions.emit, actions.select)
+    },
+  ])
 }
 
 /// Most Lustre applications need to return a tuple of `#(model, Effect(msg))`
@@ -137,6 +161,7 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
   })
 }
 
+@target(erlang)
 /// Transform the result of an effect. This is useful for mapping over effects
 /// produced by other libraries or modules.
 ///
@@ -146,7 +171,41 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
 pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
   Effect({
     use eff <- list.map(effect.all)
-    fn(dispatch, emit) { eff(fn(msg) { dispatch(f(msg)) }, emit) }
+    fn(actions: Actions(b)) {
+      eff(
+        Actions(
+          dispatch: fn(msg) { actions.dispatch(f(msg)) },
+          emit: actions.emit,
+          select: fn(selector) {
+            actions.select(process.map_selector(selector, f))
+          },
+        ),
+      )
+    }
+  })
+}
+
+@target(javascript)
+/// Transform the result of an effect. This is useful for mapping over effects
+/// produced by other libraries or modules.
+///
+/// **Note**: Remember that effects are not _required_ to dispatch any messages.
+/// Your mapping function may never be called!
+///
+pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
+  Effect({
+    use eff <- list.map(effect.all)
+    fn(actions: Actions(b)) {
+      eff(Actions(
+        dispatch: fn(msg) { actions.dispatch(f(msg)) },
+        emit: actions.emit,
+        // Selectors don't exist for the JavaScript target so there's no way
+        // for anyone to legitimately construct one. It's kind of clunky that
+        // we have to use `@target` for this and duplicate the function but
+        // so be it.
+        select: fn(_) { Nil },
+      ))
+    }
   })
 }
 
@@ -165,8 +224,10 @@ pub fn perform(
   effect: Effect(a),
   dispatch: fn(a) -> Nil,
   emit: fn(String, Json) -> Nil,
+  select: fn(Selector(a)) -> Nil,
 ) -> Nil {
+  let actions = Actions(dispatch, emit, select)
   use eff <- list.each(effect.all)
 
-  eff(dispatch, emit)
+  eff(actions)
 }

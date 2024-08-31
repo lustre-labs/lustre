@@ -75,19 +75,18 @@
 
 import gleam/bool
 import gleam/dynamic.{type DecodeError, type Dynamic, DecodeError, dynamic}
-import gleam/erlang/process.{type Selector}
+import gleam/erlang/process.{type Selector, type Subject}
 import gleam/int
+import gleam/io
 import gleam/json.{type Json}
 import gleam/result
+import gleam/string
 import lustre.{type Patch, type ServerComponent}
 import lustre/attribute.{type Attribute, attribute}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, element}
 import lustre/internals/constants
 import lustre/internals/patch
-@target(erlang)
-import lustre/internals/runtime.{type Action, Attrs, Event, SetSelector}
-@target(javascript)
 import lustre/internals/runtime.{type Action, Attrs, Event}
 
 // ELEMENTS --------------------------------------------------------------------
@@ -208,23 +207,64 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
   effect.event(event, data)
 }
 
+/// On the Erlang target, Lustre's server component runtime is an OTP
+/// [actor](https://hexdocs.pm/gleam_otp/gleam/otp/actor.html) that can be
+/// communicated with using the standard process API and the `Subject` returned
+/// when starting the server component.
 ///
+/// Sometimes, you might want to hand a different `Subject` to a process to restrict
+/// the type of messages it can send or to distinguish messages from different
+/// sources from one another. The `select` effect creates a fresh `Subject` each
+/// time it is run. By returning a `Selector` you can teach the Lustre server
+/// component runtime how to listen to messages from this `Subject`.
 ///
-pub fn set_selector(sel: Selector(Action(runtime, msg))) -> Effect(msg) {
-  do_set_selector(sel)
+/// The `select` effect also gives you the dispatch function passed to `effect.from`.
+/// This is useful in case you want to store the provided `Subject` in your model
+/// for later use. For example you may subscribe to a pubsub service and later use
+/// that same `Subject` to unsubscribe.
+///
+/// **Note**: This effect does nothing on the JavaScript runtime, where `Subjects`
+/// and `Selectors` don't exist, and is the equivalent of returning `effect.none()`.
+///
+pub fn select(
+  sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
+) -> Effect(msg) {
+  do_select(sel)
 }
 
 @target(erlang)
-fn do_set_selector(sel: Selector(Action(runtime, msg))) -> Effect(msg) {
-  use _ <- effect.from
+fn do_select(
+  sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
+) -> Effect(msg) {
+  use dispatch, _, select <- effect.custom
   let self = process.new_subject()
+  let selector = sel(dispatch, self)
 
-  process.send(self, SetSelector(sel))
+  select(selector)
 }
 
 @target(javascript)
-fn do_set_selector(_sel: Selector(Action(runtime, msg))) -> Effect(msg) {
+fn do_select(_: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg)) -> Effect(msg) {
   effect.none()
+}
+
+///
+///
+@deprecated("The implementation of this effect is broken in ways that cannot be
+fixed without changing the API. If you'd like other Erlang actors and processes
+to send messages to your Lustre server component, take a look at the `select`
+effect instead.")
+pub fn set_selector(_: Selector(Action(runtime, msg))) -> Effect(msg) {
+  use _ <- effect.from
+  "
+It looks like you're trying to use `set_selector` in a server component. The
+implementation of this effect is broken in ways that cannot be fixed without
+changing the API. Please take a look at `select` instead!
+  "
+  |> string.trim
+  |> io.println_error
+
+  Nil
 }
 
 // DECODERS --------------------------------------------------------------------

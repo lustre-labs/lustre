@@ -20,6 +20,7 @@ import lustre/internals/vdom
 type State(model, msg, runtime) {
   State(
     self: Subject(Action(msg, runtime)),
+    selector: Selector(Action(msg, runtime)),
     model: model,
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
@@ -39,7 +40,7 @@ pub type Action(msg, runtime) {
   Dispatch(msg)
   Emit(String, Json)
   Event(String, Dynamic)
-  SetSelector(Selector(Action(msg, runtime)))
+  SetSelector(Selector(msg))
   Shutdown
   Subscribe(String, fn(Patch(msg)) -> Nil)
   Unsubscribe(String)
@@ -67,9 +68,12 @@ pub fn start(
     let self = process.new_subject()
     let html = view(init.0)
     let handlers = vdom.handlers(html)
+    let selector =
+      process.selecting(process.new_selector(), self, fn(msg) { msg })
     let state =
       State(
         self,
+        selector,
         init.0,
         update,
         view,
@@ -78,8 +82,6 @@ pub fn start(
         handlers,
         on_attribute_change,
       )
-    let selector =
-      process.selecting(process.new_selector(), self, fn(msg) { msg })
 
     run_effects(init.1, self)
     actor.Ready(state, selector)
@@ -212,7 +214,15 @@ fn loop(
       actor.continue(next)
     }
 
-    SetSelector(selector) -> actor.Continue(state, Some(selector))
+    SetSelector(selector) ->
+      actor.Continue(
+        state,
+        Some(
+          state.selector
+          |> process.merge_selector(process.map_selector(selector, Dispatch)),
+        ),
+      )
+
     Shutdown -> actor.Stop(process.Killed)
   }
 }
@@ -232,12 +242,12 @@ fn run_renderers(
 fn run_effects(effects: Effect(msg), self: Subject(Action(msg, runtime))) -> Nil {
   let dispatch = fn(msg) { actor.send(self, Dispatch(msg)) }
   let emit = fn(name, event) { actor.send(self, Emit(name, event)) }
+  let select = fn(selector) { actor.send(self, SetSelector(selector)) }
 
-  effect.perform(effects, dispatch, emit)
+  effect.perform(effects, dispatch, emit, select)
 }
 
 // FFI -------------------------------------------------------------------------
 
 @external(erlang, "lustre_escape_ffi", "coerce")
-@external(javascript, "../../lustre-escape.ffi.mjs", "coerce")
 fn unsafe_coerce(value: a) -> b
