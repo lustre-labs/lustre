@@ -1,48 +1,29 @@
-// Note that this path is relative to the built Gleam project, not the source files
-// in `src/`. This particular module is not used by the Lustre package itself, but
-// is instead bundled and made available to package users in the `priv/` directory.
-//
-// It makes obvious sense to co-locate the source with the rest of the package
-// source code, but if we use relative imports here the bundle will fail because
-// `vdom.ffi.mjs` is importing things from the Gleam standard library and expects
-// to be placed in the `build/dev/javascript/lustre/` directory.
-//
+// IMPORTS ---------------------------------------------------------------------
+
 import * as Constants from "../build/dev/javascript/lustre/lustre/internals/constants.mjs";
-import { patch, morph } from "../build/dev/javascript/lustre/vdom.ffi.mjs";
+import { morph, patch } from "../build/dev/javascript/lustre/vdom.ffi.mjs";
+import { isEqual } from "../build/dev/javascript/prelude.mjs";
+
+// SERVER COMPONENT ------------------------------------------------------------
 
 export class LustreServerComponent extends HTMLElement {
   static get observedAttributes() {
     return ["route"];
   }
 
-  #observer = null;
-  #root = null;
-  #socket = null;
-  /** @type {ShadowRoot} */
-  #shadow;
-  /** @type {Array<Node>} */
-  #styles = [];
-
   constructor() {
     super();
 
-    this.#shadow = this.attachShadow({ mode: "closed" });
-    this.#root = document.createElement("div");
+    this.attachShadow({ mode: "open" });
     this.#observer = new MutationObserver((mutations) => {
       const changed = [];
 
       for (const mutation of mutations) {
         if (mutation.type === "attributes") {
-          const { attributeName: name, oldValue: prev } = mutation;
-          const next = this.getAttribute(name);
+          const { attributeName } = mutation;
+          const next = this.getAttribute(attributeName);
 
-          if (prev !== next) {
-            try {
-              changed.push([name, JSON.parse(next)]);
-            } catch {
-              changed.push([name, next]);
-            }
-          }
+          this[attributeName] = next;
         }
       }
 
@@ -53,9 +34,8 @@ export class LustreServerComponent extends HTMLElement {
   }
 
   connectedCallback() {
-    this.adoptStyleSheets().finally(() => {
-      this.#shadow.append(this.#root);
-    });
+    this.#observer.observe(this, { attributes: true, attributeOldValue: true });
+    this.#adoptStyleSheets().finally(() => (this.#connected = true));
   }
 
   attributeChangedCallback(name, prev, next) {
@@ -86,17 +66,26 @@ export class LustreServerComponent extends HTMLElement {
 
     switch (kind) {
       case Constants.diff:
-        return this.diff(payload);
+        return this.#diff(payload);
 
       case Constants.emit:
-        return this.emit(payload);
+        return this.#emit(payload);
 
       case Constants.init:
-        return this.init(payload);
+        return this.#init(payload);
     }
   }
 
-  init([attrs, vdom]) {
+  disconnectedCallback() {
+    this.#socket?.close();
+  }
+
+  /** @type {MutationObserver} */ #observer;
+  /** @type {WebSocket | null} */ #socket;
+  /** @type {boolean} */ #connected = false;
+  /** @type {Element[]} */ #adoptedStyleElements = [];
+
+  #init([attrs, vdom]) {
     const initial = [];
 
     for (const attr of attrs) {
@@ -108,22 +97,15 @@ export class LustreServerComponent extends HTMLElement {
 
       Object.defineProperty(this, attr, {
         get() {
-          return this[`_${attr}`] ?? this.getAttribute(attr);
+          return this[`__mirrored__${attr}`];
         },
         set(value) {
-          const prev = this[attr];
-
-          if (typeof value === "string") {
-            this.setAttribute(attr, value);
-          } else {
-            this[`_${attr}`] = value;
-          }
-
-          if (prev !== value) {
-            this.#socket?.send(
-              JSON.stringify([Constants.attrs, [[attr, value]]]),
-            );
-          }
+          const prev = this[`__mirrored__${attr}`];
+          if (isEqual(prev, value)) return;
+          this[`__mirrored__${attr}`] = value;
+          this.#socket?.send(
+            JSON.stringify([Constants.attrs, [[attr, value]]]),
+          );
         },
       });
     }
@@ -138,53 +120,44 @@ export class LustreServerComponent extends HTMLElement {
       subtree: false,
     });
 
-    this.morph(vdom);
+    const prev =
+      nth_child(this.shadowRoot, this.#adoptedStyleElements.length) ??
+      this.shadowRoot.appendChild(document.createTextNode(""));
+    const dispatch = (handler) => (event) => {
+      const data = JSON.parse(this.getAttribute("data-lustre-data") || "{}");
+      const msg = handler(event);
+
+      msg.data = deep_merge(data, msg.data);
+
+      this.#socket?.send(JSON.stringify([Constants.event, msg.tag, msg.data]));
+    };
+
+    morph(prev, vdom, dispatch);
 
     if (initial.length) {
       this.#socket?.send(JSON.stringify([Constants.attrs, initial]));
     }
   }
 
-  morph(vdom) {
-    this.#root = morph(this.#root, vdom, (handler) => (event) => {
-      const data = JSON.parse(this.getAttribute("data-lustre-data") || "{}");
+  #diff([diff]) {
+    const prev =
+      nth_child(this.shadowRoot, this.#adoptedStyleElements.length) ??
+      this.shadowRoot.appendChild(document.createTextNode(""));
+    const dispatch = (handler) => (event) => {
       const msg = handler(event);
-
-      msg.data = merge(data, msg.data);
-
       this.#socket?.send(JSON.stringify([Constants.event, msg.tag, msg.data]));
-    });
+    };
+
+    patch(prev, diff, dispatch, this.#adoptedStyleElements.length);
   }
 
-  diff([diff]) {
-    this.#root = patch(
-      this.#root,
-      diff,
-      (handler) => (event) => {
-        const msg = handler(event);
-        this.#socket?.send(
-          JSON.stringify([Constants.event, msg.tag, msg.data]),
-        );
-      },
-      this.#styles.length,
-    );
-  }
-
-  emit([event, data]) {
+  #emit([event, data]) {
     this.dispatchEvent(new CustomEvent(event, { detail: data }));
   }
 
-  disconnectedCallback() {
-    this.#socket?.close();
-  }
-
-  async adoptStyleSheets() {
-    // There might be stylesheets in the document that have not loaded by the
-    // time our component mounts. If that's the case we'd miss them when trying
-    // to adopt all appropriate styles, so we do some work here to detect any
-    // stylesheets currently loading and wait for them all before we continue.
+  async #adoptStyleSheets() {
     const pendingParentStylesheets = [];
-    const documentStyleSheets = [...document.styleSheets];
+    const documentStyleSheets = Array.from(document.styleSheets);
 
     for (const link of document.querySelectorAll("link[rel=stylesheet]")) {
       if (documentStyleSheets.includes(link.sheet)) continue;
@@ -199,39 +172,32 @@ export class LustreServerComponent extends HTMLElement {
 
     await Promise.allSettled(pendingParentStylesheets);
 
-    // Remove any existing style or link nodes that we've added to the shadow
-    // root
-    while (this.#styles.length) this.#styles.shift().remove();
+    while (this.#adoptedStyleElements.length) {
+      this.#adoptedStyleElements.shift().remove();
+    }
+
+    this.shadowRoot.adoptedStyleSheets = this.getRootNode().adoptedStyleSheets;
 
     const pending = [];
 
-    // Adopt any stylesheets that are present in the parent root
-    //
-    this.#shadow.adoptedStyleSheets = this.getRootNode().adoptedStyleSheets;
-
-    // Iterate over all the stylesheets in the document and add them to the
-    // shadow root. If the stylesheet is cross-origin, we need to clone the
-    // node and add it to the shadow root instead.
-    //
     for (const sheet of document.styleSheets) {
       try {
-        this.#shadow.adoptedStyleSheets.push(sheet);
-        continue;
+        this.shadowRoot.adoptedStyleSheets.push(sheet);
       } catch {}
 
       try {
         const adoptedSheet = new CSSStyleSheet();
-
         for (const rule of sheet.cssRules) {
-          adoptedSheet.insertRule(rule.cssText);
+          adoptedSheet.insertRule(rule.cssText, adoptedSheet.cssRules.length);
         }
 
-        this.#shadow.adoptedStyleSheets.push(adoptedSheet);
+        this.shadowRoot.adoptedStyleSheets.push(adoptedSheet);
       } catch {
         const node = sheet.ownerNode.cloneNode();
 
-        this.#shadow.prepend(node);
-        this.#styles.push(node);
+        this.shadowRoot.prepend(node);
+        this.#adoptedStyleElements.push(node);
+
         pending.push(
           new Promise((resolve, reject) => {
             node.onload = resolve;
@@ -243,26 +209,26 @@ export class LustreServerComponent extends HTMLElement {
 
     return Promise.allSettled(pending);
   }
-
-  adoptStyleSheet(sheet) {
-    this.#shadow.adoptedStyleSheets.push(sheet);
-  }
-
-  get adoptedStyleSheets() {
-    return this.#shadow.adoptedStyleSheets;
-  }
 }
 
 window.customElements.define("lustre-server-component", LustreServerComponent);
 
-// UTILS -----------------------------------------------------------------------
+const nth_child = (root, n) => {
+  let child = root.firstChild;
 
-function merge(target, source) {
+  while (child && n > 0) {
+    child = child.nextSibling;
+  }
+
+  return child;
+};
+
+const deep_merge = (target, source) => {
   for (const key in source) {
     if (source[key] instanceof Object)
-      Object.assign(source[key], merge(target[key], source[key]));
+      Object.assign(source[key], deep_merge(target[key], source[key]));
   }
 
   Object.assign(target || {}, source);
   return target;
-}
+};

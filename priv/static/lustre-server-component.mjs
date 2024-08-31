@@ -6,7 +6,7 @@ var event = 4;
 var attrs = 5;
 
 // build/dev/javascript/lustre/vdom.ffi.mjs
-function morph(prev, next, dispatch, isComponent = false) {
+function morph(prev, next, dispatch) {
   let out;
   let stack = [{ prev, next, parent: prev.parentNode }];
   while (stack.length) {
@@ -32,8 +32,7 @@ function morph(prev, next, dispatch, isComponent = false) {
         prev: prev2,
         next: next2,
         dispatch,
-        stack,
-        isComponent
+        stack
       });
       if (!prev2) {
         parent.appendChild(created);
@@ -136,7 +135,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
         prevAttributes.delete(name);
     } else if (name.startsWith("on")) {
       const eventName = name.slice(2);
-      const callback = dispatch(value);
+      const callback = dispatch(value, eventName === "input");
       if (!handlersForEl.has(eventName)) {
         el2.addEventListener(eventName, lustreGenericEventHandler);
       }
@@ -349,35 +348,89 @@ function iterateElement(element, processElement) {
   }
 }
 
+// build/dev/javascript/prelude.mjs
+function isEqual(x, y) {
+  let values = [x, y];
+  while (values.length) {
+    let a = values.pop();
+    let b = values.pop();
+    if (a === b)
+      continue;
+    if (!isObject(a) || !isObject(b))
+      return false;
+    let unequal = !structurallyCompatibleObjects(a, b) || unequalDates(a, b) || unequalBuffers(a, b) || unequalArrays(a, b) || unequalMaps(a, b) || unequalSets(a, b) || unequalRegExps(a, b);
+    if (unequal)
+      return false;
+    const proto = Object.getPrototypeOf(a);
+    if (proto !== null && typeof proto.equals === "function") {
+      try {
+        if (a.equals(b))
+          continue;
+        else
+          return false;
+      } catch {
+      }
+    }
+    let [keys, get] = getters(a);
+    for (let k of keys(a)) {
+      values.push(get(a, k), get(b, k));
+    }
+  }
+  return true;
+}
+function getters(object) {
+  if (object instanceof Map) {
+    return [(x) => x.keys(), (x, y) => x.get(y)];
+  } else {
+    let extra = object instanceof globalThis.Error ? ["message"] : [];
+    return [(x) => [...extra, ...Object.keys(x)], (x, y) => x[y]];
+  }
+}
+function unequalDates(a, b) {
+  return a instanceof Date && (a > b || a < b);
+}
+function unequalBuffers(a, b) {
+  return a.buffer instanceof ArrayBuffer && a.BYTES_PER_ELEMENT && !(a.byteLength === b.byteLength && a.every((n, i) => n === b[i]));
+}
+function unequalArrays(a, b) {
+  return Array.isArray(a) && a.length !== b.length;
+}
+function unequalMaps(a, b) {
+  return a instanceof Map && a.size !== b.size;
+}
+function unequalSets(a, b) {
+  return a instanceof Set && (a.size != b.size || [...a].some((e) => !b.has(e)));
+}
+function unequalRegExps(a, b) {
+  return a instanceof RegExp && (a.source !== b.source || a.flags !== b.flags);
+}
+function isObject(a) {
+  return typeof a === "object" && a !== null;
+}
+function structurallyCompatibleObjects(a, b) {
+  if (typeof a !== "object" && typeof b !== "object" && (!a || !b))
+    return false;
+  let nonstructural = [Promise, WeakSet, WeakMap, Function];
+  if (nonstructural.some((c) => a instanceof c))
+    return false;
+  return a.constructor === b.constructor;
+}
+
 // src/server-component.mjs
 var LustreServerComponent = class extends HTMLElement {
   static get observedAttributes() {
     return ["route"];
   }
-  #observer = null;
-  #root = null;
-  #socket = null;
-  /** @type {ShadowRoot} */
-  #shadow;
-  /** @type {Array<Node>} */
-  #styles = [];
   constructor() {
     super();
-    this.#shadow = this.attachShadow({ mode: "closed" });
-    this.#root = document.createElement("div");
+    this.attachShadow({ mode: "open" });
     this.#observer = new MutationObserver((mutations) => {
       const changed = [];
       for (const mutation of mutations) {
         if (mutation.type === "attributes") {
-          const { attributeName: name, oldValue: prev } = mutation;
-          const next = this.getAttribute(name);
-          if (prev !== next) {
-            try {
-              changed.push([name, JSON.parse(next)]);
-            } catch {
-              changed.push([name, next]);
-            }
-          }
+          const { attributeName } = mutation;
+          const next = this.getAttribute(attributeName);
+          this[attributeName] = next;
         }
       }
       if (changed.length) {
@@ -386,9 +439,8 @@ var LustreServerComponent = class extends HTMLElement {
     });
   }
   connectedCallback() {
-    this.adoptStyleSheets().finally(() => {
-      this.#shadow.append(this.#root);
-    });
+    this.#observer.observe(this, { attributes: true, attributeOldValue: true });
+    this.#adoptStyleSheets().finally(() => this.#connected = true);
   }
   attributeChangedCallback(name, prev, next) {
     switch (name) {
@@ -416,14 +468,25 @@ var LustreServerComponent = class extends HTMLElement {
     const [kind, ...payload] = JSON.parse(data);
     switch (kind) {
       case diff:
-        return this.diff(payload);
+        return this.#diff(payload);
       case emit:
-        return this.emit(payload);
+        return this.#emit(payload);
       case init:
-        return this.init(payload);
+        return this.#init(payload);
     }
   }
-  init([attrs2, vdom]) {
+  disconnectedCallback() {
+    this.#socket?.close();
+  }
+  /** @type {MutationObserver} */
+  #observer;
+  /** @type {WebSocket | null} */
+  #socket;
+  /** @type {boolean} */
+  #connected = false;
+  /** @type {Element[]} */
+  #adoptedStyleElements = [];
+  #init([attrs2, vdom]) {
     const initial = [];
     for (const attr of attrs2) {
       if (attr in this) {
@@ -433,20 +496,16 @@ var LustreServerComponent = class extends HTMLElement {
       }
       Object.defineProperty(this, attr, {
         get() {
-          return this[`_${attr}`] ?? this.getAttribute(attr);
+          return this[`__mirrored__${attr}`];
         },
         set(value) {
-          const prev = this[attr];
-          if (typeof value === "string") {
-            this.setAttribute(attr, value);
-          } else {
-            this[`_${attr}`] = value;
-          }
-          if (prev !== value) {
-            this.#socket?.send(
-              JSON.stringify([attrs, [[attr, value]]])
-            );
-          }
+          const prev2 = this[`__mirrored__${attr}`];
+          if (isEqual(prev2, value))
+            return;
+          this[`__mirrored__${attr}`] = value;
+          this.#socket?.send(
+            JSON.stringify([attrs, [[attr, value]]])
+          );
         }
       });
     }
@@ -459,41 +518,32 @@ var LustreServerComponent = class extends HTMLElement {
       childList: false,
       subtree: false
     });
-    this.morph(vdom);
+    const prev = nthChild(this.shadowRoot, this.#adoptedStyleElements.length) ?? this.shadowRoot.appendChild(document.createTextNode(""));
+    const dispatch = (handler) => (event2) => {
+      const data = JSON.parse(this.getAttribute("data-lustre-data") || "{}");
+      const msg = handler(event2);
+      msg.data = deepMerge(data, msg.data);
+      this.#socket?.send(JSON.stringify([event, msg.tag, msg.data]));
+    };
+    morph(prev, vdom, dispatch);
     if (initial.length) {
       this.#socket?.send(JSON.stringify([attrs, initial]));
     }
   }
-  morph(vdom) {
-    this.#root = morph(this.#root, vdom, (handler) => (event2) => {
-      const data = JSON.parse(this.getAttribute("data-lustre-data") || "{}");
+  #diff([diff2]) {
+    const prev = nthChild(this.shadowRoot, this.#adoptedStyleElements.length) ?? this.shadowRoot.appendChild(document.createTextNode(""));
+    const dispatch = (handler) => (event2) => {
       const msg = handler(event2);
-      msg.data = merge(data, msg.data);
       this.#socket?.send(JSON.stringify([event, msg.tag, msg.data]));
-    });
+    };
+    patch(prev, diff2, dispatch, this.#adoptedStyleElements.length);
   }
-  diff([diff2]) {
-    this.#root = patch(
-      this.#root,
-      diff2,
-      (handler) => (event2) => {
-        const msg = handler(event2);
-        this.#socket?.send(
-          JSON.stringify([event, msg.tag, msg.data])
-        );
-      },
-      this.#styles.length
-    );
-  }
-  emit([event2, data]) {
+  #emit([event2, data]) {
     this.dispatchEvent(new CustomEvent(event2, { detail: data }));
   }
-  disconnectedCallback() {
-    this.#socket?.close();
-  }
-  async adoptStyleSheets() {
+  async #adoptStyleSheets() {
     const pendingParentStylesheets = [];
-    const documentStyleSheets = [...document.styleSheets];
+    const documentStyleSheets = Array.from(document.styleSheets);
     for (const link of document.querySelectorAll("link[rel=stylesheet]")) {
       if (documentStyleSheets.includes(link.sheet))
         continue;
@@ -505,14 +555,14 @@ var LustreServerComponent = class extends HTMLElement {
       );
     }
     await Promise.allSettled(pendingParentStylesheets);
-    while (this.#styles.length)
-      this.#styles.shift().remove();
+    while (this.#adoptedStyleElements.length) {
+      this.#adoptedStyleElements.shift().remove();
+    }
+    this.shadowRoot.adoptedStyleSheets = this.getRootNode().adoptedStyleSheets;
     const pending = [];
-    this.#shadow.adoptedStyleSheets = this.getRootNode().adoptedStyleSheets;
     for (const sheet of document.styleSheets) {
       try {
-        this.#shadow.adoptedStyleSheets.push(sheet);
-        continue;
+        this.shadowRoot.adoptedStyleSheets.push(sheet);
       } catch {
       }
       try {
@@ -520,11 +570,11 @@ var LustreServerComponent = class extends HTMLElement {
         for (const rule of sheet.cssRules) {
           adoptedSheet.insertRule(rule.cssText);
         }
-        this.#shadow.adoptedStyleSheets.push(adoptedSheet);
+        this.shadowRoot.adoptedStyleSheets.push(adoptedSheet);
       } catch {
         const node = sheet.ownerNode.cloneNode();
-        this.#shadow.prepend(node);
-        this.#styles.push(node);
+        this.shadowRoot.prepend(node);
+        this.#adoptedStyleElements.push(node);
         pending.push(
           new Promise((resolve, reject) => {
             node.onload = resolve;
@@ -535,22 +585,22 @@ var LustreServerComponent = class extends HTMLElement {
     }
     return Promise.allSettled(pending);
   }
-  adoptStyleSheet(sheet) {
-    this.#shadow.adoptedStyleSheets.push(sheet);
-  }
-  get adoptedStyleSheets() {
-    return this.#shadow.adoptedStyleSheets;
-  }
 };
 window.customElements.define("lustre-server-component", LustreServerComponent);
-function merge(target, source) {
+var nthChild = (root, n) => {
+  let child = root.firstChild;
+  while (child && n > 0)
+    child = child.nextSibling;
+  return child;
+};
+var deepMerge = (target, source) => {
   for (const key in source) {
     if (source[key] instanceof Object)
-      Object.assign(source[key], merge(target[key], source[key]));
+      Object.assign(source[key], deepMerge(target[key], source[key]));
   }
   Object.assign(target || {}, source);
   return target;
-}
+};
 export {
   LustreServerComponent
 };

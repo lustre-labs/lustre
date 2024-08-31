@@ -197,7 +197,7 @@ pub fn mouse_position(event: Dynamic) -> Decoded(#(Float, Float)) {
 ///
 /// See: https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault
 ///
-@external(javascript, "../client-runtime.ffi.mjs", "prevent_default")
+@external(javascript, "../lustre.ffi.mjs", "prevent_default")
 pub fn prevent_default(_event: Dynamic) -> Nil {
   Nil
 }
@@ -211,7 +211,7 @@ pub fn prevent_default(_event: Dynamic) -> Nil {
 ///
 /// See: https://developer.mozilla.org/en-US/docs/Web/API/Event/stopPropagation
 ///
-@external(javascript, "../client-runtime.ffi.mjs", "stop_propagation")
+@external(javascript, "../lustre.ffi.mjs", "stop_propagation")
 pub fn stop_propagation(_event: Dynamic) -> Nil {
   Nil
 }
