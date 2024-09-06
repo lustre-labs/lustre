@@ -41,7 +41,7 @@ function morph(prev, next, dispatch) {
       }
       out ??= created;
     } else if (next2.elements !== void 0) {
-      for (const fragmentElement of children(next2)) {
+      for (const fragmentElement of forceChild(next2)) {
         stack.unshift({ prev: prev2, next: fragmentElement, parent });
         prev2 = prev2?.nextSibling;
       }
