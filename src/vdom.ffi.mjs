@@ -120,7 +120,7 @@ export function morph(prev, next, dispatch) {
     // first child means that document -> body will be the parent of the first level
     // of children
     else if (next.elements !== undefined) {
-      for (const fragmentElement of children(next)) {
+      for (const fragmentElement of forceChild(next)) {
         stack.unshift({ prev, next: fragmentElement, parent });
         prev = prev?.nextSibling;
       }
