@@ -20,7 +20,7 @@ pages = [
     { title = "Managing state", path = "guide/02-state-management.html", source = "./pages/guide/02-state-management.md" },
     { title = "Side effects", path = "guide/03-side-effects.html", source = "./pages/guide/03-side-effects.md" },
     { title = "Server side rendering", path = "guide/05-server-side-rendering.html", source = "./pages/guide/05-server-side-rendering.md" },
-    { title = "Full stack applications", path = "guide/06-full-stack-applications.html", source = "./pages/guide/06-full-stack-applictations.md" },
+    { title = "Full stack applications", path = "guide/06-full-stack-applications.html", source = "./pages/guide/06-full-stack-applications.md" },
     { title = "Components", path = "guide/08-components.html", source = "./pages/guide/08-components.md" },
     { title = "Server components", path = "guide/09-server-components.html", source = "./pages/guide/09-server-components.md" },
     { title = " ", path = "#", source = "" },

@@ -3,7 +3,7 @@
 > [Gleam Discord server](https://discord.gg/Fm8Pwmy) if you have any questions about
 > full stack applications with Lustre.
 
-# 05 Full stack applications
+# 06 Full stack applications
 
 We've now seen how Lustre can render single-page applications in the browser,
 static HTML templates, and we've seen how hydration can be implemented. In this
