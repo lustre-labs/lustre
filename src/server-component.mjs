@@ -120,8 +120,7 @@ export class LustreServerComponent extends HTMLElement {
       subtree: false,
     });
 
-    const prev =
-      nth_child(this.shadowRoot, this.#adoptedStyleElements.length) ??
+    const prev = this.shadowRoot.childNodes[this.#adoptedStyleElements.lemgth] ??
       this.shadowRoot.appendChild(document.createTextNode(""));
     const dispatch = (handler) => (event) => {
       const data = JSON.parse(this.getAttribute("data-lustre-data") || "{}");
@@ -140,8 +139,7 @@ export class LustreServerComponent extends HTMLElement {
   }
 
   #diff([diff]) {
-    const prev =
-      nth_child(this.shadowRoot, this.#adoptedStyleElements.length) ??
+    const prev = this.shadowRoot.childNodes[this.#adoptedStyleElements.length - 1] ??
       this.shadowRoot.appendChild(document.createTextNode(""));
     const dispatch = (handler) => (event) => {
       const msg = handler(event);
@@ -183,7 +181,7 @@ export class LustreServerComponent extends HTMLElement {
     for (const sheet of document.styleSheets) {
       try {
         this.shadowRoot.adoptedStyleSheets.push(sheet);
-      } catch {}
+      } catch { }
 
       try {
         const adoptedSheet = new CSSStyleSheet();
@@ -213,15 +211,6 @@ export class LustreServerComponent extends HTMLElement {
 
 window.customElements.define("lustre-server-component", LustreServerComponent);
 
-const nth_child = (root, n) => {
-  let child = root.firstChild;
-
-  while (child && n > 0) {
-    child = child.nextSibling;
-  }
-
-  return child;
-};
 
 const deep_merge = (target, source) => {
   for (const key in source) {
