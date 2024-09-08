@@ -105,13 +105,13 @@ export class LustreClientApplication {
         const vdom = this.#view(this.#model);
         const dispatch =
           (handler, immediate = false) =>
-          (event) => {
-            const result = handler(event);
+            (event) => {
+              const result = handler(event);
 
-            if (result instanceof Ok) {
-              this.send(new Dispatch(result[0], immediate));
-            }
-          };
+              if (result instanceof Ok) {
+                this.send(new Dispatch(result[0], immediate));
+              }
+            };
         const prev =
           this.root.firstChild ??
           this.root.appendChild(document.createTextNode(""));
@@ -192,13 +192,13 @@ export class LustreClientApplication {
     const vdom = this.#view(this.#model);
     const dispatch =
       (handler, immediate = false) =>
-      (event) => {
-        const result = handler(event);
+        (event) => {
+          const result = handler(event);
 
-        if (result instanceof Ok) {
-          this.send(new Dispatch(result[0], immediate));
-        }
-      };
+          if (result instanceof Ok) {
+            this.send(new Dispatch(result[0], immediate));
+          }
+        };
     const prev =
       this.root.firstChild ??
       this.root.appendChild(document.createTextNode(""));
@@ -228,7 +228,7 @@ export class LustreClientApplication {
             composed: true,
           }),
         );
-      const select = () => {};
+      const select = () => { };
 
       effect({ dispatch, emit, select });
     }
@@ -380,16 +380,16 @@ export const make_lustre_client_component = (
           const vdom = view(this.#model);
           const dispatch =
             (handler, immediate = false) =>
-            (event) => {
-              const result = handler(event);
+              (event) => {
+                const result = handler(event);
 
-              if (result instanceof Ok) {
-                this.send(new Dispatch(result[0], immediate));
-              }
-            };
-          const prev =
-            nth_child(this.shadowRoot, this.#adoptedStyleElements.length) ??
+                if (result instanceof Ok) {
+                  this.send(new Dispatch(result[0], immediate));
+                }
+              };
+          const prev = this.shadowRoot.childNodes[this.#adoptedStyleElements.length] ??
             this.shadowRoot.appendChild(document.createTextNode(""));
+
 
           morph(prev, vdom, dispatch);
         }
@@ -457,16 +457,18 @@ export const make_lustre_client_component = (
       const vdom = view(this.#model);
       const dispatch =
         (handler, immediate = false) =>
-        (event) => {
-          const result = handler(event);
+          (event) => {
+            const result = handler(event);
 
-          if (result instanceof Ok) {
-            this.send(new Dispatch(result[0], immediate));
-          }
-        };
-      const prev =
-        nth_child(this.shadowRoot, this.#adoptedStyleElements.length) ??
+            if (result instanceof Ok) {
+              this.send(new Dispatch(result[0], immediate));
+            }
+          };
+      const prev = this.shadowRoot.childNodes[this.#adoptedStyleElements.length] ??
         this.shadowRoot.appendChild(document.createTextNode(""));
+
+
+      console.log({ prev })
 
       morph(prev, vdom, dispatch);
     }
@@ -493,7 +495,7 @@ export const make_lustre_client_component = (
               composed: true,
             }),
           );
-        const select = () => {};
+        const select = () => { };
 
         effect({ dispatch, emit, select });
       }
@@ -536,7 +538,7 @@ export const make_lustre_client_component = (
       for (const sheet of document.styleSheets) {
         try {
           this.shadowRoot.adoptedStyleSheets.push(sheet);
-        } catch {}
+        } catch { }
 
         try {
           const adoptedSheet = new CSSStyleSheet();
@@ -700,7 +702,7 @@ export class LustreServerApplication {
             composed: true,
           }),
         );
-      const select = () => {};
+      const select = () => { };
 
       effect({ dispatch, emit, select });
     }
@@ -747,17 +749,3 @@ export const prevent_default = (event) => event.preventDefault();
  * @returns {void}
  */
 export const stop_propagation = (event) => event.stopPropagation();
-
-/**
- * @param {Element} root
- * @param {number} n
- *
- * @returns {Element | null}
- */
-const nth_child = (root, n) => {
-  let child = root.firstChild;
-
-  while (child && n > 0) child = child.nextSibling;
-
-  return child;
-};
