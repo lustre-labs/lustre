@@ -511,10 +511,8 @@ export const make_lustre_client_component = (
 
     async #adoptStyleSheets() {
       const pendingParentStylesheets = [];
-      const documentStyleSheets = Array.from(document.styleSheets);
-
       for (const link of document.querySelectorAll("link[rel=stylesheet]")) {
-        if (documentStyleSheets.includes(link.sheet)) continue;
+        if (link.sheet) continue
 
         pendingParentStylesheets.push(
           new Promise((resolve, reject) => {
@@ -528,6 +526,7 @@ export const make_lustre_client_component = (
 
       while (this.#adoptedStyleElements.length) {
         this.#adoptedStyleElements.shift().remove();
+        this.shadowRoot.firstChild.remove();
       }
 
       this.shadowRoot.adoptedStyleSheets =
@@ -538,27 +537,27 @@ export const make_lustre_client_component = (
       for (const sheet of document.styleSheets) {
         try {
           this.shadowRoot.adoptedStyleSheets.push(sheet);
-        } catch { }
-
-        try {
-          const adoptedSheet = new CSSStyleSheet();
-          for (const rule of sheet.cssRules) {
-            adoptedSheet.insertRule(rule.cssText, adoptedSheet.cssRules.length);
-          }
-
-          this.shadowRoot.adoptedStyleSheets.push(adoptedSheet);
         } catch {
-          const node = sheet.ownerNode.cloneNode();
+          try {
+            const adoptedSheet = new CSSStyleSheet();
+            for (const rule of sheet.cssRules) {
+              adoptedSheet.insertRule(rule.cssText, adoptedSheet.cssRules.length);
+            }
 
-          this.shadowRoot.prepend(node);
-          this.#adoptedStyleElements.push(node);
+            this.shadowRoot.adoptedStyleSheets.push(adoptedSheet);
+          } catch {
+            const node = sheet.ownerNode.cloneNode();
 
-          pending.push(
-            new Promise((resolve, reject) => {
-              node.onload = resolve;
-              node.onerror = reject;
-            }),
-          );
+            this.shadowRoot.prepend(node);
+            this.#adoptedStyleElements.push(node);
+
+            pending.push(
+              new Promise((resolve, reject) => {
+                node.onload = resolve;
+                node.onerror = reject;
+              }),
+            );
+          }
         }
       }
 
@@ -567,16 +566,6 @@ export const make_lustre_client_component = (
   };
 
   window.customElements.define(name, component);
-
-  for (const el of document.querySelectorAll(name)) {
-    const replaced = new component();
-
-    for (const attr of el.attributes) {
-      replaced.setAttribute(attr.name, attr.value);
-    }
-
-    el.replaceWith(replaced);
-  }
 
   return new Ok(undefined);
 };

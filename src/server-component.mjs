@@ -155,10 +155,9 @@ export class LustreServerComponent extends HTMLElement {
 
   async #adoptStyleSheets() {
     const pendingParentStylesheets = [];
-    const documentStyleSheets = Array.from(document.styleSheets);
 
     for (const link of document.querySelectorAll("link[rel=stylesheet]")) {
-      if (documentStyleSheets.includes(link.sheet)) continue;
+      if (link.sheet) continue
 
       pendingParentStylesheets.push(
         new Promise((resolve, reject) => {
@@ -172,6 +171,7 @@ export class LustreServerComponent extends HTMLElement {
 
     while (this.#adoptedStyleElements.length) {
       this.#adoptedStyleElements.shift().remove();
+      this.shadowRoot.firstChild.remove();
     }
 
     this.shadowRoot.adoptedStyleSheets = this.getRootNode().adoptedStyleSheets;
@@ -181,27 +181,28 @@ export class LustreServerComponent extends HTMLElement {
     for (const sheet of document.styleSheets) {
       try {
         this.shadowRoot.adoptedStyleSheets.push(sheet);
-      } catch { }
-
-      try {
-        const adoptedSheet = new CSSStyleSheet();
-        for (const rule of sheet.cssRules) {
-          adoptedSheet.insertRule(rule.cssText, adoptedSheet.cssRules.length);
-        }
-
-        this.shadowRoot.adoptedStyleSheets.push(adoptedSheet);
       } catch {
-        const node = sheet.ownerNode.cloneNode();
 
-        this.shadowRoot.prepend(node);
-        this.#adoptedStyleElements.push(node);
+        try {
+          const adoptedSheet = new CSSStyleSheet();
+          for (const rule of sheet.cssRules) {
+            adoptedSheet.insertRule(rule.cssText, adoptedSheet.cssRules.length);
+          }
 
-        pending.push(
-          new Promise((resolve, reject) => {
-            node.onload = resolve;
-            node.onerror = reject;
-          }),
-        );
+          this.shadowRoot.adoptedStyleSheets.push(adoptedSheet);
+        } catch {
+          const node = sheet.ownerNode.cloneNode();
+
+          this.shadowRoot.prepend(node);
+          this.#adoptedStyleElements.push(node);
+
+          pending.push(
+            new Promise((resolve, reject) => {
+              node.onload = resolve;
+              node.onerror = reject;
+            }),
+          );
+        }
       }
     }
 
