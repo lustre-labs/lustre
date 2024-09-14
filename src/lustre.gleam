@@ -2,7 +2,7 @@
 //// Gleam. This module contains the core API for constructing and communicating
 //// with Lustre applications. If you're new to Lustre or frontend development in
 //// general, make sure you check out the [examples](https://github.com/lustre-labs/lustre/tree/main/examples)
-//// or the [quickstart guide]() to get up to speed!
+//// or the [quickstart guide](./guide/01-quickstart.html) to get up to speed!
 ////
 //// Lustre currently has three kinds of application:
 ////
