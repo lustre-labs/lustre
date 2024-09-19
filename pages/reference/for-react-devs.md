@@ -100,7 +100,7 @@ const decr = () => setCount(count - 1);
 ```
 
 ```jsx
-const dispatch = useReducer((state, action) => {
+const [state, dispatch] = useReducer((state, action) => {
   switch (action.type) {
     case "increment":
       return state + 1;
@@ -134,6 +134,23 @@ fn update(model, msg) {
   }
 }
 ```
+
+We also need to update our main function to include `init` and `update`, as well as moving our `view` code.
+
+```gleam
+fn view() {
+  html.h1([], [html.text("Hello, world")])
+}
+
+pub fn main() {
+  let app = lustre.simple(init, update, view)
+  let assert Ok(_) = lustre.start(app, "#app", Nil)
+}
+```
+
+> More on `lustre.simple` later.
+
+<!-- TODO Some react devs have "PTSD" /s on redux/flux/tea pattern, so maybe a paragraph on how lustre's implementation doesn't have all the painpoints of redux (action types, action creators, dispatch) -->
 
 You can read more about this approach in the [state management guide](https://hexdocs.pm/lustre/guide/02-state-management.html).
 
@@ -194,15 +211,91 @@ function Counter({ initialCount }) {
 ---
 
 **In Lustre** components are more commonly referred to as "view functions". They
-are regular Gleam functions
+are regular Gleam functions.
+
+<!-- TODO see https://hexdocs.pm/lustre/lustre.html#component for more -->
+
+```gleam
+fn view(model) {
+  let count = int.to_string(model)
+  button([on_click(Incr)], [text(count)])
+}
+```
+
+> A reminder that Lustre has no local state primitive, so translating `useState` 1:1 isn't possible in lustre. Instead we need to use the reducer pattern for everything. And while it is possible to make sub-models, thats increases complexity and is discouraged.
 
 ### Fetch data
 
-**In React**...
+**In React** the simplest example is to just fetch data inside of a useEffect with an empty dependency array. This will run our fetch once, after the page has rendered, then once we get a response we store it in a useState which triggers a new render.
+
+<!-- FIXME use the same example as https://hexdocs.pm/lustre/guide/01-quickstart.html -->
+<!-- Also see https://github.com/lustre-labs/lustre/tree/main/examples/05-http-requests -->
+
+```jsx
+const [ip, setIp] = useState();
+
+useEffect(() => {
+  fetch("https://api.ipify.org")
+    .then((response) => response.text())
+    .then((data) => setIp(data));
+}, []);
+```
 
 ---
 
-**In Lustre**...
+**In Lustre** the higher level process is pretty similar, but since we don't have local state lustre we also don't have a way to manage effects locally. We need to pull the effects up to our update & init functions.
+
+<!-- TODO Maybe this should be the last thing actually. -->
+
+The first thing we need to do is change out the [simple app contructor](https://hexdocs.pm/lustre/lustre.html#simple) for the [application constructor](https://hexdocs.pm/lustre/lustre.html#application) to gain side effect support.
+
+```gleam
+pub fn main() {
+  // Change lustre.simple -> lustre.application
+  let app = lustre.application(init, update, view)
+  let assert Ok(_) = lustre.start(app, "#app", Nil)
+}
+```
+
+To simplify the next part, we're going to add `lustre_http` to our project, which
+handles network side effects for us. (more on creating [your own effects here](https://hexdocs.pm/lustre/guide/03-side-effects.html))
+
+```bash
+gleam add lustre_http
+```
+
+```gleam
+pub type Msg {
+  ApiReturnedIpAddress(Result(String, lustre_http.HttpError))
+}
+
+fn init(_flags) {
+  let model = Model(...)
+  let get_ip = lustre_http.get(
+    "https://api.ipify.org",
+    ApiReturnedIpAddress
+  )
+
+  #(model, get_ip)
+}
+
+// This might seem strange, having Model twice. This pattern simply means we'll end up with a type Model and a single Record named Model. This way you can use Model as a type and as a record (records are similar to objects)
+pub type Model {
+  Model(ip_address: Result(String, HttpError))
+}
+
+pub fn update(model, msg) {
+  case msg {
+    ApiReturnedIpAddress(ip) -> #(Model(..model, ip_address: ip), effect.none())
+  }
+}
+
+
+```
+
+> Effects in lustre are similar to [redux-thunks](https://github.com/reduxjs/redux-thunk)
+
+You can read more about effects in the [side effects guide](https://hexdocs.pm/lustre/guide/03-side-effects.html).
 
 ## Where to go next
 
