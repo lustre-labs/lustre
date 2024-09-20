@@ -589,11 +589,8 @@ function diffKeyedChild(
   // insert the incoming child at the current position (and diff against whatever
   // is already there).
   if (keyedChildren.size === 0) {
-    for (const currChild of children(child)) {
-      stack.unshift({ prev: prevChild, next: currChild, parent: el });
-      prevChild = prevChild?.nextSibling;
-    }
-
+    stack.unshift({ prev: prevChild, next: child, parent: el });
+    prevChild = prevChild?.nextSibling;
     return prevChild;
   }
 
