@@ -214,14 +214,15 @@ fn loop(
       actor.continue(next)
     }
 
-    SetSelector(selector) ->
-      actor.Continue(
-        state,
-        Some(
-          state.selector
-          |> process.merge_selector(process.map_selector(selector, Dispatch)),
-        ),
-      )
+    SetSelector(selector) -> {
+      let new_selector =
+        process.merge_selector(
+          state.selector,
+          process.map_selector(selector, Dispatch),
+        )
+
+      actor.Continue(State(..state, selector: new_selector), Some(new_selector))
+    }
 
     Shutdown -> actor.Stop(process.Killed)
   }
