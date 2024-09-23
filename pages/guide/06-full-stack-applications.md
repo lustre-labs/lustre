@@ -5,9 +5,10 @@
 
 # 06 Full stack applications
 
-We've now seen how Lustre can render single-page applications in the browser,
-static HTML templates, and we've seen how hydration can be implemented. In this
-guide we'll look at how to put these pieces together into a single application.
+We've seen how Lustre can render single-page applications in the browser, and
+static HTML templates on the server, powered-up with hydration. In this guide
+we'll look at how to put these pieces together and create our first full stack
+application, before continuing to Server Components and truly combining the two.
 
 To create a full stack Web application in Gleam you will need to adopt a
 _monorepo_. Although Gleam supports multiple targets, and has conditional
