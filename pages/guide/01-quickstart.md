@@ -388,6 +388,12 @@ pub fn view(model: Model) -> element.Element(Msg) {
 }
 ```
 
+> **Note**: Depending on how fast the cat images download, and your browser window
+> size and zoom level, you might notice that when you click the increment counter
+> that the last cat image is duplicated before the new image loads. This is expected.
+> To learn more about why this happens and how to prevent this behaviour, see
+> [rendering lists](https://github.com/lustre-labs/lustre/blob/main/pages/hints/rendering-lists.md)
+
 ## Where to go from here
 
 Believe it or not, you've already seen about 80% of what Lustre has to offer! From
