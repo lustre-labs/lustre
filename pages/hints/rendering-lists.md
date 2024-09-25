@@ -98,7 +98,11 @@ pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       effect.none(),
     )
     ApiReturnedCat(Ok(cat)) -> #(
-      Model(model.count, [#(model.next_id, cat), ..model.cats], model.next_id + 1),
+      Model(
+        model.count,
+        [#(model.next_id, cat), ..model.cats],
+        model.next_id + 1,
+      ),
       effect.none(),
     )
     ApiReturnedCat(Error(_)) -> #(model, effect.none())
