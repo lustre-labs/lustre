@@ -258,8 +258,6 @@ effects, but for now we'll use a community package called
 every time the counter is incremented.
 
 Because this is a separate package, make sure to add it to your project first.
-While we're here, we'll also add `gleam_json` so we can decode the response from
-the cat API:
 
 ```sh
 $ gleam add lustre_http
