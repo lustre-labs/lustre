@@ -258,8 +258,6 @@ effects, but for now we'll use a community package called
 every time the counter is incremented.
 
 Because this is a separate package, make sure to add it to your project first.
-While we're here, we'll also add `gleam_json` so we can decode the response from
-the cat API:
 
 ```sh
 $ gleam add lustre_http
@@ -389,6 +387,12 @@ pub fn view(model: Model) -> element.Element(Msg) {
   ])
 }
 ```
+
+> **Note**: Depending on how fast the cat images download, and your browser window
+> size and zoom level, you might notice that when you click the increment counter
+> that the last cat image is duplicated before the new image loads. This is expected.
+> To learn more about why this happens and how to prevent this behaviour, see
+> [rendering lists](https://github.com/lustre-labs/lustre/blob/main/pages/hints/rendering-lists.md)
 
 ## Where to go from here
 
