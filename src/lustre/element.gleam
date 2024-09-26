@@ -156,7 +156,8 @@ pub fn element(
 ///
 /// **Note**: The key must be unique within the list of children, but it doesn't
 /// have to be unique across the whole application. It's fine to use the same key
-/// in different lists.
+/// in different lists. Lustre will display a warning in the browser console when
+/// it detects duplicate keys in a list.
 ///
 ///
 pub fn keyed(
