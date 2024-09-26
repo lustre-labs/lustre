@@ -58,78 +58,14 @@ to better track which items have changed, moved, been removed, etc. Keyed elemen
 were intentionally not used in the quickstart tutorial in an attempt to focus on
 the fundamentals.
 
-The key must be unique within a list, and the cat API could return the same image
-since it's random. This means the image slug is not suitable for use as a key.
-One solution is to make a synthetic key and pass it around as part of the model.
-This means we don't have to add additional depenencies such as a UUID library.
-
-> **Note:** Lustre will display a warning in the browser console when it detects
-> duplicate keys.
-
-Update the model so it carries the next synthetic id. The list of cats now also includes
-an `id` along with the URL slug, which will be used as the element key:
+Here is one possible way to use `element.keyed` in the `view` function, where the
+image slug is used as the key:
 
 ```gleam
-pub type Model {
-  Model(count: Int, cats: List(#(Int, String)), next_id: Int)
-}
-```
-
-The `init` function needs updating for the new model constructor:
-
-```gleam
-fn init(_flags) -> #(Model, effect.Effect(Msg)) {
-  #(Model(0, [], 0), effect.none())
-}
-```
-
-In the `update` function, during the `ApiReturnedCat(Ok(cat))` message match, the
-`next_id` is used when adding the new cat to the list. The `next_id` is also 
-incremented so any subsequent uses of it will have a new value. The 
-`UserDecrementedCount` message match needs to be updated to support the new model
-constructor also.
-
-```gleam
-pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
-  case msg {
-    UserIncrementedCount -> #(Model(..model, count: model.count + 1), get_cat())
-    UserDecrementedCount -> #(
-      Model(model.count - 1, list.drop(model.cats, 1), model.next_id),
-      effect.none(),
-    )
-    ApiReturnedCat(Ok(cat)) -> #(
-      Model(
-        model.count,
-        [#(model.next_id, cat), ..model.cats],
-        model.next_id + 1,
-      ),
-      effect.none(),
-    )
-    ApiReturnedCat(Error(_)) -> #(model, effect.none())
-  }
-}
-```
-
-Finally, update the `view` function to use `element.keyed`:
-
-```gleam
-pub fn view(model: Model) -> element.Element(Msg) {
-  let count = int.to_string(model.count)
-
-  html.div([], [
-    html.button([event.on_click(UserIncrementedCount)], [element.text("+")]),
-    element.text(count),
-    html.button([event.on_click(UserDecrementedCount)], [element.text("-")]),
-    element.keyed(
-      html.div([], _),
-      list.map(model.cats, fn(item) {
-        let #(id, cat) = item
-        #(
-          int.to_string(id),
-          html.img([attribute.src("https://cataas.com/cat/" <> cat)]),
-        )
-      }),
-    ),
-  ])
-}
+element.keyed(
+  html.div([], _),
+  list.map(model.cats, fn(cat) {
+    #(cat, html.img([attribute.src("https://cataas.com/cat/" <> cat)]))
+  }),
+),
 ```
