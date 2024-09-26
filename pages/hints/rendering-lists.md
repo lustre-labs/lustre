@@ -37,7 +37,12 @@ This can be pulled from the browser cache so is immediately displayed without th
 experiencing any delay. The visual issue presents as a duplicate `a` cat image until
 image `b` is downloaded, at which point it replaces the first `a` image.
 
-To try and represent this in a different way:
+> **Note:** Because the cat API returns a random image, it is possible for the final
+> result to be a duplicate cat image. This is a different situation from the one
+> described above. Using the slugs from above, this situation would produce
+> a list `[a, a]`.
+
+To try and represent this in a different way by showing how the DOM might change:
 
 ```
 Increment ->                 Increment ->
@@ -45,10 +50,14 @@ Increment ->                 Increment ->
                              -- added -->  <img href="a">
 ```
 
-> **Note:** Because the cat API returns a random image, it is possible for the final
-> result to be a duplicate cat image. This is a different situation from the one
-> described above. Using the slugs from above, this situation would produce
-> a list `[a, a]`.
+With `element.keyed`, these changes might look more like:
+    
+```
+Increment ->                 Increment ->
+                             -- added -->  <img href="b">
+             <img href="a">  -no change->  <img href="a">
+```
+
 
 ### Fixing the quickstart program
 
