@@ -90,7 +90,7 @@ function patch(root, diff2, dispatch, stylesOffset = 0) {
         }
         handlersForEl.set(eventName, callback);
         prev.setAttribute(name, value);
-      } else if ((name.startsWith("delegated:data-") || name.startsWith("delegated:aria-")) && prev instanceof HTMLSlotElement) {
+      } else if ((name.startsWith("delegate:data-") || name.startsWith("delegate:aria-")) && prev instanceof HTMLSlotElement) {
         delegated.push([name.slice(10), value]);
       } else {
         prev.setAttribute(name, value);
@@ -164,7 +164,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
       }
       handlersForEl.set(eventName, callback);
       el.setAttribute(name, value);
-    } else if (name.startsWith("delegated:data-") || name.startsWith("delegated:aria-")) {
+    } else if (name.startsWith("delegate:data-") || name.startsWith("delegate:aria-")) {
       el.setAttribute(name, value);
       delegated.push([name.slice(10), value]);
     } else if (name === "class") {
