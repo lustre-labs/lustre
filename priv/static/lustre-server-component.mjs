@@ -78,6 +78,7 @@ function patch(root, diff2, dispatch, stylesOffset = 0) {
     const patches = updated[1];
     const prev = getDeepChild(rootParent, key, stylesOffset);
     const handlersForEl = registeredHandlers.get(prev);
+    const delegated = [];
     for (const created of patches[0]) {
       const name = created[0];
       const value = created[1];
@@ -85,13 +86,22 @@ function patch(root, diff2, dispatch, stylesOffset = 0) {
         const eventName = name.slice(15);
         const callback = dispatch(lustreServerEventHandler);
         if (!handlersForEl.has(eventName)) {
-          el.addEventListener(eventName, lustreGenericEventHandler);
+          prev.addEventListener(eventName, lustreGenericEventHandler);
         }
         handlersForEl.set(eventName, callback);
-        el.setAttribute(name, value);
+        prev.setAttribute(name, value);
+      } else if ((name.startsWith("delegate:data-") || name.startsWith("delegate:aria-")) && prev instanceof HTMLSlotElement) {
+        delegated.push([name.slice(10), value]);
       } else {
         prev.setAttribute(name, value);
         prev[name] = value;
+      }
+      if (delegated.length > 0) {
+        for (const child of prev.assignedElements()) {
+          for (const [name2, value2] of delegated) {
+            child[name2] = value2;
+          }
+        }
       }
     }
     for (const removed of patches[1]) {
@@ -109,14 +119,14 @@ function patch(root, diff2, dispatch, stylesOffset = 0) {
 function createElementNode({ prev, next, dispatch, stack }) {
   const namespace = next.namespace || "http://www.w3.org/1999/xhtml";
   const canMorph = prev && prev.nodeType === Node.ELEMENT_NODE && prev.localName === next.tag && prev.namespaceURI === (next.namespace || "http://www.w3.org/1999/xhtml");
-  const el2 = canMorph ? prev : namespace ? document.createElementNS(namespace, next.tag) : document.createElement(next.tag);
+  const el = canMorph ? prev : namespace ? document.createElementNS(namespace, next.tag) : document.createElement(next.tag);
   let handlersForEl;
-  if (!registeredHandlers.has(el2)) {
+  if (!registeredHandlers.has(el)) {
     const emptyHandlers = /* @__PURE__ */ new Map();
-    registeredHandlers.set(el2, emptyHandlers);
+    registeredHandlers.set(el, emptyHandlers);
     handlersForEl = emptyHandlers;
   } else {
-    handlersForEl = registeredHandlers.get(el2);
+    handlersForEl = registeredHandlers.get(el);
   }
   const prevHandlers = canMorph ? new Set(handlersForEl.keys()) : null;
   const prevAttributes = canMorph ? new Set(Array.from(prev.attributes, (a) => a.name)) : null;
@@ -126,21 +136,22 @@ function createElementNode({ prev, next, dispatch, stack }) {
   if (canMorph && next.tag === "textarea") {
     const innertText = next.children[Symbol.iterator]().next().value?.content;
     if (innertText !== void 0)
-      el2.value = innertText;
+      el.value = innertText;
   }
+  const delegated = [];
   for (const attr of next.attrs) {
     const name = attr[0];
     const value = attr[1];
     if (attr.as_property) {
-      if (el2[name] !== value)
-        el2[name] = value;
+      if (el[name] !== value)
+        el[name] = value;
       if (canMorph)
         prevAttributes.delete(name);
     } else if (name.startsWith("on")) {
       const eventName = name.slice(2);
       const callback = dispatch(value, eventName === "input");
       if (!handlersForEl.has(eventName)) {
-        el2.addEventListener(eventName, lustreGenericEventHandler);
+        el.addEventListener(eventName, lustreGenericEventHandler);
       }
       handlersForEl.set(eventName, callback);
       if (canMorph)
@@ -149,10 +160,13 @@ function createElementNode({ prev, next, dispatch, stack }) {
       const eventName = name.slice(15);
       const callback = dispatch(lustreServerEventHandler);
       if (!handlersForEl.has(eventName)) {
-        el2.addEventListener(eventName, lustreGenericEventHandler);
+        el.addEventListener(eventName, lustreGenericEventHandler);
       }
       handlersForEl.set(eventName, callback);
-      el2.setAttribute(name, value);
+      el.setAttribute(name, value);
+    } else if (name.startsWith("delegate:data-") || name.startsWith("delegate:aria-")) {
+      el.setAttribute(name, value);
+      delegated.push([name.slice(10), value]);
     } else if (name === "class") {
       className = className === null ? value : className + " " + value;
     } else if (name === "style") {
@@ -160,40 +174,51 @@ function createElementNode({ prev, next, dispatch, stack }) {
     } else if (name === "dangerous-unescaped-html") {
       innerHTML = value;
     } else {
-      if (el2.getAttribute(name) !== value)
-        el2.setAttribute(name, value);
+      if (el.getAttribute(name) !== value)
+        el.setAttribute(name, value);
       if (name === "value" || name === "selected")
-        el2[name] = value;
+        el[name] = value;
       if (canMorph)
         prevAttributes.delete(name);
     }
   }
   if (className !== null) {
-    el2.setAttribute("class", className);
+    el.setAttribute("class", className);
     if (canMorph)
       prevAttributes.delete("class");
   }
   if (style !== null) {
-    el2.setAttribute("style", style);
+    el.setAttribute("style", style);
     if (canMorph)
       prevAttributes.delete("style");
   }
   if (canMorph) {
     for (const attr of prevAttributes) {
-      el2.removeAttribute(attr);
+      el.removeAttribute(attr);
     }
     for (const eventName of prevHandlers) {
       handlersForEl.delete(eventName);
-      el2.removeEventListener(eventName, lustreGenericEventHandler);
+      el.removeEventListener(eventName, lustreGenericEventHandler);
     }
   }
-  if (next.key !== void 0 && next.key !== "") {
-    el2.setAttribute("data-lustre-key", next.key);
-  } else if (innerHTML !== null) {
-    el2.innerHTML = innerHTML;
-    return el2;
+  if (next.tag === "slot") {
+    window.queueMicrotask(() => {
+      for (const child of el.assignedElements()) {
+        for (const [name, value] of delegated) {
+          if (!child.hasAttribute(name)) {
+            child.setAttribute(name, value);
+          }
+        }
+      }
+    });
   }
-  let prevChild = el2.firstChild;
+  if (next.key !== void 0 && next.key !== "") {
+    el.setAttribute("data-lustre-key", next.key);
+  } else if (innerHTML !== null) {
+    el.innerHTML = innerHTML;
+    return el;
+  }
+  let prevChild = el.firstChild;
   let seenKeys = null;
   let keyedChildren = null;
   let incomingKeyedChildren = null;
@@ -208,7 +233,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
       prevChild = diffKeyedChild(
         prevChild,
         child,
-        el2,
+        el,
         stack,
         incomingKeyedChildren,
         keyedChildren,
@@ -217,16 +242,16 @@ function createElementNode({ prev, next, dispatch, stack }) {
     }
   } else {
     for (const child of children(next)) {
-      stack.unshift({ prev: prevChild, next: child, parent: el2 });
+      stack.unshift({ prev: prevChild, next: child, parent: el });
       prevChild = prevChild?.nextSibling;
     }
   }
   while (prevChild) {
     const next2 = prevChild.nextSibling;
-    el2.removeChild(prevChild);
+    el.removeChild(prevChild);
     prevChild = next2;
   }
-  return el2;
+  return el;
 }
 var registeredHandlers = /* @__PURE__ */ new WeakMap();
 function lustreGenericEventHandler(event2) {
@@ -243,10 +268,10 @@ function lustreGenericEventHandler(event2) {
   handlersForEventTarget.get(event2.type)(event2);
 }
 function lustreServerEventHandler(event2) {
-  const el2 = event2.currentTarget;
-  const tag = el2.getAttribute(`data-lustre-on-${event2.type}`);
-  const data = JSON.parse(el2.getAttribute("data-lustre-data") || "{}");
-  const include = JSON.parse(el2.getAttribute("data-lustre-include") || "[]");
+  const el = event2.currentTarget;
+  const tag = el.getAttribute(`data-lustre-on-${event2.type}`);
+  const data = JSON.parse(el.getAttribute("data-lustre-data") || "{}");
+  const include = JSON.parse(el.getAttribute("data-lustre-include") || "[]");
   switch (event2.type) {
     case "input":
     case "change":
@@ -273,10 +298,10 @@ function lustreServerEventHandler(event2) {
     )
   };
 }
-function getKeyedChildren(el2) {
+function getKeyedChildren(el) {
   const keyedChildren = /* @__PURE__ */ new Map();
-  if (el2) {
-    for (const child of children(el2)) {
+  if (el) {
+    for (const child of children(el)) {
       const key = child?.key || child?.getAttribute?.("data-lustre-key");
       if (key)
         keyedChildren.set(key, child);
@@ -284,10 +309,10 @@ function getKeyedChildren(el2) {
   }
   return keyedChildren;
 }
-function getDeepChild(el2, path, stylesOffset) {
+function getDeepChild(el, path, stylesOffset) {
   let n;
   let rest;
-  let child = el2;
+  let child = el;
   let isFirstInPath = true;
   while ([n, ...rest] = path, n !== void 0) {
     child = child.childNodes.item(isFirstInPath ? n + stylesOffset : n);
@@ -296,43 +321,41 @@ function getDeepChild(el2, path, stylesOffset) {
   }
   return child;
 }
-function diffKeyedChild(prevChild, child, el2, stack, incomingKeyedChildren, keyedChildren, seenKeys) {
+function diffKeyedChild(prevChild, child, el, stack, incomingKeyedChildren, keyedChildren, seenKeys) {
   while (prevChild && !incomingKeyedChildren.has(prevChild.getAttribute("data-lustre-key"))) {
     const nextChild = prevChild.nextSibling;
-    el2.removeChild(prevChild);
+    el.removeChild(prevChild);
     prevChild = nextChild;
   }
   if (keyedChildren.size === 0) {
-    for (const currChild of children(child)) {
-      stack.unshift({ prev: prevChild, next: currChild, parent: el2 });
-      prevChild = prevChild?.nextSibling;
-    }
+    stack.unshift({ prev: prevChild, next: child, parent: el });
+    prevChild = prevChild?.nextSibling;
     return prevChild;
   }
   if (seenKeys.has(child.key)) {
     console.warn(`Duplicate key found in Lustre vnode: ${child.key}`);
-    stack.unshift({ prev: null, next: child, parent: el2 });
+    stack.unshift({ prev: null, next: child, parent: el });
     return prevChild;
   }
   seenKeys.add(child.key);
   const keyedChild = keyedChildren.get(child.key);
   if (!keyedChild && !prevChild) {
-    stack.unshift({ prev: null, next: child, parent: el2 });
+    stack.unshift({ prev: null, next: child, parent: el });
     return prevChild;
   }
   if (!keyedChild && prevChild !== null) {
     const placeholder = document.createTextNode("");
-    el2.insertBefore(placeholder, prevChild);
-    stack.unshift({ prev: placeholder, next: child, parent: el2 });
+    el.insertBefore(placeholder, prevChild);
+    stack.unshift({ prev: placeholder, next: child, parent: el });
     return prevChild;
   }
   if (!keyedChild || keyedChild === prevChild) {
-    stack.unshift({ prev: prevChild, next: child, parent: el2 });
+    stack.unshift({ prev: prevChild, next: child, parent: el });
     prevChild = prevChild?.nextSibling;
     return prevChild;
   }
-  el2.insertBefore(keyedChild, prevChild);
-  stack.unshift({ prev: keyedChild, next: child, parent: el2 });
+  el.insertBefore(keyedChild, prevChild);
+  stack.unshift({ prev: keyedChild, next: child, parent: el });
   return prevChild;
 }
 function* children(element) {

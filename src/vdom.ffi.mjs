@@ -187,6 +187,7 @@ export function patch(root, diff, dispatch, stylesOffset = 0) {
     const patches = updated[1];
     const prev = getDeepChild(rootParent, key, stylesOffset);
     const handlersForEl = registeredHandlers.get(prev);
+    const delegated = [];
 
     for (const created of patches[0]) {
       const name = created[0];
@@ -197,14 +198,28 @@ export function patch(root, diff, dispatch, stylesOffset = 0) {
         const callback = dispatch(lustreServerEventHandler);
 
         if (!handlersForEl.has(eventName)) {
-          el.addEventListener(eventName, lustreGenericEventHandler);
+          prev.addEventListener(eventName, lustreGenericEventHandler);
         }
 
         handlersForEl.set(eventName, callback);
-        el.setAttribute(name, value);
+        prev.setAttribute(name, value);
+      } else if (
+        (name.startsWith("delegate:data-") ||
+          name.startsWith("delegate:aria-")) &&
+        prev instanceof HTMLSlotElement
+      ) {
+        delegated.push([name.slice(10), value]);
       } else {
         prev.setAttribute(name, value);
         prev[name] = value;
+      }
+
+      if (delegated.length > 0) {
+        for (const child of prev.assignedElements()) {
+          for (const [name, value] of delegated) {
+            child[name] = value;
+          }
+        }
       }
     }
 
@@ -305,6 +320,8 @@ function createElementNode({ prev, next, dispatch, stack }) {
     if (innertText !== undefined) el.value = innertText;
   }
 
+  const delegated = [];
+
   // In Gleam custom type fields have numeric indexes if they aren't labelled
   // but they *aren't* able to be destructured, so we have to do normal array
   // access below.
@@ -347,6 +364,12 @@ function createElementNode({ prev, next, dispatch, stack }) {
 
       handlersForEl.set(eventName, callback);
       el.setAttribute(name, value);
+    } else if (
+      name.startsWith("delegate:data-") ||
+      name.startsWith("delegate:aria-")
+    ) {
+      el.setAttribute(name, value);
+      delegated.push([name.slice(10), value]);
     }
     // These attributes are special-cased as explained above.
     else if (name === "class") {
@@ -388,6 +411,18 @@ function createElementNode({ prev, next, dispatch, stack }) {
       handlersForEl.delete(eventName);
       el.removeEventListener(eventName, lustreGenericEventHandler);
     }
+  }
+
+  if (next.tag === "slot") {
+    window.queueMicrotask(() => {
+      for (const child of el.assignedElements()) {
+        for (const [name, value] of delegated) {
+          if (!child.hasAttribute(name)) {
+            child.setAttribute(name, value);
+          }
+        }
+      }
+    });
   }
 
   // Keyed elements have the property explicitly set on the DOM so we can easily
