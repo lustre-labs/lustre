@@ -150,8 +150,6 @@ pub fn main() {
 
 > More on `lustre.simple` later.
 
-<!-- TODO Some react devs have "PTSD" /s on redux/flux/tea pattern, so maybe a paragraph on how lustre's implementation doesn't have all the painpoints of redux (action types, action creators, dispatch) -->
-
 You can read more about this approach in the [state management guide](https://hexdocs.pm/lustre/guide/02-state-management.html).
 
 ### Handle events
@@ -241,8 +239,6 @@ comboboxes with complex keyboard interractions is a good use case.
 This will run our fetch once, after the page has rendered, then once we get a
 response we store it in a useState which triggers a new render.
 
-<!-- FIXME use the same example as https://hexdocs.pm/lustre/guide/01-quickstart.html -->
-
 ```jsx
 const [ip, setIp] = useState();
 
@@ -258,8 +254,6 @@ useEffect(() => {
 **In Lustre** the higher level process is pretty similar, but since we don't have
 local state lustre we also don't have a way to manage effects locally. We need to
 pull the effects up to our update & init functions.
-
-<!-- TODO Maybe this should be the last thing actually. -->
 
 The first thing we need to do is change out the [simple app contructor](https://hexdocs.pm/lustre/lustre.html#simple)
 for the final [application constructor](https://hexdocs.pm/lustre/lustre.html#application) which supports side effects.
