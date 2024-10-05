@@ -252,7 +252,7 @@ useEffect(() => {
 ---
 
 **In Lustre** the higher level process is pretty similar, but since we don't have
-local state lustre we also don't have a way to manage effects locally. We need to
+local state in lustre we also don't have a way to manage effects locally. We need to
 pull the effects up to our update & init functions.
 
 The first thing we need to do is change out the [simple app contructor](https://hexdocs.pm/lustre/lustre.html#simple)
