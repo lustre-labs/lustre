@@ -194,6 +194,14 @@ div([on("mousemove", fn(event) {
 }], [...])
 ```
 
+This might seem very familiar, if you've used Redux heavily. A lot of React devs
+have scars from those days and tend to dislike anything similar. Don't worry!
+Gleam takes inspiration from Elm, which is what originally inspired Redux.
+
+You might have noticed lustre already has a lot less Boilerplate, which is the
+first big complaint of redux. The second being lack of built in support for
+async, which we'll see is a key part of Lustre (and Elm).
+
 ### Write a component
 
 **In React** components are functions that take a single `props` argument and
@@ -213,8 +221,6 @@ function Counter({ initialCount }) {
 **In Lustre** components are more commonly referred to as "view functions". They
 are regular Gleam functions.
 
-<!-- TODO see https://hexdocs.pm/lustre/lustre.html#component for more -->
-
 ```gleam
 fn view(model) {
   let count = int.to_string(model)
@@ -222,14 +228,20 @@ fn view(model) {
 }
 ```
 
-> A reminder that Lustre has no local state primitive, so translating `useState` 1:1 isn't possible in lustre. Instead we need to use the reducer pattern for everything. And while it is possible to make sub-models, thats increases complexity and is discouraged.
+Generally, in lustre you'll just use "view functions" which similar to writing
+React components without any hooks and thus no side effect. Luster does have a
+primitive, [lustre.component](https://hexdocs.pm/lustre/lustre.html#component),
+for cases where local state is needed, but they're a lot heavier compared to
+components in React. Avoid using them for things like buttons but things like
+comboboxes with complex keyboard interractions is a good use case.
 
 ### Fetch data
 
-**In React** the simplest example is to just fetch data inside of a useEffect with an empty dependency array. This will run our fetch once, after the page has rendered, then once we get a response we store it in a useState which triggers a new render.
+**In React** the simplest example of data fetching is done with a useEffect.
+This will run our fetch once, after the page has rendered, then once we get a
+response we store it in a useState which triggers a new render.
 
 <!-- FIXME use the same example as https://hexdocs.pm/lustre/guide/01-quickstart.html -->
-<!-- Also see https://github.com/lustre-labs/lustre/tree/main/examples/05-http-requests -->
 
 ```jsx
 const [ip, setIp] = useState();
@@ -243,11 +255,14 @@ useEffect(() => {
 
 ---
 
-**In Lustre** the higher level process is pretty similar, but since we don't have local state lustre we also don't have a way to manage effects locally. We need to pull the effects up to our update & init functions.
+**In Lustre** the higher level process is pretty similar, but since we don't have
+local state lustre we also don't have a way to manage effects locally. We need to
+pull the effects up to our update & init functions.
 
 <!-- TODO Maybe this should be the last thing actually. -->
 
-The first thing we need to do is change out the [simple app contructor](https://hexdocs.pm/lustre/lustre.html#simple) for the [application constructor](https://hexdocs.pm/lustre/lustre.html#application) to gain side effect support.
+The first thing we need to do is change out the [simple app contructor](https://hexdocs.pm/lustre/lustre.html#simple)
+for the final [application constructor](https://hexdocs.pm/lustre/lustre.html#application) which supports side effects.
 
 ```gleam
 pub fn main() {
@@ -257,8 +272,8 @@ pub fn main() {
 }
 ```
 
-To simplify the next part, we're going to add `lustre_http` to our project, which
-handles network side effects for us. (more on creating [your own effects here](https://hexdocs.pm/lustre/guide/03-side-effects.html))
+Next we're going to add `lustre_http` to our project, which handles creating
+effects from network requests for us. (more on creating [your own effects here](https://hexdocs.pm/lustre/guide/03-side-effects.html))
 
 ```bash
 gleam add lustre_http
@@ -279,7 +294,7 @@ fn init(_flags) {
   #(model, get_ip)
 }
 
-// This might seem strange, having Model twice. This pattern simply means we'll end up with a type Model and a single Record named Model. This way you can use Model as a type and as a record (records are similar to objects)
+// If you're new to Gleam, this double "Model" might seem strange. Just think of the inner Model as the "Default variant".
 pub type Model {
   Model(ip_address: Result(String, HttpError))
 }
@@ -292,8 +307,6 @@ pub fn update(model, msg) {
 
 
 ```
-
-> Effects in lustre are similar to [redux-thunks](https://github.com/reduxjs/redux-thunk)
 
 You can read more about effects in the [side effects guide](https://hexdocs.pm/lustre/guide/03-side-effects.html).
 
