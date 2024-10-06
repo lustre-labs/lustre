@@ -105,13 +105,13 @@ export class LustreClientApplication {
         const vdom = this.#view(this.#model);
         const dispatch =
           (handler, immediate = false) =>
-            (event) => {
-              const result = handler(event);
+          (event) => {
+            const result = handler(event);
 
-              if (result instanceof Ok) {
-                this.send(new Dispatch(result[0], immediate));
-              }
-            };
+            if (result instanceof Ok) {
+              this.send(new Dispatch(result[0], immediate));
+            }
+          };
         const prev =
           this.root.firstChild ??
           this.root.appendChild(document.createTextNode(""));
@@ -192,13 +192,13 @@ export class LustreClientApplication {
     const vdom = this.#view(this.#model);
     const dispatch =
       (handler, immediate = false) =>
-        (event) => {
-          const result = handler(event);
+      (event) => {
+        const result = handler(event);
 
-          if (result instanceof Ok) {
-            this.send(new Dispatch(result[0], immediate));
-          }
-        };
+        if (result instanceof Ok) {
+          this.send(new Dispatch(result[0], immediate));
+        }
+      };
     const prev =
       this.root.firstChild ??
       this.root.appendChild(document.createTextNode(""));
@@ -228,7 +228,7 @@ export class LustreClientApplication {
             composed: true,
           }),
         );
-      const select = () => { };
+      const select = () => {};
 
       effect({ dispatch, emit, select });
     }
@@ -380,16 +380,16 @@ export const make_lustre_client_component = (
           const vdom = view(this.#model);
           const dispatch =
             (handler, immediate = false) =>
-              (event) => {
-                const result = handler(event);
+            (event) => {
+              const result = handler(event);
 
-                if (result instanceof Ok) {
-                  this.send(new Dispatch(result[0], immediate));
-                }
-              };
-          const prev = this.shadowRoot.childNodes[this.#adoptedStyleElements.length] ??
+              if (result instanceof Ok) {
+                this.send(new Dispatch(result[0], immediate));
+              }
+            };
+          const prev =
+            this.shadowRoot.childNodes[this.#adoptedStyleElements.length] ??
             this.shadowRoot.appendChild(document.createTextNode(""));
-
 
           morph(prev, vdom, dispatch);
         }
@@ -457,18 +457,16 @@ export const make_lustre_client_component = (
       const vdom = view(this.#model);
       const dispatch =
         (handler, immediate = false) =>
-          (event) => {
-            const result = handler(event);
+        (event) => {
+          const result = handler(event);
 
-            if (result instanceof Ok) {
-              this.send(new Dispatch(result[0], immediate));
-            }
-          };
-      const prev = this.shadowRoot.childNodes[this.#adoptedStyleElements.length] ??
+          if (result instanceof Ok) {
+            this.send(new Dispatch(result[0], immediate));
+          }
+        };
+      const prev =
+        this.shadowRoot.childNodes[this.#adoptedStyleElements.length] ??
         this.shadowRoot.appendChild(document.createTextNode(""));
-
-
-      console.log({ prev })
 
       morph(prev, vdom, dispatch);
     }
@@ -495,7 +493,7 @@ export const make_lustre_client_component = (
               composed: true,
             }),
           );
-        const select = () => { };
+        const select = () => {};
 
         effect({ dispatch, emit, select });
       }
@@ -512,7 +510,7 @@ export const make_lustre_client_component = (
     async #adoptStyleSheets() {
       const pendingParentStylesheets = [];
       for (const link of document.querySelectorAll("link[rel=stylesheet]")) {
-        if (link.sheet) continue
+        if (link.sheet) continue;
 
         pendingParentStylesheets.push(
           new Promise((resolve, reject) => {
@@ -541,7 +539,10 @@ export const make_lustre_client_component = (
           try {
             const adoptedSheet = new CSSStyleSheet();
             for (const rule of sheet.cssRules) {
-              adoptedSheet.insertRule(rule.cssText, adoptedSheet.cssRules.length);
+              adoptedSheet.insertRule(
+                rule.cssText,
+                adoptedSheet.cssRules.length,
+              );
             }
 
             this.shadowRoot.adoptedStyleSheets.push(adoptedSheet);
@@ -691,7 +692,7 @@ export class LustreServerApplication {
             composed: true,
           }),
         );
-      const select = () => { };
+      const select = () => {};
 
       effect({ dispatch, emit, select });
     }
