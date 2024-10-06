@@ -59,7 +59,7 @@ pub type Element(msg) =
 
 /// A general function for constructing any kind of element. In most cases you
 /// will want to use the [`lustre/element/html`](./element/html.html) instead but this
-/// function is particularly handing when constructing custom elements, either
+/// function is particularly handy when constructing custom elements, either
 /// from your own Lustre components or from external JavaScript libraries.
 ///
 /// **Note**: Because Lustre is primarily used to create HTML, this function
