@@ -120,7 +120,7 @@ pub fn main() {
       html.div([], [
         html.h1([], [element.text("Hello, world!")]),
         html.figure([], [
-          html.img([attribute.src("https://cataas.com/cat")]),
+          html.img([attribute.src("https://cdn2.thecatapi.com/images/b7k.jpg")]),
           html.figcaption([], [element.text("A cat!")])
         ])
       ])
@@ -295,8 +295,12 @@ need to return a _tuple_ of the new model and any effects. We can amend our `ini
 function like so:
 
 ```gleam
+pub type Cat {
+  Cat(id: String, url: String)
+}
+
 pub type Model {
-  Model(count: Int, cats: List(String))
+  Model(count: Int, cats: List(Cat))
 }
 
 fn init(_flags) -> #(Model, effect.Effect(Msg)) {
@@ -322,7 +326,7 @@ to modify our `Msg` type to include a new variant for the response:
 pub type Msg {
   UserIncrementedCount
   UserDecrementedCount
-  ApiReturnedCat(Result(String, lustre_http.HttpError))
+  ApiReturnedCats(Result(List(Cat), lustre_http.HttpError))
 }
 ```
 
@@ -337,16 +341,26 @@ pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   case msg {
     UserIncrementedCount -> #(Model(..model, count: model.count + 1), get_cat())
     UserDecrementedCount -> #(Model(..model, count: model.count - 1), effect.none())
-    ApiReturnedCat(Ok(cat)) -> #(Model(..model, cats: [cat, ..model.cats]), effect.none())
-    ApiReturnedCat(Error(_)) -> #(model, effect.none())
+    ApiReturnedCats(Ok(api_cats)) ->
+      case api_cats {
+        [] -> #(model, effect.none())
+
+        [cat, ..] -> #(Model(..model, cats: [cat, ..model.cats]), effect.none())
+      }
+    ApiReturnedCats(Error(_)) -> #(model, effect.none())
   }
 }
 
 fn get_cat() -> effect.Effect(Msg) {
-  let decoder = dynamic.field("_id", dynamic.string)
-  let expect = lustre_http.expect_json(decoder, ApiReturnedCat)
+  let decoder =
+    dynamic.decode2(
+      Cat,
+      dynamic.field("id", dynamic.string),
+      dynamic.field("url", dynamic.string),
+    )
+  let expect = lustre_http.expect_json(dynamic.list(decoder), ApiReturnedCats)
 
-  lustre_http.get("https://cataas.com/cat?json=true", expect)
+  lustre_http.get("https://api.thecatapi.com/v1/images/search", expect)
 }
 ```
 
@@ -381,7 +395,11 @@ pub fn view(model: Model) -> element.Element(Msg) {
     html.div(
       [],
       list.map(model.cats, fn(cat) {
-        html.img([attribute.src("https://cataas.com/cat/" <> cat)])
+        html.img([
+          attribute.src(cat.url),
+          attribute.width(400),
+          attribute.height(400),
+        ])
       }),
     ),
   ])
