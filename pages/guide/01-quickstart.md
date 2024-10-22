@@ -341,12 +341,10 @@ pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   case msg {
     UserIncrementedCount -> #(Model(..model, count: model.count + 1), get_cat())
     UserDecrementedCount -> #(Model(..model, count: model.count - 1), effect.none())
-    ApiReturnedCats(Ok(api_cats)) ->
-      case api_cats {
-        [] -> #(model, effect.none())
-
-        [cat, ..] -> #(Model(..model, cats: [cat, ..model.cats]), effect.none())
-      }
+    ApiReturnedCats(Ok(api_cats)) -> {
+      let assert [cat, ..] = api_cats
+      #(Model(..model, cats: [cat, ..model.cats]), effect.none())
+    }
     ApiReturnedCats(Error(_)) -> #(model, effect.none())
   }
 }
