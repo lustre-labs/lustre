@@ -283,6 +283,11 @@ pub fn alt(text: String) -> Attribute(msg) {
   attribute("alt", text)
 }
 
+///
+pub fn content(text: String) -> Attribute(msg) {
+  attribute("content", text)
+}
+
 // AUDIO AND VIDEO -------------------------------------------------------------
 
 ///
