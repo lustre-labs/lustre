@@ -16,16 +16,6 @@ if (window && window.customElements) {
       }
     },
   );
-
-  const stylesheet = new CSSStyleSheet();
-
-  stylesheet.replaceSync(`
-    lustre-fragment {
-      display: contents;
-    }
-  `);
-
-  document.adoptedStyleSheets = [stylesheet];
 }
 
 /**
@@ -46,10 +36,6 @@ if (window && window.customElements) {
  *
  * @typedef {Object} VMap
  * @property {() => VElement} subtree
- *
- * @typedef {Object} VFragment
- * @property {Iterable<VElement>} elements
- * @property {string} key
  *
  * @typedef {{ 0: string, 1: any, as_property: boolean }} VAttribute
  * @typedef {{ 0: string, 1: Function }} VEvent
@@ -134,17 +120,6 @@ export function morph(prev, next, dispatch) {
       }
 
       out ??= created;
-    }
-
-    // If this happens, then the top level Element is a Fragment `prev` should be
-    // the first element of the given fragment. Functionally, a fragment as the
-    // first child means that document -> body will be the parent of the first level
-    // of children
-    else if (next.elements !== undefined) {
-      for (const fragmentElement of forceChild(next)) {
-        stack.unshift({ prev, next: fragmentElement, parent });
-        prev = prev?.nextSibling;
-      }
     }
   }
 
@@ -232,7 +207,10 @@ export function patch(root, diff, dispatch, stylesOffset = 0) {
         delegated.push([name.slice(10), value]);
       } else {
         prev.setAttribute(name, value);
-        prev[name] = value;
+
+        if (name === "value" || name === "selected") {
+          prev[name] = value;
+        }
       }
 
       if (delegated.length > 0) {
@@ -245,12 +223,12 @@ export function patch(root, diff, dispatch, stylesOffset = 0) {
     }
 
     for (const removed of patches[1]) {
-      if (removed[0].startsWith("data-lustre-on-")) {
-        const eventName = removed[0].slice(15);
+      if (removed.startsWith("data-lustre-on-")) {
+        const eventName = removed.slice(15);
         prev.removeEventListener(eventName, lustreGenericEventHandler);
         handlersForEl.delete(eventName);
       } else {
-        prev.removeAttribute(removed[0]);
+        prev.removeAttribute(removed);
       }
     }
   }
@@ -721,11 +699,7 @@ function* children(element) {
  *
  */
 function* forceChild(element) {
-  if (element.elements !== undefined) {
-    for (const inner of element.elements) {
-      yield* forceChild(inner);
-    }
-  } else if (element.subtree !== undefined) {
+  if (element.subtree !== undefined) {
     yield* forceChild(element.subtree());
   } else {
     yield element;
