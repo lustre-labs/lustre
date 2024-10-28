@@ -358,7 +358,7 @@ fn attribute_dict(
             ))
           dict.insert(dict, "style", Attribute("style", styles, False))
         }
-        Ok(_) | Error(_) -> dict.insert(dict, "class", attr)
+        Ok(_) | Error(_) -> dict.insert(dict, "style", attr)
       }
 
     Attribute(key, _, _) -> dict.insert(dict, key, attr)
