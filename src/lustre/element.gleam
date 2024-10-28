@@ -8,12 +8,11 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/int
 import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
 import lustre/attribute.{type Attribute, attribute}
-import lustre/internals/vdom.{Element, Fragment, Map, Text}
+import lustre/internals/vdom.{Element, Map, Text}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -183,21 +182,7 @@ fn do_keyed(el: Element(msg), key: String) -> Element(msg) {
         void: void,
       )
     Map(subtree) -> Map(fn() { do_keyed(subtree(), key) })
-    Fragment(elements, _) ->
-      elements
-      |> list.index_map(fn(element, idx) {
-        case element {
-          Element(el_key, _, _, _, _, _, _) -> {
-            let new_key = case el_key {
-              "" -> key <> "-" <> int.to_string(idx)
-              _ -> key <> "-" <> el_key
-            }
-            do_keyed(element, new_key)
-          }
-          _ -> do_keyed(element, key)
-        }
-      })
-      |> Fragment(key)
+
     _ -> el
   }
 }
@@ -269,22 +254,7 @@ pub fn none() -> Element(msg) {
 /// used downstream.
 ///
 pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
-  // remove redundant fragments to simplify rendering
-  flatten_fragment_elements(elements)
-  |> Fragment("")
-}
-
-fn flatten_fragment_elements(elements: List(Element(msg))) {
-  list.fold_right(elements, [], fn(new_elements, element) {
-    case element {
-      // Only flatten one level, the runtime handles next level children
-      // alternatively, this could flatten deeply, but it doesn't save
-      // iteration later given a fragment is iterated the same as an equivalent
-      // list of children
-      Fragment(fr_elements, _) -> list.append(fr_elements, new_elements)
-      el -> [el, ..new_elements]
-    }
-  })
+  element("lustre-fragment", [], elements)
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
@@ -312,9 +282,6 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
           void: void,
         )
       })
-    Fragment(elements, key) -> {
-      Map(fn() { Fragment(list.map(elements, map(_, f)), key) })
-    }
   }
 }
 
@@ -376,4 +343,32 @@ pub fn to_document_string_builder(el: Element(msg)) -> StringBuilder {
     _ -> element("html", [], [element("body", [], [el])])
   })
   |> string_builder.prepend("<!doctype html>\n")
+}
+
+/// Converts a Lustre `Element` to a human-readable string by inserting new lines
+/// and indentation where appropriate. This is useful for debugging and testing,
+/// but for production code you should use [`to_string`](#to_string) or
+/// [`to_document_string`](#to_document_string) instead.
+///
+/// 💡 This function works great with the snapshot testing library
+///    [birdie](https://hexdocs.pm/birdie)!
+///
+/// ## Using `to_string`:
+///
+/// ```html
+/// <header><h1>Hello, world!</h1></header>
+/// ```
+///
+/// ## Using `to_readable_string`
+///
+/// ```html
+/// <header>
+///   <h1>
+///     Hello, world!
+///   </h1>
+/// </header>
+/// ```
+///
+pub fn to_readable_string(el: Element(msg)) -> String {
+  vdom.element_to_snapshot(el)
 }

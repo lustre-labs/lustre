@@ -7,6 +7,27 @@
 // - https://www.zhenghao.io/posts/object-vs-map
 //
 
+if (window && window.customElements) {
+  window.customElements.define(
+    "lustre-fragment",
+    class LustreFragment extends HTMLElement {
+      constructor() {
+        super();
+      }
+    },
+  );
+
+  const stylesheet = new CSSStyleSheet();
+
+  stylesheet.replaceSync(`
+    lustre-fragment {
+      display: contents;
+    }
+  `);
+
+  document.adoptedStyleSheets = [stylesheet];
+}
+
 /**
  *
  * @typedef {VText | VElement | VMap | VFragment } VNode

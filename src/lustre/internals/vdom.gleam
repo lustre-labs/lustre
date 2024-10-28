@@ -26,7 +26,6 @@ pub type Element(msg) {
   // The lambda here defers the creation of the mapped subtree until it is necessary.
   // This means we pay the cost of mapping multiple times only *once* during rendering.
   Map(subtree: fn() -> Element(msg))
-  Fragment(elements: List(Element(msg)), key: String)
 }
 
 pub type Attribute(msg) {
@@ -60,7 +59,6 @@ fn do_handlers(
 
       do_element_list_handlers(children, handlers, key)
     }
-    Fragment(elements, _) -> do_element_list_handlers(elements, handlers, key)
   }
 }
 
@@ -96,8 +94,6 @@ pub fn element_to_json(element: Element(msg), key: String) -> Json {
         #("void", json.bool(void)),
       ])
     }
-    Fragment(elements, _) ->
-      json.object([#("elements", do_element_list_to_json(elements, key))])
   }
 }
 
@@ -261,8 +257,6 @@ fn do_element_to_string_builder(
           |> string_builder.append(">" <> inner_html <> "</" <> tag <> ">")
       }
     }
-    Fragment(elements, _) ->
-      children_to_string_builder(string_builder.new(), elements, raw_text)
   }
 }
 
@@ -276,6 +270,131 @@ fn children_to_string_builder(
   child
   |> do_element_to_string_builder(raw_text)
   |> string_builder.append_builder(html, _)
+}
+
+pub fn element_to_snapshot(element: Element(msg)) -> String {
+  element
+  |> do_element_to_snapshot_builder(False, 0)
+  |> string_builder.to_string
+}
+
+fn do_element_to_snapshot_builder(
+  element: Element(msg),
+  raw_text: Bool,
+  indent: Int,
+) -> StringBuilder {
+  let spaces = string.repeat("  ", indent)
+
+  case element {
+    Text("") -> string_builder.new()
+    Text(content) if raw_text -> string_builder.from_strings([spaces, content])
+    Text(content) -> string_builder.from_strings([spaces, escape(content)])
+
+    Map(subtree) -> do_element_to_snapshot_builder(subtree(), raw_text, indent)
+
+    Element(_, namespace, tag, attrs, _, self_closing, _) if self_closing -> {
+      let html = string_builder.from_string("<" <> tag)
+      let #(attrs, _) =
+        attributes_to_string_builder(case namespace {
+          "" -> attrs
+          _ -> [Attribute("xmlns", dynamic.from(namespace), False), ..attrs]
+        })
+
+      html
+      |> string_builder.prepend(spaces)
+      |> string_builder.append_builder(attrs)
+      |> string_builder.append("/>")
+    }
+
+    Element(_, namespace, tag, attrs, _, _, void) if void -> {
+      let html = string_builder.from_string("<" <> tag)
+      let #(attrs, _) =
+        attributes_to_string_builder(case namespace {
+          "" -> attrs
+          _ -> [Attribute("xmlns", dynamic.from(namespace), False), ..attrs]
+        })
+
+      html
+      |> string_builder.prepend(spaces)
+      |> string_builder.append_builder(attrs)
+      |> string_builder.append(">")
+    }
+
+    Element(_, "", tag, attrs, [], _, _) -> {
+      let html = string_builder.from_string("<" <> tag)
+      let #(attrs, _) = attributes_to_string_builder(attrs)
+
+      html
+      |> string_builder.prepend(spaces)
+      |> string_builder.append_builder(attrs)
+      |> string_builder.append(">")
+      |> string_builder.append("</" <> tag <> ">")
+    }
+
+    // Style and script tags are special beacuse they need to contain unescape
+    // text content and not escaped HTML content.
+    Element(_, "", "style" as tag, attrs, children, False, False)
+    | Element(_, "", "script" as tag, attrs, children, False, False) -> {
+      let html = string_builder.from_string("<" <> tag)
+      let #(attrs, _) = attributes_to_string_builder(attrs)
+
+      html
+      |> string_builder.prepend(spaces)
+      |> string_builder.append_builder(attrs)
+      |> string_builder.append(">")
+      |> children_to_snapshot_builder(children, True, indent + 1)
+      |> string_builder.append(spaces)
+      |> string_builder.append("</" <> tag <> ">")
+    }
+
+    Element(_, namespace, tag, attrs, children, _, _) -> {
+      let html = string_builder.from_string("<" <> tag)
+      let #(attrs, inner_html) =
+        attributes_to_string_builder(case namespace {
+          "" -> attrs
+          _ -> [Attribute("xmlns", dynamic.from(namespace), False), ..attrs]
+        })
+
+      case inner_html {
+        "" ->
+          html
+          |> string_builder.prepend(spaces)
+          |> string_builder.append_builder(attrs)
+          |> string_builder.append(">\n")
+          |> children_to_snapshot_builder(children, raw_text, indent + 1)
+          |> string_builder.append(spaces)
+          |> string_builder.append("</" <> tag <> ">")
+        _ ->
+          html
+          |> string_builder.append_builder(attrs)
+          |> string_builder.append(">" <> inner_html <> "</" <> tag <> ">")
+      }
+    }
+  }
+}
+
+fn children_to_snapshot_builder(
+  html: StringBuilder,
+  children: List(Element(msg)),
+  raw_text: Bool,
+  indent: Int,
+) -> StringBuilder {
+  case children {
+    [Text(a), Text(b), ..rest] ->
+      children_to_snapshot_builder(
+        html,
+        [Text(a <> b), ..rest],
+        raw_text,
+        indent,
+      )
+    [child, ..rest] ->
+      child
+      |> do_element_to_snapshot_builder(raw_text, indent)
+      |> string_builder.append("\n")
+      |> string_builder.append_builder(html, _)
+      |> children_to_snapshot_builder(rest, raw_text, indent)
+    [] -> html
+  }
 }
 
 fn attributes_to_string_builder(

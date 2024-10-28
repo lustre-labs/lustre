@@ -12,7 +12,7 @@ import gleam/set.{type Set}
 import gleam/string
 import lustre/internals/constants
 import lustre/internals/vdom.{
-  type Attribute, type Element, Attribute, Element, Event, Fragment, Map, Text,
+  type Attribute, type Element, Attribute, Element, Event, Map, Text,
 }
 
 // TYPES -----------------------------------------------------------------------
@@ -128,15 +128,6 @@ fn do_elements(
         // there is nothing to diff. We mark the new element as created and
         // extract any event handlers.
         Element(_, _, _, _, _, _, _), Element(_, _, _, _, _, _, _) ->
-          ElementDiff(
-            ..diff,
-            created: dict.insert(diff.created, key, new),
-            handlers: fold_event_handlers(diff.handlers, new, key),
-          )
-        Fragment(old_elements, _), Fragment(new_elements, _) ->
-          do_element_list(diff, old_elements, new_elements, key)
-        // Other element is not a fragment, take new element in both cases
-        _, Fragment(_, _) | Fragment(_, _), _ ->
           ElementDiff(
             ..diff,
             created: dict.insert(diff.created, key, new),
@@ -408,8 +399,6 @@ fn fold_event_handlers(
         })
       fold_element_list_event_handlers(handlers, children, key)
     }
-    Fragment(elements, _) ->
-      fold_element_list_event_handlers(handlers, elements, key)
   }
 }
 
