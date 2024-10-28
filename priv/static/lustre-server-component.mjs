@@ -6,6 +6,16 @@ var event = 4;
 var attrs = 5;
 
 // build/dev/javascript/lustre/vdom.ffi.mjs
+if (window && window.customElements) {
+  window.customElements.define(
+    "lustre-fragment",
+    class LustreFragment extends HTMLElement {
+      constructor() {
+        super();
+      }
+    }
+  );
+}
 function morph(prev, next, dispatch) {
   let out;
   let stack = [{ prev, next, parent: prev.parentNode }];
@@ -40,11 +50,6 @@ function morph(prev, next, dispatch) {
         parent.replaceChild(created, prev2);
       }
       out ??= created;
-    } else if (next2.elements !== void 0) {
-      for (const fragmentElement of forceChild(next2)) {
-        stack.unshift({ prev: prev2, next: fragmentElement, parent });
-        prev2 = prev2?.nextSibling;
-      }
     }
   }
   return out;
@@ -94,7 +99,9 @@ function patch(root, diff2, dispatch, stylesOffset = 0) {
         delegated.push([name.slice(10), value]);
       } else {
         prev.setAttribute(name, value);
-        prev[name] = value;
+        if (name === "value" || name === "selected") {
+          prev[name] = value;
+        }
       }
       if (delegated.length > 0) {
         for (const child of prev.assignedElements()) {
@@ -105,12 +112,12 @@ function patch(root, diff2, dispatch, stylesOffset = 0) {
       }
     }
     for (const removed of patches[1]) {
-      if (removed[0].startsWith("data-lustre-on-")) {
-        const eventName = removed[0].slice(15);
+      if (removed.startsWith("data-lustre-on-")) {
+        const eventName = removed.slice(15);
         prev.removeEventListener(eventName, lustreGenericEventHandler);
         handlersForEl.delete(eventName);
       } else {
-        prev.removeAttribute(removed[0]);
+        prev.removeAttribute(removed);
       }
     }
   }
@@ -364,11 +371,7 @@ function* children(element) {
   }
 }
 function* forceChild(element) {
-  if (element.elements !== void 0) {
-    for (const inner of element.elements) {
-      yield* forceChild(inner);
-    }
-  } else if (element.subtree !== void 0) {
+  if (element.subtree !== void 0) {
     yield* forceChild(element.subtree());
   } else {
     yield element;
