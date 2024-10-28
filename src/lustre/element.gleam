@@ -254,7 +254,11 @@ pub fn none() -> Element(msg) {
 /// used downstream.
 ///
 pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
-  element("lustre-fragment", [], elements)
+  element(
+    "lustre-fragment",
+    [attribute.style([#("display", "contents")])],
+    elements,
+  )
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
