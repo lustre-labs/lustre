@@ -192,7 +192,7 @@ pub fn pattern(regex: String) -> Attribute(msg) {
 
 ///
 pub fn readonly(is_readonly: Bool) -> Attribute(msg) {
-  property("readonly", is_readonly)
+  property("readOnly", is_readonly)
 }
 
 ///
