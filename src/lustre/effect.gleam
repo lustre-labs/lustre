@@ -41,6 +41,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/dynamic.{type Dynamic}
 import gleam/erlang/process.{type Selector}
 import gleam/json.{type Json}
 import gleam/list
@@ -65,6 +66,7 @@ type Actions(msg) {
     dispatch: fn(msg) -> Nil,
     emit: fn(String, Json) -> Nil,
     select: fn(Selector(msg)) -> Nil,
+    root: Dynamic,
   )
 }
 
@@ -101,7 +103,7 @@ type Actions(msg) {
 /// }
 /// ```
 pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  use dispatch, _, _ <- custom
+  use dispatch, _, _, _ <- custom
 
   effect(dispatch)
 }
@@ -113,7 +115,7 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 ///
 @internal
 pub fn event(name: String, data: Json) -> Effect(msg) {
-  use _, emit, _ <- custom
+  use _, emit, _, _ <- custom
 
   emit(name, data)
 }
@@ -122,12 +124,17 @@ pub fn event(name: String, data: Json) -> Effect(msg) {
 ///
 @internal
 pub fn custom(
-  run: fn(fn(msg) -> Nil, fn(String, Json) -> Nil, fn(Selector(msg)) -> Nil) ->
+  run: fn(
+    fn(msg) -> Nil,
+    fn(String, Json) -> Nil,
+    fn(Selector(msg)) -> Nil,
+    Dynamic,
+  ) ->
     Nil,
 ) -> Effect(msg) {
   Effect([
     fn(actions: Actions(msg)) {
-      run(actions.dispatch, actions.emit, actions.select)
+      run(actions.dispatch, actions.emit, actions.select, actions.root)
     },
   ])
 }
@@ -172,15 +179,14 @@ pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
   Effect({
     use eff <- list.map(effect.all)
     fn(actions: Actions(b)) {
-      eff(
-        Actions(
-          dispatch: fn(msg) { actions.dispatch(f(msg)) },
-          emit: actions.emit,
-          select: fn(selector) {
-            actions.select(process.map_selector(selector, f))
-          },
-        ),
-      )
+      eff(Actions(
+        dispatch: fn(msg) { actions.dispatch(f(msg)) },
+        emit: actions.emit,
+        select: fn(selector) {
+          actions.select(process.map_selector(selector, f))
+        },
+        root: actions.root,
+      ))
     }
   })
 }
@@ -204,6 +210,7 @@ pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
         // we have to use `@target` for this and duplicate the function but
         // so be it.
         select: fn(_) { Nil },
+        root: actions.root,
       ))
     }
   })
@@ -225,8 +232,9 @@ pub fn perform(
   dispatch: fn(a) -> Nil,
   emit: fn(String, Json) -> Nil,
   select: fn(Selector(a)) -> Nil,
+  root: Dynamic,
 ) -> Nil {
-  let actions = Actions(dispatch, emit, select)
+  let actions = Actions(dispatch, emit, select, root)
   use eff <- list.each(effect.all)
 
   eff(actions)

@@ -236,7 +236,7 @@ pub fn select(
 fn do_select(
   sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
 ) -> Effect(msg) {
-  use dispatch, _, select <- effect.custom
+  use dispatch, _, select, _ <- effect.custom
   let self = process.new_subject()
   let selector = sel(dispatch, self)
 

@@ -244,7 +244,7 @@ fn run_effects(effects: Effect(msg), self: Subject(Action(msg, runtime))) -> Nil
   let dispatch = fn(msg) { actor.send(self, Dispatch(msg)) }
   let emit = fn(name, event) { actor.send(self, Emit(name, event)) }
   let select = fn(selector) { actor.send(self, SetSelector(selector)) }
-  let root = fn(_) { Nil }
+  let root = unsafe_coerce(Nil)
 
   effect.perform(effects, dispatch, emit, select, root)
 }

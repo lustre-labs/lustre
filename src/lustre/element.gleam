@@ -8,10 +8,12 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/dynamic.{type Dynamic}
 import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
 import lustre/attribute.{type Attribute, attribute}
+import lustre/effect.{type Effect}
 import lustre/internals/vdom.{Element, Map, Text}
 
 // TYPES -----------------------------------------------------------------------
@@ -287,6 +289,15 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
         )
       })
   }
+}
+
+// EFFECTS ---------------------------------------------------------------------
+
+@internal
+pub fn get_root(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
+  use dispatch, _, _, root <- effect.custom
+
+  effect(dispatch, root)
 }
 
 // CONVERSIONS -----------------------------------------------------------------
