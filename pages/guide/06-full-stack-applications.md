@@ -17,8 +17,10 @@ _three separate Gleam projects_:
 
 ```sh
 mkdir lustre-fullstack-guide \
+  && cd lustre-fullstack-guide \
   && gleam new client --name app \
-  && gleam new server --name app
+  && gleam new server --name app \
+  && gleam new shared --name app
 ```
 
 We have one project for the frontend SPA, one project for the server, and a third
