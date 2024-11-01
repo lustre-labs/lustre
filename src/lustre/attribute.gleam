@@ -358,3 +358,15 @@ pub fn form_target(target: String) -> Attribute(msg) {
 pub fn open(is_open: Bool) -> Attribute(msg) {
   property("open", is_open)
 }
+
+// META ------------------------------------------------------------------------
+
+///
+pub fn charset(name: String) -> Attribute(msg) {
+  attribute("charset", name)
+}
+
+///
+pub fn http_equiv(name: String) -> Attribute(msg) {
+  attribute("http-equiv", name)
+}
