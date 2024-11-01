@@ -304,6 +304,7 @@ export const make_lustre_client_component = (
     constructor() {
       super();
       this.attachShadow({ mode: "open" });
+      this.internals = this.attachInternals();
 
       if (hasAttributes) {
         on_attribute_change[0].forEach((decoder, name) => {
