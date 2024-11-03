@@ -1,5 +1,5 @@
 ---
-version: 1.1.0
+version: 1.2.3
 title: Can render an application's initial state when using fragments
 ---
-<p>start fragment</p><p>middle fragment</p><p>0</p><button>-</button><button>+</button><p>order check, last element</p>
+<lustre-fragment style="display:contents;"><lustre-fragment style="display:contents;"><p>start fragment</p></lustre-fragment><lustre-fragment style="display:contents;"><p>middle fragment</p></lustre-fragment><lustre-fragment style="display:contents;"><p>0</p></lustre-fragment><button>-</button><button>+</button><p>order check, last element</p></lustre-fragment>
