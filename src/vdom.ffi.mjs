@@ -7,8 +7,8 @@
 // - https://www.zhenghao.io/posts/object-vs-map
 //
 
-if (window && window.customElements) {
-  window.customElements.define(
+if (globalThis && globalThis.customElements) {
+  globalThis.customElements.define(
     "lustre-fragment",
     class LustreFragment extends HTMLElement {
       constructor() {
