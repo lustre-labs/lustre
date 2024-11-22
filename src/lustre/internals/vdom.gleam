@@ -8,6 +8,7 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/string
 import gleam/string_builder.{type StringBuilder}
+import gleam/string_tree.{type StringTree}
 import lustre/internals/escape.{escape}
 
 // TYPES -----------------------------------------------------------------------
@@ -185,6 +186,10 @@ pub fn element_to_string_builder(element: Element(msg)) -> StringBuilder {
   do_element_to_string_builder(element, False)
 }
 
+pub fn element_to_string_tree(element: Element(msg)) -> StringTree {
+  do_element_to_string_tree(element, False)
+}
+
 fn do_element_to_string_builder(
   element: Element(msg),
   raw_text: Bool,
@@ -260,6 +265,81 @@ fn do_element_to_string_builder(
   }
 }
 
+fn do_element_to_string_tree(
+  element: Element(msg),
+  raw_text: Bool,
+) -> StringTree {
+  case element {
+    Text("") -> string_tree.new()
+    Text(content) if raw_text -> string_tree.from_string(content)
+    Text(content) -> string_tree.from_string(escape(content))
+
+    Map(subtree) -> do_element_to_string_tree(subtree(), raw_text)
+
+    Element(_, namespace, tag, attrs, _, self_closing, _) if self_closing -> {
+      let html = string_tree.from_string("<" <> tag)
+      let #(attrs, _) =
+        attributes_to_string_tree(case namespace {
+          "" -> attrs
+          _ -> [Attribute("xmlns", dynamic.from(namespace), False), ..attrs]
+        })
+
+      html
+      |> string_tree.append_tree(attrs)
+      |> string_tree.append("/>")
+    }
+
+    Element(_, namespace, tag, attrs, _, _, void) if void -> {
+      let html = string_tree.from_string("<" <> tag)
+      let #(attrs, _) =
+        attributes_to_string_tree(case namespace {
+          "" -> attrs
+          _ -> [Attribute("xmlns", dynamic.from(namespace), False), ..attrs]
+        })
+
+      html
+      |> string_tree.append_tree(attrs)
+      |> string_tree.append(">")
+    }
+
+    // Style and script tags are special beacuse they need to contain unescape
+    // text content and not escaped HTML content.
+    Element(_, "", "style" as tag, attrs, children, False, False)
+    | Element(_, "", "script" as tag, attrs, children, False, False) -> {
+      let html = string_tree.from_string("<" <> tag)
+      let #(attrs, _) = attributes_to_string_tree(attrs)
+
+      html
+      |> string_tree.append_tree(attrs)
+      |> string_tree.append(">")
+      |> children_to_string_tree(children, True)
+      |> string_tree.append("</" <> tag <> ">")
+    }
+
+    Element(_, namespace, tag, attrs, children, _, _) -> {
+      let html = string_tree.from_string("<" <> tag)
+      let #(attrs, inner_html) =
+        attributes_to_string_tree(case namespace {
+          "" -> attrs
+          _ -> [Attribute("xmlns", dynamic.from(namespace), False), ..attrs]
+        })
+
+      case inner_html {
+        "" ->
+          html
+          |> string_tree.append_tree(attrs)
+          |> string_tree.append(">")
+          |> children_to_string_tree(children, raw_text)
+          |> string_tree.append("</" <> tag <> ">")
+        _ ->
+          html
+          |> string_tree.append_tree(attrs)
+          |> string_tree.append(">" <> inner_html <> "</" <> tag <> ">")
+      }
+    }
+  }
+}
+
 fn children_to_string_builder(
   html: StringBuilder,
   children: List(Element(msg)),
@@ -270,6 +350,18 @@ fn children_to_string_builder(
   child
   |> do_element_to_string_builder(raw_text)
   |> string_builder.append_builder(html, _)
+}
+
+fn children_to_string_tree(
+  html: StringTree,
+  children: List(Element(msg)),
+  raw_text: Bool,
+) -> StringTree {
+  use html, child <- list.fold(children, html)
+
+  child
+  |> do_element_to_string_tree(raw_text)
+  |> string_tree.append_tree(html, _)
 }
 
 pub fn element_to_snapshot(element: Element(msg)) -> String {
@@ -458,6 +550,75 @@ fn attributes_to_string_builder(
       "", _ -> string_builder.append(html, " style=\"" <> style <> "\"")
       _, _ ->
         string_builder.append(
+          html,
+          " class=\"" <> class <> "\" style=\"" <> style <> "\"",
+        )
+    },
+    inner_html,
+  )
+}
+
+fn attributes_to_string_tree(
+  attrs: List(Attribute(msg)),
+) -> #(StringTree, String) {
+  let #(html, class, style, inner_html) = {
+    let init = #(string_tree.new(), "", "", "")
+    use #(html, class, style, inner_html), attr <- list.fold(attrs, init)
+
+    case attribute_to_string_parts(attr) {
+      Ok(#("dangerous-unescaped-html", val)) -> #(
+        html,
+        class,
+        style,
+        inner_html <> val,
+      )
+      Ok(#("class", val)) if class == "" -> #(
+        html,
+        escape(val),
+        style,
+        inner_html,
+      )
+      Ok(#("class", val)) -> #(
+        html,
+        class <> " " <> escape(val),
+        style,
+        inner_html,
+      )
+      Ok(#("style", val)) if style == "" -> #(
+        html,
+        class,
+        escape(val),
+        inner_html,
+      )
+      Ok(#("style", val)) -> #(
+        html,
+        class,
+        style <> " " <> escape(val),
+        inner_html,
+      )
+      Ok(#(key, "")) -> #(
+        string_tree.append(html, " " <> key),
+        class,
+        style,
+        inner_html,
+      )
+      Ok(#(key, val)) -> #(
+        string_tree.append(html, " " <> key <> "=\"" <> escape(val) <> "\""),
+        class,
+        style,
+        inner_html,
+      )
+      Error(_) -> #(html, class, style, inner_html)
+    }
+  }
+
+  #(
+    case class, style {
+      "", "" -> html
+      _, "" -> string_tree.append(html, " class=\"" <> class <> "\"")
+      "", _ -> string_tree.append(html, " style=\"" <> style <> "\"")
+      _, _ ->
+        string_tree.append(
           html,
           " class=\"" <> class <> "\" style=\"" <> style <> "\"",
         )
