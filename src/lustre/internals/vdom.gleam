@@ -178,8 +178,8 @@ pub fn attribute_to_json(
 
 pub fn element_to_string(element: Element(msg)) -> String {
   element
-  |> do_element_to_string_builder(False)
-  |> string_builder.to_string
+  |> do_element_to_string_tree(False)
+  |> string_tree.to_string
 }
 
 pub fn element_to_string_builder(element: Element(msg)) -> StringBuilder {
@@ -366,83 +366,83 @@ fn children_to_string_tree(
 
 pub fn element_to_snapshot(element: Element(msg)) -> String {
   element
-  |> do_element_to_snapshot_builder(False, 0)
-  |> string_builder.to_string
+  |> do_element_to_snapshot_tree(False, 0)
+  |> string_tree.to_string
 }
 
-fn do_element_to_snapshot_builder(
+fn do_element_to_snapshot_tree(
   element: Element(msg),
   raw_text: Bool,
   indent: Int,
-) -> StringBuilder {
+) -> StringTree {
   let spaces = string.repeat("  ", indent)
 
   case element {
-    Text("") -> string_builder.new()
-    Text(content) if raw_text -> string_builder.from_strings([spaces, content])
-    Text(content) -> string_builder.from_strings([spaces, escape(content)])
+    Text("") -> string_tree.new()
+    Text(content) if raw_text -> string_tree.from_strings([spaces, content])
+    Text(content) -> string_tree.from_strings([spaces, escape(content)])
 
-    Map(subtree) -> do_element_to_snapshot_builder(subtree(), raw_text, indent)
+    Map(subtree) -> do_element_to_snapshot_tree(subtree(), raw_text, indent)
 
     Element(_, namespace, tag, attrs, _, self_closing, _) if self_closing -> {
-      let html = string_builder.from_string("<" <> tag)
+      let html = string_tree.from_string("<" <> tag)
       let #(attrs, _) =
-        attributes_to_string_builder(case namespace {
+        attributes_to_string_tree(case namespace {
           "" -> attrs
           _ -> [Attribute("xmlns", dynamic.from(namespace), False), ..attrs]
         })
 
       html
-      |> string_builder.prepend(spaces)
-      |> string_builder.append_builder(attrs)
-      |> string_builder.append("/>")
+      |> string_tree.prepend(spaces)
+      |> string_tree.append_tree(attrs)
+      |> string_tree.append("/>")
     }
 
     Element(_, namespace, tag, attrs, _, _, void) if void -> {
-      let html = string_builder.from_string("<" <> tag)
+      let html = string_tree.from_string("<" <> tag)
       let #(attrs, _) =
-        attributes_to_string_builder(case namespace {
+        attributes_to_string_tree(case namespace {
           "" -> attrs
           _ -> [Attribute("xmlns", dynamic.from(namespace), False), ..attrs]
         })
 
       html
-      |> string_builder.prepend(spaces)
-      |> string_builder.append_builder(attrs)
-      |> string_builder.append(">")
+      |> string_tree.prepend(spaces)
+      |> string_tree.append_tree(attrs)
+      |> string_tree.append(">")
     }
 
     Element(_, "", tag, attrs, [], _, _) -> {
-      let html = string_builder.from_string("<" <> tag)
-      let #(attrs, _) = attributes_to_string_builder(attrs)
+      let html = string_tree.from_string("<" <> tag)
+      let #(attrs, _) = attributes_to_string_tree(attrs)
 
       html
-      |> string_builder.prepend(spaces)
-      |> string_builder.append_builder(attrs)
-      |> string_builder.append(">")
-      |> string_builder.append("</" <> tag <> ">")
+      |> string_tree.prepend(spaces)
+      |> string_tree.append_tree(attrs)
+      |> string_tree.append(">")
+      |> string_tree.append("</" <> tag <> ">")
     }
 
     // Style and script tags are special beacuse they need to contain unescape
     // text content and not escaped HTML content.
     Element(_, "", "style" as tag, attrs, children, False, False)
     | Element(_, "", "script" as tag, attrs, children, False, False) -> {
-      let html = string_builder.from_string("<" <> tag)
-      let #(attrs, _) = attributes_to_string_builder(attrs)
+      let html = string_tree.from_string("<" <> tag)
+      let #(attrs, _) = attributes_to_string_tree(attrs)
 
       html
-      |> string_builder.prepend(spaces)
-      |> string_builder.append_builder(attrs)
-      |> string_builder.append(">")
-      |> children_to_snapshot_builder(children, True, indent + 1)
-      |> string_builder.append(spaces)
-      |> string_builder.append("</" <> tag <> ">")
+      |> string_tree.prepend(spaces)
+      |> string_tree.append_tree(attrs)
+      |> string_tree.append(">")
+      |> children_to_snapshot_tree(children, True, indent + 1)
+      |> string_tree.append(spaces)
+      |> string_tree.append("</" <> tag <> ">")
     }
 
     Element(_, namespace, tag, attrs, children, _, _) -> {
-      let html = string_builder.from_string("<" <> tag)
+      let html = string_tree.from_string("<" <> tag)
       let #(attrs, inner_html) =
-        attributes_to_string_builder(case namespace {
+        attributes_to_string_tree(case namespace {
           "" -> attrs
           _ -> [Attribute("xmlns", dynamic.from(namespace), False), ..attrs]
         })
@@ -450,41 +450,36 @@ fn do_element_to_snapshot_builder(
       case inner_html {
         "" ->
           html
-          |> string_builder.prepend(spaces)
-          |> string_builder.append_builder(attrs)
-          |> string_builder.append(">\n")
-          |> children_to_snapshot_builder(children, raw_text, indent + 1)
-          |> string_builder.append(spaces)
-          |> string_builder.append("</" <> tag <> ">")
+          |> string_tree.prepend(spaces)
+          |> string_tree.append_tree(attrs)
+          |> string_tree.append(">\n")
+          |> children_to_snapshot_tree(children, raw_text, indent + 1)
+          |> string_tree.append(spaces)
+          |> string_tree.append("</" <> tag <> ">")
         _ ->
           html
-          |> string_builder.append_builder(attrs)
-          |> string_builder.append(">" <> inner_html <> "</" <> tag <> ">")
+          |> string_tree.append_tree(attrs)
+          |> string_tree.append(">" <> inner_html <> "</" <> tag <> ">")
       }
     }
   }
 }
 
-fn children_to_snapshot_builder(
-  html: StringBuilder,
+fn children_to_snapshot_tree(
+  html: StringTree,
   children: List(Element(msg)),
   raw_text: Bool,
   indent: Int,
-) -> StringBuilder {
+) -> StringTree {
   case children {
     [Text(a), Text(b), ..rest] ->
-      children_to_snapshot_builder(
-        html,
-        [Text(a <> b), ..rest],
-        raw_text,
-        indent,
-      )
+      children_to_snapshot_tree(html, [Text(a <> b), ..rest], raw_text, indent)
     [child, ..rest] ->
       child
-      |> do_element_to_snapshot_builder(raw_text, indent)
-      |> string_builder.append("\n")
-      |> string_builder.append_builder(html, _)
-      |> children_to_snapshot_builder(rest, raw_text, indent)
+      |> do_element_to_snapshot_tree(raw_text, indent)
+      |> string_tree.append("\n")
+      |> string_tree.append_tree(html, _)
+      |> children_to_snapshot_tree(rest, raw_text, indent)
     [] -> html
   }
 }
