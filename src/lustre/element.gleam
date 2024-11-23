@@ -338,6 +338,7 @@ pub fn to_document_string(el: Element(msg)) -> String {
 /// [open an issue](https://github.com/lustre-labs/lustre/issues/new) with your
 /// use case and we'll see what we can do!
 ///
+@deprecated("The `to_string_builder` function and the `gleam/string_builder.StringBuilder` type have been deprecated. Use the `to_string_tree` function and the `gleam/string_tree.StringTree` type instead.")
 pub fn to_string_builder(element: Element(msg)) -> StringBuilder {
   vdom.element_to_string_builder(element)
 }
@@ -359,6 +360,7 @@ pub fn to_string_tree(element: Element(msg)) -> StringTree {
 /// If the provided element is not an `html` element, it will be wrapped in both
 /// a `html` and `body` element.
 ///
+@deprecated("The `to_document_string_builder` function and the `gleam/string_builder.StringBuilder` type have been deprecated. Use the `to_document_string_tree` function and the `gleam/string_tree.StringTree` type instead.")
 pub fn to_document_string_builder(el: Element(msg)) -> StringBuilder {
   vdom.element_to_string_builder(case el {
     Element(tag: "html", ..) -> el

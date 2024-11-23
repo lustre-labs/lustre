@@ -182,6 +182,7 @@ pub fn element_to_string(element: Element(msg)) -> String {
   |> string_tree.to_string
 }
 
+@deprecated("The `element_to_string_builder` function and the `gleam/string_builder.StringBuilder` type have been deprecated. Use the `element_to_string_tree` function and the `gleam/string_tree.StringTree` type instead.")
 pub fn element_to_string_builder(element: Element(msg)) -> StringBuilder {
   do_element_to_string_builder(element, False)
 }
@@ -190,6 +191,7 @@ pub fn element_to_string_tree(element: Element(msg)) -> StringTree {
   do_element_to_string_tree(element, False)
 }
 
+@deprecated("The `do_element_to_string_builder` function and the `gleam/string_builder.StringBuilder` type have been deprecated. Use the `do_element_to_string_tree` function and the `gleam/string_tree.StringTree` type instead.")
 fn do_element_to_string_builder(
   element: Element(msg),
   raw_text: Bool,
@@ -340,6 +342,7 @@ fn do_element_to_string_tree(
   }
 }
 
+@deprecated("The `children_to_string_builder` function and the `gleam/string_builder.StringBuilder` type have been deprecated. Use the `children_to_string_tree` function and the `gleam/string_tree.StringTree` type instead.")
 fn children_to_string_builder(
   html: StringBuilder,
   children: List(Element(msg)),
@@ -484,6 +487,7 @@ fn children_to_snapshot_tree(
   }
 }
 
+@deprecated("The `attributes_to_string_builder` function and the `gleam/string_builder.StringBuilder` type have been deprecated. Use the `attributes_to_string_tree` function and the `gleam/string_tree.StringTree` type instead.")
 fn attributes_to_string_builder(
   attrs: List(Attribute(msg)),
 ) -> #(StringBuilder, String) {
