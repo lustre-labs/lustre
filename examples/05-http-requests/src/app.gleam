@@ -51,12 +51,12 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 }
 
 fn get_quote() -> Effect(Msg) {
-  let url = "https://api.quotable.io/random"
+  let url = "https://dummyjson.com/quotes/random"
   let decoder =
     dynamic.decode2(
       Quote,
       dynamic.field("author", dynamic.string),
-      dynamic.field("content", dynamic.string),
+      dynamic.field("quote", dynamic.string),
     )
 
   lustre_http.get(url, lustre_http.expect_json(decoder, ApiUpdatedQuote))

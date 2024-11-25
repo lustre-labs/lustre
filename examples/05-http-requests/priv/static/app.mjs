@@ -39,6 +39,7 @@ var List = class {
     }
     return desired === 0;
   }
+  // @internal
   countLength() {
     let length4 = 0;
     for (let _ of this)
@@ -92,12 +93,12 @@ var BitArray = class _BitArray {
     return this.buffer[index3];
   }
   // @internal
-  floatAt(index3) {
-    return byteArrayToFloat(this.buffer.slice(index3, index3 + 8));
+  floatFromSlice(start4, end, isBigEndian) {
+    return byteArrayToFloat(this.buffer, start4, end, isBigEndian);
   }
   // @internal
-  intFromSlice(start4, end) {
-    return byteArrayToInt(this.buffer.slice(start4, end));
+  intFromSlice(start4, end, isBigEndian, isSigned) {
+    return byteArrayToInt(this.buffer, start4, end, isBigEndian, isSigned);
   }
   // @internal
   binaryFromSlice(start4, end) {
@@ -108,16 +109,37 @@ var BitArray = class _BitArray {
     return new _BitArray(this.buffer.slice(index3));
   }
 };
-function byteArrayToInt(byteArray) {
-  byteArray = byteArray.reverse();
+function byteArrayToInt(byteArray, start4, end, isBigEndian, isSigned) {
   let value = 0;
-  for (let i = byteArray.length - 1; i >= 0; i--) {
-    value = value * 256 + byteArray[i];
+  if (isBigEndian) {
+    for (let i = start4; i < end; i++) {
+      value = value * 256 + byteArray[i];
+    }
+  } else {
+    for (let i = end - 1; i >= start4; i--) {
+      value = value * 256 + byteArray[i];
+    }
+  }
+  if (isSigned) {
+    const byteSize = end - start4;
+    const highBit = 2 ** (byteSize * 8 - 1);
+    if (value >= highBit) {
+      value -= highBit * 2;
+    }
   }
   return value;
 }
-function byteArrayToFloat(byteArray) {
-  return new Float64Array(byteArray.reverse().buffer)[0];
+function byteArrayToFloat(byteArray, start4, end, isBigEndian) {
+  const view2 = new DataView(byteArray.buffer);
+  const byteSize = end - start4;
+  if (byteSize === 8) {
+    return view2.getFloat64(start4, !isBigEndian);
+  } else if (byteSize === 4) {
+    return view2.getFloat32(start4, !isBigEndian);
+  } else {
+    const msg = `Sized floats must be 32-bit or 64-bit on JavaScript, got size of ${byteSize * 8} bits`;
+    throw new globalThis.Error(msg);
+  }
 }
 var Result = class _Result extends CustomType {
   // @internal
@@ -216,6 +238,7 @@ function makeError(variant, module, line, fn, message, extra) {
   error.gleam_error = variant;
   error.module = module;
   error.line = line;
+  error.function = fn;
   error.fn = fn;
   for (let k in extra)
     error[k] = extra[k];
@@ -982,11 +1005,11 @@ var Dict = class _Dict {
     if (!(o instanceof _Dict) || this.size !== o.size) {
       return false;
     }
-    let equal2 = true;
+    let equal = true;
     this.forEach((v, k) => {
-      equal2 = equal2 && isEqual(o.get(k, !v), v);
+      equal = equal && isEqual(o.get(k, !v), v);
     });
-    return equal2;
+    return equal;
   }
 };
 
@@ -1012,15 +1035,15 @@ function graphemes_iterator(string3) {
   }
 }
 function pop_grapheme(string3) {
-  let first2;
+  let first3;
   const iterator = graphemes_iterator(string3);
   if (iterator) {
-    first2 = iterator.next().value?.segment;
+    first3 = iterator.next().value?.segment;
   } else {
-    first2 = string3.match(/./su)?.[0];
+    first3 = string3.match(/./su)?.[0];
   }
-  if (first2) {
-    return new Ok([first2, string3.slice(first2.length)]);
+  if (first3) {
+    return new Ok([first3, string3.slice(first3.length)]);
   } else {
     return new Error(Nil);
   }
@@ -1078,6 +1101,8 @@ function map_get(map6, key) {
 function classify_dynamic(data) {
   if (typeof data === "string") {
     return "String";
+  } else if (typeof data === "boolean") {
+    return "Bool";
   } else if (data instanceof Result) {
     return "Result";
   } else if (data instanceof List) {
@@ -1151,7 +1176,7 @@ function second(pair) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/list.mjs
-function do_reverse_acc(loop$remaining, loop$accumulator) {
+function do_reverse(loop$remaining, loop$accumulator) {
   while (true) {
     let remaining = loop$remaining;
     let accumulator = loop$accumulator;
@@ -1165,11 +1190,8 @@ function do_reverse_acc(loop$remaining, loop$accumulator) {
     }
   }
 }
-function do_reverse(list) {
-  return do_reverse_acc(list, toList([]));
-}
 function reverse(xs) {
-  return do_reverse(xs);
+  return do_reverse(xs, toList([]));
 }
 function first(list) {
   if (list.hasLength(0)) {
@@ -1198,25 +1220,22 @@ function do_map(loop$list, loop$fun, loop$acc) {
 function map2(list, fun) {
   return do_map(list, fun, toList([]));
 }
-function do_append_acc(loop$first, loop$second) {
+function do_append(loop$first, loop$second) {
   while (true) {
-    let first2 = loop$first;
+    let first3 = loop$first;
     let second2 = loop$second;
-    if (first2.hasLength(0)) {
+    if (first3.hasLength(0)) {
       return second2;
     } else {
-      let item = first2.head;
-      let rest$1 = first2.tail;
+      let item = first3.head;
+      let rest$1 = first3.tail;
       loop$first = rest$1;
       loop$second = prepend(item, second2);
     }
   }
 }
-function do_append(first2, second2) {
-  return do_append_acc(reverse(first2), second2);
-}
-function append(first2, second2) {
-  return do_append(first2, second2);
+function append(first3, second2) {
+  return do_append(reverse(first3), second2);
 }
 function reverse_and_prepend(loop$prefix, loop$suffix) {
   while (true) {
@@ -1713,6 +1732,12 @@ function text(content) {
 }
 
 // build/dev/javascript/lustre/lustre/internals/runtime.mjs
+var Debug = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
 var Dispatch = class extends CustomType {
   constructor(x0) {
     super();
@@ -1720,6 +1745,12 @@ var Dispatch = class extends CustomType {
   }
 };
 var Shutdown = class extends CustomType {
+};
+var ForceModel = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
 };
 
 // build/dev/javascript/lustre/vdom.ffi.mjs
@@ -1758,6 +1789,13 @@ function morph(prev, next, dispatch, isComponent = false) {
         parent.replaceChild(created, prev2);
       }
       out ??= created;
+    } else if (next2.elements !== void 0) {
+      iterateElement(next2, (fragmentElement) => {
+        stack3.unshift({ prev: prev2, next: fragmentElement, parent });
+        prev2 = prev2?.nextSibling;
+      });
+    } else if (next2.subtree !== void 0) {
+      stack3.push({ prev: prev2, next: next2, parent });
     }
   }
   return out;
@@ -1782,9 +1820,11 @@ function createElementNode({ prev, next, dispatch, stack: stack3 }) {
   for (const attr of next.attrs) {
     const name = attr[0];
     const value = attr[1];
-    const isProperty = attr[2];
-    if (isProperty) {
-      el2[name] = value;
+    if (attr.as_property) {
+      if (el2[name] !== value)
+        el2[name] = value;
+      if (canMorph)
+        prevAttributes.delete(name);
     } else if (name.startsWith("on")) {
       const eventName = name.slice(2);
       const callback = dispatch(value);
@@ -1809,8 +1849,9 @@ function createElementNode({ prev, next, dispatch, stack: stack3 }) {
     } else if (name === "dangerous-unescaped-html") {
       innerHTML = value;
     } else {
-      el2.setAttribute(name, value);
-      if (name === "value")
+      if (el2.getAttribute(name) !== value)
+        el2.setAttribute(name, value);
+      if (name === "value" || name === "selected")
         el2[name] = value;
       if (canMorph)
         prevAttributes.delete(name);
@@ -1854,45 +1895,22 @@ function createElementNode({ prev, next, dispatch, stack: stack3 }) {
     incomingKeyedChildren = getKeyedChildren(next);
   }
   for (const child of next.children) {
-    if (child.key !== void 0 && seenKeys !== null) {
-      while (prevChild && !incomingKeyedChildren.has(prevChild.getAttribute("data-lustre-key"))) {
-        const nextChild = prevChild.nextSibling;
-        el2.removeChild(prevChild);
-        prevChild = nextChild;
-      }
-      if (keyedChildren.size === 0) {
-        stack3.unshift({ prev: prevChild, next: child, parent: el2 });
+    iterateElement(child, (currElement) => {
+      if (currElement.key !== void 0 && seenKeys !== null) {
+        prevChild = diffKeyedChild(
+          prevChild,
+          currElement,
+          el2,
+          stack3,
+          incomingKeyedChildren,
+          keyedChildren,
+          seenKeys
+        );
+      } else {
+        stack3.unshift({ prev: prevChild, next: currElement, parent: el2 });
         prevChild = prevChild?.nextSibling;
-        continue;
       }
-      if (seenKeys.has(child.key)) {
-        console.warn(`Duplicate key found in Lustre vnode: ${child.key}`);
-        stack3.unshift({ prev: null, next: child, parent: el2 });
-        continue;
-      }
-      seenKeys.add(child.key);
-      const keyedChild = keyedChildren.get(child.key);
-      if (!keyedChild && !prevChild) {
-        stack3.unshift({ prev: null, next: child, parent: el2 });
-        continue;
-      }
-      if (!keyedChild && prevChild !== null) {
-        const placeholder = document.createTextNode("");
-        el2.insertBefore(placeholder, prevChild);
-        stack3.unshift({ prev: placeholder, next: child, parent: el2 });
-        continue;
-      }
-      if (!keyedChild || keyedChild === prevChild) {
-        stack3.unshift({ prev: prevChild, next: child, parent: el2 });
-        prevChild = prevChild?.nextSibling;
-        continue;
-      }
-      el2.insertBefore(keyedChild, prevChild);
-      stack3.unshift({ prev: keyedChild, next: child, parent: el2 });
-    } else {
-      stack3.unshift({ prev: prevChild, next: child, parent: el2 });
-      prevChild = prevChild?.nextSibling;
-    }
+    });
   }
   while (prevChild) {
     const next2 = prevChild.nextSibling;
@@ -1916,7 +1934,7 @@ function lustreGenericEventHandler(event2) {
   handlersForEventTarget.get(event2.type)(event2);
 }
 function lustreServerEventHandler(event2) {
-  const el2 = event2.target;
+  const el2 = event2.currentTarget;
   const tag2 = el2.getAttribute(`data-lustre-on-${event2.type}`);
   const data = JSON.parse(el2.getAttribute("data-lustre-data") || "{}");
   const include = JSON.parse(el2.getAttribute("data-lustre-include") || "[]");
@@ -1950,12 +1968,62 @@ function getKeyedChildren(el2) {
   const keyedChildren = /* @__PURE__ */ new Map();
   if (el2) {
     for (const child of el2.children) {
-      const key = child.key || child?.getAttribute("data-lustre-key");
-      if (key)
-        keyedChildren.set(key, child);
+      iterateElement(child, (currElement) => {
+        const key = currElement?.key || currElement?.getAttribute?.("data-lustre-key");
+        if (key)
+          keyedChildren.set(key, currElement);
+      });
     }
   }
   return keyedChildren;
+}
+function diffKeyedChild(prevChild, child, el2, stack3, incomingKeyedChildren, keyedChildren, seenKeys) {
+  while (prevChild && !incomingKeyedChildren.has(prevChild.getAttribute("data-lustre-key"))) {
+    const nextChild = prevChild.nextSibling;
+    el2.removeChild(prevChild);
+    prevChild = nextChild;
+  }
+  if (keyedChildren.size === 0) {
+    iterateElement(child, (currChild) => {
+      stack3.unshift({ prev: prevChild, next: currChild, parent: el2 });
+      prevChild = prevChild?.nextSibling;
+    });
+    return prevChild;
+  }
+  if (seenKeys.has(child.key)) {
+    console.warn(`Duplicate key found in Lustre vnode: ${child.key}`);
+    stack3.unshift({ prev: null, next: child, parent: el2 });
+    return prevChild;
+  }
+  seenKeys.add(child.key);
+  const keyedChild = keyedChildren.get(child.key);
+  if (!keyedChild && !prevChild) {
+    stack3.unshift({ prev: null, next: child, parent: el2 });
+    return prevChild;
+  }
+  if (!keyedChild && prevChild !== null) {
+    const placeholder = document.createTextNode("");
+    el2.insertBefore(placeholder, prevChild);
+    stack3.unshift({ prev: placeholder, next: child, parent: el2 });
+    return prevChild;
+  }
+  if (!keyedChild || keyedChild === prevChild) {
+    stack3.unshift({ prev: prevChild, next: child, parent: el2 });
+    prevChild = prevChild?.nextSibling;
+    return prevChild;
+  }
+  el2.insertBefore(keyedChild, prevChild);
+  stack3.unshift({ prev: keyedChild, next: child, parent: el2 });
+  return prevChild;
+}
+function iterateElement(element2, processElement) {
+  if (element2.elements !== void 0) {
+    for (const currElement of element2.elements) {
+      processElement(currElement);
+    }
+  } else {
+    processElement(element2);
+  }
 }
 
 // build/dev/javascript/lustre/client-runtime.ffi.mjs
@@ -1998,6 +2066,10 @@ var LustreClientApplication2 = class _LustreClientApplication {
         this.#shutdown();
         return;
       }
+      case action instanceof Debug: {
+        this.#debug(action[0]);
+        return;
+      }
       default:
         return;
     }
@@ -2013,20 +2085,22 @@ var LustreClientApplication2 = class _LustreClientApplication {
   }
   #tick() {
     this.#flush_queue();
-    const vdom = this.#view(this.#model);
-    const dispatch = (handler) => (e) => {
-      const result = handler(e);
-      if (result instanceof Ok) {
-        this.send(new Dispatch(result[0]));
-      }
-    };
-    this.#didUpdate = false;
-    this.#root = morph(this.#root, vdom, dispatch, this.#isComponent);
+    if (this.#didUpdate) {
+      const vdom = this.#view(this.#model);
+      const dispatch = (handler) => (e) => {
+        const result = handler(e);
+        if (result instanceof Ok) {
+          this.send(new Dispatch(result[0]));
+        }
+      };
+      this.#didUpdate = false;
+      this.#root = morph(this.#root, vdom, dispatch, this.#isComponent);
+    }
   }
   #flush_queue(iterations = 0) {
     while (this.#queue.length) {
       const [next, effects] = this.#update(this.#model, this.#queue.shift());
-      this.#didUpdate ||= !isEqual(this.#model, next);
+      this.#didUpdate ||= this.#model !== next;
       this.#model = next;
       this.#effects = this.#effects.concat(effects.all.toArray());
     }
@@ -2041,6 +2115,23 @@ var LustreClientApplication2 = class _LustreClientApplication {
         this.#flush_queue(++iterations);
       } else {
         window.requestAnimationFrame(() => this.#tick());
+      }
+    }
+  }
+  #debug(action) {
+    switch (true) {
+      case action instanceof ForceModel: {
+        const vdom = this.#view(action[0]);
+        const dispatch = (handler) => (e) => {
+          const result = handler(e);
+          if (result instanceof Ok) {
+            this.send(new Dispatch(result[0]));
+          }
+        };
+        this.#queue = [];
+        this.#effects = [];
+        this.#didUpdate = false;
+        this.#root = morph(this.#root, vdom, dispatch, this.#isComponent);
       }
     }
   }
@@ -2064,7 +2155,7 @@ var start = (app, selector, flags) => LustreClientApplication2.start(
   app.update,
   app.view
 );
-var is_browser = () => window && window.document;
+var is_browser = () => globalThis.window && window.document;
 
 // build/dev/javascript/lustre/lustre.mjs
 var App = class extends CustomType {
@@ -2279,7 +2370,7 @@ function do_parse(uri_string) {
 function parse2(uri_string) {
   return do_parse(uri_string);
 }
-function to_string5(uri) {
+function to_string6(uri) {
   let parts = (() => {
     let $ = uri.fragment;
     if ($ instanceof Some) {
@@ -2560,7 +2651,7 @@ function from_fetch_response(response) {
   );
 }
 function to_fetch_request(request) {
-  let url = to_string5(to_uri(request));
+  let url = to_string6(to_uri(request));
   let method = method_to_string(request.method).toUpperCase();
   let options = {
     headers: make_headers(request.headers),
@@ -2777,180 +2868,6 @@ function centre(attributes, children) {
   return of3(div, attributes, children);
 }
 
-// build/dev/javascript/gleam_community_colour/gleam_community/colour.mjs
-var Rgba = class extends CustomType {
-  constructor(r, g, b, a) {
-    super();
-    this.r = r;
-    this.g = g;
-    this.b = b;
-    this.a = a;
-  }
-};
-var light_red = new Rgba(
-  0.9372549019607843,
-  0.1607843137254902,
-  0.1607843137254902,
-  1
-);
-var red = new Rgba(0.8, 0, 0, 1);
-var dark_red = new Rgba(0.6431372549019608, 0, 0, 1);
-var light_orange = new Rgba(
-  0.9882352941176471,
-  0.6862745098039216,
-  0.24313725490196078,
-  1
-);
-var orange = new Rgba(0.9607843137254902, 0.4745098039215686, 0, 1);
-var dark_orange = new Rgba(
-  0.807843137254902,
-  0.3607843137254902,
-  0,
-  1
-);
-var light_yellow = new Rgba(
-  1,
-  0.9137254901960784,
-  0.30980392156862746,
-  1
-);
-var yellow = new Rgba(0.9294117647058824, 0.8313725490196079, 0, 1);
-var dark_yellow = new Rgba(
-  0.7686274509803922,
-  0.6274509803921569,
-  0,
-  1
-);
-var light_green = new Rgba(
-  0.5411764705882353,
-  0.8862745098039215,
-  0.20392156862745098,
-  1
-);
-var green = new Rgba(
-  0.45098039215686275,
-  0.8235294117647058,
-  0.08627450980392157,
-  1
-);
-var dark_green = new Rgba(
-  0.3058823529411765,
-  0.6039215686274509,
-  0.023529411764705882,
-  1
-);
-var light_blue = new Rgba(
-  0.4470588235294118,
-  0.6235294117647059,
-  0.8117647058823529,
-  1
-);
-var blue = new Rgba(
-  0.20392156862745098,
-  0.396078431372549,
-  0.6431372549019608,
-  1
-);
-var dark_blue = new Rgba(
-  0.12549019607843137,
-  0.2901960784313726,
-  0.5294117647058824,
-  1
-);
-var light_purple = new Rgba(
-  0.6784313725490196,
-  0.4980392156862745,
-  0.6588235294117647,
-  1
-);
-var purple = new Rgba(
-  0.4588235294117647,
-  0.3137254901960784,
-  0.4823529411764706,
-  1
-);
-var dark_purple = new Rgba(
-  0.3607843137254902,
-  0.20784313725490197,
-  0.4,
-  1
-);
-var light_brown = new Rgba(
-  0.9137254901960784,
-  0.7254901960784313,
-  0.43137254901960786,
-  1
-);
-var brown = new Rgba(
-  0.7568627450980392,
-  0.49019607843137253,
-  0.06666666666666667,
-  1
-);
-var dark_brown = new Rgba(
-  0.5607843137254902,
-  0.34901960784313724,
-  0.00784313725490196,
-  1
-);
-var black = new Rgba(0, 0, 0, 1);
-var white = new Rgba(1, 1, 1, 1);
-var light_grey = new Rgba(
-  0.9333333333333333,
-  0.9333333333333333,
-  0.9254901960784314,
-  1
-);
-var grey = new Rgba(
-  0.8274509803921568,
-  0.8431372549019608,
-  0.8117647058823529,
-  1
-);
-var dark_grey = new Rgba(
-  0.7294117647058823,
-  0.7411764705882353,
-  0.7137254901960784,
-  1
-);
-var light_gray = new Rgba(
-  0.9333333333333333,
-  0.9333333333333333,
-  0.9254901960784314,
-  1
-);
-var gray = new Rgba(
-  0.8274509803921568,
-  0.8431372549019608,
-  0.8117647058823529,
-  1
-);
-var dark_gray = new Rgba(
-  0.7294117647058823,
-  0.7411764705882353,
-  0.7137254901960784,
-  1
-);
-var light_charcoal = new Rgba(
-  0.5333333333333333,
-  0.5411764705882353,
-  0.5215686274509804,
-  1
-);
-var charcoal = new Rgba(
-  0.3333333333333333,
-  0.3411764705882353,
-  0.3254901960784314,
-  1
-);
-var dark_charcoal = new Rgba(
-  0.1803921568627451,
-  0.20392156862745098,
-  0.21176470588235294,
-  1
-);
-var pink = new Rgba(1, 0.6862745098039216, 0.9529411764705882, 1);
-
 // build/dev/javascript/lustre_ui/lustre/ui.mjs
 var aside2 = aside;
 var button3 = button2;
@@ -2983,13 +2900,13 @@ function init2(_) {
   return [new Model(new None()), none()];
 }
 function get_quote() {
-  let url = "https://api.quotable.io/random";
+  let url = "https://dummyjson.com/quotes/random";
   let decoder2 = decode2(
     (var0, var1) => {
       return new Quote(var0, var1);
     },
     field("author", string),
-    field("content", string)
+    field("quote", string)
   );
   return get2(
     url,
@@ -3057,11 +2974,11 @@ function main() {
   let $ = start3(app, "#app", void 0);
   if (!$.isOk()) {
     throw makeError(
-      "assignment_no_match",
+      "let_assert",
       "app",
       21,
       "main",
-      "Assignment pattern did not match",
+      "Pattern match failed, no pattern matched the value.",
       { value: $ }
     );
   }
