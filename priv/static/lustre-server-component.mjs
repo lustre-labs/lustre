@@ -136,7 +136,6 @@ function createElementNode({ prev, next, dispatch, stack }) {
     handlersForEl = registeredHandlers.get(el);
   }
   const prevHandlers = canMorph ? new Set(handlersForEl.keys()) : null;
-  console.log({prevHandlers})
   const prevAttributes = canMorph ? new Set(Array.from(prev.attributes, (a) => a.name)) : null;
   let className = null;
   let style = null;
@@ -172,6 +171,10 @@ function createElementNode({ prev, next, dispatch, stack }) {
       }
       handlersForEl.set(eventName, callback);
       el.setAttribute(name, value);
+      if (canMorph) {
+        prevHandlers.delete(eventName);
+        prevAttributes.delete(name);
+      }
     } else if (name.startsWith("delegate:data-") || name.startsWith("delegate:aria-")) {
       el.setAttribute(name, value);
       delegated.push([name.slice(10), value]);
