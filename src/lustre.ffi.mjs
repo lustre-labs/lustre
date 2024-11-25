@@ -182,12 +182,10 @@ export class LustreClientApplication {
 
   /**
    * @param {Lustre.Effect<Msg>[]} effects
-   * @param {boolean} isFirstRender
    */
-  #tick(effects = [], isFirstRender = false) {
+  #tick(effects = []) {
     this.#tickScheduled = undefined;
-
-    if (!this.#flush(effects, isFirstRender)) return;
+    this.#flush(effects);
 
     const vdom = this.#view(this.#model);
     const dispatch =
@@ -206,12 +204,11 @@ export class LustreClientApplication {
     morph(prev, vdom, dispatch);
   }
 
-  #flush(effects = [], didUpdate = false) {
+  #flush(effects = []) {
     while (this.#queue.length > 0) {
       const msg = this.#queue.shift();
       const [next, effect] = this.#update(this.#model, msg);
 
-      didUpdate ||= this.#model !== next;
       effects = effects.concat(effect.all.toArray());
 
       this.#model = next;
@@ -237,9 +234,7 @@ export class LustreClientApplication {
     // If any effects immediately dispatched a message we can process it
     // synchronously before the next render.
     if (this.#queue.length > 0) {
-      return this.#flush(effects, didUpdate);
-    } else {
-      return didUpdate;
+      this.#flush(effects);
     }
   }
 }
@@ -450,11 +445,11 @@ export const make_lustre_client_component = (
     /** @type {boolean} */
     #connected = true;
 
-    #tick(effects = [], isFirstRender = false) {
-      this.#tickScheduled = undefined;
-
+    #tick(effects = []) {
       if (!this.#connected) return;
-      if (!this.#flush(isFirstRender, effects)) return;
+
+      this.#tickScheduled = undefined;
+      this.#flush(effects);
 
       const vdom = view(this.#model);
       const dispatch =
@@ -473,12 +468,11 @@ export const make_lustre_client_component = (
       morph(prev, vdom, dispatch);
     }
 
-    #flush(didUpdate = false, effects = []) {
+    #flush(effects = []) {
       while (this.#queue.length > 0) {
         const msg = this.#queue.shift();
         const [next, effect] = update(this.#model, msg);
 
-        didUpdate ||= this.#model !== next;
         effects = effects.concat(effect.all.toArray());
 
         this.#model = next;
@@ -504,9 +498,7 @@ export const make_lustre_client_component = (
       // If any effects immediately dispatched a message we can process it
       // synchronously before the next render.
       if (this.#queue.length > 0) {
-        return this.#flush(didUpdate, effects);
-      } else {
-        return didUpdate;
+        this.#flush(effects);
       }
     }
 
@@ -657,7 +649,7 @@ export class LustreServerApplication {
   #onAttributeChange;
 
   #tick(effects = []) {
-    if (!this.#flush(false, effects)) return;
+    this.#flush(effects);
 
     const vdom = this.#view(this.#model);
     const diff = elements(this.#html, vdom);
@@ -673,12 +665,11 @@ export class LustreServerApplication {
     this.#handlers = diff.handlers;
   }
 
-  #flush(didUpdate = false, effects = []) {
+  #flush(effects = []) {
     while (this.#queue.length > 0) {
       const msg = this.#queue.shift();
       const [next, effect] = this.#update(this.#model, msg);
 
-      didUpdate ||= this.#model !== next;
       effects = effects.concat(effect.all.toArray());
 
       this.#model = next;
@@ -704,9 +695,7 @@ export class LustreServerApplication {
     // If any effects immediately dispatched a message we can process it
     // synchronously before the next render.
     if (this.#queue.length > 0) {
-      return this.#flush(didUpdate, effects);
-    } else {
-      return didUpdate;
+      this.#flush(effects);
     }
   }
 }
