@@ -1,5 +1,0 @@
----
-version: 1.0.1
-title: Can render an application's state after some updates.
----
-<div><p>3</p><button>-</button><button>+</button></div>

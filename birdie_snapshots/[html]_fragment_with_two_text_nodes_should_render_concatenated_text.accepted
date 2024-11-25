@@ -1,0 +1,6 @@
+---
+version: 1.2.3
+title: [html] Fragment with two text nodes should render concatenated text
+---
+
+Hello, world!

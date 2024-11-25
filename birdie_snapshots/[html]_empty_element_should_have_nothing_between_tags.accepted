@@ -1,0 +1,5 @@
+---
+version: 1.2.4
+title: [html] Empty element should have nothing between tags
+---
+<div></div>

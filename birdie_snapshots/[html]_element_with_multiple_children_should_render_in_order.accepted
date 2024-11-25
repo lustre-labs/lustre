@@ -1,0 +1,9 @@
+---
+version: 1.2.3
+title: [html] Element with multiple children should render in order
+---
+<div>
+  <p></p>
+  <p></p>
+  <p></p>
+</div>

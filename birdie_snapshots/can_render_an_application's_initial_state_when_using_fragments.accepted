@@ -1,5 +1,0 @@
----
-version: 1.1.0
-title: Can render an application's initial state when using fragments
----
-<p>start fragment</p><p>middle fragment</p><p>0</p><button>-</button><button>+</button><p>order check, last element</p>

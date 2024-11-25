@@ -1,6 +1,0 @@
----
-version: 1.1.2
-title: Can render static HTML with unescaped HTML
----
-<!doctype html>
-<html><body><article><div>hello!</div></article></body></html>
