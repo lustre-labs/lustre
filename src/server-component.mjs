@@ -48,14 +48,7 @@ export class LustreServerComponent extends HTMLElement {
           const id = this.getAttribute("id");
           const route = next + (id ? `?id=${id}` : "");
           const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-
-          this.#socket?.close();
-          this.#socket = new WebSocket(
-            `${protocol}://${window.location.host}${route}`,
-          );
-          this.#socket.addEventListener("message", (message) =>
-            this.messageReceivedCallback(message),
-          );
+          this.#reconnect(`${protocol}://${window.location.host}${route}`);
         }
       }
     }
@@ -120,7 +113,7 @@ export class LustreServerComponent extends HTMLElement {
       subtree: false,
     });
 
-    const prev = this.shadowRoot.childNodes[this.#adoptedStyleElements.lemgth] ??
+    const prev = this.shadowRoot.childNodes[this.#adoptedStyleElements.length] ??
       this.shadowRoot.appendChild(document.createTextNode(""));
     const dispatch = (handler) => (event) => {
       const data = JSON.parse(this.getAttribute("data-lustre-data") || "{}");
@@ -136,6 +129,24 @@ export class LustreServerComponent extends HTMLElement {
     if (initial.length) {
       this.#socket?.send(JSON.stringify([Constants.attrs, initial]));
     }
+  }
+
+  #reconnect(socketUrl = this.#socket.url) {
+    this.#socket?.close();
+    this.#socket = new WebSocket(
+      socketUrl
+    );
+    this.#socket.addEventListener(
+      "message",
+      (message) => this.messageReceivedCallback(message)
+    );
+    this.#socket.addEventListener("close", () => {
+      setTimeout(() => {
+        if (this.#socket.readyState === WebSocket.CLOSED) {
+          this.#reconnect();
+        }
+      }, 1000);
+    });
   }
 
   #diff([diff]) {

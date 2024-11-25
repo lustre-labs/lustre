@@ -363,6 +363,11 @@ function createElementNode({ prev, next, dispatch, stack }) {
 
       handlersForEl.set(eventName, callback);
       el.setAttribute(name, value);
+      // Same as above, prevent removal of handler & attribute in next step
+      if (canMorph) {
+        prevHandlers.delete(eventName)
+        prevAttributes.delete(name);
+      }
     } else if (
       name.startsWith("delegate:data-") ||
       name.startsWith("delegate:aria-")
