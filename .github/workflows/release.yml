@@ -5,25 +5,30 @@ on:
     tags: ["v*"]
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3.1.0
       - uses: erlef/setup-beam@v1.16.0
         with:
-          otp-version: "26.0.2"
+          otp-version: "27.0"
           rebar3-version: "3"
-          gleam-version: "1.5.0"
+          gleam-version: "1.5.1"
 
-      - run: cargo install tomlq
       - run: |
-          if [ "v$(tomlq version -f gleam.toml)" == "${{ github.ref_name }}" ]; then
-            exit 0
+          version="v$(cat gleam.toml | grep -m 1 "version" | sed -r "s/version *= *\"([[:digit:].]+)\"/\1/")"
+          if [ "$version" != "${{ github.ref_name }}" ]; then
+            echo "tag '${{ github.ref_name }}' does not match the version in gleam.toml"
+            echo "expected a tag name 'v$version'"
+            exit 1
           fi
-          echo "tag does not match version in gleam.toml, refusing to publish"
-          exit 1
-      - run: gleam format --check src test
+        name: check version
+
+      - run: gleam format --check
+
       - run: gleam test
+
       - run: gleam publish -y
         env:
           HEXPM_USER: ${{ secrets.HEX_USERNAME }}
