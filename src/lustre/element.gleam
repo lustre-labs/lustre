@@ -11,7 +11,7 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/list
 import gleam/string
-import gleam/string_builder.{type StringBuilder}
+import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute, attribute}
 import lustre/effect.{type Effect}
 import lustre/internals/vdom.{Element, Map, Text}
@@ -331,24 +331,24 @@ pub fn to_document_string(el: Element(msg)) -> String {
   |> string.append("<!doctype html>\n", _)
 }
 
-/// Convert a Lustre `Element` to a `StringBuilder`. This is _not_ pretty-printed,
+/// Convert a Lustre `Element` to a `StringTree`. This is _not_ pretty-printed,
 /// so there are no newlines or indentation. If you need to pretty-print an element,
 /// reach out on the [Gleam Discord](https://discord.gg/Fm8Pwmy) or
 /// [open an issue](https://github.com/lustre-labs/lustre/issues/new) with your
 /// use case and we'll see what we can do!
 ///
-pub fn to_string_builder(element: Element(msg)) -> StringBuilder {
+pub fn to_string_builder(element: Element(msg)) -> StringTree {
   vdom.element_to_string_builder(element)
 }
 
-/// Converts an element to a `StringBuilder` like [`to_string_builder`](#to_string_builder),
+/// Converts an element to a `StringTree` like [`to_string_builder`](#to_string_builder),
 /// but prepends a `<!doctype html>` declaration. This is useful for rendering
 /// complete HTML documents.
 ///
 /// If the provided element is not an `html` element, it will be wrapped in both
 /// a `html` and `body` element.
 ///
-pub fn to_document_string_builder(el: Element(msg)) -> StringBuilder {
+pub fn to_document_string_builder(el: Element(msg)) -> StringTree {
   vdom.element_to_string_builder(case el {
     Element(tag: "html", ..) -> el
     Element(tag: "head", ..) | Element(tag: "body", ..) ->
@@ -357,7 +357,7 @@ pub fn to_document_string_builder(el: Element(msg)) -> StringBuilder {
 
     _ -> element("html", [], [element("body", [], [el])])
   })
-  |> string_builder.prepend("<!doctype html>\n")
+  |> string_tree.prepend("<!doctype html>\n")
 }
 
 /// Converts a Lustre `Element` to a human-readable string by inserting new lines

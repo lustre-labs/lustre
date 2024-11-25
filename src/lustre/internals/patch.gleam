@@ -108,7 +108,7 @@ fn do_elements(
               diff.handlers,
             )
 
-            let name = string.drop_left(name, 2)
+            let name = string.drop_start(name, 2)
             dict.insert(handlers, key <> "-" <> name, handler)
           }
           let diff =
@@ -372,7 +372,7 @@ fn event_handler(
   case attribute {
     Attribute(_, _, _) -> Error(Nil)
     Event(name, handler) -> {
-      let name = string.drop_left(name, 2)
+      let name = string.drop_start(name, 2)
 
       Ok(#(name, handler))
     }

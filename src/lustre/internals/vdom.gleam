@@ -7,7 +7,7 @@ import gleam/int
 import gleam/json.{type Json}
 import gleam/list
 import gleam/string
-import gleam/string_builder.{type StringBuilder}
+import gleam/string_tree.{type StringTree}
 import lustre/internals/escape.{escape}
 
 // TYPES -----------------------------------------------------------------------
@@ -161,7 +161,7 @@ pub fn attribute_to_json(
     }
 
     Event(name, _) -> {
-      let name = string.drop_left(name, 2)
+      let name = string.drop_start(name, 2)
 
       Ok(
         json.object([
@@ -178,26 +178,26 @@ pub fn attribute_to_json(
 pub fn element_to_string(element: Element(msg)) -> String {
   element
   |> do_element_to_string_builder(False)
-  |> string_builder.to_string
+  |> string_tree.to_string
 }
 
-pub fn element_to_string_builder(element: Element(msg)) -> StringBuilder {
+pub fn element_to_string_builder(element: Element(msg)) -> StringTree {
   do_element_to_string_builder(element, False)
 }
 
 fn do_element_to_string_builder(
   element: Element(msg),
   raw_text: Bool,
-) -> StringBuilder {
+) -> StringTree {
   case element {
-    Text("") -> string_builder.new()
-    Text(content) if raw_text -> string_builder.from_string(content)
-    Text(content) -> string_builder.from_string(escape(content))
+    Text("") -> string_tree.new()
+    Text(content) if raw_text -> string_tree.from_string(content)
+    Text(content) -> string_tree.from_string(escape(content))
 
     Map(subtree) -> do_element_to_string_builder(subtree(), raw_text)
 
     Element(_, namespace, tag, attrs, _, self_closing, _) if self_closing -> {
-      let html = string_builder.from_string("<" <> tag)
+      let html = string_tree.from_string("<" <> tag)
       let #(attrs, _) =
         attributes_to_string_builder(case namespace {
           "" -> attrs
@@ -205,12 +205,12 @@ fn do_element_to_string_builder(
         })
 
       html
-      |> string_builder.append_builder(attrs)
-      |> string_builder.append("/>")
+      |> string_tree.append_tree(attrs)
+      |> string_tree.append("/>")
     }
 
     Element(_, namespace, tag, attrs, _, _, void) if void -> {
-      let html = string_builder.from_string("<" <> tag)
+      let html = string_tree.from_string("<" <> tag)
       let #(attrs, _) =
         attributes_to_string_builder(case namespace {
           "" -> attrs
@@ -218,26 +218,26 @@ fn do_element_to_string_builder(
         })
 
       html
-      |> string_builder.append_builder(attrs)
-      |> string_builder.append(">")
+      |> string_tree.append_tree(attrs)
+      |> string_tree.append(">")
     }
 
     // Style and script tags are special beacuse they need to contain unescape
     // text content and not escaped HTML content.
     Element(_, "", "style" as tag, attrs, children, False, False)
     | Element(_, "", "script" as tag, attrs, children, False, False) -> {
-      let html = string_builder.from_string("<" <> tag)
+      let html = string_tree.from_string("<" <> tag)
       let #(attrs, _) = attributes_to_string_builder(attrs)
 
       html
-      |> string_builder.append_builder(attrs)
-      |> string_builder.append(">")
+      |> string_tree.append_tree(attrs)
+      |> string_tree.append(">")
       |> children_to_string_builder(children, True)
-      |> string_builder.append("</" <> tag <> ">")
+      |> string_tree.append("</" <> tag <> ">")
     }
 
     Element(_, namespace, tag, attrs, children, _, _) -> {
-      let html = string_builder.from_string("<" <> tag)
+      let html = string_tree.from_string("<" <> tag)
       let #(attrs, inner_html) =
         attributes_to_string_builder(case namespace {
           "" -> attrs
@@ -247,53 +247,53 @@ fn do_element_to_string_builder(
       case inner_html {
         "" ->
           html
-          |> string_builder.append_builder(attrs)
-          |> string_builder.append(">")
+          |> string_tree.append_tree(attrs)
+          |> string_tree.append(">")
           |> children_to_string_builder(children, raw_text)
-          |> string_builder.append("</" <> tag <> ">")
+          |> string_tree.append("</" <> tag <> ">")
         _ ->
           html
-          |> string_builder.append_builder(attrs)
-          |> string_builder.append(">" <> inner_html <> "</" <> tag <> ">")
+          |> string_tree.append_tree(attrs)
+          |> string_tree.append(">" <> inner_html <> "</" <> tag <> ">")
       }
     }
   }
 }
 
 fn children_to_string_builder(
-  html: StringBuilder,
+  html: StringTree,
   children: List(Element(msg)),
   raw_text: Bool,
-) -> StringBuilder {
+) -> StringTree {
   use html, child <- list.fold(children, html)
 
   child
   |> do_element_to_string_builder(raw_text)
-  |> string_builder.append_builder(html, _)
+  |> string_tree.append_tree(html, _)
 }
 
 pub fn element_to_snapshot(element: Element(msg)) -> String {
   element
   |> do_element_to_snapshot_builder(False, 0)
-  |> string_builder.to_string
+  |> string_tree.to_string
 }
 
 fn do_element_to_snapshot_builder(
   element: Element(msg),
   raw_text: Bool,
   indent: Int,
-) -> StringBuilder {
+) -> StringTree {
   let spaces = string.repeat("  ", indent)
 
   case element {
-    Text("") -> string_builder.new()
-    Text(content) if raw_text -> string_builder.from_strings([spaces, content])
-    Text(content) -> string_builder.from_strings([spaces, escape(content)])
+    Text("") -> string_tree.new()
+    Text(content) if raw_text -> string_tree.from_strings([spaces, content])
+    Text(content) -> string_tree.from_strings([spaces, escape(content)])
 
     Map(subtree) -> do_element_to_snapshot_builder(subtree(), raw_text, indent)
 
     Element(_, namespace, tag, attrs, _, self_closing, _) if self_closing -> {
-      let html = string_builder.from_string("<" <> tag)
+      let html = string_tree.from_string("<" <> tag)
       let #(attrs, _) =
         attributes_to_string_builder(case namespace {
           "" -> attrs
@@ -301,13 +301,13 @@ fn do_element_to_snapshot_builder(
         })
 
       html
-      |> string_builder.prepend(spaces)
-      |> string_builder.append_builder(attrs)
-      |> string_builder.append("/>")
+      |> string_tree.prepend(spaces)
+      |> string_tree.append_tree(attrs)
+      |> string_tree.append("/>")
     }
 
     Element(_, namespace, tag, attrs, _, _, void) if void -> {
-      let html = string_builder.from_string("<" <> tag)
+      let html = string_tree.from_string("<" <> tag)
       let #(attrs, _) =
         attributes_to_string_builder(case namespace {
           "" -> attrs
@@ -315,40 +315,40 @@ fn do_element_to_snapshot_builder(
         })
 
       html
-      |> string_builder.prepend(spaces)
-      |> string_builder.append_builder(attrs)
-      |> string_builder.append(">")
+      |> string_tree.prepend(spaces)
+      |> string_tree.append_tree(attrs)
+      |> string_tree.append(">")
     }
 
     Element(_, "", tag, attrs, [], _, _) -> {
-      let html = string_builder.from_string("<" <> tag)
+      let html = string_tree.from_string("<" <> tag)
       let #(attrs, _) = attributes_to_string_builder(attrs)
 
       html
-      |> string_builder.prepend(spaces)
-      |> string_builder.append_builder(attrs)
-      |> string_builder.append(">")
-      |> string_builder.append("</" <> tag <> ">")
+      |> string_tree.prepend(spaces)
+      |> string_tree.append_tree(attrs)
+      |> string_tree.append(">")
+      |> string_tree.append("</" <> tag <> ">")
     }
 
     // Style and script tags are special beacuse they need to contain unescape
     // text content and not escaped HTML content.
     Element(_, "", "style" as tag, attrs, children, False, False)
     | Element(_, "", "script" as tag, attrs, children, False, False) -> {
-      let html = string_builder.from_string("<" <> tag)
+      let html = string_tree.from_string("<" <> tag)
       let #(attrs, _) = attributes_to_string_builder(attrs)
 
       html
-      |> string_builder.prepend(spaces)
-      |> string_builder.append_builder(attrs)
-      |> string_builder.append(">")
+      |> string_tree.prepend(spaces)
+      |> string_tree.append_tree(attrs)
+      |> string_tree.append(">")
       |> children_to_snapshot_builder(children, True, indent + 1)
-      |> string_builder.append(spaces)
-      |> string_builder.append("</" <> tag <> ">")
+      |> string_tree.append(spaces)
+      |> string_tree.append("</" <> tag <> ">")
     }
 
     Element(_, namespace, tag, attrs, children, _, _) -> {
-      let html = string_builder.from_string("<" <> tag)
+      let html = string_tree.from_string("<" <> tag)
       let #(attrs, inner_html) =
         attributes_to_string_builder(case namespace {
           "" -> attrs
@@ -358,27 +358,27 @@ fn do_element_to_snapshot_builder(
       case inner_html {
         "" ->
           html
-          |> string_builder.prepend(spaces)
-          |> string_builder.append_builder(attrs)
-          |> string_builder.append(">\n")
+          |> string_tree.prepend(spaces)
+          |> string_tree.append_tree(attrs)
+          |> string_tree.append(">\n")
           |> children_to_snapshot_builder(children, raw_text, indent + 1)
-          |> string_builder.append(spaces)
-          |> string_builder.append("</" <> tag <> ">")
+          |> string_tree.append(spaces)
+          |> string_tree.append("</" <> tag <> ">")
         _ ->
           html
-          |> string_builder.append_builder(attrs)
-          |> string_builder.append(">" <> inner_html <> "</" <> tag <> ">")
+          |> string_tree.append_tree(attrs)
+          |> string_tree.append(">" <> inner_html <> "</" <> tag <> ">")
       }
     }
   }
 }
 
 fn children_to_snapshot_builder(
-  html: StringBuilder,
+  html: StringTree,
   children: List(Element(msg)),
   raw_text: Bool,
   indent: Int,
-) -> StringBuilder {
+) -> StringTree {
   case children {
     [Text(a), Text(b), ..rest] ->
       children_to_snapshot_builder(
@@ -390,8 +390,8 @@ fn children_to_snapshot_builder(
     [child, ..rest] ->
       child
       |> do_element_to_snapshot_builder(raw_text, indent)
-      |> string_builder.append("\n")
-      |> string_builder.append_builder(html, _)
+      |> string_tree.append("\n")
+      |> string_tree.append_tree(html, _)
       |> children_to_snapshot_builder(rest, raw_text, indent)
     [] -> html
   }
@@ -399,9 +399,9 @@ fn children_to_snapshot_builder(
 
 fn attributes_to_string_builder(
   attrs: List(Attribute(msg)),
-) -> #(StringBuilder, String) {
+) -> #(StringTree, String) {
   let #(html, class, style, inner_html) = {
-    let init = #(string_builder.new(), "", "", "")
+    let init = #(string_tree.new(), "", "", "")
     use #(html, class, style, inner_html), attr <- list.fold(attrs, init)
 
     case attribute_to_string_parts(attr) {
@@ -436,13 +436,13 @@ fn attributes_to_string_builder(
         inner_html,
       )
       Ok(#(key, "")) -> #(
-        string_builder.append(html, " " <> key),
+        string_tree.append(html, " " <> key),
         class,
         style,
         inner_html,
       )
       Ok(#(key, val)) -> #(
-        string_builder.append(html, " " <> key <> "=\"" <> escape(val) <> "\""),
+        string_tree.append(html, " " <> key <> "=\"" <> escape(val) <> "\""),
         class,
         style,
         inner_html,
@@ -454,10 +454,10 @@ fn attributes_to_string_builder(
   #(
     case class, style {
       "", "" -> html
-      _, "" -> string_builder.append(html, " class=\"" <> class <> "\"")
-      "", _ -> string_builder.append(html, " style=\"" <> style <> "\"")
+      _, "" -> string_tree.append(html, " class=\"" <> class <> "\"")
+      "", _ -> string_tree.append(html, " style=\"" <> style <> "\"")
       _, _ ->
-        string_builder.append(
+        string_tree.append(
           html,
           " class=\"" <> class <> "\" style=\"" <> style <> "\"",
         )
@@ -511,7 +511,7 @@ pub fn attribute_to_event_handler(
   case attribute {
     Attribute(_, _, _) -> Error(Nil)
     Event(name, handler) -> {
-      let name = string.drop_left(name, 2)
+      let name = string.drop_start(name, 2)
       Ok(#(name, handler))
     }
   }
