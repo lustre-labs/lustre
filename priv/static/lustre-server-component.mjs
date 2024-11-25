@@ -6,8 +6,8 @@ var event = 4;
 var attrs = 5;
 
 // build/dev/javascript/lustre/vdom.ffi.mjs
-if (window && window.customElements) {
-  window.customElements.define(
+if (globalThis.customElements) {
+  globalThis.customElements.define(
     "lustre-fragment",
     class LustreFragment extends HTMLElement {
       constructor() {
@@ -136,6 +136,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
     handlersForEl = registeredHandlers.get(el);
   }
   const prevHandlers = canMorph ? new Set(handlersForEl.keys()) : null;
+  console.log({prevHandlers})
   const prevAttributes = canMorph ? new Set(Array.from(prev.attributes, (a) => a.name)) : null;
   let className = null;
   let style = null;
@@ -482,14 +483,7 @@ var LustreServerComponent = class extends HTMLElement {
           const id = this.getAttribute("id");
           const route = next + (id ? `?id=${id}` : "");
           const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-          this.#socket?.close();
-          this.#socket = new WebSocket(
-            `${protocol}://${window.location.host}${route}`
-          );
-          this.#socket.addEventListener(
-            "message",
-            (message) => this.messageReceivedCallback(message)
-          );
+          this.#reconnect(`${protocol}://${window.location.host}${route}`);
         }
       }
     }
@@ -548,7 +542,7 @@ var LustreServerComponent = class extends HTMLElement {
       childList: false,
       subtree: false
     });
-    const prev = this.shadowRoot.childNodes[this.#adoptedStyleElements.lemgth] ?? this.shadowRoot.appendChild(document.createTextNode(""));
+    const prev = this.shadowRoot.childNodes[this.#adoptedStyleElements.length] ?? this.shadowRoot.appendChild(document.createTextNode(""));
     const dispatch = (handler) => (event2) => {
       const data = JSON.parse(this.getAttribute("data-lustre-data") || "{}");
       const msg = handler(event2);
@@ -559,6 +553,23 @@ var LustreServerComponent = class extends HTMLElement {
     if (initial.length) {
       this.#socket?.send(JSON.stringify([attrs, initial]));
     }
+  }
+  #reconnect(socketUrl = this.#socket.url) {
+    this.#socket?.close();
+    this.#socket = new WebSocket(
+      socketUrl
+    );
+    this.#socket.addEventListener(
+      "message",
+      (message) => this.messageReceivedCallback(message)
+    );
+    this.#socket.addEventListener("close", () => {
+      setTimeout(() => {
+        if (this.#socket.readyState === WebSocket.CLOSED) {
+          this.#reconnect();
+        }
+      }, 1e3);
+    });
   }
   #diff([diff2]) {
     const prev = this.shadowRoot.childNodes[this.#adoptedStyleElements.length - 1] ?? this.shadowRoot.appendChild(document.createTextNode(""));
