@@ -268,11 +268,23 @@ pub fn src(uri: String) -> Attribute(msg) {
   attribute("src", uri)
 }
 
+/// **Note**: this uses [`property`](#property) to set the value directly on the
+/// DOM node, making it **incompatible** with SVG elements. To set the height of
+/// an `<svg>` element, use the [`attribute`](#attribute) function directly.
+///
+/// You can read more about the difference between attributes and properties
+/// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn height(val: Int) -> Attribute(msg) {
   property("height", val)
 }
 
+/// **Note**: this uses [`property`](#property) to set the value directly on the
+/// DOM node, making it **incompatible** with SVG elements. To set the width of
+/// an `<svg>` element, use the [`attribute`](#attribute) function directly.
+///
+/// You can read more about the difference between attributes and properties
+/// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn width(val: Int) -> Attribute(msg) {
   property("width", val)
