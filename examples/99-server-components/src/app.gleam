@@ -1,5 +1,6 @@
 import counter
 import gleam/bytes_builder
+import gleam/bytes_tree
 import gleam/erlang
 import gleam/erlang/process.{type Selector, type Subject}
 import gleam/http/request.{type Request}
@@ -81,7 +82,7 @@ pub fn main() {
               ]),
             ])
             |> element.to_document_string_builder
-            |> bytes_builder.from_string_builder
+            |> bytes_tree.from_string_tree
             |> mist.Bytes,
           )
       }
@@ -98,9 +99,7 @@ pub fn main() {
 type Counter =
   Subject(lustre.Action(counter.Msg, lustre.ServerComponent))
 
-fn socket_init(
-  conn: WebsocketConnection,
-) -> #(Counter, Option(Selector(lustre.Patch(counter.Msg)))) {
+fn socket_init(_) -> #(Counter, Option(Selector(lustre.Patch(counter.Msg)))) {
   let self = process.new_subject()
   let app = counter.app()
   let assert Ok(counter) = lustre.start_actor(app, 0)
