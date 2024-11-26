@@ -6,7 +6,7 @@ var event = 4;
 var attrs = 5;
 
 // build/dev/javascript/lustre/vdom.ffi.mjs
-if (globalThis.customElements) {
+if (globalThis.customElements && !globalThis.customElements.get("lustre-fragment")) {
   globalThis.customElements.define(
     "lustre-fragment",
     class LustreFragment extends HTMLElement {
