@@ -64,18 +64,16 @@
 
 ## Features
 
+- **Unparalleled flexibility.** Run in the browser, render on the server, or diff
+  over the wire **only where you need it**. Elm meets Phoenix LiveView.
+
 - A **declarative**, functional API for constructing HTML. No templates, no macros,
   just Gleam.
 
-- An Erlang and Elm-inspired architecture for **managing state**.
-
-- **Managed side effects** for predictable, testable code.
-
-- Universal components. **Write once, run anywhere**. Elm meets Phoenix LiveView.
+- An Erlang and Elm-inspired state architecture with **Managed side effects**
+  for predictable, testable code.
 
 - A **batteries-included CLI** that makes scaffolding and building apps a breeze.
-
-- **Server-side rendering** for static HTML templating.
 
 ## Example
 

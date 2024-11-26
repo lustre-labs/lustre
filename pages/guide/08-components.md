@@ -4,7 +4,7 @@
 > creating components with Lustre.
 
 
-# 06 Components
+# 08 Components
 
 In the previous chapters of this guide we have explored the Model-View-Update
 architecture and stressed the importance of having a _single source of truth_ in
