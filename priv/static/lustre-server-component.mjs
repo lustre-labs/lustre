@@ -486,7 +486,7 @@ var LustreServerComponent = class extends HTMLElement {
           const id = this.getAttribute("id");
           const route = next + (id ? `?id=${id}` : "");
           const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-          this.#reconnect(`${protocol}://${window.location.host}${route}`);
+          this.#connect(`${protocol}://${window.location.host}${route}`);
         }
       }
     }
@@ -503,12 +503,16 @@ var LustreServerComponent = class extends HTMLElement {
     }
   }
   disconnectedCallback() {
+    clearTimeout(this.#reconnectTimeout);
+    this.#socket?.removeEventListener("close", this.#attemptReconnect);
     this.#socket?.close();
   }
   /** @type {MutationObserver} */
   #observer;
   /** @type {WebSocket | null} */
   #socket;
+  /** @type {number | null} */
+  #reconnectTimeout = null;
   /** @type {boolean} */
   #connected = false;
   /** @type {Element[]} */
@@ -557,7 +561,7 @@ var LustreServerComponent = class extends HTMLElement {
       this.#socket?.send(JSON.stringify([attrs, initial]));
     }
   }
-  #reconnect(socketUrl = this.#socket.url) {
+  #connect(socketUrl = this.#socket.url) {
     this.#socket?.close();
     this.#socket = new WebSocket(
       socketUrl
@@ -566,14 +570,15 @@ var LustreServerComponent = class extends HTMLElement {
       "message",
       (message) => this.messageReceivedCallback(message)
     );
-    this.#socket.addEventListener("close", () => {
-      setTimeout(() => {
-        if (this.#socket.readyState === WebSocket.CLOSED) {
-          this.#reconnect();
-        }
-      }, 1e3);
-    });
+    this.#socket.addEventListener("close", this.#attemptReconnect);
   }
+  #attemptReconnect = () => {
+    this.#reconnectTimeout = setTimeout(() => {
+      if (this.#socket.readyState === WebSocket.CLOSED) {
+        this.#connect();
+      }
+    }, 1e3);
+  };
   #diff([diff2]) {
     const prev = this.shadowRoot.childNodes[this.#adoptedStyleElements.length - 1] ?? this.shadowRoot.appendChild(document.createTextNode(""));
     const dispatch = (handler) => (event2) => {
