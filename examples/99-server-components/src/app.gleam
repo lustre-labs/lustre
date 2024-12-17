@@ -1,5 +1,4 @@
 import counter
-import gleam/bytes_builder
 import gleam/bytes_tree
 import gleam/erlang
 import gleam/erlang/process.{type Selector, type Subject}
@@ -47,7 +46,7 @@ pub fn main() {
           })
           |> result.lazy_unwrap(fn() {
             response.new(404)
-            |> response.set_body(mist.Bytes(bytes_builder.new()))
+            |> response.set_body(mist.Bytes(bytes_tree.new()))
           })
         }
 
