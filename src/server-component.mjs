@@ -48,7 +48,7 @@ export class LustreServerComponent extends HTMLElement {
           const id = this.getAttribute("id");
           const route = next + (id ? `?id=${id}` : "");
           const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-          this.#reconnect(`${protocol}://${window.location.host}${route}`);
+          this.#connect(`${protocol}://${window.location.host}${route}`);
         }
       }
     }
@@ -70,11 +70,14 @@ export class LustreServerComponent extends HTMLElement {
   }
 
   disconnectedCallback() {
+    clearTimeout(this.#reconnectTimeout);
+    this.#socket?.removeEventListener("close", this.#attemptReconnect);
     this.#socket?.close();
   }
 
   /** @type {MutationObserver} */ #observer;
   /** @type {WebSocket | null} */ #socket;
+  /** @type {number | null} */ #reconnectTimeout = null;
   /** @type {boolean} */ #connected = false;
   /** @type {Element[]} */ #adoptedStyleElements = [];
 
@@ -131,7 +134,7 @@ export class LustreServerComponent extends HTMLElement {
     }
   }
 
-  #reconnect(socketUrl = this.#socket.url) {
+  #connect(socketUrl = this.#socket.url) {
     this.#socket?.close();
     this.#socket = new WebSocket(
       socketUrl
@@ -140,13 +143,15 @@ export class LustreServerComponent extends HTMLElement {
       "message",
       (message) => this.messageReceivedCallback(message)
     );
-    this.#socket.addEventListener("close", () => {
-      setTimeout(() => {
-        if (this.#socket.readyState === WebSocket.CLOSED) {
-          this.#reconnect();
-        }
-      }, 1000);
-    });
+    this.#socket.addEventListener("close", this.#attemptReconnect);
+  }
+
+  #attemptReconnect = () => {
+    this.#reconnectTimeout = setTimeout(() => {
+      if (this.#socket.readyState === WebSocket.CLOSED) {
+        this.#connect();
+      }
+    }, 1000);
   }
 
   #diff([diff]) {
