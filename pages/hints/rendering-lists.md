@@ -51,7 +51,7 @@ Increment ->                 Increment ->
 ```
 
 With `element.keyed`, these changes might look more like:
-    
+
 ```
 Increment ->                 Increment ->
                              -- added -->  <img href="b">
@@ -71,10 +71,7 @@ Here is one possible way to use `element.keyed` in the `view` function, where th
 image slug is used as the key:
 
 ```gleam
-element.keyed(
-  html.div([], _),
-  list.map(model.cats, fn(cat) {
-    #(cat, html.img([attribute.src("https://cataas.com/cat/" <> cat)]))
-  }),
-),
+element.keyed(html.div([], _), list.map(model.cats, fn(cat) {
+    #(cat.id, html.img([attribute.src(cat.url)]))
+})),
 ```
