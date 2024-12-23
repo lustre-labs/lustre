@@ -143,7 +143,13 @@ export class LustreServerComponent extends HTMLElement {
       "message",
       (message) => this.messageReceivedCallback(message)
     );
-    this.#socket.addEventListener("close", this.#attemptReconnect);
+    this.#socket.addEventListener("open", () => {
+      this.dispatchEvent(new CustomEvent("connect"));
+    });
+    this.#socket.addEventListener("close", () => {
+      this.dispatchEvent(new CustomEvent("disconnect"));
+      this.#attemptReconnect();
+    });
   }
 
   #attemptReconnect = () => {
