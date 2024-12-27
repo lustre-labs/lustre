@@ -3,7 +3,6 @@
 > [Gleam Discord server](https://discord.gg/Fm8Pwmy) if you have any questions about
 > creating components with Lustre.
 
-
 # 06 Components
 
 In the previous chapters of this guide we have explored the Model-View-Update
@@ -122,3 +121,128 @@ to see how you can use the type system to enforce things like required props or
 prevent setting the same prop twice. We use this approach in [lustre/ssg](https://hexdocs.pm/lustre_ssg)!
 
 ### Nested MVU
+
+It is possible to split a complex application into a series of nested MVUs. If you have ever used Elm, this exercise will look very familiar. But if not, no problem, just remember that the `view` function must have a signature of `fn(Model) -> Element(Msg)`, where both `Model` and `Msg` are defined at the top of your program tree. For example, suppose we have an application that allows searching for something and displays the results:
+
+```gleam
+// main.gleam
+type Model {
+  Model(search_text: String, results: List(SomeResult))
+}
+
+type Msg {
+  SetSearchText(String),
+  SetResults(List(SomeResult))
+}
+
+fn init() {
+  Model("", [])
+}
+
+fn update(model: Model, msg: Msg) -> Model { // or #(Model, Effect(Msg))
+  case msg {
+    SetSearchText(str) -> // update the model
+    SetResults(items) -> // update the model
+  }
+}
+
+fn view(model: Model) -> Element(Msg) {
+  html.div([], [
+    render_search_text(model),
+    render_results_list(model)
+  ])
+}
+```
+
+In this case, you can move everything related to searching into a separate module. For example,
+
+```gleam
+// search_box.gleam
+pub type Model { // You can also call it differently, e.g. SearchModel
+  Model(text: String)
+}
+
+pub type Msg {
+  SetSearchText(String)
+}
+
+pub fn init() {
+  Model("")
+}
+
+pub fn update(model: Model, msg: Msg) -> Model { // or #(Model, Effect(Msg))
+  case msg {
+    SetSearchText(str) -> // update the model
+  }
+}
+
+pub fn view(model: Model) -> Element(Msg) {
+  html.div([], [
+    html.input([on_input(SetSearchText) ])
+    html.button([], [ html.text("Search") ])
+  ])
+}
+```
+
+Now we can import and use the search view in our `main.gleam` file:
+
+```gleam
+// main.gleam
+import search_box
+
+// ...
+
+fn view(model: Model) -> Element(Msg) {
+  html.div([], [
+    search_box(?),
+    render_results_list(model)
+  ])
+}
+```
+
+Now, the `search_box`'s `view` requires `search_box`'s `Model`. Let's provide it from our `main` module:
+
+```gleam
+// main.gleam
+import search_box
+
+type Model {
+  Model(search: search_box.Model, results: List(SomeResult))
+}
+
+// ...
+
+fn view(model: Model) -> Element(Msg) {
+  html.div([], [
+    search_box.view(model.search),
+    render_results_list(model)
+  ])
+}
+```
+
+Okay, we're getting there, Now, the `search_box.view`'s signature is `view(search_box.Model) -> Element(search_box.Msg)` and we need to return `Element(main.Msg)`. How do we resolve this mismatch? Easy! First, let's update the `Msg` type:
+
+```gleam
+// main.gleam
+type Msg {
+  FromSearchBox(search_box.Msg), // a wrapper for all things search
+  SetResults(List(SomeResult))
+}
+```
+
+Now we just need to map the return type of the nested view (`search_box.view`) to the correct type:
+
+```gleam
+// main.gleam
+
+// ...
+
+fn view(model: Model) -> Element(Msg) {
+  html.div([], [
+    Element.map(search_box.view(model.search), FromSearchBox),
+    render_results_list(model)
+  ])
+}
+```
+
+In other words, we created a wrapper for the messages from the nested MVU and use it to encapsulate those "nested" messages without revealing any details.
