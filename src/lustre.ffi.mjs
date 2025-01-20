@@ -303,15 +303,17 @@ export const make_lustre_client_component = (
 
       if (hasAttributes) {
         on_attribute_change[0].forEach((decoder, name) => {
+          const key = `__mirrored__${name}`;
+
           Object.defineProperty(this, name, {
             get() {
-              return this[`__mirrored__${name}`];
+              return this[key];
             },
 
             set(value) {
-              const prev = this[`__mirrored__${name}`];
+              const prev = this[key];
               if (this.#connected && isEqual(prev, value)) return;
-              this[`__mirrorred__${name}`] = value;
+              this[key] = value;
               const decoded = decoder(value);
               if (decoded instanceof Error) return;
               this.#queue.push(decoded[0]);
