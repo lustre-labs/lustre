@@ -130,7 +130,7 @@ pub fn type_(name: String) -> Attribute(msg) {
 
 ///
 pub fn value(val: String) -> Attribute(msg) {
-  attribute("value", val)
+  property("value", val)
 }
 
 ///

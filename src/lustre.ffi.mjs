@@ -18,7 +18,6 @@ import {
   Shutdown,
   Subscribe,
   Unsubscribe,
-  View,
 } from "./lustre/internals/runtime.mjs";
 import { morph } from "./vdom.ffi.mjs";
 import {
