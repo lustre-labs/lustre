@@ -107,6 +107,14 @@ pub fn classes(names: List(#(String, Bool))) -> Attribute(msg) {
 }
 
 ///
+///
+/// Add a `data-*` attribute to an HTML element. The key will be prefixed by `data-`.
+/// 
+pub fn data(key: String, value: String) -> Attribute(msg) {
+  attribute("data-" <> key, value)
+}
+
+///
 pub fn id(name: String) -> Attribute(msg) {
   attribute("id", name)
 }
