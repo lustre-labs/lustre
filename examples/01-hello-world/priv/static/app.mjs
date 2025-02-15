@@ -2,7 +2,7 @@
 var CustomType = class {
   withFields(fields) {
     let properties = Object.keys(this).map(
-      (label2) => label2 in fields ? fields[label2] : this[label2]
+      (label) => label in fields ? fields[label] : this[label]
     );
     return new this.constructor(...properties);
   }
@@ -883,17 +883,16 @@ var Dict = class _Dict {
 };
 
 // build/dev/javascript/gleam_stdlib/gleam_stdlib.mjs
-function identity(x) {
-  return x;
-}
+var Nil = void 0;
+var NOT_FOUND = {};
 function to_string(term) {
   return term.toString();
 }
-function string_length(string3) {
-  if (string3 === "") {
+function string_length(string2) {
+  if (string2 === "") {
     return 0;
   }
-  const iterator = graphemes_iterator(string3);
+  const iterator = graphemes_iterator(string2);
   if (iterator) {
     let i = 0;
     for (const _ of iterator) {
@@ -901,21 +900,21 @@ function string_length(string3) {
     }
     return i;
   } else {
-    return string3.match(/./gsu).length;
+    return string2.match(/./gsu).length;
   }
 }
 var segmenter = void 0;
-function graphemes_iterator(string3) {
+function graphemes_iterator(string2) {
   if (globalThis.Intl && Intl.Segmenter) {
     segmenter ||= new Intl.Segmenter();
-    return segmenter.segment(string3)[Symbol.iterator]();
+    return segmenter.segment(string2)[Symbol.iterator]();
   }
 }
-function string_slice(string3, idx, len) {
-  if (len <= 0 || idx >= string3.length) {
+function string_slice(string2, idx, len) {
+  if (len <= 0 || idx >= string2.length) {
     return "";
   }
-  const iterator = graphemes_iterator(string3);
+  const iterator = graphemes_iterator(string2);
   if (iterator) {
     while (idx-- > 0) {
       iterator.next();
@@ -930,7 +929,7 @@ function string_slice(string3, idx, len) {
     }
     return result;
   } else {
-    return string3.match(/./gsu).slice(idx, idx + len).join("");
+    return string2.match(/./gsu).slice(idx, idx + len).join("");
   }
 }
 var unicode_whitespaces = [
@@ -961,6 +960,16 @@ function new_map() {
 function map_to_list(map4) {
   return List.fromArray(map4.entries());
 }
+function map_remove(key, map4) {
+  return map4.delete(key);
+}
+function map_get(map4, key) {
+  const value = map4.get(key, NOT_FOUND);
+  if (value === NOT_FOUND) {
+    return new Error(Nil);
+  }
+  return new Ok(value);
+}
 function map_insert(key, value, map4) {
   return map4.set(key, value);
 }
@@ -973,6 +982,18 @@ function to_string2(x) {
 // build/dev/javascript/gleam_stdlib/gleam/dict.mjs
 function new$() {
   return new_map();
+}
+function is_empty(dict) {
+  return isEqual(dict, new$());
+}
+function get(from, get2) {
+  return map_get(from, get2);
+}
+function do_has_key(key, dict) {
+  return !isEqual(get(dict, key), new Error(void 0));
+}
+function has_key(dict, key) {
+  return do_has_key(key, dict);
 }
 function insert(dict, key, value) {
   return map_insert(key, value, dict);
@@ -998,10 +1019,10 @@ function do_keys_loop(loop$list, loop$acc) {
     if (list.hasLength(0)) {
       return reverse_and_concat(acc, toList([]));
     } else {
-      let first2 = list.head;
+      let first3 = list.head;
       let rest = list.tail;
       loop$list = rest;
-      loop$acc = prepend(first2[0], acc);
+      loop$acc = prepend(first3[0], acc);
     }
   }
 }
@@ -1012,8 +1033,19 @@ function do_keys(dict) {
 function keys(dict) {
   return do_keys(dict);
 }
+function delete$(dict, key) {
+  return map_remove(key, dict);
+}
 
 // build/dev/javascript/gleam_stdlib/gleam/list.mjs
+function first(list) {
+  if (list.hasLength(0)) {
+    return new Error(void 0);
+  } else {
+    let x = list.head;
+    return new Ok(x);
+  }
+}
 function fold(loop$list, loop$initial, loop$fun) {
   while (true) {
     let list = loop$list;
@@ -1053,34 +1085,60 @@ function index_fold(list, initial, fun) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/string.mjs
-function length2(string3) {
-  return string_length(string3);
+function length2(string2) {
+  return string_length(string2);
 }
-function slice(string3, idx, len) {
+function slice(string2, idx, len) {
   let $ = len < 0;
   if ($) {
     return "";
   } else {
     let $1 = idx < 0;
     if ($1) {
-      let translated_idx = length2(string3) + idx;
+      let translated_idx = length2(string2) + idx;
       let $2 = translated_idx < 0;
       if ($2) {
         return "";
       } else {
-        return string_slice(string3, translated_idx, len);
+        return string_slice(string2, translated_idx, len);
       }
     } else {
-      return string_slice(string3, idx, len);
+      return string_slice(string2, idx, len);
     }
   }
 }
-function drop_start(string3, num_graphemes) {
+function drop_start(string2, num_graphemes) {
   let $ = num_graphemes < 0;
   if ($) {
-    return string3;
+    return string2;
   } else {
-    return slice(string3, num_graphemes, length2(string3) - num_graphemes);
+    return slice(string2, num_graphemes, length2(string2) - num_graphemes);
+  }
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/result.mjs
+function is_ok(result) {
+  if (!result.isOk()) {
+    return false;
+  } else {
+    return true;
+  }
+}
+function map2(result, fun) {
+  if (result.isOk()) {
+    let x = result[0];
+    return new Ok(fun(x));
+  } else {
+    let e = result[0];
+    return new Error(e);
+  }
+}
+function unwrap(result, default$) {
+  if (result.isOk()) {
+    let v = result[0];
+    return v;
+  } else {
+    return default$;
   }
 }
 
@@ -1104,32 +1162,530 @@ function none() {
   return new Effect(toList([]));
 }
 
-// build/dev/javascript/lustre/lustre/internals/vdom.mjs
-var Text = class extends CustomType {
-  constructor(content) {
+// build/dev/javascript/gleam_stdlib/gleam/set.mjs
+var Set2 = class extends CustomType {
+  constructor(dict) {
     super();
-    this.content = content;
+    this.dict = dict;
   }
 };
-var Element = class extends CustomType {
-  constructor(key, namespace, tag2, attrs, children2, self_closing, void$) {
+function new$2() {
+  return new Set2(new$());
+}
+function is_empty2(set) {
+  return isEqual(set, new$2());
+}
+function contains(set, member) {
+  let _pipe = set.dict;
+  let _pipe$1 = get(_pipe, member);
+  return is_ok(_pipe$1);
+}
+
+// build/dev/javascript/lustre/lustre/runtime/lookup.mjs
+function new$3() {
+  return [new$(), new$2()];
+}
+function from_values(values, to_entry) {
+  let dict = index_fold(
+    values,
+    new$(),
+    (dict2, a, index2) => {
+      let $ = to_entry(a, index2);
+      let key = $[0];
+      let value = $[1];
+      return insert(dict2, key, value);
+    }
+  );
+  return [dict, new$2()];
+}
+function has(lookup, key) {
+  return has_key(lookup[0], key);
+}
+function visited(lookup, key) {
+  return contains(lookup[1], key);
+}
+function is_empty3(lookup) {
+  return is_empty(lookup[0]) && is_empty2(lookup[1]);
+}
+
+// build/dev/javascript/lustre/lustre/runtime/vdom.mjs
+var Fragment = class extends CustomType {
+  constructor(key, children2) {
+    super();
+    this.key = key;
+    this.children = children2;
+  }
+};
+var Map2 = class extends CustomType {
+  constructor(key, element3) {
+    super();
+    this.key = key;
+    this.element = element3;
+  }
+};
+var Node2 = class extends CustomType {
+  constructor(key, namespace, tag, attributes, children2, self_closing, void$) {
     super();
     this.key = key;
     this.namespace = namespace;
-    this.tag = tag2;
-    this.attrs = attrs;
+    this.tag = tag;
+    this.attributes = attributes;
     this.children = children2;
     this.self_closing = self_closing;
     this.void = void$;
   }
 };
-var Map2 = class extends CustomType {
+var Text = class extends CustomType {
+  constructor(key, content) {
+    super();
+    this.key = key;
+    this.content = content;
+  }
+};
+var Attribute = class extends CustomType {
+  constructor(name, value) {
+    super();
+    this.name = name;
+    this.value = value;
+  }
+};
+var Property = class extends CustomType {
+  constructor(name, value) {
+    super();
+    this.name = name;
+    this.value = value;
+  }
+};
+var Event = class extends CustomType {
+  constructor(name, handler, prevent_default, stop_propagation, immediate) {
+    super();
+    this.name = name;
+    this.handler = handler;
+    this.prevent_default = prevent_default;
+    this.stop_propagation = stop_propagation;
+    this.immediate = immediate;
+  }
+};
+var Patch = class extends CustomType {
+  constructor(index2, changes, children2) {
+    super();
+    this.index = index2;
+    this.changes = changes;
+    this.children = children2;
+  }
+};
+var Append = class extends CustomType {
+  constructor(children2) {
+    super();
+    this.children = children2;
+  }
+};
+var Insert = class extends CustomType {
+  constructor(before, element3) {
+    super();
+    this.before = before;
+    this.element = element3;
+  }
+};
+var Move = class extends CustomType {
+  constructor(before) {
+    super();
+    this.before = before;
+  }
+};
+var Remove = class extends CustomType {
+  constructor(from) {
+    super();
+    this.from = from;
+  }
+};
+var Replace = class extends CustomType {
+  constructor(element3) {
+    super();
+    this.element = element3;
+  }
+};
+var Update = class extends CustomType {
+  constructor(added, removed) {
+    super();
+    this.added = added;
+    this.removed = removed;
+  }
+};
+var Cursor = class extends CustomType {
+  constructor(this$, pointer, old, keyed, new$5) {
+    super();
+    this.this = this$;
+    this.pointer = pointer;
+    this.old = old;
+    this.keyed = keyed;
+    this.new = new$5;
+  }
+};
+function do_diff_attributes(loop$prev, loop$next, loop$added) {
+  while (true) {
+    let prev = loop$prev;
+    let next = loop$next;
+    let added = loop$added;
+    if (next.hasLength(0)) {
+      return [added, keys(prev)];
+    } else if (next.atLeastLength(1) && next.head instanceof Attribute) {
+      let a = next.head;
+      let rest = next.tail;
+      let $ = get(prev, a.name);
+      if ($.isOk() && $[0] instanceof Attribute && a.value === $[0].value) {
+        let b = $[0];
+        loop$prev = delete$(prev, a.name);
+        loop$next = rest;
+        loop$added = added;
+      } else if ($.isOk()) {
+        loop$prev = delete$(prev, a.name);
+        loop$next = rest;
+        loop$added = prepend(a, added);
+      } else {
+        loop$prev = prev;
+        loop$next = rest;
+        loop$added = prepend(a, added);
+      }
+    } else if (next.atLeastLength(1) && next.head instanceof Property) {
+      let a = next.head;
+      let rest = next.tail;
+      let $ = get(prev, a.name);
+      if ($.isOk() && $[0] instanceof Property && isEqual(a.value, $[0].value)) {
+        let b = $[0];
+        loop$prev = delete$(prev, a.name);
+        loop$next = rest;
+        loop$added = added;
+      } else if ($.isOk()) {
+        loop$prev = delete$(prev, a.name);
+        loop$next = rest;
+        loop$added = prepend(a, added);
+      } else {
+        loop$prev = prev;
+        loop$next = rest;
+        loop$added = prepend(a, added);
+      }
+    } else {
+      let rest = next.tail;
+      loop$prev = prev;
+      loop$next = rest;
+      loop$added = added;
+    }
+  }
+}
+function diff_attributes(prev, next) {
+  let prev$1 = fold(
+    prev,
+    new$(),
+    (acc, attr) => {
+      return insert(acc, attr.name, attr);
+    }
+  );
+  return do_diff_attributes(prev$1, next, toList([]));
+}
+function create_keyed_lookup(prev) {
+  if (prev.atLeastLength(1) && prev.head.key !== "") {
+    let head = prev.head;
+    return from_values(
+      prev,
+      (element3, index2) => {
+        let $ = element3.key;
+        if ($ === "" && element3 instanceof Map2) {
+          return [to_string2(index2), element3.element()];
+        } else if (element3 instanceof Map2) {
+          let key = $;
+          return [key, element3.element()];
+        } else if ($ === "") {
+          return [to_string2(index2), element3];
+        } else {
+          let key = $;
+          return [key, element3];
+        }
+      }
+    );
+  } else {
+    return new$3();
+  }
+}
+function do_diff(loop$stack) {
+  while (true) {
+    let stack = loop$stack;
+    if (stack.hasLength(0)) {
+      return new Patch(0, toList([]), toList([]));
+    } else if (stack.hasLength(1) && stack.head instanceof Cursor && stack.head.old.hasLength(0) && stack.head.new.hasLength(0)) {
+      let this$ = stack.head.this;
+      return this$;
+    } else if (stack.atLeastLength(1) && stack.head instanceof Cursor && stack.head.this instanceof Patch && stack.head.this.changes.hasLength(0) && stack.head.this.children.hasLength(0) && stack.head.old.hasLength(0) && stack.head.new.hasLength(0)) {
+      let stack$1 = stack.tail;
+      loop$stack = stack$1;
+    } else if (stack.atLeastLength(2) && stack.head instanceof Cursor && stack.head.old.hasLength(0) && stack.head.new.hasLength(0) && stack.tail.head instanceof Cursor) {
+      let this$ = stack.head.this;
+      let next = stack.tail.head;
+      let stack$1 = stack.tail.tail;
+      let children2 = prepend(this$, next.this.children);
+      let parent = (() => {
+        let _record = next.this;
+        return new Patch(_record.index, _record.changes, children2);
+      })();
+      loop$stack = prepend(
+        (() => {
+          let _record = next;
+          return new Cursor(
+            parent,
+            _record.pointer,
+            _record.old,
+            _record.keyed,
+            _record.new
+          );
+        })(),
+        stack$1
+      );
+    } else {
+      let cursor = stack.head;
+      let this$ = stack.head.this;
+      let pointer = stack.head.pointer;
+      let old = stack.head.old;
+      let keyed = stack.head.keyed;
+      let new$5 = stack.head.new;
+      let stack$1 = stack.tail;
+      let is_keyed_diff = !is_empty3(keyed);
+      let has_key2 = is_keyed_diff && (() => {
+        let _pipe = first(new$5);
+        let _pipe$1 = map2(
+          _pipe,
+          (element3) => {
+            return has(keyed, element3.key) || visited(
+              keyed,
+              element3.key
+            );
+          }
+        );
+        return unwrap(_pipe$1, false);
+      })();
+      if (old.hasLength(0)) {
+        let this$1 = (() => {
+          let _record = this$;
+          return new Patch(
+            _record.index,
+            prepend(new Append(new$5), this$.changes),
+            _record.children
+          );
+        })();
+        let cursor$1 = (() => {
+          let _record = cursor;
+          return new Cursor(
+            this$1,
+            _record.pointer,
+            _record.old,
+            _record.keyed,
+            toList([])
+          );
+        })();
+        loop$stack = prepend(cursor$1, stack$1);
+      } else if (new$5.hasLength(0)) {
+        let changes = prepend(new Remove(pointer), this$.changes);
+        let this$1 = (() => {
+          let _record = this$;
+          return new Patch(_record.index, changes, _record.children);
+        })();
+        let cursor$1 = (() => {
+          let _record = cursor;
+          return new Cursor(
+            this$1,
+            _record.pointer,
+            toList([]),
+            _record.keyed,
+            _record.new
+          );
+        })();
+        loop$stack = prepend(cursor$1, stack$1);
+      } else if (old.atLeastLength(1) && old.head instanceof Map2 && new$5.atLeastLength(1) && new$5.head instanceof Map2) {
+        let prev = old.head;
+        let old$1 = old.tail;
+        let next = new$5.head;
+        let new$1 = new$5.tail;
+        let old$2 = prepend(prev.element(), old$1);
+        let new$22 = prepend(next.element(), new$1);
+        let cursor$1 = (() => {
+          let _record = cursor;
+          return new Cursor(
+            _record.this,
+            _record.pointer,
+            old$2,
+            _record.keyed,
+            new$22
+          );
+        })();
+        loop$stack = prepend(cursor$1, stack$1);
+      } else if (old.atLeastLength(1) && old.head instanceof Map2) {
+        let prev = old.head;
+        let old$1 = old.tail;
+        let old$2 = prepend(prev.element(), old$1);
+        let stack$2 = prepend(
+          new Cursor(this$, pointer, old$2, keyed, new$5),
+          stack$1
+        );
+        loop$stack = stack$2;
+      } else if (new$5.atLeastLength(1) && new$5.head instanceof Map2) {
+        let next = new$5.head;
+        let new$1 = new$5.tail;
+        let new$22 = prepend(next.element(), new$1);
+        let stack$2 = prepend(
+          new Cursor(this$, pointer, old, keyed, new$22),
+          stack$1
+        );
+        loop$stack = stack$2;
+      } else if (old.atLeastLength(1) && old.head instanceof Fragment && new$5.atLeastLength(1) && new$5.head instanceof Fragment) {
+        let prev = old.head;
+        let old$1 = old.tail;
+        let next = new$5.head;
+        let new$1 = new$5.tail;
+        let child_cursor = new Cursor(
+          new Patch(pointer, toList([]), toList([])),
+          0,
+          prev.children,
+          create_keyed_lookup(prev.children),
+          next.children
+        );
+        let cursor$1 = (() => {
+          let _record = cursor;
+          return new Cursor(this$, pointer + 1, old$1, _record.keyed, new$1);
+        })();
+        loop$stack = prepend(child_cursor, prepend(cursor$1, stack$1));
+      } else if (old.atLeastLength(1) && old.head instanceof Node2 && new$5.atLeastLength(1) && new$5.head instanceof Node2 && (old.head.namespace === new$5.head.namespace && old.head.tag === new$5.head.tag)) {
+        let prev = old.head;
+        let old$1 = old.tail;
+        let next = new$5.head;
+        let new$1 = new$5.tail;
+        let child_cursor = new Cursor(
+          (() => {
+            let $ = diff_attributes(prev.attributes, next.attributes);
+            if ($[0].hasLength(0) && $[1].hasLength(0)) {
+              return new Patch(pointer, toList([]), toList([]));
+            } else {
+              let added = $[0];
+              let removed = $[1];
+              return new Patch(
+                pointer,
+                toList([new Update(added, removed)]),
+                toList([])
+              );
+            }
+          })(),
+          0,
+          prev.children,
+          create_keyed_lookup(prev.children),
+          next.children
+        );
+        let cursor$1 = (() => {
+          let _record = cursor;
+          return new Cursor(this$, pointer + 1, old$1, _record.keyed, new$1);
+        })();
+        loop$stack = prepend(child_cursor, prepend(cursor$1, stack$1));
+      } else if (old.atLeastLength(1) && old.head instanceof Text && new$5.atLeastLength(1) && new$5.head instanceof Text && old.head.content === new$5.head.content) {
+        let prev = old.head;
+        let old$1 = old.tail;
+        let next = new$5.head;
+        let new$1 = new$5.tail;
+        let cursor$1 = (() => {
+          let _record = cursor;
+          return new Cursor(
+            _record.this,
+            pointer + 1,
+            old$1,
+            _record.keyed,
+            new$1
+          );
+        })();
+        loop$stack = prepend(cursor$1, stack$1);
+      } else {
+        let old$1 = old.tail;
+        let next = new$5.head;
+        let new$1 = new$5.tail;
+        let child = new Patch(pointer, toList([new Replace(next)]), toList([]));
+        let this$1 = (() => {
+          let _record = this$;
+          return new Patch(
+            _record.index,
+            _record.changes,
+            prepend(child, this$.children)
+          );
+        })();
+        let cursor$1 = (() => {
+          let _record = cursor;
+          return new Cursor(this$1, pointer + 1, old$1, _record.keyed, new$1);
+        })();
+        loop$stack = prepend(cursor$1, stack$1);
+      }
+    }
+  }
+}
+function diff(prev, next) {
+  return do_diff(
+    toList([
+      new Cursor(
+        new Patch(0, toList([]), toList([])),
+        0,
+        toList([prev]),
+        new$3(),
+        toList([next])
+      )
+    ])
+  );
+}
+
+// build/dev/javascript/lustre/lustre/element.mjs
+function element(tag, attributes, children2) {
+  if (tag === "area") {
+    return new Node2("", "", tag, attributes, toList([]), false, true);
+  } else if (tag === "base") {
+    return new Node2("", "", tag, attributes, toList([]), false, true);
+  } else if (tag === "br") {
+    return new Node2("", "", tag, attributes, toList([]), false, true);
+  } else if (tag === "col") {
+    return new Node2("", "", tag, attributes, toList([]), false, true);
+  } else if (tag === "embed") {
+    return new Node2("", "", tag, attributes, toList([]), false, true);
+  } else if (tag === "hr") {
+    return new Node2("", "", tag, attributes, toList([]), false, true);
+  } else if (tag === "img") {
+    return new Node2("", "", tag, attributes, toList([]), false, true);
+  } else if (tag === "input") {
+    return new Node2("", "", tag, attributes, toList([]), false, true);
+  } else if (tag === "link") {
+    return new Node2("", "", tag, attributes, toList([]), false, true);
+  } else if (tag === "meta") {
+    return new Node2("", "", tag, attributes, toList([]), false, true);
+  } else if (tag === "param") {
+    return new Node2("", "", tag, attributes, toList([]), false, true);
+  } else if (tag === "source") {
+    return new Node2("", "", tag, attributes, toList([]), false, true);
+  } else if (tag === "track") {
+    return new Node2("", "", tag, attributes, toList([]), false, true);
+  } else if (tag === "wbr") {
+    return new Node2("", "", tag, attributes, toList([]), false, true);
+  } else {
+    return new Node2("", "", tag, attributes, children2, false, false);
+  }
+}
+function text(content) {
+  return new Text("", content);
+}
+
+// build/dev/javascript/lustre/lustre/internals/vdom.mjs
+var Text2 = class extends CustomType {
+  constructor(content) {
+    super();
+    this.content = content;
+  }
+};
+var Map3 = class extends CustomType {
   constructor(subtree) {
     super();
     this.subtree = subtree;
   }
 };
-var Attribute = class extends CustomType {
+var Attribute2 = class extends CustomType {
   constructor(x0, x1, as_property) {
     super();
     this[0] = x0;
@@ -1138,7 +1694,7 @@ var Attribute = class extends CustomType {
   }
 };
 function attribute_to_event_handler(attribute2) {
-  if (attribute2 instanceof Attribute) {
+  if (attribute2 instanceof Attribute2) {
     return new Error(void 0);
   } else {
     let name = attribute2[0];
@@ -1162,9 +1718,9 @@ function do_handlers(loop$element, loop$handlers, loop$key) {
     let element3 = loop$element;
     let handlers2 = loop$handlers;
     let key = loop$key;
-    if (element3 instanceof Text) {
+    if (element3 instanceof Text2) {
       return handlers2;
-    } else if (element3 instanceof Map2) {
+    } else if (element3 instanceof Map3) {
       let subtree = element3.subtree;
       loop$element = subtree();
       loop$handlers = handlers2;
@@ -1194,77 +1750,6 @@ function handlers(element3) {
   return do_handlers(element3, new$(), "0");
 }
 
-// build/dev/javascript/lustre/lustre/attribute.mjs
-function attribute(name, value) {
-  return new Attribute(name, identity(value), false);
-}
-function style(properties) {
-  return attribute(
-    "style",
-    fold(
-      properties,
-      "",
-      (styles, _use1) => {
-        let name$1 = _use1[0];
-        let value$1 = _use1[1];
-        return styles + name$1 + ":" + value$1 + ";";
-      }
-    )
-  );
-}
-function class$(name) {
-  return attribute("class", name);
-}
-
-// build/dev/javascript/lustre/lustre/element.mjs
-function element(tag2, attrs, children2) {
-  if (tag2 === "area") {
-    return new Element("", "", tag2, attrs, toList([]), false, true);
-  } else if (tag2 === "base") {
-    return new Element("", "", tag2, attrs, toList([]), false, true);
-  } else if (tag2 === "br") {
-    return new Element("", "", tag2, attrs, toList([]), false, true);
-  } else if (tag2 === "col") {
-    return new Element("", "", tag2, attrs, toList([]), false, true);
-  } else if (tag2 === "embed") {
-    return new Element("", "", tag2, attrs, toList([]), false, true);
-  } else if (tag2 === "hr") {
-    return new Element("", "", tag2, attrs, toList([]), false, true);
-  } else if (tag2 === "img") {
-    return new Element("", "", tag2, attrs, toList([]), false, true);
-  } else if (tag2 === "input") {
-    return new Element("", "", tag2, attrs, toList([]), false, true);
-  } else if (tag2 === "link") {
-    return new Element("", "", tag2, attrs, toList([]), false, true);
-  } else if (tag2 === "meta") {
-    return new Element("", "", tag2, attrs, toList([]), false, true);
-  } else if (tag2 === "param") {
-    return new Element("", "", tag2, attrs, toList([]), false, true);
-  } else if (tag2 === "source") {
-    return new Element("", "", tag2, attrs, toList([]), false, true);
-  } else if (tag2 === "track") {
-    return new Element("", "", tag2, attrs, toList([]), false, true);
-  } else if (tag2 === "wbr") {
-    return new Element("", "", tag2, attrs, toList([]), false, true);
-  } else {
-    return new Element("", "", tag2, attrs, children2, false, false);
-  }
-}
-function text(content) {
-  return new Text(content);
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/set.mjs
-var Set2 = class extends CustomType {
-  constructor(dict) {
-    super();
-    this.dict = dict;
-  }
-};
-function new$3() {
-  return new Set2(new$());
-}
-
 // build/dev/javascript/lustre/lustre/internals/patch.mjs
 var Diff = class extends CustomType {
   constructor(x0) {
@@ -1286,11 +1771,11 @@ var Init = class extends CustomType {
     this[1] = x1;
   }
 };
-function is_empty_element_diff(diff2) {
-  return isEqual(diff2.created, new$()) && isEqual(
-    diff2.removed,
-    new$3()
-  ) && isEqual(diff2.updated, new$());
+function is_empty_element_diff(diff3) {
+  return isEqual(diff3.created, new$()) && isEqual(
+    diff3.removed,
+    new$2()
+  ) && isEqual(diff3.updated, new$());
 }
 
 // build/dev/javascript/lustre/lustre/internals/runtime.mjs
@@ -1326,7 +1811,7 @@ var Emit2 = class extends CustomType {
     this[1] = x1;
   }
 };
-var Event2 = class extends CustomType {
+var Event3 = class extends CustomType {
   constructor(x0, x1) {
     super();
     this[0] = x0;
@@ -1368,9 +1853,9 @@ if (globalThis.customElements && !globalThis.customElements.get("lustre-fragment
 }
 function morph(prev, next, dispatch) {
   let out;
-  let stack2 = [{ prev, next, parent: prev.parentNode }];
-  while (stack2.length) {
-    let { prev: prev2, next: next2, parent } = stack2.pop();
+  let stack = [{ prev, next, parent: prev.parentNode }];
+  while (stack.length) {
+    let { prev: prev2, next: next2, parent } = stack.pop();
     while (next2.subtree !== void 0)
       next2 = next2.subtree();
     if (next2.content !== void 0) {
@@ -1392,7 +1877,7 @@ function morph(prev, next, dispatch) {
         prev: prev2,
         next: next2,
         dispatch,
-        stack: stack2
+        stack
       });
       if (!prev2) {
         parent.appendChild(created);
@@ -1404,7 +1889,7 @@ function morph(prev, next, dispatch) {
   }
   return out;
 }
-function createElementNode({ prev, next, dispatch, stack: stack2 }) {
+function createElementNode({ prev, next, dispatch, stack }) {
   const namespace = next.namespace || "http://www.w3.org/1999/xhtml";
   const canMorph = prev && prev.nodeType === Node.ELEMENT_NODE && prev.localName === next.tag && prev.namespaceURI === (next.namespace || "http://www.w3.org/1999/xhtml");
   const el = canMorph ? prev : namespace ? document.createElementNS(namespace, next.tag) : document.createElement(next.tag);
@@ -1419,7 +1904,7 @@ function createElementNode({ prev, next, dispatch, stack: stack2 }) {
   const prevHandlers = canMorph ? new Set(handlersForEl.keys()) : null;
   const prevAttributes = canMorph ? new Set(Array.from(prev.attributes, (a) => a.name)) : null;
   let className = null;
-  let style2 = null;
+  let style = null;
   let innerHTML = null;
   if (canMorph && next.tag === "textarea") {
     const innertText = next.children[Symbol.iterator]().next().value?.content;
@@ -1462,7 +1947,7 @@ function createElementNode({ prev, next, dispatch, stack: stack2 }) {
     } else if (name === "class") {
       className = className === null ? value : className + " " + value;
     } else if (name === "style") {
-      style2 = style2 === null ? value : style2 + value;
+      style = style === null ? value : style + value;
     } else if (name === "dangerous-unescaped-html") {
       innerHTML = value;
     } else {
@@ -1479,8 +1964,8 @@ function createElementNode({ prev, next, dispatch, stack: stack2 }) {
     if (canMorph)
       prevAttributes.delete("class");
   }
-  if (style2 !== null) {
-    el.setAttribute("style", style2);
+  if (style !== null) {
+    el.setAttribute("style", style);
     if (canMorph)
       prevAttributes.delete("style");
   }
@@ -1526,7 +2011,7 @@ function createElementNode({ prev, next, dispatch, stack: stack2 }) {
         prevChild,
         child,
         el,
-        stack2,
+        stack,
         incomingKeyedChildren,
         keyedChildren,
         seenKeys
@@ -1534,7 +2019,7 @@ function createElementNode({ prev, next, dispatch, stack: stack2 }) {
     }
   } else {
     for (const child of children(next)) {
-      stack2.unshift({ prev: prevChild, next: child, parent: el });
+      stack.unshift({ prev: prevChild, next: child, parent: el });
       prevChild = prevChild?.nextSibling;
     }
   }
@@ -1561,7 +2046,7 @@ function lustreGenericEventHandler(event) {
 }
 function lustreServerEventHandler(event) {
   const el = event.currentTarget;
-  const tag2 = el.getAttribute(`data-lustre-on-${event.type}`);
+  const tag = el.getAttribute(`data-lustre-on-${event.type}`);
   const data = JSON.parse(el.getAttribute("data-lustre-data") || "{}");
   const include = JSON.parse(el.getAttribute("data-lustre-include") || "[]");
   switch (event.type) {
@@ -1571,7 +2056,7 @@ function lustreServerEventHandler(event) {
       break;
   }
   return {
-    tag: tag2,
+    tag,
     data: include.reduce(
       (data2, property) => {
         const path = property.split(".");
@@ -1601,41 +2086,41 @@ function getKeyedChildren(el) {
   }
   return keyedChildren;
 }
-function diffKeyedChild(prevChild, child, el, stack2, incomingKeyedChildren, keyedChildren, seenKeys) {
+function diffKeyedChild(prevChild, child, el, stack, incomingKeyedChildren, keyedChildren, seenKeys) {
   while (prevChild && !incomingKeyedChildren.has(prevChild.getAttribute("data-lustre-key"))) {
     const nextChild = prevChild.nextSibling;
     el.removeChild(prevChild);
     prevChild = nextChild;
   }
   if (keyedChildren.size === 0) {
-    stack2.unshift({ prev: prevChild, next: child, parent: el });
+    stack.unshift({ prev: prevChild, next: child, parent: el });
     prevChild = prevChild?.nextSibling;
     return prevChild;
   }
   if (seenKeys.has(child.key)) {
     console.warn(`Duplicate key found in Lustre vnode: ${child.key}`);
-    stack2.unshift({ prev: null, next: child, parent: el });
+    stack.unshift({ prev: null, next: child, parent: el });
     return prevChild;
   }
   seenKeys.add(child.key);
   const keyedChild = keyedChildren.get(child.key);
   if (!keyedChild && !prevChild) {
-    stack2.unshift({ prev: null, next: child, parent: el });
+    stack.unshift({ prev: null, next: child, parent: el });
     return prevChild;
   }
   if (!keyedChild && prevChild !== null) {
     const placeholder = document.createTextNode("");
     el.insertBefore(placeholder, prevChild);
-    stack2.unshift({ prev: placeholder, next: child, parent: el });
+    stack.unshift({ prev: placeholder, next: child, parent: el });
     return prevChild;
   }
   if (!keyedChild || keyedChild === prevChild) {
-    stack2.unshift({ prev: prevChild, next: child, parent: el });
+    stack.unshift({ prev: prevChild, next: child, parent: el });
     prevChild = prevChild?.nextSibling;
     return prevChild;
   }
   el.insertBefore(keyedChild, prevChild);
-  stack2.unshift({ prev: keyedChild, next: child, parent: el });
+  stack.unshift({ prev: keyedChild, next: child, parent: el });
   return prevChild;
 }
 function* children(element3) {
@@ -1822,10 +2307,10 @@ var LustreServerApplication = class _LustreServerApplication {
   send(action) {
     if (action instanceof Attrs) {
       for (const attr of action[0]) {
-        const decoder2 = this.#onAttributeChange.get(attr[0]);
-        if (!decoder2)
+        const decoder = this.#onAttributeChange.get(attr[0]);
+        if (!decoder)
           continue;
-        const msg = decoder2(attr[1]);
+        const msg = decoder(attr[1]);
         if (msg instanceof Error)
           continue;
         this.#queue.push(msg);
@@ -1843,7 +2328,7 @@ var LustreServerApplication = class _LustreServerApplication {
       for (const [_, renderer] of this.#renderers) {
         renderer(event);
       }
-    } else if (action instanceof Event2) {
+    } else if (action instanceof Event3) {
       const handler = this.#handlers.get(action[0]);
       if (!handler)
         return;
@@ -1872,15 +2357,15 @@ var LustreServerApplication = class _LustreServerApplication {
   #tick(effects = []) {
     this.#flush(effects);
     const vdom = this.#view(this.#model);
-    const diff2 = elements(this.#html, vdom);
-    if (!is_empty_element_diff(diff2)) {
-      const patch = new Diff(diff2);
+    const diff3 = elements(this.#html, vdom);
+    if (!is_empty_element_diff(diff3)) {
+      const patch = new Diff(diff3);
       for (const [_, renderer] of this.#renderers) {
         renderer(patch);
       }
     }
     this.#html = vdom;
-    this.#handlers = diff2.handlers;
+    this.#handlers = diff3.handlers;
   }
   #flush(effects = []) {
     while (this.#queue.length > 0) {
@@ -1911,6 +2396,221 @@ var LustreServerApplication = class _LustreServerApplication {
 };
 var start_server_application = LustreServerApplication.start;
 var is_browser = () => globalThis.window && window.document;
+
+// build/dev/javascript/lustre/reconciler.ffi.mjs
+var LustreReconciler = class {
+  #nextTick = null;
+  #queue = [];
+  #handlers = /* @__PURE__ */ new WeakMap();
+  constructor(root, { useServerEvents = false } = {}) {
+    this.root = root;
+  }
+  mount(vnode) {
+    this.root.appendChild(createElement(vnode));
+  }
+  push(diff3, { flush = false } = {}) {
+    this.#queue.push(diff3);
+    if (flush) {
+      this.flush();
+    } else if (!this.#nextTick) {
+      this.#nextTick = window.requestAnimationFrame(() => {
+        this.flush();
+      });
+    }
+  }
+  flush() {
+    for (const diff3 of this.#queue) {
+      reconcile(this.root, diff3, this.#handlers);
+    }
+    this.#nextTick = null;
+  }
+};
+var empty = new Empty();
+function reconcile(root, diff3) {
+  const nodes = [root];
+  const stack = [diff3];
+  while (stack.length) {
+    const patch = stack.unshift();
+    if (patch.children.constructor !== NonEmpty) {
+      const parent = nodes[0];
+      stack.shift(patch);
+      for (const child of patch.children) {
+        nodes.shift(parent[0].childNodes[child.index]);
+        stack.shift(child);
+      }
+      patch.children = empty;
+    } else {
+      const node = nodes.unshift();
+      for (const change of patch.changes) {
+        switch (change.constructor) {
+          case Append: {
+            for (const child of change.children) {
+              node.appendChild(createElement(child));
+            }
+            break;
+          }
+          case Insert:
+            break;
+          case Move:
+            break;
+          case Remove: {
+            while (node.childNodes[change.from]) {
+              node.removeChild(node.childNodes[change.from]);
+            }
+            break;
+          }
+          case Replace: {
+            node.parentNode.replaceChild(createElement(change.element), node);
+            break;
+          }
+          case Update: {
+            for (const attribute2 of change.added) {
+              switch (attribute2.constructor) {
+                case Attribute: {
+                  node.setAttribute(attribute2.name, attribute2.value);
+                  break;
+                }
+                case Property: {
+                  node[attribute2.name] = attribute2.value;
+                  break;
+                }
+                case Event: {
+                  break;
+                }
+              }
+            }
+            for (const attribute2 of change.removed) {
+              node.removeAttribute(attribute2.name);
+            }
+            break;
+          }
+        }
+      }
+    }
+  }
+}
+function createElement(vnode) {
+  switch (vnode.constructor) {
+    case Fragment: {
+      const node = document.createDocumentFragment();
+      const start4 = document.createComment("(");
+      const end = document.createComment(")");
+      start4.end = end;
+      end.start = start4;
+      node.appendChild(start4);
+      for (const child of vnode.children) {
+        node.appendChild(createElement(child));
+      }
+      node.appendChild(end);
+      if (vnode.key) {
+        start4.key = vnode.key;
+      }
+      return node;
+    }
+    case Node2: {
+      const node = vnode.namespace ? document.createElementNS(vnode.namespace, vnode.tag) : document.createElement(vnode.tag);
+      for (const attribute2 of vnode.attributes) {
+        switch (attribute2.constructor) {
+          case Attribute: {
+            node.setAttribute(attribute2.name, attribute2.value);
+            break;
+          }
+          case Property: {
+            node[attribute2.name] = attribute2.value;
+            break;
+          }
+          case Event: {
+            break;
+          }
+        }
+      }
+      for (const child of vnode.children) {
+        node.appendChild(createElement(child));
+      }
+      if (vnode.key) {
+        node.key = vnode.key;
+      }
+      return node;
+    }
+    case Text: {
+      const node = document.createTextNode(vnode.content);
+      if (vnode.key) {
+        node.key = vnode.key;
+      }
+      return node;
+    }
+  }
+}
+
+// build/dev/javascript/lustre/runtime.ffi.mjs
+var is_browser2 = () => globalThis.window && window.document;
+var LustreSPA = class _LustreSPA {
+  static start({ init: init2, update, view }, selector, flags) {
+    if (!is_browser2())
+      return new Error(new NotABrowser());
+    const root = selector instanceof HTMLElement ? selector : document.querySelector(selector);
+    if (!root)
+      return new Error(new ElementNotFound(selector));
+    const app = new _LustreSPA(root, init2(flags), update, view);
+    return new Ok((action) => app.send(action));
+  }
+  #model;
+  #update;
+  #view;
+  #prev;
+  #reconciler;
+  constructor(root, [init2, effects], update, view) {
+    this.root = root;
+    this.#model = init2;
+    this.#update = update;
+    this.#view = view;
+    this.#reconciler = new LustreReconciler(root);
+    this.#prev = view(init2);
+    this.#reconciler.mount(this.#prev);
+    if (effects.all instanceof NonEmpty) {
+      window.requestAnimationFrame(() => {
+        this.#tick(effects.all.toArray());
+      });
+    }
+  }
+  send(action) {
+    switch (action.constructor) {
+      case Dispatch: {
+        this.#dispatch(action[0], action[1]);
+        break;
+      }
+    }
+  }
+  #dispatch(msg, immediate = false) {
+    const [next, effects] = this.#update(this.#model, msg);
+    this.#model = next;
+    this.#tick(effects.all, immediate);
+  }
+  #tick(effects, immediate = false) {
+    this.#flush(effects, immediate);
+    const next = this.#view(this.#model);
+    const patches = diff(this.#prev, next);
+    this.#reconciler.push(patches, { flush: immediate });
+    this.#prev = next;
+  }
+  #flush(effects = []) {
+    const dispatch = (msg) => this.send(new Dispatch(msg));
+    const emit2 = (event, data) => this.root.dispatchEvent(
+      new CustomEvent(event, {
+        detail: data,
+        bubbles: true,
+        composed: true
+      })
+    );
+    const select = () => {
+    };
+    const root = this.root;
+    for (const effect of effects) {
+      effect({ dispatch, emit: emit2, select, root });
+    }
+  }
+};
+var start2 = LustreSPA.start;
 
 // build/dev/javascript/lustre/lustre.mjs
 var App = class extends CustomType {
@@ -1945,12 +2645,12 @@ function element2(html) {
   };
   return application(init2, update, view);
 }
-function start2(app, selector, flags) {
+function start3(app, selector, flags) {
   return guard(
-    !is_browser(),
+    !is_browser2(),
     new Error(new NotABrowser()),
     () => {
-      return start(app, selector, flags);
+      return start2(app, selector, flags);
     }
   );
 }
@@ -1966,20 +2666,6 @@ function div(attrs, children2) {
   return element("div", attrs, children2);
 }
 
-// build/dev/javascript/lustre_ui/lustre/ui/layout/centre.mjs
-function of2(element3, attributes, children2) {
-  return element3(
-    prepend(class$("lustre-ui-centre"), attributes),
-    toList([children2])
-  );
-}
-function centre(attributes, children2) {
-  return of2(div, attributes, children2);
-}
-
-// build/dev/javascript/lustre_ui/lustre/ui.mjs
-var centre2 = centre;
-
 // build/dev/javascript/app/app.mjs
 function main() {
   let styles = toList([
@@ -1988,18 +2674,15 @@ function main() {
     ["padding", "1rem"]
   ]);
   let app = element2(
-    centre2(
-      toList([style(styles)]),
-      div(
-        toList([]),
-        toList([
-          h1(toList([]), toList([text("Hello, world.")])),
-          h2(toList([]), toList([text("Welcome to Lustre.")]))
-        ])
-      )
+    div(
+      toList([]),
+      toList([
+        h1(toList([]), toList([text("Hello, world.")])),
+        h2(toList([]), toList([text("Welcome to Lustre.")]))
+      ])
     )
   );
-  let $ = start2(app, "#app", void 0);
+  let $ = start3(app, "#app", void 0);
   if (!$.isOk()) {
     throw makeError(
       "let_assert",

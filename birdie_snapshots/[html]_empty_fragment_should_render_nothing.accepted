@@ -1,5 +1,4 @@
 ---
-version: 1.2.4
+version: 1.2.5
 title: [html] Empty fragment should render nothing
 ---
-<lustre-fragment style="display:contents;"></lustre-fragment>

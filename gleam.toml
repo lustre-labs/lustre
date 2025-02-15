@@ -1,6 +1,6 @@
 name = "lustre"
 version = "4.6.4"
-gleam = ">= 1.4.0"
+gleam = ">= 1.6.0"
 
 description = "An Gleam web framework for building HTML templates, single page applications, and real-time server components."
 repository = { type = "github", user = "lustre-labs", repo = "lustre" }
@@ -42,7 +42,11 @@ houdini = ">= 1.0.0 and < 2.0.0"
 
 [dev-dependencies]
 birdie = "~> 1.0"
+gleam_regexp = ">= 1.0.0 and < 2.0.0"
 gleeunit = "~> 1.0"
+pprint = ">= 1.0.4 and < 2.0.0"
 shellout = "~> 1.6"
 simplifile = "~> 2.0"
 gleam_regexp = ">= 1.1.0 and < 2.0.0"
+gleamy_bench = ">= 0.5.0 and < 1.0.0"
+argv = ">= 1.0.2 and < 2.0.0"

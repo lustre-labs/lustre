@@ -14,10 +14,12 @@ packages = [
   { name = "gleam_otp", version = "0.16.1", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_stdlib"], otp_app = "gleam_otp", source = "hex", outer_checksum = "50DA1539FC8E8FA09924EB36A67A2BBB0AD6B27BCDED5A7EF627057CF69D035E" },
   { name = "gleam_regexp", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_regexp", source = "hex", outer_checksum = "7F5E0C0BBEB3C58E57C9CB05FA9002F970C85AD4A63BA1E55CBCB35C15809179" },
   { name = "gleam_stdlib", version = "0.55.0", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "32D8F4AE03771516950047813A9E359249BD9FBA5C33463FDB7B953D6F8E896B" },
+  { name = "gleamy_bench", version = "0.5.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleamy_bench", source = "hex", outer_checksum = "FF23A7C2BF586FAD472CB65128089A54B34690F24CECFFEE36A1F11D2A5049C6" },
   { name = "gleeunit", version = "1.3.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "0E6C83834BA65EDCAAF4FE4FB94AC697D9262D83E6F58A750D63C9F6C8A9D9FF" },
-  { name = "glexer", version = "2.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "glexer", source = "hex", outer_checksum = "F74FB4F78C3C1E158DF15A7226F33A662672F58EEF1DFE6593B7FCDA38B0A0EB" },
   { name = "houdini", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "houdini", source = "hex", outer_checksum = "799BECC222753D60FA0809B2FD5280B7C0C3FE853380B5EF78D58FE81156F01C" },
+  { name = "glexer", version = "2.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "glexer", source = "hex", outer_checksum = "F74FB4F78C3C1E158DF15A7226F33A662672F58EEF1DFE6593B7FCDA38B0A0EB" },
   { name = "justin", version = "1.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "justin", source = "hex", outer_checksum = "7FA0C6DB78640C6DC5FBFD59BF3456009F3F8B485BF6825E97E1EB44E9A1E2CD" },
+  { name = "pprint", version = "1.0.4", build_tools = ["gleam"], requirements = ["glam", "gleam_stdlib"], otp_app = "pprint", source = "hex", outer_checksum = "C310A98BDC0995644847C3C8702DE19656D6BCD638B2A8A358B97824379ECAA1" },
   { name = "rank", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "rank", source = "hex", outer_checksum = "5660E361F0E49CBB714CC57CC4C89C63415D8986F05B2DA0C719D5642FAD91C9" },
   { name = "shellout", version = "1.6.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "shellout", source = "hex", outer_checksum = "E2FCD18957F0E9F67E1F497FC9FF57393392F8A9BAEAEA4779541DE7A68DD7E0" },
   { name = "simplifile", version = "2.2.0", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "0DFABEF7DC7A9E2FF4BB27B108034E60C81BEBFCB7AB816B9E7E18ED4503ACD8" },
@@ -26,13 +28,16 @@ packages = [
 ]
 
 [requirements]
+argv = { version = ">= 1.0.2 and < 2.0.0" }
 birdie = { version = "~> 1.0" }
 gleam_erlang = { version = "~> 0.24" }
 gleam_json = { version = ">= 1.0.0 and < 3.0.0" }
 gleam_otp = { version = "~> 0.9" }
 gleam_regexp = { version = ">= 1.1.0 and < 2.0.0" }
 gleam_stdlib = { version = ">= 0.43.0 and < 2.0.0" }
+gleamy_bench = { version = ">= 0.5.0 and < 1.0.0" }
 gleeunit = { version = "~> 1.0" }
 houdini = { version = ">= 1.0.0 and < 2.0.0" }
+pprint = { version = ">= 1.0.4 and < 2.0.0" }
 shellout = { version = "~> 1.6" }
 simplifile = { version = "~> 2.0" }
