@@ -90,6 +90,7 @@ pub fn diff(
     Cursor(
       meta: Metadata(
         fragment: False,
+        keyed: False,
         keyed_children: lookup.new(),
         keyed_moves: 0,
       ),
@@ -114,6 +115,7 @@ type Cursor(msg) {
 type Metadata(msg) {
   Metadata(
     fragment: Bool,
+    keyed: Bool,
     keyed_children: Lookup(String, Element(msg)),
     keyed_moves: Int,
   )
@@ -155,9 +157,8 @@ fn do_diff(
       }
 
     [Cursor(meta:, node:, idx:, old:, new:) as cursor, ..stack] -> {
-      let is_keyed_diff = !lookup.is_empty(meta.keyed_children)
       let has_key = case new {
-        [head, ..] if is_keyed_diff ->
+        [head, ..] if meta.keyed ->
           lookup.has(meta.keyed_children, head.key)
           || lookup.visited(meta.keyed_children, head.key)
         _ -> False
@@ -171,12 +172,23 @@ fn do_diff(
           do_diff(handlers, [cursor, ..stack])
         }
 
-        [_, ..], [] if is_keyed_diff -> {
+        [_, ..], [] if meta.keyed -> {
           let changes =
             lookup.remaining_keys(meta.keyed_children)
             |> list.fold(node.changes, fn(changes, key) {
               [RemoveKey(key), ..changes]
             })
+          let node = Patch(..node, changes:)
+          let cursor = Cursor(..cursor, node:, old: [])
+
+          do_diff(handlers, [cursor, ..stack])
+        }
+
+        [_, ..], [] if meta.fragment -> {
+          let changes = [
+            Remove(from: idx, count: list.length(old)),
+            ..node.changes
+          ]
           let node = Patch(..node, changes:)
           let cursor = Cursor(..cursor, node:, old: [])
 
@@ -209,7 +221,7 @@ fn do_diff(
           do_diff(handlers, [cursor, ..stack])
         }
 
-        _, [next, ..new] if is_keyed_diff && !has_key -> {
+        _, [next, ..new] if meta.keyed && !has_key -> {
           let changes = [
             Insert(child: next, at: idx - meta.keyed_moves),
             ..node.changes
@@ -222,14 +234,27 @@ fn do_diff(
         }
 
         [Fragment(..) as prev, ..old], [Fragment(..) as next, ..new] -> {
-          let child_cursor =
-            Cursor(
-              meta: Metadata(
+          let child_meta = case prev.children {
+            [head, ..] if head.key != "" ->
+              Metadata(
                 fragment: True,
+                keyed: True,
                 keyed_children: add_keyed_children(lookup.new(), prev.children),
                 keyed_moves: meta.keyed_moves,
-              ),
+              )
+
+            _ ->
+              Metadata(
+                fragment: True,
+                keyed: False,
+                keyed_children: lookup.new(),
+                keyed_moves: meta.keyed_moves,
+              )
+          }
+          let child_cursor =
+            Cursor(
               node: Patch(..node, index: idx),
+              meta: child_meta,
               idx: idx,
               old: prev.children,
               new: next.children,
@@ -242,13 +267,26 @@ fn do_diff(
         [Node(..) as prev, ..old], [Node(..) as next, ..new]
           if prev.namespace == next.namespace && prev.tag == next.tag
         -> {
+          let child_meta = case prev.children {
+            [head, ..] if head.key != "" ->
+              Metadata(
+                fragment: False,
+                keyed: True,
+                keyed_children: add_keyed_children(lookup.new(), prev.children),
+                keyed_moves: meta.keyed_moves,
+              )
+
+            _ ->
+              Metadata(
+                fragment: False,
+                keyed: False,
+                keyed_children: lookup.new(),
+                keyed_moves: meta.keyed_moves,
+              )
+          }
           let child_cursor =
             Cursor(
-              meta: Metadata(
-                fragment: False,
-                keyed_children: add_keyed_children(lookup.new(), prev.children),
-                keyed_moves: 0,
-              ),
+              meta: child_meta,
               node: case diff_attributes(prev.attributes, next.attributes) {
                 #([], []) -> Patch(idx, changes: [], children: [])
                 #(added, removed) ->
