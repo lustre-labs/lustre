@@ -28,6 +28,7 @@ birdie = { version = "~> 1.0" }
 gleam_erlang = { version = "~> 0.24" }
 gleam_json = { version = ">= 1.0.0 and < 3.0.0" }
 gleam_otp = { version = "~> 0.9" }
+gleam_regexp = { version = ">= 1.1.0 and < 2.0.0" }
 gleam_stdlib = { version = ">= 0.43.0 and < 2.0.0" }
 gleeunit = { version = "~> 1.0" }
 shellout = { version = "~> 1.6" }
