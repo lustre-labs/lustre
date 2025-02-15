@@ -9,7 +9,7 @@ import gleam/option.{type Option}
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/internals/escape.{escape}
-import lustre/runtime/lookup.{type Lookup}
+import lustre/internals/keyed_lookup.{type KeyedLookup}
 
 // ELEMENTS --------------------------------------------------------------------
 
@@ -91,7 +91,7 @@ pub fn diff(
       meta: Metadata(
         fragment: False,
         keyed: False,
-        keyed_children: lookup.new(),
+        keyed_children: keyed_lookup.new(),
         keyed_moves: 0,
       ),
       node: Patch(0, changes: [], children: []),
@@ -116,7 +116,7 @@ type Metadata(msg) {
   Metadata(
     fragment: Bool,
     keyed: Bool,
-    keyed_children: Lookup(String, Element(msg)),
+    keyed_children: KeyedLookup(String, Element(msg)),
     keyed_moves: Int,
   )
 }
@@ -126,6 +126,7 @@ fn do_diff(
   stack: List(Cursor(msg)),
 ) -> Diff(msg) {
   case stack {
+    //
     [] -> Diff(patch: Patch(0, changes: [], children: []), handlers:)
 
     [Cursor(node:, old: [], new: [], ..)] -> Diff(patch: node, handlers:)
@@ -133,6 +134,7 @@ fn do_diff(
     [Cursor(node:, meta:, idx:, old: [], new: []), next, ..stack] ->
       case meta.fragment, node.changes, node.children {
         False, [], [] -> do_diff(handlers, [next, ..stack])
+
         False, _, _ -> {
           let children = [node, ..next.node.children]
           let parent = Patch(..next.node, children:)
@@ -140,6 +142,7 @@ fn do_diff(
 
           do_diff(handlers, [next, ..stack])
         }
+
         True, [], [] -> {
           let meta = Metadata(..next.meta, keyed_moves: meta.keyed_moves)
           let node = Patch(..node, index: next.node.index)
@@ -147,6 +150,7 @@ fn do_diff(
 
           do_diff(handlers, [next, ..stack])
         }
+
         True, _, _ -> {
           let meta = Metadata(..next.meta, keyed_moves: meta.keyed_moves)
           let node = Patch(..node, index: next.node.index)
@@ -159,8 +163,8 @@ fn do_diff(
     [Cursor(meta:, node:, idx:, old:, new:) as cursor, ..stack] -> {
       let has_key = case new {
         [head, ..] if meta.keyed ->
-          lookup.has(meta.keyed_children, head.key)
-          || lookup.visited(meta.keyed_children, head.key)
+          keyed_lookup.has(meta.keyed_children, head.key)
+          || keyed_lookup.visited(meta.keyed_children, head.key)
         _ -> False
       }
 
@@ -172,9 +176,9 @@ fn do_diff(
           do_diff(handlers, [cursor, ..stack])
         }
 
-        [_, ..], [] if meta.keyed -> {
+        _, [] if meta.keyed -> {
           let changes =
-            lookup.remaining_keys(meta.keyed_children)
+            keyed_lookup.remaining_keys(meta.keyed_children)
             |> list.fold(node.changes, fn(changes, key) {
               [RemoveKey(key), ..changes]
             })
@@ -184,7 +188,7 @@ fn do_diff(
           do_diff(handlers, [cursor, ..stack])
         }
 
-        [_, ..], [] if meta.fragment -> {
+        _, [] if meta.fragment -> {
           let changes = [
             Remove(from: idx, count: list.length(old)),
             ..node.changes
@@ -195,7 +199,7 @@ fn do_diff(
           do_diff(handlers, [cursor, ..stack])
         }
 
-        [_, ..], [] -> {
+        _, [] -> {
           let changes = [RemoveAll(from: idx), ..node.changes]
           let node = Patch(..node, changes:)
           let cursor = Cursor(..cursor, node:, old: [])
@@ -205,7 +209,7 @@ fn do_diff(
 
         [prev, ..old], [next, ..] as new if has_key && prev.key != next.key -> {
           let assert Ok(#(match, keyed_children)) =
-            lookup.pop(meta.keyed_children, next.key)
+            keyed_lookup.pop(meta.keyed_children, next.key)
           let old = [match, prev, ..old]
           // TODO: If the `next` node is a fragment this will throw everything
           // off.
@@ -239,7 +243,10 @@ fn do_diff(
               Metadata(
                 fragment: True,
                 keyed: True,
-                keyed_children: add_keyed_children(lookup.new(), prev.children),
+                keyed_children: add_keyed_children(
+                  keyed_lookup.new(),
+                  prev.children,
+                ),
                 keyed_moves: meta.keyed_moves,
               )
 
@@ -247,7 +254,7 @@ fn do_diff(
               Metadata(
                 fragment: True,
                 keyed: False,
-                keyed_children: lookup.new(),
+                keyed_children: keyed_lookup.new(),
                 keyed_moves: meta.keyed_moves,
               )
           }
@@ -272,7 +279,10 @@ fn do_diff(
               Metadata(
                 fragment: False,
                 keyed: True,
-                keyed_children: add_keyed_children(lookup.new(), prev.children),
+                keyed_children: add_keyed_children(
+                  keyed_lookup.new(),
+                  prev.children,
+                ),
                 keyed_moves: meta.keyed_moves,
               )
 
@@ -280,7 +290,7 @@ fn do_diff(
               Metadata(
                 fragment: False,
                 keyed: False,
-                keyed_children: lookup.new(),
+                keyed_children: keyed_lookup.new(),
                 keyed_moves: meta.keyed_moves,
               )
           }
@@ -296,7 +306,8 @@ fn do_diff(
               old: prev.children,
               new: next.children,
             )
-          let keyed_children = lookup.delete(meta.keyed_children, next.key)
+          let keyed_children =
+            keyed_lookup.delete(meta.keyed_children, next.key)
           let meta = Metadata(..meta, keyed_children:)
           let cursor = Cursor(meta:, node:, idx: idx + 1, old:, new:)
 
@@ -306,7 +317,8 @@ fn do_diff(
         [Text(..) as prev, ..old], [Text(..) as next, ..new] ->
           case prev.content == next.content {
             True -> {
-              let keyed_children = lookup.delete(meta.keyed_children, next.key)
+              let keyed_children =
+                keyed_lookup.delete(meta.keyed_children, next.key)
               let meta = Metadata(..meta, keyed_children:)
               let cursor = Cursor(..cursor, meta:, idx: idx + 1, old:, new:)
 
@@ -317,7 +329,8 @@ fn do_diff(
               let changes = [ReplaceText(next.content)]
               let child = Patch(idx, changes:, children: [])
               let node = Patch(..node, children: [child, ..node.children])
-              let keyed_children = lookup.delete(meta.keyed_children, next.key)
+              let keyed_children =
+                keyed_lookup.delete(meta.keyed_children, next.key)
               let meta = Metadata(..meta, keyed_children:)
               let cursor = Cursor(meta:, node:, idx: idx + 1, old:, new:)
 
@@ -328,7 +341,8 @@ fn do_diff(
         [_, ..old], [next, ..new] -> {
           let child = Patch(idx, changes: [Replace(next)], children: [])
           let node = Patch(..node, children: [child, ..node.children])
-          let keyed_children = lookup.delete(meta.keyed_children, next.key)
+          let keyed_children =
+            keyed_lookup.delete(meta.keyed_children, next.key)
           let meta = Metadata(..meta, keyed_children:)
           let cursor = Cursor(meta:, node:, idx: idx + 1, old:, new:)
 
@@ -405,9 +419,9 @@ fn do_diff_attributes(
 }
 
 fn add_keyed_children(
-  keyed_children: Lookup(String, Element(msg)),
+  keyed_children: KeyedLookup(String, Element(msg)),
   children: List(Element(msg)),
-) -> Lookup(String, Element(msg)) {
+) -> KeyedLookup(String, Element(msg)) {
   case children {
     [] -> keyed_children
     [child, ..] if child.key == "" -> keyed_children
@@ -416,29 +430,17 @@ fn add_keyed_children(
 }
 
 fn do_add_keyed_children(
-  keyed_children: Lookup(String, Element(msg)),
+  keyed_children: KeyedLookup(String, Element(msg)),
   index: Int,
   children: List(Element(msg)),
-) -> Lookup(String, Element(msg)) {
+) -> KeyedLookup(String, Element(msg)) {
   case children {
     [] -> keyed_children
     [child, ..rest] ->
       keyed_children
-      |> lookup.set(child.key, child)
+      |> keyed_lookup.set(child.key, child)
       |> do_add_keyed_children(index, rest)
   }
-}
-
-fn drop_visited_orphans(
-  prev: List(Element(msg)),
-  keyed_children: Lookup(String, Element(msg)),
-) -> List(Element(msg)) {
-  list.filter(prev, fn(el) {
-    case el.key {
-      "" -> True
-      _ -> !lookup.visited(keyed_children, el.key)
-    }
-  })
 }
 
 fn flattened_element_count(element: Element(msg)) -> Int {
