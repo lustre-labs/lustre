@@ -1,11 +1,9 @@
 ---
-version: 1.2.4
+version: 1.2.5
 title: [html] Fragment with multiple mix elements should render on multiple lines
 ---
-<lustre-fragment style="display:contents;">
-  Hello, 
-  <span>
-    world
-  </span>
-  !
-</lustre-fragment>
+Hello, 
+<span>
+  world
+</span>
+!

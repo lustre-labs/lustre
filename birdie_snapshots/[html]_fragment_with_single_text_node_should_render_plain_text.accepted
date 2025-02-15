@@ -1,7 +1,5 @@
 ---
-version: 1.2.4
+version: 1.2.5
 title: [html] Fragment with single text node should render plain text
 ---
-<lustre-fragment style="display:contents;">
-  Hello, world!
-</lustre-fragment>
+Hello, world!

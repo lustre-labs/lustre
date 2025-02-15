@@ -2,10 +2,11 @@
 
 import gleam/dynamic.{type Decoder}
 import gleam/int
+import gleam/json.{type Json}
 import gleam/list
 import gleam/result
 import gleam/string
-import lustre/internals/vdom.{Attribute, Event}
+import lustre/runtime/vdom.{Attribute, Event, Property}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -25,7 +26,7 @@ pub type Attribute(msg) =
 /// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn attribute(name: String, value: String) -> Attribute(msg) {
-  Attribute(name, dynamic.from(value), as_property: False)
+  Attribute(name, value)
 }
 
 /// Create a DOM property. This is like saying `element.className = "wibble"` in
@@ -36,13 +37,19 @@ pub fn attribute(name: String, value: String) -> Attribute(msg) {
 /// can read more about the implications of this
 /// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
-pub fn property(name: String, value: any) -> Attribute(msg) {
-  Attribute(name, dynamic.from(value), as_property: True)
+pub fn property(name: String, value: Json) -> Attribute(msg) {
+  Property(name, value)
 }
 
 ///
 pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
-  Event("on" <> name, handler)
+  Event(
+    name,
+    handler,
+    prevent_default: False,
+    stop_propagation: False,
+    immediate: False,
+  )
 }
 
 /// Create an empty attribute. This is not added to the DOM and not rendered when
@@ -62,8 +69,10 @@ pub fn none() -> Attribute(msg) {
 ///
 pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
   case attr {
-    Attribute(name, value, as_property) -> Attribute(name, value, as_property)
-    Event(on, handler) -> Event(on, fn(e) { result.map(handler(e), f) })
+    Attribute(name, value) -> Attribute(name, value)
+    Event(handler:, ..) ->
+      Event(..attr, handler: fn(e) { result.map(handler(e), f) })
+    Property(name, value) -> Property(name, value)
   }
 }
 
@@ -135,7 +144,7 @@ pub fn value(val: String) -> Attribute(msg) {
 
 ///
 pub fn checked(is_checked: Bool) -> Attribute(msg) {
-  property("checked", is_checked)
+  property("checked", json.bool(is_checked))
 }
 
 ///
@@ -145,7 +154,7 @@ pub fn placeholder(text: String) -> Attribute(msg) {
 
 ///
 pub fn selected(is_selected: Bool) -> Attribute(msg) {
-  property("selected", is_selected)
+  property("selected", json.bool(is_selected))
 }
 
 // INPUT HELPERS ---------------------------------------------------------------
@@ -172,12 +181,12 @@ pub fn autocomplete(name: String) -> Attribute(msg) {
 
 ///
 pub fn autofocus(should_autofocus: Bool) -> Attribute(msg) {
-  property("autofocus", should_autofocus)
+  property("autofocus", json.bool(should_autofocus))
 }
 
 ///
 pub fn disabled(is_disabled: Bool) -> Attribute(msg) {
-  property("disabled", is_disabled)
+  property("disabled", json.bool(is_disabled))
 }
 
 ///
@@ -192,12 +201,12 @@ pub fn pattern(regex: String) -> Attribute(msg) {
 
 ///
 pub fn readonly(is_readonly: Bool) -> Attribute(msg) {
-  property("readOnly", is_readonly)
+  property("readOnly", json.bool(is_readonly))
 }
 
 ///
 pub fn required(is_required: Bool) -> Attribute(msg) {
-  property("required", is_required)
+  property("required", json.bool(is_required))
 }
 
 ///
@@ -276,7 +285,7 @@ pub fn src(uri: String) -> Attribute(msg) {
 /// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn height(val: Int) -> Attribute(msg) {
-  property("height", val)
+  property("height", json.int(val))
 }
 
 /// **Note**: this uses [`property`](#property) to set the value directly on the
@@ -287,7 +296,7 @@ pub fn height(val: Int) -> Attribute(msg) {
 /// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn width(val: Int) -> Attribute(msg) {
-  property("width", val)
+  property("width", json.int(val))
 }
 
 ///
@@ -304,17 +313,17 @@ pub fn content(text: String) -> Attribute(msg) {
 
 ///
 pub fn autoplay(should_autoplay: Bool) -> Attribute(msg) {
-  property("autoplay", should_autoplay)
+  property("autoplay", json.bool(should_autoplay))
 }
 
 ///
 pub fn controls(visible: Bool) -> Attribute(msg) {
-  property("controls", visible)
+  property("controls", json.bool(visible))
 }
 
 ///
 pub fn loop(should_loop: Bool) -> Attribute(msg) {
-  property("loop", should_loop)
+  property("loop", json.bool(should_loop))
 }
 
 // FORMS -----------------------------------------------------------------------
@@ -336,7 +345,7 @@ pub fn method(method: String) -> Attribute(msg) {
 
 ///
 pub fn novalidate(value: Bool) -> Attribute(msg) {
-  property("novalidate", value)
+  property("novalidate", json.bool(value))
 }
 
 ///
@@ -356,7 +365,7 @@ pub fn form_method(method: String) -> Attribute(msg) {
 
 ///
 pub fn form_novalidate(value: Bool) -> Attribute(msg) {
-  property("formnovalidate", value)
+  property("formnovalidate", json.bool(value))
 }
 
 ///
@@ -368,7 +377,7 @@ pub fn form_target(target: String) -> Attribute(msg) {
 
 ///
 pub fn open(is_open: Bool) -> Attribute(msg) {
-  property("open", is_open)
+  property("open", json.bool(is_open))
 }
 
 // META ------------------------------------------------------------------------

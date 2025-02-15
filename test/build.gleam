@@ -2,7 +2,7 @@
 
 import gleam/bool
 import gleam/io
-import gleam/regex.{Options}
+import gleam/regexp.{Options}
 import gleam/result
 import gleam/string
 import shellout
@@ -85,8 +85,8 @@ fn read_module() {
 fn inject_script(script, module) {
   let inject_regex = "// <<INJECT RUNTIME>>\\n.+\\n.+\\n    \\),"
   let options = Options(case_insensitive: False, multi_line: True)
-  let assert Ok(re) = regex.compile(inject_regex, options)
-  let assert [before, after] = regex.split(re, module)
+  let assert Ok(re) = regexp.compile(inject_regex, options)
+  let assert [before, after] = regexp.split(re, module)
 
   simplifile.write(
     "./src/lustre/server_component.gleam",

@@ -5,8 +5,7 @@ target = "javascript"
 [dependencies]
 gleam_json = "1.0.1"
 gleam_stdlib = "0.43.0"
-lustre = "4.6.3"
-lustre_ui = "~> 0.4"
+lustre = { path = "../../" }
 
 [dev-dependencies]
 gleeunit = "~> 1.0"

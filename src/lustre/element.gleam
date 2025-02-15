@@ -9,12 +9,14 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Dynamic}
+import gleam/int
 import gleam/list
+import gleam/option.{None, Some}
 import gleam/string
 import gleam/string_tree.{type StringTree}
-import lustre/attribute.{type Attribute, attribute}
+import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
-import lustre/internals/vdom.{Element, Map, Text}
+import lustre/runtime/vdom.{Fragment, Node, Text}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -89,7 +91,7 @@ pub type Element(msg) =
 ///
 pub fn element(
   tag: String,
-  attrs: List(Attribute(msg)),
+  attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
   case tag {
@@ -107,23 +109,25 @@ pub fn element(
     | "source"
     | "track"
     | "wbr" ->
-      Element(
+      Node(
         key: "",
         namespace: "",
         tag: tag,
-        attrs: attrs,
+        attributes:,
+        mapper: None,
         children: [],
         self_closing: False,
         void: True,
       )
 
     _ ->
-      Element(
+      Node(
         key: "",
         namespace: "",
         tag: tag,
-        attrs: attrs,
-        children: children,
+        attributes:,
+        mapper: None,
+        children:,
         self_closing: False,
         void: False,
       )
@@ -173,19 +177,23 @@ pub fn keyed(
 
 fn do_keyed(el: Element(msg), key: String) -> Element(msg) {
   case el {
-    Element(_, namespace, tag, attrs, children, self_closing, void) ->
-      Element(
-        key: key,
-        namespace: namespace,
-        tag: tag,
-        attrs: attrs,
-        children: children,
-        self_closing: self_closing,
-        void: void,
+    Fragment(children:, ..) ->
+      Fragment(
+        key:,
+        // Fragments get squashed into the parent child list so we need to make
+        // sure keys are guaranteed to stay unique after thaat happens. For a
+        // fragment with already-keyed children this will just prefix the fragment's
+        // own key, but for fragments without keyed children this will fallback
+        // to essentially indexed-based keying.
+        children: list.index_map(children, fn(child, index) {
+          case child.key {
+            "" -> do_keyed(child, key <> ":" <> int.to_string(index))
+            _ -> do_keyed(child, key <> ":" <> child.key)
+          }
+        }),
       )
-    Map(subtree) -> Map(fn() { do_keyed(subtree(), key) })
-
-    _ -> el
+    Node(..) -> Node(..el, key:)
+    Text(..) -> Text(..el, key:)
   }
 }
 
@@ -195,15 +203,16 @@ fn do_keyed(el: Element(msg), key: String) -> Element(msg) {
 pub fn namespaced(
   namespace: String,
   tag: String,
-  attrs: List(Attribute(msg)),
+  attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  Element(
+  Node(
     key: "",
-    namespace: namespace,
-    tag: tag,
-    attrs: attrs,
-    children: children,
+    namespace:,
+    tag:,
+    attributes:,
+    mapper: None,
+    children:,
     self_closing: False,
     void: False,
   )
@@ -217,19 +226,20 @@ pub fn namespaced(
 pub fn advanced(
   namespace: String,
   tag: String,
-  attrs: List(Attribute(msg)),
+  attributes: List(Attribute(msg)),
   children: List(Element(msg)),
   self_closing: Bool,
   void: Bool,
 ) -> Element(msg) {
-  Element(
+  Node(
     key: "",
-    namespace: namespace,
-    tag: tag,
-    attrs: attrs,
-    children: children,
-    self_closing: self_closing,
-    void: void,
+    namespace:,
+    tag:,
+    attributes:,
+    mapper: None,
+    children:,
+    self_closing:,
+    void:,
   )
 }
 
@@ -239,7 +249,7 @@ pub fn advanced(
 /// this function is exactly that!
 ///
 pub fn text(content: String) -> Element(msg) {
-  Text(content)
+  Text(key: "", content:)
 }
 
 /// A function for rendering nothing. This is mostly useful for conditional
@@ -247,7 +257,7 @@ pub fn text(content: String) -> Element(msg) {
 /// condition is met.
 ///
 pub fn none() -> Element(msg) {
-  Text("")
+  Text(key: "", content: "")
 }
 
 /// A function for wrapping elements to be rendered within a parent container without
@@ -255,14 +265,15 @@ pub fn none() -> Element(msg) {
 /// as if it were Element(msg). Useful when generating a list of elements from data but
 /// used downstream.
 ///
-pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
-  element(
-    "lustre-fragment",
-    [attribute.style([#("display", "contents")])],
-    elements,
-  )
+pub fn fragment(children: List(Element(msg))) -> Element(msg) {
+  Fragment(key: "", children:)
 }
 
+@external(erlang, "lustre_escape_ffi", "coerce")
+@external(javascript, "../lustre-escape.ffi.mjs", "coerce")
+fn unsafe_coerce(value: a) -> b
+
+///
 // MANIPULATIONS ---------------------------------------------------------------
 
 /// The `Element` type is parameterised by the type of messages it can produce
@@ -273,21 +284,55 @@ pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
 /// Think of it like `list.map` or `result.map` but for HTML events!
 ///
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
+  do_map(element, unsafe_coerce(f))
+}
+
+fn do_map(element: Element(a), f: fn(Dynamic) -> Dynamic) -> Element(b) {
   case element {
-    Text(content) -> Text(content)
-    Map(subtree) -> Map(fn() { map(subtree(), f) })
-    Element(key, namespace, tag, attrs, children, self_closing, void) ->
-      Map(fn() {
-        Element(
-          key: key,
-          namespace: namespace,
-          tag: tag,
-          attrs: list.map(attrs, attribute.map(_, f)),
-          children: list.map(children, map(_, f)),
-          self_closing: self_closing,
-          void: void,
-        )
-      })
+    Fragment(key:, children:) ->
+      Fragment(key:, children: list.map(children, do_map(_, f)))
+    Node(
+      key:,
+      namespace:,
+      tag:,
+      attributes:,
+      mapper:,
+      children:,
+      self_closing:,
+      void:,
+    ) ->
+      Node(
+        key:,
+        namespace:,
+        tag:,
+        // For vdom performance reasons we don't want to modify the callback
+        // of an event handler directly just to map it. Instead we track the
+        // mapper function separately and this will be stored on the DOM node
+        // directly. This way, for event handlers with a stable reference, we
+        // don't create unecessary patches and also, importantly, don't need to
+        // walk the list of attributes and apply this mapping function to each
+        // handler individually.
+        //
+        // That means we have to lie to Gleam and coerce the type for this list
+        // to the new mapped msg type. Here's why that is mostly ok:
+        //
+        // - The `Element` type is internal and should not be used by third-party
+        //   code. Anyone relying on internal implementation details do so at
+        //   their own peril, and if nothing else should have already come across
+        //   this comment.
+        //
+        // - The vdom will generate a `Map` patch for nodes where the mapper has
+        //   changed reference
+        attributes: unsafe_coerce(attributes),
+        mapper: case mapper {
+          Some(g) -> Some(fn(msg) { f(g(msg)) })
+          None -> Some(f)
+        },
+        children: list.map(children, do_map(_, f)),
+        self_closing:,
+        void:,
+      )
+    Text(key:, content:) -> Text(key:, content:)
   }
 }
 
@@ -321,11 +366,8 @@ pub fn to_string(element: Element(msg)) -> String {
 ///
 pub fn to_document_string(el: Element(msg)) -> String {
   vdom.element_to_string(case el {
-    Element(tag: "html", ..) -> el
-    Element(tag: "head", ..) | Element(tag: "body", ..) ->
-      element("html", [], [el])
-    Map(subtree) -> subtree()
-
+    Node(tag: "html", ..) -> el
+    Node(tag: "head", ..) | Node(tag: "body", ..) -> element("html", [], [el])
     _ -> element("html", [], [element("body", [], [el])])
   })
   |> string.append("<!doctype html>\n", _)
@@ -350,11 +392,8 @@ pub fn to_string_builder(element: Element(msg)) -> StringTree {
 ///
 pub fn to_document_string_builder(el: Element(msg)) -> StringTree {
   vdom.element_to_string_builder(case el {
-    Element(tag: "html", ..) -> el
-    Element(tag: "head", ..) | Element(tag: "body", ..) ->
-      element("html", [], [el])
-    Map(subtree) -> subtree()
-
+    Node(tag: "html", ..) -> el
+    Node(tag: "head", ..) | Node(tag: "body", ..) -> element("html", [], [el])
     _ -> element("html", [], [element("body", [], [el])])
   })
   |> string_tree.prepend("<!doctype html>\n")
