@@ -30,123 +30,46 @@ fn run_diff(input: #(Element(msg), Element(msg))) {
 
 fn table_diff(rows: Int) {
   let prev =
-    html.div([attribute.class("container")], [
-      html.div([attribute.class("jumbotron")], [
-        html.div([attribute.class("row")], [
-          html.div([attribute.class("col-md-6")], [
-            html.h1([], [html.text("Vdom Benchmark")]),
-          ]),
-          html.div([attribute.class("col-md-6")], [
-            html.div([attribute.class("row")], [
-              html.div([attribute.class("col-sm-6 smallpad")], [
-                html.button(
-                  [
-                    attribute.type_("button"),
-                    attribute.class("btn btn-primary btn-block"),
-                    attribute.id("run"),
-                  ],
-                  [html.text("Create 1,000 rows")],
-                ),
-              ]),
-              html.div([attribute.class("col-sm-6 smallpad")], [
-                html.button(
-                  [
-                    attribute.type_("button"),
-                    attribute.class("btn btn-primary btn-block"),
-                    attribute.id("runlots"),
-                  ],
-                  [html.text("Create 10,000 rows")],
-                ),
-              ]),
-            ]),
-          ]),
-        ]),
-      ]),
-      element.keyed(
-        html.table(
-          [attribute.class("table table-hover table-striped test-data")],
-          _,
-        ),
-        list.range(1, rows)
-          |> list.map(fn(i) {
-            #(
-              int.to_string(i),
-              html.tr([attribute.class("danger")], [
-                html.td([attribute.class("col-md-1")], [
+    element.keyed(
+      html.table([], _),
+      list.range(1, rows)
+        |> list.map(fn(i) {
+          #(
+            int.to_string(i),
+            html.tr([], [
+              html.td([], [html.text(int.to_string(i))]),
+              html.td([], [
+                html.a([], [
+                  html.text("Updated Row "),
                   html.text(int.to_string(i)),
                 ]),
-                html.td([attribute.class("col-md-4")], [
-                  html.a([], [html.text("Row " <> int.to_string(i))]),
-                ]),
-                html.td([attribute.class("col-md-1")], [
-                  html.a([], [html.text("Delete")]),
-                ]),
-                html.td([attribute.class("col-md-4")], []),
               ]),
-            )
-          }),
-      ),
-    ])
+              html.td([], [html.button([], [html.text("Delete")])]),
+            ]),
+          )
+        }),
+    )
 
   let next =
-    html.div([attribute.class("container")], [
-      html.div([attribute.class("jumbotron")], [
-        html.div([attribute.class("row")], [
-          html.div([attribute.class("col-md-6")], [
-            html.h1([], [html.text("Vdom Benchmark")]),
-          ]),
-          html.div([attribute.class("col-md-6")], [
-            html.div([attribute.class("row")], [
-              html.div([attribute.class("col-sm-6 smallpad")], [
-                html.button(
-                  [
-                    attribute.type_("button"),
-                    attribute.class("btn btn-primary btn-block"),
-                    attribute.id("run"),
-                  ],
-                  [html.text("Create 1,000 rows")],
-                ),
-              ]),
-              html.div([attribute.class("col-sm-6 smallpad")], [
-                html.button(
-                  [
-                    attribute.type_("button"),
-                    attribute.class("btn btn-primary btn-block"),
-                    attribute.id("runlots"),
-                  ],
-                  [html.text("Create 10,000 rows")],
-                ),
-              ]),
-            ]),
-          ]),
-        ]),
-      ]),
-      element.keyed(
-        html.table(
-          [attribute.class("table table-hover table-striped test-data")],
-          _,
-        ),
-        list.range(1 + { rows / 2 }, rows + { rows / 2 })
-          |> list.shuffle()
-          |> list.map(fn(i) {
-            #(
-              int.to_string(i),
-              html.tr([attribute.class("danger")], [
-                html.td([attribute.class("col-md-1")], [
+    element.keyed(
+      html.table([], _),
+      list.range(1 + { rows / 2 }, rows + { rows / 2 })
+        |> list.map(fn(i) {
+          #(
+            int.to_string(i),
+            html.tr([], [
+              html.td([], [html.text(int.to_string(i))]),
+              html.td([], [
+                html.a([], [
+                  html.text("Updated Row "),
                   html.text(int.to_string(i)),
                 ]),
-                html.td([attribute.class("col-md-4")], [
-                  html.a([], [html.text("Updated Row " <> int.to_string(i))]),
-                ]),
-                html.td([attribute.class("col-md-1")], [
-                  html.a([], [html.text("Delete")]),
-                ]),
-                html.td([attribute.class("col-md-4")], []),
               ]),
-            )
-          }),
-      ),
-    ])
+              html.td([], [html.button([], [html.text("Delete")])]),
+            ]),
+          )
+        }),
+    )
 
   #(prev, next)
 }
