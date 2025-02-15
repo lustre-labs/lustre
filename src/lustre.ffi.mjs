@@ -77,8 +77,9 @@ export class LustreClientApplication {
     this.#update = update;
     this.#view = view;
 
-    this.#tickScheduled = window.requestAnimationFrame(() =>
-      this.#tick(effects.all.toArray(), true),
+    this.#tickScheduled = window.setTimeout(
+      () => this.#tick(effects.all.toArray(), true),
+      0,
     );
   }
 
@@ -97,7 +98,7 @@ export class LustreClientApplication {
     if (action instanceof Debug) {
       // The `ForceModel` debug action
       if (action[0] instanceof ForceModel) {
-        this.#tickScheduled = window.cancelAnimationFrame(this.#tickScheduled);
+        this.#tickScheduled = window.clearTimeout(this.#tickScheduled);
 
         this.#queue = [];
         this.#model = action[0][0];
@@ -136,10 +137,10 @@ export class LustreClientApplication {
       this.#queue.push(msg);
 
       if (immediate) {
-        this.#tickScheduled = window.cancelAnimationFrame(this.#tickScheduled);
+        this.#tickScheduled = window.clearTimeout(this.#tickScheduled);
         this.#tick();
       } else if (!this.#tickScheduled) {
-        this.#tickScheduled = window.requestAnimationFrame(() => this.#tick());
+        this.#tickScheduled = window.setTimeout(() => this.#tick());
       }
     }
 
@@ -159,7 +160,7 @@ export class LustreClientApplication {
 
     // The `Shutdown` action
     else if (action instanceof Shutdown) {
-      this.#tickScheduled = window.cancelAnimationFrame(this.#tickScheduled);
+      this.#tickScheduled = window.clearTimeout(this.#tickScheduled);
 
       this.#model = null;
       this.#update = null;
