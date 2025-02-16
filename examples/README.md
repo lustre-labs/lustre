@@ -11,6 +11,28 @@ the previous ones. Feel free to jump in to any example that interests you, thoug
 > know that you can follow along with any of these examples using only the standard
 > `lustre/element/html` module.
 
+## Quickstart
+
+### Update deps
+
+It's a good idea to update your dependencies prior to running the examples:
+
+```bash
+gleam deps update
+```
+
+For context, [see here](https://github.com/lustre-labs/lustre/issues/237).
+
+## Running Examples
+
+Run the examples with a development server:
+
+```
+gleam run -m lustre/dev start
+```
+
+Head over to `localhost:1234` to see what it produces.
+
 ## Examples
 
 - [`01-hello-world`](./01-hello-world) is a simple example to just get something
