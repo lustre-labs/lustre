@@ -44,7 +44,6 @@ packages = [
 
 [requirements]
 gleam_stdlib = { version = ">= 0.44.0 and < 2.0.0" }
-gleam_yielder = { version = ">= 1.1.0 and < 2.0.0" }
 gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
 iv = { version = ">= 1.1.1 and < 2.0.0" }
 lustre = { path = "../../" }
