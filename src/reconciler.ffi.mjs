@@ -127,8 +127,13 @@ function move(node, key, to) {
 }
 
 function removeAll(node, from) {
-  node[meta].keyedChildren = new Map();
-  node.innerHTML = "";
+  while (node.children[from]) {
+    if (node.children[from].key) {
+      node[meta].keyedChildren.delete(node.children[from].key);
+    }
+
+    node.removeChild(node.children[from]);
+  }
 }
 
 function removeKey(node, key) {
