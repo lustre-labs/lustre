@@ -23,8 +23,6 @@ const meta = Symbol("metadata");
 
 export class LustreReconciler {
   #root = null;
-  #queue = [];
-  #tick = null;
   #dispatch = () => {};
 
   constructor(root, dispatch, { useServerEvents = false } = {}) {
@@ -36,27 +34,8 @@ export class LustreReconciler {
     this.#root.appendChild(createElement(vnode, this.#dispatch));
   }
 
-  push(patch, { flush = false }) {
-    this.#queue.push(patch);
-
-    if (flush) {
-      window.cancelAnimationFrame(this.#tick);
-      this.flush();
-      this.#tick = null;
-    } else if (!this.#tick) {
-      this.#tick = window.requestAnimationFrame(() => {
-        this.flush();
-        this.#tick = null;
-      });
-    }
-  }
-
-  flush() {
-    console.time("reconcile");
-    for (const patch of this.#queue) {
-      reconcile(this.#root, patch, this.#dispatch);
-    }
-    console.timeEnd("reconcile");
+  push(patch) {
+    reconcile(this.#root, patch, this.#dispatch);
   }
 }
 

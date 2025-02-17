@@ -2,7 +2,6 @@
 
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Decoder, type Dynamic}
-import gleam/io
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option}
@@ -232,7 +231,7 @@ fn do_diff(
           ]
           let meta = Metadata(..meta, keyed_moves: meta.keyed_moves + 1)
           let node = Patch(..node, changes: changes)
-          let cursor = Cursor(..cursor, meta:, node:, idx: idx + 1, new:)
+          let cursor = Cursor(..cursor, meta:, node:, idx: idx, new:)
 
           do_diff(handlers, [cursor, ..stack])
         }
@@ -294,12 +293,15 @@ fn do_diff(
                 keyed_moves: meta.keyed_moves,
               )
           }
+
           let child_cursor =
             Cursor(
               meta: child_meta,
               node: case diff_attributes(prev.attributes, next.attributes) {
-                #([], []) -> Patch(idx, changes: [], children: [])
-                #(added, removed) ->
+                AttributeChange(added: [], removed: []) ->
+                  Patch(idx, changes: [], children: [])
+
+                AttributeChange(added:, removed:) ->
                   Patch(idx, changes: [Update(added:, removed:)], children: [])
               },
               idx: 0,
@@ -353,25 +355,40 @@ fn do_diff(
   }
 }
 
+type AttributeChange(msg) {
+  AttributeChange(added: List(Attribute(msg)), removed: List(String))
+}
+
 fn diff_attributes(
   prev: List(Attribute(msg)),
   next: List(Attribute(msg)),
-) -> #(List(Attribute(msg)), List(String)) {
-  let prev =
-    list.fold(prev, dict.new(), fn(acc, attr) {
-      dict.insert(acc, attr.name, attr)
-    })
+) -> AttributeChange(msg) {
+  case prev, next {
+    [], [] -> AttributeChange(added: [], removed: [])
+    [], _ -> AttributeChange(added: next, removed: [])
+    _, [] ->
+      AttributeChange(
+        added: [],
+        removed: list.map(prev, fn(attribute) { attribute.name }),
+      )
+    _, _ -> {
+      let prev =
+        list.fold(prev, dict.new(), fn(acc, attr) {
+          dict.insert(acc, attr.name, attr)
+        })
 
-  do_diff_attributes(prev, next, [])
+      do_diff_attributes(prev, next, [])
+    }
+  }
 }
 
 fn do_diff_attributes(
   prev: Dict(String, Attribute(msg)),
   next: List(Attribute(msg)),
   added: List(Attribute(msg)),
-) -> #(List(Attribute(msg)), List(String)) {
+) -> AttributeChange(msg) {
   case next {
-    [] -> #(added, dict.keys(prev))
+    [] -> AttributeChange(added:, removed: dict.keys(prev))
     [attr, ..rest] -> {
       case attr, dict.get(prev, attr.name) {
         _, Error(_) -> do_diff_attributes(prev, rest, [attr, ..added])
@@ -442,19 +459,6 @@ fn do_add_keyed_children(
       |> do_add_keyed_children(index, rest)
   }
 }
-
-fn flattened_element_count(element: Element(msg)) -> Int {
-  case element {
-    Fragment(children:, ..) ->
-      list.fold(children, 0, fn(count, child) {
-        count + flattened_element_count(child)
-      })
-
-    _ -> 1
-  }
-}
-
-//
 
 pub fn element_to_string(element: Element(msg)) -> String {
   element

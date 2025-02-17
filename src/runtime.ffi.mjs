@@ -53,9 +53,7 @@ export class LustreSPA {
     this.#reconciler.mount(this.#prev);
 
     if (effects.all instanceof NonEmpty) {
-      window.requestAnimationFrame(() => {
-        this.#tick(effects.all.toArray());
-      });
+      this.#tick(effects.all);
     }
   }
 
@@ -95,26 +93,17 @@ export class LustreSPA {
       effect({ dispatch, emit, select, root });
     }
 
-    console.group("render");
-    console.time("render");
-    console.time("view");
     const next = this.#view(this.#model);
-    console.timeEnd("view");
-
-    console.time("diff");
     const { patch, handlers } = diff(
       this.#prev,
       next,
       this.#reconciler_handlers,
     );
-    console.timeEnd("diff");
 
     this.#reconciler_handlers = handlers;
 
-    this.#reconciler.push(patch, { flush: true });
+    this.#reconciler.push(patch);
     this.#prev = next;
-    console.timeEnd("render");
-    console.groupEnd("render");
   }
 }
 
@@ -133,22 +122,22 @@ export const make_lustre_client_component = (
   }
 
   const [model, effects] = init(undefined);
+  const initialView = view(model);
   const hasAttributes = on_attribute_change instanceof Some;
+  const observedAttributes = hasAttributes
+    ? on_attribute_change[0].entries().map(([name]) => name)
+    : [];
+
   const component = class LustreClientComponent extends HTMLElement {
     static get observedAttributes() {
-      if (hasAttributes) {
-        return on_attribute_change[0].entries().map(([name]) => name);
-      } else {
-        return [];
-      }
+      return observedAttributes;
     }
 
-    #connected = false;
-    #adoptedStyleElements = [];
-
     #model = model;
+    #update = update;
+    #view = view;
 
-    #prev = view(model);
+    #prev = initialView;
     #reconciler;
     #reconciler_handlers = new Dict();
 
@@ -156,6 +145,7 @@ export const make_lustre_client_component = (
       super();
       this.attachShadow({ mode: "open" });
       this.internals = this.attachInternals();
+      this.root = this.shadowRoot;
 
       this.#reconciler = new LustreReconciler(
         this.shadowRoot,
@@ -165,19 +155,24 @@ export const make_lustre_client_component = (
           }
         },
       );
+
       this.#reconciler.mount(this.#prev);
+
+      if (effects.all instanceof NonEmpty) {
+        this.#tick(effects.all);
+      }
 
       if (hasAttributes) {
         on_attribute_change[0].forEach((decoder, name) => {
           Object.defineProperty(this, name, {
             get() {
-              return this[`__mirrored__${name}`];
+              return this[`_${name}`];
             },
 
             set(value) {
-              const prev = this[`__mirrored__${name}`];
-              if (this.#connected && isEqual(prev, value)) return;
-              this[`__mirrorred__${name}`] = value;
+              const prev = this[`_${name}`];
+              if (isEqual(prev, value)) return;
+              this[`_${name}`] = value;
               const decoded = decoder(value);
 
               if (decoded.constructor === Ok) {
@@ -187,22 +182,6 @@ export const make_lustre_client_component = (
           });
         });
       }
-    }
-
-    connectedCallback() {
-      this.#adoptStyleSheets().finally(() => {
-        this.#tick(effects.all, true);
-        this.#connected = true;
-      });
-    }
-
-    attributeChangedCallback(key, prev, next) {
-      if (prev !== next) this[key] = next;
-    }
-
-    disconnectedCallback() {
-      this.#model = null;
-      this.#connected = false;
     }
 
     send(action) {
@@ -215,30 +194,17 @@ export const make_lustre_client_component = (
     }
 
     #dispatch(msg, immediate = false) {
-      const [next, effects] = update(this.#model, msg);
+      const [next, effects] = this.#update(this.#model, msg);
 
       this.#model = next;
       this.#tick(effects.all, immediate);
     }
 
     #tick(effects, immediate = false) {
-      this.#flush(effects.all, immediate);
+      const dispatch = (msg, immediate) => {
+        this.#dispatch(msg, immediate);
+      };
 
-      const next = view(this.#model);
-      const { patch, handlers } = diff(
-        this.#prev,
-        next,
-        this.#reconciler_handlers,
-      );
-
-      this.#reconciler_handlers = handlers;
-
-      this.#reconciler.push(patch, { flush: immediate });
-      this.#prev = next;
-    }
-
-    #flush(effects = []) {
-      const dispatch = (msg, immediate) => this.#dispatch(msg, immediate);
       const emit = (event, data) =>
         this.dispatchEvent(
           new CustomEvent(event, {
@@ -253,64 +219,18 @@ export const make_lustre_client_component = (
       for (const effect of effects) {
         effect({ dispatch, emit, select, root });
       }
-    }
 
-    async #adoptStyleSheets() {
-      const pendingParentStylesheets = [];
-      for (const link of document.querySelectorAll("link[rel=stylesheet]")) {
-        if (link.sheet) continue;
+      const next = this.#view(this.#model);
+      const { patch, handlers } = diff(
+        this.#prev,
+        next,
+        this.#reconciler_handlers,
+      );
 
-        pendingParentStylesheets.push(
-          new Promise((resolve, reject) => {
-            link.addEventListener("load", resolve);
-            link.addEventListener("error", reject);
-          }),
-        );
-      }
+      this.#reconciler_handlers = handlers;
 
-      await Promise.allSettled(pendingParentStylesheets);
-
-      while (this.#adoptedStyleElements.length) {
-        this.#adoptedStyleElements.shift().remove();
-        this.shadowRoot.firstChild.remove();
-      }
-
-      this.shadowRoot.adoptedStyleSheets =
-        this.getRootNode().adoptedStyleSheets;
-
-      const pending = [];
-
-      for (const sheet of document.styleSheets) {
-        try {
-          this.shadowRoot.adoptedStyleSheets.push(sheet);
-        } catch {
-          try {
-            const adoptedSheet = new CSSStyleSheet();
-            for (const rule of sheet.cssRules) {
-              adoptedSheet.insertRule(
-                rule.cssText,
-                adoptedSheet.cssRules.length,
-              );
-            }
-
-            this.shadowRoot.adoptedStyleSheets.push(adoptedSheet);
-          } catch {
-            const node = sheet.ownerNode.cloneNode();
-
-            this.shadowRoot.prepend(node);
-            this.#adoptedStyleElements.push(node);
-
-            pending.push(
-              new Promise((resolve, reject) => {
-                node.onload = resolve;
-                node.onerror = reject;
-              }),
-            );
-          }
-        }
-      }
-
-      return Promise.allSettled(pending);
+      this.#reconciler.push(patch);
+      this.#prev = next;
     }
   };
 
