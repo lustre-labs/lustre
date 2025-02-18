@@ -45,10 +45,6 @@ function reconcile(root, patch, dispatch) {
   while (stack.length) {
     const { node, patch } = stack.pop();
 
-    for (const child of patch.children) {
-      stack.push({ node: node.childNodes[child.index], patch: child });
-    }
-
     for (const change of patch.changes) {
       switch (change.constructor) {
         case Append:
@@ -56,11 +52,11 @@ function reconcile(root, patch, dispatch) {
           break;
 
         case Insert:
-          insert(node, change.child, change.at, dispatch);
+          insert(node, change.child, change.before, dispatch);
           break;
 
         case Move:
-          move(node, change.key, change.to);
+          move(node, change.key, change.before);
           break;
 
         case RemoveAll:
@@ -88,6 +84,10 @@ function reconcile(root, patch, dispatch) {
           break;
       }
     }
+
+    for (const child of patch.children) {
+      stack.push({ node: node.childNodes[child.index], patch: child });
+    }
   }
 }
 
@@ -109,20 +109,20 @@ function append(node, children, dispatch) {
   node.appendChild(fragment);
 }
 
-function insert(node, child, at, dispatch) {
+function insert(node, child, before, dispatch) {
   const el = createElement(child, dispatch);
 
-  node.insertBefore(el, node.children[at]);
+  node.insertBefore(el, node[meta].keyedChildren.get(before).deref());
 
   if (child.key) {
     node[meta].keyedChildren.set(child.key, new WeakRef(el));
   }
 }
 
-function move(node, key, to) {
+function move(node, key, before) {
   node.insertBefore(
     node[meta].keyedChildren.get(key).deref(),
-    node.children[to],
+    node[meta].keyedChildren.get(before).deref(),
   );
 }
 
