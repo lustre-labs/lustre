@@ -44,7 +44,7 @@ type Option {
 fn init(_) -> Model {
   let name = "My Table"
   let description = "Description for my table"
-  let columns = iv.range(0, 600) |> iv.map(init_column)
+  let columns = iv.range(0, 500) |> iv.map(init_column)
 
   Model(name:, description:, columns:, open: False)
 }
@@ -140,8 +140,8 @@ fn update(model: Model, msg: Msg) -> Model {
 
       let columns =
         model.columns
-        |> iv.try_set(index, b)
         |> iv.try_set(index + 1, a)
+        |> iv.try_set(index, b)
 
       Model(..model, columns:)
     }
@@ -188,25 +188,14 @@ fn view_table(columns: Array(Column)) -> Element(Msg) {
   let size = iv.length(columns) - 1
   let #(elements, _) = {
     use #(elements, index), column <- iv.fold_right(columns, #([], size))
-    // let #(key, element) = view_keyed_column(column, index)
-    #([view_column(column, index), ..elements], index - 1)
-    // #([#(key, element), ..elements], index - 1)
+    let #(key, element) = view_keyed_column(column, index)
+
+    #([#(key, element), ..elements], index - 1)
   }
 
   html.div([], [
     html.h4([], [html.text("Columns")]),
-    case elements {
-      [] ->
-        html.button(
-          [
-            attribute.class("btn btn-primary mt-3"),
-            event.on_click(UserAddedColumn),
-          ],
-          [html.text("Add column")],
-        )
-
-      _ -> html.div([attribute.class("accordion")], elements)
-    },
+    element.keyed(html.div([attribute.class("accordion")], _), elements),
   ])
 }
 
