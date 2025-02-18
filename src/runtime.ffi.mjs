@@ -101,7 +101,6 @@ export class LustreSPA {
     );
 
     this.#reconciler_handlers = handlers;
-
     this.#reconciler.push(patch);
     this.#prev = next;
   }

@@ -69,9 +69,9 @@ pub type Patch(msg) {
 
 pub type Change(msg) {
   Append(children: List(Element(msg)))
-  Insert(child: Element(msg), at: Int)
+  Insert(child: Element(msg), before: String)
   Map(fn(Dynamic) -> Dynamic)
-  Move(key: String, to: Int)
+  Move(key: String, before: String)
   RemoveAll(from: Int)
   RemoveKey(key: String)
   Remove(from: Int, count: Int)
@@ -91,7 +91,6 @@ pub fn diff(
         fragment: False,
         keyed: False,
         keyed_children: keyed_lookup.new(),
-        keyed_moves: 0,
       ),
       node: Patch(0, changes: [], children: []),
       idx: 0,
@@ -116,7 +115,6 @@ type Metadata(msg) {
     fragment: Bool,
     keyed: Bool,
     keyed_children: KeyedLookup(String, Element(msg)),
-    keyed_moves: Int,
   )
 }
 
@@ -143,7 +141,7 @@ fn do_diff(
         }
 
         True, [], [] -> {
-          let meta = Metadata(..next.meta, keyed_moves: meta.keyed_moves)
+          let meta = next.meta
           let node = Patch(..node, index: next.node.index)
           let next = Cursor(..next, meta:, node:, idx:)
 
@@ -151,7 +149,7 @@ fn do_diff(
         }
 
         True, _, _ -> {
-          let meta = Metadata(..next.meta, keyed_moves: meta.keyed_moves)
+          let meta = next.meta
           let node = Patch(..node, index: next.node.index)
           let next = Cursor(..next, meta:, node:, idx:)
 
@@ -160,13 +158,6 @@ fn do_diff(
       }
 
     [Cursor(meta:, node:, idx:, old:, new:) as cursor, ..stack] -> {
-      let has_key = case new {
-        [head, ..] if meta.keyed ->
-          keyed_lookup.has(meta.keyed_children, head.key)
-          || keyed_lookup.visited(meta.keyed_children, head.key)
-        _ -> False
-      }
-
       case old, new {
         [], _ -> {
           let node = Patch(..node, changes: [Append(new), ..node.changes])
@@ -206,34 +197,36 @@ fn do_diff(
           do_diff(handlers, [cursor, ..stack])
         }
 
-        [prev, ..old], [next, ..] as new if has_key && prev.key != next.key -> {
-          let assert Ok(#(match, keyed_children)) =
-            keyed_lookup.pop(meta.keyed_children, next.key)
-          let old = [match, prev, ..old]
-          // TODO: If the `next` node is a fragment this will throw everything
-          // off.
-          let changes = [
-            Move(key: next.key, to: idx - meta.keyed_moves),
-            ..node.changes
-          ]
-          let node = Patch(..node, changes:)
-          let meta =
-            Metadata(..meta, keyed_children:, keyed_moves: meta.keyed_moves + 1)
-          let cursor = Cursor(..cursor, meta:, node:, old:, new:)
+        [prev, ..old], [next, ..new] if meta.keyed && prev.key != next.key -> {
+          case keyed_lookup.pop(meta.keyed_children, next.key) {
+            Ok(#(match, keyed_children)) -> {
+              let old = [match, prev, ..old]
+              // TODO: If the `next` node is a fragment this will throw everything
+              // off.
+              let changes = [
+                Move(key: next.key, before: prev.key),
+                ..node.changes
+              ]
+              let node = Patch(..node, changes:)
+              let meta = Metadata(..meta, keyed_children:)
+              let cursor =
+                Cursor(..cursor, meta:, node:, old:, new: [next, ..new])
 
-          do_diff(handlers, [cursor, ..stack])
-        }
+              do_diff(handlers, [cursor, ..stack])
+            }
 
-        _, [next, ..new] if meta.keyed && !has_key -> {
-          let changes = [
-            Insert(child: next, at: idx - meta.keyed_moves),
-            ..node.changes
-          ]
-          let meta = Metadata(..meta, keyed_moves: meta.keyed_moves + 1)
-          let node = Patch(..node, changes: changes)
-          let cursor = Cursor(..cursor, meta:, node:, idx: idx, new:)
+            Error(_) -> {
+              let changes = [
+                Insert(child: next, before: prev.key),
+                ..node.changes
+              ]
+              let node = Patch(..node, changes: changes)
+              let cursor =
+                Cursor(meta:, node:, idx: idx + 1, old: [prev, ..old], new:)
 
-          do_diff(handlers, [cursor, ..stack])
+              do_diff(handlers, [cursor, ..stack])
+            }
+          }
         }
 
         [Fragment(..) as prev, ..old], [Fragment(..) as next, ..new] -> {
@@ -246,7 +239,6 @@ fn do_diff(
                   keyed_lookup.new(),
                   prev.children,
                 ),
-                keyed_moves: meta.keyed_moves,
               )
 
             _ ->
@@ -254,7 +246,6 @@ fn do_diff(
                 fragment: True,
                 keyed: False,
                 keyed_children: keyed_lookup.new(),
-                keyed_moves: meta.keyed_moves,
               )
           }
           let child_cursor =
@@ -282,7 +273,6 @@ fn do_diff(
                   keyed_lookup.new(),
                   prev.children,
                 ),
-                keyed_moves: meta.keyed_moves,
               )
 
             _ ->
@@ -290,7 +280,6 @@ fn do_diff(
                 fragment: False,
                 keyed: False,
                 keyed_children: keyed_lookup.new(),
-                keyed_moves: meta.keyed_moves,
               )
           }
 
