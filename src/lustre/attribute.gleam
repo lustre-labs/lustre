@@ -216,6 +216,11 @@ pub fn for(id: String) -> Attribute(msg) {
 // INPUT RANGES ----------------------------------------------------------------
 
 ///
+pub fn maxlength(val: String) -> Attribute(msg) {
+  attribute("maxlength", val)
+}
+
+///
 pub fn max(val: String) -> Attribute(msg) {
   attribute("max", val)
 }
