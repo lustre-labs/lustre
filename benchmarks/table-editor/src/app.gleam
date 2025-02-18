@@ -1,4 +1,6 @@
 import gleam/bool
+import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/int
 import gleam/io
 import gleam/list
@@ -44,7 +46,7 @@ type Option {
 fn init(_) -> Model {
   let name = "My Table"
   let description = "Description for my table"
-  let columns = iv.range(0, 500) |> iv.map(init_column)
+  let columns = iv.initialise(600, init_column)
 
   Model(name:, description:, columns:, open: False)
 }
@@ -87,6 +89,8 @@ type Msg {
   UserInsertedColumnAfter(Int)
   UserMovedColumnUp(Int)
   UserMovedColumnDown(Int)
+  UserToggledColumnOpen(Int)
+  UserEditedColumnName(Int, String)
 }
 
 fn update(model: Model, msg: Msg) -> Model {
@@ -142,6 +146,24 @@ fn update(model: Model, msg: Msg) -> Model {
         model.columns
         |> iv.try_set(index + 1, a)
         |> iv.try_set(index, b)
+
+      Model(..model, columns:)
+    }
+
+    UserToggledColumnOpen(index) -> {
+      let columns =
+        model.columns
+        |> iv.try_update(index, fn(column) {
+          Column(..column, open: !column.open)
+        })
+
+      Model(..model, columns:)
+    }
+
+    UserEditedColumnName(index, name) -> {
+      let columns =
+        model.columns
+        |> iv.try_update(index, fn(column) { Column(..column, name:) })
 
       Model(..model, columns:)
     }
@@ -208,7 +230,11 @@ fn view_keyed_column(column: Column, index: Int) -> #(String, Element(Msg)) {
 
 fn view_column(column: Column, index: Int) -> Element(Msg) {
   html.details(
-    [attribute.class("accordion-item"), attribute.open(column.open)],
+    [
+      attribute.class("accordion-item"),
+      attribute.open(column.open),
+      event.on("toggle", fn(_) { Ok(UserToggledColumnOpen(index)) }),
+    ],
     [
       html.summary(
         [
@@ -218,7 +244,11 @@ fn view_column(column: Column, index: Int) -> Element(Msg) {
               attribute.class("accordion-button px-2 py-2 collapsed bg-light")
           },
         ],
-        [html.text(column.id), html.text(" "), html.text(int.to_string(index))],
+        [
+          html.text(int.to_string(index)),
+          html.text(" - "),
+          html.text(column.name),
+        ],
       ),
       html.div([attribute.class("accordion-body border-bottom px-2 py-2")], [
         html.div([attribute.class("row")], [
@@ -233,6 +263,7 @@ fn view_column(column: Column, index: Int) -> Element(Msg) {
                 attribute.class("form-control"),
                 attribute.placeholder("Column name..."),
                 attribute("aria-label", "Column name"),
+                event.on_input(UserEditedColumnName(index, _)),
               ]),
             ]),
           ]),

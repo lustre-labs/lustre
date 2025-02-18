@@ -12,8 +12,8 @@ import {
   Insert,
   Move,
   Remove,
-  RemoveAll,
-  RemoveKey,
+  // RemoveAll,
+  // RemoveKey,
   Replace,
   ReplaceText,
   Update,
@@ -39,13 +39,45 @@ export class LustreReconciler {
   }
 }
 
+let nodesStack = []
+let patchesStack = []
 function reconcile(root, patch, dispatch) {
-  const stack = [{ node: root, patch }];
+  console.log(nodesStack.length)
+  let stackPtr = 0
+  nodesStack[0] = root
+  patchesStack[0] = patch
+  // const stack = [{ node: root, patch }];
 
-  while (stack.length) {
-    const { node, patch } = stack.pop();
+  while (stackPtr >= 0) {
+    const node = nodesStack[stackPtr];
+    const patch = patchesStack[stackPtr];
+    stackPtr -= 1;
+    // const { node, patch } = stack.pop();
+    
+    // if (!patch.changes.tail && !patch.children.tail) {
+    //   console.log("EMPTY PATCH FOR ", node)
+    // }
+    //
+    
 
-    for (const change of patch.changes) {
+    for (let changePtr = patch.changes; changePtr.tail; changePtr = changePtr.tail) {
+      const change = changePtr.head;
+    // for (const change of patch.changes) {
+      // if (change instanceof Update) {
+      //   const isInteresting = (c) => (
+      //     !(c instanceof Event)
+      //     && !['value', 'checked', 'selected', 'scrollLeft', 'scrollTop'].includes(c.name ?? c)
+      //   );
+          
+      //   const added = [...change.added].filter(isInteresting);
+      //   const removed = [...change.removed].filter(isInteresting);
+
+      //   if (added.length || removed.length) {
+      //     console.log(node, { added, removed })
+      //   }
+      // } else {
+      //   console.log(node, change)
+      // }
       switch (change.constructor) {
         case Append:
           append(node, change.children, dispatch);
@@ -59,13 +91,13 @@ function reconcile(root, patch, dispatch) {
           move(node, change.key, change.before);
           break;
 
-        case RemoveAll:
-          removeAll(node, change.from);
-          break;
+        // case RemoveAll:
+        //   removeAll(node, change.from);
+        //   break;
 
-        case RemoveKey:
-          removeKey(node, change.key);
-          break;
+        // case RemoveKey:
+        //   removeKey(node, change.key);
+        //   break;
 
         case Remove:
           remove(node, change.from, change.count);
@@ -85,9 +117,25 @@ function reconcile(root, patch, dispatch) {
       }
     }
 
-    for (const child of patch.children) {
-      stack.push({ node: node.childNodes[child.index], patch: child });
+    for (let child = patch.children; child.tail; child = child.tail) {
+      stackPtr += 1;
+      nodesStack[stackPtr] = node.childNodes[child.head.index];
+      patchesStack[stackPtr] = child.head;
     }
+
+    if (patch.size > 0) {
+      while (node.childNodes.length > patch.size) {
+        const child = node.lastChild;
+        const key = child[meta].key;
+        if (key) {
+          node[meta].keyedChildren.delete(key)
+        }
+        child.remove();
+      }
+    }
+    
+    // for (const child of patch.children) {
+    // }
   }
 }
 
@@ -113,7 +161,7 @@ function insert(node, child, before, dispatch) {
   const el = createElement(child, dispatch);
 
   node.insertBefore(el, node[meta].keyedChildren.get(before).deref());
-
+ 
   if (child.key) {
     node[meta].keyedChildren.set(child.key, new WeakRef(el));
   }
@@ -170,17 +218,18 @@ function replaceText(node, content) {
 }
 
 function update(node, added, removed, dispatch) {
-  for (const attribute of removed) {
-    if (node[meta].handlers.has(attribute)) {
-      node.removeEventListener(attribute, handleEvent);
-      node[meta].handlers.delete(attribute);
+  for (let attribute= removed; attribute.tail; attribute = attribute.tail) {
+    const name = attribute.head.name
+    if (node[meta].handlers.has(name)) {
+      node.removeEventListener(name, handleEvent);
+      node[meta].handlers.delete(name);
     } else {
-      node.removeAttribute(attribute);
+      node.removeAttribute(name);
     }
   }
 
-  for (const attribute of added) {
-    createAttribute(node, attribute, dispatch);
+  for (let attribute = added; attribute.tail; attribute = attribute.tail) {
+    createAttribute(node, attribute.head, dispatch);
   }
 }
 
@@ -234,10 +283,12 @@ function createElement(vnode, dispatch) {
 function createAttribute(node, attribute, dispatch) {
   switch (attribute.constructor) {
     case Attribute:
-      node.setAttribute(attribute.name, attribute.value);
+      if (attribute.value !== node.getAttribute(attribute.name)) {
+        node.setAttribute(attribute.name, attribute.value);
 
-      if (SYNCED_ATTRIBUTES.has(attribute.name)) {
-        node[attribute.name] = attribute.value;
+        if (SYNCED_ATTRIBUTES.includes(attribute.name)) {
+          node[attribute.name] = attribute.value;
+        }
       }
       break;
 
@@ -260,7 +311,7 @@ function createAttribute(node, attribute, dispatch) {
 
         dispatch(
           node[meta].mapper ? node[meta].mapper(msg) : msg,
-          attribute.immediate || IMMEDIATE_EVENTS.has(event.type),
+          attribute.immediate || IMMEDIATE_EVENTS.includes(event.type),
         );
       });
       break;
@@ -274,9 +325,9 @@ function handleEvent(event) {
   handler(event);
 }
 
-const SYNCED_ATTRIBUTES = new Set(["checked", "disabled", "selected", "value"]);
+const SYNCED_ATTRIBUTES = ["checked", "disabled", "selected", "value"];
 
-const IMMEDIATE_EVENTS = new Set([
+const IMMEDIATE_EVENTS = [
   // Input synchronization
   "input",
   "change",
@@ -289,4 +340,4 @@ const IMMEDIATE_EVENTS = new Set([
 
   // Text selection
   "select",
-]);
+];

@@ -5,10 +5,15 @@ import gleam/dynamic.{type Decoder, type Dynamic}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option}
+import gleam/order
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/internals/escape.{escape}
 import lustre/internals/keyed_lookup.{type KeyedLookup}
+
+// CONSTANTS -------------------------------------------------------------------
+
+const empty_list = []
 
 // ELEMENTS --------------------------------------------------------------------
 
@@ -64,7 +69,12 @@ pub type Diff(msg) {
 }
 
 pub type Patch(msg) {
-  Patch(index: Int, changes: List(Change(msg)), children: List(Patch(msg)))
+  Patch(
+    index: Int,
+    size: Int,
+    changes: List(Change(msg)),
+    children: List(Patch(msg)),
+  )
 }
 
 pub type Change(msg) {
@@ -72,12 +82,12 @@ pub type Change(msg) {
   Insert(child: Element(msg), before: String)
   Map(fn(Dynamic) -> Dynamic)
   Move(key: String, before: String)
-  RemoveAll(from: Int)
-  RemoveKey(key: String)
+  // RemoveAll(from: Int)
+  // RemoveKey(key: String)
   Remove(from: Int, count: Int)
   Replace(element: Element(msg))
   ReplaceText(content: String)
-  Update(added: List(Attribute(msg)), removed: List(String))
+  Update(added: List(Attribute(msg)), removed: List(Attribute(msg)))
 }
 
 pub fn diff(
@@ -85,259 +95,330 @@ pub fn diff(
   next: Element(msg),
   handlers: Dict(List(Int), Dict(String, Decoder(msg))),
 ) -> Diff(msg) {
-  do_diff(handlers, [
-    Cursor(
-      meta: Metadata(
-        fragment: False,
-        keyed: False,
-        keyed_children: keyed_lookup.new(),
-      ),
-      node: Patch(0, changes: [], children: []),
+  let patch =
+    do_diff(
+      // handlers,
+      // node: Patch(0, changes: [], children: []),
       idx: 0,
       old: [prev],
       new: [next],
-    ),
-  ])
+      fragment: False,
+      keyed: False,
+      keyed_children: dict.new(),
+      patch_index: 0,
+      changes: empty_list,
+      children: empty_list,
+    )
+
+  Diff(handlers:, patch:)
 }
 
-type Cursor(msg) {
-  Cursor(
-    meta: Metadata(msg),
-    node: Patch(msg),
-    idx: Int,
-    old: List(Element(msg)),
-    new: List(Element(msg)),
-  )
-}
-
-type Metadata(msg) {
-  Metadata(
-    fragment: Bool,
-    keyed: Bool,
-    keyed_children: KeyedLookup(String, Element(msg)),
-  )
-}
+// type Cursor(msg) {
+//   Cursor(
+//     node: Patch(msg),
+//     idx: Int,
+//     old: List(Element(msg)),
+//     new: List(Element(msg)),
+//     // metadata
+//     fragment: Bool,
+//     keyed: Bool,
+//     keyed_children: KeyedLookup(Element(msg)),
+//   )
+// }
 
 fn do_diff(
-  handlers: Dict(List(Int), Dict(String, Decoder(msg))),
-  stack: List(Cursor(msg)),
-) -> Diff(msg) {
-  case stack {
-    //
-    [] -> Diff(patch: Patch(0, changes: [], children: []), handlers:)
+  // handlers handlers: Dict(List(Int), Dict(String, Decoder(msg))),
+  // stack: List(Cursor(msg)),
+  // cursor
+  // node node: Patch(msg),
+  idx idx: Int,
+  old old: List(Element(msg)),
+  new new: List(Element(msg)),
+  // metadata
+  fragment fragment: Bool,
+  keyed keyed: Bool,
+  keyed_children keyed_children: Dict(String, Element(msg)),
+  // patch data
+  patch_index patch_index: Int,
+  changes changes: List(Change(msg)),
+  children children: List(Patch(msg)),
+) -> Patch(msg) {
+  // // if we have at least 2 things on the stack and we reached the end of the top thing
+  // [Cursor(node:, fragment:, idx:, old: [], new: [], ..), next, ..stack] ->
+  //   case fragment, node.changes, node.children {
+  //     // the top thing was empty and not a fragment
+  //     // --> we got empty back from a recursive call -> skip it
+  //     False, [], [] -> do_diff(handlers, [next, ..stack])
 
-    [Cursor(node:, old: [], new: [], ..)] -> Diff(patch: node, handlers:)
+  //     // the top thing is not empty and not a fragment
+  //     // -->  push it, baby
+  //     False, _, _ -> {
+  //       let children = [node, ..next.node.children]
+  //       let parent = Patch(..next.node, children:)
+  //       let next = Cursor(..next, node: parent)
 
-    [Cursor(node:, meta:, idx:, old: [], new: []), next, ..stack] ->
-      case meta.fragment, node.changes, node.children {
-        False, [], [] -> do_diff(handlers, [next, ..stack])
+  //       do_diff(handlers, [next, ..stack])
+  //     }
 
-        False, _, _ -> {
-          let children = [node, ..next.node.children]
-          let parent = Patch(..next.node, children:)
-          let next = Cursor(..next, node: parent)
+  //     // fragments - fixup indices
+  //     True, _, _ -> {
+  //       let node = Patch(..node, index: next.node.index)
+  //       let next = Cursor(..next, node:, idx:)
 
-          do_diff(handlers, [next, ..stack])
+  //       do_diff(handlers, [next, ..stack])
+  //     }
+  //   }
+  case old, new {
+    [], [] -> Patch(patch_index, size: 0, changes:, children:)
+    _, [] -> {
+      // let changes = [RemoveAll(from: idx), ..changes]
+      Patch(patch_index, size: idx, changes:, children:)
+    }
+    [], _ -> {
+      let changes = [Append(new), ..changes]
+      Patch(patch_index, size: idx, changes:, children:)
+    }
+
+    // _, [] if keyed -> {
+    //   let changes =
+    //     keyed_lookup.fold_remaining_keys(
+    //       keyed_children,
+    //       changes,
+    //       fn(changes, key) { [RemoveKey(key), ..changes] },
+    //     )
+    //   Patch(index: patch_index, changes:, children:)
+    // }
+    // _, [] if fragment -> {
+    //   let changes = [Remove(from: idx, count: list.length(old)), ..changes]
+    //   Patch(index: patch_index, changes:, children:)
+    // }
+    [prev, ..old_rest], [next, ..new_rest] if keyed && prev.key != next.key -> {
+      case dict.get(keyed_children, next.key) {
+        Ok(match) -> {
+          // TODO: if the `next` node is a fragment this will throw everything off.
+          let old = [match, ..old]
+          let changes = [Move(key: next.key, before: prev.key), ..changes]
+          do_diff(
+            idx:,
+            old:,
+            new:,
+            fragment:,
+            keyed:,
+            keyed_children:,
+            patch_index:,
+            changes:,
+            children:,
+          )
         }
 
-        True, [], [] -> {
-          let meta = next.meta
-          let node = Patch(..node, index: next.node.index)
-          let next = Cursor(..next, meta:, node:, idx:)
-
-          do_diff(handlers, [next, ..stack])
-        }
-
-        True, _, _ -> {
-          let meta = next.meta
-          let node = Patch(..node, index: next.node.index)
-          let next = Cursor(..next, meta:, node:, idx:)
-
-          do_diff(handlers, [next, ..stack])
+        Error(_) -> {
+          let changes = [Insert(child: next, before: prev.key), ..changes]
+          let idx = idx + 1
+          let new = new_rest
+          do_diff(
+            idx:,
+            old:,
+            new:,
+            fragment:,
+            keyed:,
+            keyed_children:,
+            patch_index:,
+            changes:,
+            children:,
+          )
         }
       }
+    }
 
-    [Cursor(meta:, node:, idx:, old:, new:) as cursor, ..stack] -> {
-      case old, new {
-        [], _ -> {
-          let node = Patch(..node, changes: [Append(new), ..node.changes])
-          let cursor = Cursor(..cursor, node:, new: [])
-
-          do_diff(handlers, [cursor, ..stack])
-        }
-
-        _, [] if meta.keyed -> {
-          let changes =
-            keyed_lookup.remaining_keys(meta.keyed_children)
-            |> list.fold(node.changes, fn(changes, key) {
-              [RemoveKey(key), ..changes]
-            })
-          let node = Patch(..node, changes:)
-          let cursor = Cursor(..cursor, node:, old: [])
-
-          do_diff(handlers, [cursor, ..stack])
-        }
-
-        _, [] if meta.fragment -> {
-          let changes = [
-            Remove(from: idx, count: list.length(old)),
-            ..node.changes
-          ]
-          let node = Patch(..node, changes:)
-          let cursor = Cursor(..cursor, node:, old: [])
-
-          do_diff(handlers, [cursor, ..stack])
-        }
-
-        _, [] -> {
-          let changes = [RemoveAll(from: idx), ..node.changes]
-          let node = Patch(..node, changes:)
-          let cursor = Cursor(..cursor, node:, old: [])
-
-          do_diff(handlers, [cursor, ..stack])
-        }
-
-        [prev, ..old], [next, ..new] if meta.keyed && prev.key != next.key -> {
-          case keyed_lookup.pop(meta.keyed_children, next.key) {
-            Ok(#(match, keyed_children)) -> {
-              let old = [match, prev, ..old]
-              // TODO: If the `next` node is a fragment this will throw everything
-              // off.
-              let changes = [
-                Move(key: next.key, before: prev.key),
-                ..node.changes
-              ]
-              let node = Patch(..node, changes:)
-              let meta = Metadata(..meta, keyed_children:)
-              let cursor =
-                Cursor(..cursor, meta:, node:, old:, new: [next, ..new])
-
-              do_diff(handlers, [cursor, ..stack])
+    [prev, ..old], [next, ..new] -> {
+      case prev, next {
+        Fragment(..), Fragment(..) -> {
+          let child_patch = case prev.children {
+            [head, ..] if head.key != "" -> {
+              let keyed = True
+              let keyed_children = to_keyed_children(prev.children)
+              let fragment = True
+              let old = prev.children
+              let new = next.children
+              let patch_index = idx
+              do_diff(
+                idx:,
+                old:,
+                new:,
+                fragment:,
+                keyed:,
+                keyed_children:,
+                patch_index:,
+                changes:,
+                children:,
+              )
             }
-
-            Error(_) -> {
-              let changes = [
-                Insert(child: next, before: prev.key),
-                ..node.changes
-              ]
-              let node = Patch(..node, changes: changes)
-              let cursor =
-                Cursor(meta:, node:, idx: idx + 1, old: [prev, ..old], new:)
-
-              do_diff(handlers, [cursor, ..stack])
+            _ -> {
+              let keyed = False
+              let fragment = True
+              let old = prev.children
+              let new = next.children
+              let patch_index = idx
+              do_diff(
+                idx:,
+                old:,
+                new:,
+                fragment:,
+                keyed:,
+                keyed_children: dict.new(),
+                patch_index:,
+                changes:,
+                children:,
+              )
             }
           }
+
+          // let node = Patch(..node, index: next.node.index)
+          // let next = Cursor(..next, node:, idx:)
+          let changes = child_patch.changes
+          let children = child_patch.children
+          do_diff(
+            idx:,
+            old:,
+            new:,
+            fragment:,
+            keyed:,
+            keyed_children:,
+            patch_index:,
+            changes:,
+            children:,
+          )
         }
 
-        [Fragment(..) as prev, ..old], [Fragment(..) as next, ..new] -> {
-          let child_meta = case prev.children {
-            [head, ..] if head.key != "" ->
-              Metadata(
-                fragment: True,
-                keyed: True,
-                keyed_children: add_keyed_children(
-                  keyed_lookup.new(),
-                  prev.children,
-                ),
-              )
-
-            _ ->
-              Metadata(
-                fragment: True,
-                keyed: False,
-                keyed_children: keyed_lookup.new(),
-              )
-          }
-          let child_cursor =
-            Cursor(
-              node: Patch(..node, index: idx),
-              meta: child_meta,
-              idx: idx,
-              old: prev.children,
-              new: next.children,
-            )
-          let cursor = Cursor(..cursor, node:, old:, new:)
-
-          do_diff(handlers, [child_cursor, cursor, ..stack])
-        }
-
-        [Node(..) as prev, ..old], [Node(..) as next, ..new]
+        Node(..), Node(..)
           if prev.namespace == next.namespace && prev.tag == next.tag
         -> {
-          let child_meta = case prev.children {
-            [head, ..] if head.key != "" ->
-              Metadata(
-                fragment: False,
-                keyed: True,
-                keyed_children: add_keyed_children(
-                  keyed_lookup.new(),
-                  prev.children,
-                ),
-              )
-
-            _ ->
-              Metadata(
-                fragment: False,
-                keyed: False,
-                keyed_children: keyed_lookup.new(),
-              )
+          let child_changes = case
+            diff_attributes(prev.attributes, next.attributes)
+          {
+            AttributeChange(added: [], removed: []) -> []
+            AttributeChange(added:, removed:) -> [Update(added:, removed:)]
           }
 
-          let child_cursor =
-            Cursor(
-              meta: child_meta,
-              node: case diff_attributes(prev.attributes, next.attributes) {
-                AttributeChange(added: [], removed: []) ->
-                  Patch(idx, changes: [], children: [])
+          let child_patch = case prev.children {
+            [head, ..] if head.key != "" -> {
+              let patch_index = idx
+              let idx = 0
+              let old = prev.children
+              let new = next.children
+              let fragment = False
+              let keyed = True
+              let keyed_children = to_keyed_children(prev.children)
+              do_diff(
+                idx:,
+                old:,
+                new:,
+                fragment:,
+                keyed:,
+                keyed_children:,
+                patch_index:,
+                changes: child_changes,
+                children: empty_list,
+              )
+            }
+            _ -> {
+              let patch_index = idx
+              let idx = 0
+              let old = prev.children
+              let new = next.children
+              let fragment = False
+              let keyed = False
+              do_diff(
+                idx:,
+                old:,
+                new:,
+                fragment:,
+                keyed:,
+                keyed_children: dict.new(),
+                patch_index:,
+                changes: child_changes,
+                children: empty_list,
+              )
+            }
+          }
 
-                AttributeChange(added:, removed:) ->
-                  Patch(idx, changes: [Update(added:, removed:)], children: [])
-              },
-              idx: 0,
-              old: prev.children,
-              new: next.children,
-            )
-          let keyed_children =
-            keyed_lookup.delete(meta.keyed_children, next.key)
-          let meta = Metadata(..meta, keyed_children:)
-          let cursor = Cursor(meta:, node:, idx: idx + 1, old:, new:)
-
-          do_diff(handlers, [child_cursor, cursor, ..stack])
+          let idx = idx + 1
+          // let keyed_children = keyed_lookup.delete(keyed_children, next.key)
+          let children = case child_patch {
+            Patch(changes: [], children: [], ..) -> children
+            _ -> [child_patch, ..children]
+          }
+          do_diff(
+            idx:,
+            old:,
+            new:,
+            fragment:,
+            keyed:,
+            keyed_children:,
+            patch_index:,
+            changes:,
+            children:,
+          )
         }
 
-        [Text(..) as prev, ..old], [Text(..) as next, ..new] ->
-          case prev.content == next.content {
-            True -> {
-              let keyed_children =
-                keyed_lookup.delete(meta.keyed_children, next.key)
-              let meta = Metadata(..meta, keyed_children:)
-              let cursor = Cursor(..cursor, meta:, idx: idx + 1, old:, new:)
+        Text(..), Text(..) if prev.content == next.content -> {
+          let idx = idx + 1
+          // let keyed_children = keyed_lookup.delete(keyed_children, next.key)
+          do_diff(
+            idx:,
+            old:,
+            new:,
+            fragment:,
+            keyed:,
+            keyed_children:,
+            patch_index:,
+            changes:,
+            children:,
+          )
+        }
 
-              do_diff(handlers, [cursor, ..stack])
-            }
+        Text(..), Text(..) -> {
+          let child =
+            Patch(
+              idx,
+              size: 0,
+              changes: [ReplaceText(next.content)],
+              children: empty_list,
+            )
+          let children = [child, ..children]
+          // let keyed_children = keyed_lookup.delete(keyed_children, next.key)
+          let idx = idx + 1
+          do_diff(
+            idx:,
+            old:,
+            new:,
+            fragment:,
+            keyed:,
+            keyed_children:,
+            patch_index:,
+            changes:,
+            children:,
+          )
+        }
 
-            False -> {
-              let changes = [ReplaceText(next.content)]
-              let child = Patch(idx, changes:, children: [])
-              let node = Patch(..node, children: [child, ..node.children])
-              let keyed_children =
-                keyed_lookup.delete(meta.keyed_children, next.key)
-              let meta = Metadata(..meta, keyed_children:)
-              let cursor = Cursor(meta:, node:, idx: idx + 1, old:, new:)
-
-              do_diff(handlers, [cursor, ..stack])
-            }
-          }
-
-        [_, ..old], [next, ..new] -> {
-          let child = Patch(idx, changes: [Replace(next)], children: [])
-          let node = Patch(..node, children: [child, ..node.children])
-          let keyed_children =
-            keyed_lookup.delete(meta.keyed_children, next.key)
-          let meta = Metadata(..meta, keyed_children:)
-          let cursor = Cursor(meta:, node:, idx: idx + 1, old:, new:)
-
-          do_diff(handlers, [cursor, ..stack])
+        _, _ -> {
+          // TODO: wtf is this
+          let child =
+            Patch(idx, size: 9_999_999, changes: [Replace(next)], children: [])
+          let children = [child, ..children]
+          // let keyed_children = keyed_lookup.delete(keyed_children, next.key)
+          let idx = idx + 1
+          do_diff(
+            idx:,
+            old:,
+            new:,
+            fragment:,
+            keyed:,
+            keyed_children:,
+            patch_index:,
+            changes:,
+            children:,
+          )
         }
       }
     }
@@ -345,107 +426,123 @@ fn do_diff(
 }
 
 type AttributeChange(msg) {
-  AttributeChange(added: List(Attribute(msg)), removed: List(String))
+  AttributeChange(added: List(Attribute(msg)), removed: List(Attribute(msg)))
+}
+
+fn compare_attributes(a: Attribute(msg), b: Attribute(msg)) -> order.Order {
+  string.compare(a.name, b.name)
+}
+
+@external(javascript, "../../runtime.ffi.mjs", "sort_attributes")
+pub fn sort_attributes(attributes: List(Attribute(msg))) -> List(Attribute(msg)) {
+  list.sort(attributes, by: compare_attributes)
 }
 
 fn diff_attributes(
   prev: List(Attribute(msg)),
   next: List(Attribute(msg)),
 ) -> AttributeChange(msg) {
-  case prev, next {
-    [], [] -> AttributeChange(added: [], removed: [])
-    [], _ -> AttributeChange(added: next, removed: [])
-    _, [] ->
-      AttributeChange(
-        added: [],
-        removed: list.map(prev, fn(attribute) { attribute.name }),
-      )
-    _, _ -> {
-      let prev =
-        list.fold(prev, dict.new(), fn(acc, attr) {
-          dict.insert(acc, attr.name, attr)
-        })
-
-      do_diff_attributes(prev, next, [])
-    }
-  }
+  // case prev, next {
+  // [], [] -> AttributeChange(added: [], removed: [])
+  // [], _ -> AttributeChange(added: next, removed: [])
+  // _, [] -> AttributeChange(added: [], removed: prev)
+  // _, _ -> {
+  do_diff_attributes(prev, next, empty_list, empty_list)
+  // }
+  // }
 }
 
 fn do_diff_attributes(
-  prev: Dict(String, Attribute(msg)),
+  prev: List(Attribute(msg)),
   next: List(Attribute(msg)),
   added: List(Attribute(msg)),
+  removed: List(Attribute(msg)),
 ) -> AttributeChange(msg) {
-  case next {
-    [] -> AttributeChange(added:, removed: dict.keys(prev))
-    [attr, ..rest] -> {
-      case attr, dict.get(prev, attr.name) {
-        _, Error(_) -> do_diff_attributes(prev, rest, [attr, ..added])
+  case prev, next {
+    [], [] -> AttributeChange(added:, removed:)
+    _, [] ->
+      AttributeChange(added:, removed: list.fold(prev, removed, list.prepend))
+    [], _ ->
+      AttributeChange(added: list.fold(next, added, list.prepend), removed:)
+    [prev_attr, ..prev_rest], [next_attr, ..next_rest] ->
+      case compare_attributes(prev_attr, next_attr) {
+        order.Eq ->
+          case prev_attr, next_attr {
+            Attribute(..), Attribute(..) ->
+              case next_attr.name {
+                "value" | "checked" | "selected" -> {
+                  let added = [next_attr, ..added]
+                  do_diff_attributes(prev_rest, next_rest, added, removed)
+                }
 
-        Attribute(..), Ok(Attribute(..) as old) ->
-          case attr.name {
-            "value" | "checked" | "selected" ->
-              do_diff_attributes(prev, rest, [attr, ..added])
+                _ if prev_attr.value == next_attr.value ->
+                  do_diff_attributes(prev_rest, next_rest, added, removed)
 
-            _ if attr.value == old.value ->
-              do_diff_attributes(dict.delete(prev, attr.name), rest, added)
+                _ -> {
+                  let added = [next_attr, ..added]
+                  do_diff_attributes(prev_rest, next_rest, added, removed)
+                }
+              }
 
-            _ ->
-              do_diff_attributes(dict.delete(prev, attr.name), rest, [
-                attr,
-                ..added
-              ])
+            Property(..), Property(..) ->
+              case next_attr.name {
+                "value" | "checked" | "selected" | "scrollLeft" | "scrollRight" -> {
+                  let added = [next_attr, ..added]
+                  do_diff_attributes(prev_rest, next_rest, added, removed)
+                }
+
+                _ if prev_attr.value == next_attr.value ->
+                  do_diff_attributes(prev_rest, next_rest, added, removed)
+
+                _ -> {
+                  let added = [next_attr, ..added]
+                  do_diff_attributes(prev_rest, next_rest, added, removed)
+                }
+              }
+
+            // Event(..), Event(..) as old if attr == old ->
+            //   do_diff_attributes(dict.delete(prev, attr.name), rest, added)
+            // Event(..), Event(..) ->
+            //   do_diff_attributes(dict.delete(prev, attr.name), rest, [
+            //     attr,
+            //     ..added
+            //   ])
+            _, _ -> {
+              let added = [next_attr, ..added]
+              do_diff_attributes(prev_rest, next_rest, added, removed)
+            }
           }
-
-        Property(..), Ok(Property(..) as old) ->
-          case attr.name {
-            "value" | "checked" | "selected" | "scrollLeft" | "scrollTop" ->
-              do_diff_attributes(prev, rest, [attr, ..added])
-
-            _ if attr.value == old.value ->
-              do_diff_attributes(dict.delete(prev, attr.name), rest, added)
-
-            _ ->
-              do_diff_attributes(dict.delete(prev, attr.name), rest, [
-                attr,
-                ..added
-              ])
-          }
-
-        Event(..), Ok(Event(..) as old) if attr == old ->
-          do_diff_attributes(dict.delete(prev, attr.name), rest, added)
-
-        Event(..), Ok(Event(..)) ->
-          do_diff_attributes(dict.delete(prev, attr.name), rest, [attr, ..added])
-
-        _, Ok(_) -> do_diff_attributes(prev, rest, [attr, ..added])
+        order.Gt -> {
+          let added = [next_attr, ..added]
+          do_diff_attributes(prev, next_rest, added, removed)
+        }
+        order.Lt -> {
+          let removed = [prev_attr, ..removed]
+          do_diff_attributes(prev_rest, next, added, removed)
+        }
       }
-    }
+  }
+}
+
+fn to_keyed_children(children: List(Element(msg))) -> Dict(String, Element(msg)) {
+  use dict, child <- list.fold(children, dict.new())
+  case child.key {
+    "" -> dict
+    _ -> dict.insert(dict, child.key, child)
   }
 }
 
 fn add_keyed_children(
-  keyed_children: KeyedLookup(String, Element(msg)),
+  keyed_children: KeyedLookup(Element(msg)),
   children: List(Element(msg)),
-) -> KeyedLookup(String, Element(msg)) {
+) -> KeyedLookup(Element(msg)) {
   case children {
     [] -> keyed_children
     [child, ..] if child.key == "" -> keyed_children
-    _ -> do_add_keyed_children(keyed_children, 0, children)
-  }
-}
-
-fn do_add_keyed_children(
-  keyed_children: KeyedLookup(String, Element(msg)),
-  index: Int,
-  children: List(Element(msg)),
-) -> KeyedLookup(String, Element(msg)) {
-  case children {
-    [] -> keyed_children
-    [child, ..rest] ->
-      keyed_children
-      |> keyed_lookup.set(child.key, child)
-      |> do_add_keyed_children(index, rest)
+    _ ->
+      keyed_lookup.set_from_values(keyed_children, children, fn(child, _) {
+        #(child.key, child)
+      })
   }
 }
 
