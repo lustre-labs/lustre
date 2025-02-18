@@ -209,7 +209,7 @@ pub fn keyed_swap_test() {
       #("a", html.text("wibble")),
     ])
 
-  let diff = Patch(0, [], [Patch(0, [Move("b", 0)], [])])
+  let diff = Patch(0, [], [Patch(0, [Move("b", "a")], [])])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -229,7 +229,7 @@ pub fn keyed_reorder_test() {
       #("b", html.div([], [])),
     ])
 
-  let diff = Patch(0, [], [Patch(0, [Move("c", 1)], [])])
+  let diff = Patch(0, [], [Patch(0, [Move("c", "b")], [])])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -252,7 +252,7 @@ pub fn keyed_insert_test() {
 
   let diff =
     Patch(0, [], [
-      Patch(0, [Insert(keyed("d", html.span([], [])), 1), Move("c", 0)], []),
+      Patch(0, [Insert(keyed("d", html.span([], [])), "b"), Move("c", "a")], []),
     ])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
@@ -273,7 +273,7 @@ pub fn keyed_list_with_updates_test() {
 
   let diff =
     Patch(0, [], [
-      Patch(0, [Move("2", 0)], [
+      Patch(0, [Move("2", "1")], [
         Patch(1, [Update([attribute.class("new")], [])], []),
         Patch(0, [Update([attribute.class("new")], [])], []),
       ]),
@@ -326,7 +326,7 @@ pub fn mixed_keyed_and_regular_nodes_test() {
     Patch(0, [], [
       Patch(0, [], [
         Patch(1, [], [Patch(0, [ReplaceText("changed")], [])]),
-        Patch(0, [Move("2", 0)], []),
+        Patch(0, [Move("2", "1")], []),
       ]),
     ])
 
