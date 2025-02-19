@@ -1,15 +1,11 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{type DecodeError, type Decoder, type Dynamic}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/result
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
-
-// TYPES -----------------------------------------------------------------------
-
-type Decoded(a) =
-  Result(a, List(DecodeError))
+import lustre/runtime/vdom
 
 // EFFECTS ---------------------------------------------------------------------
 
@@ -37,48 +33,57 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
   attribute.on(name, handler)
 }
 
+///
+pub fn prevent_default(event: Attribute(msg)) -> Attribute(msg) {
+  case event {
+    vdom.Event(..) -> vdom.Event(..event, prevent_default: True)
+    _ -> event
+  }
+}
+
+///
+pub fn stop_propagation(event: Attribute(msg)) -> Attribute(msg) {
+  case event {
+    vdom.Event(..) -> vdom.Event(..event, stop_propagation: True)
+    _ -> event
+  }
+}
+
 // MOUSE EVENTS ----------------------------------------------------------------
 
 ///
 pub fn on_click(msg: msg) -> Attribute(msg) {
-  use _ <- on("click")
-  Ok(msg)
+  on("click", decode.success(msg))
 }
 
 ///
 pub fn on_mouse_down(msg: msg) -> Attribute(msg) {
-  use _ <- on("mousedown")
-  Ok(msg)
+  on("mousedown", decode.success(msg))
 }
 
 ///
 pub fn on_mouse_up(msg: msg) -> Attribute(msg) {
-  use _ <- on("mouseup")
-  Ok(msg)
+  on("mouseup", decode.success(msg))
 }
 
 ///
 pub fn on_mouse_enter(msg: msg) -> Attribute(msg) {
-  use _ <- on("mouseenter")
-  Ok(msg)
+  on("mouseenter", decode.success(msg))
 }
 
 ///
 pub fn on_mouse_leave(msg: msg) -> Attribute(msg) {
-  use _ <- on("mouseleave")
-  Ok(msg)
+  on("mouseleave", decode.success(msg))
 }
 
 ///
 pub fn on_mouse_over(msg: msg) -> Attribute(msg) {
-  use _ <- on("mouseover")
-  Ok(msg)
+  on("mouseover", decode.success(msg))
 }
 
 ///
 pub fn on_mouse_out(msg: msg) -> Attribute(msg) {
-  use _ <- on("mouseout")
-  Ok(msg)
+  on("mouseout", decode.success(msg))
 }
 
 // KEYBOARD EVENTS -------------------------------------------------------------
@@ -87,50 +92,44 @@ pub fn on_mouse_out(msg: msg) -> Attribute(msg) {
 /// current key being pressed.
 ///
 pub fn on_keypress(msg: fn(String) -> msg) -> Attribute(msg) {
-  use event <- on("keypress")
+  on("keypress", {
+    use key <- decode.field("key", decode.string)
 
-  event
-  |> dynamic.field("key", dynamic.string)
-  |> result.map(msg)
+    key |> msg |> decode.success
+  })
 }
 
 /// Listens for key down events on an element, and dispatches a message with the
 /// current key being pressed.
 ///
 pub fn on_keydown(msg: fn(String) -> msg) -> Attribute(msg) {
-  use event <- on("keydown")
+  on("keydown", {
+    use key <- decode.field("key", decode.string)
 
-  event
-  |> dynamic.field("key", dynamic.string)
-  |> result.map(msg)
+    key |> msg |> decode.success
+  })
 }
 
 /// Listens for key up events on an element, and dispatches a message with the
 /// current key being released.
 ///
 pub fn on_keyup(msg: fn(String) -> msg) -> Attribute(msg) {
-  use event <- on("keyup")
+  on("keyup", {
+    use key <- decode.field("key", decode.string)
 
-  event
-  |> dynamic.field("key", dynamic.string)
-  |> result.map(msg)
+    key |> msg |> decode.success
+  })
 }
 
 // FORM EVENTS -----------------------------------------------------------------
 
 ///
 pub fn on_input(msg: fn(String) -> msg) -> Attribute(msg) {
-  use event <- on("input")
-
-  value(event)
-  |> result.map(msg)
+  on("input", value() |> decode.map(msg))
 }
 
 pub fn on_check(msg: fn(Bool) -> msg) -> Attribute(msg) {
-  use event <- on("change")
-
-  checked(event)
-  |> result.map(msg)
+  on("change", checked() |> decode.map(msg))
 }
 
 /// Listens for the form's `submit` event, and dispatches the given message. This
@@ -138,22 +137,17 @@ pub fn on_check(msg: fn(Bool) -> msg) -> Attribute(msg) {
 /// from submitting.
 ///
 pub fn on_submit(msg: msg) -> Attribute(msg) {
-  use event <- on("submit")
-  let _ = prevent_default(event)
-
-  Ok(msg)
+  on("submit", decode.success(msg)) |> prevent_default
 }
 
 // FOCUS EVENTS ----------------------------------------------------------------
 
 pub fn on_focus(msg: msg) -> Attribute(msg) {
-  use _ <- on("focus")
-  Ok(msg)
+  on("focus", decode.success(msg))
 }
 
 pub fn on_blur(msg: msg) -> Attribute(msg) {
-  use _ <- on("blur")
-  Ok(msg)
+  on("blur", decode.success(msg))
 }
 
 // DECODERS --------------------------------------------------------------------
@@ -162,56 +156,24 @@ pub fn on_blur(msg: msg) -> Attribute(msg) {
 /// a dedicated decoder for it. This attempts to decoder `event.target.value` as
 /// a string.
 ///
-pub fn value(event: Dynamic) -> Decoded(String) {
-  event
-  |> dynamic.field("target", dynamic.field("value", dynamic.string))
+pub fn value() -> Decoder(String) {
+  decode.at(["target", "value"], decode.string)
 }
 
 /// Similar to [`value`](#value), decoding a checkbox's `checked` state is common
 /// enough to warrant a dedicated decoder. This attempts to decode
 /// `event.target.checked` as a boolean.
 ///
-pub fn checked(event: Dynamic) -> Decoded(Bool) {
-  event
-  |> dynamic.field("target", dynamic.field("checked", dynamic.bool))
+pub fn checked() -> Decoder(Bool) {
+  decode.at(["target", "checked"], decode.bool)
 }
 
 /// Decodes the mouse position from any event that has a `clientX` and `clientY`
 /// property.
 ///
-pub fn mouse_position(event: Dynamic) -> Decoded(#(Float, Float)) {
-  use x <- result.then(dynamic.field("clientX", dynamic.float)(event))
-  use y <- result.then(dynamic.field("clientY", dynamic.float)(event))
+pub fn mouse_position() -> Decoder(#(Float, Float)) {
+  use x <- decode.field("clientX", decode.float)
+  use y <- decode.field("clientY", decode.float)
 
-  Ok(#(x, y))
-}
-
-// UTILS -----------------------------------------------------------------------
-
-/// Calls an event's `preventDefault` method. If the `Dynamic` does not have a
-/// `preventDefault` method, this function does nothing.
-///
-/// As the name implies, `preventDefault` will prevent any default action associated
-/// with an event from occuring. For example, if you call `preventDefault` on a
-/// `submit` event, the form will not be submitted.
-///
-/// See: https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault
-///
-@external(javascript, "../lustre.ffi.mjs", "prevent_default")
-pub fn prevent_default(_event: Dynamic) -> Nil {
-  Nil
-}
-
-/// Calls an event's `stopPropagation` method. If the `Dynamic` does not have a
-/// `stopPropagation` method, this function does nothing.
-///
-/// Stopping event propagation means the event will not "bubble" up to parent
-/// elements. If any elements higher up in the DOM have event listeners for the
-/// same event, they will not be called.
-///
-/// See: https://developer.mozilla.org/en-US/docs/Web/API/Event/stopPropagation
-///
-@external(javascript, "../lustre.ffi.mjs", "stop_propagation")
-pub fn stop_propagation(_event: Dynamic) -> Nil {
-  Nil
+  decode.success(#(x, y))
 }

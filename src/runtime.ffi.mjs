@@ -1,14 +1,37 @@
+// IMPORTS ---------------------------------------------------------------------
+
 import Dict from "../gleam_stdlib/dict.mjs";
 import { Dispatch } from "./lustre/internals/runtime.mjs";
 import { ElementNotFound, NotABrowser } from "./lustre.mjs";
 import { LustreReconciler } from "./reconciler.ffi.mjs";
 import { Ok, Error, NonEmpty, isEqual } from "./gleam.mjs";
-import { diff } from "./lustre/runtime/vdom.mjs";
 import { Some } from "../gleam_stdlib/gleam/option.mjs";
+import { diff } from "./lustre/runtime/vdom.mjs";
+
+// UTILS -----------------------------------------------------------------------
 
 export const is_browser = () => globalThis.window && window.document;
 
+export const is_registered = (name) =>
+  globalThis.window && globalThis.window.customElements.get(name);
+
 export const is_reference_equal = (a, b) => a === b;
+
+export const throw_server_component_error = () => {
+  throw new window.Error(
+    [
+      "It looks like you're trying to use the server component runtime written ",
+      "using `gleam_otp`. You can only end up here if you were poking around ",
+      "the internals and started calling functions you shouldn't be!",
+      "\n\n",
+      "If you're just looking to start a server component in a JavaScript app,",
+      "you can use `lustre.start_server_component`.",
+      "\n\n",
+      "If you're seeing this error and you think it's a bug. Please open an ",
+      "issue over on Github: https://github.com/lustre-labs/lustre/issues/new",
+    ].join(""),
+  );
+};
 
 // SPA -------------------------------------------------------------------------
 

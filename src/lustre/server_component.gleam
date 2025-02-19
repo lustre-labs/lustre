@@ -88,6 +88,7 @@ import lustre/element.{type Element, element}
 import lustre/internals/constants
 import lustre/internals/patch
 import lustre/internals/runtime.{type Action, Attrs, Event}
+import lustre/runtime/vdom
 
 // ELEMENTS --------------------------------------------------------------------
 
@@ -167,11 +168,14 @@ pub fn data(json: Json) -> Attribute(msg) {
 /// }
 /// ```
 ///
-pub fn include(properties: List(String)) -> Attribute(msg) {
-  properties
-  |> json.array(json.string)
-  |> json.to_string
-  |> attribute("data-lustre-include", _)
+pub fn include(
+  event: Attribute(msg),
+  properties: List(String),
+) -> Attribute(msg) {
+  case event {
+    vdom.Event(..) -> vdom.Event(..event, include: properties)
+    _ -> event
+  }
 }
 
 // ACTIONS ---------------------------------------------------------------------

@@ -1,7 +1,8 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Decoder, type Dynamic}
+import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option}
@@ -29,24 +30,10 @@ pub type Element(msg) {
     // stored sorted. We do this while constructing the tree to not have to sort
     // the attribute in the previous tree again. The order does not matter, as
     // long as the new and old tree agree on the same order relation.
-    // 
+    //
     // When constructing a Node with attributes provided by a user, attributes
     // have to be sorted with the `vdom.sort_attributes` function.
     attributes: List(Attribute(msg)),
-    // We want the ability to map events produced by a node to other messages
-    // before they are sent to the runtime. The most-obviously implementation
-    // would involve wrapping every event handler in the mapping function but
-    // this would produce a new function every render, which is wasteful.
-    //
-    // Instead we store this unsafe mapping function on the element itself which
-    // we are free to call when an event is triggered. We're erasing the type of
-    // the mapper here because otherwise the element type would have to be
-    // `Element(to, from)` and would be confusing and unhelpful. Instead, we know
-    // that mapped elements can only be produced by a type-safe api.
-    //
-    // Anyone reaching into a node and mucking with this function should expect
-    // things to break!
-    mapper: Option(fn(Dynamic) -> Dynamic),
     children: List(Element(msg)),
     // When encountering keyed children, we need to be able to differentiate
     // between these cases:
@@ -88,6 +75,7 @@ pub type Attribute(msg) {
   Event(
     name: String,
     handler: Decoder(msg),
+    include: List(String),
     prevent_default: Bool,
     stop_propagation: Bool,
     immediate: Bool,
@@ -252,7 +240,7 @@ fn do_diff(
               //
               // [a b c d] -> [c a b d]    // new -> old
               // diff -> apply in reverse order -> update children in reverse order
-              // 
+              //
               // ↓ diff                   ↓ old         new       idx offs   ↑    changes   ↑    children
               // ↓ 1. move c before 0-0=0 ↓ [a b c d]   [c b a d]   0    0   ↑ 2. [c b a d] ↑
               // ↓ 2. update c at idx=0   ↓ [c a b c d] [c b a d]   0    1   ↑              ↑ 6. [C B A D]
@@ -281,7 +269,7 @@ fn do_diff(
             }
             True -> {
               // previous child got moved -> skip
-              // 
+              //
               // Once we've seen the old node our indices are correct again,
               // so we can decrement moved_children_offset.
               let count = node_advancement(prev)

@@ -1,10 +1,9 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{type Decoder}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/int
 import gleam/json.{type Json}
 import gleam/list
-import gleam/result
 import gleam/string
 import lustre/runtime/vdom.{Attribute, Event, Property}
 
@@ -46,6 +45,7 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
   Event(
     name,
     handler,
+    include: [],
     prevent_default: False,
     stop_propagation: False,
     immediate: False,
@@ -67,11 +67,10 @@ pub fn none() -> Attribute(msg) {
 /// library or module that produces a different type of message: this function lets
 /// you map the messages produced from one type to another.
 ///
-pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
-  case attr {
+pub fn map(attribute: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
+  case attribute {
     Attribute(name, value) -> Attribute(name, value)
-    Event(handler:, ..) ->
-      Event(..attr, handler: fn(e) { result.map(handler(e), f) })
+    Event(handler:, ..) -> Event(..attribute, handler: decode.map(handler, f))
     Property(name, value) -> Property(name, value)
   }
 }
