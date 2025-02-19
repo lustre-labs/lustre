@@ -8,6 +8,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/int
 import gleam/list
@@ -116,6 +117,7 @@ pub fn element(
         attributes: vdom.sort_attributes(attributes),
         mapper: None,
         children: [],
+        keyed_children: dict.new(),
         self_closing: False,
         void: True,
       )
@@ -128,6 +130,7 @@ pub fn element(
         attributes: vdom.sort_attributes(attributes),
         mapper: None,
         children:,
+        keyed_children: vdom.to_keyed_children(children),
         self_closing: False,
         void: False,
       )
@@ -213,6 +216,7 @@ pub fn namespaced(
     attributes: vdom.sort_attributes(attributes),
     mapper: None,
     children:,
+    keyed_children: vdom.to_keyed_children(children),
     self_closing: False,
     void: False,
   )
@@ -238,6 +242,7 @@ pub fn advanced(
     attributes: vdom.sort_attributes(attributes),
     mapper: None,
     children:,
+    keyed_children: vdom.to_keyed_children(children),
     self_closing:,
     void:,
   )
@@ -291,20 +296,9 @@ fn do_map(element: Element(a), f: fn(Dynamic) -> Dynamic) -> Element(b) {
   case element {
     Fragment(key:, children:) ->
       Fragment(key:, children: list.map(children, do_map(_, f)))
-    Node(
-      key:,
-      namespace:,
-      tag:,
-      attributes:,
-      mapper:,
-      children:,
-      self_closing:,
-      void:,
-    ) ->
+    Node(attributes:, mapper:, children:, keyed_children:, ..) ->
       Node(
-        key:,
-        namespace:,
-        tag:,
+        ..element,
         // For vdom performance reasons we don't want to modify the callback
         // of an event handler directly just to map it. Instead we track the
         // mapper function separately and this will be stored on the DOM node
@@ -328,9 +322,11 @@ fn do_map(element: Element(a), f: fn(Dynamic) -> Dynamic) -> Element(b) {
           Some(g) -> Some(fn(msg) { f(g(msg)) })
           None -> Some(f)
         },
+        // TODO: does this maybe mean that we don't have to map our children?
         children: list.map(children, do_map(_, f)),
-        self_closing:,
-        void:,
+        keyed_children: dict.map_values(keyed_children, fn(_, child) {
+          do_map(child, f)
+        }),
       )
     Text(key:, content:) -> Text(key:, content:)
   }

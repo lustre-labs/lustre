@@ -1,6 +1,4 @@
 import gleam/bool
-import gleam/dynamic
-import gleam/dynamic/decode
 import gleam/int
 import gleam/io
 import gleam/list

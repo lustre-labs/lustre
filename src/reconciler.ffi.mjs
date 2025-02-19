@@ -13,7 +13,7 @@ import {
   Move,
   Remove,
   // RemoveAll,
-  // RemoveKey,
+  RemoveKey,
   Replace,
   ReplaceText,
   Update,
@@ -42,7 +42,7 @@ export class LustreReconciler {
 let nodesStack = []
 let patchesStack = []
 function reconcile(root, patch, dispatch) {
-  console.log(nodesStack.length)
+  // console.log(nodesStack.length)
   let stackPtr = 0
   nodesStack[0] = root
   patchesStack[0] = patch
@@ -62,21 +62,20 @@ function reconcile(root, patch, dispatch) {
 
     for (let changePtr = patch.changes; changePtr.tail; changePtr = changePtr.tail) {
       const change = changePtr.head;
-    // for (const change of patch.changes) {
       // if (change instanceof Update) {
-      //   const isInteresting = (c) => (
-      //     !(c instanceof Event)
-      //     && !['value', 'checked', 'selected', 'scrollLeft', 'scrollTop'].includes(c.name ?? c)
-      //   );
-          
-      //   const added = [...change.added].filter(isInteresting);
-      //   const removed = [...change.removed].filter(isInteresting);
+      //  const isInteresting = (c) => (
+      //    !(c instanceof Event)
+      //    && !['value', 'checked', 'selected', 'scrollLeft', 'scrollTop'].includes(c.name ?? c)
+      //  );
 
-      //   if (added.length || removed.length) {
-      //     console.log(node, { added, removed })
-      //   }
+      //  const added = [...change.added].filter(isInteresting);
+      //  const removed = [...change.removed].filter(isInteresting);
+
+      //  if (added.length || removed.length) {
+      //    console.log(node, { added, removed })
+      //  }
       // } else {
-      //   console.log(node, change)
+      //  console.log(node, change)
       // }
       switch (change.constructor) {
         case Append:
@@ -95,9 +94,9 @@ function reconcile(root, patch, dispatch) {
         //   removeAll(node, change.from);
         //   break;
 
-        // case RemoveKey:
-        //   removeKey(node, change.key);
-        //   break;
+        case RemoveKey:
+          removeKey(node, change.key);
+          break;
 
         case Remove:
           remove(node, change.from, change.count);

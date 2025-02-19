@@ -6,10 +6,10 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/order
+import gleam/set.{type Set}
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/internals/escape.{escape}
-import lustre/internals/keyed_lookup.{type KeyedLookup}
 
 // CONSTANTS -------------------------------------------------------------------
 
@@ -39,6 +39,7 @@ pub type Element(msg) {
     // things to break!
     mapper: Option(fn(Dynamic) -> Dynamic),
     children: List(Element(msg)),
+    keyed_children: Dict(String, Element(msg)),
     // These two properties are only useful when rendering Elements to strings.
     // Certain HTML tags like <img> and <input> are called "void" elements,
     // which means they cannot have children and should not have a closing tag.
@@ -48,6 +49,16 @@ pub type Element(msg) {
     void: Bool,
   )
   Text(key: String, content: String)
+}
+
+pub fn to_keyed_children(
+  children: List(Element(msg)),
+) -> Dict(String, Element(msg)) {
+  use dict, child <- list.fold(children, dict.new())
+  case child.key {
+    "" -> dict
+    key -> dict.insert(dict, key, child)
+  }
 }
 
 pub type Attribute(msg) {
@@ -60,6 +71,15 @@ pub type Attribute(msg) {
     stop_propagation: Bool,
     immediate: Bool,
   )
+}
+
+@external(javascript, "../../runtime.ffi.mjs", "sort_attributes")
+pub fn sort_attributes(attributes: List(Attribute(msg))) -> List(Attribute(msg)) {
+  list.sort(attributes, by: compare_attributes)
+}
+
+fn compare_attributes(a: Attribute(msg), b: Attribute(msg)) -> order.Order {
+  string.compare(a.name, b.name)
 }
 
 // DIFFS -----------------------------------------------------------------------
@@ -83,7 +103,7 @@ pub type Change(msg) {
   Map(fn(Dynamic) -> Dynamic)
   Move(key: String, before: String)
   // RemoveAll(from: Int)
-  // RemoveKey(key: String)
+  RemoveKey(key: String)
   Remove(from: Int, count: Int)
   Replace(element: Element(msg))
   ReplaceText(content: String)
@@ -104,7 +124,9 @@ pub fn diff(
       new: [next],
       fragment: False,
       keyed: False,
-      keyed_children: dict.new(),
+      old_keyed: dict.new(),
+      new_keyed: dict.new(),
+      moved_children: set.new(),
       patch_index: 0,
       changes: empty_list,
       children: empty_list,
@@ -137,7 +159,9 @@ fn do_diff(
   // metadata
   fragment fragment: Bool,
   keyed keyed: Bool,
-  keyed_children keyed_children: Dict(String, Element(msg)),
+  moved_children moved_children: Set(String),
+  old_keyed old_keyed: Dict(String, Element(msg)),
+  new_keyed new_keyed: Dict(String, Element(msg)),
   // patch data
   patch_index patch_index: Int,
   changes changes: List(Change(msg)),
@@ -193,40 +217,89 @@ fn do_diff(
     //   Patch(index: patch_index, changes:, children:)
     // }
     [prev, ..old_rest], [next, ..new_rest] if keyed && prev.key != next.key -> {
-      case dict.get(keyed_children, next.key) {
-        Ok(match) -> {
-          // TODO: if the `next` node is a fragment this will throw everything off.
-          let old = [match, ..old]
-          let changes = [Move(key: next.key, before: prev.key), ..changes]
-          do_diff(
-            idx:,
-            old:,
-            new:,
-            fragment:,
-            keyed:,
-            keyed_children:,
-            patch_index:,
-            changes:,
-            children:,
-          )
-        }
+      case dict.get(new_keyed, prev.key), dict.get(old_keyed, next.key) {
+        Ok(_), Ok(match) ->
+          case set.contains(moved_children, prev.key) {
+            True ->
+              // child already moved -> skip
+              do_diff(
+                idx:,
+                old: old_rest,
+                new:,
+                fragment:,
+                keyed:,
+                old_keyed:,
+                new_keyed:,
+                moved_children:,
+                patch_index:,
+                changes:,
+                children:,
+              )
+            False ->
+              // both exist -> moves
+              // TODO: if the `next` node is a fragment this will throw everything off.
+              do_diff(
+                idx:,
+                old: [match, ..old],
+                new:,
+                fragment:,
+                keyed:,
+                old_keyed:,
+                new_keyed:,
+                moved_children: set.insert(moved_children, next.key),
+                patch_index:,
+                changes: [Move(next.key, before: prev.key), ..changes],
+                children:,
+              )
+          }
 
-        Error(_) -> {
-          let changes = [Insert(child: next, before: prev.key), ..changes]
-          let idx = idx + 1
-          let new = new_rest
+        Error(_), Ok(_) ->
+          // old deleted new exists -> delete old then check again for new
           do_diff(
             idx:,
-            old:,
+            old: old_rest,
             new:,
             fragment:,
             keyed:,
-            keyed_children:,
+            old_keyed:,
+            new_keyed:,
+            moved_children:,
             patch_index:,
-            changes:,
+            changes: [RemoveKey(prev.key), ..changes],
             children:,
           )
-        }
+
+        Error(_), Error(_) ->
+          // old deleted, new is new -> replace
+          do_diff(
+            idx: idx + 1,
+            old: old_rest,
+            new: new_rest,
+            fragment:,
+            keyed:,
+            old_keyed:,
+            new_keyed:,
+            moved_children:,
+            patch_index:,
+            changes:,
+            children: [Patch(idx, -1, [Replace(next)], []), ..children],
+          )
+
+        Ok(_), Error(_) ->
+          // old moved, new is new -> insert
+          do_diff(
+            idx: idx + 1,
+            old:,
+            new: new_rest,
+            fragment:,
+            keyed:,
+            old_keyed:,
+            new_keyed:,
+            moved_children:,
+            patch_index:,
+            changes: [Insert(child: next, before: prev.key), ..changes],
+            children:,
+          )
       }
     }
 
@@ -235,8 +308,8 @@ fn do_diff(
         Fragment(..), Fragment(..) -> {
           let child_patch = case prev.children {
             [head, ..] if head.key != "" -> {
+              // TODO: keyed fragments wtf
               let keyed = True
-              let keyed_children = to_keyed_children(prev.children)
               let fragment = True
               let old = prev.children
               let new = next.children
@@ -247,7 +320,9 @@ fn do_diff(
                 new:,
                 fragment:,
                 keyed:,
-                keyed_children:,
+                old_keyed: dict.new(),
+                new_keyed: dict.new(),
+                moved_children: set.new(),
                 patch_index:,
                 changes:,
                 children:,
@@ -265,7 +340,9 @@ fn do_diff(
                 new:,
                 fragment:,
                 keyed:,
-                keyed_children: dict.new(),
+                old_keyed:,
+                new_keyed:,
+                moved_children: set.new(),
                 patch_index:,
                 changes:,
                 children:,
@@ -283,7 +360,9 @@ fn do_diff(
             new:,
             fragment:,
             keyed:,
-            keyed_children:,
+            old_keyed:,
+            new_keyed:,
+            moved_children:,
             patch_index:,
             changes:,
             children:,
@@ -302,80 +381,70 @@ fn do_diff(
 
           let child_patch = case prev.children {
             [head, ..] if head.key != "" -> {
-              let patch_index = idx
-              let idx = 0
-              let old = prev.children
-              let new = next.children
-              let fragment = False
-              let keyed = True
-              let keyed_children = to_keyed_children(prev.children)
               do_diff(
-                idx:,
-                old:,
-                new:,
-                fragment:,
-                keyed:,
-                keyed_children:,
-                patch_index:,
+                idx: 0,
+                old: prev.children,
+                new: next.children,
+                fragment: False,
+                keyed: True,
+                old_keyed: prev.keyed_children,
+                new_keyed: next.keyed_children,
+                moved_children: set.new(),
+                patch_index: idx,
                 changes: child_changes,
                 children: empty_list,
               )
             }
             _ -> {
-              let patch_index = idx
-              let idx = 0
-              let old = prev.children
-              let new = next.children
-              let fragment = False
-              let keyed = False
               do_diff(
-                idx:,
-                old:,
-                new:,
-                fragment:,
-                keyed:,
-                keyed_children: dict.new(),
-                patch_index:,
+                idx: 0,
+                old: prev.children,
+                new: next.children,
+                fragment: False,
+                keyed: False,
+                old_keyed: prev.keyed_children,
+                new_keyed: next.keyed_children,
+                moved_children: set.new(),
+                patch_index: idx,
                 changes: child_changes,
                 children: empty_list,
               )
             }
           }
 
-          let idx = idx + 1
-          // let keyed_children = keyed_lookup.delete(keyed_children, next.key)
           let children = case child_patch {
             Patch(changes: [], children: [], ..) -> children
             _ -> [child_patch, ..children]
           }
           do_diff(
-            idx:,
+            idx: idx + 1,
             old:,
             new:,
             fragment:,
             keyed:,
-            keyed_children:,
+            old_keyed:,
+            new_keyed:,
+            moved_children:,
             patch_index:,
             changes:,
             children:,
           )
         }
 
-        Text(..), Text(..) if prev.content == next.content -> {
-          let idx = idx + 1
-          // let keyed_children = keyed_lookup.delete(keyed_children, next.key)
+        Text(..), Text(..) if prev.content == next.content ->
           do_diff(
-            idx:,
+            idx: idx + 1,
             old:,
             new:,
             fragment:,
             keyed:,
-            keyed_children:,
+            old_keyed:,
+            new_keyed:,
+            moved_children:,
             patch_index:,
             changes:,
             children:,
           )
-        }
 
         Text(..), Text(..) -> {
           let child =
@@ -385,39 +454,36 @@ fn do_diff(
               changes: [ReplaceText(next.content)],
               children: empty_list,
             )
-          let children = [child, ..children]
-          // let keyed_children = keyed_lookup.delete(keyed_children, next.key)
-          let idx = idx + 1
           do_diff(
-            idx:,
+            idx: idx + 1,
             old:,
             new:,
             fragment:,
             keyed:,
-            keyed_children:,
+            old_keyed:,
+            new_keyed:,
+            moved_children:,
             patch_index:,
             changes:,
-            children:,
+            children: [child, ..children],
           )
         }
 
         _, _ -> {
-          // TODO: wtf is this
           let child =
-            Patch(idx, size: 9_999_999, changes: [Replace(next)], children: [])
-          let children = [child, ..children]
-          // let keyed_children = keyed_lookup.delete(keyed_children, next.key)
-          let idx = idx + 1
+            Patch(idx, size: -1, changes: [Replace(next)], children: [])
           do_diff(
-            idx:,
+            idx: idx + 1,
             old:,
             new:,
             fragment:,
             keyed:,
-            keyed_children:,
+            old_keyed:,
+            new_keyed:,
+            moved_children:,
             patch_index:,
             changes:,
-            children:,
+            children: [child, ..children],
           )
         }
       }
@@ -427,15 +493,6 @@ fn do_diff(
 
 type AttributeChange(msg) {
   AttributeChange(added: List(Attribute(msg)), removed: List(Attribute(msg)))
-}
-
-fn compare_attributes(a: Attribute(msg), b: Attribute(msg)) -> order.Order {
-  string.compare(a.name, b.name)
-}
-
-@external(javascript, "../../runtime.ffi.mjs", "sort_attributes")
-pub fn sort_attributes(attributes: List(Attribute(msg))) -> List(Attribute(msg)) {
-  list.sort(attributes, by: compare_attributes)
 }
 
 fn diff_attributes(
@@ -521,28 +578,6 @@ fn do_diff_attributes(
           do_diff_attributes(prev_rest, next, added, removed)
         }
       }
-  }
-}
-
-fn to_keyed_children(children: List(Element(msg))) -> Dict(String, Element(msg)) {
-  use dict, child <- list.fold(children, dict.new())
-  case child.key {
-    "" -> dict
-    _ -> dict.insert(dict, child.key, child)
-  }
-}
-
-fn add_keyed_children(
-  keyed_children: KeyedLookup(Element(msg)),
-  children: List(Element(msg)),
-) -> KeyedLookup(Element(msg)) {
-  case children {
-    [] -> keyed_children
-    [child, ..] if child.key == "" -> keyed_children
-    _ ->
-      keyed_lookup.set_from_values(keyed_children, children, fn(child, _) {
-        #(child.key, child)
-      })
   }
 }
 
