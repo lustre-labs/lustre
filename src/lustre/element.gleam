@@ -114,7 +114,6 @@ pub fn element(
         namespace: "",
         tag: tag,
         attributes: vdom.sort_attributes(attributes),
-        mapper: None,
         children: [],
         keyed_children: dict.new(),
         self_closing: False,
@@ -127,7 +126,6 @@ pub fn element(
         namespace: "",
         tag: tag,
         attributes: vdom.sort_attributes(attributes),
-        mapper: None,
         children:,
         keyed_children: vdom.to_keyed_children(children),
         self_closing: False,
@@ -199,7 +197,6 @@ pub fn namespaced(
     namespace:,
     tag:,
     attributes: vdom.sort_attributes(attributes),
-    mapper: None,
     children:,
     keyed_children: vdom.to_keyed_children(children),
     self_closing: False,
@@ -225,7 +222,6 @@ pub fn advanced(
     namespace:,
     tag:,
     attributes: vdom.sort_attributes(attributes),
-    mapper: None,
     children:,
     keyed_children: vdom.to_keyed_children(children),
     self_closing:,
@@ -267,10 +263,6 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
   }
 }
 
-@external(erlang, "lustre_escape_ffi", "coerce")
-@external(javascript, "../lustre-escape.ffi.mjs", "coerce")
-fn unsafe_coerce(value: a) -> b
-
 ///
 // MANIPULATIONS ---------------------------------------------------------------
 
@@ -282,16 +274,23 @@ fn unsafe_coerce(value: a) -> b
 /// Think of it like `list.map` or `result.map` but for HTML events!
 ///
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
-  do_map(element, unsafe_coerce(f))
-}
-
-fn do_map(element: Element(a), f: fn(Dynamic) -> Dynamic) -> Element(b) {
   case element {
-    Fragment(children:, ..) ->
-      Fragment(..element, children: list.map(children, do_map(_, f)))
-    Node(attributes:, mapper:, children:, keyed_children:, ..) ->
+    Fragment(key:, children:, children_count:) ->
+      Fragment(key:, children: list.map(children, map(_, f)), children_count:)
+    Node(
+      key:,
+      namespace:,
+      tag:,
+      attributes:,
+      children:,
+      keyed_children:,
+      self_closing:,
+      void:,
+    ) ->
       Node(
-        ..element,
+        key:,
+        namespace:,
+        tag:,
         // For vdom performance reasons we don't want to modify the callback
         // of an event handler directly just to map it. Instead we track the
         // mapper function separately and this will be stored on the DOM node
@@ -310,16 +309,14 @@ fn do_map(element: Element(a), f: fn(Dynamic) -> Dynamic) -> Element(b) {
         //
         // - The vdom will generate a `Map` patch for nodes where the mapper has
         //   changed reference
-        attributes: unsafe_coerce(attributes),
-        mapper: case mapper {
-          Some(g) -> Some(fn(msg) { f(g(msg)) })
-          None -> Some(f)
-        },
+        attributes: list.map(attributes, attribute.map(_, f)),
         // TODO: does this maybe mean that we don't have to map our children?
-        children: list.map(children, do_map(_, f)),
+        children: list.map(children, map(_, f)),
         keyed_children: dict.map_values(keyed_children, fn(_, child) {
-          do_map(child, f)
+          map(child, f)
         }),
+        self_closing:,
+        void:,
       )
     Text(key:, content:) -> Text(key:, content:)
   }

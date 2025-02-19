@@ -17,6 +17,7 @@ import {
   ReplaceText,
   Update,
 } from "./lustre/runtime/vdom.mjs";
+import { run } from "../gleam_stdlib/gleam/dynamic/decode.mjs";
 
 const meta = Symbol("metadata");
 
@@ -279,7 +280,7 @@ function createAttribute(node, attribute, dispatch) {
         if (attribute.prevent_default) event.preventDefault();
         if (attribute.stop_propagation) event.stopPropagation();
 
-        const msg = attribute.handler(event);
+        const msg = run(event, attribute.handler);
 
         dispatch(
           node[meta].mapper ? node[meta].mapper(msg) : msg,
