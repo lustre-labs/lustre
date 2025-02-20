@@ -108,7 +108,7 @@ fn view_grocery_list(model: Model) -> Element(Msg) {
 fn view_grocery_item(name: String, quantity: Int) -> Element(Msg) {
   let handle_input = fn(e) {
     event.value(e)
-    |> result.nil_error
+    |> result.replace_error(Nil)
     |> result.then(int.parse)
     |> result.map(UserUpdatedQuantity(name, _))
     |> result.replace_error([])
