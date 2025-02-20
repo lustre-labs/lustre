@@ -6,3 +6,5 @@ erl_crash.dump
 .vscode
 
 node_modules
+
+*.0x
