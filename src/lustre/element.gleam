@@ -10,7 +10,6 @@
 
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
-import gleam/int
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
@@ -180,21 +179,7 @@ pub fn keyed(
 
 fn do_keyed(el: Element(msg), key: String) -> Element(msg) {
   case el {
-    Fragment(children:, ..) ->
-      Fragment(
-        key:,
-        // Fragments get squashed into the parent child list so we need to make
-        // sure keys are guaranteed to stay unique after thaat happens. For a
-        // fragment with already-keyed children this will just prefix the fragment's
-        // own key, but for fragments without keyed children this will fallback
-        // to essentially indexed-based keying.
-        children: list.index_map(children, fn(child, index) {
-          case child.key {
-            "" -> do_keyed(child, key <> ":" <> int.to_string(index))
-            _ -> do_keyed(child, key <> ":" <> child.key)
-          }
-        }),
-      )
+    Fragment(..) -> Fragment(..el, key:)
     Node(..) -> Node(..el, key:)
     Text(..) -> Text(..el, key:)
   }
@@ -274,8 +259,11 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
   // we never want to produce empty fragments - this is required by the
   // reconciler to have at least one node to refer to.
   case children {
-    [] -> Fragment(key: "", children: [Text(key: "", content: "")])
-    _ -> Fragment(key: "", children:)
+    [] -> {
+      let children = [Text(key: "", content: "")]
+      Fragment(key: "", children:, children_count: 1)
+    }
+    _ -> Fragment(key: "", children:, children_count: list.length(children))
   }
 }
 
@@ -299,8 +287,8 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
 
 fn do_map(element: Element(a), f: fn(Dynamic) -> Dynamic) -> Element(b) {
   case element {
-    Fragment(key:, children:) ->
-      Fragment(key:, children: list.map(children, do_map(_, f)))
+    Fragment(children:, ..) ->
+      Fragment(..element, children: list.map(children, do_map(_, f)))
     Node(attributes:, mapper:, children:, keyed_children:, ..) ->
       Node(
         ..element,

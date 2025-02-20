@@ -54,6 +54,8 @@ function reconcile(root, patch, dispatch) {
 
     for (let changePtr = patch.changes; changePtr.tail; changePtr = changePtr.tail) {
       const change = changePtr.head;
+
+      console.log(node, change.constructor.name, change)
      
       switch (change.constructor) {
         case Append:
@@ -65,11 +67,11 @@ function reconcile(root, patch, dispatch) {
           break;
 
         case Move:
-          move(node, change.key, change.before);
+          move(node, change.key, change.before, change.count);
           break;
 
         case RemoveKey:
-          removeKey(node, change.key);
+          removeKey(node, change.key, change.count);
           break;
 
         case Remove:
@@ -90,8 +92,13 @@ function reconcile(root, patch, dispatch) {
       }
     }
 
-    if (patch.remove_from >= 0) {
-      removeAll(node, patch.remove_from)
+    while (patch.remove_count-- > 0) {
+      const child  = node.lastChild;
+      const key = child[meta].key;
+      if (key) {
+        node[meta].keyedChildren.delete(key);
+      }
+      node.removeChild(child);
     }
 
     for (let child = patch.children; child.tail; child = child.tail) {
@@ -111,11 +118,11 @@ function append(node, children, dispatch) {
   for (const child of children) {
     const el = createElement(child, dispatch);
 
-    fragment.appendChild(el);
-
     if (child.key) {
-      node[meta].keyedChildren.set(child.key, new WeakRef(el));
+      node[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
     }
+    
+    fragment.appendChild(el);
   }
 
   node.appendChild(fragment);
@@ -123,47 +130,47 @@ function append(node, children, dispatch) {
 
 function insert(node, child, before, dispatch) {
   const el = createElement(child, dispatch);
-
-  node.insertBefore(el, node.childNodes[before]);
  
   if (child.key) {
-    node[meta].keyedChildren.set(child.key, new WeakRef(el));
+    node[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
   }
+
+  node.insertBefore(el, node.childNodes[before]);
 }
 
-function move(node, key, before) {
-  node.insertBefore(
-    node[meta].keyedChildren.get(key).deref(),
-    node.childNodes[before],
-  );
-}
+function move(node, key, before, count) {
+  let el = node[meta].keyedChildren.get(key).deref();
 
-function removeAll(node, from) {
-  while (node.children[from]) {
-    if (node.children[from].key) {
-      node[meta].keyedChildren.delete(node.children[from].key);
+  if (count > 1) {
+    const fragment = document.createDocumentFragment();
+    for (let i = 0; i < count && el !== null; ++i) {
+      let next = el.nextSibling;
+      fragment.append(el);
+      el = next;
     }
-
-    node.removeChild(node.children[from]);
+    el = fragment;
   }
+  
+  node.insertBefore(el, node.childNodes[before]);
 }
 
-function removeKey(node, key) {
-  const el = node[meta].keyedChildren.get(key).deref();
-
-  node.removeChild(el);
+function removeKey(node, key, count) {
+  let el = node[meta].keyedChildren.get(key).deref();
   node[meta].keyedChildren.delete(key);
+
+  while (count-- > 0 && el !== null) {
+    let next = el.nextSibling;
+    node.removeChild(el);
+    el = next;
+  }
 }
 
 function remove(node, from, count) {
-  while (count && node.children[from]) {
-    const el = node.children[from];
-
+  let el = node.childNodes[from]
+  while (count-- > 0 && el !== null) {
+    const next = el.nextSibling;
     node.removeChild(el);
-
-    if (el.key) {
-      node[meta].keyedChildren.delete(el.key);
-    }
+    el = next;
   }
 }
 
@@ -171,11 +178,12 @@ function replace(node, child, dispatch) {
   const el = createElement(child, dispatch);
   const parent = node.parentNode;
   
+  if (child.key) {
+    parent[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
+  }
+
   parent.replaceChild(el, node);
 
-  if (child.key) {
-    parent[meta].keyedChildren.set(child.key, new WeakRef(el));
-  }
 }
 
 function replaceText(node, content) {
@@ -199,6 +207,13 @@ function update(node, added, removed, dispatch) {
 }
 
 // ELEMENTS --------------------------------------------------------------------
+
+function unwrapFragment(node) {
+  while (node.nodeType === DocumentFragment.DOCUMENT_FRAGMENT_NODE) {
+    node = node.firstChild;
+  }
+  return node;
+}
 
 function createElement(vnode, dispatch) {
   switch (vnode.constructor) {
