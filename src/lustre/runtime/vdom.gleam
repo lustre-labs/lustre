@@ -23,6 +23,13 @@ pub type Element(msg) {
     key: String,
     namespace: String,
     tag: String,
+    // To efficiently compare attributes during the diff, attribute are always
+    // stored sorted. We do this while constructing the tree to not have to sort
+    // the attribute in the previous tree again. The order does not matter, as
+    // long as the new and old tree agree on the same order relation.
+    // 
+    // When constructing a Node with attributes provided by a user, attributes
+    // have to be sorted with the `vdom.sort_attributes` function.
     attributes: List(Attribute(msg)),
     // We want the ability to map events produced by a node to other messages
     // before they are sent to the runtime. The most-obviously implementation
@@ -39,6 +46,18 @@ pub type Element(msg) {
     // things to break!
     mapper: Option(fn(Dynamic) -> Dynamic),
     children: List(Element(msg)),
+    // When encountering keyed children, we need to be able to differentiate
+    // between these cases:
+    //
+    // - A child moved, so we need to access to the old child tree using its key
+    // - A child got inserted, which means the key doesn't exist in the old tree
+    // - A child got removed, which means the key doesn't exist in the new tree
+    //
+    // This requires us to have build a lookup table for every pair of trees we
+    // diff. We therefore keep the lookup table on the node directly, meaning
+    // we can re-use the old tree every tick.
+    //
+    // The table can constructed using the `vdom.to_keyed_children` function.
     keyed_children: Dict(String, Element(msg)),
     // These two properties are only useful when rendering Elements to strings.
     // Certain HTML tags like <img> and <input> are called "void" elements,
@@ -91,23 +110,32 @@ pub type Diff(msg) {
 pub type Patch(msg) {
   Patch(
     index: Int,
-    size: Int,
+    // How many children this node should contain. If the node contains more
+    // children after all `changes` got applied, the remaining children will
+    // be deleted.
+    //
+    // Can be set to a negative value to indicate that this step should be
+    // skipped, for example when the node got replaced entirely.
+    remove_from: Int,
     changes: List(Change(msg)),
     children: List(Patch(msg)),
   )
+  // Replace(index: Int, replacement: Element(msg))
 }
 
 pub type Change(msg) {
-  Append(children: List(Element(msg)))
-  Insert(child: Element(msg), before: String)
-  Map(fn(Dynamic) -> Dynamic)
-  Move(key: String, before: String)
-  // RemoveAll(from: Int)
-  RemoveKey(key: String)
-  Remove(from: Int, count: Int)
+  // node updates
   Replace(element: Element(msg))
   ReplaceText(content: String)
   Update(added: List(Attribute(msg)), removed: List(Attribute(msg)))
+  // Map(fn(Dynamic) -> Dynamic)
+  // keyed changes
+  Insert(child: Element(msg), before: Int)
+  Move(key: String, before: Int, count: Int)
+  RemoveKey(key: String, count: Int)
+  // unkeyed changes
+  Append(children: List(Element(msg)))
+  Remove(from: Int, count: Int)
 }
 
 pub fn diff(
@@ -118,15 +146,13 @@ pub fn diff(
   let patch =
     do_diff(
       // handlers,
-      // node: Patch(0, changes: [], children: []),
       idx: 0,
       old: [prev],
       new: [next],
-      fragment: False,
-      keyed: False,
       old_keyed: dict.new(),
       new_keyed: dict.new(),
       moved_children: set.new(),
+      moved_children_offset: 0,
       patch_index: 0,
       changes: empty_list,
       children: empty_list,
@@ -135,237 +161,195 @@ pub fn diff(
   Diff(handlers:, patch:)
 }
 
-// type Cursor(msg) {
-//   Cursor(
-//     node: Patch(msg),
-//     idx: Int,
-//     old: List(Element(msg)),
-//     new: List(Element(msg)),
-//     // metadata
-//     fragment: Bool,
-//     keyed: Bool,
-//     keyed_children: KeyedLookup(Element(msg)),
-//   )
-// }
-
 fn do_diff(
   // handlers handlers: Dict(List(Int), Dict(String, Decoder(msg))),
-  // stack: List(Cursor(msg)),
-  // cursor
-  // node node: Patch(msg),
+  // Cursor - where we are on the patch node child list.
   idx idx: Int,
   old old: List(Element(msg)),
   new new: List(Element(msg)),
-  // metadata
-  fragment fragment: Bool,
-  keyed keyed: Bool,
   moved_children moved_children: Set(String),
+  moved_children_offset moved_children_offset: Int,
+  // Metadata - does not change during the diff of a single node.
   old_keyed old_keyed: Dict(String, Element(msg)),
   new_keyed new_keyed: Dict(String, Element(msg)),
-  // patch data
+  // Patch data - Accumulators to construct the final `Patch`.
   patch_index patch_index: Int,
   changes changes: List(Change(msg)),
   children children: List(Patch(msg)),
 ) -> Patch(msg) {
-  // // if we have at least 2 things on the stack and we reached the end of the top thing
-  // [Cursor(node:, fragment:, idx:, old: [], new: [], ..), next, ..stack] ->
-  //   case fragment, node.changes, node.children {
-  //     // the top thing was empty and not a fragment
-  //     // --> we got empty back from a recursive call -> skip it
-  //     False, [], [] -> do_diff(handlers, [next, ..stack])
-
-  //     // the top thing is not empty and not a fragment
-  //     // -->  push it, baby
-  //     False, _, _ -> {
-  //       let children = [node, ..next.node.children]
-  //       let parent = Patch(..next.node, children:)
-  //       let next = Cursor(..next, node: parent)
-
-  //       do_diff(handlers, [next, ..stack])
-  //     }
-
-  //     // fragments - fixup indices
-  //     True, _, _ -> {
-  //       let node = Patch(..node, index: next.node.index)
-  //       let next = Cursor(..next, node:, idx:)
-
-  //       do_diff(handlers, [next, ..stack])
-  //     }
-  //   }
   case old, new {
-    [], [] -> Patch(patch_index, size: 0, changes:, children:)
-    _, [] -> {
-      // let changes = [RemoveAll(from: idx), ..changes]
-      Patch(patch_index, size: idx, changes:, children:)
+    // we have no more new nodes left, we are done.
+    [], [] -> Patch(patch_index, remove_from: -1, changes:, children:)
+    [prev, ..old_rest], [] -> {
+      // we got to the end of the new list, but we still need to check if we
+      // need to remove children nodes. We might have children left that we
+      // already moved!
+      // case prev.key != "" && set.contains(prev.key) {
+      //   True -> todo
+      //   False -> todo
+      // }
+      Patch(patch_index, remove_from: idx, changes:, children:)
     }
     [], _ -> {
+      // we have no more old nodes left, but still some new ones -
+      // we append them all and do not set children_count, since we don't want
+      // to remove any nodes.
       let changes = [Append(new), ..changes]
-      Patch(patch_index, size: idx, changes:, children:)
+      Patch(patch_index, remove_from: -1, changes:, children:)
     }
 
-    // _, [] if keyed -> {
-    //   let changes =
-    //     keyed_lookup.fold_remaining_keys(
-    //       keyed_children,
-    //       changes,
-    //       fn(changes, key) { [RemoveKey(key), ..changes] },
-    //     )
-    //   Patch(index: patch_index, changes:, children:)
-    // }
-    // _, [] if fragment -> {
-    //   let changes = [Remove(from: idx, count: list.length(old)), ..changes]
-    //   Patch(index: patch_index, changes:, children:)
-    // }
-    [prev, ..old_rest], [next, ..new_rest] if keyed && prev.key != next.key -> {
+    // In the following 2 cases, we got at least 2 nodes in both lists that we
+    // can compare. We handle keyed nodes first before all other diffs.
+    // This includes cases where one node is keyed and the other node isn't!
+    [prev, ..old_rest], [next, ..new_rest] if prev.key != next.key -> {
+      // does the old node still exist? did the new node exist previously?
       case dict.get(new_keyed, prev.key), dict.get(old_keyed, next.key) {
         Ok(_), Ok(match) ->
+          // Both keys still exist, so the new node had to got moved, since the
+          // the keys are different. However, we might also be in a situation
+          // where the old node is a duplicate produced by a previous move.
+          // We definitely need to skip those nodes, and doing so first might
+          // reveal that the new node didn't move at all.
           case set.contains(moved_children, prev.key) {
             True ->
-              // child already moved -> skip
+              // previous child got moved -> skip
+              // 
+              // Once we've seen the old node, our indices are correct again,
+              // so we can decrement moved_children_offset.
               do_diff(
                 idx:,
                 old: old_rest,
                 new:,
-                fragment:,
-                keyed:,
                 old_keyed:,
                 new_keyed:,
                 moved_children:,
+                moved_children_offset: moved_children_offset - 1,
                 patch_index:,
                 changes:,
                 children:,
               )
-            False ->
-              // both exist -> moves
-              // TODO: if the `next` node is a fragment this will throw everything off.
+            False -> {
+              // Both exist and we did not handle the previous node yet -
+              // Here, we move the target node to the front and loop again to
+              // handle equal keys in the next loop.
+              // After that, the previous node again has a chance to match the
+              // next node naturally, minimising moves.
+              //
+              // Once we move this node into position, all patches that we generate
+              // later will have to take into account that there is this node now
+              // here, since we apply patches in the reconciler in reverse!
+              let count = node_advancement(next)
+              let before = idx - moved_children_offset
               do_diff(
                 idx:,
                 old: [match, ..old],
                 new:,
-                fragment:,
-                keyed:,
                 old_keyed:,
                 new_keyed:,
                 moved_children: set.insert(moved_children, next.key),
+                moved_children_offset: moved_children_offset + 1,
                 patch_index:,
-                changes: [Move(next.key, before: prev.key), ..changes],
+                changes: [Move(next.key, before:, count:), ..changes],
                 children:,
               )
+            }
           }
 
-        Error(_), Ok(_) ->
-          // old deleted new exists -> delete old then check again for new
+        Error(_), Ok(_) -> {
+          // old node deleted or not keyed, new previously existed -> delete old
+          let count = node_advancement(prev)
           do_diff(
             idx:,
             old: old_rest,
             new:,
-            fragment:,
-            keyed:,
             old_keyed:,
             new_keyed:,
             moved_children:,
+            moved_children_offset:,
             patch_index:,
-            changes: [RemoveKey(prev.key), ..changes],
+            changes: [RemoveKey(prev.key, count:), ..changes],
             children:,
           )
+        }
 
-        Error(_), Error(_) ->
-          // old deleted, new is new -> replace
+        Error(_), Error(_) -> {
+          // old node deleted, new node is new -> replace
+          // TODO: We have to handle the node diff here to make sure replace can work
+          // if we got 2 fragments, trigger the normal diff?
+
+          // if the old node is a fragment, we need to first delete n-1 nodes
+          // and then replace the remaining node later.
+          let count = node_advancement(prev)
+          let changes = case count > 1 {
+            True -> [RemoveKey(prev.key, count - 1), ..changes]
+            False -> changes
+          }
           do_diff(
             idx: idx + 1,
             old: old_rest,
             new: new_rest,
-            fragment:,
-            keyed:,
             old_keyed:,
             new_keyed:,
             moved_children:,
+            moved_children_offset:,
             patch_index:,
             changes:,
             children: [Patch(idx, -1, [Replace(next)], []), ..children],
           )
+        }
 
-        Ok(_), Error(_) ->
-          // old moved, new is new -> insert
+        Ok(_), Error(_) -> {
+          // old node still exists, new node is new or not keyed -> insert
+          let before = idx - moved_children_offset
           do_diff(
             idx: idx + 1,
             old:,
             new: new_rest,
-            fragment:,
-            keyed:,
             old_keyed:,
             new_keyed:,
             moved_children:,
+            moved_children_offset: moved_children_offset + 1,
             patch_index:,
-            changes: [Insert(child: next, before: prev.key), ..changes],
+            changes: [Insert(child: next, before:), ..changes],
             children:,
           )
+        }
       }
     }
 
     [prev, ..old], [next, ..new] -> {
       case prev, next {
         Fragment(..), Fragment(..) -> {
-          let child_patch = case prev.children {
-            [head, ..] if head.key != "" -> {
-              // TODO: keyed fragments wtf
-              let keyed = True
-              let fragment = True
-              let old = prev.children
-              let new = next.children
-              let patch_index = idx
-              do_diff(
-                idx:,
-                old:,
-                new:,
-                fragment:,
-                keyed:,
-                old_keyed: dict.new(),
-                new_keyed: dict.new(),
-                moved_children: set.new(),
-                patch_index:,
-                changes:,
-                children:,
-              )
-            }
-            _ -> {
-              let keyed = False
-              let fragment = True
-              let old = prev.children
-              let new = next.children
-              let patch_index = idx
-              do_diff(
-                idx:,
-                old:,
-                new:,
-                fragment:,
-                keyed:,
-                old_keyed:,
-                new_keyed:,
-                moved_children: set.new(),
-                patch_index:,
-                changes:,
-                children:,
-              )
-            }
+          let child_patch =
+            do_diff(
+              idx:,
+              old: prev.children,
+              new: next.children,
+              old_keyed: dict.new(),
+              new_keyed: dict.new(),
+              moved_children: set.new(),
+              moved_children_offset:,
+              patch_index: idx,
+              changes: empty_list,
+              children: empty_list,
+            )
+
+          let children = case child_patch {
+            Patch(remove_from: -1, changes: [], children: [], ..) -> children
+            _ -> [child_patch, ..children]
           }
 
-          // let node = Patch(..node, index: next.node.index)
-          // let next = Cursor(..next, node:, idx:)
-          let changes = child_patch.changes
-          let children = child_patch.children
           do_diff(
             idx:,
             old:,
             new:,
-            fragment:,
-            keyed:,
             old_keyed:,
             new_keyed:,
             moved_children:,
+            moved_children_offset:,
             patch_index:,
             changes:,
-            children:,
+            children: children,
           )
         }
 
@@ -373,58 +357,40 @@ fn do_diff(
           if prev.namespace == next.namespace && prev.tag == next.tag
         -> {
           let child_changes = case
-            diff_attributes(prev.attributes, next.attributes)
+            diff_attributes(prev.attributes, next.attributes, [], [])
           {
             AttributeChange(added: [], removed: []) -> []
             AttributeChange(added:, removed:) -> [Update(added:, removed:)]
           }
 
-          let child_patch = case prev.children {
-            [head, ..] if head.key != "" -> {
-              do_diff(
-                idx: 0,
-                old: prev.children,
-                new: next.children,
-                fragment: False,
-                keyed: True,
-                old_keyed: prev.keyed_children,
-                new_keyed: next.keyed_children,
-                moved_children: set.new(),
-                patch_index: idx,
-                changes: child_changes,
-                children: empty_list,
-              )
-            }
-            _ -> {
-              do_diff(
-                idx: 0,
-                old: prev.children,
-                new: next.children,
-                fragment: False,
-                keyed: False,
-                old_keyed: prev.keyed_children,
-                new_keyed: next.keyed_children,
-                moved_children: set.new(),
-                patch_index: idx,
-                changes: child_changes,
-                children: empty_list,
-              )
-            }
-          }
+          let child_patch =
+            do_diff(
+              idx: 0,
+              old: prev.children,
+              new: next.children,
+              old_keyed: prev.keyed_children,
+              new_keyed: next.keyed_children,
+              moved_children: set.new(),
+              moved_children_offset:,
+              patch_index: idx,
+              changes: child_changes,
+              children: empty_list,
+            )
 
+          // we do not have to keep empty patches
           let children = case child_patch {
-            Patch(changes: [], children: [], ..) -> children
+            Patch(remove_from: -1, changes: [], children: [], ..) -> children
             _ -> [child_patch, ..children]
           }
+
           do_diff(
             idx: idx + 1,
             old:,
             new:,
-            fragment:,
-            keyed:,
             old_keyed:,
             new_keyed:,
             moved_children:,
+            moved_children_offset:,
             patch_index:,
             changes:,
             children:,
@@ -436,11 +402,10 @@ fn do_diff(
             idx: idx + 1,
             old:,
             new:,
-            fragment:,
-            keyed:,
             old_keyed:,
             new_keyed:,
             moved_children:,
+            moved_children_offset:,
             patch_index:,
             changes:,
             children:,
@@ -450,7 +415,7 @@ fn do_diff(
           let child =
             Patch(
               idx,
-              size: 0,
+              remove_from: -1,
               changes: [ReplaceText(next.content)],
               children: empty_list,
             )
@@ -458,11 +423,10 @@ fn do_diff(
             idx: idx + 1,
             old:,
             new:,
-            fragment:,
-            keyed:,
             old_keyed:,
             new_keyed:,
             moved_children:,
+            moved_children_offset:,
             patch_index:,
             changes:,
             children: [child, ..children],
@@ -470,17 +434,19 @@ fn do_diff(
         }
 
         _, _ -> {
+          // the nodes have a different constructor, tag, or namespace -
+          // we assume they changed enough to warrant a replace and not diff
+          // them further.
           let child =
-            Patch(idx, size: -1, changes: [Replace(next)], children: [])
+            Patch(idx, remove_from: -1, changes: [Replace(next)], children: [])
           do_diff(
             idx: idx + 1,
             old:,
             new:,
-            fragment:,
-            keyed:,
             old_keyed:,
             new_keyed:,
             moved_children:,
+            moved_children_offset:,
             patch_index:,
             changes:,
             children: [child, ..children],
@@ -491,25 +457,18 @@ fn do_diff(
   }
 }
 
+fn node_advancement(element: Element(msg)) {
+  case element {
+    Fragment(children:, ..) -> list.length(children)
+    _ -> 1
+  }
+}
+
 type AttributeChange(msg) {
   AttributeChange(added: List(Attribute(msg)), removed: List(Attribute(msg)))
 }
 
 fn diff_attributes(
-  prev: List(Attribute(msg)),
-  next: List(Attribute(msg)),
-) -> AttributeChange(msg) {
-  // case prev, next {
-  // [], [] -> AttributeChange(added: [], removed: [])
-  // [], _ -> AttributeChange(added: next, removed: [])
-  // _, [] -> AttributeChange(added: [], removed: prev)
-  // _, _ -> {
-  do_diff_attributes(prev, next, empty_list, empty_list)
-  // }
-  // }
-}
-
-fn do_diff_attributes(
   prev: List(Attribute(msg)),
   next: List(Attribute(msg)),
   added: List(Attribute(msg)),
@@ -522,6 +481,16 @@ fn do_diff_attributes(
     [], _ ->
       AttributeChange(added: list.fold(next, added, list.prepend), removed:)
     [prev_attr, ..prev_rest], [next_attr, ..next_rest] ->
+      // We assume atttribute lists are sorted here. This means we can figure out
+      // if something got added or removed by comparing each pair of attributes
+      // we encounter:
+      //
+      // - If both names are equal, we can continue diffing the attributes.
+      // - If the previous attribute is "less than", it means the previous
+      //   attribute is no longer in the next attributee list, because otherwise
+      //   the next attribute would have been sorted in this position.
+      // - Using the same arguments, we can assume that of the previous attribute
+      //   is "greater than", the next attribute got added.
       case compare_attributes(prev_attr, next_attr) {
         order.Eq ->
           case prev_attr, next_attr {
@@ -529,15 +498,15 @@ fn do_diff_attributes(
               case next_attr.name {
                 "value" | "checked" | "selected" -> {
                   let added = [next_attr, ..added]
-                  do_diff_attributes(prev_rest, next_rest, added, removed)
+                  diff_attributes(prev_rest, next_rest, added, removed)
                 }
 
                 _ if prev_attr.value == next_attr.value ->
-                  do_diff_attributes(prev_rest, next_rest, added, removed)
+                  diff_attributes(prev_rest, next_rest, added, removed)
 
                 _ -> {
                   let added = [next_attr, ..added]
-                  do_diff_attributes(prev_rest, next_rest, added, removed)
+                  diff_attributes(prev_rest, next_rest, added, removed)
                 }
               }
 
@@ -545,37 +514,38 @@ fn do_diff_attributes(
               case next_attr.name {
                 "value" | "checked" | "selected" | "scrollLeft" | "scrollRight" -> {
                   let added = [next_attr, ..added]
-                  do_diff_attributes(prev_rest, next_rest, added, removed)
+                  diff_attributes(prev_rest, next_rest, added, removed)
                 }
 
                 _ if prev_attr.value == next_attr.value ->
-                  do_diff_attributes(prev_rest, next_rest, added, removed)
+                  diff_attributes(prev_rest, next_rest, added, removed)
 
                 _ -> {
                   let added = [next_attr, ..added]
-                  do_diff_attributes(prev_rest, next_rest, added, removed)
+                  diff_attributes(prev_rest, next_rest, added, removed)
                 }
               }
 
-            // Event(..), Event(..) as old if attr == old ->
-            //   do_diff_attributes(dict.delete(prev, attr.name), rest, added)
-            // Event(..), Event(..) ->
-            //   do_diff_attributes(dict.delete(prev, attr.name), rest, [
-            //     attr,
-            //     ..added
-            //   ])
-            _, _ -> {
+            Event(..), Event(..) -> {
+              // we skip diffing event handlers, since Decoders are constructed
+              // dynamically at every call to view and constantly changing.
               let added = [next_attr, ..added]
-              do_diff_attributes(prev_rest, next_rest, added, removed)
+              diff_attributes(prev_rest, next_rest, added, removed)
+            }
+            _, _ -> {
+              // we have the same name, but the type has changed!
+              let added = [next_attr, ..added]
+              let removed = [prev_attr, ..removed]
+              diff_attributes(prev_rest, next_rest, added, removed)
             }
           }
         order.Gt -> {
           let added = [next_attr, ..added]
-          do_diff_attributes(prev, next_rest, added, removed)
+          diff_attributes(prev, next_rest, added, removed)
         }
         order.Lt -> {
           let removed = [prev_attr, ..removed]
-          do_diff_attributes(prev_rest, next, added, removed)
+          diff_attributes(prev_rest, next, added, removed)
         }
       }
   }

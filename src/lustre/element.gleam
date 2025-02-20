@@ -271,7 +271,12 @@ pub fn none() -> Element(msg) {
 /// used downstream.
 ///
 pub fn fragment(children: List(Element(msg))) -> Element(msg) {
-  Fragment(key: "", children:)
+  // we never want to produce empty fragments - this is required by the
+  // reconciler to have at least one node to refer to.
+  case children {
+    [] -> Fragment(key: "", children: [Text(key: "", content: "")])
+    _ -> Fragment(key: "", children:)
+  }
 }
 
 @external(erlang, "lustre_escape_ffi", "coerce")

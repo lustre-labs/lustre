@@ -12,7 +12,6 @@ import {
   Insert,
   Move,
   Remove,
-  // RemoveAll,
   RemoveKey,
   Replace,
   ReplaceText,
@@ -52,31 +51,10 @@ function reconcile(root, patch, dispatch) {
     const node = nodesStack[stackPtr];
     const patch = patchesStack[stackPtr];
     stackPtr -= 1;
-    // const { node, patch } = stack.pop();
-    
-    // if (!patch.changes.tail && !patch.children.tail) {
-    //   console.log("EMPTY PATCH FOR ", node)
-    // }
-    //
-    
 
     for (let changePtr = patch.changes; changePtr.tail; changePtr = changePtr.tail) {
       const change = changePtr.head;
-      // if (change instanceof Update) {
-      //  const isInteresting = (c) => (
-      //    !(c instanceof Event)
-      //    && !['value', 'checked', 'selected', 'scrollLeft', 'scrollTop'].includes(c.name ?? c)
-      //  );
-
-      //  const added = [...change.added].filter(isInteresting);
-      //  const removed = [...change.removed].filter(isInteresting);
-
-      //  if (added.length || removed.length) {
-      //    console.log(node, { added, removed })
-      //  }
-      // } else {
-      //  console.log(node, change)
-      // }
+     
       switch (change.constructor) {
         case Append:
           append(node, change.children, dispatch);
@@ -89,10 +67,6 @@ function reconcile(root, patch, dispatch) {
         case Move:
           move(node, change.key, change.before);
           break;
-
-        // case RemoveAll:
-        //   removeAll(node, change.from);
-        //   break;
 
         case RemoveKey:
           removeKey(node, change.key);
@@ -116,25 +90,16 @@ function reconcile(root, patch, dispatch) {
       }
     }
 
+    if (patch.remove_from >= 0) {
+      removeAll(node, patch.remove_from)
+    }
+
     for (let child = patch.children; child.tail; child = child.tail) {
       stackPtr += 1;
       nodesStack[stackPtr] = node.childNodes[child.head.index];
       patchesStack[stackPtr] = child.head;
     }
 
-    if (patch.size > 0) {
-      while (node.childNodes.length > patch.size) {
-        const child = node.lastChild;
-        const key = child[meta].key;
-        if (key) {
-          node[meta].keyedChildren.delete(key)
-        }
-        child.remove();
-      }
-    }
-    
-    // for (const child of patch.children) {
-    // }
   }
 }
 
@@ -159,7 +124,7 @@ function append(node, children, dispatch) {
 function insert(node, child, before, dispatch) {
   const el = createElement(child, dispatch);
 
-  node.insertBefore(el, node[meta].keyedChildren.get(before).deref());
+  node.insertBefore(el, node.childNodes[before]);
  
   if (child.key) {
     node[meta].keyedChildren.set(child.key, new WeakRef(el));
@@ -169,7 +134,7 @@ function insert(node, child, before, dispatch) {
 function move(node, key, before) {
   node.insertBefore(
     node[meta].keyedChildren.get(key).deref(),
-    node[meta].keyedChildren.get(before).deref(),
+    node.childNodes[before],
   );
 }
 
@@ -204,11 +169,12 @@ function remove(node, from, count) {
 
 function replace(node, child, dispatch) {
   const el = createElement(child, dispatch);
-
-  node.parentNode.replaceChild(el, node);
+  const parent = node.parentNode;
+  
+  parent.replaceChild(el, node);
 
   if (child.key) {
-    node.parentNode[meta].keyedChildren.set(child.key, new WeakRef(el));
+    parent[meta].keyedChildren.set(child.key, new WeakRef(el));
   }
 }
 

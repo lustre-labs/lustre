@@ -21,14 +21,13 @@ List.prototype.atLeastLength = function(n) {
 }
 
 export const compare_attributes = (a, b) => {
-  
-    if (a.name < b.name) {
-      return -1;
-    } else if (a.name > b.name) {
-      return 1;
-    } else {
-      return 0;
-    }
+  if (a.name < b.name) {
+    return -1;
+  } else if (a.name > b.name) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 export const sort_attributes = (attributes) =>  {
