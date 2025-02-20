@@ -39,8 +39,8 @@ fn init(_) -> Model {
 
 type Msg {
   UserClickedUpdate
+  UserClickedShuffle
   UserClickedRegenerate
-  UserToggledKeyed(Bool)
   UserChangedNext(String)
 }
 
@@ -48,7 +48,8 @@ fn update(model: Model, msg: Msg) -> Model {
   case io.debug(msg) {
     UserChangedNext(next) -> Model(..model, next:)
     UserClickedRegenerate -> Model(..model, revision: model.revision + 1)
-    UserToggledKeyed(keyed) -> Model(..model, keyed:)
+    UserClickedShuffle ->
+      Model(..model, prev: model.curr, curr: list.shuffle(model.curr))
     UserClickedUpdate -> {
       let curr =
         model.next
@@ -72,66 +73,80 @@ fn view(model: Model) -> Element(Msg) {
     [
       #(
         int.to_string(model.revision),
-        html.div([], [
-          html.div([], [
-            html.text("Previous: "),
-            html.text(string.inspect(model.prev)),
-            html.br([]),
-            html.text("Current: "),
-            html.text(string.inspect(model.curr)),
-          ]),
-          html.div(
-            [
-              attribute.style([
-                #("display", "flex"),
-                #("align-items", "center"),
-                #("gap", "0.5em"),
-              ]),
-            ],
-            [
-              html.input([
-                attribute.value(model.next),
-                event.on_input(UserChangedNext),
-              ]),
-              html.button([event.on_click(UserClickedUpdate)], [
-                html.text("Update"),
-              ]),
-              html.button([event.on_click(UserClickedRegenerate)], [
-                html.text("Regenerate"),
-              ]),
-              html.label([], [
-                html.input([
-                  attribute.type_("checkbox"),
-                  attribute.checked(model.keyed),
-                  event.on_check(UserToggledKeyed),
+        html.div(
+          [
+            attribute.style([
+              #("display", "flex"),
+              #("flex-direction", "column"),
+              #("gap", "1em"),
+              #("max-inline-size", "60ch"),
+            ]),
+          ],
+          [
+            html.div([], [
+              html.text("Previous: "),
+              html.text(string.inspect(model.prev)),
+              html.br([]),
+              html.text("Current: "),
+              html.text(string.inspect(model.curr)),
+            ]),
+            html.div(
+              [
+                attribute.style([
+                  #("display", "flex"),
+                  #("align-items", "center"),
+                  #("gap", "0.5em"),
                 ]),
-                html.text(" Keyed"),
-              ]),
-            ],
-          ),
-          case model.keyed {
-            True ->
-              element.keyed(
+              ],
+              [
+                html.input([
+                  attribute.value(model.next),
+                  event.on_input(UserChangedNext),
+                ]),
+                html.button([event.on_click(UserClickedUpdate)], [
+                  html.text("Update"),
+                ]),
+                html.button([event.on_click(UserClickedShuffle)], [
+                  html.text("Shuffle"),
+                ]),
+                html.button([event.on_click(UserClickedRegenerate)], [
+                  html.text("Regenerate"),
+                ]),
+              ],
+            ),
+            html.div(
+              [
+                attribute.style([
+                  #("display", "grid"),
+                  #("grid-template-columns", "auto 1fr"),
+                  #("column-gap", "1em"),
+                ]),
+              ],
+              [
+                html.text("classic"),
                 html.div(
                   [attribute.style([#("display", "flex"), #("gap", "1em")])],
-                  _,
-                ),
-                list.map(model.curr, fn(key) {
-                  let child =
+                  list.map(model.curr, fn(key) {
                     html.div([attribute("data-key", key)], [html.text(key)])
-                  #(key, child)
-                }),
-              )
-            False ->
-              html.div(
-                [attribute.style([#("display", "flex"), #("gap", "1em")])],
-                list.map(model.curr, fn(key) {
-                  html.div([attribute("data-key", key)], [html.text(key)])
-                }),
-              )
-          },
-          html.textarea([attribute.placeholder("Scratch area :)")], ""),
-        ]),
+                  }),
+                ),
+                html.text("keyed"),
+                element.keyed(
+                  html.div(
+                    [attribute.style([#("display", "flex"), #("gap", "1em")])],
+                    _,
+                  ),
+                  list.map(model.curr, fn(key) {
+                    let child =
+                      html.div([attribute("data-key", key)], [html.text(key)])
+                    #(key, child)
+                  }),
+                ),
+              ],
+            ),
+            html.textarea([attribute.placeholder("Scratch area :)")], ""),
+          ],
+        ),
       ),
     ],
   )
