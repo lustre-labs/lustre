@@ -405,3 +405,10 @@ pub fn charset(name: String) -> Attribute(msg) {
 pub fn http_equiv(name: String) -> Attribute(msg) {
   attribute("http-equiv", name)
 }
+
+// HTML ------------------------------------------------------------------------
+
+///
+pub fn lang(name: String) -> Attribute(msg) {
+  attribute("lang", name)
+}
