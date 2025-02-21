@@ -2,43 +2,9 @@ import Dict from "../gleam_stdlib/dict.mjs";
 import { Dispatch } from "./lustre/internals/runtime.mjs";
 import { ElementNotFound, NotABrowser } from "./lustre.mjs";
 import { LustreReconciler } from "./reconciler.ffi.mjs";
-import { Ok, Error, NonEmpty, isEqual, List, Empty } from "./gleam.mjs";
+import { Ok, Error, NonEmpty, isEqual } from "./gleam.mjs";
 import { diff } from "./lustre/runtime/vdom.mjs";
 import { Some } from "../gleam_stdlib/gleam/option.mjs";
-
-
-
-// dumb hack to speed up lists to see more stuff.
-List.prototype.hasLength = function(n) {
-  let ptr = this;
-  while (n-- > 0 && ptr) ptr = ptr.tail;
-  return ptr instanceof Empty;
-}
-List.prototype.atLeastLength = function(n) {
-  let ptr = this;
-  while (n-- > 0 && ptr) ptr = ptr.tail;
-  return !!ptr;
-}
-
-export const compare_attributes = (a, b) => {
-  if (a.name < b.name) {
-    return -1;
-  } else if (a.name > b.name) {
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
-export const sort_attributes = (attributes) =>  {
-  let attrs_array = [];
-  for (let attr = attributes; attr.tail; attr = attr.tail) {
-    attrs_array.push(attr.head)
-  }
-  attrs_array.sort(compare_attributes);
-  return List.fromArray(attrs_array);
-}
-
 
 export const is_browser = () => globalThis.window && window.document;
 
@@ -68,7 +34,7 @@ export class LustreSPA {
 
   #prev;
   #reconciler;
-  #reconciler_handlers = new Dict();
+  #reconciler_handlers = Dict.new();
 
   constructor(root, [init, effects], update, view) {
     this.root = root;
@@ -181,7 +147,7 @@ export const make_lustre_client_component = (
 
     #prev = initialView;
     #reconciler;
-    #reconciler_handlers = new Dict();
+    #reconciler_handlers = Dict.new();
 
     constructor() {
       super();

@@ -11,10 +11,6 @@ import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/internals/escape.{escape}
 
-// CONSTANTS -------------------------------------------------------------------
-
-const empty_list = []
-
 // ELEMENTS --------------------------------------------------------------------
 
 pub type Element(msg) {
@@ -79,7 +75,7 @@ pub type Element(msg) {
 pub fn to_keyed_children(
   children: List(Element(msg)),
 ) -> Dict(String, Element(msg)) {
-  use dict, child <- list.fold(children, dict.new())
+  use dict, child <- list.fold(children, empty_dict())
   case child.key {
     "" -> dict
     key -> dict.insert(dict, key, child)
@@ -98,13 +94,8 @@ pub type Attribute(msg) {
   )
 }
 
-@external(javascript, "../../runtime.ffi.mjs", "sort_attributes")
 pub fn sort_attributes(attributes: List(Attribute(msg))) -> List(Attribute(msg)) {
   list.sort(attributes, by: compare_attributes)
-}
-
-fn compare_attributes(a: Attribute(msg), b: Attribute(msg)) -> order.Order {
-  string.compare(a.name, b.name)
 }
 
 // DIFFS -----------------------------------------------------------------------
@@ -149,9 +140,9 @@ pub fn diff(
       idx: 0,
       old: [prev],
       new: [next],
-      old_keyed: dict.new(),
-      new_keyed: dict.new(),
-      moved_children: set.new(),
+      old_keyed: empty_dict(),
+      new_keyed: empty_dict(),
+      moved_children: empty_set(),
       moved_children_offset: 0,
       patch_index: 0,
       changes: empty_list,
@@ -239,35 +230,39 @@ fn do_diff(
           // We definitely need to skip those nodes, and doing so first might
           // reveal that the new node didn't move at all.
           case set.contains(moved_children, prev.key) {
-            True ->
-              // previous child got moved -> skip
-              // 
-              // Once we've seen the old node, our indices are correct again,
-              // so we can decrement moved_children_offset.
-              do_diff(
-                idx:,
-                old: old_rest,
-                new:,
-                old_keyed:,
-                new_keyed:,
-                moved_children:,
-                moved_children_offset: moved_children_offset
-                  - node_advancement(prev),
-                patch_index:,
-                changes:,
-                children:,
-                remove_count:,
-              )
             False -> {
               // Both exist and we did not handle the previous node yet -
-              // Here, we move the target node to the front and loop again to
-              // handle equal keys in the next loop.
-              // After that, the previous node again has a chance to match the
-              // next node naturally, minimising moves.
+              // Here, we move the target node _further up_ to the front and loop
+              // again, diffing and updating the pair in the next iteration.
+              // After that, the old previous node again has a chance to match
+              // the next node naturally, minimising moves.
               //
-              // Once we move this node into position, all patches that we generate
-              // later will have to take into account that there is this node now
-              // here, since we apply patches in the reconciler in reverse!
+              // Since we only ever move elements _up_, it means whenever we do
+              // we have to take that extra element into account until we see
+              // that same element again at the position it was moved from.
+              // In the reconciler we apply changes in the reverse order, so
+              // during patching ew first get to the index where the element was
+              // moved _from_. Once reached, the element is still there, since
+              // we wont move it immediately.
+              // This means that all indices between these 2 positions need to
+              // be offset to account for the element that will be moved _later_!
+              // The `idx` always refers to the final position where an element
+              // ends up at, `idx-moved_children_offset` refers to the position
+              // where the element is at currently/temporarily during patching!
+              //
+              // [a b c d] -> [c a b d]    // new -> old
+              // diff -> apply in reverse order -> update children in reverse order
+              // 
+              // ↓ diff                   ↓ old         new       idx offs   ↑    changes   ↑    children
+              // ↓ 1. move c before 0-0=0 ↓ [a b c d]   [c b a d]   0    0   ↑ 2. [c b a d] ↑
+              // ↓ 2. update c at idx=0   ↓ [c a b c d] [c b a d]   0    1   ↑              ↑ 6. [C B A D]
+              // ↓ 3. move b before 1-1=0 ↓ [a b c d]   [b a d]     1    1   ↑ 1. [b a c d] ↑
+              // ↓ 4. update b at idx=1   ↓ [b a b c d] [b a d]     1    2   ↑              ↑ 5. [c B A D]
+              // ↓ 5. update a at idx=2   ↓ [a b c d]   [a d]       2    2   ↑              ↑ 4. [c b A D]
+              // ↓ 6. fixup offset for b  ↓ [b c d]     [d]         3    2   ↑              ↑
+              // ↓ 7. fixup offset for c  ↓ [c d]       [d]         3    1   ↑              ↑
+              // ↓ 8. update d at idx=3   ↓ [d]         [d]         3    0   ↑ 0. [a b c d] ↑ 3. [c b a D]
+              //
               let count = node_advancement(next)
               let before = idx - moved_children_offset
               do_diff(
@@ -277,10 +272,29 @@ fn do_diff(
                 old_keyed:,
                 new_keyed:,
                 moved_children: set.insert(moved_children, next.key),
-                moved_children_offset: moved_children_offset
-                  + node_advancement(next),
+                moved_children_offset: moved_children_offset + count,
                 patch_index:,
                 changes: [Move(next.key, before:, count:), ..changes],
+                children:,
+                remove_count:,
+              )
+            }
+            True -> {
+              // previous child got moved -> skip
+              // 
+              // Once we've seen the old node our indices are correct again,
+              // so we can decrement moved_children_offset.
+              let count = node_advancement(prev)
+              do_diff(
+                idx:,
+                old: old_rest,
+                new:,
+                old_keyed:,
+                new_keyed:,
+                moved_children:,
+                moved_children_offset: moved_children_offset - count,
+                patch_index:,
+                changes:,
                 children:,
                 remove_count:,
               )
@@ -360,9 +374,9 @@ fn do_diff(
               idx:,
               old: prev.children,
               new: next.children,
-              old_keyed: dict.new(),
-              new_keyed: dict.new(),
-              moved_children: set.new(),
+              old_keyed: empty_dict(),
+              new_keyed: empty_dict(),
+              moved_children: empty_set(),
               moved_children_offset:,
               patch_index: -1,
               changes:,
@@ -405,9 +419,14 @@ fn do_diff(
           if prev.namespace == next.namespace && prev.tag == next.tag
         -> {
           let child_changes = case
-            diff_attributes(prev.attributes, next.attributes, [], [])
+            diff_attributes(
+              prev.attributes,
+              next.attributes,
+              empty_list,
+              empty_list,
+            )
           {
-            AttributeChange(added: [], removed: []) -> []
+            AttributeChange(added: [], removed: []) -> empty_list
             AttributeChange(added:, removed:) -> [Update(added:, removed:)]
           }
 
@@ -418,7 +437,7 @@ fn do_diff(
               new: next.children,
               old_keyed: prev.keyed_children,
               new_keyed: next.keyed_children,
-              moved_children: set.new(),
+              moved_children: empty_set(),
               moved_children_offset:,
               patch_index: idx,
               changes: child_changes,
@@ -954,4 +973,23 @@ fn attribute_to_string_parts(
     Attribute(name, value) -> Ok(#(name, value))
     _ -> Error(Nil)
   }
+}
+
+// -- PERFORMANCE CRIMES -------------------------------------------------------
+
+const empty_list = []
+
+@external(javascript, "../../perf_crimes.ffi.mjs", "empty_dict")
+fn empty_dict() -> Dict(a, b) {
+  dict.new()
+}
+
+@external(javascript, "../../perf_crimes.ffi.mjs", "empty_set")
+fn empty_set() -> Set(a) {
+  set.new()
+}
+
+@external(javascript, "../../perf_crimes.ffi.mjs", "compare_attributes")
+fn compare_attributes(a: Attribute(msg), b: Attribute(msg)) -> order.Order {
+  string.compare(a.name, b.name)
 }
