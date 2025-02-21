@@ -274,6 +274,16 @@ pub fn rel(relationship: String) -> Attribute(msg) {
   attribute("rel", relationship)
 }
 
+///
+pub fn crossorigin(origin: String) -> Attribute(msg) {
+  attribute("crossorigin", origin)
+}
+
+///
+pub fn integrity(cryptographic_hash: String) -> Attribute(msg) {
+  attribute("integrity", cryptographic_hash)
+}
+
 // EMBEDDED CONTENT ------------------------------------------------------------
 
 ///
