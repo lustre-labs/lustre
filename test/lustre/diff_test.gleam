@@ -1,20 +1,18 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dict
-import gleam/int
-import gleam/list
 import gleeunit/should
 import lustre/attribute.{attribute}
 import lustre/element
 import lustre/element/html
 import lustre/runtime/vdom.{
-  Append, Insert, Move, Patch, Remove, RemoveAll, Replace, ReplaceText, Update,
+  Insert, InsertMany, Move, Patch, Remove, Replace, ReplaceText, Update,
 }
 
 pub fn empty_node_test() {
   let prev = html.div([], [])
   let next = html.div([], [])
-  let diff = Patch(0, [], [])
+  let diff = Patch(0, 0, [], [])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -24,7 +22,7 @@ pub fn empty_node_test() {
 pub fn text_element_replaced_test() {
   let prev = html.text("Hello, World!")
   let next = html.text("Hello, Joe!")
-  let diff = Patch(0, [], [Patch(0, [ReplaceText("Hello, Joe!")], [])])
+  let diff = Patch(0, 0, [], [Patch(0, 0, [ReplaceText("Hello, Joe!")], [])])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -33,9 +31,9 @@ pub fn text_to_element_replacement_test() {
   let prev = html.div([], [html.text("Hello")])
   let next = html.div([], [html.span([], [html.text("Hello")])])
   let diff =
-    Patch(0, [], [
-      Patch(0, [], [
-        Patch(0, [Replace(html.span([], [html.text("Hello")]))], []),
+    Patch(0, 0, [], [
+      Patch(0, 0, [], [
+        Patch(0, 0, [Replace(html.span([], [html.text("Hello")]))], []),
       ]),
     ])
 
@@ -60,10 +58,10 @@ pub fn nested_attribute_changes_test() {
     ])
 
   let diff =
-    Patch(0, [], [
-      Patch(0, [], [
-        Patch(0, [Update([attribute.class("new")], [])], [
-          Patch(0, [Update([attribute("data-test", "456")], [])], []),
+    Patch(0, 0, [], [
+      Patch(0, 0, [], [
+        Patch(0, 0, [Update([attribute.class("new")], [])], [
+          Patch(0, 0, [Update([attribute("data-test", "456")], [])], []),
         ]),
       ]),
     ])
@@ -75,7 +73,7 @@ pub fn node_attribute_added_test() {
   let prev = html.div([], [])
   let next = html.div([attribute.class("wibble")], [])
   let diff =
-    Patch(0, [], [Patch(0, [Update([attribute.class("wibble")], [])], [])])
+    Patch(0, 0, [], [Patch(0, 0, [Update([attribute.class("wibble")], [])], [])])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -83,7 +81,8 @@ pub fn node_attribute_added_test() {
 pub fn node_attribute_removed_test() {
   let prev = html.div([attribute.class("wibble")], [])
   let next = html.div([], [])
-  let diff = Patch(0, [], [Patch(0, [Update([], ["class"])], [])])
+  let diff =
+    Patch(0, 0, [], [Patch(0, 0, [Update([], [attribute.class("wibble")])], [])])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -93,7 +92,14 @@ pub fn node_many_attributes_changed_test() {
     html.div([attribute("id", "cool-node"), attribute.class("wibble")], [])
   let next = html.div([attribute.class("wobble")], [])
   let diff =
-    Patch(0, [], [Patch(0, [Update([attribute.class("wobble")], ["id"])], [])])
+    Patch(0, 0, [], [
+      Patch(
+        0,
+        0,
+        [Update([attribute.class("wobble")], [attribute.id("cool-node")])],
+        [],
+      ),
+    ])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -102,7 +108,9 @@ pub fn node_child_replaced_test() {
   let prev = html.div([], [html.p([], [])])
   let next = html.div([], [html.h1([], [])])
   let diff =
-    Patch(0, [], [Patch(0, [], [Patch(0, [Replace(html.h1([], []))], [])])])
+    Patch(0, 0, [], [
+      Patch(0, 0, [], [Patch(0, 0, [Replace(html.h1([], []))], [])]),
+    ])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -122,11 +130,11 @@ pub fn node_many_children_changed_test() {
     ])
 
   let diff =
-    Patch(0, [], [
-      Patch(0, [Append([html.p([], [html.text("...")])])], [
-        Patch(1, [Replace(html.hr([]))], []),
-        Patch(0, [Update([attribute.class("flash")], [])], [
-          Patch(0, [ReplaceText("Hello, Joe!")], []),
+    Patch(0, 0, [], [
+      Patch(0, 0, [InsertMany([html.p([], [html.text("...")])], 2)], [
+        Patch(1, 0, [Replace(html.hr([]))], []),
+        Patch(0, 0, [Update([attribute.class("flash")], [])], [
+          Patch(0, 0, [ReplaceText("Hello, Joe!")], []),
         ]),
       ]),
     ])
@@ -137,7 +145,7 @@ pub fn node_many_children_changed_test() {
 pub fn node_children_removed_test() {
   let prev = html.div([], [html.h1([], []), html.p([], [])])
   let next = html.div([], [html.h1([], [])])
-  let diff = Patch(0, [], [Patch(0, [RemoveAll(from: 1)], [])])
+  let diff = Patch(0, 0, [], [Patch(0, 1, [], [])])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -158,10 +166,10 @@ pub fn fragment_many_children_changed_test() {
     ])
 
   let diff =
-    Patch(0, [Append([html.p([], [html.text("...")])])], [
-      Patch(1, [Replace(html.hr([]))], []),
-      Patch(0, [Update([attribute.class("flash")], [])], [
-        Patch(0, [ReplaceText("Hello, Joe!")], []),
+    Patch(0, 0, [InsertMany([html.p([], [html.text("...")])], 2)], [
+      Patch(1, 0, [Replace(html.hr([]))], []),
+      Patch(0, 0, [Update([attribute.class("flash")], [])], [
+        Patch(0, 0, [ReplaceText("Hello, Joe!")], []),
       ]),
     ])
 
@@ -175,7 +183,7 @@ pub fn nested_fragment_child_replaced_test() {
   let next =
     element.fragment([element.fragment([html.h1([], [])]), html.p([], [])])
 
-  let diff = Patch(0, [], [Patch(0, [Replace(html.h1([], []))], [])])
+  let diff = Patch(0, 0, [], [Patch(0, 0, [Replace(html.h1([], []))], [])])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -189,7 +197,7 @@ pub fn nested_fragment_children_removed_test() {
 
   let next = html.div([], [element.fragment([html.h1([], [])]), html.p([], [])])
 
-  let diff = Patch(0, [], [Patch(0, [Remove(from: 1, count: 2)], [])])
+  let diff = Patch(0, 0, [], [Patch(0, 0, [Remove(from: 1, count: 2)], [])])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -209,7 +217,7 @@ pub fn keyed_swap_test() {
       #("a", html.text("wibble")),
     ])
 
-  let diff = Patch(0, [], [Patch(0, [Move("b", "a")], [])])
+  let diff = Patch(0, 0, [], [Patch(0, 0, [Move("b", 0, 1)], [])])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -229,7 +237,7 @@ pub fn keyed_reorder_test() {
       #("b", html.div([], [])),
     ])
 
-  let diff = Patch(0, [], [Patch(0, [Move("c", "b")], [])])
+  let diff = Patch(0, 0, [], [Patch(0, 0, [Move("c", 1, 1)], [])])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -251,8 +259,13 @@ pub fn keyed_insert_test() {
     ])
 
   let diff =
-    Patch(0, [], [
-      Patch(0, [Insert(keyed("d", html.span([], [])), "b"), Move("c", "a")], []),
+    Patch(0, 0, [], [
+      Patch(
+        0,
+        0,
+        [Insert(keyed("d", html.span([], [])), 1), Move("c", 0, 1)],
+        [],
+      ),
     ])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
@@ -272,10 +285,10 @@ pub fn keyed_list_with_updates_test() {
     ])
 
   let diff =
-    Patch(0, [], [
-      Patch(0, [Move("2", "1")], [
-        Patch(1, [Update([attribute.class("new")], [])], []),
-        Patch(0, [Update([attribute.class("new")], [])], []),
+    Patch(0, 0, [], [
+      Patch(0, 0, [Move("2", 0, 1)], [
+        Patch(1, 0, [Update([attribute.class("new")], [])], []),
+        Patch(0, 0, [Update([attribute.class("new")], [])], []),
       ]),
     ])
 
@@ -298,7 +311,7 @@ pub fn multiple_nested_fragments_test() {
       html.div([], []),
     ])
 
-  let diff = Patch(0, [], [Patch(0, [ReplaceText("changed")], [])])
+  let diff = Patch(0, 0, [], [Patch(0, 0, [ReplaceText("changed")], [])])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -323,10 +336,10 @@ pub fn mixed_keyed_and_regular_nodes_test() {
     ])
 
   let diff =
-    Patch(0, [], [
-      Patch(0, [], [
-        Patch(1, [], [Patch(0, [ReplaceText("changed")], [])]),
-        Patch(0, [Move("2", "1")], []),
+    Patch(0, 0, [], [
+      Patch(0, 0, [], [
+        Patch(1, 0, [], [Patch(0, 0, [ReplaceText("changed")], [])]),
+        Patch(0, 0, [Move("2", 0, 1)], []),
       ]),
     ])
 
@@ -355,17 +368,18 @@ pub fn complex_attribute_changes_test() {
     )
 
   let diff =
-    Patch(0, [], [
+    Patch(0, 0, [], [
       Patch(
+        0,
         0,
         [
           Update(
             [
-              attribute("aria-label", "new"),
               attribute("style", "color: blue"),
               attribute.class("two three"),
+              attribute("aria-label", "new"),
             ],
-            ["data-test"],
+            [attribute("data-test", "old")],
           ),
         ],
         [],
@@ -385,15 +399,19 @@ pub fn empty_to_multiple_children_test() {
     ])
 
   let diff =
-    Patch(0, [], [
+    Patch(0, 0, [], [
       Patch(
         0,
+        0,
         [
-          Append([
-            html.h1([], [html.text("Title")]),
-            html.p([], [html.text("Paragraph")]),
-            html.span([], [html.text("Span")]),
-          ]),
+          InsertMany(
+            [
+              html.h1([], [html.text("Title")]),
+              html.p([], [html.text("Paragraph")]),
+              html.span([], [html.text("Span")]),
+            ],
+            0,
+          ),
         ],
         [],
       ),
@@ -418,11 +436,11 @@ pub fn mixed_text_and_element_changes_test() {
     ])
 
   let diff =
-    Patch(0, [], [
-      Patch(0, [], [
-        Patch(2, [ReplaceText("new end")], []),
-        Patch(1, [], [Patch(0, [ReplaceText("new middle")], [])]),
-        Patch(0, [ReplaceText("new start")], []),
+    Patch(0, 0, [], [
+      Patch(0, 0, [], [
+        Patch(2, 0, [ReplaceText("new end")], []),
+        Patch(1, 0, [], [Patch(0, 0, [ReplaceText("new middle")], [])]),
+        Patch(0, 0, [ReplaceText("new start")], []),
       ]),
     ])
 
@@ -433,16 +451,7 @@ pub fn mixed_text_and_element_changes_test() {
 
 fn keyed(key, el) {
   case el {
-    vdom.Fragment(..) ->
-      vdom.Fragment(
-        key:,
-        children: list.index_map(el.children, fn(child, index) {
-          case child.key {
-            "" -> keyed(key <> ":" <> int.to_string(index), child)
-            _ -> keyed(key <> ":" <> child.key, child)
-          }
-        }),
-      )
+    vdom.Fragment(..) -> vdom.Fragment(..el, key:)
     vdom.Node(..) -> vdom.Node(..el, key:)
     vdom.Text(..) -> vdom.Text(..el, key:)
   }
