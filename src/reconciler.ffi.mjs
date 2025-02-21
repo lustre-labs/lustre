@@ -8,7 +8,7 @@ import {
   Property,
   Event,
   // PATCHES
-  Append,
+  InsertMany,
   Insert,
   Move,
   Remove,
@@ -58,8 +58,8 @@ function reconcile(root, patch, dispatch) {
       console.log(node, change.constructor.name, change)
      
       switch (change.constructor) {
-        case Append:
-          append(node, change.children, dispatch);
+        case InsertMany:
+          insertMany(node, change.children, change.before, dispatch);
           break;
 
         case Insert:
@@ -112,7 +112,7 @@ function reconcile(root, patch, dispatch) {
 
 // CHANGES ---------------------------------------------------------------------
 
-function append(node, children, dispatch) {
+function insertMany(node, children, before, dispatch) {
   const fragment = document.createDocumentFragment();
 
   for (const child of children) {
@@ -121,11 +121,11 @@ function append(node, children, dispatch) {
     if (child.key) {
       node[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
     }
-    
+
     fragment.appendChild(el);
   }
 
-  node.appendChild(fragment);
+  node.insertBefore(fragment, node.childNodes[before]);
 }
 
 function insert(node, child, before, dispatch) {
@@ -233,7 +233,7 @@ function createElement(vnode, dispatch) {
         createAttribute(node, attribute, dispatch);
       }
 
-      append(node, vnode.children, dispatch);
+      insertMany(node, vnode.children, 0, dispatch);
 
       return node;
     }

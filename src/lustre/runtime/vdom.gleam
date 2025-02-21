@@ -134,7 +134,7 @@ pub type Change(msg) {
   Move(key: String, before: Int, count: Int)
   RemoveKey(key: String, count: Int)
   // unkeyed changes
-  Append(children: List(Element(msg)))
+  InsertMany(children: List(Element(msg)), before: Int)
   Remove(from: Int, count: Int)
 }
 
@@ -221,7 +221,8 @@ fn do_diff(
       // we have no more old nodes left, but still some new ones -
       // we append them all and do not set children_count, since we don't want
       // to remove any nodes.
-      let changes = [Append(new), ..changes]
+      let append = InsertMany(new, before: idx - moved_children_offset)
+      let changes = [append, ..changes]
       Patch(patch_index, remove_count:, changes:, children:)
     }
 
@@ -250,7 +251,8 @@ fn do_diff(
                 old_keyed:,
                 new_keyed:,
                 moved_children:,
-                moved_children_offset: moved_children_offset - 1,
+                moved_children_offset: moved_children_offset
+                  - node_advancement(prev),
                 patch_index:,
                 changes:,
                 children:,
@@ -275,7 +277,8 @@ fn do_diff(
                 old_keyed:,
                 new_keyed:,
                 moved_children: set.insert(moved_children, next.key),
-                moved_children_offset: moved_children_offset + 1,
+                moved_children_offset: moved_children_offset
+                  + node_advancement(next),
                 patch_index:,
                 changes: [Move(next.key, before:, count:), ..changes],
                 children:,
@@ -368,14 +371,20 @@ fn do_diff(
             )
 
           let idx = idx + node_advancement(next)
+
           let changes = case child_patch {
             Patch(remove_count: 0, changes:, ..) -> changes
             Patch(remove_count:, changes:, ..) -> {
               // - node_advancement(prev) + node_advancement(next)
               let idx = idx
-              [Remove(idx, remove_count), ..changes]
+              [Remove(idx - moved_children_offset, remove_count), ..changes]
             }
           }
+
+          let moved_children_offset =
+            moved_children_offset
+            - node_advancement(prev)
+            + node_advancement(next)
 
           do_diff(
             idx:,
