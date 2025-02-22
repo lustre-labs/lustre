@@ -311,7 +311,7 @@ fn do_diff(
             old_keyed:,
             new_keyed:,
             moved_children:,
-            moved_children_offset:,
+            moved_children_offset: moved_children_offset - count,
             patch_index:,
             changes: [RemoveKey(prev.key, count:), ..changes],
             children:,
@@ -321,16 +321,31 @@ fn do_diff(
 
         Error(_), Error(_) -> {
           // old node deleted, new node is new -> replace
-          // TODO: We have to handle the node diff here to make sure replace can work
-          // if we got 2 fragments, trigger the normal diff?
+          // NOTE: we have to copy-paste this code from the general replace case,
+          // to stay tail-recursive!
 
           // if the old node is a fragment, we need to first delete n-1 nodes
           // and then replace the remaining node later.
-          let count = node_advancement(prev)
-          let changes = case count > 1 {
-            True -> [RemoveKey(prev.key, count - 1), ..changes]
+          let prev_count = node_advancement(prev)
+
+          // this remove makes sure that the node has size=1 after the changes
+          // got applied, so we have to treat it as such for our index tracking!
+          let changes = case prev_count > 1 {
+            True -> [
+              Remove(idx - moved_children_offset + 1, prev_count - 1),
+              ..changes
+            ]
             False -> changes
           }
+
+          // for the changes that we generate later, we have to offset them by
+          // this amount, similar to moves!
+          // So if we delete 2 elements from a fragment, we have to increase
+          // the index for changes by 2, meaning we'd have an offset of -2
+          let moved_children_offset = moved_children_offset - prev_count + 1
+
+          let child =
+            Patch(idx, remove_count: 0, changes: [Replace(next)], children: [])
           do_diff(
             idx: idx + 1,
             old: old_rest,
@@ -341,7 +356,7 @@ fn do_diff(
             moved_children_offset:,
             patch_index:,
             changes:,
-            children: [Patch(idx, -1, [Replace(next)], []), ..children],
+            children: [child, ..children],
             remove_count:,
           )
         }
@@ -349,6 +364,7 @@ fn do_diff(
         Ok(_), Error(_) -> {
           // old node still exists, new node is new or not keyed -> insert
           let before = idx - moved_children_offset
+          let count = node_advancement(next)
           do_diff(
             idx: idx + 1,
             old:,
@@ -356,7 +372,7 @@ fn do_diff(
             old_keyed:,
             new_keyed:,
             moved_children:,
-            moved_children_offset: moved_children_offset + 1,
+            moved_children_offset: moved_children_offset + count,
             patch_index:,
             changes: [Insert(child: next, before:), ..changes],
             children:,

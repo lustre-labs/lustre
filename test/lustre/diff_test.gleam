@@ -6,7 +6,8 @@ import lustre/attribute.{attribute}
 import lustre/element
 import lustre/element/html
 import lustre/runtime/vdom.{
-  Insert, InsertMany, Move, Patch, Remove, Replace, ReplaceText, Update,
+  Insert, InsertMany, Move, Patch, Remove, RemoveKey, Replace, ReplaceText,
+  Update,
 }
 
 pub fn empty_node_test() {
@@ -268,7 +269,28 @@ pub fn fragment_update_and_remove_test() {
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
 
-// // KEYED DIFFS -----------------------------------------------------------------
+pub fn multiple_nested_fragments_test() {
+  let prev =
+    element.fragment([
+      element.fragment([element.fragment([html.text("deep")]), html.p([], [])]),
+      html.div([], []),
+    ])
+
+  let next =
+    element.fragment([
+      element.fragment([
+        element.fragment([html.text("changed")]),
+        html.p([], []),
+      ]),
+      html.div([], []),
+    ])
+
+  let diff = Patch(0, 0, [], [Patch(0, 0, [ReplaceText("changed")], [])])
+
+  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+}
+
+// KEYED DIFFS -----------------------------------------------------------------
 
 pub fn keyed_swap_test() {
   let prev =
@@ -357,27 +379,6 @@ pub fn keyed_list_with_updates_test() {
         Patch(0, 0, [Update([attribute.class("new")], [])], []),
       ]),
     ])
-
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
-}
-
-pub fn multiple_nested_fragments_test() {
-  let prev =
-    element.fragment([
-      element.fragment([element.fragment([html.text("deep")]), html.p([], [])]),
-      html.div([], []),
-    ])
-
-  let next =
-    element.fragment([
-      element.fragment([
-        element.fragment([html.text("changed")]),
-        html.p([], []),
-      ]),
-      html.div([], []),
-    ])
-
-  let diff = Patch(0, 0, [], [Patch(0, 0, [ReplaceText("changed")], [])])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
@@ -507,6 +508,91 @@ pub fn mixed_text_and_element_changes_test() {
         Patch(2, 0, [ReplaceText("new end")], []),
         Patch(1, 0, [], [Patch(0, 0, [ReplaceText("new middle")], [])]),
         Patch(0, 0, [ReplaceText("new start")], []),
+      ]),
+    ])
+
+  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+}
+
+// KEYED FRAGMENTS -------------------------------------------------------------
+
+pub fn keyed_fragment_move_with_replace_with_different_count_test() {
+  let x = element.fragment([html.text("x")])
+  let prev =
+    element.keyed(html.div([], _), [
+      #("x", x),
+      #("ab", element.fragment([html.text("a"), html.text("b")])),
+    ])
+
+  let cd = element.fragment([html.text("c"), html.text("d")])
+  let next =
+    element.keyed(html.div([], _), [
+      #("ab", element.fragment([html.text("a"), html.text("b")])),
+      #("cd", cd),
+    ])
+
+  let diff =
+    Patch(0, 0, [], [
+      Patch(0, 0, [InsertMany([keyed("cd", cd)], 3), RemoveKey("x", 1)], []),
+    ])
+
+  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+
+  // reverse
+
+  let diff = Patch(0, 0, [], [Patch(0, 2, [Insert(keyed("x", x), 0)], [])])
+  vdom.diff(next, prev, dict.new()).patch |> should.equal(diff)
+}
+
+pub fn keyed_fragment_move_with_replace_to_simple_node_test() {
+  let x = element.fragment([html.text("x")])
+  let ab = element.fragment([html.text("a"), html.text("b")])
+  let prev = element.keyed(html.div([], _), [#("x", x), #("a", ab)])
+
+  let next =
+    element.keyed(html.div([], _), [
+      #("a", html.text("a")),
+      #("b", html.text("b")),
+      #("c", html.text("c")),
+    ])
+
+  let diff =
+    Patch(0, 0, [], [
+      Patch(
+        0,
+        0,
+        [
+          InsertMany(
+            [keyed("b", html.text("b")), keyed("c", html.text("c"))],
+            3,
+          ),
+          Remove(2, 1),
+          RemoveKey("x", 1),
+        ],
+        [Patch(0, 0, [Replace(keyed("a", html.text("a")))], [])],
+      ),
+    ])
+
+  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+}
+
+pub fn keyed_fragment_replace_test() {
+  let x = element.fragment([html.text("x")])
+  let ab = element.fragment([html.text("a"), html.text("b")])
+  let prev = element.keyed(html.div([], _), [#("x", x), #("ab", ab)])
+
+  let next =
+    element.keyed(html.div([], _), [
+      #("a", html.text("a")),
+      #("b", html.text("b")),
+      #("c", html.text("c")),
+    ])
+
+  let diff =
+    Patch(0, 0, [], [
+      Patch(0, 0, [InsertMany([keyed("c", html.text("c"))], 3), Remove(2, 1)], [
+        Patch(1, 0, [Replace(keyed("b", html.text("b")))], []),
+        Patch(0, 0, [Replace(keyed("a", html.text("a")))], []),
       ]),
     ])
 
