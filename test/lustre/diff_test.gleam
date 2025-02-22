@@ -599,6 +599,22 @@ pub fn keyed_fragment_replace_test() {
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
 
+pub fn keyed_fragment_insert_test() {
+  let prev = element.keyed(html.div([], _), [#("a", html.text("a"))])
+  let xyz = element.fragment([html.text("x"), html.text("y"), html.text("z")])
+  let next =
+    element.keyed(html.div([], _), [#("xyz", xyz), #("a", html.text("A"))])
+
+  let diff =
+    Patch(0, 0, [], [
+      Patch(0, 0, [Insert(keyed("xyz", xyz), 0)], [
+        Patch(3, 0, [ReplaceText("A")], []),
+      ]),
+    ])
+
+  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+}
+
 // UTILS -----------------------------------------------------------------------
 
 fn keyed(key, el) {

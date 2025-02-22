@@ -366,7 +366,7 @@ fn do_diff(
           let before = idx - moved_children_offset
           let count = node_advancement(next)
           do_diff(
-            idx: idx + 1,
+            idx: idx + count,
             old:,
             new: new_rest,
             old_keyed:,

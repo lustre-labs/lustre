@@ -47,6 +47,8 @@ function reconcile(stack, dispatch) {
     for (let changePtr = patch.changes; changePtr.tail; changePtr = changePtr.tail) {
       const change = changePtr.head;
 
+      console.log(patch.index, change.constructor.name, change, node)
+
       switch (change.constructor) {
         case InsertMany:
           insertMany(node, change.children, change.before, dispatch);
