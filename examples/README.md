@@ -36,6 +36,12 @@ the previous ones. Feel free to jump in to any example that interests you, thoug
 - [`07-routing`](./07-routing) shows you how to use [`modem`](https://hexdocs.pm/modem/)
   to set up routing and navigating between pages in a Lustre app.
 
+- [99-components](./99-components)
+- [99-full-stack-applications](./99-full-stack-applications)
+- [99-server-components](./99-server-components)
+
+👷‍♀️ These examples are under construction.
+
 ## Getting help
 
 If you're having trouble with Lustre or not sure what the right way to do
