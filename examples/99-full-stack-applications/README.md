@@ -1,25 +1,7 @@
-# app
+👷‍♀️ Under construction
 
-[![Package Version](https://img.shields.io/hexpm/v/app)](https://hex.pm/packages/app)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/app/)
+## Getting help
 
-```sh
-gleam add app
-```
-```gleam
-import app
-
-pub fn main() {
-  // TODO: An example of the project in use
-}
-```
-
-Further documentation can be found at <https://hexdocs.pm/app>.
-
-## Development
-
-```sh
-gleam run   # Run the project
-gleam test  # Run the tests
-gleam shell # Run an Erlang shell
-```
+If you're having trouble with Lustre or not sure what the right way to do
+something is, the best place to get help is the [Gleam Discord server](https://discord.gg/Fm8Pwmy).
+You could also open an issue on the [Lustre GitHub repository](https://github.com/lustre-labs/lustre/issues).
