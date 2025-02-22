@@ -190,7 +190,7 @@ fn do_diff(
             patch_index:,
             changes:,
             children:,
-            remove_count: remove_count + 1,
+            remove_count: remove_count + node_advancement(prev),
           )
         False ->
           do_diff(

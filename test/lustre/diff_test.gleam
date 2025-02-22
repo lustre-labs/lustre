@@ -249,6 +249,25 @@ pub fn fragment_prepend_and_replace_with_node_test() {
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
 
+pub fn fragment_update_and_remove_test() {
+  let a = html.text("a")
+  let bc = element.fragment([html.text("b"), html.text("c")])
+  let de = element.fragment([html.text("d"), html.text("e")])
+
+  let prev = html.div([], [a, bc, de])
+  let next = html.div([], [a, de])
+
+  let diff =
+    Patch(0, 0, [], [
+      Patch(0, 2, [], [
+        Patch(2, 0, [ReplaceText("e")], []),
+        Patch(1, 0, [ReplaceText("d")], []),
+      ]),
+    ])
+
+  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+}
+
 // // KEYED DIFFS -----------------------------------------------------------------
 
 pub fn keyed_swap_test() {
