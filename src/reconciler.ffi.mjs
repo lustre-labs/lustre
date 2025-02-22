@@ -23,6 +23,7 @@ const meta = Symbol("metadata");
 export class LustreReconciler {
   #root = null;
   #dispatch = () => { };
+  #stack = [];
 
   constructor(root, dispatch, { useServerEvents = false } = {}) {
     this.#root = root;
@@ -34,14 +35,12 @@ export class LustreReconciler {
   }
 
   push(patch) {
-    reconcile(this.#root, patch, this.#dispatch);
+    this.#stack.push({ node: this.#root, patch })
+    reconcile(this.#stack, this.#dispatch);
   }
 }
 
-const stack = [];
-function reconcile(root, patch, dispatch) {
-  stack.push({ node: root, patch });
-
+function reconcile(stack, dispatch) {
   while (stack.length) {
     const { node, patch } = stack.pop();
 
