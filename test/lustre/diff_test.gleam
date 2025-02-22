@@ -202,6 +202,53 @@ pub fn nested_fragment_children_removed_test() {
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
 
+pub fn fragment_update_with_different_children_counts_test() {
+  let abc = element.fragment([html.text("a"), html.text("b"), html.text("c")])
+
+  let x = html.text("x")
+
+  let y = element.fragment([html.text("y")])
+
+  let prev = html.div([], [x, y, abc])
+  let next = html.div([], [y, abc, x])
+
+  let diff =
+    Patch(0, 0, [], [
+      Patch(
+        0,
+        0,
+        [
+          Remove(from: 3, count: 2),
+          InsertMany([html.text("b"), html.text("c")], before: 2),
+        ],
+        [
+          Patch(4, 0, [Replace(x)], []),
+          Patch(1, 0, [ReplaceText("a")], []),
+          Patch(0, 0, [Replace(y)], []),
+        ],
+      ),
+    ])
+
+  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+}
+
+pub fn fragment_prepend_and_replace_with_node_test() {
+  let ab = element.fragment([html.text("a"), html.text("b")])
+  let x = html.text("x")
+
+  let prev = html.div([], [ab])
+  let next = html.div([], [x, ab])
+
+  let diff =
+    Patch(0, 0, [], [
+      Patch(0, 0, [InsertMany([ab], before: 2), Remove(from: 1, count: 1)], [
+        Patch(0, 0, [Replace(x)], []),
+      ]),
+    ])
+
+  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+}
+
 // // KEYED DIFFS -----------------------------------------------------------------
 
 pub fn keyed_swap_test() {

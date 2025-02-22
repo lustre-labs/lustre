@@ -369,6 +369,21 @@ fn do_diff(
     [prev, ..old], [next, ..new] -> {
       case prev, next {
         Fragment(..), Fragment(..) -> {
+          let next_count = next.children_count
+          let prev_count = prev.children_count
+
+          // once we updated the fragment, we have to remove additinional
+          // elements afterwards, similarly to hwow `remove_count` works.
+          // We _have_ to to this afterwards though, otherwise we could delete
+          // a keyed item that we still needed here!
+          let changes = case prev_count - next_count {
+            remove_count if remove_count > 0 -> {
+              let remove_from = idx + next_count - moved_children_offset
+              [Remove(remove_from, remove_count), ..changes]
+            }
+            _ -> changes
+          }
+
           let child_patch =
             do_diff(
               idx:,
@@ -384,21 +399,14 @@ fn do_diff(
               remove_count: 0,
             )
 
-          let idx = idx + node_advancement(next)
+          // when we apply the changes, we will have next_count nodes in the tree,
+          // so we want to advance our index by that.
+          let idx = idx + next_count
 
-          let changes = case child_patch {
-            Patch(remove_count: 0, changes:, ..) -> changes
-            Patch(remove_count:, changes:, ..) -> {
-              // - node_advancement(prev) + node_advancement(next)
-              let idx = idx
-              [Remove(idx - moved_children_offset, remove_count), ..changes]
-            }
-          }
-
+          // changes after us have to be generated as if we still had prev_count
+          // children here, so we need to offset moved_children to account for that!
           let moved_children_offset =
-            moved_children_offset
-            - node_advancement(prev)
-            + node_advancement(next)
+            moved_children_offset + next_count - prev_count
 
           do_diff(
             idx:,
@@ -409,7 +417,7 @@ fn do_diff(
             moved_children:,
             moved_children_offset:,
             patch_index:,
-            changes:,
+            changes: child_patch.changes,
             children: child_patch.children,
             remove_count:,
           )
@@ -511,15 +519,26 @@ fn do_diff(
 
           // if the old node is a fragment, we need to first delete n-1 nodes
           // and then replace the remaining node later.
-          let count = node_advancement(prev)
-          let changes = case count > 1 {
-            True -> [Remove(idx, count - 1), ..changes]
+          let prev_count = node_advancement(prev)
+
+          // this remove makes sure that the node has size=1 after the changes
+          // got applied, so we have to treat it as such for our index tracking!
+          let changes = case prev_count > 1 {
+            True -> [
+              Remove(idx - moved_children_offset + 1, prev_count - 1),
+              ..changes
+            ]
             False -> changes
           }
 
+          // for the changes that we generate later, we have to offset them by
+          // this amount, similar to moves!
+          // So if we delete 2 elements from a fragment, we have to increase
+          // the index for changes by 2, meaning we'd have an offset of -2
+          let moved_children_offset = moved_children_offset - prev_count + 1
+
           let child =
             Patch(idx, remove_count: 0, changes: [Replace(next)], children: [])
-
           do_diff(
             idx: idx + 1,
             old:,
