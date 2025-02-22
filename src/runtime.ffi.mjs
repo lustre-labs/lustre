@@ -74,7 +74,6 @@ export class LustreSPA {
   }
 
   #tick(effects, immediate = false) {
-    console.time("tick")
     const dispatch = (msg, immediate) => {
       this.#dispatch(msg, immediate);
     };
@@ -94,24 +93,15 @@ export class LustreSPA {
       effect({ dispatch, emit, select, root });
     }
 
-    console.time("render")
-    console.time("view")
     const next = this.#view(this.#model);
-    console.timeEnd("view")
-    console.time("diff")
     const { patch, handlers } = diff(
       this.#prev,
       next,
       this.#reconciler_handlers,
     );
     this.#reconciler_handlers = handlers;
-    console.timeEnd("diff")
-    console.time("reconcile")
     this.#reconciler.push(patch);
     this.#prev = next;
-    console.timeEnd("reconcile")
-    console.timeEnd("render")
-    console.timeEnd("tick")
   }
 }
 
