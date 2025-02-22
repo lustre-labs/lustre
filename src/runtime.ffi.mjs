@@ -34,7 +34,7 @@ export class LustreSPA {
 
   #prev;
   #reconciler;
-  #reconciler_handlers = new Dict();
+  #reconciler_handlers = Dict.new();
 
   constructor(root, [init, effects], update, view) {
     this.root = root;
@@ -99,7 +99,6 @@ export class LustreSPA {
       next,
       this.#reconciler_handlers,
     );
-
     this.#reconciler_handlers = handlers;
     this.#reconciler.push(patch);
     this.#prev = next;
@@ -138,7 +137,7 @@ export const make_lustre_client_component = (
 
     #prev = initialView;
     #reconciler;
-    #reconciler_handlers = new Dict();
+    #reconciler_handlers = Dict.new();
 
     constructor() {
       super();

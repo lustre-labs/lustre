@@ -8,11 +8,10 @@ import {
   Property,
   Event,
   // PATCHES
-  Append,
+  InsertMany,
   Insert,
   Move,
   Remove,
-  RemoveAll,
   RemoveKey,
   Replace,
   ReplaceText,
@@ -23,7 +22,8 @@ const meta = Symbol("metadata");
 
 export class LustreReconciler {
   #root = null;
-  #dispatch = () => {};
+  #dispatch = () => { };
+  #stack = [];
 
   constructor(root, dispatch, { useServerEvents = false } = {}) {
     this.#root = root;
@@ -35,20 +35,23 @@ export class LustreReconciler {
   }
 
   push(patch) {
-    reconcile(this.#root, patch, this.#dispatch);
+    this.#stack.push({ node: this.#root, patch })
+    reconcile(this.#stack, this.#dispatch);
   }
 }
 
-function reconcile(root, patch, dispatch) {
-  const stack = [{ node: root, patch }];
-
+function reconcile(stack, dispatch) {
   while (stack.length) {
     const { node, patch } = stack.pop();
 
-    for (const change of patch.changes) {
+    for (let changePtr = patch.changes; changePtr.tail; changePtr = changePtr.tail) {
+      const change = changePtr.head;
+
+      console.log(patch.index, change.constructor.name, change, node)
+
       switch (change.constructor) {
-        case Append:
-          append(node, change.children, dispatch);
+        case InsertMany:
+          insertMany(node, change.children, change.before, dispatch);
           break;
 
         case Insert:
@@ -56,15 +59,11 @@ function reconcile(root, patch, dispatch) {
           break;
 
         case Move:
-          move(node, change.key, change.before);
-          break;
-
-        case RemoveAll:
-          removeAll(node, change.from);
+          move(node, change.key, change.before, change.count);
           break;
 
         case RemoveKey:
-          removeKey(node, change.key);
+          removeKey(node, change.key, change.count);
           break;
 
         case Remove:
@@ -85,84 +84,96 @@ function reconcile(root, patch, dispatch) {
       }
     }
 
-    for (const child of patch.children) {
-      stack.push({ node: node.childNodes[child.index], patch: child });
+    while (patch.remove_count-- > 0) {
+      const child = node.lastChild;
+      const key = child[meta].key;
+      if (key) {
+        node[meta].keyedChildren.delete(key);
+      }
+      node.removeChild(child);
+    }
+
+    for (let child = patch.children; child.tail; child = child.tail) {
+      stack.push({ node: node.childNodes[child.head.index], patch: child.head })
     }
   }
 }
 
 // CHANGES ---------------------------------------------------------------------
 
-function append(node, children, dispatch) {
+function insertMany(node, children, before, dispatch) {
   const fragment = document.createDocumentFragment();
 
-  for (const child of children) {
+  for (let childPtr = children; childPtr.tail; childPtr = childPtr.tail) {
+    const child = childPtr.head;
     const el = createElement(child, dispatch);
 
-    fragment.appendChild(el);
-
     if (child.key) {
-      node[meta].keyedChildren.set(child.key, new WeakRef(el));
+      node[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
     }
+
+    fragment.appendChild(el);
   }
 
-  node.appendChild(fragment);
+  node.insertBefore(fragment, node.childNodes[before]);
 }
 
 function insert(node, child, before, dispatch) {
   const el = createElement(child, dispatch);
 
-  node.insertBefore(el, node[meta].keyedChildren.get(before).deref());
-
   if (child.key) {
-    node[meta].keyedChildren.set(child.key, new WeakRef(el));
+    node[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
   }
+
+  node.insertBefore(el, node.childNodes[before]);
 }
 
-function move(node, key, before) {
-  node.insertBefore(
-    node[meta].keyedChildren.get(key).deref(),
-    node[meta].keyedChildren.get(before).deref(),
-  );
-}
+function move(node, key, before, count) {
+  let el = node[meta].keyedChildren.get(key).deref();
 
-function removeAll(node, from) {
-  while (node.children[from]) {
-    if (node.children[from].key) {
-      node[meta].keyedChildren.delete(node.children[from].key);
+  if (count > 1) {
+    const fragment = document.createDocumentFragment();
+    for (let i = 0; i < count && el !== null; ++i) {
+      let next = el.nextSibling;
+      fragment.append(el);
+      el = next;
     }
-
-    node.removeChild(node.children[from]);
+    el = fragment;
   }
+
+  node.insertBefore(el, node.childNodes[before]);
 }
 
-function removeKey(node, key) {
-  const el = node[meta].keyedChildren.get(key).deref();
-
-  node.removeChild(el);
+function removeKey(node, key, count) {
+  let el = node[meta].keyedChildren.get(key).deref();
   node[meta].keyedChildren.delete(key);
+
+  while (count-- > 0 && el !== null) {
+    let next = el.nextSibling;
+    node.removeChild(el);
+    el = next;
+  }
 }
 
 function remove(node, from, count) {
-  while (count && node.children[from]) {
-    const el = node.children[from];
-
+  let el = node.childNodes[from]
+  while (count-- > 0 && el !== null) {
+    const next = el.nextSibling;
     node.removeChild(el);
-
-    if (el.key) {
-      node[meta].keyedChildren.delete(el.key);
-    }
+    el = next;
   }
 }
 
 function replace(node, child, dispatch) {
   const el = createElement(child, dispatch);
-
-  node.parentNode.replaceChild(el, node);
+  const parent = node.parentNode;
 
   if (child.key) {
-    node.parentNode[meta].keyedChildren.set(child.key, new WeakRef(el));
+    parent[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
   }
+
+  parent.replaceChild(el, node);
+
 }
 
 function replaceText(node, content) {
@@ -170,21 +181,29 @@ function replaceText(node, content) {
 }
 
 function update(node, added, removed, dispatch) {
-  for (const attribute of removed) {
-    if (node[meta].handlers.has(attribute)) {
-      node.removeEventListener(attribute, handleEvent);
-      node[meta].handlers.delete(attribute);
+  for (let attribute = removed; attribute.tail; attribute = attribute.tail) {
+    const name = attribute.head.name
+    if (node[meta].handlers.has(name)) {
+      node.removeEventListener(name, handleEvent);
+      node[meta].handlers.delete(name);
     } else {
-      node.removeAttribute(attribute);
+      node.removeAttribute(name);
     }
   }
 
-  for (const attribute of added) {
-    createAttribute(node, attribute, dispatch);
+  for (let attribute = added; attribute.tail; attribute = attribute.tail) {
+    createAttribute(node, attribute.head, dispatch);
   }
 }
 
 // ELEMENTS --------------------------------------------------------------------
+
+function unwrapFragment(node) {
+  while (node.nodeType === DocumentFragment.DOCUMENT_FRAGMENT_NODE) {
+    node = node.firstChild;
+  }
+  return node;
+}
 
 function createElement(vnode, dispatch) {
   switch (vnode.constructor) {
@@ -200,11 +219,12 @@ function createElement(vnode, dispatch) {
         handlers: new Map(),
       };
 
-      for (const attribute of vnode.attributes) {
+      for (let attributePtr = vnode.attributes; attributePtr.tail; attributePtr = attributePtr.tail) {
+        const attribute = attributePtr.head;
         createAttribute(node, attribute, dispatch);
       }
 
-      append(node, vnode.children, dispatch);
+      insertMany(node, vnode.children, 0, dispatch);
 
       return node;
     }
@@ -220,7 +240,8 @@ function createElement(vnode, dispatch) {
     case Fragment: {
       const node = document.createDocumentFragment();
 
-      for (const child of vnode.children) {
+      for (let childPtr = vnode.children; childPtr.tail; childPtr = childPtr.tail) {
+        const child = childPtr.head;
         node.appendChild(createElement(child, dispatch));
       }
 
@@ -234,10 +255,12 @@ function createElement(vnode, dispatch) {
 function createAttribute(node, attribute, dispatch) {
   switch (attribute.constructor) {
     case Attribute:
-      node.setAttribute(attribute.name, attribute.value);
+      if (attribute.value !== node.getAttribute(attribute.name)) {
+        node.setAttribute(attribute.name, attribute.value);
 
-      if (SYNCED_ATTRIBUTES.has(attribute.name)) {
-        node[attribute.name] = attribute.value;
+        if (SYNCED_ATTRIBUTES.includes(attribute.name)) {
+          node[attribute.name] = attribute.value;
+        }
       }
       break;
 
@@ -260,7 +283,7 @@ function createAttribute(node, attribute, dispatch) {
 
         dispatch(
           node[meta].mapper ? node[meta].mapper(msg) : msg,
-          attribute.immediate || IMMEDIATE_EVENTS.has(event.type),
+          attribute.immediate || IMMEDIATE_EVENTS.includes(event.type),
         );
       });
       break;
@@ -274,9 +297,9 @@ function handleEvent(event) {
   handler(event);
 }
 
-const SYNCED_ATTRIBUTES = new Set(["checked", "disabled", "selected", "value"]);
+const SYNCED_ATTRIBUTES = ["checked", "disabled", "selected", "value"];
 
-const IMMEDIATE_EVENTS = new Set([
+const IMMEDIATE_EVENTS = [
   // Input synchronization
   "input",
   "change",
@@ -289,4 +312,4 @@ const IMMEDIATE_EVENTS = new Set([
 
   // Text selection
   "select",
-]);
+];
