@@ -49,14 +49,19 @@ some of the noise:
 ```gleam
 import lustre/element.{text}
 import lustre/element/html.{div, p}
-...
 ```
 
 ## Seeing the result
 
 Lustre has a companion package containing development tooling called
 [lustre_dev_tools](https://hexdocs.pm/lustre_dev_tools/). It's already included
-in this and all the other example. You can run `gleam run -m lustre/dev start`
+in this and all the other example. You can run:
+
+```bash
+gleam deps update
+gleam run -m lustre/dev start
+```
+
 in any of these examples to start a development server and head over to
 `localhost:1234` to see what it produces.
 
