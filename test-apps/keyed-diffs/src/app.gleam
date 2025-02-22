@@ -197,9 +197,9 @@ fn view_node(node: Node) {
 }
 
 fn fragment_key(children: List(Node)) {
-  use key, child <- list.fold(children, "")
-  case child {
-    Node(node_key) -> key <> node_key
-    Fragment(children) -> key <> fragment_key(children)
+  case children {
+    [] -> "[]"
+    [Node(key:), ..] -> key
+    [Fragment(children:), ..] -> fragment_key(children)
   }
 }
