@@ -1,15 +1,14 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
-import gleam/option.{type Option}
 import gleam/order
 import gleam/set.{type Set}
 import gleam/string
 import gleam/string_tree.{type StringTree}
+import lustre/internals/constants
 import lustre/internals/escape.{escape}
 
 // ELEMENTS --------------------------------------------------------------------
@@ -18,6 +17,19 @@ pub type Element(msg) {
   Fragment(
     key: String,
     children: List(Element(msg)),
+    // When encountering keyed children, we need to be able to differentiate
+    // between these cases:
+    //
+    // - A child moved, so we need to access to the old child tree using its key
+    // - A child got inserted, which means the key doesn't exist in the old tree
+    // - A child got removed, which means the key doesn't exist in the new tree
+    //
+    // This requires us to have build a lookup table for every pair of trees we
+    // diff. We therefore keep the lookup table on the node directly, meaning
+    // we can re-use the old tree every tick.
+    //
+    // The table can constructed using the `vdom.to_keyed_children` function.
+    keyed_children: Dict(String, Element(msg)),
     // When diffing Fragments, we need to know how many elements this fragment
     // spans when moving/deleting/updating it.
     children_count: Int,
@@ -57,16 +69,6 @@ pub type Element(msg) {
     void: Bool,
   )
   Text(key: String, content: String)
-}
-
-pub fn to_keyed_children(
-  children: List(Element(msg)),
-) -> Dict(String, Element(msg)) {
-  use dict, child <- list.fold(children, empty_dict())
-  case child.key {
-    "" -> dict
-    key -> dict.insert(dict, key, child)
-  }
 }
 
 pub type Attribute(msg) {
@@ -128,13 +130,13 @@ pub fn diff(
       idx: 0,
       old: [prev],
       new: [next],
-      old_keyed: empty_dict(),
-      new_keyed: empty_dict(),
-      moved_children: empty_set(),
+      old_keyed: constants.empty_dict(),
+      new_keyed: constants.empty_dict(),
+      moved_children: constants.empty_set(),
       moved_children_offset: 0,
       patch_index: 0,
-      changes: empty_list,
-      children: empty_list,
+      changes: constants.empty_list,
+      children: constants.empty_list,
       remove_count: 0,
     )
 
@@ -142,7 +144,6 @@ pub fn diff(
 }
 
 fn do_diff(
-  // handlers handlers: Dict(List(Int), Dict(String, Decoder(msg))),
   // Cursor - where we are on the patch node child list.
   idx idx: Int,
   old old: List(Element(msg)),
@@ -333,7 +334,12 @@ fn do_diff(
           let moved_children_offset = moved_children_offset - prev_count + 1
 
           let child =
-            Patch(idx, remove_count: 0, changes: [Replace(next)], children: [])
+            Patch(
+              idx,
+              remove_count: 0,
+              changes: [Replace(next)],
+              children: constants.empty_list,
+            )
           do_diff(
             idx: idx + 1,
             old: old_rest,
@@ -393,9 +399,9 @@ fn do_diff(
               idx:,
               old: prev.children,
               new: next.children,
-              old_keyed: empty_dict(),
-              new_keyed: empty_dict(),
-              moved_children: empty_set(),
+              old_keyed: prev.keyed_children,
+              new_keyed: next.keyed_children,
+              moved_children: constants.empty_set(),
               moved_children_offset:,
               patch_index: -1,
               changes:,
@@ -434,11 +440,11 @@ fn do_diff(
             diff_attributes(
               prev.attributes,
               next.attributes,
-              empty_list,
-              empty_list,
+              constants.empty_list,
+              constants.empty_list,
             )
           {
-            AttributeChange(added: [], removed: []) -> empty_list
+            AttributeChange(added: [], removed: []) -> constants.empty_list
             AttributeChange(added:, removed:) -> [Update(added:, removed:)]
           }
 
@@ -449,11 +455,11 @@ fn do_diff(
               new: next.children,
               old_keyed: prev.keyed_children,
               new_keyed: next.keyed_children,
-              moved_children: empty_set(),
+              moved_children: constants.empty_set(),
               moved_children_offset:,
               patch_index: idx,
               changes: child_changes,
-              children: empty_list,
+              children: constants.empty_list,
               remove_count:,
             )
 
@@ -499,7 +505,7 @@ fn do_diff(
               idx,
               remove_count: 0,
               changes: [ReplaceText(next.content)],
-              children: empty_list,
+              children: constants.empty_list,
             )
           do_diff(
             idx: idx + 1,
@@ -542,7 +548,12 @@ fn do_diff(
           let moved_children_offset = moved_children_offset - prev_count + 1
 
           let child =
-            Patch(idx, remove_count: 0, changes: [Replace(next)], children: [])
+            Patch(
+              idx,
+              remove_count: 0,
+              changes: [Replace(next)],
+              children: constants.empty_list,
+            )
           do_diff(
             idx: idx + 1,
             old:,
@@ -568,6 +579,8 @@ fn node_advancement(element: Element(msg)) {
     _ -> 1
   }
 }
+
+// ATTRIBUTE DIFFS -------------------------------------------------------------
 
 type AttributeChange(msg) {
   AttributeChange(added: List(Attribute(msg)), removed: List(Attribute(msg)))
@@ -999,18 +1012,6 @@ fn attribute_to_string_parts(
 }
 
 // -- PERFORMANCE CRIMES -------------------------------------------------------
-
-const empty_list = []
-
-@external(javascript, "../../perf_crimes.ffi.mjs", "empty_dict")
-fn empty_dict() -> Dict(a, b) {
-  dict.new()
-}
-
-@external(javascript, "../../perf_crimes.ffi.mjs", "empty_set")
-fn empty_set() -> Set(a) {
-  set.new()
-}
 
 @external(javascript, "../../perf_crimes.ffi.mjs", "compare_attributes")
 fn compare_attributes(a: Attribute(msg), b: Attribute(msg)) -> order.Order {

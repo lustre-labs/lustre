@@ -1,12 +1,12 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import Dict from "../gleam_stdlib/dict.mjs";
 import { Dispatch } from "./lustre/internals/runtime.mjs";
 import { ElementNotFound, NotABrowser } from "./lustre.mjs";
 import { LustreReconciler } from "./reconciler.ffi.mjs";
 import { Ok, Error, NonEmpty, isEqual } from "./gleam.mjs";
 import { Some } from "../gleam_stdlib/gleam/option.mjs";
 import { diff } from "./lustre/runtime/vdom.mjs";
+import { empty_dict } from "./lustre/internals/constants.ffi.mjs";
 
 // UTILS -----------------------------------------------------------------------
 
@@ -57,7 +57,7 @@ export class LustreSPA {
 
   #prev;
   #reconciler;
-  #reconciler_handlers = Dict.new();
+  #reconciler_handlers = empty_dict();
 
   constructor(root, [init, effects], update, view) {
     this.root = root;
@@ -160,7 +160,7 @@ export const make_lustre_client_component = (
 
     #prev = initialView;
     #reconciler;
-    #reconciler_handlers = Dict.new();
+    #reconciler_handlers = empty_dict();
 
     constructor() {
       super();

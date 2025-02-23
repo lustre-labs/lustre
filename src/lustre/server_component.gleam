@@ -100,7 +100,7 @@ import lustre/runtime/vdom
 /// the [`script`](#script) function.
 ///
 pub fn component(attrs: List(Attribute(msg))) -> Element(msg) {
-  element("lustre-server-component", attrs, [])
+  element("lustre-server-component", attrs, constants.empty_list)
 }
 
 /// Inline the Lustre Server Component client runtime as a script tag.

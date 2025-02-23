@@ -45,6 +45,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/erlang/process.{type Selector}
 import gleam/json.{type Json}
 import gleam/list
+import lustre/internals/constants
 
 // TYPES -----------------------------------------------------------------------
 
@@ -143,9 +144,7 @@ pub fn custom(
 /// from their `init` and `update` functions. If you don't want to perform any
 /// side effects, you can use `none` to tell the runtime there's no work to do.
 ///
-pub fn none() -> Effect(msg) {
-  Effect([])
-}
+pub const none: Effect(msg) = Effect([])
 
 // MANIPULATIONS ---------------------------------------------------------------
 
@@ -163,7 +162,7 @@ pub fn none() -> Effect(msg) {
 ///
 pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
   Effect({
-    use b, Effect(a) <- list.fold(effects, [])
+    use b, Effect(a) <- list.fold(effects, constants.empty_list)
     list.append(b, a)
   })
 }
