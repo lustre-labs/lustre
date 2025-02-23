@@ -1,11 +1,9 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
-import gleam/option.{type Option}
 import gleam/order
 import gleam/set.{type Set}
 import gleam/string
@@ -591,6 +589,8 @@ fn node_advancement(element: Element(msg)) {
     _ -> 1
   }
 }
+
+// ATTRIBUTE DIFFS -------------------------------------------------------------
 
 type AttributeChange(msg) {
   AttributeChange(added: List(Attribute(msg)), removed: List(Attribute(msg)))

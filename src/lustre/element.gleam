@@ -11,7 +11,6 @@
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
-import gleam/option.{None, Some}
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute}
@@ -135,55 +134,6 @@ pub fn element(
   }
 }
 
-/// Keying elements is an optimisation that helps the runtime reuse existing DOM
-/// nodes in cases where children are reordered or removed from a list. Maybe you
-/// have a list of elements that can be filtered or sorted in some way, or additions
-/// to the front are common. In these cases, keying elements can help Lustre avoid
-/// unecessary DOM manipulations by pairing the DOM nodes with the elements in the
-/// list that share the same key.
-///
-/// You can easily take an element from `lustre/element/html` and key its children
-/// by making use of Gleam's [function capturing syntax](https://tour.gleam.run/functions/function-captures/):
-///
-/// ```gleam
-/// import gleam/list
-/// import lustre/element
-/// import lustre/element/html
-///
-/// fn example() {
-///   element.keyed(html.ul([], _), {
-///     use item <- list.map(todo_list)
-///     let child = html.li([], [view_item(item)])
-///
-///     #(item.id, child)
-///   })
-/// }
-/// ```
-///
-/// **Note**: The key must be unique within the list of children, but it doesn't
-/// have to be unique across the whole application. It's fine to use the same key
-/// in different lists. Lustre will display a warning in the browser console when
-/// it detects duplicate keys in a list.
-///
-///
-pub fn keyed(
-  el: fn(List(Element(msg))) -> Element(msg),
-  children: List(#(String, Element(msg))),
-) -> Element(msg) {
-  el({
-    use #(key, child) <- list.map(children)
-    do_keyed(child, key)
-  })
-}
-
-fn do_keyed(el: Element(msg), key: String) -> Element(msg) {
-  case el {
-    Fragment(..) -> Fragment(..el, key:)
-    Node(..) -> Node(..el, key:)
-    Text(..) -> Text(..el, key:)
-  }
-}
-
 /// A function for constructing elements in a specific XML namespace. This can
 /// be used to construct SVG or MathML elements, for example.
 ///
@@ -295,6 +245,7 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
         }),
         children_count:,
       )
+
     Node(
       key:,
       namespace:,
