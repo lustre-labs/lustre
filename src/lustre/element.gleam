@@ -252,14 +252,24 @@ pub fn none() -> Element(msg) {
 /// used downstream.
 ///
 pub fn fragment(children: List(Element(msg))) -> Element(msg) {
-  // we never want to produce empty fragments - this is required by the
-  // reconciler to have at least one node to refer to.
   case children {
-    [] -> {
-      let children = [Text(key: "", content: "")]
-      Fragment(key: "", children:, children_count: 1)
-    }
-    _ -> Fragment(key: "", children:, children_count: list.length(children))
+    // we never want to produce empty fragments - this is required by the
+    // reconciler to have at least one node to refer to.
+    [] ->
+      Fragment(
+        key: "",
+        children: [Text(key: "", content: "")],
+        keyed_children: dict.new(),
+        children_count: 1,
+      )
+
+    _ ->
+      Fragment(
+        key: "",
+        children:,
+        keyed_children: vdom.to_keyed_children(children),
+        children_count: list.length(children),
+      )
   }
 }
 
@@ -275,8 +285,15 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
 ///
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
   case element {
-    Fragment(key:, children:, children_count:) ->
-      Fragment(key:, children: list.map(children, map(_, f)), children_count:)
+    Fragment(key:, children:, keyed_children:, children_count:) ->
+      Fragment(
+        key:,
+        children: list.map(children, map(_, f)),
+        keyed_children: dict.map_values(keyed_children, fn(_, child) {
+          map(child, f)
+        }),
+        children_count:,
+      )
     Node(
       key:,
       namespace:,

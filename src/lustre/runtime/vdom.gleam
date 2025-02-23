@@ -18,6 +18,19 @@ pub type Element(msg) {
   Fragment(
     key: String,
     children: List(Element(msg)),
+    // When encountering keyed children, we need to be able to differentiate
+    // between these cases:
+    //
+    // - A child moved, so we need to access to the old child tree using its key
+    // - A child got inserted, which means the key doesn't exist in the old tree
+    // - A child got removed, which means the key doesn't exist in the new tree
+    //
+    // This requires us to have build a lookup table for every pair of trees we
+    // diff. We therefore keep the lookup table on the node directly, meaning
+    // we can re-use the old tree every tick.
+    //
+    // The table can constructed using the `vdom.to_keyed_children` function.
+    keyed_children: Dict(String, Element(msg)),
     // When diffing Fragments, we need to know how many elements this fragment
     // spans when moving/deleting/updating it.
     children_count: Int,
@@ -142,7 +155,6 @@ pub fn diff(
 }
 
 fn do_diff(
-  // handlers handlers: Dict(List(Int), Dict(String, Decoder(msg))),
   // Cursor - where we are on the patch node child list.
   idx idx: Int,
   old old: List(Element(msg)),
@@ -393,8 +405,8 @@ fn do_diff(
               idx:,
               old: prev.children,
               new: next.children,
-              old_keyed: empty_dict(),
-              new_keyed: empty_dict(),
+              old_keyed: prev.keyed_children,
+              new_keyed: next.keyed_children,
               moved_children: empty_set(),
               moved_children_offset:,
               patch_index: -1,
