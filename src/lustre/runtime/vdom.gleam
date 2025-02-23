@@ -10,6 +10,7 @@ import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/internals/constants
 import lustre/internals/escape.{escape}
+import lustre/internals/events.{type Events}
 
 // ELEMENTS --------------------------------------------------------------------
 
@@ -91,7 +92,7 @@ pub fn sort_attributes(attributes: List(Attribute(msg))) -> List(Attribute(msg))
 // DIFFS -----------------------------------------------------------------------
 
 pub type Diff(msg) {
-  Diff(patch: Patch(msg), handlers: Dict(List(Int), Dict(String, Decoder(msg))))
+  Diff(patch: Patch(msg), events: Events(msg))
 }
 
 pub type Patch(msg) {
@@ -122,28 +123,26 @@ pub type Change(msg) {
 pub fn diff(
   prev: Element(msg),
   next: Element(msg),
-  handlers: Dict(List(Int), Dict(String, Decoder(msg))),
+  events: Events(msg),
 ) -> Diff(msg) {
-  let patch =
-    do_diff(
-      // handlers,
-      idx: 0,
-      old: [prev],
-      new: [next],
-      old_keyed: constants.empty_dict(),
-      new_keyed: constants.empty_dict(),
-      moved_children: constants.empty_set(),
-      moved_children_offset: 0,
-      patch_index: 0,
-      changes: constants.empty_list,
-      children: constants.empty_list,
-      remove_count: 0,
-    )
-
-  Diff(handlers:, patch:)
+  do_diff(
+    events:,
+    idx: 0,
+    old: [prev],
+    new: [next],
+    old_keyed: constants.empty_dict(),
+    new_keyed: constants.empty_dict(),
+    moved_children: constants.empty_set(),
+    moved_children_offset: 0,
+    patch_index: 0,
+    changes: constants.empty_list,
+    children: constants.empty_list,
+    remove_count: 0,
+  )
 }
 
 fn do_diff(
+  events events: Events(msg),
   // Cursor - where we are on the patch node child list.
   idx idx: Int,
   old old: List(Element(msg)),
@@ -158,10 +157,15 @@ fn do_diff(
   changes changes: List(Change(msg)),
   children children: List(Patch(msg)),
   remove_count remove_count: Int,
-) -> Patch(msg) {
+) -> Diff(msg) {
   case old, new {
     // we have no more new nodes left, we are done.
-    [], [] -> Patch(patch_index, remove_count:, changes:, children:)
+    [], [] ->
+      Diff(
+        patch: Patch(patch_index, remove_count:, changes:, children:),
+        events:,
+      )
+
     [prev, ..old_rest], [] -> {
       // we got to the end of the new list, but we still need to check if we
       // need to remove children nodes. We might have children left that we
@@ -169,6 +173,7 @@ fn do_diff(
       case prev.key == "" || !set.contains(moved_children, prev.key) {
         True ->
           do_diff(
+            events:,
             idx:,
             old: old_rest,
             new:,
@@ -181,8 +186,10 @@ fn do_diff(
             children:,
             remove_count: remove_count + node_advancement(prev),
           )
+
         False ->
           do_diff(
+            events:,
             idx:,
             old: old_rest,
             new:,
@@ -197,13 +204,18 @@ fn do_diff(
           )
       }
     }
+
     [], _ -> {
       // we have no more old nodes left, but still some new ones -
       // we append them all and do not set children_count, since we don't want
       // to remove any nodes.
       let append = InsertMany(new, before: idx - moved_children_offset)
       let changes = [append, ..changes]
-      Patch(patch_index, remove_count:, changes:, children:)
+
+      Diff(
+        patch: Patch(patch_index, remove_count:, changes:, children:),
+        events:,
+      )
     }
 
     // In the following 2 cases, we got at least 2 nodes in both lists that we
@@ -254,7 +266,9 @@ fn do_diff(
               //
               let count = node_advancement(next)
               let before = idx - moved_children_offset
+
               do_diff(
+                events:,
                 idx:,
                 old: [match, ..old],
                 new:,
@@ -274,7 +288,9 @@ fn do_diff(
               // Once we've seen the old node our indices are correct again,
               // so we can decrement moved_children_offset.
               let count = node_advancement(prev)
+
               do_diff(
+                events:,
                 idx:,
                 old: old_rest,
                 new:,
@@ -293,7 +309,9 @@ fn do_diff(
         Error(_), Ok(_) -> {
           // old node deleted or not keyed, new previously existed -> delete old
           let count = node_advancement(prev)
+
           do_diff(
+            events:,
             idx:,
             old: old_rest,
             new:,
@@ -340,7 +358,9 @@ fn do_diff(
               changes: [Replace(next)],
               children: constants.empty_list,
             )
+
           do_diff(
+            events:,
             idx: idx + 1,
             old: old_rest,
             new: new_rest,
@@ -359,7 +379,9 @@ fn do_diff(
           // old node still exists, new node is new or not keyed -> insert
           let before = idx - moved_children_offset
           let count = node_advancement(next)
+
           do_diff(
+            events:,
             idx: idx + count,
             old:,
             new: new_rest,
@@ -394,8 +416,9 @@ fn do_diff(
             _ -> changes
           }
 
-          let child_patch =
+          let child =
             do_diff(
+              events:,
               idx:,
               old: prev.children,
               new: next.children,
@@ -419,6 +442,7 @@ fn do_diff(
             moved_children_offset + next_count - prev_count
 
           do_diff(
+            events: child.events,
             idx:,
             old:,
             new:,
@@ -427,8 +451,8 @@ fn do_diff(
             moved_children:,
             moved_children_offset:,
             patch_index:,
-            changes: child_patch.changes,
-            children: child_patch.children,
+            changes: child.patch.changes,
+            children: child.patch.children,
             remove_count:,
           )
         }
@@ -448,8 +472,9 @@ fn do_diff(
             AttributeChange(added:, removed:) -> [Update(added:, removed:)]
           }
 
-          let child_patch =
+          let child =
             do_diff(
+              events:,
               idx: 0,
               old: prev.children,
               new: next.children,
@@ -464,12 +489,13 @@ fn do_diff(
             )
 
           // we do not have to keep empty patches
-          let children = case child_patch {
+          let children = case child.patch {
             Patch(remove_count: 0, changes: [], children: [], ..) -> children
-            _ -> [child_patch, ..children]
+            _ -> [child.patch, ..children]
           }
 
           do_diff(
+            events: child.events,
             idx: idx + 1,
             old:,
             new:,
@@ -486,6 +512,7 @@ fn do_diff(
 
         Text(..), Text(..) if prev.content == next.content ->
           do_diff(
+            events:,
             idx: idx + 1,
             old:,
             new:,
@@ -507,7 +534,9 @@ fn do_diff(
               changes: [ReplaceText(next.content)],
               children: constants.empty_list,
             )
+
           do_diff(
+            events:,
             idx: idx + 1,
             old:,
             new:,
@@ -554,7 +583,9 @@ fn do_diff(
               changes: [Replace(next)],
               children: constants.empty_list,
             )
+
           do_diff(
+            events:,
             idx: idx + 1,
             old:,
             new:,

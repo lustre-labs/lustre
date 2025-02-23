@@ -6,7 +6,7 @@ import { LustreReconciler } from "./reconciler.ffi.mjs";
 import { Ok, Error, NonEmpty, isEqual } from "./gleam.mjs";
 import { Some } from "../gleam_stdlib/gleam/option.mjs";
 import { diff } from "./lustre/runtime/vdom.mjs";
-import { empty_dict } from "./lustre/internals/constants.ffi.mjs";
+import * as Events from "./lustre/internals/events.mjs";
 
 // UTILS -----------------------------------------------------------------------
 
@@ -57,7 +57,7 @@ export class LustreSPA {
 
   #prev;
   #reconciler;
-  #reconciler_handlers = empty_dict();
+  #events = Events.new$();
 
   constructor(root, [init, effects], update, view) {
     this.root = root;
@@ -117,12 +117,9 @@ export class LustreSPA {
     }
 
     const next = this.#view(this.#model);
-    const { patch, handlers } = diff(
-      this.#prev,
-      next,
-      this.#reconciler_handlers,
-    );
-    this.#reconciler_handlers = handlers;
+    const { patch, events } = diff(this.#prev, next, Events.next(this.#events));
+
+    this.#events = events;
     this.#reconciler.push(patch);
     this.#prev = next;
   }
@@ -160,7 +157,7 @@ export const make_lustre_client_component = (
 
     #prev = initialView;
     #reconciler;
-    #reconciler_handlers = empty_dict();
+    #events = Events.new$();
 
     constructor() {
       super();
@@ -242,14 +239,13 @@ export const make_lustre_client_component = (
       }
 
       const next = this.#view(this.#model);
-      const { patch, handlers } = diff(
+      const { patch, events } = diff(
         this.#prev,
         next,
-        this.#reconciler_handlers,
+        Events.next(this.#events),
       );
 
-      this.#reconciler_handlers = handlers;
-
+      this.#events = events;
       this.#reconciler.push(patch);
       this.#prev = next;
     }

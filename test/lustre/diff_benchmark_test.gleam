@@ -8,6 +8,7 @@ import gleamy/bench
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/element/keyed
+import lustre/internals/events
 import lustre/runtime/vdom
 
 pub fn benchmark_10_rows_test() {
@@ -100,7 +101,7 @@ pub fn benchmark_10_000_rows_test() {
 //
 
 fn run_diff(input: #(Element(msg), Element(msg))) {
-  vdom.diff(input.0, input.1, dict.new())
+  vdom.diff(input.0, input.1, events.new())
 }
 
 fn table_diff(rows: Int, shuffle: Bool, keyed: Bool) {
