@@ -1,4 +1,5 @@
 import gleam/list
+import lustre/internals/constants
 
 // ERLANG VERSION --------------------------------------------------------------
 
@@ -11,7 +12,7 @@ pub fn escape(text: String) -> String {
   // as BitArrays and slices them to share as much as possible. You can find
   // more details in `do_escape`.
   let bits = <<text:utf8>>
-  let acc = do_escape(bits, 0, bits, [])
+  let acc = do_escape(bits, 0, bits, constants.empty_list)
 
   list.reverse(acc)
   |> bit_array.concat
@@ -164,7 +165,7 @@ import gleam/string
 
 @target(javascript)
 pub fn escape(text: String) -> String {
-  do_escape(text, 0, text, [], 0, False)
+  do_escape(text, 0, text, constants.empty_list, 0, False)
   |> list.reverse
   |> string.join(with: "")
 }

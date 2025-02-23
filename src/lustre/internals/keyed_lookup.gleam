@@ -3,6 +3,7 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/set.{type Set}
+import lustre/internals/constants
 
 // TYPES -----------------------------------------------------------------------
 
@@ -13,7 +14,7 @@ pub type KeyedLookup(v) {
 // CONSTRUCTORS ----------------------------------------------------------------
 
 pub fn new() -> KeyedLookup(v) {
-  KeyedLookup(dict.new(), set.new())
+  KeyedLookup(constants.empty_dict(), constants.empty_set())
 }
 
 pub fn from_values(
@@ -21,13 +22,13 @@ pub fn from_values(
   to_entry: fn(a, Int) -> #(String, v),
 ) -> KeyedLookup(v) {
   let dict = {
-    use dict, value, index <- list.index_fold(values, dict.new())
+    use dict, value, index <- list.index_fold(values, constants.empty_dict())
     let #(key, value) = to_entry(value, index)
 
     dict.insert(dict, key, value)
   }
 
-  KeyedLookup(dict, set.new())
+  KeyedLookup(dict, constants.empty_set())
 }
 
 // QUERIES ---------------------------------------------------------------------

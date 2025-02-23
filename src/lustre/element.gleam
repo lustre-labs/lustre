@@ -16,6 +16,7 @@ import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
+import lustre/internals/constants
 import lustre/runtime/vdom.{Fragment, Node, Text}
 
 // TYPES -----------------------------------------------------------------------
@@ -114,8 +115,8 @@ pub fn element(
         namespace: "",
         tag: tag,
         attributes: vdom.sort_attributes(attributes),
-        children: [],
-        keyed_children: dict.new(),
+        children: constants.empty_list,
+        keyed_children: constants.empty_dict(),
         self_closing: False,
         void: True,
       )
@@ -259,7 +260,7 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
       Fragment(
         key: "",
         children: [Text(key: "", content: "")],
-        keyed_children: dict.new(),
+        keyed_children: constants.empty_dict(),
         children_count: 1,
       )
 

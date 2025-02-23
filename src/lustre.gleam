@@ -167,6 +167,7 @@ import gleam/otp/actor.{type StartError}
 import gleam/result
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
+import lustre/internals/constants
 import lustre/internals/patch
 import lustre/internals/runtime
 
@@ -291,8 +292,8 @@ pub type Error {
 /// > or server component that has its own encapsulated update loop!
 ///
 pub fn element(html: Element(msg)) -> App(Nil, Nil, msg) {
-  let init = fn(_) { #(Nil, effect.none()) }
-  let update = fn(_, _) { #(Nil, effect.none()) }
+  let init = fn(_) { #(Nil, effect.none) }
+  let update = fn(_, _) { #(Nil, effect.none) }
   let view = fn(_) { html }
 
   application(init, update, view)
@@ -311,8 +312,8 @@ pub fn simple(
   update: fn(model, msg) -> model,
   view: fn(model) -> Element(msg),
 ) -> App(flags, model, msg) {
-  let init = fn(flags) { #(init(flags), effect.none()) }
-  let update = fn(model, msg) { #(update(model, msg), effect.none()) }
+  let init = fn(flags) { #(init(flags), effect.none) }
+  let update = fn(model, msg) { #(update(model, msg), effect.none) }
 
   application(init, update, view)
 }
@@ -445,7 +446,8 @@ fn do_start_actor(
   app: App(flags, model, msg),
   flags: flags,
 ) -> Result(Subject(Action(msg, ServerComponent)), Error) {
-  let on_attribute_change = option.unwrap(app.on_attribute_change, dict.new())
+  let on_attribute_change =
+    option.unwrap(app.on_attribute_change, constants.empty_dict())
 
   app.init(flags)
   |> runtime.start(app.update, app.view, on_attribute_change)

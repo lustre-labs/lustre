@@ -10,6 +10,7 @@ import gleam/order
 import gleam/set.{type Set}
 import gleam/string
 import gleam/string_tree.{type StringTree}
+import lustre/internals/constants
 import lustre/internals/escape.{escape}
 
 // ELEMENTS --------------------------------------------------------------------
@@ -75,7 +76,7 @@ pub type Element(msg) {
 pub fn to_keyed_children(
   children: List(Element(msg)),
 ) -> Dict(String, Element(msg)) {
-  use dict, child <- list.fold(children, empty_dict())
+  use dict, child <- list.fold(children, constants.empty_dict())
   case child.key {
     "" -> dict
     key -> dict.insert(dict, key, child)
@@ -141,13 +142,13 @@ pub fn diff(
       idx: 0,
       old: [prev],
       new: [next],
-      old_keyed: empty_dict(),
-      new_keyed: empty_dict(),
-      moved_children: empty_set(),
+      old_keyed: constants.empty_dict(),
+      new_keyed: constants.empty_dict(),
+      moved_children: constants.empty_set(),
       moved_children_offset: 0,
       patch_index: 0,
-      changes: empty_list,
-      children: empty_list,
+      changes: constants.empty_list,
+      children: constants.empty_list,
       remove_count: 0,
     )
 
@@ -345,7 +346,12 @@ fn do_diff(
           let moved_children_offset = moved_children_offset - prev_count + 1
 
           let child =
-            Patch(idx, remove_count: 0, changes: [Replace(next)], children: [])
+            Patch(
+              idx,
+              remove_count: 0,
+              changes: [Replace(next)],
+              children: constants.empty_list,
+            )
           do_diff(
             idx: idx + 1,
             old: old_rest,
@@ -407,7 +413,7 @@ fn do_diff(
               new: next.children,
               old_keyed: prev.keyed_children,
               new_keyed: next.keyed_children,
-              moved_children: empty_set(),
+              moved_children: constants.empty_set(),
               moved_children_offset:,
               patch_index: -1,
               changes:,
@@ -446,11 +452,11 @@ fn do_diff(
             diff_attributes(
               prev.attributes,
               next.attributes,
-              empty_list,
-              empty_list,
+              constants.empty_list,
+              constants.empty_list,
             )
           {
-            AttributeChange(added: [], removed: []) -> empty_list
+            AttributeChange(added: [], removed: []) -> constants.empty_list
             AttributeChange(added:, removed:) -> [Update(added:, removed:)]
           }
 
@@ -461,11 +467,11 @@ fn do_diff(
               new: next.children,
               old_keyed: prev.keyed_children,
               new_keyed: next.keyed_children,
-              moved_children: empty_set(),
+              moved_children: constants.empty_set(),
               moved_children_offset:,
               patch_index: idx,
               changes: child_changes,
-              children: empty_list,
+              children: constants.empty_list,
               remove_count:,
             )
 
@@ -511,7 +517,7 @@ fn do_diff(
               idx,
               remove_count: 0,
               changes: [ReplaceText(next.content)],
-              children: empty_list,
+              children: constants.empty_list,
             )
           do_diff(
             idx: idx + 1,
@@ -554,7 +560,12 @@ fn do_diff(
           let moved_children_offset = moved_children_offset - prev_count + 1
 
           let child =
-            Patch(idx, remove_count: 0, changes: [Replace(next)], children: [])
+            Patch(
+              idx,
+              remove_count: 0,
+              changes: [Replace(next)],
+              children: constants.empty_list,
+            )
           do_diff(
             idx: idx + 1,
             old:,
@@ -1011,18 +1022,6 @@ fn attribute_to_string_parts(
 }
 
 // -- PERFORMANCE CRIMES -------------------------------------------------------
-
-const empty_list = []
-
-@external(javascript, "../../perf_crimes.ffi.mjs", "empty_dict")
-fn empty_dict() -> Dict(a, b) {
-  dict.new()
-}
-
-@external(javascript, "../../perf_crimes.ffi.mjs", "empty_set")
-fn empty_set() -> Set(a) {
-  set.new()
-}
 
 @external(javascript, "../../perf_crimes.ffi.mjs", "compare_attributes")
 fn compare_attributes(a: Attribute(msg), b: Attribute(msg)) -> order.Order {
