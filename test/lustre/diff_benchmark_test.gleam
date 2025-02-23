@@ -7,6 +7,7 @@ import gleam/list
 import gleamy/bench
 import lustre/element.{type Element}
 import lustre/element/html
+import lustre/element/keyed
 import lustre/runtime/vdom
 
 pub fn benchmark_10_rows_test() {
@@ -130,20 +131,24 @@ fn view_table(
 }
 
 fn view_keyed_table(rows: List(Int)) -> Element(msg) {
-  element.keyed(html.table([], _), {
-    use id, pos <- list.index_map(rows)
-    let key = int.to_string(id)
+  html.table([], [
+    keyed.tbody([], {
+      use id, pos <- list.index_map(rows)
+      let key = int.to_string(id)
 
-    #(key, view_row(id, pos))
-  })
+      #(key, view_row(id, pos))
+    }),
+  ])
 }
 
 fn view_unkeyed_table(rows: List(Int)) -> Element(msg) {
-  html.table([], {
-    use id, pos <- list.index_map(rows)
+  html.table([], [
+    html.tbody([], {
+      use id, pos <- list.index_map(rows)
 
-    view_row(id, pos)
-  })
+      view_row(id, pos)
+    }),
+  ])
 }
 
 fn view_row(id: Int, pos: Int) -> Element(msg) {

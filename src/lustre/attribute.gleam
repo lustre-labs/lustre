@@ -5,6 +5,7 @@ import gleam/int
 import gleam/json.{type Json}
 import gleam/list
 import gleam/string
+import lustre/internals/constants
 import lustre/runtime/vdom.{Attribute, Event, Property}
 
 // TYPES -----------------------------------------------------------------------
@@ -45,7 +46,7 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
   Event(
     name,
     handler,
-    include: [],
+    include: constants.empty_list,
     prevent_default: False,
     stop_propagation: False,
     immediate: False,

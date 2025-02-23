@@ -5,6 +5,7 @@ import gleeunit/should
 import lustre/attribute.{attribute}
 import lustre/element
 import lustre/element/html
+import lustre/element/keyed
 import lustre/runtime/vdom.{
   Insert, InsertMany, Move, Patch, Remove, RemoveKey, Replace, ReplaceText,
   Update,
@@ -294,16 +295,10 @@ pub fn multiple_nested_fragments_test() {
 
 pub fn keyed_swap_test() {
   let prev =
-    element.keyed(html.div([], _), [
-      #("a", html.text("wibble")),
-      #("b", html.text("wobble")),
-    ])
+    keyed.div([], [#("a", html.text("wibble")), #("b", html.text("wobble"))])
 
   let next =
-    element.keyed(html.div([], _), [
-      #("b", html.text("wobble")),
-      #("a", html.text("wibble")),
-    ])
+    keyed.div([], [#("b", html.text("wobble")), #("a", html.text("wibble"))])
 
   let diff = Patch(0, 0, [], [Patch(0, 0, [Move("b", 0, 1)], [])])
 
@@ -312,14 +307,14 @@ pub fn keyed_swap_test() {
 
 pub fn keyed_reorder_test() {
   let prev =
-    element.keyed(html.div([], _), [
+    keyed.div([], [
       #("a", html.p([], [])),
       #("b", html.div([], [])),
       #("c", html.img([])),
     ])
 
   let next =
-    element.keyed(html.div([], _), [
+    keyed.div([], [
       #("a", html.p([], [])),
       #("c", html.img([])),
       #("b", html.div([], [])),
@@ -332,14 +327,14 @@ pub fn keyed_reorder_test() {
 
 pub fn keyed_insert_test() {
   let prev =
-    element.keyed(html.div([], _), [
+    keyed.div([], [
       #("a", html.p([], [])),
       #("b", html.div([], [])),
       #("c", html.img([])),
     ])
 
   let next =
-    element.keyed(html.div([], _), [
+    keyed.div([], [
       #("c", html.img([])),
       #("a", html.p([], [])),
       #("d", html.span([], [])),
@@ -361,13 +356,13 @@ pub fn keyed_insert_test() {
 
 pub fn keyed_list_with_updates_test() {
   let prev =
-    element.keyed(html.div([], _), [
+    keyed.div([], [
       #("1", html.div([attribute.class("old")], [html.text("one")])),
       #("2", html.div([attribute.class("old")], [html.text("two")])),
     ])
 
   let next =
-    element.keyed(html.div([], _), [
+    keyed.div([], [
       #("2", html.div([attribute.class("new")], [html.text("two")])),
       #("1", html.div([attribute.class("new")], [html.text("one")])),
     ])
@@ -386,7 +381,7 @@ pub fn keyed_list_with_updates_test() {
 pub fn mixed_keyed_and_regular_nodes_test() {
   let prev =
     html.div([], [
-      element.keyed(html.ul([], _), [
+      keyed.ul([], [
         #("1", html.li([], [html.text("one")])),
         #("2", html.li([], [html.text("two")])),
       ]),
@@ -395,7 +390,7 @@ pub fn mixed_keyed_and_regular_nodes_test() {
 
   let next =
     html.div([], [
-      element.keyed(html.ul([], _), [
+      keyed.ul([], [
         #("2", html.li([], [html.text("two")])),
         #("1", html.li([], [html.text("one")])),
       ]),
@@ -514,19 +509,19 @@ pub fn mixed_text_and_element_changes_test() {
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
 
-// KEYED FRAGMENTS -------------------------------------------------------------
+// KEYED DIFFS WITH FRAGMENTS --------------------------------------------------
 
-pub fn keyed_fragment_move_with_replace_with_different_count_test() {
+pub fn keyed_move_fragment_with_replace_with_different_count_test() {
   let x = element.fragment([html.text("x")])
   let prev =
-    element.keyed(html.div([], _), [
+    keyed.div([], [
       #("x", x),
       #("ab", element.fragment([html.text("a"), html.text("b")])),
     ])
 
   let cd = element.fragment([html.text("c"), html.text("d")])
   let next =
-    element.keyed(html.div([], _), [
+    keyed.div([], [
       #("ab", element.fragment([html.text("a"), html.text("b")])),
       #("cd", cd),
     ])
@@ -544,13 +539,13 @@ pub fn keyed_fragment_move_with_replace_with_different_count_test() {
   vdom.diff(next, prev, dict.new()).patch |> should.equal(diff)
 }
 
-pub fn keyed_fragment_move_with_replace_to_simple_node_test() {
+pub fn keyed_move_fragment_with_replace_to_simple_node_test() {
   let x = element.fragment([html.text("x")])
   let ab = element.fragment([html.text("a"), html.text("b")])
-  let prev = element.keyed(html.div([], _), [#("x", x), #("a", ab)])
+  let prev = keyed.div([], [#("x", x), #("a", ab)])
 
   let next =
-    element.keyed(html.div([], _), [
+    keyed.div([], [
       #("a", html.text("a")),
       #("b", html.text("b")),
       #("c", html.text("c")),
@@ -576,13 +571,13 @@ pub fn keyed_fragment_move_with_replace_to_simple_node_test() {
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
 
-pub fn keyed_fragment_replace_test() {
+pub fn keyed_replace_fragment_test() {
   let x = element.fragment([html.text("x")])
   let ab = element.fragment([html.text("a"), html.text("b")])
-  let prev = element.keyed(html.div([], _), [#("x", x), #("ab", ab)])
+  let prev = keyed.div([], [#("x", x), #("ab", ab)])
 
   let next =
-    element.keyed(html.div([], _), [
+    keyed.div([], [
       #("a", html.text("a")),
       #("b", html.text("b")),
       #("c", html.text("c")),
@@ -599,11 +594,10 @@ pub fn keyed_fragment_replace_test() {
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }
 
-pub fn keyed_fragment_insert_test() {
-  let prev = element.keyed(html.div([], _), [#("a", html.text("a"))])
+pub fn keyed_insert_fragment_test() {
+  let prev = keyed.div([], [#("a", html.text("a"))])
   let xyz = element.fragment([html.text("x"), html.text("y"), html.text("z")])
-  let next =
-    element.keyed(html.div([], _), [#("xyz", xyz), #("a", html.text("A"))])
+  let next = keyed.div([], [#("xyz", xyz), #("a", html.text("A"))])
 
   let diff =
     Patch(0, 0, [], [
@@ -611,6 +605,62 @@ pub fn keyed_fragment_insert_test() {
         Patch(3, 0, [ReplaceText("A")], []),
       ]),
     ])
+
+  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+}
+
+// KEYED FRAGMENTS -------------------------------------------------------------
+
+pub fn keyed_fragment_swap_test() {
+  let prev =
+    keyed.fragment([#("a", html.text("wibble")), #("b", html.text("wobble"))])
+
+  let next =
+    keyed.fragment([#("b", html.text("wobble")), #("a", html.text("wibble"))])
+
+  let diff = Patch(0, 0, [Move("b", 0, 1)], [])
+
+  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+}
+
+pub fn keyed_fragment_reorder_test() {
+  let prev =
+    keyed.fragment([
+      #("a", html.p([], [])),
+      #("b", html.div([], [])),
+      #("c", html.img([])),
+    ])
+
+  let next =
+    keyed.fragment([
+      #("a", html.p([], [])),
+      #("c", html.img([])),
+      #("b", html.div([], [])),
+    ])
+
+  let diff = Patch(0, 0, [Move("c", 1, 1)], [])
+
+  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+}
+
+pub fn keyed_fragment_insert_test() {
+  let prev =
+    keyed.fragment([
+      #("a", html.p([], [])),
+      #("b", html.div([], [])),
+      #("c", html.img([])),
+    ])
+
+  let next =
+    keyed.fragment([
+      #("c", html.img([])),
+      #("a", html.p([], [])),
+      #("d", html.span([], [])),
+      #("b", html.div([], [])),
+    ])
+
+  let diff =
+    Patch(0, 0, [Insert(keyed("d", html.span([], [])), 1), Move("c", 0, 1)], [])
 
   vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
 }

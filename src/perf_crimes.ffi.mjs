@@ -1,19 +1,19 @@
-import { List, Empty, NonEmpty } from './gleam.mjs';
-import Dict from '../gleam_stdlib/dict.mjs';
-import { new$ as set_new } from '../gleam_stdlib/gleam/set.mjs';
-import { Gt, Lt, Eq } from '../gleam_stdlib/gleam/order.mjs';
+import { List, Empty, NonEmpty } from "./gleam.mjs";
+import Dict from "../gleam_stdlib/dict.mjs";
+import { new$ as set_new } from "../gleam_stdlib/gleam/set.mjs";
+import { Gt, Lt, Eq } from "../gleam_stdlib/gleam/order.mjs";
 
 // This has been merged! https://github.com/gleam-lang/gleam/pull/4264
-List.prototype.hasLength = function(n) {
+List.prototype.hasLength = function (n) {
   let ptr = this;
   while (n-- > 0 && ptr) ptr = ptr.tail;
   return ptr instanceof Empty;
-}
-List.prototype.atLeastLength = function(n) {
+};
+List.prototype.atLeastLength = function (n) {
   let ptr = this;
   while (n-- > 0 && ptr) ptr = ptr.tail;
   return !!ptr;
-}
+};
 
 const EMPTY = new Empty();
 // I implemented the function differently for some superstition that walking the
@@ -29,9 +29,9 @@ List.fromArray = function (array, tail) {
     ptr = ptr.tail = new NonEmpty(array[i]);
   }
   ptr.tail = tail;
-  
+
   return start;
-}
+};
 
 // hoist order.Order values.
 const GT = new Gt();
@@ -45,16 +45,4 @@ export const compare_attributes = (a, b) => {
   } else {
     return GT;
   }
-}
-
-// hoist empty Dict/empty Set.
-const DICT_NEW = Dict.new();
-export function empty_dict() {
-  return DICT_NEW;
-}
-
-const SET_NEW = set_new();
-export function empty_set() {
-  return SET_NEW;
-}
-
+};

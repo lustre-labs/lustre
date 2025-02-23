@@ -11,11 +11,11 @@
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
-import gleam/option.{None, Some}
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
+import lustre/internals/constants
 import lustre/runtime/vdom.{Fragment, Node, Text}
 
 // TYPES -----------------------------------------------------------------------
@@ -114,8 +114,8 @@ pub fn element(
         namespace: "",
         tag: tag,
         attributes: vdom.sort_attributes(attributes),
-        children: [],
-        keyed_children: dict.new(),
+        children: constants.empty_list,
+        keyed_children: constants.empty_dict(),
         self_closing: False,
         void: True,
       )
@@ -127,59 +127,10 @@ pub fn element(
         tag: tag,
         attributes: vdom.sort_attributes(attributes),
         children:,
-        keyed_children: vdom.to_keyed_children(children),
+        keyed_children: constants.empty_dict(),
         self_closing: False,
         void: False,
       )
-  }
-}
-
-/// Keying elements is an optimisation that helps the runtime reuse existing DOM
-/// nodes in cases where children are reordered or removed from a list. Maybe you
-/// have a list of elements that can be filtered or sorted in some way, or additions
-/// to the front are common. In these cases, keying elements can help Lustre avoid
-/// unecessary DOM manipulations by pairing the DOM nodes with the elements in the
-/// list that share the same key.
-///
-/// You can easily take an element from `lustre/element/html` and key its children
-/// by making use of Gleam's [function capturing syntax](https://tour.gleam.run/functions/function-captures/):
-///
-/// ```gleam
-/// import gleam/list
-/// import lustre/element
-/// import lustre/element/html
-///
-/// fn example() {
-///   element.keyed(html.ul([], _), {
-///     use item <- list.map(todo_list)
-///     let child = html.li([], [view_item(item)])
-///
-///     #(item.id, child)
-///   })
-/// }
-/// ```
-///
-/// **Note**: The key must be unique within the list of children, but it doesn't
-/// have to be unique across the whole application. It's fine to use the same key
-/// in different lists. Lustre will display a warning in the browser console when
-/// it detects duplicate keys in a list.
-///
-///
-pub fn keyed(
-  el: fn(List(Element(msg))) -> Element(msg),
-  children: List(#(String, Element(msg))),
-) -> Element(msg) {
-  el({
-    use #(key, child) <- list.map(children)
-    do_keyed(child, key)
-  })
-}
-
-fn do_keyed(el: Element(msg), key: String) -> Element(msg) {
-  case el {
-    Fragment(..) -> Fragment(..el, key:)
-    Node(..) -> Node(..el, key:)
-    Text(..) -> Text(..el, key:)
   }
 }
 
@@ -198,7 +149,7 @@ pub fn namespaced(
     tag:,
     attributes: vdom.sort_attributes(attributes),
     children:,
-    keyed_children: vdom.to_keyed_children(children),
+    keyed_children: constants.empty_dict(),
     self_closing: False,
     void: False,
   )
@@ -223,7 +174,7 @@ pub fn advanced(
     tag:,
     attributes: vdom.sort_attributes(attributes),
     children:,
-    keyed_children: vdom.to_keyed_children(children),
+    keyed_children: constants.empty_dict(),
     self_closing:,
     void:,
   )
@@ -252,14 +203,24 @@ pub fn none() -> Element(msg) {
 /// used downstream.
 ///
 pub fn fragment(children: List(Element(msg))) -> Element(msg) {
-  // we never want to produce empty fragments - this is required by the
-  // reconciler to have at least one node to refer to.
   case children {
-    [] -> {
-      let children = [Text(key: "", content: "")]
-      Fragment(key: "", children:, children_count: 1)
-    }
-    _ -> Fragment(key: "", children:, children_count: list.length(children))
+    // we never want to produce empty fragments - this is required by the
+    // reconciler to have at least one node to refer to.
+    [] ->
+      Fragment(
+        key: "",
+        children: [Text(key: "", content: "")],
+        keyed_children: constants.empty_dict(),
+        children_count: 1,
+      )
+
+    _ ->
+      Fragment(
+        key: "",
+        children:,
+        keyed_children: constants.empty_dict(),
+        children_count: list.length(children),
+      )
   }
 }
 
@@ -275,8 +236,16 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
 ///
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
   case element {
-    Fragment(key:, children:, children_count:) ->
-      Fragment(key:, children: list.map(children, map(_, f)), children_count:)
+    Fragment(key:, children:, keyed_children:, children_count:) ->
+      Fragment(
+        key:,
+        children: list.map(children, map(_, f)),
+        keyed_children: dict.map_values(keyed_children, fn(_, child) {
+          map(child, f)
+        }),
+        children_count:,
+      )
+
     Node(
       key:,
       namespace:,
