@@ -71,16 +71,6 @@ pub type Element(msg) {
   Text(key: String, content: String)
 }
 
-pub fn to_keyed_children(
-  children: List(Element(msg)),
-) -> Dict(String, Element(msg)) {
-  use dict, child <- list.fold(children, constants.empty_dict())
-  case child.key {
-    "" -> dict
-    key -> dict.insert(dict, key, child)
-  }
-}
-
 pub type Attribute(msg) {
   Attribute(name: String, value: String)
   Property(name: String, value: Json)

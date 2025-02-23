@@ -44,7 +44,7 @@ pub fn element(
   attributes: List(Attribute(msg)),
   children: List(#(String, Element(msg))),
 ) -> Element(msg) {
-  let #(keyed_children, children) = extract_keyed_children(children)
+  let #(keyed_children, children, _) = extract_keyed_children(children)
 
   Node(
     key: "",
@@ -64,7 +64,7 @@ pub fn namespaced(
   attributes: List(Attribute(msg)),
   children: List(#(String, Element(msg))),
 ) -> Element(msg) {
-  let #(keyed_children, children) = extract_keyed_children(children)
+  let #(keyed_children, children, _) = extract_keyed_children(children)
 
   Node(
     key: "",
@@ -79,14 +79,10 @@ pub fn namespaced(
 }
 
 pub fn fragment(children: List(#(String, Element(msg)))) -> Element(msg) {
-  let #(keyed_children, children) = extract_keyed_children(children)
+  let #(keyed_children, children, children_count) =
+    extract_keyed_children(children)
 
-  Fragment(
-    key: "",
-    children:,
-    children_count: dict.size(keyed_children),
-    keyed_children:,
-  )
+  Fragment(key: "", children:, children_count:, keyed_children:)
 }
 
 // ELEMENTS --------------------------------------------------------------------
@@ -130,13 +126,27 @@ pub fn dl(
 
 fn extract_keyed_children(
   children: List(#(String, Element(msg))),
-) -> #(Dict(String, Element(msg)), List(Element(msg))) {
-  list.map_fold(children, constants.empty_dict(), fn(keyed_children, child) {
-    let key = child.0
-    let element = key_element(key, child.1)
+) -> #(Dict(String, Element(msg)), List(Element(msg)), Int) {
+  let init = #(constants.empty_dict(), constants.empty_list, 0)
+  let #(keyed_children, children, children_count) = {
+    use #(keyed_children, children, children_count), #(key, element) <- list.fold(
+      children,
+      init,
+    )
 
-    #(dict.insert(keyed_children, key, element), element)
-  })
+    let keyed_element = key_element(key, element)
+
+    // Children with empty keys are not inserted into the lookup, but they are
+    // still returned in the children list.
+    let keyed_children = case key {
+      "" -> keyed_children
+      _ -> dict.insert(keyed_children, key, keyed_element)
+    }
+
+    #(keyed_children, [keyed_element, ..children], children_count + 1)
+  }
+
+  #(keyed_children, list.reverse(children), children_count)
 }
 
 fn key_element(key: String, element: Element(msg)) -> Element(msg) {

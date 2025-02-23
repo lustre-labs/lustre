@@ -127,7 +127,7 @@ pub fn element(
         tag: tag,
         attributes: vdom.sort_attributes(attributes),
         children:,
-        keyed_children: vdom.to_keyed_children(children),
+        keyed_children: constants.empty_dict(),
         self_closing: False,
         void: False,
       )
@@ -149,7 +149,7 @@ pub fn namespaced(
     tag:,
     attributes: vdom.sort_attributes(attributes),
     children:,
-    keyed_children: vdom.to_keyed_children(children),
+    keyed_children: constants.empty_dict(),
     self_closing: False,
     void: False,
   )
@@ -174,7 +174,7 @@ pub fn advanced(
     tag:,
     attributes: vdom.sort_attributes(attributes),
     children:,
-    keyed_children: vdom.to_keyed_children(children),
+    keyed_children: constants.empty_dict(),
     self_closing:,
     void:,
   )
@@ -218,7 +218,7 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
       Fragment(
         key: "",
         children:,
-        keyed_children: vdom.to_keyed_children(children),
+        keyed_children: constants.empty_dict(),
         children_count: list.length(children),
       )
   }
