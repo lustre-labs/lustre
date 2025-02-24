@@ -123,6 +123,7 @@ export class LustreSPA {
       this.#reconciler_handlers,
     );
     this.#reconciler_handlers = handlers;
+
     this.#reconciler.push(patch);
     this.#prev = next;
   }
@@ -162,11 +163,13 @@ export const make_lustre_client_component = (
     #reconciler;
     #reconciler_handlers = empty_dict();
 
+    #adoptedStyleNodes = [];
+
     constructor() {
       super();
       this.attachShadow({ mode: "open" });
       this.internals = this.attachInternals();
-      this.root = this.shadowRoot;
+      this.#adoptStyleSheets();
 
       this.#reconciler = new LustreReconciler(
         this.shadowRoot,
@@ -183,26 +186,10 @@ export const make_lustre_client_component = (
         this.#tick(effects.all);
       }
 
-      if (hasAttributes) {
-        on_attribute_change[0].forEach((decoder, name) => {
-          Object.defineProperty(this, name, {
-            get() {
-              return this[`_${name}`];
-            },
+    }
 
-            set(value) {
-              const prev = this[`_${name}`];
-              if (isEqual(prev, value)) return;
-              this[`_${name}`] = value;
-              const decoded = decoder(value);
-
-              if (decoded.constructor === Ok) {
-                this.#dispatch(decoded[0]);
-              }
-            },
-          });
-        });
-      }
+    adoptedCallback() {
+      this.#adoptStyleSheets();
     }
 
     send(action) {
@@ -253,9 +240,87 @@ export const make_lustre_client_component = (
       this.#reconciler.push(patch);
       this.#prev = next;
     }
+
+    async #adoptStyleSheets() {
+      while (this.#adoptedStyleNodes.length) {
+        this.#adoptedStyleNodes.pop().remove();
+        this.shadowRoot.firstChild.remove();
+      }
+
+      this.#adoptedStyleNodes = await adoptStyleSheets(this.shadowRoot);
+    }
   };
+
+  if (hasAttributes) {
+    on_attribute_change[0].forEach((decoder, name) => {
+      Object.defineProperty(component.prototype, name, {
+        get() {
+          return this[`_${name}`];
+        },
+
+        set(value) {
+          const prev = this[`_${name}`];
+          if (isEqual(prev, value)) return;
+
+          this[`_${name}`] = value;
+          const decoded = decoder(value);
+
+          if (decoded.constructor === Ok) {
+            this.send(new Dispatch(decoded[0]));
+          }
+        },
+      });
+    });
+  }
 
   window.customElements.define(name, component);
 
   return new Ok(undefined);
 };
+
+const copiedStyleSheets = new WeakMap();
+async function adoptStyleSheets(shadowRoot) {
+  const pendingParentStylesheets = [];
+  for (const node of document.querySelectorAll("link[rel=stylesheet], style")) {
+    if (node.sheet) continue;
+
+    pendingParentStylesheets.push(
+      new Promise((resolve, reject) => {
+        node.addEventListener("load", resolve);
+        node.addEventListener("error", reject);
+      }),
+    );
+  }
+
+  await Promise.allSettled(pendingParentStylesheets);
+
+  shadowRoot.adoptedStyleSheets = shadowRoot.host.getRootNode().adoptedStyleSheets;
+
+  const pending = [];
+
+  for (const sheet of document.styleSheets) {
+    try {
+      shadowRoot.adoptedStyleSheets.push(sheet);
+    } catch {
+      try {
+        let copiedSheet = copiedStyleSheets.get(sheet);
+        if (!copiedSheet) {
+          copiedSheet = new CSSStyleSheet();
+          for (const rule of sheet.cssRules) {
+            copiedSheet.insertRule(rule.cssText, copiedSheet.cssRules.length);
+          }
+          copiedStyleSheets.set(sheet, copiedSheet);
+        }
+
+        shadowRoot.adoptedStyleSheets.push(copiedSheet);
+      } catch {
+        const node = sheet.ownerNode.cloneNode();
+
+        shadowRoot.append(node);
+        pending.push(node);
+      }
+    }
+  }
+
+  return pending;
+}
