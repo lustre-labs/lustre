@@ -249,7 +249,7 @@ fn do_select(
 
 @target(javascript)
 fn do_select(_: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg)) -> Effect(msg) {
-  effect.none()
+  effect.none
 }
 
 ///
