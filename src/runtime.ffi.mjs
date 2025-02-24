@@ -244,7 +244,7 @@ export const make_lustre_client_component = (
     async #adoptStyleSheets() {
       while (this.#adoptedStyleNodes.length) {
         this.#adoptedStyleNodes.pop().remove();
-        this.shadowRoot.firstChild.remove();
+        this.shadowRoot.lastChild.remove();
       }
 
       this.#adoptedStyleNodes = await adoptStyleSheets(this.shadowRoot);
