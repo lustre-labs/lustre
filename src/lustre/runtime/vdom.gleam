@@ -77,6 +77,7 @@ pub type Attribute(msg) {
   Property(name: String, value: Json)
   Event(
     name: String,
+    id: Int,
     handler: Decoder(msg),
     include: List(String),
     prevent_default: Bool,
@@ -173,7 +174,7 @@ fn do_diff(
       case prev.key == "" || !set.contains(moved_children, prev.key) {
         True ->
           do_diff(
-            events:,
+            events: forget_events(events, prev),
             idx:,
             old: old_rest,
             new:,
@@ -189,7 +190,7 @@ fn do_diff(
 
         False ->
           do_diff(
-            events:,
+            events: forget_events(events, prev),
             idx:,
             old: old_rest,
             new:,
@@ -209,6 +210,7 @@ fn do_diff(
       // we have no more old nodes left, but still some new ones -
       // we append them all and do not set children_count, since we don't want
       // to remove any nodes.
+      let #(events, new) = list.map_fold(new, events, insert_events)
       let append = InsertMany(new, before: idx - moved_children_offset)
       let changes = [append, ..changes]
 
@@ -282,6 +284,7 @@ fn do_diff(
                 remove_count:,
               )
             }
+
             True -> {
               // previous child got moved -> skip
               //
@@ -311,7 +314,7 @@ fn do_diff(
           let count = node_advancement(prev)
 
           do_diff(
-            events:,
+            events: forget_events(events, prev),
             idx:,
             old: old_rest,
             new:,
@@ -351,6 +354,9 @@ fn do_diff(
           // the index for changes by 2, meaning we'd have an offset of -2
           let moved_children_offset = moved_children_offset - prev_count + 1
 
+          let #(events, next) =
+            forget_events(events, prev) |> insert_events(next)
+
           let child =
             Patch(
               idx,
@@ -379,6 +385,8 @@ fn do_diff(
           // old node still exists, new node is new or not keyed -> insert
           let before = idx - moved_children_offset
           let count = node_advancement(next)
+
+          let #(events, next) = insert_events(events, next)
 
           do_diff(
             events:,
@@ -460,17 +468,14 @@ fn do_diff(
         Node(..), Node(..)
           if prev.namespace == next.namespace && prev.tag == next.tag
         -> {
-          let child_changes = case
+          let #(attribute_diff, events) =
             diff_attributes(
               prev.attributes,
               next.attributes,
               constants.empty_list,
               constants.empty_list,
+              events,
             )
-          {
-            AttributeChange(added: [], removed: []) -> constants.empty_list
-            AttributeChange(added:, removed:) -> [Update(added:, removed:)]
-          }
 
           let child =
             do_diff(
@@ -483,7 +488,11 @@ fn do_diff(
               moved_children: constants.empty_set(),
               moved_children_offset:,
               patch_index: idx,
-              changes: child_changes,
+              changes: case attribute_diff {
+                AttributeChange(added: [], removed: []) -> constants.empty_list
+
+                AttributeChange(added:, removed:) -> [Update(added:, removed:)]
+              },
               children: constants.empty_list,
               remove_count:,
             )
@@ -622,13 +631,54 @@ fn diff_attributes(
   next: List(Attribute(msg)),
   added: List(Attribute(msg)),
   removed: List(Attribute(msg)),
-) -> AttributeChange(msg) {
+  events: Events(msg),
+) -> #(AttributeChange(msg), Events(msg)) {
   case prev, next {
-    [], [] -> AttributeChange(added:, removed:)
-    _, [] ->
-      AttributeChange(added:, removed: list.fold(prev, removed, list.prepend))
-    [], _ ->
-      AttributeChange(added: list.fold(next, added, list.prepend), removed:)
+    [], [] -> #(AttributeChange(added:, removed:), events)
+
+    _, [] -> {
+      let #(removed, events) =
+        list.fold(prev, #(removed, events), fn(acc, attr) {
+          case attr {
+            Event(..) -> {
+              let events = events.forget(events, attr.handler)
+              let removed = [attr, ..acc.0]
+
+              #(removed, events)
+            }
+
+            _ -> {
+              let removed = [attr, ..acc.0]
+              #(removed, acc.1)
+            }
+          }
+        })
+
+      #(AttributeChange(added:, removed:), events)
+    }
+
+    [], _ -> {
+      let #(added, events) =
+        list.fold(next, #(added, events), fn(acc, attr) {
+          case attr {
+            Event(..) -> {
+              let #(id, events) = events.insert(acc.1, attr.handler)
+              let added = [Event(..attr, id:), ..acc.0]
+
+              #(added, events)
+            }
+
+            _ -> {
+              let added = [attr, ..acc.0]
+
+              #(added, acc.1)
+            }
+          }
+        })
+
+      #(AttributeChange(added:, removed:), events)
+    }
+
     [prev_attr, ..prev_rest], [next_attr, ..next_rest] ->
       // We assume atttribute lists are sorted here. This means we can figure out
       // if something got added or removed by comparing each pair of attributes
@@ -647,15 +697,15 @@ fn diff_attributes(
               case next_attr.name {
                 "value" | "checked" | "selected" -> {
                   let added = [next_attr, ..added]
-                  diff_attributes(prev_rest, next_rest, added, removed)
+                  diff_attributes(prev_rest, next_rest, added, removed, events)
                 }
 
                 _ if prev_attr.value == next_attr.value ->
-                  diff_attributes(prev_rest, next_rest, added, removed)
+                  diff_attributes(prev_rest, next_rest, added, removed, events)
 
                 _ -> {
                   let added = [next_attr, ..added]
-                  diff_attributes(prev_rest, next_rest, added, removed)
+                  diff_attributes(prev_rest, next_rest, added, removed, events)
                 }
               }
 
@@ -663,42 +713,143 @@ fn diff_attributes(
               case next_attr.name {
                 "value" | "checked" | "selected" | "scrollLeft" | "scrollRight" -> {
                   let added = [next_attr, ..added]
-                  diff_attributes(prev_rest, next_rest, added, removed)
+                  diff_attributes(prev_rest, next_rest, added, removed, events)
                 }
 
                 _ if prev_attr.value == next_attr.value ->
-                  diff_attributes(prev_rest, next_rest, added, removed)
+                  diff_attributes(prev_rest, next_rest, added, removed, events)
 
                 _ -> {
                   let added = [next_attr, ..added]
-                  diff_attributes(prev_rest, next_rest, added, removed)
+                  diff_attributes(prev_rest, next_rest, added, removed, events)
                 }
               }
 
-            Event(..), Event(..) -> {
-              // we skip diffing event handlers, since Decoders are constructed
-              // dynamically at every call to view and constantly changing.
-              let added = [next_attr, ..added]
-              diff_attributes(prev_rest, next_rest, added, removed)
+            // If any of the ways to handle the event change, we know we need to
+            // get the reconciler to update the event handler.
+            Event(..), Event(..)
+              if prev_attr.prevent_default != next_attr.prevent_default
+              || prev_attr.stop_propagation != next_attr.stop_propagation
+              || prev_attr.immediate != next_attr.immediate
+            -> {
+              let #(id, events) =
+                events.replace(events, prev_attr.handler, next_attr.handler)
+              let added = [Event(..next_attr, id:), ..added]
+
+              diff_attributes(prev_rest, next_rest, added, removed, events)
             }
+
+            Event(..), Event(..) -> {
+              let #(_, events) =
+                events.replace(events, prev_attr.handler, next_attr.handler)
+
+              diff_attributes(prev_rest, next_rest, added, removed, events)
+            }
+
+            Event(..), _ -> {
+              let events = events.forget(events, prev_attr.handler)
+              let removed = [prev_attr, ..removed]
+
+              diff_attributes(prev_rest, next, added, removed, events)
+            }
+
+            _, Event(..) -> {
+              let #(id, events) = events.insert(events, next_attr.handler)
+              let added = [Event(..next_attr, id:), ..added]
+
+              diff_attributes(prev, next_rest, added, removed, events)
+            }
+
             _, _ -> {
               // we have the same name, but the type has changed!
               let added = [next_attr, ..added]
               let removed = [prev_attr, ..removed]
-              diff_attributes(prev_rest, next_rest, added, removed)
+
+              diff_attributes(prev_rest, next_rest, added, removed, events)
             }
           }
+
         order.Gt -> {
           let added = [next_attr, ..added]
-          diff_attributes(prev, next_rest, added, removed)
+          diff_attributes(prev, next_rest, added, removed, events)
         }
+
         order.Lt -> {
           let removed = [prev_attr, ..removed]
-          diff_attributes(prev_rest, next, added, removed)
+          diff_attributes(prev_rest, next, added, removed, events)
         }
       }
   }
 }
+
+// EVENT HANDLERS --------------------------------------------------------------
+
+fn forget_events(events: Events(msg), element: Element(msg)) -> Events(msg) {
+  case element {
+    Fragment(children:, ..) -> list.fold(children, events, forget_events)
+    Node(attributes:, children:, ..) ->
+      events
+      |> do_forget_events(attributes)
+      |> list.fold(children, _, forget_events)
+    _ -> events
+  }
+}
+
+fn do_forget_events(
+  events: Events(msg),
+  attributes: List(Attribute(msg)),
+) -> Events(msg) {
+  case attributes {
+    [] -> events
+    [Event(handler:, ..), ..rest] ->
+      events
+      |> events.forget(handler)
+      |> do_forget_events(rest)
+    [_, ..rest] -> do_forget_events(events, rest)
+  }
+}
+
+fn insert_events(
+  events: Events(msg),
+  element: Element(msg),
+) -> #(Events(msg), Element(msg)) {
+  case element {
+    Fragment(children:, ..) -> {
+      let #(events, children) = list.map_fold(children, events, insert_events)
+
+      #(events, Fragment(..element, children:))
+    }
+
+    Node(attributes:, children:, ..) -> {
+      let #(events, attributes) = do_insert_events(events, attributes)
+      let #(events, children) = list.map_fold(children, events, insert_events)
+
+      #(events, Node(..element, attributes:, children:))
+    }
+
+    _ -> #(events, element)
+  }
+}
+
+fn do_insert_events(
+  events: Events(msg),
+  attributes: List(Attribute(msg)),
+) -> #(Events(msg), List(Attribute(msg))) {
+  case attributes {
+    [] -> #(events, attributes)
+
+    [Event(handler:, ..) as event, ..rest] -> {
+      let #(id, events) = events.insert(events, handler)
+      let event = Event(..event, id:)
+
+      do_insert_events(events, [event, ..rest])
+    }
+
+    [_, ..rest] -> do_insert_events(events, rest)
+  }
+}
+
+//
 
 pub fn element_to_string(element: Element(msg)) -> String {
   element

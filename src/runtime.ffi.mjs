@@ -7,6 +7,7 @@ import { Ok, Error, NonEmpty, isEqual } from "./gleam.mjs";
 import { Some } from "../gleam_stdlib/gleam/option.mjs";
 import { diff } from "./lustre/runtime/vdom.mjs";
 import * as Events from "./lustre/internals/events.mjs";
+import * as Decode from "../gleam_stdlib/gleam/dynamic/decode.mjs";
 
 // UTILS -----------------------------------------------------------------------
 
@@ -66,7 +67,10 @@ export class LustreSPA {
     this.#update = update;
     this.#view = view;
 
-    this.#reconciler = new LustreReconciler(root, (msg, immediate) => {
+    this.#reconciler = new LustreReconciler(root, (event, id, immediate) => {
+      const handler = this.#events.get(id);
+      if (!handler) return;
+      const msg = Decode.run(event, handler);
       if (msg.constructor === Ok) {
         this.#dispatch(msg[0], immediate);
       }
@@ -167,7 +171,10 @@ export const make_lustre_client_component = (
 
       this.#reconciler = new LustreReconciler(
         this.shadowRoot,
-        (msg, immediate) => {
+        (event, id, immediate) => {
+          const handler = this.#events.get(id);
+          if (!handler) return;
+          const msg = Decode.run(event, handler);
           if (msg.constructor === Ok) {
             this.#dispatch(msg[0], immediate);
           }

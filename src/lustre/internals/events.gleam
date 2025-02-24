@@ -55,26 +55,52 @@ pub fn replace(
   events: Events(msg),
   prev: Decoder(msg),
   next: Decoder(msg),
-) -> Events(msg) {
+) -> #(Int, Events(msg)) {
   case dict.get(events.ids, prev) {
     Ok(id) ->
-      Events(
-        handlers: dict.insert(events.handlers, id, next),
-        ids: dict.insert(events.ids, next, id),
-        next_id: events.next_id,
-      )
+      case prev == next {
+        True -> #(id, events)
+        False -> #(
+          id,
+          Events(
+            handlers: dict.insert(events.handlers, id, next),
+            ids: dict.insert(events.ids, next, id),
+            next_id: events.next_id,
+          ),
+        )
+      }
 
-    Error(_) -> events
+    Error(_) -> #(
+      events.next_id,
+      Events(
+        handlers: dict.insert(events.handlers, events.next_id, next),
+        ids: dict.insert(events.ids, next, events.next_id),
+        next_id: events.next_id + 1,
+      ),
+    )
   }
 }
 
 ///
 ///
-pub fn insert(events: Events(msg), handler: Decoder(msg)) -> Events(msg) {
+pub fn insert(events: Events(msg), handler: Decoder(msg)) -> #(Int, Events(msg)) {
+  #(
+    events.next_id,
+    Events(
+      handlers: dict.insert(events.handlers, events.next_id, handler),
+      ids: dict.insert(events.ids, handler, events.next_id),
+      next_id: events.next_id + 1,
+    ),
+  )
+}
+
+///
+///
+pub fn forget(events: Events(msg), handler: Decoder(msg)) -> Events(msg) {
   Events(
-    handlers: dict.insert(events.handlers, events.next_id, handler),
-    ids: dict.insert(events.ids, handler, events.next_id),
-    next_id: events.next_id + 1,
+    handlers: events.handlers,
+    ids: dict.delete(events.ids, handler),
+    next_id: events.next_id,
   )
 }
 
