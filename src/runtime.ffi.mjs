@@ -118,6 +118,7 @@ export class LustreSPA {
 
     const next = this.#view(this.#model);
     const { patch, handlers } = diff(
+      0,
       this.#prev,
       next,
       this.#reconciler_handlers,
@@ -185,7 +186,6 @@ export const make_lustre_client_component = (
       if (effects.all instanceof NonEmpty) {
         this.#tick(effects.all);
       }
-
     }
 
     adoptedCallback() {
@@ -230,6 +230,7 @@ export const make_lustre_client_component = (
 
       const next = this.#view(this.#model);
       const { patch, handlers } = diff(
+        this.#adoptedStyleNodes.length,
         this.#prev,
         next,
         this.#reconciler_handlers,
@@ -244,7 +245,7 @@ export const make_lustre_client_component = (
     async #adoptStyleSheets() {
       while (this.#adoptedStyleNodes.length) {
         this.#adoptedStyleNodes.pop().remove();
-        this.shadowRoot.lastChild.remove();
+        this.shadowRoot.firstChild.remove();
       }
 
       this.#adoptedStyleNodes = await adoptStyleSheets(this.shadowRoot);
@@ -316,7 +317,7 @@ async function adoptStyleSheets(shadowRoot) {
       } catch {
         const node = sheet.ownerNode.cloneNode();
 
-        shadowRoot.append(node);
+        shadowRoot.prepend(node);
         pending.push(node);
       }
     }

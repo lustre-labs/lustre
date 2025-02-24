@@ -101,7 +101,6 @@ pub type Patch(msg) {
     changes: List(Change(msg)),
     children: List(Patch(msg)),
   )
-  // Replace(index: Int, replacement: Element(msg))
 }
 
 pub type Change(msg) {
@@ -120,6 +119,7 @@ pub type Change(msg) {
 }
 
 pub fn diff(
+  initial_element_offset: Int,
   prev: Element(msg),
   next: Element(msg),
   handlers: Dict(List(Int), Dict(String, Decoder(msg))),
@@ -140,7 +140,39 @@ pub fn diff(
       remove_count: 0,
     )
 
+  // there are cases where we need to skip elements at the front of the node we
+  // control, for example when we insert style sheets at the front.
+  let patch = case initial_element_offset > 0 {
+    True -> offset_indices(patch, initial_element_offset)
+    False -> patch
+  }
+
   Diff(handlers:, patch:)
+}
+
+fn offset_indices(patch: Patch(msg), initial_element_offset: Int) {
+  Patch(
+    ..patch,
+    changes: {
+      use change <- list.map(patch.changes)
+      case change {
+        Insert(child:, before:) ->
+          Insert(child:, before: before + initial_element_offset)
+        InsertMany(children:, before:) ->
+          InsertMany(children:, before: before + initial_element_offset)
+        Move(key:, before:, count:) ->
+          Move(key:, count:, before: before + initial_element_offset)
+        Remove(from:, count:) ->
+          Remove(count:, from: from + initial_element_offset)
+
+        Replace(..) | ReplaceText(..) | Update(..) | RemoveKey(..) -> change
+      }
+    },
+    children: {
+      use child <- list.map(patch.children)
+      Patch(..child, index: child.index + initial_element_offset)
+    },
+  )
 }
 
 fn do_diff(

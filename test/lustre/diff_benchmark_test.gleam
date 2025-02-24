@@ -100,7 +100,7 @@ pub fn benchmark_10_000_rows_test() {
 //
 
 fn run_diff(input: #(Element(msg), Element(msg))) {
-  vdom.diff(input.0, input.1, dict.new())
+  vdom.diff(0, input.0, input.1, dict.new())
 }
 
 fn table_diff(rows: Int, shuffle: Bool, keyed: Bool) {
