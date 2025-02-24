@@ -103,7 +103,6 @@ pub type Patch(msg) {
     changes: List(Change(msg)),
     children: List(Patch(msg)),
   )
-  // Replace(index: Int, replacement: Element(msg))
 }
 
 pub type Change(msg) {
@@ -122,23 +121,62 @@ pub type Change(msg) {
 }
 
 pub fn diff(
+  initial_element_offset: Int,
   prev: Element(msg),
   next: Element(msg),
   events: Events(msg),
 ) -> Diff(msg) {
-  do_diff(
-    events:,
-    idx: 0,
-    old: [prev],
-    new: [next],
-    old_keyed: constants.empty_dict(),
-    new_keyed: constants.empty_dict(),
-    moved_children: constants.empty_set(),
-    moved_children_offset: 0,
-    patch_index: 0,
-    changes: constants.empty_list,
-    children: constants.empty_list,
-    remove_count: 0,
+  let diff =
+    do_diff(
+      events:,
+      idx: 0,
+      old: [prev],
+      new: [next],
+      old_keyed: constants.empty_dict(),
+      new_keyed: constants.empty_dict(),
+      moved_children: constants.empty_set(),
+      moved_children_offset: 0,
+      patch_index: 0,
+      changes: constants.empty_list,
+      children: constants.empty_list,
+      remove_count: 0,
+    )
+
+  // there are cases where we need to skip elements at the front of the node we
+  // control, for example when we insert style sheets at the front.
+  case initial_element_offset > 0 {
+    True -> {
+      let patch = offset_indices(diff.patch, initial_element_offset)
+
+      Diff(..diff, patch:)
+    }
+
+    False -> diff
+  }
+}
+
+fn offset_indices(patch: Patch(msg), initial_element_offset: Int) {
+  Patch(
+    ..patch,
+    changes: {
+      use change <- list.map(patch.changes)
+      case change {
+        Insert(child:, before:) ->
+          Insert(child:, before: before + initial_element_offset)
+        InsertMany(children:, before:) ->
+          InsertMany(children:, before: before + initial_element_offset)
+        Move(key:, before:, count:) ->
+          Move(key:, count:, before: before + initial_element_offset)
+        Remove(from:, count:) ->
+          Remove(count:, from: from + initial_element_offset)
+
+        Replace(..) | ReplaceText(..) | Update(..) | RemoveKey(..) -> change
+      }
+    },
+    children: {
+      use child <- list.map(patch.children)
+      Patch(..child, index: child.index + initial_element_offset)
+    },
   )
 }
 
