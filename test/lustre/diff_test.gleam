@@ -16,7 +16,7 @@ pub fn empty_node_test() {
   let next = html.div([], [])
   let diff = Patch(0, 0, [], [])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 // TEXT DIFFS ------------------------------------------------------------------
@@ -26,7 +26,7 @@ pub fn text_element_replaced_test() {
   let next = html.text("Hello, Joe!")
   let diff = Patch(0, 0, [], [Patch(0, 0, [ReplaceText("Hello, Joe!")], [])])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn text_to_element_replacement_test() {
@@ -39,7 +39,7 @@ pub fn text_to_element_replacement_test() {
       ]),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 // // NODE DIFFS ------------------------------------------------------------------
@@ -68,7 +68,7 @@ pub fn nested_attribute_changes_test() {
       ]),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn node_attribute_added_test() {
@@ -77,7 +77,7 @@ pub fn node_attribute_added_test() {
   let diff =
     Patch(0, 0, [], [Patch(0, 0, [Update([attribute.class("wibble")], [])], [])])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn node_attribute_removed_test() {
@@ -86,7 +86,7 @@ pub fn node_attribute_removed_test() {
   let diff =
     Patch(0, 0, [], [Patch(0, 0, [Update([], [attribute.class("wibble")])], [])])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn node_many_attributes_changed_test() {
@@ -103,7 +103,7 @@ pub fn node_many_attributes_changed_test() {
       ),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn node_child_replaced_test() {
@@ -114,7 +114,7 @@ pub fn node_child_replaced_test() {
       Patch(0, 0, [], [Patch(0, 0, [Replace(html.h1([], []))], [])]),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn node_many_children_changed_test() {
@@ -141,7 +141,7 @@ pub fn node_many_children_changed_test() {
       ]),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn node_children_removed_test() {
@@ -149,7 +149,7 @@ pub fn node_children_removed_test() {
   let next = html.div([], [html.h1([], [])])
   let diff = Patch(0, 0, [], [Patch(0, 1, [], [])])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 // // FRAGMENT DIFFS --------------------------------------------------------------
@@ -175,7 +175,7 @@ pub fn fragment_many_children_changed_test() {
       ]),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn nested_fragment_child_replaced_test() {
@@ -187,7 +187,7 @@ pub fn nested_fragment_child_replaced_test() {
 
   let diff = Patch(0, 0, [], [Patch(0, 0, [Replace(html.h1([], []))], [])])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn nested_fragment_children_removed_test() {
@@ -201,7 +201,7 @@ pub fn nested_fragment_children_removed_test() {
 
   let diff = Patch(0, 0, [], [Patch(0, 0, [Remove(from: 1, count: 2)], [])])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn fragment_update_with_different_children_counts_test() {
@@ -231,7 +231,7 @@ pub fn fragment_update_with_different_children_counts_test() {
       ),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn fragment_prepend_and_replace_with_node_test() {
@@ -248,7 +248,7 @@ pub fn fragment_prepend_and_replace_with_node_test() {
       ]),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn fragment_update_and_remove_test() {
@@ -267,7 +267,7 @@ pub fn fragment_update_and_remove_test() {
       ]),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn multiple_nested_fragments_test() {
@@ -288,7 +288,7 @@ pub fn multiple_nested_fragments_test() {
 
   let diff = Patch(0, 0, [], [Patch(0, 0, [ReplaceText("changed")], [])])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 // KEYED DIFFS -----------------------------------------------------------------
@@ -302,7 +302,7 @@ pub fn keyed_swap_test() {
 
   let diff = Patch(0, 0, [], [Patch(0, 0, [Move("b", 0, 1)], [])])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn keyed_reorder_test() {
@@ -322,7 +322,7 @@ pub fn keyed_reorder_test() {
 
   let diff = Patch(0, 0, [], [Patch(0, 0, [Move("c", 1, 1)], [])])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn keyed_insert_test() {
@@ -351,7 +351,7 @@ pub fn keyed_insert_test() {
       ),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn keyed_list_with_updates_test() {
@@ -375,7 +375,7 @@ pub fn keyed_list_with_updates_test() {
       ]),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn mixed_keyed_and_regular_nodes_test() {
@@ -405,7 +405,7 @@ pub fn mixed_keyed_and_regular_nodes_test() {
       ]),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn complex_attribute_changes_test() {
@@ -448,7 +448,7 @@ pub fn complex_attribute_changes_test() {
       ),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn empty_to_multiple_children_test() {
@@ -479,7 +479,7 @@ pub fn empty_to_multiple_children_test() {
       ),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn mixed_text_and_element_changes_test() {
@@ -506,7 +506,7 @@ pub fn mixed_text_and_element_changes_test() {
       ]),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 // KEYED DIFFS WITH FRAGMENTS --------------------------------------------------
@@ -531,12 +531,12 @@ pub fn keyed_move_fragment_with_replace_with_different_count_test() {
       Patch(0, 0, [InsertMany([keyed("cd", cd)], 3), RemoveKey("x", 1)], []),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 
   // reverse
 
   let diff = Patch(0, 0, [], [Patch(0, 2, [Insert(keyed("x", x), 0)], [])])
-  vdom.diff(next, prev, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, next, prev, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn keyed_move_fragment_with_replace_to_simple_node_test() {
@@ -568,7 +568,7 @@ pub fn keyed_move_fragment_with_replace_to_simple_node_test() {
       ),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn keyed_replace_fragment_test() {
@@ -591,7 +591,7 @@ pub fn keyed_replace_fragment_test() {
       ]),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn keyed_insert_fragment_test() {
@@ -606,7 +606,7 @@ pub fn keyed_insert_fragment_test() {
       ]),
     ])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 // KEYED FRAGMENTS -------------------------------------------------------------
@@ -620,7 +620,7 @@ pub fn keyed_fragment_swap_test() {
 
   let diff = Patch(0, 0, [Move("b", 0, 1)], [])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn keyed_fragment_reorder_test() {
@@ -640,7 +640,7 @@ pub fn keyed_fragment_reorder_test() {
 
   let diff = Patch(0, 0, [Move("c", 1, 1)], [])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 pub fn keyed_fragment_insert_test() {
@@ -662,7 +662,64 @@ pub fn keyed_fragment_insert_test() {
   let diff =
     Patch(0, 0, [Insert(keyed("d", html.span([], [])), 1), Move("c", 0, 1)], [])
 
-  vdom.diff(prev, next, dict.new()).patch |> should.equal(diff)
+  vdom.diff(0, prev, next, dict.new()).patch |> should.equal(diff)
+}
+
+// INITIAL ELEMENT OFFSET ------------------------------------------------------
+
+pub fn node_initial_offset_test() {
+  let prev =
+    html.div([], [
+      html.h1([], [html.text("Welcome!")]),
+      html.p([], [html.text("...")]),
+    ])
+
+  let next =
+    html.div([], [
+      html.h1([attribute.class("flash")], [html.text("Hello, Joe!")]),
+      html.hr([]),
+      html.p([], [html.text("...")]),
+    ])
+
+  let offset = 123
+
+  let diff =
+    Patch(0, 0, [], [
+      Patch(offset, 0, [InsertMany([html.p([], [html.text("...")])], 2)], [
+        Patch(1, 0, [Replace(html.hr([]))], []),
+        Patch(0, 0, [Update([attribute.class("flash")], [])], [
+          Patch(0, 0, [ReplaceText("Hello, Joe!")], []),
+        ]),
+      ]),
+    ])
+
+  vdom.diff(123, prev, next, dict.new()).patch |> should.equal(diff)
+}
+
+pub fn fragment_initial_offset_test() {
+  let prev =
+    element.fragment([
+      html.h1([], [html.text("Welcome!")]),
+      html.p([], [html.text("...")]),
+    ])
+  let next =
+    element.fragment([
+      html.h1([attribute.class("flash")], [html.text("Hello, Joe!")]),
+      html.hr([]),
+      html.p([], [html.text("...")]),
+    ])
+
+  let offset = 42
+
+  let diff =
+    Patch(0, 0, [InsertMany([html.p([], [html.text("...")])], offset + 2)], [
+      Patch(offset + 1, 0, [Replace(html.hr([]))], []),
+      Patch(offset + 0, 0, [Update([attribute.class("flash")], [])], [
+        Patch(0, 0, [ReplaceText("Hello, Joe!")], []),
+      ]),
+    ])
+
+  vdom.diff(42, prev, next, dict.new()).patch |> should.equal(diff)
 }
 
 // UTILS -----------------------------------------------------------------------
