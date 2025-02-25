@@ -10,8 +10,11 @@ import lustre/runtime/vdom.{
   Insert, InsertMany, Move, Patch, Remove, RemoveKey, Replace, ReplaceText,
   Update,
 }
+import lustre_test
 
 pub fn empty_node_test() {
+  use <- lustre_test.test_filter("empty_node_test")
+
   let prev = html.div([], [])
   let next = html.div([], [])
   let diff = Patch(0, 0, [], [])
@@ -22,6 +25,8 @@ pub fn empty_node_test() {
 // TEXT DIFFS ------------------------------------------------------------------
 
 pub fn text_element_replaced_test() {
+  use <- lustre_test.test_filter("text_element_replaced_test")
+
   let prev = html.text("Hello, World!")
   let next = html.text("Hello, Joe!")
   let diff = Patch(0, 0, [], [Patch(0, 0, [ReplaceText("Hello, Joe!")], [])])
@@ -30,6 +35,8 @@ pub fn text_element_replaced_test() {
 }
 
 pub fn text_to_element_replacement_test() {
+  use <- lustre_test.test_filter("text_to_element_replacement_test")
+
   let prev = html.div([], [html.text("Hello")])
   let next = html.div([], [html.span([], [html.text("Hello")])])
   let diff =
@@ -45,6 +52,8 @@ pub fn text_to_element_replacement_test() {
 // // NODE DIFFS ------------------------------------------------------------------
 
 pub fn nested_attribute_changes_test() {
+  use <- lustre_test.test_filter("nested_attribute_changes_test")
+
   let prev =
     html.div([], [
       html.span([attribute.class("old")], [
@@ -72,6 +81,8 @@ pub fn nested_attribute_changes_test() {
 }
 
 pub fn node_attribute_added_test() {
+  use <- lustre_test.test_filter("node_attribute_added_test")
+
   let prev = html.div([], [])
   let next = html.div([attribute.class("wibble")], [])
   let diff =
@@ -81,6 +92,8 @@ pub fn node_attribute_added_test() {
 }
 
 pub fn node_attribute_removed_test() {
+  use <- lustre_test.test_filter("node_attribute_removed_test")
+
   let prev = html.div([attribute.class("wibble")], [])
   let next = html.div([], [])
   let diff =
@@ -90,6 +103,8 @@ pub fn node_attribute_removed_test() {
 }
 
 pub fn node_many_attributes_changed_test() {
+  use <- lustre_test.test_filter("node_many_attributes_changed_test")
+
   let prev =
     html.div([attribute("id", "cool-node"), attribute.class("wibble")], [])
   let next = html.div([attribute.class("wobble")], [])
@@ -107,6 +122,8 @@ pub fn node_many_attributes_changed_test() {
 }
 
 pub fn node_child_replaced_test() {
+  use <- lustre_test.test_filter("node_child_replaced_test")
+
   let prev = html.div([], [html.p([], [])])
   let next = html.div([], [html.h1([], [])])
   let diff =
@@ -118,6 +135,8 @@ pub fn node_child_replaced_test() {
 }
 
 pub fn node_many_children_changed_test() {
+  use <- lustre_test.test_filter("node_many_children_changed_test")
+
   let prev =
     html.div([], [
       html.h1([], [html.text("Welcome!")]),
@@ -145,6 +164,8 @@ pub fn node_many_children_changed_test() {
 }
 
 pub fn node_children_removed_test() {
+  use <- lustre_test.test_filter("node_children_removed_test")
+
   let prev = html.div([], [html.h1([], []), html.p([], [])])
   let next = html.div([], [html.h1([], [])])
   let diff = Patch(0, 0, [], [Patch(0, 1, [], [])])
@@ -155,6 +176,8 @@ pub fn node_children_removed_test() {
 // // FRAGMENT DIFFS --------------------------------------------------------------
 
 pub fn fragment_many_children_changed_test() {
+  use <- lustre_test.test_filter("fragment_many_children_changed_test")
+
   let prev =
     element.fragment([
       html.h1([], [html.text("Welcome!")]),
@@ -179,6 +202,8 @@ pub fn fragment_many_children_changed_test() {
 }
 
 pub fn nested_fragment_child_replaced_test() {
+  use <- lustre_test.test_filter("nested_fragment_child_replaced_test")
+
   let prev =
     element.fragment([element.fragment([html.p([], [])]), html.p([], [])])
 
@@ -191,6 +216,8 @@ pub fn nested_fragment_child_replaced_test() {
 }
 
 pub fn nested_fragment_children_removed_test() {
+  use <- lustre_test.test_filter("nested_fragment_children_removed_test")
+
   let prev =
     html.div([], [
       element.fragment([html.h1([], []), html.p([], []), html.p([], [])]),
@@ -205,6 +232,10 @@ pub fn nested_fragment_children_removed_test() {
 }
 
 pub fn fragment_update_with_different_children_counts_test() {
+  use <- lustre_test.test_filter(
+    "fragment_update_with_different_children_counts_test",
+  )
+
   let abc = element.fragment([html.text("a"), html.text("b"), html.text("c")])
 
   let x = html.text("x")
@@ -235,6 +266,8 @@ pub fn fragment_update_with_different_children_counts_test() {
 }
 
 pub fn fragment_prepend_and_replace_with_node_test() {
+  use <- lustre_test.test_filter("fragment_prepend_and_replace_with_node_test")
+
   let ab = element.fragment([html.text("a"), html.text("b")])
   let x = html.text("x")
 
@@ -252,6 +285,8 @@ pub fn fragment_prepend_and_replace_with_node_test() {
 }
 
 pub fn fragment_update_and_remove_test() {
+  use <- lustre_test.test_filter("fragment_update_and_remove_test")
+
   let a = html.text("a")
   let bc = element.fragment([html.text("b"), html.text("c")])
   let de = element.fragment([html.text("d"), html.text("e")])
@@ -271,6 +306,8 @@ pub fn fragment_update_and_remove_test() {
 }
 
 pub fn multiple_nested_fragments_test() {
+  use <- lustre_test.test_filter("multiple_nested_fragments_test")
+
   let prev =
     element.fragment([
       element.fragment([element.fragment([html.text("deep")]), html.p([], [])]),
@@ -294,6 +331,8 @@ pub fn multiple_nested_fragments_test() {
 // KEYED DIFFS -----------------------------------------------------------------
 
 pub fn keyed_swap_test() {
+  use <- lustre_test.test_filter("keyed_swap_test")
+
   let prev =
     keyed.div([], [#("a", html.text("wibble")), #("b", html.text("wobble"))])
 
@@ -306,6 +345,8 @@ pub fn keyed_swap_test() {
 }
 
 pub fn keyed_reorder_test() {
+  use <- lustre_test.test_filter("keyed_reorder_test")
+
   let prev =
     keyed.div([], [
       #("a", html.p([], [])),
@@ -326,6 +367,8 @@ pub fn keyed_reorder_test() {
 }
 
 pub fn keyed_insert_test() {
+  use <- lustre_test.test_filter("keyed_insert_test")
+
   let prev =
     keyed.div([], [
       #("a", html.p([], [])),
@@ -355,6 +398,8 @@ pub fn keyed_insert_test() {
 }
 
 pub fn keyed_list_with_updates_test() {
+  use <- lustre_test.test_filter("keyed_list_with_updates_test")
+
   let prev =
     keyed.div([], [
       #("1", html.div([attribute.class("old")], [html.text("one")])),
@@ -379,6 +424,8 @@ pub fn keyed_list_with_updates_test() {
 }
 
 pub fn mixed_keyed_and_regular_nodes_test() {
+  use <- lustre_test.test_filter("mixed_keyed_and_regular_nodes_test")
+
   let prev =
     html.div([], [
       keyed.ul([], [
@@ -409,6 +456,8 @@ pub fn mixed_keyed_and_regular_nodes_test() {
 }
 
 pub fn complex_attribute_changes_test() {
+  use <- lustre_test.test_filter("complex_attribute_changes_test")
+
   let prev =
     html.div(
       [
@@ -452,6 +501,8 @@ pub fn complex_attribute_changes_test() {
 }
 
 pub fn empty_to_multiple_children_test() {
+  use <- lustre_test.test_filter("empty_to_multiple_children_test")
+
   let prev = html.div([], [])
   let next =
     html.div([], [
@@ -483,6 +534,8 @@ pub fn empty_to_multiple_children_test() {
 }
 
 pub fn mixed_text_and_element_changes_test() {
+  use <- lustre_test.test_filter("mixed_text_and_element_changes_test")
+
   let prev =
     html.div([], [
       html.text("start"),
@@ -512,6 +565,10 @@ pub fn mixed_text_and_element_changes_test() {
 // KEYED DIFFS WITH FRAGMENTS --------------------------------------------------
 
 pub fn keyed_move_fragment_with_replace_with_different_count_test() {
+  use <- lustre_test.test_filter(
+    "keyed_move_fragment_with_replace_with_different_count_test",
+  )
+
   let x = element.fragment([html.text("x")])
   let prev =
     keyed.div([], [
@@ -541,6 +598,10 @@ pub fn keyed_move_fragment_with_replace_with_different_count_test() {
 }
 
 pub fn keyed_move_fragment_with_replace_to_simple_node_test() {
+  use <- lustre_test.test_filter(
+    "keyed_move_fragment_with_replace_to_simple_node_test",
+  )
+
   let x = element.fragment([html.text("x")])
   let ab = element.fragment([html.text("a"), html.text("b")])
   let prev = keyed.div([], [#("x", x), #("a", ab)])
@@ -573,6 +634,8 @@ pub fn keyed_move_fragment_with_replace_to_simple_node_test() {
 }
 
 pub fn keyed_replace_fragment_test() {
+  use <- lustre_test.test_filter("keyed_replace_fragment_test")
+
   let x = element.fragment([html.text("x")])
   let ab = element.fragment([html.text("a"), html.text("b")])
   let prev = keyed.div([], [#("x", x), #("ab", ab)])
@@ -596,6 +659,8 @@ pub fn keyed_replace_fragment_test() {
 }
 
 pub fn keyed_insert_fragment_test() {
+  use <- lustre_test.test_filter("keyed_insert_fragment_test")
+
   let prev = keyed.div([], [#("a", html.text("a"))])
   let xyz = element.fragment([html.text("x"), html.text("y"), html.text("z")])
   let next = keyed.div([], [#("xyz", xyz), #("a", html.text("A"))])
@@ -613,6 +678,8 @@ pub fn keyed_insert_fragment_test() {
 // KEYED FRAGMENTS -------------------------------------------------------------
 
 pub fn keyed_fragment_swap_test() {
+  use <- lustre_test.test_filter("keyed_fragment_swap_test")
+
   let prev =
     keyed.fragment([#("a", html.text("wibble")), #("b", html.text("wobble"))])
 
@@ -625,6 +692,8 @@ pub fn keyed_fragment_swap_test() {
 }
 
 pub fn keyed_fragment_reorder_test() {
+  use <- lustre_test.test_filter("keyed_fragment_reorder_test")
+
   let prev =
     keyed.fragment([
       #("a", html.p([], [])),
@@ -645,6 +714,8 @@ pub fn keyed_fragment_reorder_test() {
 }
 
 pub fn keyed_fragment_insert_test() {
+  use <- lustre_test.test_filter("keyed_fragment_insert_test")
+
   let prev =
     keyed.fragment([
       #("a", html.p([], [])),
@@ -669,6 +740,8 @@ pub fn keyed_fragment_insert_test() {
 // INITIAL ELEMENT OFFSET ------------------------------------------------------
 
 pub fn node_initial_offset_test() {
+  use <- lustre_test.test_filter("node_initial_offset_test")
+
   let prev =
     html.div([], [
       html.h1([], [html.text("Welcome!")]),
@@ -698,6 +771,8 @@ pub fn node_initial_offset_test() {
 }
 
 pub fn fragment_initial_offset_test() {
+  use <- lustre_test.test_filter("fragment_initial_offset_test")
+
   let prev =
     element.fragment([
       html.h1([], [html.text("Welcome!")]),
