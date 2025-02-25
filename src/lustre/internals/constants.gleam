@@ -55,7 +55,4 @@ pub fn empty_set() -> Set(a) {
   set.new()
 }
 
-@external(javascript, "./constants.ffi.mjs", "option_none")
-pub fn option_none() -> Option(a) {
-  None
-}
+pub const option_none = option.None

@@ -50,7 +50,7 @@ pub fn element(
     key: "",
     namespace: "",
     tag:,
-    mapper: constants.option_none(),
+    mapper: constants.option_none,
     attributes: vdom.sort_attributes(attributes),
     children:,
     keyed_children:,
@@ -69,7 +69,7 @@ pub fn namespaced(
 
   Node(
     key: "",
-    mapper: constants.option_none(),
+    mapper: constants.option_none,
     namespace:,
     tag:,
     attributes: vdom.sort_attributes(attributes),
@@ -86,7 +86,7 @@ pub fn fragment(children: List(#(String, Element(msg)))) -> Element(msg) {
 
   Fragment(
     key: "",
-    mapper: constants.option_none(),
+    mapper: constants.option_none,
     children:,
     children_count:,
     keyed_children:,

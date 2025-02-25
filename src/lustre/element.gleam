@@ -111,7 +111,7 @@ pub fn element(
     | "wbr" ->
       Node(
         key: "",
-        mapper: constants.option_none(),
+        mapper: constants.option_none,
         namespace: "",
         tag: tag,
         attributes: vdom.sort_attributes(attributes),
@@ -124,7 +124,7 @@ pub fn element(
     _ ->
       Node(
         key: "",
-        mapper: constants.option_none(),
+        mapper: constants.option_none,
         namespace: "",
         tag: tag,
         attributes: vdom.sort_attributes(attributes),
@@ -147,7 +147,7 @@ pub fn namespaced(
 ) -> Element(msg) {
   Node(
     key: "",
-    mapper: constants.option_none(),
+    mapper: constants.option_none,
     namespace:,
     tag:,
     attributes: vdom.sort_attributes(attributes),
@@ -173,7 +173,7 @@ pub fn advanced(
 ) -> Element(msg) {
   Node(
     key: "",
-    mapper: constants.option_none(),
+    mapper: constants.option_none,
     namespace:,
     tag:,
     attributes: vdom.sort_attributes(attributes),
@@ -190,7 +190,7 @@ pub fn advanced(
 /// this function is exactly that!
 ///
 pub fn text(content: String) -> Element(msg) {
-  Text(key: "", mapper: constants.option_none(), content:)
+  Text(key: "", mapper: constants.option_none, content:)
 }
 
 /// A function for rendering nothing. This is mostly useful for conditional
@@ -198,7 +198,7 @@ pub fn text(content: String) -> Element(msg) {
 /// condition is met.
 ///
 pub fn none() -> Element(msg) {
-  Text(key: "", mapper: constants.option_none(), content: "")
+  Text(key: "", mapper: constants.option_none, content: "")
 }
 
 /// A function for wrapping elements to be rendered within a parent container without
@@ -213,8 +213,8 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
     [] ->
       Fragment(
         key: "",
-        mapper: constants.option_none(),
-        children: [Text(key: "", mapper: constants.option_none(), content: "")],
+        mapper: constants.option_none,
+        children: [Text(key: "", mapper: constants.option_none, content: "")],
         keyed_children: constants.empty_dict(),
         children_count: 1,
       )
@@ -222,7 +222,7 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
     _ ->
       Fragment(
         key: "",
-        mapper: constants.option_none(),
+        mapper: constants.option_none,
         children:,
         keyed_children: constants.empty_dict(),
         children_count: list.length(children),

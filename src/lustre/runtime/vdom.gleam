@@ -125,7 +125,7 @@ pub type Change(msg) {
 }
 
 pub fn init(view: Element(msg)) -> Events(msg) {
-  events.new() |> insert_events(constants.option_none(), view)
+  events.new() |> insert_events(constants.option_none, view)
 }
 
 pub fn diff(
@@ -137,7 +137,7 @@ pub fn diff(
   let diff =
     do_diff(
       events:,
-      mapper: constants.option_none(),
+      mapper: constants.option_none,
       idx: 0,
       old: [prev],
       new: [next],
@@ -1260,10 +1260,7 @@ fn children_to_snapshot_builder(
     [Text(content: a, ..), Text(content: b, ..), ..rest] ->
       children_to_snapshot_builder(
         html,
-        [
-          Text(key: "", mapper: constants.option_none(), content: a <> b),
-          ..rest
-        ],
+        [Text(key: "", mapper: constants.option_none, content: a <> b), ..rest],
         raw_text,
         indent,
       )
