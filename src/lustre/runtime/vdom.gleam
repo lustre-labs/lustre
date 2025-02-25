@@ -528,8 +528,7 @@ fn do_diff(
           if prev.namespace == next.namespace && prev.tag == next.tag
         -> {
           let child_mapper = compose_mapper(mapper, next.mapper)
-
-          let #(attribute_diff, events) =
+          let AttributeChange(added:, removed:, events:) =
             diff_attributes(
               prev.attributes,
               next.attributes,
@@ -539,9 +538,9 @@ fn do_diff(
               events,
             )
 
-          let child_changes = case attribute_diff {
-            AttributeChange(added: [], removed: []) -> constants.empty_list
-            AttributeChange(added:, removed:) -> [Update(added:, removed:)]
+          let child_changes = case added, removed {
+            [], [] -> constants.empty_list
+            _, _ -> [Update(added:, removed:)]
           }
 
           let child =
@@ -702,7 +701,11 @@ fn compose_mapper(
 // ATTRIBUTE DIFFS -------------------------------------------------------------
 
 type AttributeChange(msg) {
-  AttributeChange(added: List(Attribute(msg)), removed: List(Attribute(msg)))
+  AttributeChange(
+    added: List(Attribute(msg)),
+    removed: List(Attribute(msg)),
+    events: Events(msg),
+  )
 }
 
 fn diff_attributes(
@@ -712,9 +715,9 @@ fn diff_attributes(
   removed: List(Attribute(msg)),
   mapper: Option(fn(Dynamic) -> Dynamic),
   events: Events(msg),
-) -> #(AttributeChange(msg), Events(msg)) {
+) -> AttributeChange(msg) {
   case prev, next {
-    [], [] -> #(AttributeChange(added:, removed:), events)
+    [], [] -> AttributeChange(added:, removed:, events:)
 
     _, [] -> {
       let #(removed, events) =
@@ -734,7 +737,7 @@ fn diff_attributes(
           }
         })
 
-      #(AttributeChange(added:, removed:), events)
+      AttributeChange(added:, removed:, events:)
     }
 
     [], _ -> {
@@ -756,7 +759,7 @@ fn diff_attributes(
           }
         })
 
-      #(AttributeChange(added:, removed:), events)
+      AttributeChange(added:, removed:, events:)
     }
 
     [prev_attr, ..prev_rest], [next_attr, ..next_rest] ->
