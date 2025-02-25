@@ -1,6 +1,5 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dict
 import gleeunit/should
 import lustre/attribute.{attribute}
 import lustre/element
