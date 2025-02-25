@@ -719,48 +719,32 @@ fn diff_attributes(
   case prev, next {
     [], [] -> AttributeChange(added:, removed:, events:)
 
-    _, [] -> {
-      let #(removed, events) =
-        list.fold(prev, #(removed, events), fn(acc, attr) {
-          case attr {
+    [old, ..prev], [] ->
+      case old {
             Event(..) -> {
-              let events = events.forget(events, attr.handler)
-              let removed = [attr, ..acc.0]
+          let events = events.forget(events, old.handler)
+          let removed = [old, ..removed]
+          diff_attributes(prev, next, added, removed, mapper, events)
+            }
+            _ -> {
+          let removed = [old, ..removed]
+          diff_attributes(prev, next, added, removed, mapper, events)
+        }
+    }
 
-              #(removed, events)
+    [], [new, ..next] ->
+      case new {
+        Event(handler:, ..) -> {
+          let events = events.insert(events, handler, mapper)
+          let added = [new, ..added]
+          diff_attributes(prev, next, added, removed, mapper, events)
             }
 
             _ -> {
-              let removed = [attr, ..acc.0]
-              #(removed, acc.1)
+          let added = [new, ..added]
+          diff_attributes(prev, next, added, removed, mapper, events)
             }
           }
-        })
-
-      AttributeChange(added:, removed:, events:)
-    }
-
-    [], _ -> {
-      let #(added, events) =
-        list.fold(next, #(added, events), fn(acc, attr) {
-          case attr {
-            Event(..) -> {
-              let events = events.insert(acc.1, attr.handler, mapper)
-              let added = [attr, ..acc.0]
-
-              #(added, events)
-            }
-
-            _ -> {
-              let added = [attr, ..acc.0]
-
-              #(added, acc.1)
-            }
-          }
-        })
-
-      AttributeChange(added:, removed:, events:)
-    }
 
     [old, ..before], [new, ..after] ->
       // We assume atttribute lists are sorted here. This means we can figure out
@@ -855,16 +839,32 @@ fn diff_attributes(
             }
           }
 
-        order.Gt -> {
+        order.Gt ->
+          case new {
+            Event(handler:, ..) -> {
+              let events = events.insert(events, handler, mapper)
           let added = [new, ..added]
 
           diff_attributes(prev, after, added, removed, mapper, events)
+            }
+            _ -> {
+              let added = [new, ..added]
+              diff_attributes(prev, after, added, removed, mapper, events)
+            }
         }
 
-        order.Lt -> {
+        order.Lt ->
+          case old {
+            Event(handler:, ..) -> {
+              let events = events.forget(events, handler)
           let removed = [old, ..removed]
 
           diff_attributes(before, next, added, removed, mapper, events)
+            }
+            _ -> {
+              let removed = [old, ..removed]
+              diff_attributes(before, next, added, removed, mapper, events)
+            }
         }
       }
   }
