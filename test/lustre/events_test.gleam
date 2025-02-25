@@ -9,6 +9,85 @@ import lustre/internals/events
 import lustre/runtime/vdom
 import lustre_test
 
+// EDGE CASES ------------------------------------------------------------------
+
+pub fn duplicated_handler_removed_test() {
+  use <- lustre_test.test_filter("duplicated_handler_removed_test")
+
+  let click =
+    vdom.Event(
+      name: "click",
+      handler: decode.success(1),
+      include: [],
+      prevent_default: False,
+      stop_propagation: False,
+      immediate: False,
+    )
+
+  let prev =
+    html.div([], [
+      html.h1([], [html.text("Hello, Joe!")]),
+      html.button([click], [html.text("Click me!")]),
+      html.button([click], [html.text("Click me!")]),
+    ])
+
+  let prev_events = vdom.init(prev)
+
+  let next =
+    html.div([], [
+      html.h1([], [html.text("Hello, Joe!")]),
+      html.button([click], [html.text("Click me!")]),
+    ])
+
+  let diff = vdom.diff(0, prev, next, prev_events)
+
+  diff.events.handlers |> dict.get(0) |> should.equal(Ok(click.handler))
+  diff.events.ids |> dict.get(click.handler) |> should.equal(Ok(0))
+}
+
+pub fn duplicated_handler_mapped_test() {
+  use <- lustre_test.test_filter("duplicated_handler_mapped_test")
+
+  let click =
+    vdom.Event(
+      name: "click",
+      handler: decode.success(1),
+      include: [],
+      prevent_default: False,
+      stop_propagation: False,
+      immediate: False,
+    )
+
+  let prev =
+    html.div([], [
+      html.h1([], [html.text("Hello, Joe!")]),
+      html.button([click], [html.text("Click me!")]),
+      element.map(html.button([click], [html.text("Click me!")]), int.add(_, 2)),
+    ])
+
+  let events = vdom.init(prev)
+
+  events.handlers |> dict.get(0) |> should.equal(Ok(click.handler))
+  events.ids |> dict.get(click.handler) |> should.equal(Ok(0))
+
+  events.handlers |> dict.get(1) |> should.equal(Ok(click.handler))
+  // this doesnt make any sense right now but it does exemplify the issue we're
+  // trying to fix
+  events.ids |> dict.get(click.handler) |> should.equal(Ok(1))
+
+  events.handlers
+  |> dict.get(0)
+  |> should.be_ok
+  |> decode.run(dynamic.from(Nil), _)
+  |> should.equal(Ok(1))
+
+  events.handlers
+  |> dict.get(1)
+  |> should.be_ok
+  |> decode.run(dynamic.from(Nil), _)
+  |> should.equal(Ok(3))
+}
+
 // INITIAL ID ASSIGNMENTS ------------------------------------------------------
 
 pub fn no_events_init_test() {
