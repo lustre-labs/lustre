@@ -97,7 +97,7 @@ pub fn prepare_attributes(
   // the list again. This makes it conceptually easier to think about.
   attributes
   |> list.sort(by: fn(a, b) { compare_attributes(b, a) })
-  |> merge_attributes([])
+  |> merge_attributes(constants.empty_list)
 }
 
 fn merge_attributes(
@@ -120,7 +120,6 @@ fn merge_attributes(
       Attribute(name: "style", value: style2),
       ..rest
     ] -> {
-      let style = style1 <> ";" <> style2
       let attribute = Attribute(name: "style", value: style1 <> ";" <> style2)
       merge_attributes([attribute, ..rest], merged)
     }
