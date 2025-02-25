@@ -5,7 +5,7 @@ import { ElementNotFound, NotABrowser } from "./lustre.mjs";
 import { LustreReconciler } from "./reconciler.ffi.mjs";
 import { Ok, Error, NonEmpty, isEqual } from "./gleam.mjs";
 import { Some } from "../gleam_stdlib/gleam/option.mjs";
-import { diff } from "./lustre/runtime/vdom.mjs";
+import * as Vdom from "./lustre/runtime/vdom.mjs";
 import * as Events from "./lustre/internals/events.mjs";
 import * as Decode from "../gleam_stdlib/gleam/dynamic/decode.mjs";
 
@@ -58,7 +58,7 @@ export class LustreSPA {
 
   #prev;
   #reconciler;
-  #events = Events.new$();
+  #events;
 
   constructor(root, [init, effects], update, view) {
     this.root = root;
@@ -67,8 +67,9 @@ export class LustreSPA {
     this.#update = update;
     this.#view = view;
 
+    this.#prev = view(init);
     this.#reconciler = new LustreReconciler(root, (event, id, immediate) => {
-      const handler = this.#events.get(id);
+      const handler = this.#events.handlers.get(id);
       if (!handler) return;
       const msg = Decode.run(event, handler);
       if (msg.constructor === Ok) {
@@ -76,8 +77,8 @@ export class LustreSPA {
       }
     });
 
-    this.#prev = view(init);
-    this.#reconciler.mount(this.#prev);
+    this.#events = Vdom.init(this.#prev);
+    this.#reconciler.mount(this.#prev, this.#events.ids);
 
     if (effects.all instanceof NonEmpty) {
       this.#tick(effects.all);
@@ -121,15 +122,15 @@ export class LustreSPA {
     }
 
     const next = this.#view(this.#model);
-    const { patch, events } = diff(
+    const { patch, events } = Vdom.diff(
       0,
       this.#prev,
       next,
-      Events.next(this.#events),
+      Events.reset(this.#events),
     );
 
     this.#events = events;
-    this.#reconciler.push(patch);
+    this.#reconciler.push(patch, this.#events.ids);
     this.#prev = next;
   }
 }
@@ -150,6 +151,7 @@ export const make_lustre_client_component = (
 
   const [model, effects] = init(undefined);
   const initialView = view(model);
+  const initialEvents = Vdom.init(initialView);
   const hasAttributes = on_attribute_change instanceof Some;
   const observedAttributes = hasAttributes
     ? on_attribute_change[0].entries().map(([name]) => name)
@@ -166,7 +168,7 @@ export const make_lustre_client_component = (
 
     #prev = initialView;
     #reconciler;
-    #events = Events.new$();
+    #events = initialEvents;
 
     #adoptedStyleNodes = [];
 
@@ -179,7 +181,7 @@ export const make_lustre_client_component = (
       this.#reconciler = new LustreReconciler(
         this.shadowRoot,
         (event, id, immediate) => {
-          const handler = this.#events.get(id);
+          const handler = this.#events.handlers.get(id);
           if (!handler) return;
           const msg = Decode.run(event, handler);
           if (msg.constructor === Ok) {
@@ -188,7 +190,7 @@ export const make_lustre_client_component = (
         },
       );
 
-      this.#reconciler.mount(this.#prev);
+      this.#reconciler.mount(this.#prev, this.#events.ids);
 
       if (effects.all instanceof NonEmpty) {
         this.#tick(effects.all);
@@ -236,15 +238,15 @@ export const make_lustre_client_component = (
       }
 
       const next = this.#view(this.#model);
-      const { patch, events } = diff(
+      const { patch, events } = Vdom.diff(
         this.#adoptedStyleNodes.length,
         this.#prev,
         next,
-        Events.next(this.#events),
+        Events.reset(this.#events),
       );
 
       this.#events = events;
-      this.#reconciler.push(patch);
+      this.#reconciler.push(patch, this.#events.ids);
       this.#prev = next;
     }
 

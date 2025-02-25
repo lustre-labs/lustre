@@ -31,17 +31,17 @@ export class LustreReconciler {
     this.#dispatch = dispatch;
   }
 
-  mount(vnode) {
-    this.#root.appendChild(createElement(vnode, this.#dispatch));
+  mount(vnode, ids) {
+    this.#root.appendChild(createElement(vnode, this.#dispatch, ids));
   }
 
-  push(patch) {
+  push(patch, ids) {
     this.#stack.push({ node: this.#root, patch });
-    reconcile(this.#stack, this.#dispatch);
+    reconcile(this.#stack, this.#dispatch, ids);
   }
 }
 
-function reconcile(stack, dispatch) {
+function reconcile(stack, dispatch, ids) {
   while (stack.length) {
     const { node, patch } = stack.pop();
 
@@ -54,11 +54,11 @@ function reconcile(stack, dispatch) {
 
       switch (change.constructor) {
         case InsertMany:
-          insertMany(node, change.children, change.before, dispatch);
+          insertMany(node, change.children, change.before, dispatch, ids);
           break;
 
         case Insert:
-          insert(node, change.child, change.before, dispatch);
+          insert(node, change.child, change.before, dispatch, ids);
           break;
 
         case Move:
@@ -74,7 +74,7 @@ function reconcile(stack, dispatch) {
           break;
 
         case Replace:
-          replace(node, change.element, dispatch);
+          replace(node, change.element, dispatch, ids);
           break;
 
         case ReplaceText:
@@ -82,7 +82,7 @@ function reconcile(stack, dispatch) {
           break;
 
         case Update:
-          update(node, change.added, change.removed, dispatch);
+          update(node, change.added, change.removed, dispatch, ids);
           break;
       }
     }
@@ -107,12 +107,12 @@ function reconcile(stack, dispatch) {
 
 // CHANGES ---------------------------------------------------------------------
 
-function insertMany(node, children, before, dispatch) {
+function insertMany(node, children, before, dispatch, ids) {
   const fragment = document.createDocumentFragment();
 
   for (let childPtr = children; childPtr.tail; childPtr = childPtr.tail) {
     const child = childPtr.head;
-    const el = createElement(child, dispatch);
+    const el = createElement(child, dispatch, ids);
 
     if (child.key) {
       node[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
@@ -124,8 +124,8 @@ function insertMany(node, children, before, dispatch) {
   node.insertBefore(fragment, node.childNodes[before]);
 }
 
-function insert(node, child, before, dispatch) {
-  const el = createElement(child, dispatch);
+function insert(node, child, before, dispatch, ids) {
+  const el = createElement(child, dispatch, ids);
 
   if (child.key) {
     node[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
@@ -170,8 +170,8 @@ function remove(node, from, count) {
   }
 }
 
-function replace(node, child, dispatch) {
-  const el = createElement(child, dispatch);
+function replace(node, child, dispatch, ids) {
+  const el = createElement(child, dispatch, ids);
   const parent = node.parentNode;
 
   if (child.key) {
@@ -185,7 +185,7 @@ function replaceText(node, content) {
   node.data = content;
 }
 
-function update(node, added, removed, dispatch) {
+function update(node, added, removed, dispatch, ids) {
   for (let attribute = removed; attribute.tail; attribute = attribute.tail) {
     const name = attribute.head.name;
     if (node[meta].handlers.has(name)) {
@@ -197,7 +197,7 @@ function update(node, added, removed, dispatch) {
   }
 
   for (let attribute = added; attribute.tail; attribute = attribute.tail) {
-    createAttribute(node, attribute.head, dispatch);
+    createAttribute(node, attribute.head, dispatch, ids);
   }
 }
 
@@ -210,7 +210,7 @@ function unwrapFragment(node) {
   return node;
 }
 
-function createElement(vnode, dispatch) {
+function createElement(vnode, dispatch, ids) {
   switch (vnode.constructor) {
     case Node: {
       const node = vnode.namespace
@@ -230,10 +230,10 @@ function createElement(vnode, dispatch) {
         attributePtr = attributePtr.tail
       ) {
         const attribute = attributePtr.head;
-        createAttribute(node, attribute, dispatch);
+        createAttribute(node, attribute, dispatch, ids);
       }
 
-      insertMany(node, vnode.children, 0, dispatch);
+      insertMany(node, vnode.children, 0, dispatch, ids);
 
       return node;
     }
@@ -255,7 +255,7 @@ function createElement(vnode, dispatch) {
         childPtr = childPtr.tail
       ) {
         const child = childPtr.head;
-        node.appendChild(createElement(child, dispatch));
+        node.appendChild(createElement(child, dispatch, ids));
       }
 
       return node;
@@ -265,7 +265,7 @@ function createElement(vnode, dispatch) {
 
 // ATTRIBUTES ------------------------------------------------------------------
 
-function createAttribute(node, attribute, dispatch) {
+function createAttribute(node, attribute, dispatch, ids) {
   switch (attribute.constructor) {
     case Attribute:
       if (attribute.value !== node.getAttribute(attribute.name)) {
@@ -288,15 +288,17 @@ function createAttribute(node, attribute, dispatch) {
         });
       }
 
-      node[meta].handlers.set(attribute.name, (event) => {
-        if (attribute.prevent_default) event.preventDefault();
-        if (attribute.stop_propagation) event.stopPropagation();
+      const id = ids.get(attribute.handler);
+      const prevent = attribute.prevent_default;
+      const stop = attribute.stop_propagation;
+      const immediate =
+        attribute.immediate || IMMEDIATE_EVENTS.includes(attribute.name);
 
-        dispatch(
-          event,
-          attribute.id,
-          attribute.immediate || IMMEDIATE_EVENTS.includes(event.type),
-        );
+      node[meta].handlers.set(attribute.name, (event) => {
+        if (prevent) event.preventDefault();
+        if (stop) event.stopPropagation();
+
+        dispatch(event, id, immediate);
       });
       break;
   }

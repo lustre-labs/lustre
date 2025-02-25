@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dict.{type Dict}
+import gleam/option.{type Option, None}
 import gleam/set.{type Set}
 
 // CONSTANTS -------------------------------------------------------------------
@@ -52,4 +53,9 @@ pub fn empty_dict() -> Dict(k, v) {
 @external(javascript, "./constants.ffi.mjs", "empty_set")
 pub fn empty_set() -> Set(a) {
   set.new()
+}
+
+@external(javascript, "./constants.ffi.mjs", "option_none")
+pub fn option_none() -> Option(a) {
+  None
 }

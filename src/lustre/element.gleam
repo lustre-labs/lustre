@@ -8,9 +8,9 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
+import gleam/option.{None, Some}
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute}
@@ -111,6 +111,7 @@ pub fn element(
     | "wbr" ->
       Node(
         key: "",
+        mapper: constants.option_none(),
         namespace: "",
         tag: tag,
         attributes: vdom.sort_attributes(attributes),
@@ -123,6 +124,7 @@ pub fn element(
     _ ->
       Node(
         key: "",
+        mapper: constants.option_none(),
         namespace: "",
         tag: tag,
         attributes: vdom.sort_attributes(attributes),
@@ -145,6 +147,7 @@ pub fn namespaced(
 ) -> Element(msg) {
   Node(
     key: "",
+    mapper: constants.option_none(),
     namespace:,
     tag:,
     attributes: vdom.sort_attributes(attributes),
@@ -170,6 +173,7 @@ pub fn advanced(
 ) -> Element(msg) {
   Node(
     key: "",
+    mapper: constants.option_none(),
     namespace:,
     tag:,
     attributes: vdom.sort_attributes(attributes),
@@ -186,7 +190,7 @@ pub fn advanced(
 /// this function is exactly that!
 ///
 pub fn text(content: String) -> Element(msg) {
-  Text(key: "", content:)
+  Text(key: "", mapper: constants.option_none(), content:)
 }
 
 /// A function for rendering nothing. This is mostly useful for conditional
@@ -194,7 +198,7 @@ pub fn text(content: String) -> Element(msg) {
 /// condition is met.
 ///
 pub fn none() -> Element(msg) {
-  Text(key: "", content: "")
+  Text(key: "", mapper: constants.option_none(), content: "")
 }
 
 /// A function for wrapping elements to be rendered within a parent container without
@@ -209,7 +213,8 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
     [] ->
       Fragment(
         key: "",
-        children: [Text(key: "", content: "")],
+        mapper: constants.option_none(),
+        children: [Text(key: "", mapper: constants.option_none(), content: "")],
         keyed_children: constants.empty_dict(),
         children_count: 1,
       )
@@ -217,6 +222,7 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
     _ ->
       Fragment(
         key: "",
+        mapper: constants.option_none(),
         children:,
         keyed_children: constants.empty_dict(),
         children_count: list.length(children),
@@ -236,13 +242,15 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
 ///
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
   case element {
-    Fragment(key:, children:, keyed_children:, children_count:) ->
+    Fragment(key:, mapper:, children:, keyed_children:, children_count:) ->
       Fragment(
         key:,
-        children: list.map(children, map(_, f)),
-        keyed_children: dict.map_values(keyed_children, fn(_, child) {
-          map(child, f)
-        }),
+        mapper: case mapper {
+          Some(m) -> Some(fn(msg) { msg |> m |> coerce(f) })
+          None -> Some(coerce(f))
+        },
+        children: coerce(children),
+        keyed_children: coerce(keyed_children),
         children_count:,
       )
 
@@ -250,6 +258,7 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
       key:,
       namespace:,
       tag:,
+      mapper:,
       attributes:,
       children:,
       keyed_children:,
@@ -260,36 +269,23 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
         key:,
         namespace:,
         tag:,
-        // For vdom performance reasons we don't want to modify the callback
-        // of an event handler directly just to map it. Instead we track the
-        // mapper function separately and this will be stored on the DOM node
-        // directly. This way, for event handlers with a stable reference, we
-        // don't create unecessary patches and also, importantly, don't need to
-        // walk the list of attributes and apply this mapping function to each
-        // handler individually.
-        //
-        // That means we have to lie to Gleam and coerce the type for this list
-        // to the new mapped msg type. Here's why that is mostly ok:
-        //
-        // - The `Element` type is internal and should not be used by third-party
-        //   code. Anyone relying on internal implementation details do so at
-        //   their own peril, and if nothing else should have already come across
-        //   this comment.
-        //
-        // - The vdom will generate a `Map` patch for nodes where the mapper has
-        //   changed reference
-        attributes: list.map(attributes, attribute.map(_, f)),
-        // TODO: does this maybe mean that we don't have to map our children?
-        children: list.map(children, map(_, f)),
-        keyed_children: dict.map_values(keyed_children, fn(_, child) {
-          map(child, f)
-        }),
+        mapper: case mapper {
+          Some(m) -> Some(fn(msg) { msg |> m |> coerce(f) })
+          None -> Some(coerce(f))
+        },
+        attributes: coerce(attributes),
+        children: coerce(children),
+        keyed_children: coerce(keyed_children),
         self_closing:,
         void:,
       )
-    Text(key:, content:) -> Text(key:, content:)
+    Text(key:, mapper:, content:) -> Text(key:, mapper:, content:)
   }
 }
+
+@external(erlang, "gleam@function", "identity")
+@external(javascript, "../../gleam_stdlib/gleam/function.mjs", "identity")
+fn coerce(a: a) -> b
 
 // EFFECTS ---------------------------------------------------------------------
 
