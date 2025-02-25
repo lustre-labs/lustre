@@ -45,9 +45,6 @@ pub fn property(name: String, value: Json) -> Attribute(msg) {
 pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
   Event(
     name:,
-    // This event gets calculated during the diff process so during construction
-    // we just set it to something definitely invalid.
-    id: -1,
     handler:,
     include: constants.empty_list,
     prevent_default: False,

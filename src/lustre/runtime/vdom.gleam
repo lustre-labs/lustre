@@ -82,7 +82,6 @@ pub type Attribute(msg) {
   Property(name: String, value: Json)
   Event(
     name: String,
-    id: Int,
     handler: Decoder(msg),
     include: List(String),
     prevent_default: Bool,
