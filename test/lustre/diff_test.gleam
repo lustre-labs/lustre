@@ -500,6 +500,52 @@ pub fn complex_attribute_changes_test() {
   vdom.diff(0, prev, next, events.new()).patch |> should.equal(diff)
 }
 
+pub fn multiple_class_and_styles_test() {
+  use <- lustre_test.test_filter("multiple_class_and_styles_test")
+
+  let prev =
+    html.div(
+      [
+        attribute.class("one"),
+        attribute.class("two three"),
+        attribute("style", "color: red"),
+        attribute("style", "background: green"),
+      ],
+      [],
+    )
+
+  let next =
+    html.div(
+      [
+        attribute.class("two three"),
+        attribute.class("four"),
+        attribute("style", "color: blue"),
+        attribute("style", "font-size: 2em"),
+      ],
+      [],
+    )
+
+  let diff =
+    Patch(0, 0, [], [
+      Patch(
+        0,
+        0,
+        [
+          Update(
+            [
+              attribute("style", "color: blue;font-size: 2em"),
+              attribute.class("two three four"),
+            ],
+            [],
+          ),
+        ],
+        [],
+      ),
+    ])
+
+  vdom.diff(0, prev, next, events.new()).patch |> should.equal(diff)
+}
+
 pub fn empty_to_multiple_children_test() {
   use <- lustre_test.test_filter("empty_to_multiple_children_test")
 

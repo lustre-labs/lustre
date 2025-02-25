@@ -50,7 +50,7 @@ pub type Element(msg) {
     // long as the new and old tree agree on the same order relation.
     //
     // When constructing a Node with attributes provided by a user, attributes
-    // have to be sorted with the `vdom.sort_attributes` function.
+    // have to be sorted with the `vdom.prepare_attributes` function.
     attributes: List(Attribute(msg)),
     children: List(Element(msg)),
     // When encountering keyed children, we need to be able to differentiate
@@ -90,8 +90,43 @@ pub type Attribute(msg) {
   )
 }
 
-pub fn sort_attributes(attributes: List(Attribute(msg))) -> List(Attribute(msg)) {
-  list.sort(attributes, by: compare_attributes)
+pub fn prepare_attributes(
+  attributes: List(Attribute(msg)),
+) -> List(Attribute(msg)) {
+  // we sort with the arguments flipped because merge_attributes will reverse
+  // the list again. This makes it conceptually easier to think about.
+  attributes
+  |> list.sort(by: fn(a, b) { compare_attributes(b, a) })
+  |> merge_attributes([])
+}
+
+fn merge_attributes(
+  attributes: List(Attribute(msg)),
+  merged: List(Attribute(msg)),
+) -> List(Attribute(msg)) {
+  case attributes {
+    [] -> merged
+    [
+      Attribute(name: "class", value: class1),
+      Attribute(name: "class", value: class2),
+      ..rest
+    ] -> {
+      let attribute = Attribute(name: "class", value: class1 <> " " <> class2)
+      merge_attributes([attribute, ..rest], merged)
+    }
+
+    [
+      Attribute(name: "style", value: style1),
+      Attribute(name: "style", value: style2),
+      ..rest
+    ] -> {
+      let style = style1 <> ";" <> style2
+      let attribute = Attribute(name: "style", value: style1 <> ";" <> style2)
+      merge_attributes([attribute, ..rest], merged)
+    }
+
+    [attribute, ..rest] -> merge_attributes(rest, [attribute, ..merged])
+  }
 }
 
 // DIFFS -----------------------------------------------------------------------
@@ -391,7 +426,7 @@ fn do_diff(
           // to stay tail-recursive!
 
           // if the old node is a fragment, we need to first delete n-1 nodes
-          // and then replace the before node later.
+          // and then replace the remaining node later.
           let prev_count = node_advancement(prev)
 
           // this remove makes sure that the node has size=1 after the changes
@@ -632,7 +667,7 @@ fn do_diff(
           // them further.
 
           // if the old node is a fragment, we need to first delete n-1 nodes
-          // and then replace the before node later.
+          // and then replace the remaining node later.
           let prev_count = node_advancement(prev)
 
           // this remove makes sure that the node has size=1 after the changes
@@ -721,16 +756,16 @@ fn diff_attributes(
 
     [old, ..prev], [] ->
       case old {
-            Event(..) -> {
+        Event(..) -> {
           let events = events.forget(events, old.handler)
           let removed = [old, ..removed]
           diff_attributes(prev, next, added, removed, mapper, events)
-            }
-            _ -> {
+        }
+        _ -> {
           let removed = [old, ..removed]
           diff_attributes(prev, next, added, removed, mapper, events)
         }
-    }
+      }
 
     [], [new, ..next] ->
       case new {
@@ -738,13 +773,13 @@ fn diff_attributes(
           let events = events.insert(events, handler, mapper)
           let added = [new, ..added]
           diff_attributes(prev, next, added, removed, mapper, events)
-            }
+        }
 
-            _ -> {
+        _ -> {
           let added = [new, ..added]
           diff_attributes(prev, next, added, removed, mapper, events)
-            }
-          }
+        }
+      }
 
     [old, ..before], [new, ..after] ->
       // We assume atttribute lists are sorted here. This means we can figure out
@@ -843,29 +878,29 @@ fn diff_attributes(
           case new {
             Event(handler:, ..) -> {
               let events = events.insert(events, handler, mapper)
-          let added = [new, ..added]
+              let added = [new, ..added]
 
-          diff_attributes(prev, after, added, removed, mapper, events)
+              diff_attributes(prev, after, added, removed, mapper, events)
             }
             _ -> {
               let added = [new, ..added]
               diff_attributes(prev, after, added, removed, mapper, events)
             }
-        }
+          }
 
         order.Lt ->
           case old {
             Event(handler:, ..) -> {
               let events = events.forget(events, handler)
-          let removed = [old, ..removed]
+              let removed = [old, ..removed]
 
-          diff_attributes(before, next, added, removed, mapper, events)
+              diff_attributes(before, next, added, removed, mapper, events)
             }
             _ -> {
               let removed = [old, ..removed]
               diff_attributes(before, next, added, removed, mapper, events)
             }
-        }
+          }
       }
   }
 }
