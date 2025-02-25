@@ -61,18 +61,14 @@ pub fn replace(
 ) -> Events(msg) {
   case dict.get(events.ids, prev) {
     Ok(id) ->
-      case prev == next {
-        True -> events
-        False ->
-          Events(
-            handlers: dict.insert(events.handlers, id, case mapper {
-              Some(mapper) -> decode.map(next, coerce(mapper))
-              None -> next
-            }),
-            ids: dict.insert(events.ids, next, id),
-            next_id: events.next_id,
-          )
-      }
+      Events(
+        handlers: dict.insert(events.handlers, id, case mapper {
+          Some(mapper) -> decode.map(next, coerce(mapper))
+          None -> next
+        }),
+        ids: dict.insert(events.ids, next, id),
+        next_id: events.next_id,
+      )
 
     Error(_) ->
       Events(
