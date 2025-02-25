@@ -660,7 +660,7 @@ fn do_diff(
             )
 
           do_diff(
-            events: insert_events(events, mapper, next),
+            events: forget_events(events, prev) |> insert_events(mapper, next),
             mapper:,
             idx: idx + 1,
             old:,
