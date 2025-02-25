@@ -227,10 +227,10 @@ fn view(column: Column) -> Element(Msg) {
     [
       html.summary(
         [
+          attribute.class("accordion-button px-2 py-2"),
           case column.open {
-            True -> attribute.class("accordion-button px-2 py-2")
-            False ->
-              attribute.class("accordion-button px-2 py-2 collapsed bg-light")
+            True -> attribute.class("open")
+            False -> attribute.class("collapsed bg-light")
           },
         ],
         [html.text(column.id), html.text(" - "), html.text(column.name)],

@@ -6,7 +6,6 @@ import { LustreReconciler } from "./reconciler.ffi.mjs";
 import { Ok, Error, NonEmpty, isEqual } from "./gleam.mjs";
 import { Some } from "../gleam_stdlib/gleam/option.mjs";
 import * as Vdom from "./lustre/runtime/vdom.mjs";
-import * as Events from "./lustre/internals/events.mjs";
 import * as Decode from "../gleam_stdlib/gleam/dynamic/decode.mjs";
 
 // UTILS -----------------------------------------------------------------------
@@ -169,8 +168,12 @@ export const make_lustre_client_component = (
 
     constructor() {
       super();
-      this.attachShadow({ mode: "open" });
       this.internals = this.attachInternals();
+      // a shadow root may have already been constructed through declarative
+      // shadow root elements.
+      if (!this.shadowRoot) {
+        this.attachShadow({ mode: "open" });
+      }
       this.#adoptStyleSheets();
 
       this.#reconciler = new LustreReconciler(

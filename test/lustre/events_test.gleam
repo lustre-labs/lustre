@@ -3,6 +3,7 @@ import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/int
 import gleeunit/should
+import lustre/attribute
 import lustre/element
 import lustre/element/html
 import lustre/internals/events
@@ -316,6 +317,116 @@ pub fn diff_added_removed_event_test() {
 
   diff.events.handlers |> dict.get(1) |> should.equal(Ok(keydown.handler))
   diff.events.ids |> dict.get(keydown.handler) |> should.equal(Ok(1))
+}
+
+pub fn diff_added_event_at_start_test() {
+  use <- lustre_test.test_filter("diff_added_event_at_start_test")
+
+  let click =
+    vdom.Event(
+      name: "click",
+      handler: decode.success(1),
+      include: [],
+      prevent_default: False,
+      stop_propagation: False,
+      immediate: False,
+    )
+
+  let prev = html.button([attribute.type_("button")], [html.text("Click me!")])
+  let prev_events = vdom.init(prev)
+
+  let next =
+    html.button([click, attribute.type_("button")], [html.text("Click me!")])
+
+  let diff = vdom.diff(0, prev, next, prev_events)
+
+  diff.events.handlers |> dict.get(0) |> should.equal(Ok(click.handler))
+  diff.events.ids |> dict.get(click.handler) |> should.equal(Ok(0))
+}
+
+pub fn diff_added_event_at_end_test() {
+  use <- lustre_test.test_filter("diff_added_event_at_end_test")
+
+  let click =
+    vdom.Event(
+      name: "click",
+      handler: decode.success(1),
+      include: [],
+      prevent_default: False,
+      stop_propagation: False,
+      immediate: False,
+    )
+
+  let prev = html.button([attribute.class("btn")], [html.text("Click me!")])
+  let prev_events = vdom.init(prev)
+
+  let next =
+    html.button([click, attribute.class("btn")], [html.text("Click me!")])
+
+  let diff = vdom.diff(0, prev, next, prev_events)
+
+  diff.events.handlers |> dict.get(0) |> should.equal(Ok(click.handler))
+  diff.events.ids |> dict.get(click.handler) |> should.equal(Ok(0))
+}
+
+pub fn diff_added_event_at_middle_test() {
+  use <- lustre_test.test_filter("diff_added_event_at_middle_test")
+
+  let click =
+    vdom.Event(
+      name: "click",
+      handler: decode.success(1),
+      include: [],
+      prevent_default: False,
+      stop_propagation: False,
+      immediate: False,
+    )
+
+  let prev =
+    html.button([attribute.class("btn"), attribute.type_("button")], [
+      html.text("Click me!"),
+    ])
+  let prev_events = vdom.init(prev)
+
+  let next =
+    html.button([click, attribute.class("btn"), attribute.type_("button")], [
+      html.text("Click me!"),
+    ])
+
+  let diff = vdom.diff(0, prev, next, prev_events)
+
+  diff.events.handlers |> dict.get(0) |> should.equal(Ok(click.handler))
+  diff.events.ids |> dict.get(click.handler) |> should.equal(Ok(0))
+}
+
+pub fn diff_removed_event_at_middle_test() {
+  use <- lustre_test.test_filter("diff_removed_event_at_middle_test")
+
+  let click =
+    vdom.Event(
+      name: "click",
+      handler: decode.success(1),
+      include: [],
+      prevent_default: False,
+      stop_propagation: False,
+      immediate: False,
+    )
+
+  let prev =
+    html.button([click, attribute.class("btn"), attribute.type_("button")], [
+      html.text("Click me!"),
+    ])
+  let prev_events = vdom.init(prev)
+
+  let next =
+    html.button([attribute.class("btn"), attribute.type_("button")], [
+      html.text("Click me!"),
+    ])
+
+  let diff = vdom.diff(0, prev, next, prev_events)
+
+  diff.events.handlers |> dict.get(0) |> should.equal(Error(Nil))
+  diff.events.ids |> dict.get(click.handler) |> should.equal(Error(Nil))
 }
 
 // MAPPING HANDLERS ------------------------------------------------------------
