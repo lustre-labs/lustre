@@ -391,7 +391,7 @@ fn do_diff(
           // to stay tail-recursive!
 
           // if the old node is a fragment, we need to first delete n-1 nodes
-          // and then replace the remaining node later.
+          // and then replace the before node later.
           let prev_count = node_advancement(prev)
 
           // this remove makes sure that the node has size=1 after the changes
@@ -632,7 +632,7 @@ fn do_diff(
           // them further.
 
           // if the old node is a fragment, we need to first delete n-1 nodes
-          // and then replace the remaining node later.
+          // and then replace the before node later.
           let prev_count = node_advancement(prev)
 
           // this remove makes sure that the node has size=1 after the changes
@@ -762,7 +762,7 @@ fn diff_attributes(
       AttributeChange(added:, removed:, events:)
     }
 
-    [prev_attr, ..prev_rest], [next_attr, ..next_rest] ->
+    [old, ..before], [new, ..after] ->
       // We assume atttribute lists are sorted here. This means we can figure out
       // if something got added or removed by comparing each pair of attributes
       // we encounter:
@@ -773,166 +773,98 @@ fn diff_attributes(
       //   the next attribute would have been sorted in this position.
       // - Using the same arguments, we can assume that of the previous attribute
       //   is "greater than", the next attribute got added.
-      case compare_attributes(prev_attr, next_attr) {
+      case compare_attributes(old, new) {
         order.Eq ->
-          case prev_attr, next_attr {
+          case old, new {
             Attribute(..), Attribute(..) ->
-              case next_attr.name {
+              case new.name {
                 "value" | "checked" | "selected" -> {
-                  let added = [next_attr, ..added]
-                  diff_attributes(
-                    prev_rest,
-                    next_rest,
-                    added,
-                    removed,
-                    mapper,
-                    events,
-                  )
+                  let added = [new, ..added]
+
+                  diff_attributes(before, after, added, removed, mapper, events)
                 }
 
-                _ if prev_attr.value == next_attr.value ->
-                  diff_attributes(
-                    prev_rest,
-                    next_rest,
-                    added,
-                    removed,
-                    mapper,
-                    events,
-                  )
+                _ if old.value == new.value ->
+                  diff_attributes(before, after, added, removed, mapper, events)
 
                 _ -> {
-                  let added = [next_attr, ..added]
-                  diff_attributes(
-                    prev_rest,
-                    next_rest,
-                    added,
-                    removed,
-                    mapper,
-                    events,
-                  )
+                  let added = [new, ..added]
+                  diff_attributes(before, after, added, removed, mapper, events)
                 }
               }
 
             Property(..), Property(..) ->
-              case next_attr.name {
+              case new.name {
                 "value" | "checked" | "selected" | "scrollLeft" | "scrollRight" -> {
-                  let added = [next_attr, ..added]
-                  diff_attributes(
-                    prev_rest,
-                    next_rest,
-                    added,
-                    removed,
-                    mapper,
-                    events,
-                  )
+                  let added = [new, ..added]
+                  diff_attributes(before, after, added, removed, mapper, events)
                 }
 
-                _ if prev_attr.value == next_attr.value ->
-                  diff_attributes(
-                    prev_rest,
-                    next_rest,
-                    added,
-                    removed,
-                    mapper,
-                    events,
-                  )
+                _ if old.value == new.value ->
+                  diff_attributes(before, after, added, removed, mapper, events)
 
                 _ -> {
-                  let added = [next_attr, ..added]
-                  diff_attributes(
-                    prev_rest,
-                    next_rest,
-                    added,
-                    removed,
-                    mapper,
-                    events,
-                  )
+                  let added = [new, ..added]
+                  diff_attributes(before, after, added, removed, mapper, events)
                 }
               }
 
             // If any of the ways to handle the event change, we know we need to
             // get the reconciler to update the event handler.
             Event(..), Event(..)
-              if prev_attr.prevent_default != next_attr.prevent_default
-              || prev_attr.stop_propagation != next_attr.stop_propagation
-              || prev_attr.immediate != next_attr.immediate
+              if old.prevent_default != new.prevent_default
+              || old.stop_propagation != new.stop_propagation
+              || old.immediate != new.immediate
             -> {
               let events =
-                events.replace(
-                  events,
-                  prev_attr.handler,
-                  next_attr.handler,
-                  mapper,
-                )
-              let added = [next_attr, ..added]
+                events.replace(events, old.handler, new.handler, mapper)
+              let added = [new, ..added]
 
-              diff_attributes(
-                prev_rest,
-                next_rest,
-                added,
-                removed,
-                mapper,
-                events,
-              )
+              diff_attributes(before, after, added, removed, mapper, events)
             }
 
             Event(..), Event(..) -> {
               let events =
-                events.replace(
-                  events,
-                  prev_attr.handler,
-                  next_attr.handler,
-                  mapper,
-                )
+                events.replace(events, old.handler, new.handler, mapper)
 
-              diff_attributes(
-                prev_rest,
-                next_rest,
-                added,
-                removed,
-                mapper,
-                events,
-              )
+              diff_attributes(before, after, added, removed, mapper, events)
             }
 
             Event(..), _ -> {
-              let events = events.forget(events, prev_attr.handler)
-              let removed = [prev_attr, ..removed]
+              let events = events.forget(events, old.handler)
+              let added = [new, ..added]
+              let removed = [old, ..removed]
 
-              diff_attributes(prev_rest, next, added, removed, mapper, events)
+              diff_attributes(before, next, added, removed, mapper, events)
             }
 
             _, Event(..) -> {
-              let events = events.insert(events, next_attr.handler, mapper)
-              let added = [next_attr, ..added]
+              let events = events.insert(events, new.handler, mapper)
+              let added = [new, ..added]
+              let removed = [old, ..removed]
 
-              diff_attributes(prev, next_rest, added, removed, mapper, events)
+              diff_attributes(prev, after, added, removed, mapper, events)
             }
 
             _, _ -> {
               // we have the same name, but the type has changed!
-              let added = [next_attr, ..added]
-              let removed = [prev_attr, ..removed]
+              let added = [new, ..added]
+              let removed = [old, ..removed]
 
-              diff_attributes(
-                prev_rest,
-                next_rest,
-                added,
-                removed,
-                mapper,
-                events,
-              )
+              diff_attributes(before, after, added, removed, mapper, events)
             }
           }
 
         order.Gt -> {
-          let added = [next_attr, ..added]
-          diff_attributes(prev, next_rest, added, removed, mapper, events)
+          let added = [new, ..added]
+
+          diff_attributes(prev, after, added, removed, mapper, events)
         }
 
         order.Lt -> {
-          let removed = [prev_attr, ..removed]
-          diff_attributes(prev_rest, next, added, removed, mapper, events)
+          let removed = [old, ..removed]
+
+          diff_attributes(before, next, added, removed, mapper, events)
         }
       }
   }
