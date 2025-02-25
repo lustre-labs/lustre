@@ -2,7 +2,6 @@
 
 import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
-import gleam/result
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
 import lustre/runtime/vdom

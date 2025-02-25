@@ -50,6 +50,7 @@ pub fn element(
     key: "",
     namespace: "",
     tag:,
+    mapper: constants.option_none,
     attributes: vdom.sort_attributes(attributes),
     children:,
     keyed_children:,
@@ -68,6 +69,7 @@ pub fn namespaced(
 
   Node(
     key: "",
+    mapper: constants.option_none,
     namespace:,
     tag:,
     attributes: vdom.sort_attributes(attributes),
@@ -82,7 +84,13 @@ pub fn fragment(children: List(#(String, Element(msg)))) -> Element(msg) {
   let #(keyed_children, children, children_count) =
     extract_keyed_children(children)
 
-  Fragment(key: "", children:, children_count:, keyed_children:)
+  Fragment(
+    key: "",
+    mapper: constants.option_none,
+    children:,
+    children_count:,
+    keyed_children:,
+  )
 }
 
 // ELEMENTS --------------------------------------------------------------------

@@ -1,21 +1,25 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dict.{type Dict}
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
+import gleam/option.{type Option, Some}
 import gleam/order
 import gleam/set.{type Set}
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/internals/constants
 import lustre/internals/escape.{escape}
+import lustre/internals/events.{type Events}
 
 // ELEMENTS --------------------------------------------------------------------
 
 pub type Element(msg) {
   Fragment(
     key: String,
+    mapper: Option(fn(Dynamic) -> Dynamic),
     children: List(Element(msg)),
     // When encountering keyed children, we need to be able to differentiate
     // between these cases:
@@ -36,8 +40,10 @@ pub type Element(msg) {
   )
   Node(
     key: String,
+    mapper: Option(fn(Dynamic) -> Dynamic),
     namespace: String,
     tag: String,
+    //
     // To efficiently compare attributes during the diff, attribute are always
     // stored sorted. We do this while constructing the tree to not have to sort
     // the attribute in the previous tree again. The order does not matter, as
@@ -68,7 +74,7 @@ pub type Element(msg) {
     self_closing: Bool,
     void: Bool,
   )
-  Text(key: String, content: String)
+  Text(key: String, mapper: Option(fn(Dynamic) -> Dynamic), content: String)
 }
 
 pub type Attribute(msg) {
@@ -91,7 +97,7 @@ pub fn sort_attributes(attributes: List(Attribute(msg))) -> List(Attribute(msg))
 // DIFFS -----------------------------------------------------------------------
 
 pub type Diff(msg) {
-  Diff(patch: Patch(msg), handlers: Dict(List(Int), Dict(String, Decoder(msg))))
+  Diff(patch: Patch(msg), events: Events(msg))
 }
 
 pub type Patch(msg) {
@@ -118,15 +124,20 @@ pub type Change(msg) {
   Remove(from: Int, count: Int)
 }
 
+pub fn init(view: Element(msg)) -> Events(msg) {
+  events.new() |> insert_events(constants.option_none, view)
+}
+
 pub fn diff(
   initial_element_offset: Int,
   prev: Element(msg),
   next: Element(msg),
-  handlers: Dict(List(Int), Dict(String, Decoder(msg))),
+  events: Events(msg),
 ) -> Diff(msg) {
-  let patch =
+  let diff =
     do_diff(
-      // handlers,
+      events: events.reset(events),
+      mapper: constants.option_none,
       idx: 0,
       old: [prev],
       new: [next],
@@ -142,12 +153,15 @@ pub fn diff(
 
   // there are cases where we need to skip elements at the front of the node we
   // control, for example when we insert style sheets at the front.
-  let patch = case initial_element_offset > 0 {
-    True -> offset_indices(patch, initial_element_offset)
-    False -> patch
-  }
+  case initial_element_offset > 0 {
+    True -> {
+      let patch = offset_indices(diff.patch, initial_element_offset)
 
-  Diff(handlers:, patch:)
+      Diff(..diff, patch:)
+    }
+
+    False -> diff
+  }
 }
 
 fn offset_indices(patch: Patch(msg), initial_element_offset: Int) {
@@ -176,6 +190,8 @@ fn offset_indices(patch: Patch(msg), initial_element_offset: Int) {
 }
 
 fn do_diff(
+  events events: Events(msg),
+  mapper mapper: Option(fn(Dynamic) -> Dynamic),
   // Cursor - where we are on the patch node child list.
   idx idx: Int,
   old old: List(Element(msg)),
@@ -190,10 +206,15 @@ fn do_diff(
   changes changes: List(Change(msg)),
   children children: List(Patch(msg)),
   remove_count remove_count: Int,
-) -> Patch(msg) {
+) -> Diff(msg) {
   case old, new {
     // we have no more new nodes left, we are done.
-    [], [] -> Patch(patch_index, remove_count:, changes:, children:)
+    [], [] ->
+      Diff(
+        patch: Patch(patch_index, remove_count:, changes:, children:),
+        events:,
+      )
+
     [prev, ..old_rest], [] -> {
       // we got to the end of the new list, but we still need to check if we
       // need to remove children nodes. We might have children left that we
@@ -201,6 +222,8 @@ fn do_diff(
       case prev.key == "" || !set.contains(moved_children, prev.key) {
         True ->
           do_diff(
+            events: forget_events(events, prev),
+            mapper:,
             idx:,
             old: old_rest,
             new:,
@@ -213,8 +236,11 @@ fn do_diff(
             children:,
             remove_count: remove_count + node_advancement(prev),
           )
+
         False ->
           do_diff(
+            events: forget_events(events, prev),
+            mapper:,
             idx:,
             old: old_rest,
             new:,
@@ -229,13 +255,22 @@ fn do_diff(
           )
       }
     }
+
     [], _ -> {
       // we have no more old nodes left, but still some new ones -
       // we append them all and do not set children_count, since we don't want
       // to remove any nodes.
+      let events =
+        list.fold(new, events, fn(events, next) {
+          insert_events(events, mapper, next)
+        })
       let append = InsertMany(new, before: idx - moved_children_offset)
       let changes = [append, ..changes]
-      Patch(patch_index, remove_count:, changes:, children:)
+
+      Diff(
+        patch: Patch(patch_index, remove_count:, changes:, children:),
+        events:,
+      )
     }
 
     // In the following 2 cases, we got at least 2 nodes in both lists that we
@@ -286,7 +321,10 @@ fn do_diff(
               //
               let count = node_advancement(next)
               let before = idx - moved_children_offset
+
               do_diff(
+                events:,
+                mapper:,
                 idx:,
                 old: [match, ..old],
                 new:,
@@ -300,13 +338,17 @@ fn do_diff(
                 remove_count:,
               )
             }
+
             True -> {
               // previous child got moved -> skip
               //
               // Once we've seen the old node our indices are correct again,
               // so we can decrement moved_children_offset.
               let count = node_advancement(prev)
+
               do_diff(
+                events:,
+                mapper:,
                 idx:,
                 old: old_rest,
                 new:,
@@ -325,7 +367,10 @@ fn do_diff(
         Error(_), Ok(_) -> {
           // old node deleted or not keyed, new previously existed -> delete old
           let count = node_advancement(prev)
+
           do_diff(
+            events: forget_events(events, prev),
+            mapper:,
             idx:,
             old: old_rest,
             new:,
@@ -346,7 +391,7 @@ fn do_diff(
           // to stay tail-recursive!
 
           // if the old node is a fragment, we need to first delete n-1 nodes
-          // and then replace the remaining node later.
+          // and then replace the before node later.
           let prev_count = node_advancement(prev)
 
           // this remove makes sure that the node has size=1 after the changes
@@ -364,6 +409,8 @@ fn do_diff(
           // So if we delete 2 elements from a fragment, we have to increase
           // the index for changes by 2, meaning we'd have an offset of -2
           let moved_children_offset = moved_children_offset - prev_count + 1
+          let events =
+            forget_events(events, prev) |> insert_events(mapper, next)
 
           let child =
             Patch(
@@ -372,7 +419,10 @@ fn do_diff(
               changes: [Replace(next)],
               children: constants.empty_list,
             )
+
           do_diff(
+            events:,
+            mapper:,
             idx: idx + 1,
             old: old_rest,
             new: new_rest,
@@ -391,7 +441,11 @@ fn do_diff(
           // old node still exists, new node is new or not keyed -> insert
           let before = idx - moved_children_offset
           let count = node_advancement(next)
+          let events = insert_events(events, mapper, next)
+
           do_diff(
+            events:,
+            mapper:,
             idx: idx + count,
             old:,
             new: new_rest,
@@ -426,8 +480,11 @@ fn do_diff(
             _ -> changes
           }
 
-          let child_patch =
+          let child_mapper = compose_mapper(mapper, next.mapper)
+          let child =
             do_diff(
+              events:,
+              mapper: child_mapper,
               idx:,
               old: prev.children,
               new: next.children,
@@ -451,6 +508,8 @@ fn do_diff(
             moved_children_offset + next_count - prev_count
 
           do_diff(
+            events: child.events,
+            mapper:,
             idx:,
             old:,
             new:,
@@ -459,8 +518,8 @@ fn do_diff(
             moved_children:,
             moved_children_offset:,
             patch_index:,
-            changes: child_patch.changes,
-            children: child_patch.children,
+            changes: child.patch.changes,
+            children: child.patch.children,
             remove_count:,
           )
         }
@@ -468,20 +527,26 @@ fn do_diff(
         Node(..), Node(..)
           if prev.namespace == next.namespace && prev.tag == next.tag
         -> {
-          let child_changes = case
+          let child_mapper = compose_mapper(mapper, next.mapper)
+          let AttributeChange(added:, removed:, events:) =
             diff_attributes(
               prev.attributes,
               next.attributes,
               constants.empty_list,
               constants.empty_list,
+              child_mapper,
+              events,
             )
-          {
-            AttributeChange(added: [], removed: []) -> constants.empty_list
-            AttributeChange(added:, removed:) -> [Update(added:, removed:)]
+
+          let child_changes = case added, removed {
+            [], [] -> constants.empty_list
+            _, _ -> [Update(added:, removed:)]
           }
 
-          let child_patch =
+          let child =
             do_diff(
+              events:,
+              mapper: child_mapper,
               idx: 0,
               old: prev.children,
               new: next.children,
@@ -496,12 +561,14 @@ fn do_diff(
             )
 
           // we do not have to keep empty patches
-          let children = case child_patch {
+          let children = case child.patch {
             Patch(remove_count: 0, changes: [], children: [], ..) -> children
-            _ -> [child_patch, ..children]
+            _ -> [child.patch, ..children]
           }
 
           do_diff(
+            events: child.events,
+            mapper:,
             idx: idx + 1,
             old:,
             new:,
@@ -518,6 +585,8 @@ fn do_diff(
 
         Text(..), Text(..) if prev.content == next.content ->
           do_diff(
+            events:,
+            mapper:,
             idx: idx + 1,
             old:,
             new:,
@@ -539,7 +608,10 @@ fn do_diff(
               changes: [ReplaceText(next.content)],
               children: constants.empty_list,
             )
+
           do_diff(
+            events:,
+            mapper:,
             idx: idx + 1,
             old:,
             new:,
@@ -560,7 +632,7 @@ fn do_diff(
           // them further.
 
           // if the old node is a fragment, we need to first delete n-1 nodes
-          // and then replace the remaining node later.
+          // and then replace the before node later.
           let prev_count = node_advancement(prev)
 
           // this remove makes sure that the node has size=1 after the changes
@@ -586,7 +658,10 @@ fn do_diff(
               changes: [Replace(next)],
               children: constants.empty_list,
             )
+
           do_diff(
+            events: forget_events(events, prev) |> insert_events(mapper, next),
+            mapper:,
             idx: idx + 1,
             old:,
             new:,
@@ -612,10 +687,25 @@ fn node_advancement(element: Element(msg)) {
   }
 }
 
+fn compose_mapper(
+  parent_mapper: Option(fn(Dynamic) -> Dynamic),
+  this_mapper: Option(fn(Dynamic) -> Dynamic),
+) -> Option(fn(Dynamic) -> Dynamic) {
+  case parent_mapper, this_mapper {
+    Some(parent), Some(this) -> Some(fn(msg) { msg |> this |> parent })
+    _, Some(_) -> this_mapper
+    _, _ -> parent_mapper
+  }
+}
+
 // ATTRIBUTE DIFFS -------------------------------------------------------------
 
 type AttributeChange(msg) {
-  AttributeChange(added: List(Attribute(msg)), removed: List(Attribute(msg)))
+  AttributeChange(
+    added: List(Attribute(msg)),
+    removed: List(Attribute(msg)),
+    events: Events(msg),
+  )
 }
 
 fn diff_attributes(
@@ -623,14 +713,56 @@ fn diff_attributes(
   next: List(Attribute(msg)),
   added: List(Attribute(msg)),
   removed: List(Attribute(msg)),
+  mapper: Option(fn(Dynamic) -> Dynamic),
+  events: Events(msg),
 ) -> AttributeChange(msg) {
   case prev, next {
-    [], [] -> AttributeChange(added:, removed:)
-    _, [] ->
-      AttributeChange(added:, removed: list.fold(prev, removed, list.prepend))
-    [], _ ->
-      AttributeChange(added: list.fold(next, added, list.prepend), removed:)
-    [prev_attr, ..prev_rest], [next_attr, ..next_rest] ->
+    [], [] -> AttributeChange(added:, removed:, events:)
+
+    _, [] -> {
+      let #(removed, events) =
+        list.fold(prev, #(removed, events), fn(acc, attr) {
+          case attr {
+            Event(..) -> {
+              let events = events.forget(events, attr.handler)
+              let removed = [attr, ..acc.0]
+
+              #(removed, events)
+            }
+
+            _ -> {
+              let removed = [attr, ..acc.0]
+              #(removed, acc.1)
+            }
+          }
+        })
+
+      AttributeChange(added:, removed:, events:)
+    }
+
+    [], _ -> {
+      let #(added, events) =
+        list.fold(next, #(added, events), fn(acc, attr) {
+          case attr {
+            Event(..) -> {
+              let events = events.insert(acc.1, attr.handler, mapper)
+              let added = [attr, ..acc.0]
+
+              #(added, events)
+            }
+
+            _ -> {
+              let added = [attr, ..acc.0]
+
+              #(added, acc.1)
+            }
+          }
+        })
+
+      AttributeChange(added:, removed:, events:)
+    }
+
+    [old, ..before], [new, ..after] ->
       // We assume atttribute lists are sorted here. This means we can figure out
       // if something got added or removed by comparing each pair of attributes
       // we encounter:
@@ -641,65 +773,178 @@ fn diff_attributes(
       //   the next attribute would have been sorted in this position.
       // - Using the same arguments, we can assume that of the previous attribute
       //   is "greater than", the next attribute got added.
-      case compare_attributes(prev_attr, next_attr) {
+      case compare_attributes(old, new) {
         order.Eq ->
-          case prev_attr, next_attr {
+          case old, new {
             Attribute(..), Attribute(..) ->
-              case next_attr.name {
+              case new.name {
                 "value" | "checked" | "selected" -> {
-                  let added = [next_attr, ..added]
-                  diff_attributes(prev_rest, next_rest, added, removed)
+                  let added = [new, ..added]
+
+                  diff_attributes(before, after, added, removed, mapper, events)
                 }
 
-                _ if prev_attr.value == next_attr.value ->
-                  diff_attributes(prev_rest, next_rest, added, removed)
+                _ if old.value == new.value ->
+                  diff_attributes(before, after, added, removed, mapper, events)
 
                 _ -> {
-                  let added = [next_attr, ..added]
-                  diff_attributes(prev_rest, next_rest, added, removed)
+                  let added = [new, ..added]
+                  diff_attributes(before, after, added, removed, mapper, events)
                 }
               }
 
             Property(..), Property(..) ->
-              case next_attr.name {
+              case new.name {
                 "value" | "checked" | "selected" | "scrollLeft" | "scrollRight" -> {
-                  let added = [next_attr, ..added]
-                  diff_attributes(prev_rest, next_rest, added, removed)
+                  let added = [new, ..added]
+                  diff_attributes(before, after, added, removed, mapper, events)
                 }
 
-                _ if prev_attr.value == next_attr.value ->
-                  diff_attributes(prev_rest, next_rest, added, removed)
+                _ if old.value == new.value ->
+                  diff_attributes(before, after, added, removed, mapper, events)
 
                 _ -> {
-                  let added = [next_attr, ..added]
-                  diff_attributes(prev_rest, next_rest, added, removed)
+                  let added = [new, ..added]
+                  diff_attributes(before, after, added, removed, mapper, events)
                 }
               }
 
-            Event(..), Event(..) -> {
-              // we skip diffing event handlers, since Decoders are constructed
-              // dynamically at every call to view and constantly changing.
-              let added = [next_attr, ..added]
-              diff_attributes(prev_rest, next_rest, added, removed)
+            // If any of the ways to handle the event change, we know we need to
+            // get the reconciler to update the event handler.
+            Event(..), Event(..)
+              if old.prevent_default != new.prevent_default
+              || old.stop_propagation != new.stop_propagation
+              || old.immediate != new.immediate
+            -> {
+              let events =
+                events.replace(events, old.handler, new.handler, mapper)
+              let added = [new, ..added]
+
+              diff_attributes(before, after, added, removed, mapper, events)
             }
+
+            Event(..), Event(..) -> {
+              let events =
+                events.replace(events, old.handler, new.handler, mapper)
+
+              diff_attributes(before, after, added, removed, mapper, events)
+            }
+
+            Event(..), _ -> {
+              let events = events.forget(events, old.handler)
+              let added = [new, ..added]
+              let removed = [old, ..removed]
+
+              diff_attributes(before, next, added, removed, mapper, events)
+            }
+
+            _, Event(..) -> {
+              let events = events.insert(events, new.handler, mapper)
+              let added = [new, ..added]
+              let removed = [old, ..removed]
+
+              diff_attributes(prev, after, added, removed, mapper, events)
+            }
+
             _, _ -> {
               // we have the same name, but the type has changed!
-              let added = [next_attr, ..added]
-              let removed = [prev_attr, ..removed]
-              diff_attributes(prev_rest, next_rest, added, removed)
+              let added = [new, ..added]
+              let removed = [old, ..removed]
+
+              diff_attributes(before, after, added, removed, mapper, events)
             }
           }
+
         order.Gt -> {
-          let added = [next_attr, ..added]
-          diff_attributes(prev, next_rest, added, removed)
+          let added = [new, ..added]
+
+          diff_attributes(prev, after, added, removed, mapper, events)
         }
+
         order.Lt -> {
-          let removed = [prev_attr, ..removed]
-          diff_attributes(prev_rest, next, added, removed)
+          let removed = [old, ..removed]
+
+          diff_attributes(before, next, added, removed, mapper, events)
         }
       }
   }
 }
+
+// EVENT HANDLERS --------------------------------------------------------------
+
+fn forget_events(events: Events(msg), element: Element(msg)) -> Events(msg) {
+  case element {
+    Fragment(children:, ..) -> list.fold(children, events, forget_events)
+    Node(attributes:, children:, ..) ->
+      events
+      |> do_forget_events(attributes)
+      |> list.fold(children, _, forget_events)
+    _ -> events
+  }
+}
+
+fn do_forget_events(
+  events: Events(msg),
+  attributes: List(Attribute(msg)),
+) -> Events(msg) {
+  case attributes {
+    [] -> events
+    [Event(handler:, ..), ..rest] ->
+      events
+      |> events.forget(handler)
+      |> do_forget_events(rest)
+    [_, ..rest] -> do_forget_events(events, rest)
+  }
+}
+
+fn insert_events(
+  events: Events(msg),
+  mapper: Option(fn(Dynamic) -> Dynamic),
+  element: Element(msg),
+) -> Events(msg) {
+  case element {
+    Fragment(children:, ..) -> {
+      let mapper = compose_mapper(mapper, element.mapper)
+
+      list.fold(children, events, fn(events, child) {
+        insert_events(events, mapper, child)
+      })
+    }
+
+    Node(attributes:, children:, ..) -> {
+      let mapper = compose_mapper(mapper, element.mapper)
+      let events = do_insert_events(events, mapper, attributes)
+      let events =
+        list.fold(children, events, fn(events, child) {
+          insert_events(events, mapper, child)
+        })
+
+      events
+    }
+
+    _ -> events
+  }
+}
+
+fn do_insert_events(
+  events: Events(msg),
+  mapper: Option(fn(Dynamic) -> Dynamic),
+  attributes: List(Attribute(msg)),
+) -> Events(msg) {
+  case attributes {
+    [] -> events
+
+    [Event(handler:, ..), ..rest] -> {
+      let events = events.insert(events, handler, mapper)
+
+      do_insert_events(events, mapper, rest)
+    }
+
+    [_, ..rest] -> do_insert_events(events, mapper, rest)
+  }
+}
+
+//
 
 pub fn element_to_string(element: Element(msg)) -> String {
   element
@@ -950,7 +1195,7 @@ fn children_to_snapshot_builder(
     [Text(content: a, ..), Text(content: b, ..), ..rest] ->
       children_to_snapshot_builder(
         html,
-        [Text(key: "", content: a <> b), ..rest],
+        [Text(key: "", mapper: constants.option_none, content: a <> b), ..rest],
         raw_text,
         indent,
       )
