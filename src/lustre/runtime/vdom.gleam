@@ -136,7 +136,7 @@ pub fn diff(
 ) -> Diff(msg) {
   let diff =
     do_diff(
-      events:,
+      events: events.reset(events),
       mapper: constants.option_none,
       idx: 0,
       old: [prev],

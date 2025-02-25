@@ -122,12 +122,7 @@ export class LustreSPA {
     }
 
     const next = this.#view(this.#model);
-    const { patch, events } = Vdom.diff(
-      0,
-      this.#prev,
-      next,
-      Events.reset(this.#events),
-    );
+    const { patch, events } = Vdom.diff(0, this.#prev, next, this.#events);
 
     this.#events = events;
     this.#reconciler.push(patch, this.#events.ids);
@@ -242,7 +237,7 @@ export const make_lustre_client_component = (
         this.#adoptedStyleNodes.length,
         this.#prev,
         next,
-        Events.reset(this.#events),
+        this.#events,
       );
 
       this.#events = events;
