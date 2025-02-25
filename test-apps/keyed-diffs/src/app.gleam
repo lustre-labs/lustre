@@ -7,6 +7,7 @@ import lustre
 import lustre/attribute.{attribute}
 import lustre/element.{type Element}
 import lustre/element/html
+import lustre/element/keyed
 import lustre/event
 
 pub fn main() {
@@ -92,14 +93,11 @@ fn parse_loop(
 }
 
 fn view(model: Model) -> Element(Msg) {
-  element.keyed(
-    html.div(
-      [
-        attribute("data-revision", int.to_string(model.revision)),
-        attribute.style([#("margin", "2em")]),
-      ],
-      _,
-    ),
+  keyed.div(
+    [
+      attribute("data-revision", int.to_string(model.revision)),
+      attribute.style([#("margin", "2em")]),
+    ],
     [
       #(
         int.to_string(model.revision),
@@ -175,8 +173,8 @@ fn view_nodes_classic(children: List(Node)) {
 }
 
 fn view_nodes_keyed(children: List(Node)) {
-  element.keyed(
-    html.div([attribute.style([#("display", "flex"), #("gap", "1em")])], _),
+  keyed.div(
+    [attribute.style([#("display", "flex"), #("gap", "1em")])],
     list.map(children, view_node),
   )
 }

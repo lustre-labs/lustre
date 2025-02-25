@@ -44,8 +44,8 @@ pub fn property(name: String, value: Json) -> Attribute(msg) {
 ///
 pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
   Event(
-    name,
-    handler,
+    name:,
+    handler:,
     include: constants.empty_list,
     prevent_default: False,
     stop_propagation: False,

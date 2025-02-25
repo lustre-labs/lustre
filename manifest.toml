@@ -6,6 +6,7 @@ packages = [
   { name = "birdie", version = "1.2.6", build_tools = ["gleam"], requirements = ["argv", "edit_distance", "filepath", "glance", "gleam_community_ansi", "gleam_erlang", "gleam_stdlib", "justin", "rank", "simplifile", "term_size", "trie_again"], otp_app = "birdie", source = "hex", outer_checksum = "1363F4C7E7433A4A8350CC682BCDDBA5BBC6F66C94EFC63BC43025F796C4F6D0" },
   { name = "edit_distance", version = "2.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "edit_distance", source = "hex", outer_checksum = "A1E485C69A70210223E46E63985FA1008B8B2DDA9848B7897469171B29020C05" },
   { name = "envoy", version = "1.0.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "envoy", source = "hex", outer_checksum = "95FD059345AA982E89A0B6E2A3BF1CF43E17A7048DCD85B5B65D3B9E4E39D359" },
+  { name = "exception", version = "2.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "exception", source = "hex", outer_checksum = "F5580D584F16A20B7FCDCABF9E9BE9A2C1F6AC4F9176FA6DD0B63E3B20D450AA" },
   { name = "filepath", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "filepath", source = "hex", outer_checksum = "67A6D15FB39EEB69DD31F8C145BB5A421790581BD6AA14B33D64D5A55DBD6587" },
   { name = "glance", version = "2.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib", "glexer"], otp_app = "glance", source = "hex", outer_checksum = "106111453AE9BA959184302B7DADF2E8CF322B27A7CB68EE78F3EE43FEACCE2C" },
   { name = "gleam_community_ansi", version = "1.4.2", build_tools = ["gleam"], requirements = ["gleam_community_colour", "gleam_regexp", "gleam_stdlib"], otp_app = "gleam_community_ansi", source = "hex", outer_checksum = "479DEDC748D08B310C9FEB9C4CBEC46B95C874F7F4F2844304D6D20CA78A8BB5" },
@@ -32,6 +33,7 @@ packages = [
 argv = { version = ">= 1.0.2 and < 2.0.0" }
 birdie = { version = "~> 1.0" }
 envoy = { version = ">= 1.0.2 and < 2.0.0" }
+exception = { version = ">= 2.0.0 and < 3.0.0" }
 gleam_erlang = { version = "~> 0.24" }
 gleam_json = { version = ">= 1.0.0 and < 3.0.0" }
 gleam_otp = { version = "~> 0.9" }

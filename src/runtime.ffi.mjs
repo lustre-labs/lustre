@@ -5,8 +5,9 @@ import { ElementNotFound, NotABrowser } from "./lustre.mjs";
 import { LustreReconciler } from "./reconciler.ffi.mjs";
 import { Ok, Error, NonEmpty, isEqual } from "./gleam.mjs";
 import { Some } from "../gleam_stdlib/gleam/option.mjs";
-import { diff } from "./lustre/runtime/vdom.mjs";
-import { empty_dict } from "./lustre/internals/constants.ffi.mjs";
+import * as Vdom from "./lustre/runtime/vdom.mjs";
+import * as Events from "./lustre/internals/events.mjs";
+import * as Decode from "../gleam_stdlib/gleam/dynamic/decode.mjs";
 
 // UTILS -----------------------------------------------------------------------
 
@@ -57,7 +58,7 @@ export class LustreSPA {
 
   #prev;
   #reconciler;
-  #reconciler_handlers = empty_dict();
+  #events;
 
   constructor(root, [init, effects], update, view) {
     this.root = root;
@@ -66,14 +67,18 @@ export class LustreSPA {
     this.#update = update;
     this.#view = view;
 
-    this.#reconciler = new LustreReconciler(root, (msg, immediate) => {
+    this.#prev = view(init);
+    this.#reconciler = new LustreReconciler(root, (event, id, immediate) => {
+      const handler = this.#events.handlers.get(id);
+      if (!handler) return;
+      const msg = Decode.run(event, handler);
       if (msg.constructor === Ok) {
         this.#dispatch(msg[0], immediate);
       }
     });
 
-    this.#prev = view(init);
-    this.#reconciler.mount(this.#prev);
+    this.#events = Vdom.init(this.#prev);
+    this.#reconciler.mount(this.#prev, this.#events.ids);
 
     if (effects.all instanceof NonEmpty) {
       this.#tick(effects.all);
@@ -117,15 +122,10 @@ export class LustreSPA {
     }
 
     const next = this.#view(this.#model);
-    const { patch, handlers } = diff(
-      0,
-      this.#prev,
-      next,
-      this.#reconciler_handlers,
-    );
-    this.#reconciler_handlers = handlers;
+    const { patch, events } = Vdom.diff(0, this.#prev, next, this.#events);
 
-    this.#reconciler.push(patch);
+    this.#events = events;
+    this.#reconciler.push(patch, this.#events.ids);
     this.#prev = next;
   }
 }
@@ -146,6 +146,7 @@ export const make_lustre_client_component = (
 
   const [model, effects] = init(undefined);
   const initialView = view(model);
+  const initialEvents = Vdom.init(initialView);
   const hasAttributes = on_attribute_change instanceof Some;
   const observedAttributes = hasAttributes
     ? on_attribute_change[0].entries().map(([name]) => name)
@@ -162,7 +163,7 @@ export const make_lustre_client_component = (
 
     #prev = initialView;
     #reconciler;
-    #reconciler_handlers = empty_dict();
+    #events = initialEvents;
 
     #adoptedStyleNodes = [];
 
@@ -174,14 +175,17 @@ export const make_lustre_client_component = (
 
       this.#reconciler = new LustreReconciler(
         this.shadowRoot,
-        (msg, immediate) => {
+        (event, id, immediate) => {
+          const handler = this.#events.handlers.get(id);
+          if (!handler) return;
+          const msg = Decode.run(event, handler);
           if (msg.constructor === Ok) {
             this.#dispatch(msg[0], immediate);
           }
         },
       );
 
-      this.#reconciler.mount(this.#prev);
+      this.#reconciler.mount(this.#prev, this.#events.ids);
 
       if (effects.all instanceof NonEmpty) {
         this.#tick(effects.all);
@@ -229,16 +233,15 @@ export const make_lustre_client_component = (
       }
 
       const next = this.#view(this.#model);
-      const { patch, handlers } = diff(
+      const { patch, events } = Vdom.diff(
         this.#adoptedStyleNodes.length,
         this.#prev,
         next,
-        this.#reconciler_handlers,
+        this.#events,
       );
 
-      this.#reconciler_handlers = handlers;
-
-      this.#reconciler.push(patch);
+      this.#events = events;
+      this.#reconciler.push(patch, this.#events.ids);
       this.#prev = next;
     }
 
@@ -295,7 +298,8 @@ async function adoptStyleSheets(shadowRoot) {
 
   await Promise.allSettled(pendingParentStylesheets);
 
-  shadowRoot.adoptedStyleSheets = shadowRoot.host.getRootNode().adoptedStyleSheets;
+  shadowRoot.adoptedStyleSheets =
+    shadowRoot.host.getRootNode().adoptedStyleSheets;
 
   const pending = [];
 

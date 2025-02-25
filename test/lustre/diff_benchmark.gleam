@@ -1,17 +1,16 @@
 import birdie
-import envoy
-import gleam/bool
-import gleam/dict
+import exception
 import gleam/int
 import gleam/list
 import gleamy/bench
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/element/keyed
+import lustre/internals/events
 import lustre/runtime/vdom
 
-pub fn benchmark_10_rows_test() {
-  use <- bool.guard(envoy.get("BENCHMARK") == Error(Nil), Nil)
+pub fn benchmark_10_rows() {
+  use <- exception.rescue
   let rows = 10
 
   bench.run(
@@ -28,8 +27,8 @@ pub fn benchmark_10_rows_test() {
   |> birdie.snap("[benchmark] 10 table rows")
 }
 
-pub fn benchmark_100_rows_test() {
-  use <- bool.guard(envoy.get("BENCHMARK") == Error(Nil), Nil)
+pub fn benchmark_100_rows() {
+  use <- exception.rescue
   let rows = 100
 
   bench.run(
@@ -46,8 +45,8 @@ pub fn benchmark_100_rows_test() {
   |> birdie.snap("[benchmark] 100 table rows")
 }
 
-pub fn benchmark_1000_rows_test() {
-  use <- bool.guard(envoy.get("BENCHMARK") == Error(Nil), Nil)
+pub fn benchmark_1000_rows() {
+  use <- exception.rescue
   let rows = 1000
 
   bench.run(
@@ -67,8 +66,8 @@ pub fn benchmark_1000_rows_test() {
   |> birdie.snap("[benchmark] 1000 table rows")
 }
 
-pub fn benchmark_10_000_rows_test() {
-  use <- bool.guard(envoy.get("BENCHMARK") == Error(Nil), Nil)
+pub fn benchmark_10_000_rows() {
+  use <- exception.rescue
   let rows = 10_000
 
   bench.run(
@@ -100,7 +99,7 @@ pub fn benchmark_10_000_rows_test() {
 //
 
 fn run_diff(input: #(Element(msg), Element(msg))) {
-  vdom.diff(0, input.0, input.1, dict.new())
+  vdom.diff(0, input.0, input.1, events.new())
 }
 
 fn table_diff(rows: Int, shuffle: Bool, keyed: Bool) {

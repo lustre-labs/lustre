@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dict.{type Dict}
+import gleam/option.{type Option, None}
 import gleam/set.{type Set}
 
 // CONSTANTS -------------------------------------------------------------------
@@ -53,3 +54,5 @@ pub fn empty_dict() -> Dict(k, v) {
 pub fn empty_set() -> Set(a) {
   set.new()
 }
+
+pub const option_none = option.None
