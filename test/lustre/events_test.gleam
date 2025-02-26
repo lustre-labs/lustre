@@ -6,6 +6,7 @@ import gleeunit/should
 import lustre/attribute
 import lustre/element
 import lustre/element/html
+import lustre/element/keyed
 import lustre/internals/events
 import lustre/runtime/vdom
 import lustre_test
@@ -33,6 +34,10 @@ pub fn duplicated_handler_removed_test() {
     ])
 
   let prev_events = vdom.init(prev)
+  let event = events.Event([], click.handler)
+  let prev_entry = events.Entry(id: 0, reference_count: 2)
+  prev_events.events |> dict.get(0) |> should.equal(Ok(event))
+  prev_events.entries |> dict.get(event) |> should.equal(Ok(prev_entry))
 
   let next =
     html.div([], [
@@ -42,8 +47,9 @@ pub fn duplicated_handler_removed_test() {
 
   let diff = vdom.diff(0, prev, next, prev_events)
 
-  diff.events.handlers |> dict.get(0) |> should.equal(Ok(click.handler))
-  diff.events.ids |> dict.get(click.handler) |> should.equal(Ok(0))
+  let new_entry = events.Entry(id: 0, reference_count: 1)
+  diff.events.events |> dict.get(0) |> should.equal(Ok(event))
+  diff.events.entries |> dict.get(event) |> should.equal(Ok(new_entry))
 }
 
 pub fn duplicated_handler_mapped_test() {
@@ -59,33 +65,30 @@ pub fn duplicated_handler_mapped_test() {
       immediate: False,
     )
 
+  let mapper = int.add(_, 2)
+
   let prev =
     html.div([], [
       html.h1([], [html.text("Hello, Joe!")]),
       html.button([click], [html.text("Click me!")]),
-      element.map(html.button([click], [html.text("Click me!")]), int.add(_, 2)),
+      element.map(html.button([click], [html.text("Click me!")]), mapper),
     ])
 
   let events = vdom.init(prev)
 
-  events.handlers |> dict.get(0) |> should.equal(Ok(click.handler))
-  events.ids |> dict.get(click.handler) |> should.equal(Ok(0))
+  let event1 = events.Event([], click.handler)
+  let event2 = events.Event([coerce(mapper)], click.handler)
 
-  events.handlers |> dict.get(1) |> should.equal(Ok(click.handler))
-  // this doesnt make any sense right now but it does exemplify the issue we're
-  // trying to fix
-  events.ids |> dict.get(click.handler) |> should.equal(Ok(1))
+  events.events |> dict.get(0) |> should.equal(Ok(event1))
+  events.entries |> dict.get(event1) |> should.equal(Ok(events.Entry(0, 1)))
 
-  events.handlers
-  |> dict.get(0)
-  |> should.be_ok
-  |> decode.run(dynamic.from(Nil), _)
+  events.events |> dict.get(1) |> should.equal(Ok(event2))
+  events.entries |> dict.get(event2) |> should.equal(Ok(events.Entry(1, 1)))
+
+  events.run(events, 0, dynamic.from(Nil))
   |> should.equal(Ok(1))
 
-  events.handlers
-  |> dict.get(1)
-  |> should.be_ok
-  |> decode.run(dynamic.from(Nil), _)
+  events.run(events, 1, dynamic.from(Nil))
   |> should.equal(Ok(3))
 }
 
@@ -120,9 +123,10 @@ pub fn single_event_init_test() {
     ])
 
   let events = vdom.init(prev)
+  let event = events.Event([], click.handler)
 
-  events.handlers |> dict.get(0) |> should.equal(Ok(click.handler))
-  events.ids |> dict.get(click.handler) |> should.equal(Ok(0))
+  events.events |> dict.get(0) |> should.equal(Ok(event))
+  events.entries |> dict.get(event) |> should.equal(Ok(events.Entry(0, 1)))
 }
 
 pub fn multi_event_init_test() {
@@ -156,12 +160,14 @@ pub fn multi_event_init_test() {
     ])
 
   let events = vdom.init(prev)
+  let event1 = events.Event([], click.handler)
+  let event2 = events.Event([], keydown.handler)
 
-  events.handlers |> dict.get(0) |> should.equal(Ok(click.handler))
-  events.ids |> dict.get(click.handler) |> should.equal(Ok(0))
+  events.events |> dict.get(0) |> should.equal(Ok(event1))
+  events.entries |> dict.get(event1) |> should.equal(Ok(events.Entry(0, 1)))
 
-  events.handlers |> dict.get(1) |> should.equal(Ok(keydown.handler))
-  events.ids |> dict.get(keydown.handler) |> should.equal(Ok(1))
+  events.events |> dict.get(1) |> should.equal(Ok(event2))
+  events.entries |> dict.get(event2) |> should.equal(Ok(events.Entry(1, 1)))
 }
 
 // EVENT DIFFS -----------------------------------------------------------------
@@ -221,9 +227,11 @@ pub fn diff_added_event_test() {
     ])
 
   let diff = vdom.diff(0, prev, next, prev_events)
+  let event = events.Event([], click.handler)
 
-  diff.events.handlers |> dict.get(0) |> should.equal(Ok(click.handler))
-  diff.events.ids |> dict.get(click.handler) |> should.equal(Ok(0))
+  prev_events |> should.equal(events.new())
+  diff.events.events |> dict.get(0) |> should.equal(Ok(event))
+  diff.events.entries |> dict.get(event) |> should.equal(Ok(events.Entry(0, 1)))
 }
 
 pub fn diff_removed_event_test() {
@@ -266,11 +274,21 @@ pub fn diff_removed_event_test() {
 
   let diff = vdom.diff(0, prev, next, prev_events)
 
-  diff.events.handlers |> dict.get(0) |> should.equal(Ok(click.handler))
-  diff.events.ids |> dict.get(click.handler) |> should.equal(Ok(0))
+  let event1 = events.Event([], click.handler)
+  let event2 = events.Event([], keydown.handler)
 
-  diff.events.handlers |> dict.get(1) |> should.equal(Error(Nil))
-  diff.events.ids |> dict.get(keydown.handler) |> should.equal(Error(Nil))
+  diff.events.events |> dict.get(0) |> should.equal(Ok(event1))
+  diff.events.entries
+  |> dict.get(event1)
+  |> should.equal(Ok(events.Entry(0, 1)))
+
+  prev_events.events |> dict.get(1) |> should.equal(Ok(event2))
+  prev_events.entries
+  |> dict.get(event2)
+  |> should.equal(Ok(events.Entry(1, 1)))
+
+  diff.events.events |> dict.get(1) |> should.equal(Error(Nil))
+  diff.events.entries |> dict.get(event2) |> should.equal(Error(Nil))
 }
 
 pub fn diff_added_removed_event_test() {
@@ -312,11 +330,21 @@ pub fn diff_added_removed_event_test() {
 
   let diff = vdom.diff(0, prev, next, prev_events)
 
-  diff.events.handlers |> dict.get(0) |> should.equal(Error(Nil))
-  diff.events.ids |> dict.get(click.handler) |> should.equal(Error(Nil))
+  let event1 = events.Event([], click.handler)
+  let event2 = events.Event([], keydown.handler)
 
-  diff.events.handlers |> dict.get(1) |> should.equal(Ok(keydown.handler))
-  diff.events.ids |> dict.get(keydown.handler) |> should.equal(Ok(1))
+  prev_events.events |> dict.get(0) |> should.equal(Ok(event1))
+  prev_events.entries
+  |> dict.get(event1)
+  |> should.equal(Ok(events.Entry(0, 1)))
+
+  diff.events.events |> dict.get(0) |> should.equal(Error(Nil))
+  diff.events.entries |> dict.get(event1) |> should.equal(Error(Nil))
+
+  diff.events.events |> dict.get(1) |> should.equal(Ok(event2))
+  diff.events.entries
+  |> dict.get(event2)
+  |> should.equal(Ok(events.Entry(1, 1)))
 }
 
 pub fn diff_added_event_at_start_test() {
@@ -339,9 +367,10 @@ pub fn diff_added_event_at_start_test() {
     html.button([click, attribute.type_("button")], [html.text("Click me!")])
 
   let diff = vdom.diff(0, prev, next, prev_events)
+  let event = events.Event([], click.handler)
 
-  diff.events.handlers |> dict.get(0) |> should.equal(Ok(click.handler))
-  diff.events.ids |> dict.get(click.handler) |> should.equal(Ok(0))
+  diff.events.events |> dict.get(0) |> should.equal(Ok(event))
+  diff.events.entries |> dict.get(event) |> should.equal(Ok(events.Entry(0, 1)))
 }
 
 pub fn diff_added_event_at_end_test() {
@@ -364,9 +393,10 @@ pub fn diff_added_event_at_end_test() {
     html.button([click, attribute.class("btn")], [html.text("Click me!")])
 
   let diff = vdom.diff(0, prev, next, prev_events)
+  let event = events.Event([], click.handler)
 
-  diff.events.handlers |> dict.get(0) |> should.equal(Ok(click.handler))
-  diff.events.ids |> dict.get(click.handler) |> should.equal(Ok(0))
+  diff.events.events |> dict.get(0) |> should.equal(Ok(event))
+  diff.events.entries |> dict.get(event) |> should.equal(Ok(events.Entry(0, 1)))
 }
 
 pub fn diff_added_event_at_middle_test() {
@@ -394,9 +424,10 @@ pub fn diff_added_event_at_middle_test() {
     ])
 
   let diff = vdom.diff(0, prev, next, prev_events)
+  let event = events.Event([], click.handler)
 
-  diff.events.handlers |> dict.get(0) |> should.equal(Ok(click.handler))
-  diff.events.ids |> dict.get(click.handler) |> should.equal(Ok(0))
+  diff.events.events |> dict.get(0) |> should.equal(Ok(event))
+  diff.events.entries |> dict.get(event) |> should.equal(Ok(events.Entry(0, 1)))
 }
 
 pub fn diff_removed_event_at_middle_test() {
@@ -424,9 +455,119 @@ pub fn diff_removed_event_at_middle_test() {
     ])
 
   let diff = vdom.diff(0, prev, next, prev_events)
+  let event = events.Event([], click.handler)
 
-  diff.events.handlers |> dict.get(0) |> should.equal(Error(Nil))
-  diff.events.ids |> dict.get(click.handler) |> should.equal(Error(Nil))
+  prev_events.events |> dict.get(0) |> should.equal(Ok(event))
+  prev_events.entries |> dict.get(event) |> should.equal(Ok(events.Entry(0, 1)))
+
+  diff.events.events |> dict.get(0) |> should.equal(Error(Nil))
+  diff.events.entries |> dict.get(event) |> should.equal(Error(Nil))
+}
+
+pub fn diff_replace_event_with_attribute_test() {
+  use <- lustre_test.test_filter("diff_replace_event_with_attribute_test")
+
+  let open =
+    vdom.Event(
+      name: "open",
+      handler: decode.success(1),
+      include: [],
+      prevent_default: False,
+      stop_propagation: False,
+      immediate: False,
+    )
+
+  let prev = html.details([open], [html.text("Wibble")])
+  let next =
+    html.details([attribute.attribute("open", "")], [html.text("Wibble")])
+
+  let prev_events = vdom.init(prev)
+  let diff = vdom.diff(0, prev, next, prev_events)
+  let event = events.Event([], open.handler)
+
+  let patch =
+    vdom.Patch(0, 0, [], [
+      vdom.Patch(
+        0,
+        0,
+        [vdom.Update([attribute.attribute("open", "")], [open])],
+        [],
+      ),
+    ])
+
+  prev_events.events |> dict.get(0) |> should.equal(Ok(event))
+  prev_events.entries |> dict.get(event) |> should.equal(Ok(events.Entry(0, 1)))
+
+  diff.events.events |> dict.get(0) |> should.be_error
+  diff.events.entries |> dict.get(event) |> should.be_error
+
+  diff.patch |> should.equal(patch)
+}
+
+pub fn diff_replace_attribute_with_event_test() {
+  use <- lustre_test.test_filter("diff_replace_attribute_with_event_test")
+
+  let open =
+    vdom.Event(
+      name: "open",
+      handler: decode.success(1),
+      include: [],
+      prevent_default: False,
+      stop_propagation: False,
+      immediate: False,
+    )
+
+  let prev =
+    html.details([attribute.attribute("open", "")], [html.text("Wibble")])
+  let next = html.details([open], [html.text("Wibble")])
+
+  let diff = vdom.diff(0, prev, next, events.new())
+  let event = events.Event([], open.handler)
+
+  let patch =
+    vdom.Patch(0, 0, [], [
+      vdom.Patch(
+        0,
+        0,
+        [vdom.Update([open], [attribute.attribute("open", "")])],
+        [],
+      ),
+    ])
+
+  diff.events.events |> dict.get(0) |> should.equal(Ok(event))
+  diff.events.entries |> dict.get(event) |> should.equal(Ok(events.Entry(0, 1)))
+
+  diff.patch |> should.equal(patch)
+}
+
+pub fn diff_keyed_move_with_events_test() {
+  use <- lustre_test.test_filter("diff_keyed_move_with_events_test")
+
+  let click =
+    vdom.Event(
+      name: "click",
+      handler: decode.success(1),
+      include: [],
+      prevent_default: False,
+      stop_propagation: False,
+      immediate: False,
+    )
+
+  let prev =
+    keyed.div([], [
+      #("0", html.text("first")),
+      #("1", html.button([click], [html.text("Click me!")])),
+    ])
+
+  let next =
+    keyed.div([], [#("1", html.button([click], [html.text("Click me!")]))])
+
+  let prev_events = vdom.init(prev)
+  let diff = vdom.diff(0, prev, next, prev_events)
+
+  let event = events.Event([], click.handler)
+  diff.events.events |> dict.get(0) |> should.equal(Ok(event))
+  diff.events.entries |> dict.get(event) |> should.equal(Ok(events.Entry(0, 1)))
 }
 
 // MAPPING HANDLERS ------------------------------------------------------------
@@ -444,16 +585,20 @@ pub fn event_mapped_once_test() {
       immediate: False,
     )
 
+  let mapper = int.add(_, 2)
+
   let prev =
     html.div([], [
       html.h1([], [html.text("Hello, Joe!")]),
-      element.map(html.button([click], [html.text("Click me!")]), int.add(_, 2)),
+      element.map(html.button([click], [html.text("Click me!")]), mapper),
     ])
 
   let events = vdom.init(prev)
-  let handler = events.handlers |> dict.get(0) |> should.be_ok
+  let event = events.Event([coerce(mapper)], click.handler)
 
-  decode.run(dynamic.from(Nil), handler) |> should.equal(Ok(3))
+  events.events |> dict.get(0) |> should.equal(Ok(event))
+  events.run(events, 0, dynamic.from(Nil))
+  |> should.equal(Ok(3))
 }
 
 pub fn event_mapped_twice_test() {
@@ -469,22 +614,23 @@ pub fn event_mapped_twice_test() {
       immediate: False,
     )
 
+  let mapper1 = int.add(_, 2)
+  let mapper2 = int.multiply(_, 2)
+
   let prev =
     element.map(
       html.div([], [
         html.h1([], [html.text("Hello, Joe!")]),
-        element.map(html.button([click], [html.text("Click me!")]), int.add(
-          _,
-          2,
-        )),
+        element.map(html.button([click], [html.text("Click me!")]), mapper1),
       ]),
-      int.multiply(_, 2),
+      mapper2,
     )
 
   let events = vdom.init(prev)
-  let handler = events.handlers |> dict.get(0) |> should.be_ok
+  let event = events.Event([coerce(mapper1), coerce(mapper2)], click.handler)
 
-  decode.run(dynamic.from(Nil), handler) |> should.equal(Ok(6))
+  events.events |> dict.get(0) |> should.equal(Ok(event))
+  events.run(events, 0, dynamic.from(Nil)) |> should.equal(Ok(6))
 }
 
 pub fn mapped_fragment_test() {
@@ -500,16 +646,19 @@ pub fn mapped_fragment_test() {
       immediate: False,
     )
 
+  let mapper = int.add(_, 2)
+
   let prev =
     element.map(
       element.fragment([html.button([click], [html.text("Click me!")])]),
-      int.add(_, 2),
+      mapper,
     )
 
   let events = vdom.init(prev)
-  let handler = events.handlers |> dict.get(0) |> should.be_ok
+  let event = events.Event([coerce(mapper)], click.handler)
 
-  decode.run(dynamic.from(Nil), handler) |> should.equal(Ok(3))
+  events.events |> dict.get(0) |> should.equal(Ok(event))
+  events.run(events, 0, dynamic.from(Nil)) |> should.equal(Ok(3))
 }
 
 pub fn event_mapper_removed_test() {
@@ -525,10 +674,11 @@ pub fn event_mapper_removed_test() {
       immediate: False,
     )
 
+  let mapper = int.add(_, 2)
   let prev =
     html.div([], [
       html.h1([], [html.text("Hello, Joe!")]),
-      element.map(html.button([click], [html.text("Click me!")]), int.add(_, 2)),
+      element.map(html.button([click], [html.text("Click me!")]), mapper),
     ])
 
   let next =
@@ -537,11 +687,11 @@ pub fn event_mapper_removed_test() {
       html.button([click], [html.text("Click me!")]),
     ])
 
-  let events = vdom.init(prev)
-  let diff = vdom.diff(0, prev, next, events)
-  let handler = diff.events.handlers |> dict.get(0) |> should.be_ok
+  let prev_events = vdom.init(prev)
+  let diff = vdom.diff(0, prev, next, prev_events)
 
-  decode.run(dynamic.from(Nil), handler) |> should.equal(Ok(1))
+  events.run(prev_events, 0, dynamic.from(Nil)) |> should.equal(Ok(3))
+  events.run(diff.events, 0, dynamic.from(Nil)) |> should.equal(Ok(1))
 }
 
 pub fn event_mapper_changed_test() {
@@ -572,9 +722,51 @@ pub fn event_mapper_changed_test() {
       )),
     ])
 
-  let events = vdom.init(prev)
-  let diff = vdom.diff(0, prev, next, events)
-  let handler = diff.events.handlers |> dict.get(0) |> should.be_ok
+  let prev_events = vdom.init(prev)
+  let diff = vdom.diff(0, prev, next, prev_events)
 
-  decode.run(dynamic.from(Nil), handler) |> should.equal(Ok(10))
+  events.run(prev_events, 0, dynamic.from(Nil)) |> should.equal(Ok(3))
+  events.run(diff.events, 0, dynamic.from(Nil)) |> should.equal(Ok(10))
 }
+
+pub fn event_mapper_split_test() {
+  use <- lustre_test.test_filter("event_mapper_split_test")
+
+  let click =
+    vdom.Event(
+      name: "click",
+      handler: decode.success(1),
+      include: [],
+      prevent_default: False,
+      stop_propagation: False,
+      immediate: False,
+    )
+
+  let mapper1 = int.add(_, 2)
+  let mapper2 = int.multiply(_, 10)
+
+  let prev =
+    html.div([], [
+      html.h1([], [html.text("Hello, Joe!")]),
+      element.map(html.button([click], [html.text("Click me!")]), mapper1),
+      element.map(html.button([click], [html.text("Click me!")]), mapper1),
+    ])
+
+  let next =
+    html.div([], [
+      html.h1([], [html.text("Hello, Joe!")]),
+      element.map(html.button([click], [html.text("Click me!")]), mapper1),
+      element.map(html.button([click], [html.text("Click me!")]), mapper2),
+    ])
+
+  let prev_events = vdom.init(prev)
+  let diff = vdom.diff(0, prev, next, prev_events)
+
+  events.run(prev_events, 0, dynamic.from(Nil)) |> should.equal(Ok(3))
+  events.run(diff.events, 0, dynamic.from(Nil)) |> should.equal(Ok(3))
+  events.run(diff.events, 1, dynamic.from(Nil)) |> should.equal(Ok(10))
+}
+
+@external(erlang, "gleam@function", "identity")
+@external(javascript, "../../gleam_stdlib/gleam/function.mjs", "identity")
+fn coerce(a: a) -> b
