@@ -3,7 +3,6 @@
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type DecodeError, type Decoder}
-import gleam/io
 import gleam/list
 import gleam/result
 import lustre/internals/constants
@@ -59,10 +58,7 @@ pub fn reset(events: Events(msg)) -> Events(msg) {
 pub fn get(events: Events(msg), event: Event(msg)) -> Int {
   case dict.get(events.entries, event) {
     Ok(Entry(id:, ..)) -> id
-    _ -> {
-      io.debug(#("NOT FOUND", event, events.entries))
-      -1
-    }
+    _ -> -1
   }
 }
 
