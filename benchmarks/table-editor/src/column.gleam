@@ -152,28 +152,29 @@ pub fn register() {
   lustre.register(component, component_tag)
 }
 
-pub fn column(
-  column column: Column,
-  on_change on_change: fn(Column) -> msg,
-  on_move_up on_move_up: msg,
-  on_move_down on_move_down: msg,
-  on_create_above on_create_above: msg,
-  on_create_below on_create_below: msg,
-  on_delete on_delete: msg,
-) -> Element(msg) {
+pub type OutMsg {
+  Changed(Column)
+  MovedUp
+  MovedDown
+  CreatedAbove
+  CreatedBelow
+  Deleted
+}
+
+pub fn column(column column: Column) -> Element(OutMsg) {
   element.element(
     component_tag,
     [
       attribute.property("column", encode(column)),
       event.on("change", {
         use column <- decode.field("detail", decoder())
-        decode.success(on_change(column))
+        decode.success(Changed(column))
       }),
-      event.on("move-up", decode.success(on_move_up)),
-      event.on("move-down", decode.success(on_move_down)),
-      event.on("create-above", decode.success(on_create_above)),
-      event.on("create-below", decode.success(on_create_below)),
-      event.on("delete", decode.success(on_delete)),
+      event.on("move-up", decode.success(MovedUp)),
+      event.on("move-down", decode.success(MovedDown)),
+      event.on("create-above", decode.success(CreatedAbove)),
+      event.on("create-below", decode.success(CreatedBelow)),
+      event.on("delete", decode.success(Deleted)),
     ],
     [],
   )

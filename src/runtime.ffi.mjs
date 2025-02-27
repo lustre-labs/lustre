@@ -6,7 +6,7 @@ import { LustreReconciler } from "./reconciler.ffi.mjs";
 import { Ok, Error, NonEmpty, isEqual } from "./gleam.mjs";
 import { Some } from "../gleam_stdlib/gleam/option.mjs";
 import * as Vdom from "./lustre/runtime/vdom.mjs";
-import * as Decode from "../gleam_stdlib/gleam/dynamic/decode.mjs";
+import * as Events from "./lustre/internals/events.mjs";
 
 // UTILS -----------------------------------------------------------------------
 
@@ -68,16 +68,14 @@ export class LustreSPA {
 
     this.#prev = view(init);
     this.#reconciler = new LustreReconciler(root, (event, id, immediate) => {
-      const handler = this.#events.handlers.get(id);
-      if (!handler) return;
-      const msg = Decode.run(event, handler);
-      if (msg.constructor === Ok) {
+      const msg = Events.run(this.#events, id, event);
+      if (msg.isOk()) {
         this.#dispatch(msg[0], immediate);
       }
     });
 
     this.#events = Vdom.init(this.#prev);
-    this.#reconciler.mount(this.#prev, this.#events.ids);
+    this.#reconciler.mount(this.#prev, this.#events);
 
     if (effects.all instanceof NonEmpty) {
       this.#tick(effects.all);
@@ -101,6 +99,7 @@ export class LustreSPA {
   }
 
   #tick(effects, immediate = false) {
+    console.time("tick")
     const dispatch = (msg, immediate) => {
       this.#dispatch(msg, immediate);
     };
@@ -124,8 +123,9 @@ export class LustreSPA {
     const { patch, events } = Vdom.diff(0, this.#prev, next, this.#events);
 
     this.#events = events;
-    this.#reconciler.push(patch, this.#events.ids);
+    this.#reconciler.push(patch, this.#events);
     this.#prev = next;
+    console.timeEnd("tick")
   }
 }
 
@@ -179,16 +179,14 @@ export const make_lustre_client_component = (
       this.#reconciler = new LustreReconciler(
         this.shadowRoot,
         (event, id, immediate) => {
-          const handler = this.#events.handlers.get(id);
-          if (!handler) return;
-          const msg = Decode.run(event, handler);
-          if (msg.constructor === Ok) {
+          const msg = Events.run(this.#events, id, event);
+          if (msg.isOk()) {
             this.#dispatch(msg[0], immediate);
           }
         },
       );
 
-      this.#reconciler.mount(this.#prev, this.#events.ids);
+      this.#reconciler.mount(this.#prev, this.#events);
 
       if (effects.all instanceof NonEmpty) {
         this.#tick(effects.all);
@@ -244,7 +242,7 @@ export const make_lustre_client_component = (
       );
 
       this.#events = events;
-      this.#reconciler.push(patch, this.#events.ids);
+      this.#reconciler.push(patch, this.#events);
       this.#prev = next;
     }
 

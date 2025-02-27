@@ -17,9 +17,12 @@ import {
   ReplaceText,
   Update,
 } from "./lustre/runtime/vdom.mjs";
-import { run } from "../gleam_stdlib/gleam/dynamic/decode.mjs";
+import * as Events from "./lustre/internals/events.mjs";
+import { Empty, NonEmpty } from './gleam.mjs'
+import { Some } from '../gleam_stdlib/gleam/option.mjs'
 
 const meta = Symbol("metadata");
+const EMPTY_LIST = new Empty();
 
 export class LustreReconciler {
   #root = null;
@@ -31,17 +34,19 @@ export class LustreReconciler {
     this.#dispatch = dispatch;
   }
 
-  mount(vnode, ids) {
-    this.#root.appendChild(createElement(vnode, this.#dispatch, ids));
+  mount(vnode, events) {
+    this.#root.appendChild(
+      createElement(vnode, EMPTY_LIST, this.#dispatch, events)
+    );
   }
 
-  push(patch, ids) {
+  push(patch, events) {
     this.#stack.push({ node: this.#root, patch });
-    reconcile(this.#stack, this.#dispatch, ids);
+    reconcile(this.#stack, this.#dispatch, events);
   }
 }
 
-function reconcile(stack, dispatch, ids) {
+function reconcile(stack, dispatch, events) {
   while (stack.length) {
     const { node, patch } = stack.pop();
 
@@ -54,11 +59,11 @@ function reconcile(stack, dispatch, ids) {
 
       switch (change.constructor) {
         case InsertMany:
-          insertMany(node, change.children, change.before, dispatch, ids);
+          insertMany(node, change.children, change.before, patch.mapper, dispatch, events);
           break;
 
         case Insert:
-          insert(node, change.child, change.before, dispatch, ids);
+          insert(node, change.child, change.before, patch.mapper, dispatch, events);
           break;
 
         case Move:
@@ -74,7 +79,7 @@ function reconcile(stack, dispatch, ids) {
           break;
 
         case Replace:
-          replace(node, change.element, dispatch, ids);
+          replace(node, change.element, patch.mapper, dispatch, events);
           break;
 
         case ReplaceText:
@@ -82,7 +87,7 @@ function reconcile(stack, dispatch, ids) {
           break;
 
         case Update:
-          update(node, change.added, change.removed, dispatch, ids);
+          update(node, change.added, change.removed, patch.mapper, dispatch, events);
           break;
       }
     }
@@ -107,12 +112,17 @@ function reconcile(stack, dispatch, ids) {
 
 // CHANGES ---------------------------------------------------------------------
 
-function insertMany(node, children, before, dispatch, ids) {
+function insertMany(node, children, before, mapper, dispatch, events) {
   const fragment = document.createDocumentFragment();
 
   for (let childPtr = children; childPtr.tail; childPtr = childPtr.tail) {
     const child = childPtr.head;
-    const el = createElement(child, dispatch, ids);
+
+    const child_mapper = child.mapper instanceof Some
+      ? new NonEmpty(child.mapper[0], mapper)
+      : mapper;
+    
+    const el = createElement(child, child_mapper, dispatch, events);
 
     if (child.key) {
       node[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
@@ -124,8 +134,12 @@ function insertMany(node, children, before, dispatch, ids) {
   node.insertBefore(fragment, node.childNodes[before]);
 }
 
-function insert(node, child, before, dispatch, ids) {
-  const el = createElement(child, dispatch, ids);
+function insert(node, child, before, mapper, dispatch, events) {
+  const child_mapper = child.mapper instanceof Some
+    ? new NonEmpty(child.mapper[0], mapper)
+    : mapper;
+    
+  const el = createElement(child, child_mapper, dispatch, events);
 
   if (child.key) {
     node[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
@@ -170,8 +184,8 @@ function remove(node, from, count) {
   }
 }
 
-function replace(node, child, dispatch, ids) {
-  const el = createElement(child, dispatch, ids);
+function replace(node, child, mapper, dispatch, events) {
+  const el = createElement(child, mapper, dispatch, events);
   const parent = node.parentNode;
 
   if (child.key) {
@@ -185,7 +199,7 @@ function replaceText(node, content) {
   node.data = content;
 }
 
-function update(node, added, removed, dispatch, ids) {
+function update(node, added, removed, mapper, dispatch, events) {
   for (let attribute = removed; attribute.tail; attribute = attribute.tail) {
     const name = attribute.head.name;
     if (node[meta].handlers.has(name)) {
@@ -197,7 +211,7 @@ function update(node, added, removed, dispatch, ids) {
   }
 
   for (let attribute = added; attribute.tail; attribute = attribute.tail) {
-    createAttribute(node, attribute.head, dispatch, ids);
+    createAttribute(node, attribute.head, mapper, dispatch, events);
   }
 }
 
@@ -210,7 +224,7 @@ function unwrapFragment(node) {
   return node;
 }
 
-function createElement(vnode, dispatch, ids) {
+function createElement(vnode, mapper, dispatch, events) {
   switch (vnode.constructor) {
     case Node: {
       const node = vnode.namespace
@@ -223,17 +237,17 @@ function createElement(vnode, dispatch, ids) {
         keyedChildren: new Map(),
         handlers: new Map(),
       };
-
+      
       for (
         let attributePtr = vnode.attributes;
         attributePtr.tail;
         attributePtr = attributePtr.tail
       ) {
         const attribute = attributePtr.head;
-        createAttribute(node, attribute, dispatch, ids);
+        createAttribute(node, attribute, mapper, dispatch, events);
       }
 
-      insertMany(node, vnode.children, 0, dispatch, ids);
+      insertMany(node, vnode.children, 0, mapper, dispatch, events);
 
       return node;
     }
@@ -248,14 +262,14 @@ function createElement(vnode, dispatch, ids) {
 
     case Fragment: {
       const node = document.createDocumentFragment();
-
+        
       for (
         let childPtr = vnode.children;
         childPtr.tail;
         childPtr = childPtr.tail
       ) {
         const child = childPtr.head;
-        node.appendChild(createElement(child, dispatch, ids));
+        node.appendChild(createElement(child, mapper, dispatch, events));
       }
 
       return node;
@@ -265,7 +279,7 @@ function createElement(vnode, dispatch, ids) {
 
 // ATTRIBUTES ------------------------------------------------------------------
 
-function createAttribute(node, attribute, dispatch, ids) {
+function createAttribute(node, attribute, mapper, dispatch, events) {
   switch (attribute.constructor) {
     case Attribute:
       if (attribute.value !== node.getAttribute(attribute.name)) {
@@ -288,7 +302,7 @@ function createAttribute(node, attribute, dispatch, ids) {
         });
       }
 
-      const id = ids.get(attribute.handler);
+      const id = Events.get(events, new Events.Event(mapper, attribute.handler));
       const prevent = attribute.prevent_default;
       const stop = attribute.stop_propagation;
       const immediate =

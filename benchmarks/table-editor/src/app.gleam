@@ -32,23 +32,18 @@ fn init(_) -> Model {
 }
 
 type Msg {
-  UserDeletedColumn(Int)
-  UserInsertedColumnBefore(Int)
-  UserInsertedColumnAfter(Int)
-  UserMovedColumnUp(Int)
-  UserMovedColumnDown(Int)
-  ColumnChanged(Int, Column)
+  ColumnMsgReceived(Int, column.OutMsg)
 }
 
 fn update(model: Model, msg: Msg) -> Model {
   case io.debug(msg) {
-    UserDeletedColumn(index) -> {
+    ColumnMsgReceived(index, column.Deleted) -> {
       let columns = iv.try_delete(model.columns, index)
 
       Model(..model, columns:)
     }
 
-    UserInsertedColumnBefore(index) -> {
+    ColumnMsgReceived(index, column.CreatedAbove) -> {
       let columns =
         model.columns
         |> iv.insert_clamped(index, column.new(index))
@@ -56,7 +51,7 @@ fn update(model: Model, msg: Msg) -> Model {
       Model(..model, columns:)
     }
 
-    UserInsertedColumnAfter(index) -> {
+    ColumnMsgReceived(index, column.CreatedBelow) -> {
       let columns =
         model.columns
         |> iv.insert_clamped(index + 1, column.new(index + 1))
@@ -64,7 +59,7 @@ fn update(model: Model, msg: Msg) -> Model {
       Model(..model, columns:)
     }
 
-    UserMovedColumnUp(index) ->
+    ColumnMsgReceived(index, column.MovedUp) ->
       case iv.get(model.columns, index - 1), iv.get(model.columns, index) {
         Ok(prev), Ok(curr) -> {
           let columns =
@@ -77,7 +72,7 @@ fn update(model: Model, msg: Msg) -> Model {
         _, _ -> model
       }
 
-    UserMovedColumnDown(index) ->
+    ColumnMsgReceived(index, column.MovedDown) ->
       case iv.get(model.columns, index), iv.get(model.columns, index + 1) {
         Ok(curr), Ok(next) -> {
           let columns =
@@ -90,7 +85,7 @@ fn update(model: Model, msg: Msg) -> Model {
         _, _ -> model
       }
 
-    ColumnChanged(index, column) -> {
+    ColumnMsgReceived(index, column.Changed(column)) -> {
       let columns =
         model.columns
         |> iv.try_set(index, column)
@@ -153,16 +148,6 @@ fn view_table(columns: Array(Column)) -> Element(Msg) {
 
 fn view_keyed_column(column: Column, index: Int) -> #(String, Element(Msg)) {
   let key = column.id
-  let element =
-    column.column(
-      column:,
-      on_change: ColumnChanged(index, _),
-      on_move_up: UserMovedColumnUp(index),
-      on_move_down: UserMovedColumnDown(index),
-      on_create_above: UserInsertedColumnBefore(index),
-      on_create_below: UserInsertedColumnAfter(index),
-      on_delete: UserDeletedColumn(index),
-    )
-
+  let element = element.map(column.column(column:), ColumnMsgReceived(index, _))
   #(key, element)
 }
