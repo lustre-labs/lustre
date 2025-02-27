@@ -1,5 +1,5 @@
 name = "lustre"
-version = "4.6.3"
+version = "4.6.4"
 gleam = ">= 1.4.0"
 
 description = "An Gleam web framework for building HTML templates, single page applications, and real-time server components."
@@ -44,3 +44,4 @@ birdie = "~> 1.0"
 gleeunit = "~> 1.0"
 shellout = "~> 1.6"
 simplifile = "~> 2.0"
+gleam_regexp = ">= 1.1.0 and < 2.0.0"

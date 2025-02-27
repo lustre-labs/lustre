@@ -102,32 +102,62 @@ var BitArray = class _BitArray {
   }
   // @internal
   binaryFromSlice(start3, end) {
-    return new _BitArray(this.buffer.slice(start3, end));
+    const buffer = new Uint8Array(
+      this.buffer.buffer,
+      this.buffer.byteOffset + start3,
+      end - start3
+    );
+    return new _BitArray(buffer);
   }
   // @internal
   sliceAfter(index2) {
-    return new _BitArray(this.buffer.slice(index2));
+    const buffer = new Uint8Array(
+      this.buffer.buffer,
+      this.buffer.byteOffset + index2,
+      this.buffer.byteLength - index2
+    );
+    return new _BitArray(buffer);
   }
 };
 function byteArrayToInt(byteArray, start3, end, isBigEndian, isSigned) {
-  let value2 = 0;
-  if (isBigEndian) {
-    for (let i = start3; i < end; i++) {
-      value2 = value2 * 256 + byteArray[i];
+  const byteSize = end - start3;
+  if (byteSize <= 6) {
+    let value2 = 0;
+    if (isBigEndian) {
+      for (let i = start3; i < end; i++) {
+        value2 = value2 * 256 + byteArray[i];
+      }
+    } else {
+      for (let i = end - 1; i >= start3; i--) {
+        value2 = value2 * 256 + byteArray[i];
+      }
     }
+    if (isSigned) {
+      const highBit = 2 ** (byteSize * 8 - 1);
+      if (value2 >= highBit) {
+        value2 -= highBit * 2;
+      }
+    }
+    return value2;
   } else {
-    for (let i = end - 1; i >= start3; i--) {
-      value2 = value2 * 256 + byteArray[i];
+    let value2 = 0n;
+    if (isBigEndian) {
+      for (let i = start3; i < end; i++) {
+        value2 = (value2 << 8n) + BigInt(byteArray[i]);
+      }
+    } else {
+      for (let i = end - 1; i >= start3; i--) {
+        value2 = (value2 << 8n) + BigInt(byteArray[i]);
+      }
     }
-  }
-  if (isSigned) {
-    const byteSize = end - start3;
-    const highBit = 2 ** (byteSize * 8 - 1);
-    if (value2 >= highBit) {
-      value2 -= highBit * 2;
+    if (isSigned) {
+      const highBit = 1n << BigInt(byteSize * 8 - 1);
+      if (value2 >= highBit) {
+        value2 -= highBit * 2n;
+      }
     }
+    return Number(value2);
   }
-  return value2;
 }
 function byteArrayToFloat(byteArray, start3, end, isBigEndian) {
   const view2 = new DataView(byteArray.buffer);
@@ -1374,7 +1404,12 @@ function push_path(error, name) {
       return to_string3(_pipe$1);
     }
   })();
-  return error.withFields({ path: prepend(name$2, error.path) });
+  let _record = error;
+  return new DecodeError(
+    _record.expected,
+    _record.found,
+    prepend(name$2, error.path)
+  );
 }
 function map_errors(result, f) {
   return map_error(
@@ -2427,12 +2462,14 @@ function update(model, msg) {
     let length3 = length2(value2);
     let $ = length3 <= model.max;
     if ($) {
-      return model.withFields({ value: value2, length: length3 });
+      let _record = model;
+      return new Model2(value2, length3, _record.max);
     } else {
       return model;
     }
   } else {
-    return model.withFields({ value: "", length: 0 });
+    let _record = model;
+    return new Model2("", 0, _record.max);
   }
 }
 function view(model) {

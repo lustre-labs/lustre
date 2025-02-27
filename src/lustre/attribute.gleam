@@ -107,6 +107,14 @@ pub fn classes(names: List(#(String, Bool))) -> Attribute(msg) {
 }
 
 ///
+///
+/// Add a `data-*` attribute to an HTML element. The key will be prefixed by `data-`.
+/// 
+pub fn data(key: String, value: String) -> Attribute(msg) {
+  attribute("data-" <> key, value)
+}
+
+///
 pub fn id(name: String) -> Attribute(msg) {
   attribute("id", name)
 }
@@ -208,6 +216,11 @@ pub fn for(id: String) -> Attribute(msg) {
 // INPUT RANGES ----------------------------------------------------------------
 
 ///
+pub fn maxlength(val: String) -> Attribute(msg) {
+  attribute("maxlength", val)
+}
+
+///
 pub fn max(val: String) -> Attribute(msg) {
   attribute("max", val)
 }
@@ -259,6 +272,16 @@ pub fn download(filename: String) -> Attribute(msg) {
 ///
 pub fn rel(relationship: String) -> Attribute(msg) {
   attribute("rel", relationship)
+}
+
+///
+pub fn crossorigin(origin: String) -> Attribute(msg) {
+  attribute("crossorigin", origin)
+}
+
+///
+pub fn integrity(cryptographic_hash: String) -> Attribute(msg) {
+  attribute("integrity", cryptographic_hash)
 }
 
 // EMBEDDED CONTENT ------------------------------------------------------------
@@ -381,4 +404,11 @@ pub fn charset(name: String) -> Attribute(msg) {
 ///
 pub fn http_equiv(name: String) -> Attribute(msg) {
   attribute("http-equiv", name)
+}
+
+// HTML ------------------------------------------------------------------------
+
+///
+pub fn lang(name: String) -> Attribute(msg) {
+  attribute("lang", name)
 }
