@@ -1,5 +1,4 @@
 import column.{type Column}
-import gleam/bool
 import gleam/io
 import iv.{type Array}
 import lustre

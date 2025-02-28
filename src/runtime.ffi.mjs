@@ -1,12 +1,14 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { Dispatch } from "./lustre/internals/runtime.mjs";
-import { ElementNotFound, NotABrowser } from "./lustre.mjs";
-import { LustreReconciler } from "./reconciler.ffi.mjs";
 import { Ok, Error, NonEmpty, isEqual } from "./gleam.mjs";
 import { Some } from "../gleam_stdlib/gleam/option.mjs";
-import * as Vdom from "./lustre/runtime/vdom.mjs";
+
+import { ElementNotFound, NotABrowser } from "./lustre.mjs";
+import { LustreReconciler } from "./reconciler.ffi.mjs";
+import adoptStylesheets from "./adopt_stylesheets.mjs";
 import * as Events from "./lustre/internals/events.mjs";
+import { Dispatch } from "./lustre/internals/runtime.mjs";
+import * as Vdom from "./lustre/runtime/vdom.mjs";
 
 // UTILS -----------------------------------------------------------------------
 
@@ -51,81 +53,19 @@ export class LustreSPA {
     return new Ok((action) => app.send(action));
   }
 
-  #model;
-  #update;
-  #view;
-
-  #prev;
-  #reconciler;
-  #events;
+  #runtime;
 
   constructor(root, [init, effects], update, view) {
-    this.root = root;
-
-    this.#model = init;
-    this.#update = update;
-    this.#view = view;
-
-    this.#prev = view(init);
-    this.#reconciler = new LustreReconciler(root, (event, id, immediate) => {
-      const msg = Events.run(this.#events, id, event);
-      if (msg.isOk()) {
-        this.#dispatch(msg[0], immediate);
-      }
-    });
-
-    this.#events = Vdom.init(this.#prev);
-    this.#reconciler.mount(this.#prev, this.#events);
-
-    if (effects.all instanceof NonEmpty) {
-      this.#tick(effects.all);
-    }
+    this.#runtime = new LustreClientRuntime(root, [init, effects], view, update);
   }
 
   send(action) {
     switch (action.constructor) {
       case Dispatch: {
-        this.#dispatch(action[0], action[1]);
+        this.#runtime.dispatch(action[0], action[1]);
         break;
       }
     }
-  }
-
-  #dispatch(msg, immediate = false) {
-    const [next, effects] = this.#update(this.#model, msg);
-
-    this.#model = next;
-    this.#tick(effects.all, immediate);
-  }
-
-  #tick(effects, immediate = false) {
-    console.time("tick")
-    const dispatch = (msg, immediate) => {
-      this.#dispatch(msg, immediate);
-    };
-
-    const emit = (event, data) =>
-      this.root.dispatchEvent(
-        new CustomEvent(event, {
-          detail: data,
-          bubbles: true,
-          composed: true,
-        }),
-      );
-    const select = () => {};
-    const root = this.root;
-
-    for (const effect of effects) {
-      effect({ dispatch, emit, select, root });
-    }
-
-    const next = this.#view(this.#model);
-    const { patch, events } = Vdom.diff(0, this.#prev, next, this.#events);
-
-    this.#events = events;
-    this.#reconciler.push(patch, this.#events);
-    this.#prev = next;
-    console.timeEnd("tick")
   }
 }
 
@@ -144,8 +84,6 @@ export const make_lustre_client_component = (
   }
 
   const [model, effects] = init(undefined);
-  const initialView = view(model);
-  const initialEvents = Vdom.init(initialView);
   const hasAttributes = on_attribute_change instanceof Some;
   const observedAttributes = hasAttributes
     ? on_attribute_change[0].entries().map(([name]) => name)
@@ -156,14 +94,7 @@ export const make_lustre_client_component = (
       return observedAttributes;
     }
 
-    #model = model;
-    #update = update;
-    #view = view;
-
-    #prev = initialView;
-    #reconciler;
-    #events = initialEvents;
-
+    #runtime;
     #adoptedStyleNodes = [];
 
     constructor() {
@@ -176,21 +107,7 @@ export const make_lustre_client_component = (
       }
       this.#adoptStyleSheets();
 
-      this.#reconciler = new LustreReconciler(
-        this.shadowRoot,
-        (event, id, immediate) => {
-          const msg = Events.run(this.#events, id, event);
-          if (msg.isOk()) {
-            this.#dispatch(msg[0], immediate);
-          }
-        },
-      );
-
-      this.#reconciler.mount(this.#prev, this.#events);
-
-      if (effects.all instanceof NonEmpty) {
-        this.#tick(effects.all);
-      }
+      this.#runtime = new LustreClientRuntime(this.shadowRoot, [model, effects], view, update);
     }
 
     adoptedCallback() {
@@ -200,50 +117,10 @@ export const make_lustre_client_component = (
     send(action) {
       switch (action.constructor) {
         case Dispatch: {
-          this.#dispatch(action[0], action[1]);
+          this.#runtime.dispatch(action[0], action[1]);
           break;
         }
       }
-    }
-
-    #dispatch(msg, immediate = false) {
-      const [next, effects] = this.#update(this.#model, msg);
-
-      this.#model = next;
-      this.#tick(effects.all, immediate);
-    }
-
-    #tick(effects, immediate = false) {
-      const dispatch = (msg, immediate) => {
-        this.#dispatch(msg, immediate);
-      };
-
-      const emit = (event, data) =>
-        this.dispatchEvent(
-          new CustomEvent(event, {
-            detail: data,
-            bubbles: true,
-            composed: true,
-          }),
-        );
-      const select = () => {};
-      const root = this.shadowRoot;
-
-      for (const effect of effects) {
-        effect({ dispatch, emit, select, root });
-      }
-
-      const next = this.#view(this.#model);
-      const { patch, events } = Vdom.diff(
-        this.#adoptedStyleNodes.length,
-        this.#prev,
-        next,
-        this.#events,
-      );
-
-      this.#events = events;
-      this.#reconciler.push(patch, this.#events);
-      this.#prev = next;
     }
 
     async #adoptStyleSheets() {
@@ -252,7 +129,8 @@ export const make_lustre_client_component = (
         this.shadowRoot.firstChild.remove();
       }
 
-      this.#adoptedStyleNodes = await adoptStyleSheets(this.shadowRoot);
+      this.#adoptedStyleNodes = await adoptStylesheets(this.shadowRoot);
+      this.#runtime.initialNodeOffset = this.#adoptedStyleNodes.length;
     }
   };
 
@@ -283,50 +161,97 @@ export const make_lustre_client_component = (
   return new Ok(undefined);
 };
 
-const copiedStyleSheets = new WeakMap();
-async function adoptStyleSheets(shadowRoot) {
-  const pendingParentStylesheets = [];
-  for (const node of document.querySelectorAll("link[rel=stylesheet], style")) {
-    if (node.sheet) continue;
+// COMMON RUNTIME CODE ---------------------------------------------------------
 
-    pendingParentStylesheets.push(
-      new Promise((resolve, reject) => {
-        node.addEventListener("load", resolve);
-        node.addEventListener("error", reject);
-      }),
-    );
+class LustreClientRuntime {
+  #root;
+
+  #model;
+  #view;
+  #update;
+
+  #vdom;
+  #events;
+  #reconciler;
+  #viewTimer = null;
+
+  initialNodeOffset = 0;
+
+  constructor(root, [model, effects], view, update) {
+    this.#root = root;
+    this.#model = model;
+    this.#view = view;
+    this.#update = update;
+
+    this.#vdom = this.#view(this.#model);
+    this.#events = Vdom.init(this.#vdom);
+
+    this.#reconciler = new LustreReconciler(this.#root, (event, id, immediate) =>
+      this.#handleEvent(event, id, immediate));
+
+    this.#reconciler.mount(this.#vdom, this.#events);
+    this.#tick(effects.all, false);
   }
 
-  await Promise.allSettled(pendingParentStylesheets);
+  dispatch(msg, immediate = false) {
+    const [model, effects] = this.#update(this.#model, msg);
+    this.#model = model;
 
-  shadowRoot.adoptedStyleSheets =
-    shadowRoot.host.getRootNode().adoptedStyleSheets;
+    this.#tick(effects.all, immediate);
+  }
 
-  const pending = [];
-
-  for (const sheet of document.styleSheets) {
-    try {
-      shadowRoot.adoptedStyleSheets.push(sheet);
-    } catch {
-      try {
-        let copiedSheet = copiedStyleSheets.get(sheet);
-        if (!copiedSheet) {
-          copiedSheet = new CSSStyleSheet();
-          for (const rule of sheet.cssRules) {
-            copiedSheet.insertRule(rule.cssText, copiedSheet.cssRules.length);
-          }
-          copiedStyleSheets.set(sheet, copiedSheet);
-        }
-
-        shadowRoot.adoptedStyleSheets.push(copiedSheet);
-      } catch {
-        const node = sheet.ownerNode.cloneNode();
-
-        shadowRoot.prepend(node);
-        pending.push(node);
-      }
+  #handleEvent(event, id, immediate) {
+    const msg = Events.run(this.#events, id, event);
+    if (msg.isOk()) {
+      this.dispatch(msg[0], immediate);
     }
   }
 
-  return pending;
+  #tick(effects, immediate = false) {
+    const queue = [];
+
+    const effect_params = {
+      root: this.#root,
+      emit: (event, data) => this.#emit(event, data),
+      dispatch: (msg) => queue.push(msg),
+      select: () => {},
+    }
+
+    while (true) {
+      for (let effect = effects; effect.tail; effect = effect.tail) {
+        effect.head(effect_params);
+      }
+
+      if (!queue.length) {
+        break;
+      }
+
+      const msg = queue.shift();
+      [this.#model, effects] = this.#update(this.#model, msg);
+    }
+
+    this.#render();
+  }
+
+  #render() {
+    this.#viewTimer = null;
+
+    const next = this.#view(this.#model);
+    const { patch, events } = Vdom.diff(this.initialNodeOffset, this.#vdom, next, this.#events);
+    this.#events = events;
+    this.#vdom = next;
+
+    this.#reconciler.push(patch, this.#events);
+  }
+
+  #emit(event, data) {
+    const targetElement = this.#root.host ?? this.#root;
+    targetElement.dispatchEvent(
+      new CustomEvent(event, {
+        detail: data,
+        bubbles: true,
+        composed: true
+      })
+    );
+  }
 }
