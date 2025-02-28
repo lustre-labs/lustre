@@ -165,7 +165,7 @@ export const make_lustre_client_component = (
 
 class LustreClientRuntime {
   #root;
-  
+
   #model;
   #view;
   #update;
@@ -209,7 +209,7 @@ class LustreClientRuntime {
 
   #tick(effects, immediate = false) {
     const queue = [];
-    
+
     const effect_params = {
       root: this.#root,
       emit: (event, data) => this.#emit(event, data),
@@ -219,7 +219,7 @@ class LustreClientRuntime {
 
     while (true) {
       for (let effect = effects; effect.tail; effect = effect.tail) {
-        effect.head(effect_params);        
+        effect.head(effect_params);
       }
 
       if (!queue.length) {
@@ -230,13 +230,7 @@ class LustreClientRuntime {
       [this.#model, effects] = this.#update(this.#model, msg);
     }
 
-    if (immediate) {
-      window.cancelAnimationFrame(this.#viewTimer);
-      this.#viewTimer = null;
-      this.#render();
-    } else if (!this.#viewTimer) {
-      this.#viewTimer = window.requestAnimationFrame(() => this.#render());
-    }
+    this.#render();
   }
 
   #render() {
