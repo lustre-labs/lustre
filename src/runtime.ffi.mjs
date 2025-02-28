@@ -232,6 +232,7 @@ class LustreClientRuntime {
 
     if (immediate) {
       window.cancelAnimationFrame(this.#viewTimer);
+      this.#viewTimer = null;
       this.#render();
     } else if (!this.#viewTimer) {
       this.#viewTimer = window.requestAnimationFrame(() => this.#render());
