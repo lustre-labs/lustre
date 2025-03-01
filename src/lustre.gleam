@@ -168,8 +168,6 @@ import gleam/result
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/internals/constants
-import lustre/internals/patch
-import lustre/internals/runtime
 
 // TYPES -----------------------------------------------------------------------
 
@@ -253,16 +251,14 @@ pub type ServerComponent
 /// runtime, and trying to send actions like [`add_renderer`](#add_renderer) would
 /// result in a type error.
 ///
-pub type Action(msg, runtime) =
-  runtime.Action(msg, runtime)
+pub type Action(msg, runtime)
 
 /// Patches are sent by server components to any connected renderers. Because
 /// server components are not opinionated about your network layer or how your
 /// wider application is organised, it is your responsibility to make sure a `Patch`
 /// makes its way to the server component client runtime.
 ///
-pub type Patch(msg) =
-  patch.Patch(msg)
+pub type Patch(msg)
 
 /// Starting a Lustre application might fail for a number of reasons. This error
 /// type enumerates all those reasons, even though some of them are only possible
@@ -446,12 +442,13 @@ fn do_start_actor(
   app: App(flags, model, msg),
   flags: flags,
 ) -> Result(Subject(Action(msg, ServerComponent)), Error) {
-  let on_attribute_change =
-    option.unwrap(app.on_attribute_change, constants.empty_dict())
+  // let on_attribute_change =
+  //   option.unwrap(app.on_attribute_change, constants.empty_dict())
 
-  app.init(flags)
-  |> runtime.start(app.update, app.view, on_attribute_change)
-  |> result.map_error(ActorError)
+  // app.init(flags)
+  // |> runtime.start(app.update, app.view, on_attribute_change)
+  // |> result.map_error(ActorError)
+  todo
 }
 
 /// Register a Lustre application as a Web Component. This lets you render that
@@ -490,7 +487,8 @@ pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error)
 /// the `dispatch` action.
 ///
 pub fn dispatch(msg: msg) -> Action(msg, runtime) {
-  runtime.Dispatch(msg)
+  // runtime.Dispatch(msg)
+  todo
 }
 
 /// Instruct a running application to shut down. For client SPAs this will stop
@@ -499,7 +497,8 @@ pub fn dispatch(msg: msg) -> Action(msg, runtime) {
 /// clients.
 ///
 pub fn shutdown() -> Action(msg, runtime) {
-  runtime.Shutdown
+  // runtime.Shutdown
+  todo
 }
 
 // UTILS -----------------------------------------------------------------------

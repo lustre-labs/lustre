@@ -13,10 +13,11 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
 import gleam/string_tree.{type StringTree}
-import lustre/attribute.{type Attribute}
+import lustre/attribute.{type Attribute} as _
 import lustre/effect.{type Effect}
 import lustre/internals/constants
-import lustre/runtime/vdom.{Fragment, Node, Text}
+import lustre/vdom/attribute
+import lustre/vdom/node.{Element, Fragment, Text}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -56,7 +57,7 @@ import lustre/runtime/vdom.{Fragment, Node, Text}
 /// [`lustre/element/svg`](./element/svg.html).
 ///
 pub type Element(msg) =
-  vdom.Element(msg)
+  node.Node(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -109,12 +110,12 @@ pub fn element(
     | "source"
     | "track"
     | "wbr" ->
-      Node(
+      Element(
         key: "",
         mapper: constants.option_none,
         namespace: "",
         tag: tag,
-        attributes: vdom.prepare_attributes(attributes),
+        attributes: attribute.prepare(attributes),
         children: constants.empty_list,
         keyed_children: constants.empty_dict(),
         self_closing: False,
@@ -122,12 +123,12 @@ pub fn element(
       )
 
     _ ->
-      Node(
+      Element(
         key: "",
         mapper: constants.option_none,
         namespace: "",
         tag: tag,
-        attributes: vdom.prepare_attributes(attributes),
+        attributes: attribute.prepare(attributes),
         children:,
         keyed_children: constants.empty_dict(),
         self_closing: False,
@@ -145,12 +146,12 @@ pub fn namespaced(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  Node(
+  Element(
     key: "",
     mapper: constants.option_none,
     namespace:,
     tag:,
-    attributes: vdom.prepare_attributes(attributes),
+    attributes: attribute.prepare(attributes),
     children:,
     keyed_children: constants.empty_dict(),
     self_closing: False,
@@ -171,12 +172,12 @@ pub fn advanced(
   self_closing: Bool,
   void: Bool,
 ) -> Element(msg) {
-  Node(
+  Element(
     key: "",
     mapper: constants.option_none,
     namespace:,
     tag:,
-    attributes: vdom.prepare_attributes(attributes),
+    attributes: attribute.prepare(attributes),
     children:,
     keyed_children: constants.empty_dict(),
     self_closing:,
@@ -225,8 +226,19 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
         mapper: constants.option_none,
         children:,
         keyed_children: constants.empty_dict(),
-        children_count: list.length(children),
+        children_count: count_fragment_children(children, 0),
       )
+  }
+}
+
+fn count_fragment_children(children: List(Element(msg)), count: Int) -> Int {
+  case children {
+    [] -> count
+
+    [Fragment(children_count:, ..), ..rest] ->
+      count_fragment_children(rest, count + children_count)
+
+    [_, ..rest] -> count_fragment_children(rest, count + 1)
   }
 }
 
@@ -254,7 +266,7 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
         children_count:,
       )
 
-    Node(
+    Element(
       key:,
       namespace:,
       tag:,
@@ -265,7 +277,7 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
       self_closing:,
       void:,
     ) ->
-      Node(
+      Element(
         key:,
         namespace:,
         tag:,
@@ -305,7 +317,7 @@ pub fn get_root(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
 /// use case and we'll see what we can do!
 ///
 pub fn to_string(element: Element(msg)) -> String {
-  vdom.element_to_string(element)
+  node.to_string(element)
 }
 
 /// Converts an element to a string like [`to_string`](#to_string), but prepends
@@ -316,9 +328,10 @@ pub fn to_string(element: Element(msg)) -> String {
 /// a `html` and `body` element.
 ///
 pub fn to_document_string(el: Element(msg)) -> String {
-  vdom.element_to_string(case el {
-    Node(tag: "html", ..) -> el
-    Node(tag: "head", ..) | Node(tag: "body", ..) -> element("html", [], [el])
+  node.to_string(case el {
+    Element(tag: "html", ..) -> el
+    Element(tag: "head", ..) | Element(tag: "body", ..) ->
+      element("html", [], [el])
     _ -> element("html", [], [element("body", [], [el])])
   })
   |> string.append("<!doctype html>\n", _)
@@ -330,8 +343,8 @@ pub fn to_document_string(el: Element(msg)) -> String {
 /// [open an issue](https://github.com/lustre-labs/lustre/issues/new) with your
 /// use case and we'll see what we can do!
 ///
-pub fn to_string_builder(element: Element(msg)) -> StringTree {
-  vdom.element_to_string_builder(element)
+pub fn to_string_tree(element: Element(msg)) -> StringTree {
+  node.to_string_tree(element)
 }
 
 /// Converts an element to a `StringTree` like [`to_string_builder`](#to_string_builder),
@@ -341,10 +354,11 @@ pub fn to_string_builder(element: Element(msg)) -> StringTree {
 /// If the provided element is not an `html` element, it will be wrapped in both
 /// a `html` and `body` element.
 ///
-pub fn to_document_string_builder(el: Element(msg)) -> StringTree {
-  vdom.element_to_string_builder(case el {
-    Node(tag: "html", ..) -> el
-    Node(tag: "head", ..) | Node(tag: "body", ..) -> element("html", [], [el])
+pub fn to_document_string_tree(el: Element(msg)) -> StringTree {
+  node.to_string_tree(case el {
+    Element(tag: "html", ..) -> el
+    Element(tag: "head", ..) | Element(tag: "body", ..) ->
+      element("html", [], [el])
     _ -> element("html", [], [element("body", [], [el])])
   })
   |> string_tree.prepend("<!doctype html>\n")
@@ -375,5 +389,5 @@ pub fn to_document_string_builder(el: Element(msg)) -> StringTree {
 /// ```
 ///
 pub fn to_readable_string(el: Element(msg)) -> String {
-  vdom.element_to_snapshot(el)
+  node.to_snapshot(el)
 }

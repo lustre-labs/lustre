@@ -4,7 +4,7 @@ import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
-import lustre/runtime/vdom
+import lustre/vdom/attribute.{Event} as _
 
 // EFFECTS ---------------------------------------------------------------------
 
@@ -35,7 +35,7 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
 ///
 pub fn prevent_default(event: Attribute(msg)) -> Attribute(msg) {
   case event {
-    vdom.Event(..) -> vdom.Event(..event, prevent_default: True)
+    Event(..) -> Event(..event, prevent_default: True)
     _ -> event
   }
 }
@@ -43,7 +43,7 @@ pub fn prevent_default(event: Attribute(msg)) -> Attribute(msg) {
 ///
 pub fn stop_propagation(event: Attribute(msg)) -> Attribute(msg) {
   case event {
-    vdom.Event(..) -> vdom.Event(..event, stop_propagation: True)
+    Event(..) -> Event(..event, stop_propagation: True)
     _ -> event
   }
 }

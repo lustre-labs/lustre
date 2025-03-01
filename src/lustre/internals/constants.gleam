@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dict.{type Dict}
-import gleam/option.{type Option, None}
+import gleam/option
 import gleam/set.{type Set}
 
 // CONSTANTS -------------------------------------------------------------------
