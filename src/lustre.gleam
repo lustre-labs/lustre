@@ -168,8 +168,6 @@ import gleam/result
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/internals/constants
-import lustre/internals/patch
-import lustre/internals/runtime
 
 // TYPES -----------------------------------------------------------------------
 
@@ -204,15 +202,7 @@ pub opaque type App(flags, model, msg) {
     init: fn(flags) -> #(model, Effect(msg)),
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
-    // The `dict.mjs` module in the standard library is huge (20+kb!). For folks
-    // that don't ever build components and don't use a dictionary in any of their
-    // code we'd rather not thrust that increase in bundle size on them just to
-    // call `dict.new()`.
-    //
-    // Using `Option` here at least lets us say `None` for the empty case in the
-    // `application` constructor.
-    //
-    on_attribute_change: Option(Dict(String, Decoder(msg))),
+    on_attribute_change: Dict(String, Decoder(msg)),
   )
 }
 
@@ -253,16 +243,14 @@ pub type ServerComponent
 /// runtime, and trying to send actions like [`add_renderer`](#add_renderer) would
 /// result in a type error.
 ///
-pub type Action(msg, runtime) =
-  runtime.Action(msg, runtime)
+pub type Action(msg, runtime)
 
 /// Patches are sent by server components to any connected renderers. Because
 /// server components are not opinionated about your network layer or how your
 /// wider application is organised, it is your responsibility to make sure a `Patch`
 /// makes its way to the server component client runtime.
 ///
-pub type Patch(msg) =
-  patch.Patch(msg)
+pub type Patch(msg)
 
 /// Starting a Lustre application might fail for a number of reasons. This error
 /// type enumerates all those reasons, even though some of them are only possible
@@ -331,7 +319,7 @@ pub fn application(
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
 ) -> App(flags, model, msg) {
-  App(init, update, view, None)
+  App(init, update, view, constants.empty_dict())
 }
 
 /// A `component` is a type of Lustre application designed to be embedded within
@@ -358,7 +346,7 @@ pub fn component(
   view: fn(model) -> Element(msg),
   on_attribute_change: Dict(String, Decoder(msg)),
 ) -> App(flags, model, msg) {
-  App(init, update, view, Some(on_attribute_change))
+  App(init, update, view, on_attribute_change)
 }
 
 // EFFECTS ---------------------------------------------------------------------
@@ -381,10 +369,11 @@ pub fn start(
   with flags: flags,
 ) -> Result(fn(Action(msg, ClientSpa)) -> Nil, Error) {
   use <- bool.guard(!is_browser(), Error(NotABrowser))
+
   do_start(app, selector, flags)
 }
 
-@external(javascript, "./runtime.ffi.mjs", "start")
+@external(javascript, "./lustre/runtime/spa.ffi.mjs", "start")
 fn do_start(
   _app: App(flags, model, msg),
   _selector: String,
@@ -410,14 +399,14 @@ fn do_start(
 /// **Note**: Users running their application on the BEAM should use [`start_actor`](#start_actor)
 /// instead to make use of Gleam's OTP abstractions.
 ///
-@external(javascript, "./lustre.ffi.mjs", "start_server_application")
-pub fn start_server_component(
-  app: App(flags, model, msg),
-  with flags: flags,
-) -> Result(fn(Action(msg, ServerComponent)) -> Nil, Error) {
-  use runtime <- result.map(start_actor(app, flags))
-  actor.send(runtime, _)
-}
+// @external(javascript, "./lustre.ffi.mjs", "start_server_application")
+// pub fn start_server_component(
+//   app: App(flags, model, msg),
+//   with flags: flags,
+// ) -> Result(fn(Action(msg, ServerComponent)) -> Nil, Error) {
+//   use runtime <- result.map(start_actor(app, flags))
+//   actor.send(runtime, _)
+// }
 
 /// Start an application as a server component specifically for the Erlang target.
 /// Instead of receiving a callback on successful start, this function returns
@@ -446,12 +435,13 @@ fn do_start_actor(
   app: App(flags, model, msg),
   flags: flags,
 ) -> Result(Subject(Action(msg, ServerComponent)), Error) {
-  let on_attribute_change =
-    option.unwrap(app.on_attribute_change, constants.empty_dict())
+  // let on_attribute_change =
+  //   option.unwrap(app.on_attribute_change, constants.empty_dict())
 
-  app.init(flags)
-  |> runtime.start(app.update, app.view, on_attribute_change)
-  |> result.map_error(ActorError)
+  // app.init(flags)
+  // |> runtime.start(app.update, app.view, on_attribute_change)
+  // |> result.map_error(ActorError)
+  todo
 }
 
 /// Register a Lustre application as a Web Component. This lets you render that
@@ -475,7 +465,7 @@ fn do_start_actor(
 /// you can render a Lustre server component using [`start_server_component`](#start_server_component)
 /// or [`start_actor`](#start_actor) instead.
 ///
-@external(javascript, "./runtime.ffi.mjs", "make_lustre_client_component")
+@external(javascript, "./lustre/runtime/component.ffi.mjs", "make_component")
 pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error) {
   Error(NotABrowser)
 }
@@ -490,7 +480,8 @@ pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error)
 /// the `dispatch` action.
 ///
 pub fn dispatch(msg: msg) -> Action(msg, runtime) {
-  runtime.Dispatch(msg)
+  // runtime.Dispatch(msg)
+  todo
 }
 
 /// Instruct a running application to shut down. For client SPAs this will stop
@@ -499,7 +490,8 @@ pub fn dispatch(msg: msg) -> Action(msg, runtime) {
 /// clients.
 ///
 pub fn shutdown() -> Action(msg, runtime) {
-  runtime.Shutdown
+  // runtime.Shutdown
+  todo
 }
 
 // UTILS -----------------------------------------------------------------------
@@ -512,7 +504,7 @@ pub fn shutdown() -> Action(msg, runtime) {
 /// backend because you'll want to know whether you're currently running on your
 /// server or in the browser: this function tells you that!
 ///
-@external(javascript, "./runtime.ffi.mjs", "is_browser")
+@external(javascript, "./lustre/runtime/core.ffi.mjs", "is_browser")
 pub fn is_browser() -> Bool {
   False
 }
@@ -521,7 +513,7 @@ pub fn is_browser() -> Bool {
 /// Element. This is particularly useful in contexts where _other web components_
 /// may have been registered and you must avoid collisions.
 ///
-@external(javascript, "./lustre.ffi.mjs", "is_registered")
+@external(javascript, "./lustre/runtime/core.ffi.mjs", "is_registered")
 pub fn is_registered(_name: String) -> Bool {
   False
 }

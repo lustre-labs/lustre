@@ -1,0 +1,11 @@
+---
+version: 1.2.5
+title: [benchmark] 10 table rows
+file: ./test/benchmarks/diff_benchmark.gleam
+test_name: benchmark_10_rows
+---
+Input               Function                       IPS           Min           P99
+10 rows                   vdom.diff()            532962.8991        0.0017        0.0024
+10 rows (shuffled)        vdom.diff()            536881.2143        0.0017        0.0024
+10 rows (keyed)           vdom.diff()            351595.1123        0.0025        0.0036
+10 rows (keyed, shuffled) vdom.diff()            239197.5957        0.0036        0.0051

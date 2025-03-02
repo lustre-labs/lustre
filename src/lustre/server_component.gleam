@@ -86,9 +86,7 @@ import lustre/attribute.{type Attribute, attribute}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, element}
 import lustre/internals/constants
-import lustre/internals/patch
-import lustre/internals/runtime.{type Action, Attrs, Event}
-import lustre/runtime/vdom
+import lustre/vdom/attribute.{Event} as _
 
 // ELEMENTS --------------------------------------------------------------------
 
@@ -173,7 +171,7 @@ pub fn include(
   properties: List(String),
 ) -> Attribute(msg) {
   case event {
-    vdom.Event(..) -> vdom.Event(..event, include: properties)
+    Event(..) -> Event(..event, include: properties)
     _ -> event
   }
 }
@@ -183,19 +181,19 @@ pub fn include(
 /// A server component broadcasts patches to be applied to the DOM to any connected
 /// clients. This action is used to add a new client to a running server component.
 ///
-pub fn subscribe(
-  id: String,
-  renderer: fn(Patch(msg)) -> Nil,
-) -> Action(msg, ServerComponent) {
-  runtime.Subscribe(id, renderer)
-}
+// pub fn subscribe(
+//   id: String,
+//   renderer: fn(Patch(msg)) -> Nil,
+// ) -> Action(msg, ServerComponent) {
+//   runtime.Subscribe(id, renderer)
+// }
 
 /// Remove a registered renderer from a server component. If no renderer with the
 /// given id is found, this action has no effect.
 ///
-pub fn unsubscribe(id: String) -> Action(msg, ServerComponent) {
-  runtime.Unsubscribe(id)
-}
+// pub fn unsubscribe(id: String) -> Action(msg, ServerComponent) {
+//   runtime.Unsubscribe(id)
+// }
 
 // EFFECTS ---------------------------------------------------------------------
 
@@ -251,87 +249,67 @@ fn do_select(
 fn do_select(_: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg)) -> Effect(msg) {
   effect.none
 }
-
-///
-///
-@deprecated("The implementation of this effect is broken in ways that cannot be
-fixed without changing the API. If you'd like other Erlang actors and processes
-to send messages to your Lustre server component, take a look at the `select`
-effect instead.")
-pub fn set_selector(_: Selector(Action(runtime, msg))) -> Effect(msg) {
-  use _ <- effect.from
-  "
-It looks like you're trying to use `set_selector` in a server component. The
-implementation of this effect is broken in ways that cannot be fixed without
-changing the API. Please take a look at `select` instead!
-  "
-  |> string.trim
-  |> io.println_error
-
-  Nil
-}
-
-// DECODERS --------------------------------------------------------------------
-
 /// The server component client runtime sends JSON encoded actions for the server
 /// runtime to execute. Because your own WebSocket server sits between the two
 /// parts of the runtime, you need to decode these actions and pass them to the
 /// server runtime yourself.
 ///
-pub fn decode_action(
-  dyn: Dynamic,
-) -> Result(Action(runtime, ServerComponent), List(DecodeError)) {
-  dynamic.any([decode_event, decode_attrs])(dyn)
-}
-
-fn decode_event(dyn: Dynamic) -> Result(Action(runtime, msg), List(DecodeError)) {
-  use #(kind, name, data) <- result.try(dynamic.tuple3(
-    dynamic.int,
-    dynamic,
-    dynamic,
-  )(dyn))
-  use <- bool.guard(
-    kind != constants.event,
-    Error([
-      DecodeError(
-        path: ["0"],
-        found: int.to_string(kind),
-        expected: int.to_string(constants.event),
-      ),
-    ]),
-  )
-  use name <- result.try(dynamic.string(name))
-
-  Ok(Event(name, data))
-}
-
-fn decode_attrs(dyn: Dynamic) -> Result(Action(runtime, msg), List(DecodeError)) {
-  use #(kind, attrs) <- result.try(dynamic.tuple2(dynamic.int, dynamic)(dyn))
-  use <- bool.guard(
-    kind != constants.attrs,
-    Error([
-      DecodeError(
-        path: ["0"],
-        found: int.to_string(kind),
-        expected: int.to_string(constants.attrs),
-      ),
-    ]),
-  )
-  use attrs <- result.try(dynamic.list(decode_attr)(attrs))
-
-  Ok(Attrs(attrs))
-}
-
-fn decode_attr(dyn: Dynamic) -> Result(#(String, Dynamic), List(DecodeError)) {
-  dynamic.tuple2(dynamic.string, dynamic)(dyn)
-}
-
-// ENCODERS --------------------------------------------------------------------
-
 /// Encode a DOM patch as JSON you can send to the client runtime to apply. Whenever
 /// the server runtime re-renders, all subscribed clients will receive a patch
 /// message they must forward to the client runtime.
 ///
-pub fn encode_patch(patch: Patch(msg)) -> Json {
-  patch.patch_to_json(patch)
-}
+// DECODERS --------------------------------------------------------------------
+
+// pub fn decode_action(
+//   dyn: Dynamic,
+// ) -> Result(Action(runtime, ServerComponent), List(DecodeError)) {
+//   dynamic.any([decode_event, decode_attrs])(dyn)
+// }
+
+// fn decode_event(dyn: Dynamic) -> Result(Action(runtime, msg), List(DecodeError)) {
+//   use #(kind, name, data) <- result.try(dynamic.tuple3(
+//     dynamic.int,
+//     dynamic,
+//     dynamic,
+//   )(dyn))
+//   use <- bool.guard(
+//     kind != constants.event,
+//     Error([
+//       DecodeError(
+//         path: ["0"],
+//         found: int.to_string(kind),
+//         expected: int.to_string(constants.event),
+//       ),
+//     ]),
+//   )
+//   use name <- result.try(dynamic.string(name))
+
+//   Ok(Event(name, data))
+// }
+
+// fn decode_attrs(dyn: Dynamic) -> Result(Action(runtime, msg), List(DecodeError)) {
+//   use #(kind, attrs) <- result.try(dynamic.tuple2(dynamic.int, dynamic)(dyn))
+//   use <- bool.guard(
+//     kind != constants.attrs,
+//     Error([
+//       DecodeError(
+//         path: ["0"],
+//         found: int.to_string(kind),
+//         expected: int.to_string(constants.attrs),
+//       ),
+//     ]),
+//   )
+//   use attrs <- result.try(dynamic.list(decode_attr)(attrs))
+
+//   Ok(Attrs(attrs))
+// }
+
+// fn decode_attr(dyn: Dynamic) -> Result(#(String, Dynamic), List(DecodeError)) {
+//   dynamic.tuple2(dynamic.string, dynamic)(dyn)
+// }
+
+// ENCODERS --------------------------------------------------------------------
+
+// pub fn encode_patch(patch: Patch(msg)) -> Json {
+//   patch.patch_to_json(patch)
+// }
