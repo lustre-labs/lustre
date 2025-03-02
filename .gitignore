@@ -3,5 +3,5 @@
 build
 erl_crash.dump
 
-examples/*/priv/static
+test-apps/*/priv/static
 test/apps/*/priv/static
