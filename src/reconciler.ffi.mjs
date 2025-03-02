@@ -1,13 +1,6 @@
+import { Element, Text, Fragment } from "./lustre/vdom/node.mjs";
+import { Attribute, Property, Event } from "./lustre/vdom/attribute.mjs";
 import {
-  // ELEMENTS
-  Node,
-  Text,
-  Fragment,
-  // ATTRIBUTES
-  Attribute,
-  Property,
-  Event,
-  // PATCHES
   InsertMany,
   Insert,
   Move,
@@ -16,13 +9,9 @@ import {
   Replace,
   ReplaceText,
   Update,
-} from "./lustre/runtime/vdom.mjs";
-import * as Events from "./lustre/internals/events.mjs";
-import { Empty, NonEmpty } from './gleam.mjs'
-import { Some } from '../gleam_stdlib/gleam/option.mjs'
+} from "./lustre/vdom/diff.mjs";
 
 const meta = Symbol("metadata");
-const EMPTY_LIST = new Empty();
 
 export class LustreReconciler {
   #root = null;
@@ -34,95 +23,106 @@ export class LustreReconciler {
     this.#dispatch = dispatch;
   }
 
-  mount(vnode, events) {
-    this.#root.appendChild(
-      createElement(vnode, EMPTY_LIST, this.#dispatch, events)
-    );
+  mount(vnode) {
+    this.#root.appendChild(createElement(vnode, this.#dispatch, this.#root));
   }
 
-  push(patch, events) {
+  push(patch) {
     this.#stack.push({ node: this.#root, patch });
-    reconcile(this.#stack, this.#dispatch, events);
+    this.#reconcile();
   }
-}
 
-function reconcile(stack, dispatch, events) {
-  while (stack.length) {
-    const { node, patch } = stack.pop();
+  #reconcile() {
+    while (this.#stack.length) {
+      const { node, patch } = this.#stack.pop();
 
-    for (
-      let changePtr = patch.changes;
-      changePtr.tail;
-      changePtr = changePtr.tail
-    ) {
-      const change = changePtr.head;
+      for (let list = patch.changes; list.tail; list = list.tail) {
+        const change = list.head;
 
-      switch (change.constructor) {
-        case InsertMany:
-          insertMany(node, change.children, change.before, patch.mapper, dispatch, events);
-          break;
+        switch (change.constructor) {
+          case InsertMany:
+            insertMany(
+              node,
+              change.children,
+              change.before,
+              this.#dispatch,
+              this.#root,
+            );
+            break;
 
-        case Insert:
-          insert(node, change.child, change.before, patch.mapper, dispatch, events);
-          break;
+          case Insert:
+            insert(
+              node,
+              change.child,
+              change.before,
+              this.#dispatch,
+              this.#root,
+            );
+            break;
 
-        case Move:
-          move(node, change.key, change.before, change.count);
-          break;
+          case Move:
+            move(node, change.key, change.before, change.count);
+            break;
 
-        case RemoveKey:
-          removeKey(node, change.key, change.count);
-          break;
+          case RemoveKey:
+            removeKey(node, change.key, change.count);
+            break;
 
-        case Remove:
-          remove(node, change.from, change.count);
-          break;
+          case Remove:
+            remove(node, change.from, change.count);
+            break;
 
-        case Replace:
-          replace(node, change.element, patch.mapper, dispatch, events);
-          break;
+          case Replace:
+            replace(node, change.element, this.#dispatch, this.#root);
+            break;
 
-        case ReplaceText:
-          replaceText(node, change.content);
-          break;
+          case ReplaceText:
+            replaceText(node, change.content);
+            break;
 
-        case Update:
-          update(node, change.added, change.removed, patch.mapper, dispatch, events);
-          break;
+          case Update:
+            update(
+              node,
+              change.added,
+              change.removed,
+              this.#dispatch,
+              this.#root,
+            );
+            break;
+        }
       }
-    }
 
-    while (patch.remove_count-- > 0) {
-      const child = node.lastChild;
-      const key = child[meta].key;
-      if (key) {
-        node[meta].keyedChildren.delete(key);
+      while (patch.removed-- > 0) {
+        const child = node.lastChild;
+        const key = child[meta].key;
+
+        if (key) {
+          node[meta].keyedChildren.delete(key);
+        }
+
+        node.removeChild(child);
       }
-      node.removeChild(child);
-    }
 
-    for (let child = patch.children; child.tail; child = child.tail) {
-      stack.push({
-        node: node.childNodes[child.head.index],
-        patch: child.head,
-      });
+      for (let list = patch.children; list.tail; list = list.tail) {
+        const child = list.head;
+
+        this.#stack.push({
+          node: node.childNodes[child.index],
+          patch: child,
+        });
+      }
     }
   }
 }
 
 // CHANGES ---------------------------------------------------------------------
 
-function insertMany(node, children, before, mapper, dispatch, events) {
+function insertMany(node, children, before, dispatch, root) {
   const fragment = document.createDocumentFragment();
 
-  for (let childPtr = children; childPtr.tail; childPtr = childPtr.tail) {
-    const child = childPtr.head;
-
-    const child_mapper = child.mapper instanceof Some
-      ? new NonEmpty(child.mapper[0], mapper)
-      : mapper;
-    
-    const el = createElement(child, child_mapper, dispatch, events);
+  for (let list = children; list.tail; list = list.tail) {
+    const child = list.head;
+    const el = createElement(child, dispatch, root);
 
     if (child.key) {
       node[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
@@ -134,12 +134,8 @@ function insertMany(node, children, before, mapper, dispatch, events) {
   node.insertBefore(fragment, node.childNodes[before]);
 }
 
-function insert(node, child, before, mapper, dispatch, events) {
-  const child_mapper = child.mapper instanceof Some
-    ? new NonEmpty(child.mapper[0], mapper)
-    : mapper;
-    
-  const el = createElement(child, child_mapper, dispatch, events);
+function insert(node, child, before, dispatch, root) {
+  const el = createElement(child, dispatch, root);
 
   if (child.key) {
     node[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
@@ -153,11 +149,13 @@ function move(node, key, before, count) {
 
   if (count > 1) {
     const fragment = document.createDocumentFragment();
+
     for (let i = 0; i < count && el !== null; ++i) {
       let next = el.nextSibling;
       fragment.append(el);
       el = next;
     }
+
     el = fragment;
   }
 
@@ -177,6 +175,7 @@ function removeKey(node, key, count) {
 
 function remove(node, from, count) {
   let el = node.childNodes[from];
+
   while (count-- > 0 && el !== null) {
     const next = el.nextSibling;
     node.removeChild(el);
@@ -184,8 +183,8 @@ function remove(node, from, count) {
   }
 }
 
-function replace(node, child, mapper, dispatch, events) {
-  const el = createElement(child, mapper, dispatch, events);
+function replace(node, child, dispatch, root) {
+  const el = createElement(child, dispatch, root);
   const parent = node.parentNode;
 
   if (child.key) {
@@ -199,9 +198,10 @@ function replaceText(node, content) {
   node.data = content;
 }
 
-function update(node, added, removed, mapper, dispatch, events) {
-  for (let attribute = removed; attribute.tail; attribute = attribute.tail) {
-    const name = attribute.head.name;
+function update(node, added, removed, dispatch, root) {
+  for (let list = removed; list.tail; list = list.tail) {
+    const name = list.head.name;
+
     if (node[meta].handlers.has(name)) {
       node.removeEventListener(name, handleEvent);
       node[meta].handlers.delete(name);
@@ -210,8 +210,8 @@ function update(node, added, removed, mapper, dispatch, events) {
     }
   }
 
-  for (let attribute = added; attribute.tail; attribute = attribute.tail) {
-    createAttribute(node, attribute.head, mapper, dispatch, events);
+  for (let list = added; list.tail; list = list.tail) {
+    createAttribute(node, list.head, dispatch, root);
   }
 }
 
@@ -221,33 +221,28 @@ function unwrapFragment(node) {
   while (node.nodeType === DocumentFragment.DOCUMENT_FRAGMENT_NODE) {
     node = node.firstChild;
   }
+
   return node;
 }
 
-function createElement(vnode, mapper, dispatch, events) {
+function createElement(vnode, dispatch, root) {
   switch (vnode.constructor) {
-    case Node: {
+    case Element: {
       const node = vnode.namespace
         ? document.createElementNS(vnode.namespace, vnode.tag)
         : document.createElement(vnode.tag);
 
       node[meta] = {
-        constructor: Node,
         key: vnode.key,
         keyedChildren: new Map(),
         handlers: new Map(),
       };
-      
-      for (
-        let attributePtr = vnode.attributes;
-        attributePtr.tail;
-        attributePtr = attributePtr.tail
-      ) {
-        const attribute = attributePtr.head;
-        createAttribute(node, attribute, mapper, dispatch, events);
+
+      for (let list = vnode.attributes; list.tail; list = list.tail) {
+        createAttribute(node, list.head, dispatch, root);
       }
 
-      insertMany(node, vnode.children, 0, mapper, dispatch, events);
+      insertMany(node, vnode.children, 0, dispatch, root);
 
       return node;
     }
@@ -255,21 +250,16 @@ function createElement(vnode, mapper, dispatch, events) {
     case Text: {
       const node = document.createTextNode(vnode.content);
 
-      node[meta] = { constructor: Text, key: vnode.key };
+      node[meta] = { key: vnode.key };
 
       return node;
     }
 
     case Fragment: {
       const node = document.createDocumentFragment();
-        
-      for (
-        let childPtr = vnode.children;
-        childPtr.tail;
-        childPtr = childPtr.tail
-      ) {
-        const child = childPtr.head;
-        node.appendChild(createElement(child, mapper, dispatch, events));
+
+      for (let list = vnode.children; list.tail; list = list.tail) {
+        node.appendChild(createElement(list.head, dispatch, root));
       }
 
       return node;
@@ -279,7 +269,7 @@ function createElement(vnode, mapper, dispatch, events) {
 
 // ATTRIBUTES ------------------------------------------------------------------
 
-function createAttribute(node, attribute, mapper, dispatch, events) {
+function createAttribute(node, attribute, dispatch, root) {
   switch (attribute.constructor) {
     case Attribute:
       if (attribute.value !== node.getAttribute(attribute.name)) {
@@ -302,7 +292,6 @@ function createAttribute(node, attribute, mapper, dispatch, events) {
         });
       }
 
-      const id = Events.get(events, new Events.Event(mapper, attribute.handler));
       const prevent = attribute.prevent_default;
       const stop = attribute.stop_propagation;
       const immediate =
@@ -312,7 +301,22 @@ function createAttribute(node, attribute, mapper, dispatch, events) {
         if (prevent) event.preventDefault();
         if (stop) event.stopPropagation();
 
-        dispatch(event, id, immediate);
+        let node = event.target;
+        let path =
+          node[meta].key ||
+          Array.from(node.parentNode.childNodes).indexOf(node);
+
+        node = node.parentNode;
+
+        while (node !== root) {
+          const key = node[meta].key;
+          const index = Array.from(node.parentNode.childNodes).indexOf(node);
+
+          path = key ? `${key}.${path}` : `${index}.${path}`;
+          node = node.parentNode;
+        }
+
+        dispatch(event, path, event.type, immediate);
       });
       break;
   }

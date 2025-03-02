@@ -1,14 +1,13 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { Ok, Error, NonEmpty, isEqual } from "./gleam.mjs";
+import { Ok, Error, isEqual } from "./gleam.mjs";
 import { Some } from "../gleam_stdlib/gleam/option.mjs";
 
+import * as Diff from "./lustre/vdom/diff.mjs";
+import * as Events from "./lustre/vdom/events.mjs";
+import adoptStylesheets from "./adopt_stylesheets.mjs";
 import { ElementNotFound, NotABrowser } from "./lustre.mjs";
 import { LustreReconciler } from "./reconciler.ffi.mjs";
-import adoptStylesheets from "./adopt_stylesheets.mjs";
-import * as Events from "./lustre/internals/events.mjs";
-import { Dispatch } from "./lustre/internals/runtime.mjs";
-import * as Vdom from "./lustre/runtime/vdom.mjs";
 
 // UTILS -----------------------------------------------------------------------
 
@@ -56,17 +55,15 @@ export class LustreSPA {
   #runtime;
 
   constructor(root, [init, effects], update, view) {
-    this.#runtime = new LustreClientRuntime(root, [init, effects], view, update);
+    this.#runtime = new LustreClientRuntime(
+      root,
+      [init, effects],
+      view,
+      update,
+    );
   }
 
-  send(action) {
-    switch (action.constructor) {
-      case Dispatch: {
-        this.#runtime.dispatch(action[0], action[1]);
-        break;
-      }
-    }
-  }
+  send(action) {}
 }
 
 export const start = LustreSPA.start;
@@ -107,21 +104,19 @@ export const make_lustre_client_component = (
       }
       this.#adoptStyleSheets();
 
-      this.#runtime = new LustreClientRuntime(this.shadowRoot, [model, effects], view, update);
+      this.#runtime = new LustreClientRuntime(
+        this.shadowRoot,
+        [model, effects],
+        view,
+        update,
+      );
     }
 
     adoptedCallback() {
       this.#adoptStyleSheets();
     }
 
-    send(action) {
-      switch (action.constructor) {
-        case Dispatch: {
-          this.#runtime.dispatch(action[0], action[1]);
-          break;
-        }
-      }
-    }
+    send(action) {}
 
     async #adoptStyleSheets() {
       while (this.#adoptedStyleNodes.length) {
@@ -184,12 +179,16 @@ class LustreClientRuntime {
     this.#update = update;
 
     this.#vdom = this.#view(this.#model);
-    this.#events = Vdom.init(this.#vdom);
+    this.#events = Events.add_child(Events.new$(), (msg) => msg, 0, this.#vdom);
 
-    this.#reconciler = new LustreReconciler(this.#root, (event, id, immediate) =>
-      this.#handleEvent(event, id, immediate));
+    this.#reconciler = new LustreReconciler(
+      this.#root,
+      (event, id, immediate) => {
+        this.#handleEvent(event, id, immediate);
+      },
+    );
 
-    this.#reconciler.mount(this.#vdom, this.#events);
+    this.#reconciler.mount(this.#vdom);
     this.#tick(effects.all, false);
   }
 
@@ -200,8 +199,9 @@ class LustreClientRuntime {
     this.#tick(effects.all, immediate);
   }
 
-  #handleEvent(event, id, immediate) {
-    const msg = Events.run(this.#events, id, event);
+  #handleEvent(event, path, name, immediate) {
+    const msg = Events.handle(this.#events, path, name, event);
+
     if (msg.isOk()) {
       this.dispatch(msg[0], immediate);
     }
@@ -215,7 +215,7 @@ class LustreClientRuntime {
       emit: (event, data) => this.#emit(event, data),
       dispatch: (msg) => queue.push(msg),
       select: () => {},
-    }
+    };
 
     while (true) {
       for (let effect = effects; effect.tail; effect = effect.tail) {
@@ -237,7 +237,12 @@ class LustreClientRuntime {
     this.#viewTimer = null;
 
     const next = this.#view(this.#model);
-    const { patch, events } = Vdom.diff(this.initialNodeOffset, this.#vdom, next, this.#events);
+    const { patch, events } = Diff.diff(
+      this.#vdom,
+      next,
+      this.#events,
+      this.initialNodeOffset,
+    );
     this.#events = events;
     this.#vdom = next;
 
@@ -250,8 +255,8 @@ class LustreClientRuntime {
       new CustomEvent(event, {
         detail: data,
         bubbles: true,
-        composed: true
-      })
+        composed: true,
+      }),
     );
   }
 }

@@ -40,6 +40,9 @@ pub const empty_list = []
 /// construct them once in FFI and have this function return a reference to the
 /// empty dict.
 ///
+/// In erlang this optimisation is performed automatically thanks to the literal
+/// pool.
+///
 @external(javascript, "./constants.ffi.mjs", "empty_dict")
 pub fn empty_dict() -> Dict(k, v) {
   dict.new()
@@ -49,6 +52,9 @@ pub fn empty_dict() -> Dict(k, v) {
 /// are needed ends up having a notable performance impact. To mitigate this, we
 /// construct them once in FFI and have this function return a reference to the
 /// empty set.
+///
+/// In erlang this optimisation is performed automatically thanks to the literal
+/// pool.
 ///
 @external(javascript, "./constants.ffi.mjs", "empty_set")
 pub fn empty_set() -> Set(a) {
