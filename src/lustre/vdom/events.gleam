@@ -2,9 +2,11 @@
 
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type DecodeError, type Decoder}
+import gleam/int
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
+import gleam/string
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/attribute.{type Attribute, Event}
 import lustre/vdom/node.{type Node, Element, Fragment, Text}
@@ -17,8 +19,7 @@ pub type Events(msg) {
   Events(
     handlers: MutableMap(String, Decoder(msg)),
     mapper: fn(Dynamic) -> Dynamic,
-    children: MutableMap(Int, Events(msg)),
-    keyed_children: MutableMap(String, Events(msg)),
+    children: MutableMap(String, Events(msg)),
   )
 }
 
@@ -27,12 +28,7 @@ pub type Events(msg) {
 ///
 ///
 pub fn new(mapper: fn(Dynamic) -> Dynamic) -> Events(msg) {
-  Events(
-    handlers: mutable_map.new(),
-    mapper:,
-    children: mutable_map.new(),
-    keyed_children: mutable_map.new(),
-  )
+  Events(handlers: mutable_map.new(), mapper:, children: mutable_map.new())
 }
 
 ///
@@ -41,12 +37,7 @@ pub fn from_handlers(
   mapper: fn(Dynamic) -> Dynamic,
   handlers: MutableMap(String, Decoder(msg)),
 ) -> Events(msg) {
-  Events(
-    handlers:,
-    mapper:,
-    children: mutable_map.new(),
-    keyed_children: mutable_map.new(),
-  )
+  Events(handlers:, mapper:, children: mutable_map.new())
 }
 
 fn attributes_to_handlers(
@@ -55,13 +46,7 @@ fn attributes_to_handlers(
   handlers: MutableMap(String, Decoder(msg)),
 ) -> Events(msg) {
   case attributes {
-    [] ->
-      Events(
-        handlers:,
-        mapper:,
-        children: mutable_map.new(),
-        keyed_children: mutable_map.new(),
-      )
+    [] -> Events(handlers:, mapper:, children: mutable_map.new())
 
     [Event(..) as event, ..rest] ->
       handlers
@@ -91,7 +76,10 @@ pub fn add_child_events(
   index: Int,
   child: Events(msg),
 ) -> Events(msg) {
-  Events(..parent, children: mutable_map.insert(parent.children, index, child))
+  Events(
+    ..parent,
+    children: mutable_map.insert(parent.children, int.to_string(index), child),
+  )
 }
 
 pub fn add_keyed_child_events(
@@ -99,10 +87,7 @@ pub fn add_keyed_child_events(
   key: String,
   child: Events(msg),
 ) -> Events(msg) {
-  Events(
-    ..parent,
-    keyed_children: mutable_map.insert(parent.keyed_children, key, child),
-  )
+  Events(..parent, children: mutable_map.insert(parent.children, key, child))
 }
 
 ///
@@ -125,23 +110,17 @@ pub fn add_child(
         |> attributes_to_handlers(composed_mapper, parent.handlers)
         |> add_children(composed_mapper, index, children)
 
-      case key {
-        "" ->
-          Events(
-            ..parent,
-            children: mutable_map.insert(parent.children, index, child_events),
-          )
-
-        key ->
-          Events(
-            ..parent,
-            keyed_children: mutable_map.insert(
-              parent.keyed_children,
-              key,
-              child_events,
-            ),
-          )
-      }
+      Events(
+        ..parent,
+        children: mutable_map.insert(
+          parent.children,
+          case key {
+            "" -> int.to_string(index)
+            key -> key
+          },
+          child_events,
+        ),
+      )
     }
 
     Fragment(children:, ..) -> {
@@ -188,7 +167,18 @@ pub fn add_children(
 ///
 pub fn handle(
   events: Events(msg),
-  path: List(Dynamic),
+  path: String,
+  name: String,
+  event: Dynamic,
+) -> Result(msg, List(DecodeError)) {
+  path
+  |> string.split(".")
+  |> do_handle(events, _, name, event)
+}
+
+fn do_handle(
+  events: Events(msg),
+  path: List(String),
   name: String,
   event: Dynamic,
 ) -> Result(msg, List(DecodeError)) {
@@ -202,23 +192,10 @@ pub fn handle(
         Error(_) -> Error([])
       }
 
-    [index_or_key, ..path] ->
-      case decode.run(index_or_key, decode.int) {
-        Ok(index) ->
-          case mutable_map.get(events.children, index) {
-            Ok(child) -> handle(child, path, name, event)
-            Error(_) -> Error([])
-          }
-
-        Error(_) ->
-          case decode.run(index_or_key, decode.string) {
-            Ok(key) ->
-              case mutable_map.get(events.keyed_children, key) {
-                Ok(child) -> handle(child, path, name, event)
-                Error(_) -> Error([])
-              }
-            Error(_) -> Error([])
-          }
+    [key, ..path] ->
+      case mutable_map.get(events.children, key) {
+        Ok(child) -> do_handle(child, path, name, event)
+        Error(_) -> Error([])
       }
   }
 }
@@ -230,7 +207,5 @@ fn coerce(a: a) -> b
 ///
 ///
 pub fn is_empty(events: Events(msg)) -> Bool {
-  mutable_map.is_empty(events.handlers)
-  && mutable_map.is_empty(events.children)
-  && mutable_map.is_empty(events.keyed_children)
+  mutable_map.is_empty(events.handlers) && mutable_map.is_empty(events.children)
 }

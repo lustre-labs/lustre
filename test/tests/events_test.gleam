@@ -23,7 +23,7 @@ pub fn single_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = [dynamic.from(0)]
+  let path = "0"
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -41,7 +41,7 @@ pub fn single_nested_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = [dynamic.from(0), dynamic.from(0)]
+  let path = "0.0"
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -60,7 +60,7 @@ pub fn single_nested_keyed_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = [dynamic.from(0), dynamic.from("b")]
+  let path = "0.b"
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -80,7 +80,7 @@ pub fn fragment_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = [dynamic.from(0)]
+  let path = "0"
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -100,7 +100,7 @@ pub fn nested_fragment_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = [dynamic.from(0), dynamic.from(0)]
+  let path = "0.0"
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -121,7 +121,7 @@ pub fn single_mapped_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = [dynamic.from(0)]
+  let path = "0"
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("HELLO!"))
@@ -143,7 +143,7 @@ pub fn multiple_mapped_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = [dynamic.from(0)]
+  let path = "0"
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("HELLO!!"))
@@ -159,7 +159,7 @@ pub fn event_added_test() {
 
   let events = diff.diff(prev, next, 0).events
 
-  let path = [dynamic.from(0)]
+  let path = "0"
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -173,7 +173,7 @@ pub fn event_removed_test() {
 
   let events = diff.diff(prev, next, 0).events
 
-  let path = [dynamic.from(0)]
+  let path = "0"
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Error([]))
@@ -191,7 +191,7 @@ pub fn element_added_test() {
 
   let events = diff.diff(prev, next, 0).events
 
-  let path = [dynamic.from(0), dynamic.from("b")]
+  let path = "0.b"
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -209,7 +209,7 @@ pub fn element_removed_test() {
 
   let events = diff.diff(prev, next, 0).events
 
-  let path = [dynamic.from(0), dynamic.from("b")]
+  let path = "0.b"
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Error([]))
@@ -232,7 +232,7 @@ pub fn element_replaced_test() {
 
   let events = diff.diff(prev, next, 0).events
 
-  let path = [dynamic.from(0), dynamic.from("b")]
+  let path = "0.b"
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))

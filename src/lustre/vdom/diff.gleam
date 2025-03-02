@@ -2,14 +2,12 @@
 
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
-import gleam/dynamic/decode.{type Decoder}
 import gleam/function
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/order.{Eq, Gt, Lt}
 import gleam/set.{type Set}
 import lustre/internals/constants
-import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/attribute.{type Attribute, Attribute, Event, Property}
 import lustre/vdom/events.{type Events}
 import lustre/vdom/node.{type Node, Element, Fragment, Text}
