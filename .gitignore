@@ -3,8 +3,5 @@
 build
 erl_crash.dump
 
-.vscode
-
-node_modules
-
-*.0x
+examples/*/priv/static
+test/apps/*/priv/static
