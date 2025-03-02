@@ -6,7 +6,7 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/string
 import lustre/internals/constants
-import lustre/runtime/vdom.{Attribute, Event, Property}
+import lustre/vdom/attribute.{Attribute, Event, Property}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -14,7 +14,7 @@ import lustre/runtime/vdom.{Attribute, Event, Property}
 /// event listeners.
 ///
 pub type Attribute(msg) =
-  vdom.Attribute(msg)
+  attribute.Attribute(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 

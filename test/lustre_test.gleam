@@ -1,8 +1,8 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import argv
+import benchmarks/diff_benchmark
 import gleeunit
-import lustre/diff_benchmark
 
 // MAIN ------------------------------------------------------------------------
 

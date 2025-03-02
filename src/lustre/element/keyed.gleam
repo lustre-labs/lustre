@@ -2,10 +2,11 @@
 
 import gleam/dict.{type Dict}
 import gleam/list
-import lustre/attribute.{type Attribute}
+import lustre/attribute.{type Attribute} as _
 import lustre/element.{type Element}
 import lustre/internals/constants
-import lustre/runtime/vdom.{Fragment, Node, Text}
+import lustre/vdom/attribute
+import lustre/vdom/node.{Element, Fragment, Text}
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -46,12 +47,12 @@ pub fn element(
 ) -> Element(msg) {
   let #(keyed_children, children, _) = extract_keyed_children(children)
 
-  Node(
+  Element(
     key: "",
     namespace: "",
     tag:,
     mapper: constants.option_none,
-    attributes: vdom.prepare_attributes(attributes),
+    attributes: attribute.prepare(attributes),
     children:,
     keyed_children:,
     self_closing: False,
@@ -67,12 +68,12 @@ pub fn namespaced(
 ) -> Element(msg) {
   let #(keyed_children, children, _) = extract_keyed_children(children)
 
-  Node(
+  Element(
     key: "",
     mapper: constants.option_none,
     namespace:,
     tag:,
-    attributes: vdom.prepare_attributes(attributes),
+    attributes: attribute.prepare(attributes),
     children:,
     keyed_children:,
     self_closing: False,
@@ -160,7 +161,7 @@ fn extract_keyed_children(
 fn key_element(key: String, element: Element(msg)) -> Element(msg) {
   case element {
     Fragment(..) -> Fragment(..element, key:)
-    Node(..) -> Node(..element, key:)
+    Element(..) -> Element(..element, key:)
     Text(..) -> Text(..element, key:)
   }
 }

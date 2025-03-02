@@ -20,7 +20,7 @@ pub fn escape(text: String) -> String {
 }
 
 @target(erlang)
-@external(erlang, "lustre_escape_ffi", "coerce")
+@external(erlang, "gleam@function", "identity")
 fn coerce(bit_array: BitArray) -> String
 
 // A possible way to escape chars would be to split the string into graphemes,
@@ -280,13 +280,13 @@ fn do_escape(
 }
 
 @target(javascript)
-@external(javascript, "../../lustre-escape.ffi.mjs", "first")
+@external(javascript, "./escape.ffi.mjs", "first")
 fn first(_string: String) -> String
 
 @target(javascript)
-@external(javascript, "../../lustre-escape.ffi.mjs", "drop_first")
+@external(javascript, "./escape.ffi.mjs", "drop_first")
 fn drop_first(_string: String) -> String
 
 @target(javascript)
-@external(javascript, "../../lustre-escape.ffi.mjs", "slice")
+@external(javascript, "./escape.ffi.mjs", "slice")
 fn slice(_string: String, _from: Int, _to: Int) -> String
