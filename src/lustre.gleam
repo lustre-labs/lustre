@@ -202,15 +202,7 @@ pub opaque type App(flags, model, msg) {
     init: fn(flags) -> #(model, Effect(msg)),
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
-    // The `dict.mjs` module in the standard library is huge (20+kb!). For folks
-    // that don't ever build components and don't use a dictionary in any of their
-    // code we'd rather not thrust that increase in bundle size on them just to
-    // call `dict.new()`.
-    //
-    // Using `Option` here at least lets us say `None` for the empty case in the
-    // `application` constructor.
-    //
-    on_attribute_change: Option(Dict(String, Decoder(msg))),
+    on_attribute_change: Dict(String, Decoder(msg)),
   )
 }
 
@@ -327,7 +319,7 @@ pub fn application(
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
 ) -> App(flags, model, msg) {
-  App(init, update, view, None)
+  App(init, update, view, constants.empty_dict())
 }
 
 /// A `component` is a type of Lustre application designed to be embedded within
@@ -354,7 +346,7 @@ pub fn component(
   view: fn(model) -> Element(msg),
   on_attribute_change: Dict(String, Decoder(msg)),
 ) -> App(flags, model, msg) {
-  App(init, update, view, Some(on_attribute_change))
+  App(init, update, view, on_attribute_change)
 }
 
 // EFFECTS ---------------------------------------------------------------------
@@ -377,10 +369,11 @@ pub fn start(
   with flags: flags,
 ) -> Result(fn(Action(msg, ClientSpa)) -> Nil, Error) {
   use <- bool.guard(!is_browser(), Error(NotABrowser))
+
   do_start(app, selector, flags)
 }
 
-@external(javascript, "./runtime.ffi.mjs", "start")
+@external(javascript, "./lustre/runtime/spa.ffi.mjs", "start")
 fn do_start(
   _app: App(flags, model, msg),
   _selector: String,
@@ -472,7 +465,7 @@ fn do_start_actor(
 /// you can render a Lustre server component using [`start_server_component`](#start_server_component)
 /// or [`start_actor`](#start_actor) instead.
 ///
-@external(javascript, "./runtime.ffi.mjs", "make_lustre_client_component")
+@external(javascript, "./lustre/runtime/component.ffi.mjs", "make_component")
 pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error) {
   Error(NotABrowser)
 }
@@ -511,7 +504,7 @@ pub fn shutdown() -> Action(msg, runtime) {
 /// backend because you'll want to know whether you're currently running on your
 /// server or in the browser: this function tells you that!
 ///
-@external(javascript, "./runtime.ffi.mjs", "is_browser")
+@external(javascript, "./lustre/runtime/core.ffi.mjs", "is_browser")
 pub fn is_browser() -> Bool {
   False
 }
@@ -520,7 +513,7 @@ pub fn is_browser() -> Bool {
 /// Element. This is particularly useful in contexts where _other web components_
 /// may have been registered and you must avoid collisions.
 ///
-@external(javascript, "./runtime.ffi.mjs", "is_registered")
+@external(javascript, "./lustre/runtime/core.ffi.mjs", "is_registered")
 pub fn is_registered(_name: String) -> Bool {
   False
 }

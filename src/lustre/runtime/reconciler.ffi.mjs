@@ -1,5 +1,5 @@
-import { Element, Text, Fragment } from "./lustre/vdom/node.mjs";
-import { Attribute, Property, Event } from "./lustre/vdom/attribute.mjs";
+import { Element, Text, Fragment } from "../vdom/node.mjs";
+import { Attribute, Property, Event } from "../vdom/attribute.mjs";
 import {
   InsertMany,
   Insert,
@@ -9,11 +9,11 @@ import {
   Replace,
   ReplaceText,
   Update,
-} from "./lustre/vdom/diff.mjs";
+} from "../vdom/diff.mjs";
 
 const meta = Symbol("metadata");
 
-export class LustreReconciler {
+export class Reconciler {
   #root = null;
   #dispatch = () => {};
   #stack = [];
