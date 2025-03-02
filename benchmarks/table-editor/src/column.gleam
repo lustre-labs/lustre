@@ -166,7 +166,7 @@ pub fn column(column column: Column) -> Element(OutMsg) {
     component_tag,
     [
       attribute.property("column", encode(column)),
-      event.on("change", {
+      event.on("column:update", {
         use column <- decode.field("detail", decoder())
         decode.success(Changed(column))
       }),
@@ -213,7 +213,7 @@ fn update(column: Column, msg: Msg) -> #(Column, effect.Effect(Msg)) {
 }
 
 fn send(column: Column) -> #(Column, Effect(Msg)) {
-  #(column, event.emit("change", encode(column)))
+  #(column, event.emit("column:update", encode(column)))
 }
 
 // -- VIEW ---------------------------------------------------------------------
