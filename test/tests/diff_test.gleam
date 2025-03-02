@@ -1,6 +1,5 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/function
 import gleeunit/should
 import lustre/attribute.{attribute}
 import lustre/element
@@ -10,7 +9,6 @@ import lustre/vdom/diff.{
   Insert, InsertMany, Move, Patch, Remove, RemoveKey, Replace, ReplaceText,
   Update,
 }
-import lustre/vdom/events
 import lustre/vdom/node
 import lustre_test
 
