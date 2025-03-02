@@ -13,12 +13,20 @@ import lustre/vdom/node.{type Node, Element, Fragment, Text}
 
 // TYPES -----------------------------------------------------------------------
 
-///
+/// A tree of event handlers.
 ///
 pub type Events(msg) {
   Events(
-    handlers: MutableMap(String, Decoder(msg)),
+    // It's possible for all events in a sub-tree to have the messages they
+    // produced be mapped by some function. A naive implementation would require
+    // a walk of the vdom to apply the mapping function to each decoder.
+    //
+    // Instead, we store the mapping function in the events tree itself and only
+    // apply it when the event is handled.
     mapper: fn(Dynamic) -> Dynamic,
+    // 🚨 Because of the `mapper` shenanigans above, the `msg`type parameter is
+    // a lie until we actually handle an event!
+    handlers: MutableMap(String, Decoder(msg)),
     children: MutableMap(String, Events(msg)),
   )
 }
