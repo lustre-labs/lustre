@@ -406,14 +406,14 @@ fn do_start(
 /// **Note**: Users running their application on the BEAM should use [`start_actor`](#start_actor)
 /// instead to make use of Gleam's OTP abstractions.
 ///
-@external(javascript, "./lustre.ffi.mjs", "start_server_application")
-pub fn start_server_component(
-  app: App(flags, model, msg),
-  with flags: flags,
-) -> Result(fn(Action(msg, ServerComponent)) -> Nil, Error) {
-  use runtime <- result.map(start_actor(app, flags))
-  actor.send(runtime, _)
-}
+// @external(javascript, "./lustre.ffi.mjs", "start_server_application")
+// pub fn start_server_component(
+//   app: App(flags, model, msg),
+//   with flags: flags,
+// ) -> Result(fn(Action(msg, ServerComponent)) -> Nil, Error) {
+//   use runtime <- result.map(start_actor(app, flags))
+//   actor.send(runtime, _)
+// }
 
 /// Start an application as a server component specifically for the Erlang target.
 /// Instead of receiving a callback on successful start, this function returns
@@ -520,7 +520,7 @@ pub fn is_browser() -> Bool {
 /// Element. This is particularly useful in contexts where _other web components_
 /// may have been registered and you must avoid collisions.
 ///
-@external(javascript, "./lustre.ffi.mjs", "is_registered")
+@external(javascript, "./runtime.ffi.mjs", "is_registered")
 pub fn is_registered(_name: String) -> Bool {
   False
 }
