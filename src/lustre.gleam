@@ -373,7 +373,7 @@ pub fn start(
   do_start(app, selector, flags)
 }
 
-@external(javascript, "./lustre/runtime/spa.ffi.mjs", "start")
+@external(javascript, "./lustre/runtime/client/spa.ffi.mjs", "start")
 fn do_start(
   _app: App(flags, model, msg),
   _selector: String,
@@ -465,7 +465,7 @@ fn do_start_actor(
 /// you can render a Lustre server component using [`start_server_component`](#start_server_component)
 /// or [`start_actor`](#start_actor) instead.
 ///
-@external(javascript, "./lustre/runtime/component.ffi.mjs", "make_component")
+@external(javascript, "./lustre/runtime/client/component.ffi.mjs", "make_component")
 pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error) {
   Error(NotABrowser)
 }
@@ -504,7 +504,7 @@ pub fn shutdown() -> Action(msg, runtime) {
 /// backend because you'll want to know whether you're currently running on your
 /// server or in the browser: this function tells you that!
 ///
-@external(javascript, "./lustre/runtime/core.ffi.mjs", "is_browser")
+@external(javascript, "./lustre/runtime/client/core.ffi.mjs", "is_browser")
 pub fn is_browser() -> Bool {
   False
 }
@@ -513,7 +513,7 @@ pub fn is_browser() -> Bool {
 /// Element. This is particularly useful in contexts where _other web components_
 /// may have been registered and you must avoid collisions.
 ///
-@external(javascript, "./lustre/runtime/core.ffi.mjs", "is_registered")
+@external(javascript, "./lustre/runtime/client/core.ffi.mjs", "is_registered")
 pub fn is_registered(_name: String) -> Bool {
   False
 }

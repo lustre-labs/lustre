@@ -1,5 +1,5 @@
-import { Element, Text, Fragment } from "../vdom/node.mjs";
-import { Attribute, Property, Event } from "../vdom/attribute.mjs";
+import { Element, Text, Fragment } from "../../vdom/node.mjs";
+import { Attribute, Property, Event } from "../../vdom/attribute.mjs";
 import {
   InsertMany,
   Insert,
@@ -9,7 +9,7 @@ import {
   Replace,
   ReplaceText,
   Update,
-} from "../vdom/diff.mjs";
+} from "../../vdom/diff.mjs";
 
 const meta = Symbol("metadata");
 
@@ -18,7 +18,7 @@ export class Reconciler {
   #dispatch = () => {};
   #stack = [];
 
-  constructor(root, dispatch, { useServerEvents = false } = {}) {
+  constructor(root, dispatch) {
     this.#root = root;
     this.#dispatch = dispatch;
   }
@@ -302,7 +302,6 @@ function createAttribute(node, attribute, dispatch, root) {
         if (stop) event.stopPropagation();
 
         let node = event.target;
-        
         let path =
           node[meta].key ||
           [].indexOf.call(node.parentNode.childNodes, node).toString();
@@ -311,11 +310,12 @@ function createAttribute(node, attribute, dispatch, root) {
 
         while (node !== root) {
           const key = node[meta].key;
+
           if (key) {
-            path = `${key}.${path}`
+            path = `${key}.${path}`;
           } else {
             const index = [].indexOf.call(node.parentNode.childNodes, node);
-            path = `${index}.${path}`
+            path = `${index}.${path}`;
           }
 
           node = node.parentNode;
