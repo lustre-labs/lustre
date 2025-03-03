@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { diff } from "../vdom/diff.mjs";
-import * as Events from "../vdom/events.mjs";
+import { diff } from "../../vdom/diff.mjs";
+import * as Events from "../../vdom/events.mjs";
 import { Reconciler } from "./reconciler.ffi.mjs";
 
 //
@@ -54,9 +54,16 @@ export class Runtime {
     this.#vdom = this.#view(this.#model);
     this.#events = Events.add_child(Events.new$(), (msg) => msg, 0, this.#vdom);
 
-    this.#reconciler = new Reconciler(this.#root, (event, id, immediate) => {
-      this.#handleEvent(event, id, immediate);
-    });
+    this.#reconciler = new Reconciler(
+      this.#root,
+      (event, path, name, immediate) => {
+        const msg = Events.handle(this.#events, path, name, event);
+
+        if (msg.isOk()) {
+          this.dispatch(msg[0], immediate);
+        }
+      },
+    );
 
     this.#reconciler.mount(this.#vdom);
     this.#tick(effects.all, false);
@@ -67,14 +74,6 @@ export class Runtime {
 
     this.#model = model;
     this.#tick(effects.all, immediate);
-  }
-
-  #handleEvent(event, path, name, immediate) {
-    const msg = Events.handle(this.#events, path, name, event);
-
-    if (msg.isOk()) {
-      this.dispatch(msg[0], immediate);
-    }
   }
 
   #tick(effects, immediate = false) {
@@ -115,7 +114,6 @@ export class Runtime {
     );
     this.#events = events;
     this.#vdom = next;
-
     this.#reconciler.push(patch, this.#events);
   }
 
