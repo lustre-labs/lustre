@@ -7,7 +7,7 @@ import gleam/order.{type Order}
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/internals/constants
-import lustre/vdom/escape.{escape}
+import lustre/internals/escape.{escape}
 
 // TYPES -----------------------------------------------------------------------
 

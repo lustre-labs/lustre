@@ -302,17 +302,22 @@ function createAttribute(node, attribute, dispatch, root) {
         if (stop) event.stopPropagation();
 
         let node = event.target;
+        
         let path =
           node[meta].key ||
-          Array.from(node.parentNode.childNodes).indexOf(node);
+          [].indexOf.call(node.parentNode.childNodes, node).toString();
 
         node = node.parentNode;
 
         while (node !== root) {
           const key = node[meta].key;
-          const index = Array.from(node.parentNode.childNodes).indexOf(node);
+          if (key) {
+            path = `${key}.${path}`
+          } else {
+            const index = [].indexOf.call(node.parentNode.childNodes, node);
+            path = `${index}.${path}`
+          }
 
-          path = key ? `${key}.${path}` : `${index}.${path}`;
           node = node.parentNode;
         }
 

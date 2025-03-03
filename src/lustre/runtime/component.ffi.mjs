@@ -7,6 +7,7 @@ import {
   BadComponentName,
   ComponentAlreadyRegistered,
   NotABrowser,
+  is_browser,
 } from "../../lustre.mjs";
 import { Runtime, adoptStylesheets } from "./core.ffi.mjs";
 
@@ -59,6 +60,10 @@ export const make_component = (
 
     send(action) {}
 
+    dispatch(msg, immediate = false) {
+      this.#runtime.dispatch(msg, immediate)
+    }
+
     async #adoptStyleSheets() {
       while (this.#adoptedStyleNodes.length) {
         this.#adoptedStyleNodes.pop().remove();
@@ -84,7 +89,7 @@ export const make_component = (
         const decoded = decode(value, decoder);
 
         if (decoded.constructor === Ok) {
-          this.send(new Dispatch(decoded[0]));
+          this.dispatch(decoded[0]);
         }
       },
     });

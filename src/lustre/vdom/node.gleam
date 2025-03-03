@@ -7,8 +7,8 @@ import gleam/option.{type Option}
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/internals/constants
+import lustre/internals/escape.{escape}
 import lustre/vdom/attribute.{type Attribute, Attribute}
-import lustre/vdom/escape.{escape}
 
 // TYPES -----------------------------------------------------------------------
 
