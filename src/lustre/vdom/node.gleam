@@ -99,7 +99,7 @@ pub fn count_fragment_children(children: List(Node(msg)), count: Int) -> Int {
   }
 }
 
-// CONVERSIONS -----------------------------------------------------------------
+// STRING RENDERING ------------------------------------------------------------
 
 pub fn to_string(node: Node(msg)) -> String {
   node

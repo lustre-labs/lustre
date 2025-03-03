@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { Ok, Error } from "../../gleam.mjs";
-import { ElementNotFound, NotABrowser } from "../../lustre.mjs";
+import { Ok, Error } from "../../../gleam.mjs";
+import { ElementNotFound, NotABrowser } from "../../../lustre.mjs";
 import { is_browser, Runtime } from "./core.ffi.mjs";
 
 //

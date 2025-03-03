@@ -71,7 +71,7 @@ pub fn compare(a: Attribute(msg), b: Attribute(msg)) -> Order {
   string.compare(a.name, b.name)
 }
 
-// CONVERSIONS -----------------------------------------------------------------
+// STRING RENDERING ------------------------------------------------------------
 
 pub fn to_string_tree(attributes: List(Attribute(msg))) -> #(StringTree, String) {
   let #(html, class, style, inner_html) = {

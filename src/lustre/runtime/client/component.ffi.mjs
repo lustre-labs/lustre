@@ -1,14 +1,14 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { Ok, Error, isEqual } from "../../gleam.mjs";
-import { run as decode } from "../../../gleam_stdlib/gleam/dynamic/decode.mjs";
+import { Ok, Error, isEqual } from "../../../gleam.mjs";
+import { run as decode } from "../../../../gleam_stdlib/gleam/dynamic/decode.mjs";
 
 import {
   BadComponentName,
   ComponentAlreadyRegistered,
   NotABrowser,
   is_browser,
-} from "../../lustre.mjs";
+} from "../../../lustre.mjs";
 import { Runtime, adoptStylesheets } from "./core.ffi.mjs";
 
 //
@@ -38,8 +38,8 @@ export const make_component = (
 
     constructor() {
       super();
-      this.internals = this.attachInternals();
       // a shadow root may have already been constructed through declarative
+      this.internals = this.attachInternals();
       // shadow root elements.
       if (!this.shadowRoot) {
         this.attachShadow({ mode: "open" });
@@ -61,7 +61,7 @@ export const make_component = (
     send(action) {}
 
     dispatch(msg, immediate = false) {
-      this.#runtime.dispatch(msg, immediate)
+      this.#runtime.dispatch(msg, immediate);
     }
 
     async #adoptStyleSheets() {
