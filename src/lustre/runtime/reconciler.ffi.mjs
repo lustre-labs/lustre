@@ -131,7 +131,7 @@ function insertMany(node, children, before, dispatch, root) {
     fragment.appendChild(el);
   }
 
-  node.insertBefore(fragment, node.childNodes[before]);
+  node.insertBefore(fragment, node.childNodes[before] ?? null);
 }
 
 function insert(node, child, before, dispatch, root) {
@@ -141,7 +141,7 @@ function insert(node, child, before, dispatch, root) {
     node[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
   }
 
-  node.insertBefore(el, node.childNodes[before]);
+  node.insertBefore(el, node.childNodes[before] ?? null);
 }
 
 function move(node, key, before, count) {
@@ -159,7 +159,7 @@ function move(node, key, before, count) {
     el = fragment;
   }
 
-  node.insertBefore(el, node.childNodes[before]);
+  node.insertBefore(el, node.childNodes[before] ?? null);
 }
 
 function removeKey(node, key, count) {
