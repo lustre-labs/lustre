@@ -267,7 +267,7 @@ Now we are introducing side effects, we need to graduate from `lustre.simple` to
 the more powerful `lustre.application` constructor.
 
 ```gleam
-import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/int
 import gleam/list
 import lustre
@@ -353,13 +353,12 @@ pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
 }
 
 fn get_cat() -> effect.Effect(Msg) {
-  let decoder =
-    dynamic.decode2(
-      Cat,
-      dynamic.field("id", dynamic.string),
-      dynamic.field("url", dynamic.string),
-    )
-  let expect = lustre_http.expect_json(dynamic.list(decoder), ApiReturnedCats)
+  let decoder = {
+    use id <- decode.field("id", decode.string)
+    use url <- decode.field("url", decode.string)
+    decode.success(Cat(id:, url:))
+  }
+  let expect = lustre_http.expect_json(decode.list(decoder), ApiReturnedCats)
 
   lustre_http.get("https://api.thecatapi.com/v1/images/search", expect)
 }
