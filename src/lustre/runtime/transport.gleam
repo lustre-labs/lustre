@@ -1,5 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import lustre/vdom/attribute.{type Attribute, Attribute, Event, Property}
 import lustre/vdom/diff.{
@@ -8,7 +10,106 @@ import lustre/vdom/diff.{
 }
 import lustre/vdom/node.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
 
+// TYPES -----------------------------------------------------------------------
+
+pub type ClientMessage(msg) {
+  Mount(vdom: Node(msg))
+  Reconcile(patch: Patch(msg))
+  Emit(name: String, data: Json)
+}
+
+pub type ServerMessage {
+  AttributesChanged(attributes: List(#(String, Dynamic)))
+  EventFired(path: String, name: String, event: Dynamic)
+}
+
+// DECODERS --------------------------------------------------------------------
+// SERVER MESSAGE DECODERS -----------------------------------------------------
+
+pub fn server_message_decoder() -> Decoder(ServerMessage) {
+  use tag <- decode.field(0, decode.int)
+
+  case tag {
+    _ if tag == attributes_changed_variant -> attributes_changed_decoder()
+    _ if tag == event_fired_variant -> event_fired_decoder()
+    _ -> decode.failure(AttributesChanged([]), "")
+  }
+}
+
+fn attributes_changed_decoder() -> Decoder(ServerMessage) {
+  use changed <- decode.field(
+    attributes_changed_attributes,
+    decode.list({
+      use name <- decode.field(0, decode.string)
+      use value <- decode.field(1, decode.dynamic)
+
+      decode.success(#(name, value))
+    }),
+  )
+
+  decode.success(AttributesChanged(changed))
+}
+
+fn event_fired_decoder() -> Decoder(ServerMessage) {
+  use path <- decode.field(event_fired_path, decode.string)
+  use name <- decode.field(event_fired_name, decode.string)
+  use event <- decode.field(event_fired_event, decode.dynamic)
+
+  decode.success(EventFired(path, name, event))
+}
+
 // ENCODERS --------------------------------------------------------------------
+// CLIENT MESSAGE ENCODERS -----------------------------------------------------
+
+pub fn client_message_to_json(message: ClientMessage(msg)) -> Json {
+  case message {
+    Mount(vdom:) -> mount_to_json(vdom)
+    Reconcile(patch:) -> reconcile_to_json(patch)
+    Emit(name:, data:) -> emit_to_json(name, data)
+  }
+}
+
+pub const mount_variant: Int = 0
+
+pub const mount_vdom: Int = 1
+
+fn mount_to_json(vdom: Node(msg)) -> Json {
+  json.preprocessed_array([json.int(mount_variant), node_to_json(vdom)])
+}
+
+pub const reconcile_variant: Int = 1
+
+pub const reconcile_patch: Int = 1
+
+fn reconcile_to_json(patch: Patch(msg)) -> Json {
+  json.preprocessed_array([json.int(reconcile_variant), patch_to_json(patch)])
+}
+
+pub const emit_variant: Int = 2
+
+pub const emit_name: Int = 1
+
+pub const emit_data: Int = 2
+
+fn emit_to_json(name: String, data: Json) -> Json {
+  json.preprocessed_array([json.int(emit_variant), json.string(name), data])
+}
+
+// SERVER MESSAGE ENCODERS -----------------------------------------------------
+
+pub const attributes_changed_variant: Int = 0
+
+pub const attributes_changed_attributes: Int = 1
+
+pub const event_fired_variant: Int = 1
+
+pub const event_fired_path: Int = 1
+
+pub const event_fired_name: Int = 2
+
+pub const event_fired_event: Int = 3
+
+// NODE ENCODERS ---------------------------------------------------------------
 
 pub fn node_to_json(node: Node(msg)) -> Json {
   case node {
@@ -101,6 +202,8 @@ fn text_to_json(key: String, content: String) -> Json {
   ])
 }
 
+// ATTRIBUTE ENCODERS ----------------------------------------------------------
+
 pub fn attribute_to_json(attribute: Attribute(msg)) -> Json {
   case attribute {
     Attribute(name:, value:) -> attribute_variant_to_json(name, value)
@@ -163,6 +266,8 @@ fn event_to_json(
   ])
 }
 
+// PATCH ENCODERS --------------------------------------------------------------
+
 pub const patch_index: Int = 0
 
 pub const patch_removed: Int = 1
@@ -179,6 +284,8 @@ pub fn patch_to_json(patch: Patch(msg)) -> Json {
     json.array(patch.children, patch_to_json),
   ])
 }
+
+// CHANGE ENCODERS -------------------------------------------------------------
 
 fn change_to_json(change: Change(msg)) -> Json {
   case change {

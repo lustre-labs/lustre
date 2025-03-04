@@ -15,7 +15,7 @@ export const is_registered = (name) =>
 export const is_reference_equal = (a, b) => a === b;
 
 export const throw_server_component_error = () => {
-  throw new window.Error(
+  throw new globalThis.Error(
     [
       "It looks like you're trying to use the server component runtime written ",
       "using `gleam_otp`. You can only end up here if you were poking around ",
