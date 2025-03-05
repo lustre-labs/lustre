@@ -207,6 +207,9 @@ function update(node, added, removed, dispatch, root) {
       node[meta].handlers.delete(name);
     } else {
       node.removeAttribute(name);
+      if (SYNCED_BOOLEAN_ATTRIBUTES.includes(name)) {
+        node[name] = false;
+      }
     }
   }
 
@@ -271,15 +274,29 @@ function createElement(vnode, dispatch, root) {
 
 function createAttribute(node, attribute, dispatch, root) {
   switch (attribute.constructor) {
-    case Attribute:
-      if (attribute.value !== node.getAttribute(attribute.name)) {
-        node.setAttribute(attribute.name, attribute.value);
+    case Attribute: {
+      const name = attribute.name;
+      const value = attribute.value;
 
-        if (SYNCED_ATTRIBUTES.includes(attribute.name)) {
-          node[attribute.name] = attribute.value;
-        }
+      if (value !== node.getAttribute(name)) {
+        node.setAttribute(name, value);
       }
-      break;
+      if (SYNCED_ATTRIBUTES.includes(name)) {
+        node[name] = value;
+      }
+      if (SYNCED_BOOLEAN_ATTRIBUTES.includes(name)) {
+        node[name] = true;
+      }
+
+      // special case the autofocus and autoplay  attribute to also work after
+      // // the page has loaded.
+      if (name === 'autofocus') {
+        node.focus?.();
+      }
+      if (name === 'autoplay') {
+        node.play?.();
+      }
+    } break;
 
     case Property:
       node[attribute.name] = attribute.value;
@@ -334,7 +351,8 @@ function handleEvent(event) {
   handler(event);
 }
 
-const SYNCED_ATTRIBUTES = ["checked", "disabled", "selected", "value"];
+const SYNCED_BOOLEAN_ATTRIBUTES = ['checked', 'selected'];
+const SYNCED_ATTRIBUTES = ['value'];
 
 const IMMEDIATE_EVENTS = [
   // Input synchronization

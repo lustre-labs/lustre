@@ -144,7 +144,7 @@ pub fn value(val: String) -> Attribute(msg) {
 
 ///
 pub fn checked(is_checked: Bool) -> Attribute(msg) {
-  property("checked", json.bool(is_checked))
+  boolean_attribute("checked", is_checked)
 }
 
 ///
@@ -154,7 +154,7 @@ pub fn placeholder(text: String) -> Attribute(msg) {
 
 ///
 pub fn selected(is_selected: Bool) -> Attribute(msg) {
-  property("selected", json.bool(is_selected))
+  boolean_attribute("selected", is_selected)
 }
 
 // INPUT HELPERS ---------------------------------------------------------------
@@ -166,7 +166,7 @@ pub fn accept(types: List(String)) -> Attribute(msg) {
 
 ///
 pub fn accept_charset(types: List(String)) -> Attribute(msg) {
-  attribute("acceptCharset", string.join(types, " "))
+  attribute("accept-charset", string.join(types, " "))
 }
 
 ///
@@ -179,14 +179,17 @@ pub fn autocomplete(name: String) -> Attribute(msg) {
   attribute("autocomplete", name)
 }
 
+/// Sets the `autofocus` attribute.
 ///
+/// Lustre will focus the element every time this attribute switches from `False`
+/// to `True`.
 pub fn autofocus(should_autofocus: Bool) -> Attribute(msg) {
-  property("autofocus", json.bool(should_autofocus))
+  boolean_attribute("autofocus", should_autofocus)
 }
 
 ///
 pub fn disabled(is_disabled: Bool) -> Attribute(msg) {
-  property("disabled", json.bool(is_disabled))
+  boolean_attribute("disabled", is_disabled)
 }
 
 ///
@@ -201,12 +204,12 @@ pub fn pattern(regex: String) -> Attribute(msg) {
 
 ///
 pub fn readonly(is_readonly: Bool) -> Attribute(msg) {
-  property("readOnly", json.bool(is_readonly))
+  boolean_attribute("readonly", is_readonly)
 }
 
 ///
 pub fn required(is_required: Bool) -> Attribute(msg) {
-  property("required", json.bool(is_required))
+  boolean_attribute("required", is_required)
 }
 
 ///
@@ -311,19 +314,22 @@ pub fn content(text: String) -> Attribute(msg) {
 
 // AUDIO AND VIDEO -------------------------------------------------------------
 
+/// Sets the `autofocus` attribute.
 ///
+/// Lustre will start playing every time this attribute switches from `False`
+/// to `True`.
 pub fn autoplay(should_autoplay: Bool) -> Attribute(msg) {
-  property("autoplay", json.bool(should_autoplay))
+  boolean_attribute("autoplay", should_autoplay)
 }
 
 ///
 pub fn controls(visible: Bool) -> Attribute(msg) {
-  property("controls", json.bool(visible))
+  boolean_attribute("controls", visible)
 }
 
 ///
 pub fn loop(should_loop: Bool) -> Attribute(msg) {
-  property("loop", json.bool(should_loop))
+  boolean_attribute("loop", should_loop)
 }
 
 // FORMS -----------------------------------------------------------------------
@@ -345,7 +351,7 @@ pub fn method(method: String) -> Attribute(msg) {
 
 ///
 pub fn novalidate(value: Bool) -> Attribute(msg) {
-  property("novalidate", json.bool(value))
+  boolean_attribute("novalidate", value)
 }
 
 ///
@@ -365,7 +371,7 @@ pub fn form_method(method: String) -> Attribute(msg) {
 
 ///
 pub fn form_novalidate(value: Bool) -> Attribute(msg) {
-  property("formnovalidate", json.bool(value))
+  boolean_attribute("formnovalidate", value)
 }
 
 ///
@@ -377,7 +383,7 @@ pub fn form_target(target: String) -> Attribute(msg) {
 
 ///
 pub fn open(is_open: Bool) -> Attribute(msg) {
-  property("open", json.bool(is_open))
+  boolean_attribute("open", is_open)
 }
 
 // META ------------------------------------------------------------------------
@@ -390,4 +396,13 @@ pub fn charset(name: String) -> Attribute(msg) {
 ///
 pub fn http_equiv(name: String) -> Attribute(msg) {
   attribute("http-equiv", name)
+}
+
+// HELPERS ---------------------------------------------------------------------
+
+fn boolean_attribute(name: String, value: Bool) -> Attribute(msg) {
+  case value {
+    True -> attribute(name, "")
+    False -> none()
+  }
 }
