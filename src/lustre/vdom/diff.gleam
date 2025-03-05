@@ -321,41 +321,27 @@ fn do_diff(
         }
 
         // The previous child no longer exists in the incoming tree *and* the new
-        // child is new for this render. That means we can do a straight `Replace`.
+        // child is new for this render. The new element can "steal" the previous
+        // one to continue diffing like normal by setting its key!
         Error(_), Error(_) -> {
-          let prev_count = advance(prev)
-          let changes = case prev_count > 1 {
-            False -> changes
-            True -> {
-              let from = node_index - moved_offset + 1
-              let remove = Remove(from:, count: prev_count - 1)
-
-              [remove, ..changes]
-            }
+          let prev_with_key = case prev {
+            Element(..) -> Element(..prev, key: next.key)
+            Fragment(..) -> Fragment(..prev, key: next.key)
+            Text(..) -> Text(..prev, key: next.key)
           }
 
-          let child =
-            Patch(
-              index: node_index,
-              removed: 0,
-              changes: [Replace(next)],
-              children: constants.empty_list,
-            )
-
-          let events = events.add_child(events, mapper, node_index, next)
-
           do_diff(
-            old: old_remaining,
+            old: [prev_with_key, ..old_remaining],
             old_keyed:,
-            new: new_remaining,
+            new:,
             new_keyed:,
             moved:,
-            moved_offset: moved_offset - prev_count + 1,
+            moved_offset:,
             removed:,
-            node_index: node_index + 1,
+            node_index:,
             patch_index:,
             changes:,
-            children: [child, ..children],
+            children:,
             events:,
             mapper:,
           )
