@@ -108,7 +108,7 @@ pub fn classes(names: List(#(String, Bool))) -> Attribute(msg) {
       |> list.filter_map(fn(class) {
         case class.1 {
           True -> Ok(class.0)
-          False -> Error(Nil)
+          False -> constants.error_nil
         }
       })
       |> string.join(" "),
