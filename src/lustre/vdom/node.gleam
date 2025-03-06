@@ -109,6 +109,17 @@ pub fn count_fragment_children(children: List(Node(msg)), count: Int) -> Int {
   }
 }
 
+// MANIPULATION ----------------------------------------------------------------
+
+pub fn to_keyed(key: String, node: Node(msg)) -> Node(msg) {
+  case node {
+    Element(..) -> Element(..node, key:)
+    Fragment(..) -> Fragment(..node, key:)
+    Text(..) -> Text(..node, key:)
+    UnsafeInnerHtml(..) -> UnsafeInnerHtml(..node, key:)
+  }
+}
+
 // STRING RENDERING ------------------------------------------------------------
 
 pub fn to_string(node: Node(msg)) -> String {

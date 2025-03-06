@@ -6,7 +6,7 @@ import lustre/attribute.{type Attribute} as _
 import lustre/element.{type Element}
 import lustre/internals/constants
 import lustre/vdom/attribute
-import lustre/vdom/node.{Element, Fragment, Text, UnsafeInnerHtml}
+import lustre/vdom/node.{Element, Fragment}
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -143,7 +143,7 @@ fn extract_keyed_children(
       init,
     )
 
-    let keyed_element = key_element(key, element)
+    let keyed_element = node.to_keyed(key, element)
 
     // Children with empty keys are not inserted into the lookup, but they are
     // still returned in the children list.
@@ -156,14 +156,4 @@ fn extract_keyed_children(
   }
 
   #(keyed_children, list.reverse(children), children_count)
-}
-
-@internal
-pub fn key_element(key: String, element: Element(msg)) -> Element(msg) {
-  case element {
-    Fragment(..) -> Fragment(..element, key:)
-    Element(..) -> Element(..element, key:)
-    UnsafeInnerHtml(..) -> UnsafeInnerHtml(..element, key:)
-    Text(..) -> Text(..element, key:)
-  }
 }

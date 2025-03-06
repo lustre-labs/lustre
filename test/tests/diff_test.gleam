@@ -4,11 +4,11 @@ import gleeunit/should
 import lustre/attribute.{attribute}
 import lustre/element
 import lustre/element/html
-import lustre/element/keyed.{key_element as keyed}
+import lustre/element/keyed
 import lustre/vdom/diff.{
   Insert, Move, Patch, Remove, RemoveKey, Replace, ReplaceText, Update,
 }
-import lustre/vdom/node
+import lustre/vdom/node.{to_keyed}
 import lustre_test
 
 pub fn empty_node_test() {
@@ -418,7 +418,7 @@ pub fn keyed_insert_test() {
       Patch(
         0,
         0,
-        [Insert([keyed("d", html.span([], []))], 1), Move("c", 0, 1)],
+        [Insert([to_keyed("d", html.span([], []))], 1), Move("c", 0, 1)],
         [],
       ),
     ])
@@ -694,7 +694,7 @@ pub fn keyed_move_fragment_with_replace_with_different_count_test() {
 
   let diff =
     Patch(0, 0, [], [
-      Patch(0, 0, [Insert([keyed("cd", cd)], 3), RemoveKey("x", 1)], []),
+      Patch(0, 0, [Insert([to_keyed("cd", cd)], 3), RemoveKey("x", 1)], []),
     ])
 
   diff.diff(prev, next, 0).patch
@@ -702,7 +702,7 @@ pub fn keyed_move_fragment_with_replace_with_different_count_test() {
 
   // reverse
 
-  let diff = Patch(0, 0, [], [Patch(0, 2, [Insert([keyed("x", x)], 0)], [])])
+  let diff = Patch(0, 0, [], [Patch(0, 2, [Insert([to_keyed("x", x)], 0)], [])])
 
   diff.diff(next, prev, 0).patch
   |> should.equal(diff)
@@ -730,11 +730,14 @@ pub fn keyed_move_fragment_with_replace_to_simple_node_test() {
         0,
         0,
         [
-          Insert([keyed("b", html.text("b")), keyed("c", html.text("c"))], 3),
+          Insert(
+            [to_keyed("b", html.text("b")), to_keyed("c", html.text("c"))],
+            3,
+          ),
           Remove(2, 1),
           RemoveKey("x", 1),
         ],
-        [Patch(0, 0, [Replace(keyed("a", html.text("a")))], [])],
+        [Patch(0, 0, [Replace(to_keyed("a", html.text("a")))], [])],
       ),
     ])
 
@@ -758,9 +761,9 @@ pub fn keyed_replace_fragment_test() {
 
   let diff =
     Patch(0, 0, [], [
-      Patch(0, 0, [Insert([keyed("c", html.text("c"))], 3), Remove(2, 1)], [
-        Patch(1, 0, [Replace(keyed("b", html.text("b")))], []),
-        Patch(0, 0, [Replace(keyed("a", html.text("a")))], []),
+      Patch(0, 0, [Insert([to_keyed("c", html.text("c"))], 3), Remove(2, 1)], [
+        Patch(1, 0, [Replace(to_keyed("b", html.text("b")))], []),
+        Patch(0, 0, [Replace(to_keyed("a", html.text("a")))], []),
       ]),
     ])
 
@@ -777,7 +780,7 @@ pub fn keyed_insert_fragment_test() {
 
   let diff =
     Patch(0, 0, [], [
-      Patch(0, 0, [Insert([keyed("xyz", xyz)], 0)], [
+      Patch(0, 0, [Insert([to_keyed("xyz", xyz)], 0)], [
         Patch(3, 0, [ReplaceText("A")], []),
       ]),
     ])
@@ -848,7 +851,7 @@ pub fn keyed_fragment_insert_test() {
     Patch(
       0,
       0,
-      [Insert([keyed("d", html.span([], []))], 1), Move("c", 0, 1)],
+      [Insert([to_keyed("d", html.span([], []))], 1), Move("c", 0, 1)],
       [],
     )
 
