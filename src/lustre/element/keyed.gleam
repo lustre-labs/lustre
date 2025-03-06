@@ -158,7 +158,8 @@ fn extract_keyed_children(
   #(keyed_children, list.reverse(children), children_count)
 }
 
-fn key_element(key: String, element: Element(msg)) -> Element(msg) {
+@internal
+pub fn key_element(key: String, element: Element(msg)) -> Element(msg) {
   case element {
     Fragment(..) -> Fragment(..element, key:)
     Element(..) -> Element(..element, key:)

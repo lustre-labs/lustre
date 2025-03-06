@@ -4,7 +4,7 @@ import gleeunit/should
 import lustre/attribute.{attribute}
 import lustre/element
 import lustre/element/html
-import lustre/element/keyed
+import lustre/element/keyed.{key_element as keyed}
 import lustre/vdom/diff.{
   Insert, Move, Patch, Remove, RemoveKey, Replace, ReplaceText, Update,
 }
@@ -917,15 +917,4 @@ pub fn fragment_initial_offset_test() {
 
   diff.diff(prev, next, 42).patch
   |> should.equal(diff)
-}
-
-// UTILS -----------------------------------------------------------------------
-
-fn keyed(key, el) {
-  case el {
-    node.Fragment(..) -> node.Fragment(..el, key:)
-    node.Element(..) -> node.Element(..el, key:)
-    node.UnsafeInnerHtml(..) -> node.UnsafeInnerHtml(..el, key:)
-    node.Text(..) -> node.Text(..el, key:)
-  }
 }

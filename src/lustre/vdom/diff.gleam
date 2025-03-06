@@ -7,6 +7,7 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/order.{Eq, Gt, Lt}
 import gleam/set.{type Set}
+import lustre/element/keyed
 import lustre/internals/constants
 import lustre/vdom/attribute.{type Attribute, Attribute, Event, Property}
 import lustre/vdom/events.{type Events}
@@ -327,11 +328,7 @@ fn do_diff(
         // child is new for this render. The new element can "steal" the previous
         // one to continue diffing like normal by setting its key!
         Error(_), Error(_) -> {
-          let prev_with_key = case prev {
-            Element(..) -> Element(..prev, key: next.key)
-            Fragment(..) -> Fragment(..prev, key: next.key)
-            Text(..) -> Text(..prev, key: next.key)
-          }
+          let prev_with_key = keyed.key_element(next.key, prev)
 
           do_diff(
             old: [prev_with_key, ..old_remaining],
