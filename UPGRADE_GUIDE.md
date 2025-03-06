@@ -45,6 +45,11 @@ values now are required to be serialisable to a `json.Json` value.
 
 This change makes it possible to use `attribute.property` with server components.
 
+### `autoplay` and `autofocus` attributes now play and focus the element
+
+These attributes usually only work on page load. Lustre now special cases them
+to also trigger their associated action every time their value switches from
+`False` to `True`.
 
 ### Wrapper elements around fragments removed.
 

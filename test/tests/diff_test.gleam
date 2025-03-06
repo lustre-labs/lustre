@@ -645,6 +645,33 @@ pub fn mixed_text_and_element_changes_test() {
   |> should.equal(diff)
 }
 
+pub fn non_keyed_upgrade_test() {
+  use <- lustre_test.test_filter("non_keyed_upgrade_test")
+
+  let prev =
+    html.div([], [
+      html.div([attribute.class("old")], [html.text("one")]),
+      html.div([attribute.class("old")], [html.text("two")]),
+    ])
+
+  let next =
+    keyed.div([], [
+      #("1", html.div([attribute.class("new")], [html.text("one")])),
+      #("2", html.div([attribute.class("new")], [html.text("two")])),
+    ])
+
+  let diff =
+    Patch(0, 0, [], [
+      Patch(0, 0, [], [
+        Patch(1, 0, [Update([attribute.class("new")], [])], []),
+        Patch(0, 0, [Update([attribute.class("new")], [])], []),
+      ]),
+    ])
+
+  diff.diff(prev, next, 0).patch
+  |> should.equal(diff)
+}
+
 // KEYED DIFFS WITH FRAGMENTS --------------------------------------------------
 
 pub fn keyed_move_fragment_with_replace_with_different_count_test() {

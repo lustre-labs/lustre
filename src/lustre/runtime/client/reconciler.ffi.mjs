@@ -23,10 +23,6 @@ export class Reconciler {
     this.#dispatch = dispatch;
   }
 
-  mount(vnode) {
-    this.#root.appendChild(createElement(vnode, this.#dispatch, this.#root));
-  }
-
   push(patch) {
     this.#stack.push({ node: this.#root, patch });
     this.#reconcile();
@@ -92,7 +88,7 @@ export class Reconciler {
         }
       }
 
-      while (patch.removed-- > 0) {
+      for (let i = 0; i < patch.removed; ++i) {
         const child = node.lastChild;
         const key = child[meta].key;
 
@@ -125,7 +121,8 @@ function insertMany(node, children, before, dispatch, root) {
     const el = createElement(child, dispatch, root);
 
     if (child.key) {
-      node[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
+      const ref = new WeakRef(unwrapFragment(el));
+      node[meta].keyedChildren.set(child.key, ref);
     }
 
     fragment.appendChild(el);
@@ -138,7 +135,8 @@ function insert(node, child, before, dispatch, root) {
   const el = createElement(child, dispatch, root);
 
   if (child.key) {
-    node[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
+    const ref = new WeakRef(unwrapFragment(el));
+    node[meta].keyedChildren.set(child.key, ref);
   }
 
   node.insertBefore(el, node.childNodes[before] ?? null);
@@ -188,7 +186,8 @@ function replace(node, child, dispatch, root) {
   const parent = node.parentNode;
 
   if (child.key) {
-    parent[meta].keyedChildren.set(child.key, new WeakRef(unwrapFragment(el)));
+    const ref = new WeakRef(unwrapFragment(el));
+    parent[meta].keyedChildren.set(child.key, ref);
   }
 
   parent.replaceChild(el, node);
@@ -207,6 +206,7 @@ function update(node, added, removed, dispatch, root) {
       node[meta].handlers.delete(name);
     } else {
       node.removeAttribute(name);
+      ATTRIBUTE_HOOKS[name]?.removed?.(node, name);
     }
   }
 
@@ -271,21 +271,22 @@ function createElement(vnode, dispatch, root) {
 
 function createAttribute(node, attribute, dispatch, root) {
   switch (attribute.constructor) {
-    case Attribute:
-      if (attribute.value !== node.getAttribute(attribute.name)) {
-        node.setAttribute(attribute.name, attribute.value);
+    case Attribute: {
+      const name = attribute.name;
+      const value = attribute.value;
 
-        if (SYNCED_ATTRIBUTES.includes(attribute.name)) {
-          node[attribute.name] = attribute.value;
-        }
+      if (value !== node.getAttribute(name)) {
+        node.setAttribute(name, value);
       }
-      break;
+
+      ATTRIBUTE_HOOKS[name]?.added?.(node, value);
+    } break;
 
     case Property:
       node[attribute.name] = attribute.value;
       break;
 
-    case Event:
+    case Event: {
       if (!node[meta].handlers.has(attribute.name)) {
         node.addEventListener(attribute.name, handleEvent, {
           passive: !attribute.prevent_default,
@@ -323,7 +324,7 @@ function createAttribute(node, attribute, dispatch, root) {
 
         dispatch(event, path, event.type, immediate);
       });
-      break;
+    } break;
   }
 }
 
@@ -334,7 +335,42 @@ function handleEvent(event) {
   handler(event);
 }
 
-const SYNCED_ATTRIBUTES = ["checked", "disabled", "selected", "value"];
+const ATTRIBUTE_HOOKS = {
+  checked: syncedBooleanAttribute('checked'),
+  selected: syncedBooleanAttribute('selected'),
+  value: syncedAttribute('value'),
+
+  autofocus: {
+    added(node) {
+      node.focus?.()
+    }
+  },
+
+  autoplay: {
+    added(node) {
+      node.play?.()
+    }
+  }
+}
+
+function syncedBooleanAttribute(name) {
+  return {
+    added(node, value) {
+      node[name] = true
+    },
+    removed(node) {
+      node[name] = false
+    }
+  }
+}
+
+function syncedAttribute(name) {
+  return {
+    added(node, value) {
+      node[name] = value
+    }
+  }
+}
 
 const IMMEDIATE_EVENTS = [
   // Input synchronization
