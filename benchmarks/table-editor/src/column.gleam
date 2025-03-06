@@ -140,12 +140,7 @@ pub fn register() {
       update,
       view,
       dict.from_list([
-        #("column", fn(column) {
-          case decode.run(column, decoder()) {
-            Ok(column) -> Ok(ParentUpdatedColumn(column))
-            Error(_) -> Error([])
-          }
-        }),
+        #("column", decode.map(decoder(), ParentUpdatedColumn))
       ]),
     )
 

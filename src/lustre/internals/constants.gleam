@@ -62,3 +62,5 @@ pub fn empty_set() -> Set(a) {
 }
 
 pub const option_none = option.None
+
+pub const error_nil = Error(Nil)
