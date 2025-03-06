@@ -3,7 +3,7 @@
 import gleam/json.{type Json}
 import lustre/vdom/attribute.{type Attribute, Attribute, Event, Property}
 import lustre/vdom/diff.{
-  type Change, type Patch, Insert, InsertMany, Move, Remove, RemoveKey, Replace,
+  type Change, type Patch, Insert, Move, Remove, RemoveKey, Replace,
   ReplaceInnerHtml, ReplaceText, Update,
 }
 import lustre/vdom/node.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
@@ -188,11 +188,10 @@ fn change_to_json(change: Change(msg)) -> Json {
     ReplaceInnerHtml(inner_html:) -> replace_inner_html_to_json(inner_html)
     Update(added:, removed:) -> update_to_json(added, removed)
     // keyed changes
-    Insert(child:, before:) -> insert_to_json(child, before)
     Move(key:, before:, count:) -> move_to_json(key, before, count)
     RemoveKey(key:, count:) -> remove_key_to_json(key, count)
     // unkeyed changes
-    InsertMany(children:, before:) -> insert_many_to_json(children, before)
+    Insert(children:, before:) -> insert_to_json(children, before)
     Remove(from:, count:) -> remove_to_json(from, count)
   }
 }
@@ -241,21 +240,7 @@ fn update_to_json(
   ])
 }
 
-pub const insert_variant: Int = 4
-
-pub const insert_child: Int = 1
-
-pub const insert_before: Int = 2
-
-fn insert_to_json(child: Node(msg), before: Int) -> Json {
-  json.preprocessed_array([
-    json.int(insert_variant),
-    node_to_json(child),
-    json.int(before),
-  ])
-}
-
-pub const move_variant: Int = 5
+pub const move_variant: Int = 4
 
 pub const move_key: Int = 1
 
@@ -272,7 +257,7 @@ fn move_to_json(key: String, before: Int, count: Int) -> Json {
   ])
 }
 
-pub const remove_key_variant: Int = 6
+pub const remove_key_variant: Int = 5
 
 pub const remove_key_key: Int = 1
 
@@ -286,21 +271,21 @@ fn remove_key_to_json(key: String, count: Int) -> Json {
   ])
 }
 
-pub const insert_many_variant: Int = 7
+pub const insert_variant: Int = 6
 
-pub const insert_many_children: Int = 1
+pub const insert_children: Int = 1
 
-pub const insert_many_before: Int = 2
+pub const insert_before: Int = 2
 
-fn insert_many_to_json(children: List(Node(msg)), before: Int) -> Json {
+fn insert_to_json(children: List(Node(msg)), before: Int) -> Json {
   json.preprocessed_array([
-    json.int(insert_many_variant),
+    json.int(insert_variant),
     json.array(children, node_to_json),
     json.int(before),
   ])
 }
 
-pub const remove_variant: Int = 8
+pub const remove_variant: Int = 7
 
 pub const remove_from: Int = 1
 

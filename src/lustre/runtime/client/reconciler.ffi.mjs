@@ -1,7 +1,6 @@
 import { Element, Text, Fragment, UnsafeInnerHtml } from "../../vdom/node.mjs";
 import { Attribute, Property, Event } from "../../vdom/attribute.mjs";
 import {
-  InsertMany,
   Insert,
   Move,
   Remove,
@@ -37,20 +36,10 @@ export class Reconciler {
         const change = list.head;
 
         switch (change.constructor) {
-          case InsertMany:
-            insertMany(
-              node,
-              change.children,
-              change.before,
-              this.#dispatch,
-              this.#root,
-            );
-            break;
-
           case Insert:
             insert(
               node,
-              change.child,
+              change.children,
               change.before,
               this.#dispatch,
               this.#root,
@@ -118,7 +107,7 @@ export class Reconciler {
 
 // CHANGES ---------------------------------------------------------------------
 
-function insertMany(node, children, before, dispatch, root) {
+function insert(node, children, before, dispatch, root) {
   const fragment = document.createDocumentFragment();
 
   for (let list = children; list.tail; list = list.tail) {
@@ -134,17 +123,6 @@ function insertMany(node, children, before, dispatch, root) {
   }
 
   node.insertBefore(fragment, node.childNodes[before] ?? null);
-}
-
-function insert(node, child, before, dispatch, root) {
-  const el = createElement(child, dispatch, root);
-
-  if (child.key) {
-    const ref = new WeakRef(unwrapFragment(el));
-    node[meta].keyedChildren.set(child.key, ref);
-  }
-
-  node.insertBefore(el, node.childNodes[before] ?? null);
 }
 
 function move(node, key, before, count) {
@@ -251,7 +229,7 @@ function createElement(vnode, dispatch, root) {
         createAttribute(node, list.head, dispatch, root);
       }
 
-      insertMany(node, vnode.children, 0, dispatch, root);
+      insert(node, vnode.children, 0, dispatch, root);
 
       return node;
     }

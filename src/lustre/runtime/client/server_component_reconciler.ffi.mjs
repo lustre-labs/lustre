@@ -41,9 +41,6 @@ import {
   update_variant,
   update_added,
   update_removed,
-  insert_variant,
-  insert_child,
-  insert_before,
   move_variant,
   move_key,
   move_before,
@@ -51,9 +48,9 @@ import {
   remove_key_variant,
   remove_key_key,
   remove_key_count,
-  insert_many_variant,
-  insert_many_children,
-  insert_many_before,
+  insert_variant,
+  insert_children,
+  insert_before,
   remove_variant,
   remove_from,
   remove_count,
@@ -84,20 +81,10 @@ export class Reconciler {
         const change = patch[patch_changes][i];
 
         switch (change[0]) {
-          case insert_many_variant:
-            insertMany(
-              node,
-              change[insert_many_children],
-              change[insert_many_before],
-              this.#dispatch,
-              this.#root,
-            );
-            break;
-
           case insert_variant:
             insert(
               node,
-              change[insert_child],
+              change[insert_children],
               change[insert_before],
               this.#dispatch,
               this.#root,
@@ -170,7 +157,7 @@ export class Reconciler {
 
 // CHANGES ---------------------------------------------------------------------
 
-function insertMany(node, children, before, dispatch, root) {
+function insert(node, children, before, dispatch, root) {
   const fragment = document.createDocumentFragment();
 
   for (let i = 0; i < children.length; i++) {
@@ -186,17 +173,6 @@ function insertMany(node, children, before, dispatch, root) {
   }
 
   node.insertBefore(fragment, node.childNodes[before] ?? null);
-}
-
-function insert(node, child, before, dispatch, root) {
-  const el = createElement(child, dispatch, root);
-
-  if (child[element_key]) {
-    const ref = new WeakRef(unwrapFragment(el));
-    node[meta].keyedChildren.set(child[element_key], ref);
-  }
-
-  node.insertBefore(el, node.childNodes[before] ?? null);
 }
 
 function move(node, key, before, count) {
@@ -303,7 +279,7 @@ function createElement(vnode, dispatch, root) {
         createAttribute(node, vnode[element_attributes][i], dispatch, root);
       }
 
-      insertMany(node, vnode[element_children], 0, dispatch, root);
+      insert(node, vnode[element_children], 0, dispatch, root);
 
       return node;
     }

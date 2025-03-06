@@ -34,11 +34,10 @@ pub type Change(msg) {
   ReplaceInnerHtml(inner_html: String)
   Update(added: List(Attribute(msg)), removed: List(Attribute(msg)))
   // keyed changes
-  Insert(child: Node(msg), before: Int)
   Move(key: String, before: Int, count: Int)
   RemoveKey(key: String, count: Int)
   // unkeyed changes
-  InsertMany(children: List(Node(msg)), before: Int)
+  Insert(children: List(Node(msg)), before: Int)
   Remove(from: Int, count: Int)
 }
 
@@ -90,7 +89,6 @@ fn offset_root_patch(root: Patch(msg), offset: Int) -> Patch(msg) {
     list.map(root.changes, fn(change) {
       case change {
         Insert(before:, ..) -> Insert(..change, before: before + offset)
-        InsertMany(before:, ..) -> InsertMany(..change, before: before + offset)
         Move(before:, ..) -> Move(..change, before: before + offset)
         Remove(from:, ..) -> Remove(..change, from: from + offset)
         Replace(..)
@@ -162,14 +160,14 @@ fn do_diff(
       )
     }
 
-    // We've run out of old children to diff. We can produce a single `InsertMany`
+    // We've run out of old children to diff. We can produce a single `Insert`
     // change to group the all the new children together, but we still need to
     // walk the list and extract their event handlers (and their children's
     // event handlers).
     [], [_, ..] -> {
       let events =
         events.add_children(events, mapper, node_index - moved_offset, new)
-      let insert = InsertMany(children: new, before: node_index - moved_offset)
+      let insert = Insert(children: new, before: node_index - moved_offset)
       let changes = [insert, ..changes]
 
       Diff(
@@ -305,7 +303,7 @@ fn do_diff(
           let before = node_index - moved_offset
           let count = advance(next)
           let events = events.add_child(events, mapper, node_index, next)
-          let insert = Insert(child: next, before:)
+          let insert = Insert(children: [next], before:)
           let changes = [insert, ..changes]
 
           do_diff(
