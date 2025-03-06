@@ -7,6 +7,12 @@ import {
   element_namespace,
   element_attributes,
   element_children,
+  unsafe_inner_html_variant,
+  unsafe_inner_html_key,
+  unsafe_inner_html_tag,
+  unsafe_inner_html_namespace,
+  unsafe_inner_html_attributes,
+  unsafe_inner_html_inner_html,
   text_variant,
   text_key,
   text_content,
@@ -30,6 +36,8 @@ import {
   replace_element,
   replace_text_variant,
   replace_text_content,
+  replace_inner_html_variant,
+  replace_inner_html_inner_html,
   update_variant,
   update_added,
   update_removed,
@@ -119,6 +127,10 @@ export class Reconciler {
 
           case replace_text_variant:
             replaceText(node, change[replace_text_content]);
+            break;
+
+          case replace_inner_html_variant:
+            replaceInnerHtml(node, change[replace_inner_html_inner_html]);
             break;
 
           case update_variant:
@@ -242,6 +254,10 @@ function replaceText(node, content) {
   node.data = content;
 }
 
+function replaceInnerHtml(node, inner_html) {
+  node.innerHTML = inner_html;
+}
+
 function update(node, added, removed, dispatch, root) {
   for (let i = 0; i < removed.length; i++) {
     const name = removed[i][attribute_name];
@@ -308,6 +324,28 @@ function createElement(vnode, dispatch, root) {
           createElement(vnode[fragment_children][i], dispatch, root),
         );
       }
+
+      return node;
+    }
+
+    case unsafe_inner_html_variant: {
+      const node = vnode[unsafe_inner_html_namespace]
+        ? document.createElementNS(
+            vnode[unsafe_inner_html_namespace],
+            vnode[unsafe_inner_html_tag]
+          )
+        : document.createElement(vnode[unsafe_inner_html_tag]);
+
+      node[meta] = {
+        key: vnode[unsafe_inner_html_key],
+        handlers: new Map(),
+      };
+
+      for (let i = 0; i < vnode[unsafe_inner_html_attributes].length; i++) {
+        createAttribute(node, vnode[unsafe_inner_html_attributes][i], dispatch, root);
+      }
+
+      replaceInnerHtml(node, vnode[unsafe_inner_html_inner_html]);
 
       return node;
     }

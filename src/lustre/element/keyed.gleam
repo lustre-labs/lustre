@@ -6,7 +6,7 @@ import lustre/attribute.{type Attribute} as _
 import lustre/element.{type Element}
 import lustre/internals/constants
 import lustre/vdom/attribute
-import lustre/vdom/node.{Element, Fragment, Text}
+import lustre/vdom/node.{Element, Fragment, Text, UnsafeInnerHtml}
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -162,6 +162,7 @@ fn key_element(key: String, element: Element(msg)) -> Element(msg) {
   case element {
     Fragment(..) -> Fragment(..element, key:)
     Element(..) -> Element(..element, key:)
+    UnsafeInnerHtml(..) -> UnsafeInnerHtml(..element, key:)
     Text(..) -> Text(..element, key:)
   }
 }

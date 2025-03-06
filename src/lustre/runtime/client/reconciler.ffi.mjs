@@ -1,4 +1,4 @@
-import { Element, Text, Fragment } from "../../vdom/node.mjs";
+import { Element, Text, Fragment, UnsafeInnerHtml } from "../../vdom/node.mjs";
 import { Attribute, Property, Event } from "../../vdom/attribute.mjs";
 import {
   InsertMany,
@@ -7,6 +7,7 @@ import {
   Remove,
   RemoveKey,
   Replace,
+  ReplaceInnerHtml,
   ReplaceText,
   Update,
 } from "../../vdom/diff.mjs";
@@ -74,6 +75,10 @@ export class Reconciler {
 
           case ReplaceText:
             replaceText(node, change.content);
+            break;
+
+          case ReplaceInnerHtml:
+            replaceInnerHtml(node, change.inner_html);
             break;
 
           case Update:
@@ -197,6 +202,10 @@ function replaceText(node, content) {
   node.data = content;
 }
 
+function replaceInnerHtml(node, inner_html) {
+  node.innerHTML = inner_html;
+}
+
 function update(node, added, removed, dispatch, root) {
   for (let list = removed; list.tail; list = list.tail) {
     const name = list.head.name;
@@ -261,6 +270,25 @@ function createElement(vnode, dispatch, root) {
       for (let list = vnode.children; list.tail; list = list.tail) {
         node.appendChild(createElement(list.head, dispatch, root));
       }
+
+      return node;
+    }
+
+    case UnsafeInnerHtml: {
+      const node = vnode.namespace
+        ? document.createElementNS(vnode.namespace, vnode.tag)
+        : document.createElement(vnode.tag);
+
+      node[meta] = {
+        key: vnode.key,
+        handlers: new Map(),
+      };
+
+      for (let list = vnode.attributes; list.tail; list = list.tail) {
+        createAttribute(node, list.head, dispatch, root);
+      }
+
+      replaceInnerHtml(node, vnode.inner_html);
 
       return node;
     }

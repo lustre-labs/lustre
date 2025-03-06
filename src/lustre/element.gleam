@@ -9,7 +9,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Dynamic}
-import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
 import gleam/string_tree.{type StringTree}
@@ -17,7 +16,7 @@ import lustre/attribute.{type Attribute} as _
 import lustre/effect.{type Effect}
 import lustre/internals/constants
 import lustre/vdom/attribute
-import lustre/vdom/node.{Element, Fragment, Text}
+import lustre/vdom/node.{Element, Fragment, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -242,6 +241,31 @@ fn count_fragment_children(children: List(Element(msg)), count: Int) -> Int {
   }
 }
 
+/// A function for constructing a wrapper element with custom raw HTML as its
+/// content. Lustre will render the provided HTML verbatim, and will not touch
+/// its children except when replacing the entire inner html on changes.
+///
+/// **Warning:** The provided HTML will not be escaped and may therefore break
+/// rendering and be a XSS attack vector! Make sure you absolutely trust the
+/// HTML you pass to this function. In particular, never use this to display
+/// un-sanitised user HTML!
+///
+pub fn unsafe_inner_html(
+  namespace: String,
+  tag: String,
+  attributes: List(Attribute(msg)),
+  inner_html: String,
+) -> Element(msg) {
+  UnsafeInnerHtml(
+    key: "",
+    namespace:,
+    tag:,
+    mapper: constants.option_none,
+    attributes: attribute.prepare(attributes),
+    inner_html:,
+  )
+}
+
 ///
 // MANIPULATIONS ---------------------------------------------------------------
 
@@ -253,44 +277,32 @@ fn count_fragment_children(children: List(Element(msg)), count: Int) -> Int {
 /// Think of it like `list.map` or `result.map` but for HTML events!
 ///
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
+  let mapper = case element.mapper {
+    Some(m) -> Some(fn(msg) { msg |> m |> coerce(f) })
+    None -> Some(coerce(f))
+  }
+
   case element {
-    Fragment(key:, mapper:, children:, keyed_children:, children_count:) ->
+    Fragment(children:, keyed_children:, ..) ->
       Fragment(
-        key:,
-        mapper: case mapper {
-          Some(m) -> Some(fn(msg) { msg |> m |> coerce(f) })
-          None -> Some(coerce(f))
-        },
+        ..element,
+        mapper:,
         children: coerce(children),
         keyed_children: coerce(keyed_children),
-        children_count:,
       )
 
-    Element(
-      key:,
-      namespace:,
-      tag:,
-      mapper:,
-      attributes:,
-      children:,
-      keyed_children:,
-      self_closing:,
-      void:,
-    ) ->
+    Element(attributes:, children:, keyed_children:, ..) ->
       Element(
-        key:,
-        namespace:,
-        tag:,
-        mapper: case mapper {
-          Some(m) -> Some(fn(msg) { msg |> m |> coerce(f) })
-          None -> Some(coerce(f))
-        },
+        ..element,
+        mapper:,
         attributes: coerce(attributes),
         children: coerce(children),
         keyed_children: coerce(keyed_children),
-        self_closing:,
-        void:,
       )
+
+    UnsafeInnerHtml(attributes:, ..) ->
+      UnsafeInnerHtml(..element, mapper:, attributes: coerce(attributes))
+
     Text(key:, mapper:, content:) -> Text(key:, mapper:, content:)
   }
 }

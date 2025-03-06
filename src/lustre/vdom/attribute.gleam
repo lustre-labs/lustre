@@ -73,71 +73,36 @@ pub fn compare(a: Attribute(msg), b: Attribute(msg)) -> Order {
 
 // STRING RENDERING ------------------------------------------------------------
 
-pub fn to_string_tree(attributes: List(Attribute(msg))) -> #(StringTree, String) {
-  let #(html, class, style, inner_html) = {
-    let init = #(string_tree.new(), "", "", "")
-    use #(html, class, style, inner_html), attr <- list.fold(attributes, init)
+pub fn to_string_tree(attributes: List(Attribute(msg))) -> StringTree {
+  let #(html, class, style) = {
+    let init = #(string_tree.new(), "", "")
+    use #(html, class, style), attr <- list.fold(attributes, init)
 
     case to_string_parts(attr) {
-      Ok(#("dangerous-unescaped-html", val)) -> #(
-        html,
-        class,
-        style,
-        inner_html <> val,
-      )
-      Ok(#("class", val)) if class == "" -> #(
-        html,
-        escape(val),
-        style,
-        inner_html,
-      )
-      Ok(#("class", val)) -> #(
-        html,
-        class <> " " <> escape(val),
-        style,
-        inner_html,
-      )
-      Ok(#("style", val)) if style == "" -> #(
-        html,
-        class,
-        escape(val),
-        inner_html,
-      )
-      Ok(#("style", val)) -> #(
-        html,
-        class,
-        style <> " " <> escape(val),
-        inner_html,
-      )
-      Ok(#(key, "")) -> #(
-        string_tree.append(html, " " <> key),
-        class,
-        style,
-        inner_html,
-      )
+      Ok(#("class", val)) if class == "" -> #(html, escape(val), style)
+      Ok(#("class", val)) -> #(html, class <> " " <> escape(val), style)
+      Ok(#("style", val)) if style == "" -> #(html, class, escape(val))
+      Ok(#("style", val)) -> #(html, class, style <> " " <> escape(val))
+      Ok(#(key, "")) -> #(string_tree.append(html, " " <> key), class, style)
       Ok(#(key, val)) -> #(
         string_tree.append(html, " " <> key <> "=\"" <> escape(val) <> "\""),
         class,
         style,
-        inner_html,
       )
-      Error(_) -> #(html, class, style, inner_html)
+      Error(_) -> #(html, class, style)
     }
   }
 
-  #(
-    case class, style {
-      "", "" -> html
-      _, "" -> string_tree.append(html, " class=\"" <> class <> "\"")
-      "", _ -> string_tree.append(html, " style=\"" <> style <> "\"")
-      _, _ ->
-        string_tree.append(
-          html,
-          " class=\"" <> class <> "\" style=\"" <> style <> "\"",
-        )
-    },
-    inner_html,
-  )
+  case class, style {
+    "", "" -> html
+    _, "" -> string_tree.append(html, " class=\"" <> class <> "\"")
+    "", _ -> string_tree.append(html, " style=\"" <> style <> "\"")
+    _, _ ->
+      string_tree.append(
+        html,
+        " class=\"" <> class <> "\" style=\"" <> style <> "\"",
+      )
+  }
 }
 
 pub fn to_string_parts(attr: Attribute(msg)) -> Result(#(String, String), Nil) {

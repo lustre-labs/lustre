@@ -924,6 +924,7 @@ fn keyed(key, el) {
   case el {
     node.Fragment(..) -> node.Fragment(..el, key:)
     node.Element(..) -> node.Element(..el, key:)
+    node.UnsafeInnerHtml(..) -> node.UnsafeInnerHtml(..el, key:)
     node.Text(..) -> node.Text(..el, key:)
   }
 }

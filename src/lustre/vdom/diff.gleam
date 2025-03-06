@@ -10,7 +10,7 @@ import gleam/set.{type Set}
 import lustre/internals/constants
 import lustre/vdom/attribute.{type Attribute, Attribute, Event, Property}
 import lustre/vdom/events.{type Events}
-import lustre/vdom/node.{type Node, Element, Fragment, Text}
+import lustre/vdom/node.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -31,6 +31,7 @@ pub type Change(msg) {
   // node updates
   Replace(element: Node(msg))
   ReplaceText(content: String)
+  ReplaceInnerHtml(inner_html: String)
   Update(added: List(Attribute(msg)), removed: List(Attribute(msg)))
   // keyed changes
   Insert(child: Node(msg), before: Int)
@@ -92,7 +93,11 @@ fn offset_root_patch(root: Patch(msg), offset: Int) -> Patch(msg) {
         InsertMany(before:, ..) -> InsertMany(..change, before: before + offset)
         Move(before:, ..) -> Move(..change, before: before + offset)
         Remove(from:, ..) -> Remove(..change, from: from + offset)
-        Replace(..) | ReplaceText(..) | Update(..) | RemoveKey(..) -> change
+        Replace(..)
+        | ReplaceText(..)
+        | ReplaceInnerHtml(..)
+        | Update(..)
+        | RemoveKey(..) -> change
       }
     })
 
@@ -527,6 +532,64 @@ fn do_diff(
         patch_index:,
         changes:,
         children: [child, ..children],
+        events:,
+        mapper:,
+      )
+    }
+
+    [UnsafeInnerHtml(..) as prev, ..old], [UnsafeInnerHtml(..) as next, ..new] -> {
+      let composed_mapper = case next.mapper {
+        Some(child_mapper) -> fn(msg) { msg |> child_mapper |> mapper }
+        None -> mapper
+      }
+
+      let AttributeChange(
+        added: added_attrs,
+        removed: removed_attrs,
+        events: child_events,
+      ) =
+        diff_attributes(
+          old: prev.attributes,
+          new: next.attributes,
+          added: constants.empty_list,
+          removed: constants.empty_list,
+          events: events.new(composed_mapper),
+        )
+
+      let child_changes = case added_attrs, removed_attrs {
+        [], [] -> constants.empty_list
+        _, _ -> [Update(added: added_attrs, removed: removed_attrs)]
+      }
+
+      let child_changes = case prev.inner_html == next.inner_html {
+        True -> child_changes
+        False -> [ReplaceInnerHtml(next.inner_html), ..child_changes]
+      }
+
+      let children = case child_changes {
+        [] -> children
+        _ -> [Patch(node_index, 0, child_changes, []), ..children]
+      }
+
+      let events = case events.is_empty(child_events) {
+        True -> events
+        False if next.key != "" ->
+          events.add_keyed_child_events(events, next.key, child_events)
+        False -> events.add_child_events(events, node_index, child_events)
+      }
+
+      do_diff(
+        old:,
+        old_keyed:,
+        new:,
+        new_keyed:,
+        moved:,
+        moved_offset:,
+        removed:,
+        node_index: node_index + 1,
+        patch_index: patch_index,
+        changes:,
+        children:,
         events:,
         mapper:,
       )

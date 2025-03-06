@@ -4,9 +4,9 @@ import gleam/json.{type Json}
 import lustre/vdom/attribute.{type Attribute, Attribute, Event, Property}
 import lustre/vdom/diff.{
   type Change, type Patch, Insert, InsertMany, Move, Remove, RemoveKey, Replace,
-  ReplaceText, Update,
+  ReplaceInnerHtml, ReplaceText, Update,
 }
-import lustre/vdom/node.{type Node, Element, Fragment, Text}
+import lustre/vdom/node.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
 
 // ENCODERS --------------------------------------------------------------------
 
@@ -15,6 +15,8 @@ pub fn node_to_json(node: Node(msg)) -> Json {
     Fragment(key:, children:, ..) -> fragment_to_json(key, children)
     Element(key:, namespace:, tag:, attributes:, children:, ..) ->
       element_to_json(key, namespace, tag, attributes, children)
+    UnsafeInnerHtml(key:, namespace:, tag:, attributes:, inner_html:, ..) ->
+      unsafe_inner_html_to_json(key, namespace, tag, attributes, inner_html)
     Text(key:, content:, ..) -> text_to_json(key, content)
   }
 }
@@ -62,7 +64,30 @@ fn element_to_json(
   ])
 }
 
-pub const text_variant: Int = 2
+pub const unsafe_inner_html_variant: Int = 2
+
+pub const unsafe_inner_html_key: Int = 1
+
+pub const unsafe_inner_html_namespace: Int = 2
+
+pub const unsafe_inner_html_tag: Int = 3
+
+pub const unsafe_inner_html_attributes: Int = 4
+
+pub const unsafe_inner_html_inner_html: Int = 5
+
+fn unsafe_inner_html_to_json(key, namespace, tag, attributes, inner_html) {
+  json.preprocessed_array([
+    json.int(unsafe_inner_html_variant),
+    json.string(key),
+    json.string(namespace),
+    json.string(tag),
+    json.array(attributes, attribute_to_json),
+    json.string(inner_html),
+  ])
+}
+
+pub const text_variant: Int = 3
 
 pub const text_key: Int = 1
 
@@ -160,6 +185,7 @@ fn change_to_json(change: Change(msg)) -> Json {
     // node updates
     Replace(element:) -> replace_to_json(element)
     ReplaceText(content:) -> replace_text_to_json(content)
+    ReplaceInnerHtml(inner_html:) -> replace_inner_html_to_json(inner_html)
     Update(added:, removed:) -> update_to_json(added, removed)
     // keyed changes
     Insert(child:, before:) -> insert_to_json(child, before)
@@ -187,7 +213,18 @@ fn replace_text_to_json(content: String) -> Json {
   json.preprocessed_array([json.int(replace_text_variant), json.string(content)])
 }
 
-pub const update_variant: Int = 2
+pub const replace_inner_html_variant: Int = 2
+
+pub const replace_inner_html_inner_html: Int = 1
+
+fn replace_inner_html_to_json(inner_html: String) -> Json {
+  json.preprocessed_array([
+    json.int(replace_inner_html_variant),
+    json.string(inner_html),
+  ])
+}
+
+pub const update_variant: Int = 3
 
 pub const update_added: Int = 1
 
@@ -204,7 +241,7 @@ fn update_to_json(
   ])
 }
 
-pub const insert_variant: Int = 3
+pub const insert_variant: Int = 4
 
 pub const insert_child: Int = 1
 
@@ -218,7 +255,7 @@ fn insert_to_json(child: Node(msg), before: Int) -> Json {
   ])
 }
 
-pub const move_variant: Int = 4
+pub const move_variant: Int = 5
 
 pub const move_key: Int = 1
 
@@ -235,7 +272,7 @@ fn move_to_json(key: String, before: Int, count: Int) -> Json {
   ])
 }
 
-pub const remove_key_variant: Int = 5
+pub const remove_key_variant: Int = 6
 
 pub const remove_key_key: Int = 1
 
@@ -249,7 +286,7 @@ fn remove_key_to_json(key: String, count: Int) -> Json {
   ])
 }
 
-pub const insert_many_variant: Int = 6
+pub const insert_many_variant: Int = 7
 
 pub const insert_many_children: Int = 1
 
@@ -263,7 +300,7 @@ fn insert_many_to_json(children: List(Node(msg)), before: Int) -> Json {
   ])
 }
 
-pub const remove_variant: Int = 7
+pub const remove_variant: Int = 8
 
 pub const remove_from: Int = 1
 
