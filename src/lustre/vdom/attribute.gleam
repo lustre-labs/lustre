@@ -74,34 +74,13 @@ pub fn compare(a: Attribute(msg), b: Attribute(msg)) -> Order {
 // STRING RENDERING ------------------------------------------------------------
 
 pub fn to_string_tree(attributes: List(Attribute(msg))) -> StringTree {
-  let #(html, class, style) = {
-    let init = #(string_tree.new(), "", "")
-    use #(html, class, style), attr <- list.fold(attributes, init)
-
-    case to_string_parts(attr) {
-      Ok(#("class", val)) if class == "" -> #(html, escape(val), style)
-      Ok(#("class", val)) -> #(html, class <> " " <> escape(val), style)
-      Ok(#("style", val)) if style == "" -> #(html, class, escape(val))
-      Ok(#("style", val)) -> #(html, class, style <> " " <> escape(val))
-      Ok(#(key, "")) -> #(string_tree.append(html, " " <> key), class, style)
-      Ok(#(key, val)) -> #(
-        string_tree.append(html, " " <> key <> "=\"" <> escape(val) <> "\""),
-        class,
-        style,
-      )
-      Error(_) -> #(html, class, style)
-    }
-  }
-
-  case class, style {
-    "", "" -> html
-    _, "" -> string_tree.append(html, " class=\"" <> class <> "\"")
-    "", _ -> string_tree.append(html, " style=\"" <> style <> "\"")
-    _, _ ->
-      string_tree.append(
-        html,
-        " class=\"" <> class <> "\" style=\"" <> style <> "\"",
-      )
+  use html, attr <- list.fold(attributes, string_tree.new())
+  case to_string_parts(attr) {
+    Ok(#("class", "")) | Ok(#("style", "")) -> html
+    Ok(#(key, "")) -> string_tree.append(html, " " <> key)
+    Ok(#(key, val)) ->
+      string_tree.append(html, " " <> key <> "=\"" <> escape(val) <> "\"")
+    Error(_) -> html
   }
 }
 
