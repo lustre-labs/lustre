@@ -113,22 +113,17 @@ pub fn count_fragment_children(children: List(Node(msg)), count: Int) -> Int {
 
 pub fn to_string(node: Node(msg)) -> String {
   node
-  |> do_to_string_tree(False)
+  |> to_string_tree
   |> string_tree.to_string
 }
 
 pub fn to_string_tree(node: Node(msg)) -> StringTree {
-  do_to_string_tree(node, False)
-}
-
-fn do_to_string_tree(node: Node(msg), raw_text: Bool) -> StringTree {
   case node {
     Text(content: "", ..) -> string_tree.new()
-    Text(content:, ..) if raw_text -> string_tree.from_string(content)
     Text(content:, ..) -> string_tree.from_string(escape(content))
 
     Fragment(children:, ..) ->
-      children_to_string_tree(string_tree.new(), children, raw_text)
+      children_to_string_tree(string_tree.new(), children)
 
     Element(namespace:, tag:, attributes:, self_closing:, ..) if self_closing -> {
       let html = string_tree.from_string("<" <> tag)
@@ -156,36 +151,6 @@ fn do_to_string_tree(node: Node(msg), raw_text: Bool) -> StringTree {
       |> string_tree.append(">")
     }
 
-    // Style and script tags are special beacuse they need to contain unescape
-    // text content and not escaped HTML content.
-    Element(
-      namespace: "",
-      tag: "style" as tag,
-      attributes:,
-      children:,
-      self_closing: False,
-      void: False,
-      ..,
-    )
-    | Element(
-        namespace: "",
-        tag: "script" as tag,
-        attributes:,
-        children:,
-        self_closing: False,
-        void: False,
-        ..,
-      ) -> {
-      let html = string_tree.from_string("<" <> tag)
-      let attributes = attribute.to_string_tree(attributes)
-
-      html
-      |> string_tree.append_tree(attributes)
-      |> string_tree.append(">")
-      |> children_to_string_tree(children, True)
-      |> string_tree.append("</" <> tag <> ">")
-    }
-
     Element(namespace:, tag:, attributes:, children:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
       let attributes =
@@ -197,7 +162,7 @@ fn do_to_string_tree(node: Node(msg), raw_text: Bool) -> StringTree {
       html
       |> string_tree.append_tree(attributes)
       |> string_tree.append(">")
-      |> children_to_string_tree(children, raw_text)
+      |> children_to_string_tree(children)
       |> string_tree.append("</" <> tag <> ">")
     }
 
@@ -221,12 +186,11 @@ fn do_to_string_tree(node: Node(msg), raw_text: Bool) -> StringTree {
 fn children_to_string_tree(
   html: StringTree,
   children: List(Node(msg)),
-  raw_text: Bool,
 ) -> StringTree {
   use html, child <- list.fold(children, html)
 
   child
-  |> do_to_string_tree(raw_text)
+  |> to_string_tree
   |> string_tree.append_tree(html, _)
 }
 
@@ -294,38 +258,6 @@ fn do_to_snapshot_builder(
       |> string_tree.prepend(spaces)
       |> string_tree.append_tree(attributes)
       |> string_tree.append(">")
-      |> string_tree.append("</" <> tag <> ">")
-    }
-
-    // Style and script tags are special beacuse they need to contain unescape
-    // text content and not escaped HTML content.
-    Element(
-      namespace: "",
-      tag: "style" as tag,
-      attributes:,
-      children:,
-      self_closing: False,
-      void: False,
-      ..,
-    )
-    | Element(
-        namespace: "",
-        tag: "script" as tag,
-        attributes:,
-        children:,
-        self_closing: False,
-        void: False,
-        ..,
-      ) -> {
-      let html = string_tree.from_string("<" <> tag)
-      let attributes = attribute.to_string_tree(attributes)
-
-      html
-      |> string_tree.prepend(spaces)
-      |> string_tree.append_tree(attributes)
-      |> string_tree.append(">")
-      |> children_to_snapshot_builder(children, True, indent + 1)
-      |> string_tree.append(spaces)
       |> string_tree.append("</" <> tag <> ">")
     }
 
