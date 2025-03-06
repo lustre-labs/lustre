@@ -8,8 +8,8 @@ const HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
 export function virtualise(root) {
   const vdom = virtualise_node(root);
   // at this point we know the element is empty - but we have to have at least
+  // an empty text node child in the root element to be able to mount
   if (vdom === null || vdom.children instanceof Empty) {
-    // an empty text node child in the root element to be able to mount
     root.appendChild(document.createTextNode(''));
     return none();
   } else if (vdom.children instanceof NonEmpty && vdom.children.tail instanceof Empty) {
@@ -36,11 +36,10 @@ function virtualise_node(node) {
     case Node.TEXT_NODE:
       return text(node.data);
 
-    case Node.DOCUMENT_FRAGMENT_NODE:
+    case Node.DOCUMENT_FRAGMENT_NODE: // shadowRoot
       return node.childNodes.length > 0
         ? fragment(virtualise_child_nodes(node))
         : null;
-
 
     default:
       return null;
