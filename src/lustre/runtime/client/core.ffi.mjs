@@ -3,6 +3,7 @@
 import { diff } from "../../vdom/diff.mjs";
 import * as Events from "../../vdom/events.mjs";
 import { Reconciler } from "./reconciler.ffi.mjs";
+import { virtualise } from "./virtualise.ffi.mjs";
 
 //
 
@@ -51,9 +52,6 @@ export class Runtime {
     this.#view = view;
     this.#update = update;
 
-    this.#vdom = this.#view(this.#model);
-    this.#events = Events.add_child(Events.new$(), (msg) => msg, 0, this.#vdom);
-
     this.#reconciler = new Reconciler(
       this.#root,
       (event, path, name, immediate) => {
@@ -65,7 +63,12 @@ export class Runtime {
       },
     );
 
-    this.#reconciler.mount(this.#vdom);
+    const virtualised = virtualise(this.#root);
+    this.#vdom = this.#view(this.#model);
+    const { patch, events } = diff(virtualised, this.#vdom, Events.new$(), 0);
+
+    this.#events = events;
+    this.#reconciler.push(patch);
     this.#tick(effects.all, false);
   }
 

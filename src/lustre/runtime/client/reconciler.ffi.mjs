@@ -23,10 +23,6 @@ export class Reconciler {
     this.#dispatch = dispatch;
   }
 
-  mount(vnode) {
-    this.#root.appendChild(createElement(vnode, this.#dispatch, this.#root));
-  }
-
   push(patch) {
     this.#stack.push({ node: this.#root, patch });
     this.#reconcile();
@@ -92,7 +88,7 @@ export class Reconciler {
         }
       }
 
-      while (patch.removed-- > 0) {
+      for (let i = 0; i < patch.removed; ++i) {
         const child = node.lastChild;
         const key = child[meta].key;
 
