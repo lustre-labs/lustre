@@ -96,7 +96,7 @@ fn read_module() {
 }
 
 fn inject_script(script, src) {
-  let inject_regex = "// <<INJECT RUNTIME>>\\n.+\\n.+\\n    \\),"
+  let inject_regex = "// <<INJECT RUNTIME>>\\n    .+,"
   let options = Options(case_insensitive: False, multi_line: True)
   let assert Ok(re) = regexp.compile(inject_regex, options)
   let assert [before, after] = regexp.split(re, src)
@@ -104,12 +104,11 @@ fn inject_script(script, src) {
   simplifile.write(
     to: module,
     contents: before
-      <> "// <<INJECT RUNTIME>>\n    element.text(\""
+      <> "// <<INJECT RUNTIME>>\n    \""
       <> script
-      <> "\"),"
+      <> "\","
       <> after,
   )
-  |> io.debug
 }
 
 fn format_project() {
