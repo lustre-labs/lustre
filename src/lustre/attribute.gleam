@@ -102,17 +102,14 @@ pub fn class(name: String) -> Attribute(msg) {
 
 ///
 pub fn classes(names: List(#(String, Bool))) -> Attribute(msg) {
-  attribute(
-    "class",
-    names
-      |> list.filter_map(fn(class) {
-        case class.1 {
-          True -> Ok(class.0)
-          False -> constants.error_nil
-        }
-      })
-      |> string.join(" "),
-  )
+  attribute("class", {
+    use classes, #(class, active) <- list.fold(names, "")
+    case classes {
+      "" if active -> class
+      _ if active -> classes <> " " <> class
+      _ -> classes
+    }
+  })
 }
 
 ///

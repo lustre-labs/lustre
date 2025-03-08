@@ -1,12 +1,12 @@
-import { Element, Text, Fragment } from "../../vdom/node.mjs";
+import { Element, Text, Fragment, UnsafeInnerHtml } from "../../vdom/node.mjs";
 import { Attribute, Property, Event } from "../../vdom/attribute.mjs";
 import {
-  InsertMany,
   Insert,
   Move,
   Remove,
   RemoveKey,
   Replace,
+  ReplaceInnerHtml,
   ReplaceText,
   Update,
 } from "../../vdom/diff.mjs";
@@ -36,20 +36,10 @@ export class Reconciler {
         const change = list.head;
 
         switch (change.constructor) {
-          case InsertMany:
-            insertMany(
-              node,
-              change.children,
-              change.before,
-              this.#dispatch,
-              this.#root,
-            );
-            break;
-
           case Insert:
             insert(
               node,
-              change.child,
+              change.children,
               change.before,
               this.#dispatch,
               this.#root,
@@ -74,6 +64,10 @@ export class Reconciler {
 
           case ReplaceText:
             replaceText(node, change.content);
+            break;
+
+          case ReplaceInnerHtml:
+            replaceInnerHtml(node, change.inner_html);
             break;
 
           case Update:
@@ -113,7 +107,7 @@ export class Reconciler {
 
 // CHANGES ---------------------------------------------------------------------
 
-function insertMany(node, children, before, dispatch, root) {
+function insert(node, children, before, dispatch, root) {
   const fragment = document.createDocumentFragment();
 
   for (let list = children; list.tail; list = list.tail) {
@@ -129,17 +123,6 @@ function insertMany(node, children, before, dispatch, root) {
   }
 
   node.insertBefore(fragment, node.childNodes[before] ?? null);
-}
-
-function insert(node, child, before, dispatch, root) {
-  const el = createElement(child, dispatch, root);
-
-  if (child.key) {
-    const ref = new WeakRef(unwrapFragment(el));
-    node[meta].keyedChildren.set(child.key, ref);
-  }
-
-  node.insertBefore(el, node.childNodes[before] ?? null);
 }
 
 function move(node, key, before, count) {
@@ -197,6 +180,10 @@ function replaceText(node, content) {
   node.data = content;
 }
 
+function replaceInnerHtml(node, inner_html) {
+  node.innerHTML = inner_html;
+}
+
 function update(node, added, removed, dispatch, root) {
   for (let list = removed; list.tail; list = list.tail) {
     const name = list.head.name;
@@ -242,7 +229,7 @@ function createElement(vnode, dispatch, root) {
         createAttribute(node, list.head, dispatch, root);
       }
 
-      insertMany(node, vnode.children, 0, dispatch, root);
+      insert(node, vnode.children, 0, dispatch, root);
 
       return node;
     }
@@ -261,6 +248,25 @@ function createElement(vnode, dispatch, root) {
       for (let list = vnode.children; list.tail; list = list.tail) {
         node.appendChild(createElement(list.head, dispatch, root));
       }
+
+      return node;
+    }
+
+    case UnsafeInnerHtml: {
+      const node = vnode.namespace
+        ? document.createElementNS(vnode.namespace, vnode.tag)
+        : document.createElement(vnode.tag);
+
+      node[meta] = {
+        key: vnode.key,
+        handlers: new Map(),
+      };
+
+      for (let list = vnode.attributes; list.tail; list = list.tail) {
+        createAttribute(node, list.head, dispatch, root);
+      }
+
+      replaceInnerHtml(node, vnode.inner_html);
 
       return node;
     }

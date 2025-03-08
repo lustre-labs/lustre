@@ -6,10 +6,9 @@ import lustre/element
 import lustre/element/html
 import lustre/element/keyed
 import lustre/vdom/diff.{
-  Insert, InsertMany, Move, Patch, Remove, RemoveKey, Replace, ReplaceText,
-  Update,
+  Insert, Move, Patch, Remove, RemoveKey, Replace, ReplaceText, Update,
 }
-import lustre/vdom/node
+import lustre/vdom/node.{to_keyed}
 import lustre_test
 
 pub fn empty_node_test() {
@@ -160,7 +159,7 @@ pub fn node_many_children_changed_test() {
 
   let diff =
     Patch(0, 0, [], [
-      Patch(0, 0, [InsertMany([html.p([], [html.text("...")])], 2)], [
+      Patch(0, 0, [Insert([html.p([], [html.text("...")])], 2)], [
         Patch(1, 0, [Replace(html.hr([]))], []),
         Patch(0, 0, [Update([attribute.class("flash")], [])], [
           Patch(0, 0, [ReplaceText("Hello, Joe!")], []),
@@ -201,7 +200,7 @@ pub fn fragment_many_children_changed_test() {
     ])
 
   let diff =
-    Patch(0, 0, [InsertMany([html.p([], [html.text("...")])], 2)], [
+    Patch(0, 0, [Insert([html.p([], [html.text("...")])], 2)], [
       Patch(1, 0, [Replace(html.hr([]))], []),
       Patch(0, 0, [Update([attribute.class("flash")], [])], [
         Patch(0, 0, [ReplaceText("Hello, Joe!")], []),
@@ -276,7 +275,7 @@ pub fn fragment_update_with_different_children_counts_test() {
         0,
         [
           Remove(from: 3, count: 2),
-          InsertMany([html.text("b"), html.text("c")], before: 2),
+          Insert([html.text("b"), html.text("c")], before: 2),
         ],
         [
           Patch(4, 0, [Replace(x)], []),
@@ -301,7 +300,7 @@ pub fn fragment_prepend_and_replace_with_node_test() {
 
   let diff =
     Patch(0, 0, [], [
-      Patch(0, 0, [InsertMany([ab], before: 2), Remove(from: 1, count: 1)], [
+      Patch(0, 0, [Insert([ab], before: 2), Remove(from: 1, count: 1)], [
         Patch(0, 0, [Replace(x)], []),
       ]),
     ])
@@ -419,7 +418,7 @@ pub fn keyed_insert_test() {
       Patch(
         0,
         0,
-        [Insert(keyed("d", html.span([], [])), 1), Move("c", 0, 1)],
+        [Insert([to_keyed("d", html.span([], []))], 1), Move("c", 0, 1)],
         [],
       ),
     ])
@@ -598,7 +597,7 @@ pub fn empty_to_multiple_children_test() {
         0,
         0,
         [
-          InsertMany(
+          Insert(
             [
               html.h1([], [html.text("Title")]),
               html.p([], [html.text("Paragraph")]),
@@ -695,7 +694,7 @@ pub fn keyed_move_fragment_with_replace_with_different_count_test() {
 
   let diff =
     Patch(0, 0, [], [
-      Patch(0, 0, [InsertMany([keyed("cd", cd)], 3), RemoveKey("x", 1)], []),
+      Patch(0, 0, [Insert([to_keyed("cd", cd)], 3), RemoveKey("x", 1)], []),
     ])
 
   diff.diff(prev, next, 0).patch
@@ -703,7 +702,7 @@ pub fn keyed_move_fragment_with_replace_with_different_count_test() {
 
   // reverse
 
-  let diff = Patch(0, 0, [], [Patch(0, 2, [Insert(keyed("x", x), 0)], [])])
+  let diff = Patch(0, 0, [], [Patch(0, 2, [Insert([to_keyed("x", x)], 0)], [])])
 
   diff.diff(next, prev, 0).patch
   |> should.equal(diff)
@@ -731,14 +730,14 @@ pub fn keyed_move_fragment_with_replace_to_simple_node_test() {
         0,
         0,
         [
-          InsertMany(
-            [keyed("b", html.text("b")), keyed("c", html.text("c"))],
+          Insert(
+            [to_keyed("b", html.text("b")), to_keyed("c", html.text("c"))],
             3,
           ),
           Remove(2, 1),
           RemoveKey("x", 1),
         ],
-        [Patch(0, 0, [Replace(keyed("a", html.text("a")))], [])],
+        [Patch(0, 0, [Replace(to_keyed("a", html.text("a")))], [])],
       ),
     ])
 
@@ -762,9 +761,9 @@ pub fn keyed_replace_fragment_test() {
 
   let diff =
     Patch(0, 0, [], [
-      Patch(0, 0, [InsertMany([keyed("c", html.text("c"))], 3), Remove(2, 1)], [
-        Patch(1, 0, [Replace(keyed("b", html.text("b")))], []),
-        Patch(0, 0, [Replace(keyed("a", html.text("a")))], []),
+      Patch(0, 0, [Insert([to_keyed("c", html.text("c"))], 3), Remove(2, 1)], [
+        Patch(1, 0, [Replace(to_keyed("b", html.text("b")))], []),
+        Patch(0, 0, [Replace(to_keyed("a", html.text("a")))], []),
       ]),
     ])
 
@@ -781,7 +780,7 @@ pub fn keyed_insert_fragment_test() {
 
   let diff =
     Patch(0, 0, [], [
-      Patch(0, 0, [Insert(keyed("xyz", xyz), 0)], [
+      Patch(0, 0, [Insert([to_keyed("xyz", xyz)], 0)], [
         Patch(3, 0, [ReplaceText("A")], []),
       ]),
     ])
@@ -849,7 +848,12 @@ pub fn keyed_fragment_insert_test() {
     ])
 
   let diff =
-    Patch(0, 0, [Insert(keyed("d", html.span([], [])), 1), Move("c", 0, 1)], [])
+    Patch(
+      0,
+      0,
+      [Insert([to_keyed("d", html.span([], []))], 1), Move("c", 0, 1)],
+      [],
+    )
 
   diff.diff(prev, next, 0).patch
   |> should.equal(diff)
@@ -877,7 +881,7 @@ pub fn node_initial_offset_test() {
 
   let diff =
     Patch(0, 0, [], [
-      Patch(offset, 0, [InsertMany([html.p([], [html.text("...")])], 2)], [
+      Patch(offset, 0, [Insert([html.p([], [html.text("...")])], 2)], [
         Patch(1, 0, [Replace(html.hr([]))], []),
         Patch(0, 0, [Update([attribute.class("flash")], [])], [
           Patch(0, 0, [ReplaceText("Hello, Joe!")], []),
@@ -907,7 +911,7 @@ pub fn fragment_initial_offset_test() {
   let offset = 42
 
   let diff =
-    Patch(0, 0, [InsertMany([html.p([], [html.text("...")])], offset + 2)], [
+    Patch(0, 0, [Insert([html.p([], [html.text("...")])], offset + 2)], [
       Patch(offset + 1, 0, [Replace(html.hr([]))], []),
       Patch(offset + 0, 0, [Update([attribute.class("flash")], [])], [
         Patch(0, 0, [ReplaceText("Hello, Joe!")], []),
@@ -916,14 +920,4 @@ pub fn fragment_initial_offset_test() {
 
   diff.diff(prev, next, 42).patch
   |> should.equal(diff)
-}
-
-// UTILS -----------------------------------------------------------------------
-
-fn keyed(key, el) {
-  case el {
-    node.Fragment(..) -> node.Fragment(..el, key:)
-    node.Element(..) -> node.Element(..el, key:)
-    node.Text(..) -> node.Text(..el, key:)
-  }
 }
