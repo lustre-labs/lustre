@@ -7,6 +7,12 @@ import {
   element_namespace,
   element_attributes,
   element_children,
+  unsafe_inner_html_variant,
+  unsafe_inner_html_key,
+  unsafe_inner_html_tag,
+  unsafe_inner_html_namespace,
+  unsafe_inner_html_attributes,
+  unsafe_inner_html_inner_html,
   text_variant,
   text_key,
   text_content,
@@ -30,12 +36,11 @@ import {
   replace_element,
   replace_text_variant,
   replace_text_content,
+  replace_inner_html_variant,
+  replace_inner_html_inner_html,
   update_variant,
   update_added,
   update_removed,
-  insert_variant,
-  insert_child,
-  insert_before,
   move_variant,
   move_key,
   move_before,
@@ -43,9 +48,9 @@ import {
   remove_key_variant,
   remove_key_key,
   remove_key_count,
-  insert_many_variant,
-  insert_many_children,
-  insert_many_before,
+  insert_variant,
+  insert_children,
+  insert_before,
   remove_variant,
   remove_from,
   remove_count,
@@ -76,20 +81,10 @@ export class Reconciler {
         const change = patch[patch_changes][i];
 
         switch (change[0]) {
-          case insert_many_variant:
-            insertMany(
-              node,
-              change[insert_many_children],
-              change[insert_many_before],
-              this.#dispatch,
-              this.#root,
-            );
-            break;
-
           case insert_variant:
             insert(
               node,
-              change[insert_child],
+              change[insert_children],
               change[insert_before],
               this.#dispatch,
               this.#root,
@@ -119,6 +114,10 @@ export class Reconciler {
 
           case replace_text_variant:
             replaceText(node, change[replace_text_content]);
+            break;
+
+          case replace_inner_html_variant:
+            replaceInnerHtml(node, change[replace_inner_html_inner_html]);
             break;
 
           case update_variant:
@@ -158,7 +157,7 @@ export class Reconciler {
 
 // CHANGES ---------------------------------------------------------------------
 
-function insertMany(node, children, before, dispatch, root) {
+function insert(node, children, before, dispatch, root) {
   const fragment = document.createDocumentFragment();
 
   for (let i = 0; i < children.length; i++) {
@@ -174,17 +173,6 @@ function insertMany(node, children, before, dispatch, root) {
   }
 
   node.insertBefore(fragment, node.childNodes[before] ?? null);
-}
-
-function insert(node, child, before, dispatch, root) {
-  const el = createElement(child, dispatch, root);
-
-  if (child[element_key]) {
-    const ref = new WeakRef(unwrapFragment(el));
-    node[meta].keyedChildren.set(child[element_key], ref);
-  }
-
-  node.insertBefore(el, node.childNodes[before] ?? null);
 }
 
 function move(node, key, before, count) {
@@ -242,6 +230,10 @@ function replaceText(node, content) {
   node.data = content;
 }
 
+function replaceInnerHtml(node, inner_html) {
+  node.innerHTML = inner_html;
+}
+
 function update(node, added, removed, dispatch, root) {
   for (let i = 0; i < removed.length; i++) {
     const name = removed[i][attribute_name];
@@ -287,7 +279,7 @@ function createElement(vnode, dispatch, root) {
         createAttribute(node, vnode[element_attributes][i], dispatch, root);
       }
 
-      insertMany(node, vnode[element_children], 0, dispatch, root);
+      insert(node, vnode[element_children], 0, dispatch, root);
 
       return node;
     }
@@ -308,6 +300,28 @@ function createElement(vnode, dispatch, root) {
           createElement(vnode[fragment_children][i], dispatch, root),
         );
       }
+
+      return node;
+    }
+
+    case unsafe_inner_html_variant: {
+      const node = vnode[unsafe_inner_html_namespace]
+        ? document.createElementNS(
+            vnode[unsafe_inner_html_namespace],
+            vnode[unsafe_inner_html_tag]
+          )
+        : document.createElement(vnode[unsafe_inner_html_tag]);
+
+      node[meta] = {
+        key: vnode[unsafe_inner_html_key],
+        handlers: new Map(),
+      };
+
+      for (let i = 0; i < vnode[unsafe_inner_html_attributes].length; i++) {
+        createAttribute(node, vnode[unsafe_inner_html_attributes][i], dispatch, root);
+      }
+
+      replaceInnerHtml(node, vnode[unsafe_inner_html_inner_html]);
 
       return node;
     }

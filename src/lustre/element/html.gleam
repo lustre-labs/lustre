@@ -45,7 +45,7 @@ pub fn meta(attrs: List(Attribute(msg))) -> Element(msg) {
 
 ///
 pub fn style(attrs: List(Attribute(msg)), css: String) -> Element(msg) {
-  element("style", attrs, [text(css)])
+  element.unsafe_inner_html("", "style", attrs, css)
 }
 
 ///
@@ -644,7 +644,7 @@ pub fn noscript(
 
 ///
 pub fn script(attrs: List(Attribute(msg)), js: String) -> Element(msg) {
-  element("script", attrs, [text(js)])
+  element.unsafe_inner_html("", "script", attrs, js)
 }
 
 // HTML ELEMENTS: DEMARCATING EDITS ---------------------------------------------

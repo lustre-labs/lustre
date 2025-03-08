@@ -9,7 +9,7 @@ import gleam/result
 import gleam/string
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/attribute.{type Attribute, Event}
-import lustre/vdom/node.{type Node, Element, Fragment, Text}
+import lustre/vdom/node.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -113,22 +113,10 @@ pub fn add_child(
         Some(child_mapper) -> fn(msg) { msg |> child_mapper |> mapper }
       }
 
-      let child_events =
-        attributes
-        |> attributes_to_handlers(composed_mapper, parent.handlers)
-        |> add_children(composed_mapper, index, children)
-
-      Events(
-        ..parent,
-        children: mutable_map.insert(
-          parent.children,
-          case key {
-            "" -> int.to_string(index)
-            key -> key
-          },
-          child_events,
-        ),
-      )
+      attributes
+      |> attributes_to_handlers(composed_mapper, parent.handlers)
+      |> add_children(composed_mapper, index, children)
+      |> insert_child_events(parent, index, key, _)
     }
 
     Fragment(children:, ..) -> {
@@ -142,8 +130,33 @@ pub fn add_child(
       })
     }
 
+    UnsafeInnerHtml(key:, attributes:, ..) -> {
+      let composed_mapper = case child.mapper {
+        None -> mapper
+        Some(child_mapper) -> fn(msg) { msg |> child_mapper |> mapper }
+      }
+
+      attributes
+      |> attributes_to_handlers(composed_mapper, parent.handlers)
+      |> insert_child_events(parent, index, key, _)
+    }
+
     Text(..) -> parent
   }
+}
+
+fn insert_child_events(
+  events: Events(msg),
+  index: Int,
+  key: String,
+  child_events: Events(msg),
+) -> Events(msg) {
+  let key = case key {
+    "" -> int.to_string(index)
+    key -> key
+  }
+  let children = mutable_map.insert(events.children, key, child_events)
+  Events(..events, children:)
 }
 
 ///
