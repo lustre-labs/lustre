@@ -188,17 +188,6 @@ pub fn add_children(
 ///
 pub fn handle(
   events: Events(msg),
-  path: String,
-  name: String,
-  event: Dynamic,
-) -> Result(msg, List(DecodeError)) {
-  path
-  |> string.split(".")
-  |> do_handle(events, _, name, event)
-}
-
-fn do_handle(
-  events: Events(msg),
   path: List(String),
   name: String,
   event: Dynamic,
@@ -215,7 +204,7 @@ fn do_handle(
 
     [key, ..path] ->
       case mutable_map.get(events.children, key) {
-        Ok(child) -> do_handle(child, path, name, event)
+        Ok(child) -> handle(child, path, name, event)
         Error(_) -> Error([])
       }
   }

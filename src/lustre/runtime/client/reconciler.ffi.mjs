@@ -333,26 +333,17 @@ function createAttribute(node, attribute, dispatch, root) {
         if (prevent) event.preventDefault();
         if (stop) event.stopPropagation();
 
-        let node = event.target;
-        let node = event.currentTarget;
-        let path =
-          node[meta].key ||
-          [].indexOf.call(node.parentNode.childNodes, node).toString();
-
-        node = node.parentNode;
-
-        while (node !== root) {
+        let path = [];
+        for (let node = event.currentTarget; node !== root; node = node.parentNode) {
           const key = node[meta].key;
-
           if (key) {
-            path = `${key}.${path}`;
+            path.push(key);
           } else {
             const index = [].indexOf.call(node.parentNode.childNodes, node);
-            path = `${index}.${path}`;
+            path.push(index.toString());
           }
-
-          node = node.parentNode;
         }
+        path.reverse();
 
         dispatch(event, path, event.type, immediate);
       });

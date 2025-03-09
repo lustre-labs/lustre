@@ -1,4 +1,5 @@
 // IMPORTS ---------------------------------------------------------------------
+import { toList } from "../../../gleam.mjs";
 import { diff } from "../../vdom/diff.mjs";
 import * as Events from "../../vdom/events.mjs";
 import { Reconciler } from "./reconciler.ffi.mjs";
@@ -54,7 +55,7 @@ export class Runtime {
     this.#reconciler = new Reconciler(
       this.#root,
       (event, path, name, immediate) => {
-        const msg = Events.handle(this.#events, path, name, event);
+        const msg = Events.handle(this.#events, toList(path), name, event);
 
         if (msg.isOk()) {
           this.dispatch(msg[0], immediate);
