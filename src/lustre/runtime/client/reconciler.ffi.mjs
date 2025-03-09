@@ -371,7 +371,11 @@ const ATTRIBUTE_HOOKS = {
 
   autoplay: {
     added(node) {
-      node.play?.()
+      try {
+        node.play?.()
+      } catch(e) {
+        console.error(e)
+      }
     }
   }
 }
