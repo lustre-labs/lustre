@@ -1,3 +1,5 @@
+// IMPORTS ---------------------------------------------------------------------
+
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
@@ -7,6 +9,7 @@ import gleam/function
 import gleam/json.{type Json}
 import gleam/option.{Some}
 import gleam/otp/actor.{type Next, type StartError, Spec}
+import gleam/set.{type Set}
 import lustre/effect.{type Effect}
 import lustre/runtime/transport.{type ClientMessage, type ServerMessage}
 import lustre/vdom/diff.{Diff, diff}
@@ -34,6 +37,7 @@ pub type State(model, msg) {
     events: Events(msg),
     //
     subscribers: Dict(Subject(ClientMessage(msg)), ProcessMonitor),
+    callbacks: Set(fn(ClientMessage(msg)) -> Nil),
   )
 }
 
@@ -71,7 +75,10 @@ pub fn start(
         events:,
         //
         subscribers: dict.new(),
+        callbacks: set.new(),
       )
+
+    handle_effect(self, init.1)
 
     actor.Ready(state, base_selector)
   })
@@ -81,8 +88,10 @@ pub fn start(
 
 pub type Message(msg) {
   ClientDispatchedMessage(message: ServerMessage)
-  ClientSubscribed(client: Subject(ClientMessage(msg)))
-  ClientUnsubscribed(client: Subject(ClientMessage(msg)))
+  ClientRegisteredSubject(client: Subject(ClientMessage(msg)))
+  ClientDeregisteredSubject(client: Subject(ClientMessage(msg)))
+  ClientRegisteredCallback(callback: fn(ClientMessage(msg)) -> Nil)
+  ClientDeregisteredCallback(callback: fn(ClientMessage(msg)) -> Nil)
   //
   EffectAddedSelector(selector: Selector(Message(msg)))
   EffectDispatchedMessage(message: msg)
@@ -114,7 +123,8 @@ fn loop(
       let Diff(patch:, events:) = diff(state.vdom, vdom, 0)
 
       handle_effect(state.self, effect)
-      broadcast(state.subscribers, transport.Reconcile(patch))
+      broadcast(state.subscribers, state.callbacks, transport.Reconcile(patch))
+
       actor.continue(State(..state, model:, vdom:, events:))
     }
 
@@ -123,16 +133,21 @@ fn loop(
         Error(_) -> actor.continue(state)
         Ok(message) -> {
           let #(model, effect) = state.update(state.model, message)
-          let vdom = state.view(state.model)
+          let vdom = state.view(model)
           let Diff(patch:, events:) = diff(state.vdom, vdom, 0)
 
           handle_effect(state.self, effect)
-          broadcast(state.subscribers, transport.Reconcile(patch))
+          broadcast(
+            state.subscribers,
+            state.callbacks,
+            transport.Reconcile(patch),
+          )
+
           actor.continue(State(..state, model:, vdom:, events:))
         }
       }
 
-    ClientSubscribed(client:) ->
+    ClientRegisteredSubject(client:) ->
       case dict.has_key(state.subscribers, client) {
         True -> actor.continue(state)
         False -> {
@@ -140,15 +155,17 @@ fn loop(
           let subscribers = dict.insert(state.subscribers, client, monitor)
           let selector = {
             use selector, client, monitor <- dict.fold(
-              state.subscribers,
+              subscribers,
               state.base_selector,
             )
-            let unsubscribe = fn(_) { ClientUnsubscribed(client:) }
 
-            process.selecting_process_down(selector, monitor, unsubscribe)
+            process.selecting_process_down(selector, monitor, fn(_) {
+              ClientDeregisteredSubject(client:)
+            })
           }
 
           process.send(client, transport.Mount(state.vdom))
+
           actor.Continue(
             State(..state, subscribers:, selector:),
             Some(selector),
@@ -156,7 +173,7 @@ fn loop(
         }
       }
 
-    ClientUnsubscribed(client:) ->
+    ClientDeregisteredSubject(client:) ->
       case dict.get(state.subscribers, client) {
         Error(_) -> actor.continue(state)
         Ok(monitor) -> {
@@ -164,10 +181,10 @@ fn loop(
           let subscribers = dict.delete(state.subscribers, client)
           let selector = {
             use selector, client, monitor <- dict.fold(
-              state.subscribers,
+              subscribers,
               state.base_selector,
             )
-            let unsubscribe = fn(_) { ClientUnsubscribed(client:) }
+            let unsubscribe = fn(_) { ClientDeregisteredSubject(client:) }
 
             process.selecting_process_down(selector, monitor, unsubscribe)
           }
@@ -176,6 +193,27 @@ fn loop(
             State(..state, subscribers:, selector:),
             Some(selector),
           )
+        }
+      }
+
+    ClientRegisteredCallback(callback:) ->
+      case set.contains(state.callbacks, callback) {
+        True -> actor.continue(state)
+        False -> {
+          let callbacks = set.insert(state.callbacks, callback)
+
+          callback(transport.Mount(state.vdom))
+          actor.continue(State(..state, callbacks:))
+        }
+      }
+
+    ClientDeregisteredCallback(callback:) ->
+      case set.contains(state.callbacks, callback) {
+        False -> actor.continue(state)
+        True -> {
+          let callbacks = set.delete(state.callbacks, callback)
+
+          actor.continue(State(..state, callbacks:))
         }
       }
 
@@ -192,24 +230,31 @@ fn loop(
       let Diff(patch:, events:) = diff(state.vdom, vdom, 0)
 
       handle_effect(state.self, effect)
-      broadcast(state.subscribers, transport.Reconcile(patch))
+      broadcast(state.subscribers, state.callbacks, transport.Reconcile(patch))
+
       actor.continue(State(..state, model:, vdom:, events:))
     }
+
     EffectEmitEvent(name:, data:) -> {
-      broadcast(state.subscribers, transport.Emit(name, data))
+      broadcast(state.subscribers, state.callbacks, transport.Emit(name, data))
+
       actor.continue(state)
     }
 
     SelfDispatchedMessages(messages: [], effect:) -> {
+      let vdom = state.view(state.model)
+      let Diff(patch:, events:) = diff(state.vdom, vdom, 0)
+
       handle_effect(state.self, effect)
-      actor.continue(state)
+      broadcast(state.subscribers, state.callbacks, transport.Reconcile(patch))
+
+      actor.continue(State(..state, vdom:, events:))
     }
 
     SelfDispatchedMessages(messages: [message, ..messages], effect:) -> {
       let #(model, more_effects) = state.update(state.model, message)
-      let vdom = state.view(model)
       let effect = effect.batch([effect, more_effects])
-      let state = State(..state, model:, vdom:)
+      let state = State(..state, model:)
 
       loop(SelfDispatchedMessages(messages, effect), state)
     }
@@ -219,7 +264,7 @@ fn loop(
         process.demonitor_process(monitor)
       })
 
-      actor.Stop(process.Killed)
+      actor.Stop(process.Normal)
     }
   }
 }
@@ -293,8 +338,9 @@ fn handle_effect(self: Subject(Message(msg)), effect: Effect(msg)) -> Nil {
 @external(javascript, "../client/core.ffi.mjs", "throw_server_component_error")
 fn broadcast(
   clients: Dict(Subject(ClientMessage(msg)), ProcessMonitor),
+  callbacks: Set(fn(ClientMessage(msg)) -> Nil),
   message: ClientMessage(msg),
 ) -> Nil {
-  use client, _ <- dict.each(clients)
-  process.send(client, message)
+  dict.each(clients, fn(client, _) { process.send(client, message) })
+  set.each(callbacks, fn(callback) { callback(message) })
 }

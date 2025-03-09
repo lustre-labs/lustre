@@ -20,6 +20,82 @@ import {
 
 //
 
+class WebsocketTransport {
+  #url;
+  #socket;
+
+  constructor(url, onMessage, {}) {
+    this.#url = url;
+    this.#socket = new WebSocket(this.#url);
+    this.#socket.onmessage = ({ data }) => {
+      try {
+        onMessage(JSON.parse(data));
+      } catch {}
+    };
+  }
+
+  send(data) {
+    this.#socket.send(JSON.stringify(data));
+  }
+
+  close() {
+    this.#socket.close();
+  }
+}
+
+class SseTransport {
+  #url;
+  #eventSource;
+
+  constructor(url, onMessage, {}) {
+    this.#url = url;
+    this.#eventSource = new EventSource(url);
+    this.#eventSource.onmessage = ({ data }) => {
+      try {
+        onMessage(JSON.parse(data));
+      } catch {}
+    };
+  }
+
+  send(data) {}
+
+  close() {
+    this.#eventSource.close();
+  }
+}
+
+class PollingTransport {
+  #url;
+  #onMessage;
+  #interval;
+  #timer;
+
+  constructor(url, onMessage, opts = {}) {
+    this.#url = url;
+    this.#onMessage = onMessage;
+    this.#interval = opts.interval ?? 5000;
+
+    this.#fetch().finally(() => {
+      this.#timer = window.setInterval(() => this.#fetch(), this.#interval);
+    });
+  }
+
+  async send(data) {}
+
+  close() {
+    clearInterval(this.#timer);
+  }
+
+  #fetch() {
+    return fetch(this.#url)
+      .then((response) => response.json())
+      .then(this.#onMessage)
+      .catch(console.error);
+  }
+}
+
+//
+
 export class ServerComponent extends HTMLElement {
   static get observedAttributes() {
     return ["route", "method"];
@@ -67,6 +143,13 @@ export class ServerComponent extends HTMLElement {
     this.#observer.observe(this, {
       attributes: true,
     });
+
+    this.#method = this.getAttribute("method") || "ws";
+
+    if (this.hasAttribute("route")) {
+      this.#route = new URL(this.getAttribute("route"), window.location.href);
+      this.#connect();
+    }
   }
 
   adoptedCallback() {
@@ -155,10 +238,6 @@ export class ServerComponent extends HTMLElement {
       case "polling":
         this.#transport = new PollingTransport(this.#route, onMessage, {});
         break;
-
-      case "http":
-        this.#transport = new HttpTransport(this.#route, onMessage);
-        break;
     }
   }
 
@@ -174,114 +253,4 @@ export class ServerComponent extends HTMLElement {
   }
 }
 
-//
-
-class WebsocketTransport {
-  #url;
-  #socket;
-
-  constructor(url, onMessage, {}) {
-    this.#url = url;
-    this.#socket = new WebSocket(this.#url);
-    this.#socket.onmessage = onMessage;
-  }
-
-  send(data) {
-    this.#socket.send(JSON.stringify(data));
-  }
-
-  close() {
-    this.#socket.close();
-  }
-}
-
-class SseTransport {
-  #url;
-  #eventSource;
-
-  constructor(url, onMessage, {}) {
-    this.#url = url;
-    this.#eventSource = new EventSource(url);
-    this.#eventSource.onmessage = onMessage;
-  }
-
-  send(data) {
-    fetch(this.#url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-  }
-
-  close() {
-    this.#eventSource.close();
-  }
-}
-
-class PollingTransport {
-  #url;
-  #onMessage;
-  #interval;
-  #timer;
-
-  constructor(url, onMessage, opts = {}) {
-    this.#url = url;
-    this.#onMessage = onMessage;
-    this.#interval = opts.interval ?? 1000;
-    this.#timer = window.setInterval(() => {
-      fetch(this.#url)
-        .then((response) => response.json())
-        .then(this.#onMessage);
-    }, this.#interval);
-  }
-
-  async send(data) {
-    const res = await fetch(this.#url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-    const json = await res.json();
-
-    window.clearInterval(this.#timer);
-
-    this.#onMessage(json);
-    this.#timer = window.setInterval(() => {
-      fetch(this.#url)
-        .then((response) => response.json())
-        .then(this.#onMessage);
-    }, this.#interval);
-  }
-
-  close() {
-    clearInterval(this.#timer);
-  }
-}
-
-class HttpTransport {
-  #url;
-  #onMessage;
-
-  constructor(url, onMessage) {
-    this.#url = url;
-    this.#onMessage = onMessage;
-  }
-
-  send(data) {
-    fetch(this.#url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    })
-      .then((res) => res.json())
-      .then((data) => this.#onMessage(data));
-  }
-
-  close() {}
-}
+window.customElements.define("lustre-server-component", ServerComponent);

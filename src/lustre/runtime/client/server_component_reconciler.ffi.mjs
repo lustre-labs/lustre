@@ -68,6 +68,10 @@ export class Reconciler {
     this.#dispatch = dispatch;
   }
 
+  mount(vdom) {
+    this.#root.appendChild(createElement(vdom, this.#dispatch, this.#root));
+  }
+
   push(patch) {
     this.#stack.push({ node: this.#root, patch });
     this.#reconcile();
@@ -308,7 +312,7 @@ function createElement(vnode, dispatch, root) {
       const node = vnode[unsafe_inner_html_namespace]
         ? document.createElementNS(
             vnode[unsafe_inner_html_namespace],
-            vnode[unsafe_inner_html_tag]
+            vnode[unsafe_inner_html_tag],
           )
         : document.createElement(vnode[unsafe_inner_html_tag]);
 
@@ -318,7 +322,12 @@ function createElement(vnode, dispatch, root) {
       };
 
       for (let i = 0; i < vnode[unsafe_inner_html_attributes].length; i++) {
-        createAttribute(node, vnode[unsafe_inner_html_attributes][i], dispatch, root);
+        createAttribute(
+          node,
+          vnode[unsafe_inner_html_attributes][i],
+          dispatch,
+          root,
+        );
       }
 
       replaceInnerHtml(node, vnode[unsafe_inner_html_inner_html]);
@@ -332,61 +341,65 @@ function createElement(vnode, dispatch, root) {
 
 function createAttribute(node, attribute, dispatch, root) {
   switch (attribute[0]) {
-    case attribute_variant: {
-      const name = attribute[attribute_name];
-      const value = attribute[attribute_value];
+    case attribute_variant:
+      {
+        const name = attribute[attribute_name];
+        const value = attribute[attribute_value];
 
-      if (value !== node.getAttribute(name)) {
-        node.setAttribute(name, value);
+        if (value !== node.getAttribute(name)) {
+          node.setAttribute(name, value);
+        }
+
+        ATTRIBUTE_HOOKS[name]?.added?.(node, value);
       }
-
-      ATTRIBUTE_HOOKS[name]?.added?.(node, value);
-    } break;
+      break;
 
     case property_variant:
       node[attribute[property_name]] = attribute[property_value];
       break;
 
-    case event_variant: {
-      if (!node[meta].handlers.has(attribute[event_name])) {
-        node.addEventListener(attribute[event_name], handleEvent, {
-          passive: !attribute[event_prevent_default],
-        });
-      }
-
-      const prevent = attribute[event_prevent_default];
-      const stop = attribute[event_stop_propagation];
-      const immediate =
-        attribute[event_immediate] ||
-        IMMEDIATE_EVENTS.includes(attribute[event_name]);
-
-      node[meta].handlers.set(attribute[event_name], (event) => {
-        if (prevent) event.preventDefault();
-        if (stop) event.stopPropagation();
-
-        let node = event.target;
-        let path =
-          node[meta].key ||
-          [].indexOf.call(node.parentNode.childNodes, node).toString();
-
-        node = node.parentNode;
-
-        while (node !== root) {
-          const key = node[meta].key;
-
-          if (key) {
-            path = `${key}.${path}`;
-          } else {
-            const index = [].indexOf.call(node.parentNode.childNodes, node);
-            path = `${index}.${path}`;
-          }
-
-          node = node.parentNode;
+    case event_variant:
+      {
+        if (!node[meta].handlers.has(attribute[event_name])) {
+          node.addEventListener(attribute[event_name], handleEvent, {
+            passive: !attribute[event_prevent_default],
+          });
         }
 
-        dispatch(event, path, event.type, immediate);
-      });
-    } break;
+        const prevent = attribute[event_prevent_default];
+        const stop = attribute[event_stop_propagation];
+        const immediate =
+          attribute[event_immediate] ||
+          IMMEDIATE_EVENTS.includes(attribute[event_name]);
+
+        node[meta].handlers.set(attribute[event_name], (event) => {
+          if (prevent) event.preventDefault();
+          if (stop) event.stopPropagation();
+
+          let node = event.target;
+          let path =
+            node[meta].key ||
+            [].indexOf.call(node.parentNode.childNodes, node).toString();
+
+          node = node.parentNode;
+
+          while (node !== root) {
+            const key = node[meta].key;
+
+            if (key) {
+              path = `${key}.${path}`;
+            } else {
+              const index = [].indexOf.call(node.parentNode.childNodes, node);
+              path = `${index}.${path}`;
+            }
+
+            node = node.parentNode;
+          }
+
+          dispatch(event, path, event.type, immediate);
+        });
+      }
+      break;
   }
 }
 
@@ -398,40 +411,40 @@ function handleEvent(event) {
 }
 
 const ATTRIBUTE_HOOKS = {
-  checked: syncedBooleanAttribute('checked'),
-  selected: syncedBooleanAttribute('selected'),
-  value: syncedAttribute('value'),
+  checked: syncedBooleanAttribute("checked"),
+  selected: syncedBooleanAttribute("selected"),
+  value: syncedAttribute("value"),
 
   autofocus: {
     added(node) {
-      node.focus?.()
-    }
+      node.focus?.();
+    },
   },
 
   autoplay: {
     added(node) {
-      node.play?.()
-    }
-  }
-}
+      node.play?.();
+    },
+  },
+};
 
 function syncedBooleanAttribute(name) {
   return {
     added(node, value) {
-      node[name] = true
+      node[name] = true;
     },
     removed(node) {
-      node[name] = false
-    }
-  }
+      node[name] = false;
+    },
+  };
 }
 
 function syncedAttribute(name) {
   return {
     added(node, value) {
-      node[name] = value
-    }
-  }
+      node[name] = value;
+    },
+  };
 }
 
 const IMMEDIATE_EVENTS = [

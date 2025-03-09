@@ -161,18 +161,13 @@
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode.{type Decoder}
+import gleam/erlang/process.{type Subject}
 import gleam/otp/actor.{type StartError}
 import gleam/result
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/internals/constants
 import lustre/runtime/server/runtime
-
-@target(javascript)
-import gleam/erlang/process
-
-@target(erlang)
-import gleam/erlang/process.{type Subject}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -224,12 +219,9 @@ pub type Error {
   NotErlang
 }
 
-@target(javascript)
+///
+///
 pub type Runtime(msg)
-
-@target(erlang)
-pub type Runtime(msg) =
-  Subject(RuntimeMessage(msg))
 
 ///
 ///
@@ -237,26 +229,6 @@ pub type RuntimeMessage(msg) =
   runtime.Message(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
-
-/// An element is the simplest type of Lustre application. It renders its contents
-/// once and does not handle any messages or effects. Often this type of application
-/// is used for folks just getting started with Lustre on the frontend and want a
-/// quick way to get something on the screen.
-///
-/// Take a look at the [`simple`](#simple) application constructor if you want to
-/// build something interactive.
-///
-/// > **Note**: Just because an element doesn't have its own update loop, doesn't
-/// > mean its content is always static! An element application may render a client
-/// > or server component that has its own encapsulated update loop!
-///
-pub fn element(html: Element(msg)) -> App(Nil, Nil, msg) {
-  let init = fn(_) { #(Nil, effect.none) }
-  let update = fn(_, _) { #(Nil, effect.none) }
-  let view = fn(_) { html }
-
-  application(init, update, view)
-}
 
 /// A `simple` application has the basic Model-View-Update building blocks present
 /// in all Lustre applications, but it cannot handle effects. This is a great way
@@ -368,18 +340,32 @@ pub fn start_server_component(
   app: App(flags, model, msg),
   with flags: flags,
 ) -> Result(Runtime(msg), Error) {
+  start_actor(app, with: flags) |> coerce
+}
+
+pub fn start_actor(
+  app: App(flags, model, msg),
+  with flags: flags,
+) -> Result(Subject(RuntimeMessage(msg)), Error) {
+  do_start_actor(app, flags)
+}
+
+@target(erlang)
+fn do_start_actor(
+  app: App(flags, model, msg),
+  with flags: flags,
+) -> Result(Subject(RuntimeMessage(msg)), Error) {
   app.init(flags)
   |> runtime.start(app.update, app.view, app.on_attribute_change)
   |> result.map_error(ActorError)
-  // We're lying to the type checker for the *JavaScript* target here. We have
-  // disparate definitions of the `Runtime` type for each target, but Gleam will
-  // always check the body of this function - even though it can only be entered
-  // the Erlang target - to ensure the types agree.
-  //
-  // The JavaScript external will return our external `Runtime` type, and this
-  // function body will return an Erlang `Subject`. Never the two shall mix, so
-  // we're safe to coerce the result here.
-  |> coerce
+}
+
+@target(javascript)
+fn do_start_actor(
+  _app: App(flags, model, msg),
+  _flags: flags,
+) -> Result(Subject(RuntimeMessage(msg)), Error) {
+  Error(NotErlang)
 }
 
 /// Register a Lustre application as a Web Component. This lets you render that
@@ -410,19 +396,20 @@ pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error)
 
 // MESSAGES --------------------------------------------------------------------
 
-@external(javascript, "./lustre/runtime/server/runtime.ffi.mjs", "send")
+/// Send a message to an application running on the JavaScript target. This can
+/// be used to communicate with a Lustre application from the outside world, for
+/// example by attaching event listeners to the document to dispatch messages
+/// after the app has been started.
+///
+/// **Note**: This function is only meaningful when running on the JavaScript
+/// target as a `Runtime` can only be constructed on that target. If you are
+/// running a server component on the Erlang target, you should use Gleam's usual
+/// api for sending messages to actors and the `Subject` returned from
+/// [`start_actor`](#start_actor).
+///
+@external(javascript, "./lustre/runtime/client/core.ffi.mjs", "send")
 pub fn send(runtime: Runtime(msg), message: RuntimeMessage(msg)) -> Nil {
-  process.send(
-    // We're lying to the type checker for the *JavaScript* target here. We have
-    // disparate definitions of the `Runtime` type for each target, but Gleam will
-    // always check the body of this function - even though it can only be entered
-    // the Erlang target - to ensure the types agree.
-    //
-    // Because there's a JavaScript external handling this `send` we can be sure
-    // that the types will always match up at runtime.
-    coerce(runtime),
-    message,
-  )
+  coerce(runtime) |> process.send(message)
 }
 
 /// Dispatch a message to a running application's `update` function. This can be
