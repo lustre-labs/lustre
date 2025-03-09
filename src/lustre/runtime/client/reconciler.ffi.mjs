@@ -2,6 +2,7 @@ import { Element, Text, Fragment, UnsafeInnerHtml } from "../../vdom/node.mjs";
 import { Attribute, Property, Event } from "../../vdom/attribute.mjs";
 import {
   Insert,
+  SetKey,
   Move,
   Remove,
   RemoveKey,
@@ -44,6 +45,10 @@ export class Reconciler {
               this.#dispatch,
               this.#root,
             );
+            break;
+
+          case SetKey:
+            setKey(node, change.index, change.key);
             break;
 
           case Move:
@@ -123,6 +128,16 @@ function insert(node, children, before, dispatch, root) {
   }
 
   node.insertBefore(fragment, node.childNodes[before] ?? null);
+}
+
+function setKey(node, index, key) {
+  const el = node.childNodes[index];
+  if (el[meta].key) {
+    node[meta].keyedChildren.delete(el[meta].key);
+  }
+
+  el[meta].key = key;
+  node[meta].keyedChildren.set(key, new WeakRef(el));
 }
 
 function move(node, key, before, count) {
