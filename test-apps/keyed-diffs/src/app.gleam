@@ -1,7 +1,6 @@
 import gleam/int
 import gleam/io
 import gleam/list
-import gleam/pair
 import gleam/string
 import lustre
 import lustre/attribute.{attribute}
@@ -25,6 +24,7 @@ type Model {
     keyed: Bool,
     prev: List(Node),
     curr: List(Node),
+    last_event: String,
     next: String,
   )
 }
@@ -35,6 +35,7 @@ fn init(_) -> Model {
     keyed: True,
     prev: [],
     curr: [Node("a"), Node("b"), Node("c")],
+    last_event: "",
     next: "a b c",
   )
 }
@@ -44,6 +45,8 @@ type Msg {
   UserClickedShuffle
   UserClickedRegenerate
   UserChangedNext(String)
+  UserClickedClassic(Int)
+  UserClickedKeyed(Int, String)
 }
 
 fn update(model: Model, msg: Msg) -> Model {
@@ -59,6 +62,9 @@ fn update(model: Model, msg: Msg) -> Model {
     }
     UserClickedUpdate ->
       Model(..model, prev: model.curr, curr: parse(model.next))
+
+    UserClickedClassic(_) | UserClickedKeyed(_, _) ->
+      Model(..model, last_event: string.inspect(msg))
   }
 }
 
@@ -117,6 +123,8 @@ fn view(model: Model) -> Element(Msg) {
               html.br([]),
               html.text("Current: "),
               html.text(string.inspect(model.curr)),
+              html.br([]),
+              html.text("Last Event: " <> model.last_event),
             ]),
             html.div(
               [
@@ -168,36 +176,61 @@ fn view(model: Model) -> Element(Msg) {
 fn view_nodes_classic(children: List(Node)) {
   html.div(
     [attribute.style([#("display", "flex"), #("gap", "1em")])],
-    list.map(children, fn(child) { pair.second(view_node(child)) }),
+    list.index_map(children, view_node_classic),
   )
 }
 
 fn view_nodes_keyed(children: List(Node)) {
   keyed.div(
     [attribute.style([#("display", "flex"), #("gap", "1em")])],
-    list.map(children, view_node),
+    list.index_map(children, view_node_keyed),
   )
 }
 
-fn view_node(node: Node) {
+fn view_node_keyed(node: Node, index: Int) {
   case node {
     Node(key) -> #(
       key,
-      html.div([attribute("data-key", key)], [html.text(key)]),
+      html.div(
+        [
+          attribute("data-key", key),
+          event.on_click(UserClickedKeyed(index, key)),
+        ],
+        [html.text(key)],
+      ),
     )
     Fragment(children) -> #(
       fragment_key(children),
       children
-        |> list.map(fn(child) { pair.second(view_node(child)) })
-        |> element.fragment,
+        |> list.index_map(view_node_keyed)
+        |> keyed.fragment,
     )
   }
 }
 
+fn view_node_classic(node: Node, index) {
+  case node {
+    Node(key) ->
+      html.div(
+        [attribute("data-key", key), event.on_click(UserClickedClassic(index))],
+        [html.text(key)],
+      )
+    Fragment(children) ->
+      children
+      |> list.index_map(view_node_classic)
+      |> element.fragment
+  }
+}
+
 fn fragment_key(children: List(Node)) {
-  case children {
-    [] -> "[]"
-    [Node(key:), ..] -> key
-    [Fragment(children:), ..] -> fragment_key(children)
+  list.flat_map(children, collect_keys)
+  |> list.sort(by: string.compare)
+  |> string.join("")
+}
+
+fn collect_keys(node: Node) {
+  case node {
+    Fragment(children) -> list.flat_map(children, collect_keys)
+    Node(key) -> [key]
   }
 }
