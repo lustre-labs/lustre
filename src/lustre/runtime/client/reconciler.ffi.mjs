@@ -219,11 +219,7 @@ function createElement(vnode, dispatch, root) {
         ? document.createElementNS(vnode.namespace, vnode.tag)
         : document.createElement(vnode.tag);
 
-      node[meta] = {
-        key: vnode.key,
-        keyedChildren: new Map(),
-        handlers: new Map(),
-      };
+      initialiseMetadata(node, vnode.key);
 
       for (let list = vnode.attributes; list.tail; list = list.tail) {
         createAttribute(node, list.head, dispatch, root);
@@ -236,8 +232,7 @@ function createElement(vnode, dispatch, root) {
 
     case Text: {
       const node = document.createTextNode(vnode.content);
-
-      node[meta] = { key: vnode.key };
+      initialiseMetadata(node, vnode.key);
 
       return node;
     }
@@ -257,10 +252,7 @@ function createElement(vnode, dispatch, root) {
         ? document.createElementNS(vnode.namespace, vnode.tag)
         : document.createElement(vnode.tag);
 
-      node[meta] = {
-        key: vnode.key,
-        handlers: new Map(),
-      };
+      initialiseMetadata(node, vnode.key);
 
       for (let list = vnode.attributes; list.tail; list = list.tail) {
         createAttribute(node, list.head, dispatch, root);
@@ -270,6 +262,24 @@ function createElement(vnode, dispatch, root) {
 
       return node;
     }
+  }
+}
+
+/// @internal
+export function initialiseMetadata(node, key = '') {
+  switch (node.nodeType) {
+    case Node.ELEMENT_NODE:
+    case Node.DOCUMENT_FRAGMENT_NODE:
+      node[meta] = {
+        key,
+        keyedChildren: new Map(),
+        handlers: new Map(),
+      };
+      break;
+
+    case Node.ELEMENT_TEXT:
+      node[meta] = { key };
+      break;
   }
 }
 
