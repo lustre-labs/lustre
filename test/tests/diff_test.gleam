@@ -11,6 +11,8 @@ import lustre/vdom/diff.{
 import lustre/vdom/node.{to_keyed}
 import lustre_test
 
+//
+
 pub fn empty_node_test() {
   use <- lustre_test.test_filter("empty_node_test")
 

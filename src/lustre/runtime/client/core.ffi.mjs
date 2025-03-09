@@ -132,6 +132,10 @@ export class Runtime {
   }
 }
 
+export const send = (runtime, message) => {
+  runtime.send(message);
+};
+
 //
 
 const copiedStyleSheets = new WeakMap();
