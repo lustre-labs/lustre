@@ -6,7 +6,7 @@ import lustre/element
 import lustre/element/html
 import lustre/element/keyed
 import lustre/vdom/diff.{
-  Insert, Move, Patch, Remove, RemoveKey, Replace, ReplaceText, Update,
+  Insert, Move, Patch, Remove, RemoveKey, Replace, ReplaceText, SetKey, Update,
 }
 import lustre/vdom/node.{to_keyed}
 import lustre_test
@@ -661,7 +661,7 @@ pub fn non_keyed_upgrade_test() {
 
   let diff =
     Patch(0, 0, [], [
-      Patch(0, 0, [], [
+      Patch(0, 0, [SetKey(1, "2"), SetKey(0, "1")], [
         Patch(1, 0, [Update([attribute.class("new")], [])], []),
         Patch(0, 0, [Update([attribute.class("new")], [])], []),
       ]),
@@ -761,10 +761,20 @@ pub fn keyed_replace_fragment_test() {
 
   let diff =
     Patch(0, 0, [], [
-      Patch(0, 0, [Insert([to_keyed("c", html.text("c"))], 3), Remove(2, 1)], [
-        Patch(1, 0, [Replace(to_keyed("b", html.text("b")))], []),
-        Patch(0, 0, [Replace(to_keyed("a", html.text("a")))], []),
-      ]),
+      Patch(
+        0,
+        0,
+        [
+          Insert([to_keyed("c", html.text("c"))], 3),
+          Remove(2, 1),
+          SetKey(1, "b"),
+          SetKey(0, "a"),
+        ],
+        [
+          Patch(1, 0, [Replace(to_keyed("b", html.text("b")))], []),
+          Patch(0, 0, [Replace(to_keyed("a", html.text("a")))], []),
+        ],
+      ),
     ])
 
   diff.diff(prev, next, 0).patch

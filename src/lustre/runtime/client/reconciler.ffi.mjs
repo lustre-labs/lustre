@@ -2,6 +2,7 @@ import { Element, Text, Fragment, UnsafeInnerHtml } from "../../vdom/node.mjs";
 import { Attribute, Property, Event } from "../../vdom/attribute.mjs";
 import {
   Insert,
+  SetKey,
   Move,
   Remove,
   RemoveKey,
@@ -44,6 +45,10 @@ export class Reconciler {
               this.#dispatch,
               this.#root,
             );
+            break;
+
+          case SetKey:
+            setKey(node, change.index, change.key);
             break;
 
           case Move:
@@ -123,6 +128,16 @@ function insert(node, children, before, dispatch, root) {
   }
 
   node.insertBefore(fragment, node.childNodes[before] ?? null);
+}
+
+function setKey(node, index, key) {
+  const el = node.childNodes[index];
+  if (el[meta].key) {
+    node[meta].keyedChildren.delete(el[meta].key);
+  }
+
+  el[meta].key = key;
+  node[meta].keyedChildren.set(key, new WeakRef(el));
 }
 
 function move(node, key, before, count) {
@@ -219,11 +234,7 @@ function createElement(vnode, dispatch, root) {
         ? document.createElementNS(vnode.namespace, vnode.tag)
         : document.createElement(vnode.tag);
 
-      node[meta] = {
-        key: vnode.key,
-        keyedChildren: new Map(),
-        handlers: new Map(),
-      };
+      initialiseMetadata(node, vnode.key);
 
       for (let list = vnode.attributes; list.tail; list = list.tail) {
         createAttribute(node, list.head, dispatch, root);
@@ -236,8 +247,7 @@ function createElement(vnode, dispatch, root) {
 
     case Text: {
       const node = document.createTextNode(vnode.content);
-
-      node[meta] = { key: vnode.key };
+      initialiseMetadata(node, vnode.key);
 
       return node;
     }
@@ -257,10 +267,7 @@ function createElement(vnode, dispatch, root) {
         ? document.createElementNS(vnode.namespace, vnode.tag)
         : document.createElement(vnode.tag);
 
-      node[meta] = {
-        key: vnode.key,
-        handlers: new Map(),
-      };
+      initialiseMetadata(node, vnode.key);
 
       for (let list = vnode.attributes; list.tail; list = list.tail) {
         createAttribute(node, list.head, dispatch, root);
@@ -270,6 +277,24 @@ function createElement(vnode, dispatch, root) {
 
       return node;
     }
+  }
+}
+
+/// @internal
+export function initialiseMetadata(node, key = '') {
+  switch (node.nodeType) {
+    case Node.ELEMENT_NODE:
+    case Node.DOCUMENT_FRAGMENT_NODE:
+      node[meta] = {
+        key,
+        keyedChildren: new Map(),
+        handlers: new Map(),
+      };
+      break;
+
+    case Node.ELEMENT_TEXT:
+      node[meta] = { key };
+      break;
   }
 }
 
@@ -308,25 +333,17 @@ function createAttribute(node, attribute, dispatch, root) {
         if (prevent) event.preventDefault();
         if (stop) event.stopPropagation();
 
-        let node = event.target;
-        let path =
-          node[meta].key ||
-          [].indexOf.call(node.parentNode.childNodes, node).toString();
-
-        node = node.parentNode;
-
-        while (node !== root) {
+        let path = [];
+        for (let node = event.currentTarget; node !== root; node = node.parentNode) {
           const key = node[meta].key;
-
           if (key) {
-            path = `${key}.${path}`;
+            path.push(key);
           } else {
             const index = [].indexOf.call(node.parentNode.childNodes, node);
-            path = `${index}.${path}`;
+            path.push(index.toString());
           }
-
-          node = node.parentNode;
         }
+        path.reverse();
 
         dispatch(event, path, event.type, immediate);
       });
@@ -354,7 +371,11 @@ const ATTRIBUTE_HOOKS = {
 
   autoplay: {
     added(node) {
-      node.play?.()
+      try {
+        node.play?.()
+      } catch(e) {
+        console.error(e)
+      }
     }
   }
 }

@@ -23,7 +23,7 @@ pub fn single_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = "0"
+  let path = ["0"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -41,7 +41,7 @@ pub fn single_nested_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = "0.0"
+  let path = ["0", "0"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -60,7 +60,29 @@ pub fn single_nested_keyed_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = "0.b"
+  let path = ["0", "b"]
+
+  events.handle(events, path, "click", dynamic.from(Nil))
+  |> should.equal(Ok("hello!"))
+}
+
+pub fn single_nested_keyed_event_with_period_test() {
+  use <- lustre_test.test_filter("single_nested_keyed_event_with_period_test")
+
+  let vdom =
+    keyed.div([], [
+      #("a", html.h1([], [html.text("Testing...")])),
+      #(
+        "b.c",
+        html.button([event.on_click("hello!")], [html.text("Click me!")]),
+      ),
+    ])
+
+  let events =
+    events.new(function.identity)
+    |> events.add_child(function.identity, 0, vdom)
+
+  let path = ["0", "b.c"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -80,7 +102,7 @@ pub fn fragment_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = "0"
+  let path = ["0"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -100,7 +122,7 @@ pub fn nested_fragment_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = "0.0"
+  let path = ["0", "0"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -121,7 +143,7 @@ pub fn single_mapped_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = "0"
+  let path = ["0"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("HELLO!"))
@@ -143,7 +165,7 @@ pub fn multiple_mapped_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = "0"
+  let path = ["0"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("HELLO!!"))
@@ -159,7 +181,7 @@ pub fn event_added_test() {
 
   let events = diff.diff(prev, next, 0).events
 
-  let path = "0"
+  let path = ["0"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -173,7 +195,7 @@ pub fn event_removed_test() {
 
   let events = diff.diff(prev, next, 0).events
 
-  let path = "0"
+  let path = ["0"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Error([]))
@@ -191,7 +213,7 @@ pub fn element_added_test() {
 
   let events = diff.diff(prev, next, 0).events
 
-  let path = "0.b"
+  let path = ["0", "b"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -209,7 +231,7 @@ pub fn element_removed_test() {
 
   let events = diff.diff(prev, next, 0).events
 
-  let path = "0.b"
+  let path = ["0", "b"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Error([]))
@@ -232,7 +254,7 @@ pub fn element_replaced_test() {
 
   let events = diff.diff(prev, next, 0).events
 
-  let path = "0.b"
+  let path = ["0", "b"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))

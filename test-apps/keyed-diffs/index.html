@@ -18,6 +18,10 @@
   <div id="app"></div>
   <script>
     function* queryAndSelf(node, selector) {
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return;
+      }
+      
       if (node.matches(selector)) {
         yield node;
       }

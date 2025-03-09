@@ -2,6 +2,7 @@ import { Empty, NonEmpty } from '../../../gleam.mjs';
 import { element, namespaced, fragment, text, none } from '../../element.mjs';
 import { attribute } from '../../attribute.mjs';
 import { empty_list } from '../../internals/constants.mjs';
+import { initialiseMetadata } from './reconciler.ffi.mjs';
 
 const HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
 
@@ -22,6 +23,8 @@ export function virtualise(root) {
 function virtualise_node(node) {
   switch (node.nodeType) {
     case Node.ELEMENT_NODE: {
+      initialiseMetadata(node);
+ 
       const tag = node.localName;
       const namespace = node.namespaceURI;
 
@@ -34,9 +37,11 @@ function virtualise_node(node) {
     };
 
     case Node.TEXT_NODE:
+      initialiseMetadata(node);
       return text(node.data);
 
     case Node.DOCUMENT_FRAGMENT_NODE: // shadowRoot
+      initialiseMetadata(node);
       return node.childNodes.length > 0
         ? fragment(virtualise_child_nodes(node))
         : null;
