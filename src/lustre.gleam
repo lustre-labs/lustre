@@ -162,12 +162,12 @@ import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/process.{type Subject}
-import gleam/option.{type Option, None, Some}
 import gleam/otp/actor.{type StartError}
 import gleam/result
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/internals/constants
+import lustre/runtime/server/runtime
 
 // TYPES -----------------------------------------------------------------------
 
@@ -206,52 +206,6 @@ pub opaque type App(flags, model, msg) {
   )
 }
 
-/// The `ClientSpa` runtime is the most typical kind of Lustre application: it's
-/// a single-page application that runs in the browser similar to React or Elm.
-///
-/// This type is used to tag the [`Action`](#Action) type to stop you accidentally
-/// sending actions to the wrong kind of runtime.
-///
-pub type ClientSpa
-
-/// A `ServerComponent` is a type of Lustre application that does not directly
-/// render anything to the DOM. Instead, it can run anywhere Gleam runs and
-/// operates in a "headless" mode where it computes diffs between renders and
-/// sends them to any number of connected listeners.
-///
-/// Lustre Server Components are not tied to any particular transport or network
-/// protocol, but they are most commonly used with WebSockets in a fashion similar
-/// to Phoenix LiveView.
-///
-/// This type is used to tag the [`Action`](#Action) type to stop you accidentally
-/// sending actions to the wrong kind of runtime.
-///
-pub type ServerComponent
-
-/// An action represents a message that can be sent to a running Lustre application.
-/// Code that is orchestrating an application where Lustre is only one part of the
-/// system will likely want to send actions to the Lustre runtime. For most kinds of
-/// application, you can usually ignore actions entirely.
-///
-/// The `msg` type parameter is the kind of messages you can send to the runtime's
-/// `update` function through the [`dispatch`](#dispatch) action.
-///
-/// The `runtime` type parameter represents the type of Lustre application that
-/// can receive this action. If we [`start`](#start) a typical Lustre SPA, we
-/// get back the type `Result(fn(Action(msg, ClientSpa)) -> Nil, Error)`. This
-/// means we can only send actions suitable for the [`ClientSpa`](#ClientSpa)
-/// runtime, and trying to send actions like [`add_renderer`](#add_renderer) would
-/// result in a type error.
-///
-pub type Action(msg, runtime)
-
-/// Patches are sent by server components to any connected renderers. Because
-/// server components are not opinionated about your network layer or how your
-/// wider application is organised, it is your responsibility to make sure a `Patch`
-/// makes its way to the server component client runtime.
-///
-pub type Patch(msg)
-
 /// Starting a Lustre application might fail for a number of reasons. This error
 /// type enumerates all those reasons, even though some of them are only possible
 /// on certain targets.
@@ -265,27 +219,16 @@ pub type Error {
   NotErlang
 }
 
+///
+///
+pub type Runtime(msg)
+
+///
+///
+pub type RuntimeMessage(msg) =
+  runtime.Message(msg)
+
 // CONSTRUCTORS ----------------------------------------------------------------
-
-/// An element is the simplest type of Lustre application. It renders its contents
-/// once and does not handle any messages or effects. Often this type of application
-/// is used for folks just getting started with Lustre on the frontend and want a
-/// quick way to get something on the screen.
-///
-/// Take a look at the [`simple`](#simple) application constructor if you want to
-/// build something interactive.
-///
-/// > **Note**: Just because an element doesn't have its own update loop, doesn't
-/// > mean its content is always static! An element application may render a client
-/// > or server component that has its own encapsulated update loop!
-///
-pub fn element(html: Element(msg)) -> App(Nil, Nil, msg) {
-  let init = fn(_) { #(Nil, effect.none) }
-  let update = fn(_, _) { #(Nil, effect.none) }
-  let view = fn(_) { html }
-
-  application(init, update, view)
-}
 
 /// A `simple` application has the basic Model-View-Update building blocks present
 /// in all Lustre applications, but it cannot handle effects. This is a great way
@@ -349,7 +292,7 @@ pub fn component(
   App(init, update, view, on_attribute_change)
 }
 
-// EFFECTS ---------------------------------------------------------------------
+// RUNTIME ---------------------------------------------------------------------
 
 /// Start a constructed application as a client-side single-page application (SPA).
 /// This is the most typical way to start a Lustre application and will *only* work
@@ -367,7 +310,7 @@ pub fn start(
   app: App(flags, model, msg),
   onto selector: String,
   with flags: flags,
-) -> Result(fn(Action(msg, ClientSpa)) -> Nil, Error) {
+) -> Result(Runtime(msg), Error) {
   use <- bool.guard(!is_browser(), Error(NotABrowser))
 
   do_start(app, selector, flags)
@@ -378,11 +321,7 @@ fn do_start(
   _app: App(flags, model, msg),
   _selector: String,
   _flags: flags,
-) -> Result(fn(Action(msg, ClientSpa)) -> Nil, Error) {
-  // It should never be possible for the body of this function to execute on the
-  // Erlang target because the `is_browser` guard will prevent it. Instead of
-  // a panic, we still return a well-typed `Error` here in the case where someone
-  // mistakenly uses this function internally.
+) -> Result(Runtime(msg), Error) {
   Error(NotABrowser)
 }
 
@@ -396,52 +335,37 @@ fn do_start(
 /// A server component will keep running until the program is terminated or the
 /// [`shutdown`](#shutdown) action is sent to it.
 ///
-/// **Note**: Users running their application on the BEAM should use [`start_actor`](#start_actor)
-/// instead to make use of Gleam's OTP abstractions.
-///
-// @external(javascript, "./lustre.ffi.mjs", "start_server_application")
-// pub fn start_server_component(
-//   app: App(flags, model, msg),
-//   with flags: flags,
-// ) -> Result(fn(Action(msg, ServerComponent)) -> Nil, Error) {
-//   use runtime <- result.map(start_actor(app, flags))
-//   actor.send(runtime, _)
-// }
+@external(javascript, "./lustre/runtime/server/runtime.ffi.mjs", "start")
+pub fn start_server_component(
+  app: App(flags, model, msg),
+  with flags: flags,
+) -> Result(Runtime(msg), Error) {
+  start_actor(app, with: flags) |> coerce
+}
 
-/// Start an application as a server component specifically for the Erlang target.
-/// Instead of receiving a callback on successful start, this function returns
-/// a [`Subject`](https://hexdocs.pm/gleam_erlang/gleam/erlang/process.html#Subject)
-///
-///
-/// **Note**: This function is only meaningful on the Erlang target. Attempts to
-/// call it on the JavaScript will result in the `NotErlang` error. If you're running
-/// a Lustre server component on Node or Deno, use [`start_server_component`](#start_server_component)
-/// instead.
-///
 pub fn start_actor(
   app: App(flags, model, msg),
   with flags: flags,
-) -> Result(Subject(Action(msg, ServerComponent)), Error) {
+) -> Result(Subject(RuntimeMessage(msg)), Error) {
   do_start_actor(app, flags)
-}
-
-@target(javascript)
-fn do_start_actor(_, _) {
-  Error(NotErlang)
 }
 
 @target(erlang)
 fn do_start_actor(
   app: App(flags, model, msg),
-  flags: flags,
-) -> Result(Subject(Action(msg, ServerComponent)), Error) {
-  // let on_attribute_change =
-  //   option.unwrap(app.on_attribute_change, constants.empty_dict())
+  with flags: flags,
+) -> Result(Subject(RuntimeMessage(msg)), Error) {
+  app.init(flags)
+  |> runtime.start(app.update, app.view, app.on_attribute_change)
+  |> result.map_error(ActorError)
+}
 
-  // app.init(flags)
-  // |> runtime.start(app.update, app.view, on_attribute_change)
-  // |> result.map_error(ActorError)
-  todo
+@target(javascript)
+fn do_start_actor(
+  _app: App(flags, model, msg),
+  _flags: flags,
+) -> Result(Subject(RuntimeMessage(msg)), Error) {
+  Error(NotErlang)
 }
 
 /// Register a Lustre application as a Web Component. This lets you render that
@@ -470,7 +394,23 @@ pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error)
   Error(NotABrowser)
 }
 
-// ACTIONS ---------------------------------------------------------------------
+// MESSAGES --------------------------------------------------------------------
+
+/// Send a message to an application running on the JavaScript target. This can
+/// be used to communicate with a Lustre application from the outside world, for
+/// example by attaching event listeners to the document to dispatch messages
+/// after the app has been started.
+///
+/// **Note**: This function is only meaningful when running on the JavaScript
+/// target as a `Runtime` can only be constructed on that target. If you are
+/// running a server component on the Erlang target, you should use Gleam's usual
+/// api for sending messages to actors and the `Subject` returned from
+/// [`start_actor`](#start_actor).
+///
+@external(javascript, "./lustre/runtime/client/core.ffi.mjs", "send")
+pub fn send(runtime: Runtime(msg), message: RuntimeMessage(msg)) -> Nil {
+  coerce(runtime) |> process.send(message)
+}
 
 /// Dispatch a message to a running application's `update` function. This can be
 /// used as a way for the outside world to communicate with a Lustre app without
@@ -479,9 +419,8 @@ pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error)
 /// Both client SPAs and server components can have messages sent to them using
 /// the `dispatch` action.
 ///
-pub fn dispatch(msg: msg) -> Action(msg, runtime) {
-  // runtime.Dispatch(msg)
-  todo
+pub fn dispatch(msg: msg) -> RuntimeMessage(msg) {
+  runtime.EffectDispatchedMessage(msg)
 }
 
 /// Instruct a running application to shut down. For client SPAs this will stop
@@ -489,9 +428,8 @@ pub fn dispatch(msg: msg) -> Action(msg, runtime) {
 /// stop the runtime and prevent any further patches from being sent to connected
 /// clients.
 ///
-pub fn shutdown() -> Action(msg, runtime) {
-  // runtime.Shutdown
-  todo
+pub fn shutdown() -> RuntimeMessage(msg) {
+  runtime.SystemRequestedShutdown
 }
 
 // UTILS -----------------------------------------------------------------------
@@ -517,3 +455,7 @@ pub fn is_browser() -> Bool {
 pub fn is_registered(_name: String) -> Bool {
   False
 }
+
+@external(erlang, "gleam@function", "identity")
+@external(javascript, "../gleam_stdlib/gleam/function.mjs", "identity")
+fn coerce(value: a) -> b
