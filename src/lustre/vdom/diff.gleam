@@ -34,6 +34,7 @@ pub type Change(msg) {
   ReplaceInnerHtml(inner_html: String)
   Update(added: List(Attribute(msg)), removed: List(Attribute(msg)))
   // keyed changes
+  SetKey(index: Int, key: String)
   Move(key: String, before: Int, count: Int)
   RemoveKey(key: String, count: Int)
   // unkeyed changes
@@ -91,6 +92,7 @@ fn offset_root_patch(root: Patch(msg), offset: Int) -> Patch(msg) {
         Insert(before:, ..) -> Insert(..change, before: before + offset)
         Move(before:, ..) -> Move(..change, before: before + offset)
         Remove(from:, ..) -> Remove(..change, from: from + offset)
+        SetKey(index:, ..) -> SetKey(..change, index: index + offset)
         Replace(..)
         | ReplaceText(..)
         | ReplaceInnerHtml(..)
@@ -328,6 +330,9 @@ fn do_diff(
         // one to continue diffing like normal by setting its key!
         Error(_), Error(_) -> {
           let prev_with_key = node.to_keyed(next.key, prev)
+
+          let set_key = SetKey(index: node_index - moved_offset, key: next.key)
+          let changes = [set_key, ..changes]
 
           do_diff(
             old: [prev_with_key, ..old_remaining],
