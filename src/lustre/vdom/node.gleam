@@ -109,6 +109,15 @@ pub fn count_fragment_children(children: List(Node(msg)), count: Int) -> Int {
   }
 }
 
+///
+///
+pub fn advance(node: Node(msg)) {
+  case node {
+    Fragment(children_count:, ..) -> children_count
+    _ -> 1
+  }
+}
+
 // MANIPULATION ----------------------------------------------------------------
 
 pub fn to_keyed(key: String, node: Node(msg)) -> Node(msg) {

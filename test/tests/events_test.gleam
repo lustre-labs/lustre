@@ -128,6 +128,33 @@ pub fn nested_fragment_event_test() {
   |> should.equal(Ok("hello!"))
 }
 
+pub fn nested_fragment_with_multiple_children_event_test() {
+  use <- lustre_test.test_filter(
+    "nested_fragment_with_multiple_children_event_test",
+  )
+
+  let vdom =
+    html.div([], [
+      element.fragment([
+        html.button([event.on_click(1)], [html.text("Button 1!")]),
+        element.fragment([
+          html.button([event.on_click(2)], [html.text("Button 2!")]),
+          html.button([event.on_click(3)], [html.text("Button 3!")]),
+        ]),
+        html.button([event.on_click(4)], [html.text("Button 4!")]),
+      ]),
+    ])
+
+  let events =
+    events.new(function.identity)
+    |> events.add_child(function.identity, 0, vdom)
+
+  let path = ["0", "3"]
+
+  events.handle(events, path, "click", dynamic.from(Nil))
+  |> should.equal(Ok(4))
+}
+
 //
 
 pub fn single_mapped_event_test() {
@@ -258,4 +285,48 @@ pub fn element_replaced_test() {
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
+}
+
+pub fn keyed_element_replaced_test() {
+  use <- lustre_test.test_filter("keyed_element_replaced_test")
+
+  let prev =
+    keyed.div([], [
+      #(
+        "v1",
+        html.div([], [
+          html.button([event.on_click("hello from 1")], [html.text("button 1")]),
+          html.div([], [
+            html.button([event.on_click("hello from 2")], [
+              html.text("button 2"),
+            ]),
+          ]),
+        ]),
+      ),
+    ])
+
+  let next =
+    keyed.div([], [
+      #(
+        "v2",
+        html.div([], [
+          html.button([event.on_click("hello from 1")], [html.text("button 1")]),
+          html.div([], [
+            html.button([event.on_click("hello from 2")], [
+              html.text("button 2"),
+            ]),
+          ]),
+        ]),
+      ),
+    ])
+
+  let events = diff.diff(prev, next, 0).events
+
+  let path = ["0", "v2", "0"]
+  events.handle(events, path, "click", dynamic.from(Nil))
+  |> should.equal(Ok("hello from 1"))
+
+  let path = ["0", "v2", "1", "0"]
+  events.handle(events, path, "click", dynamic.from(Nil))
+  |> should.equal(Ok("hello from 2"))
 }
