@@ -334,6 +334,7 @@ function createAttribute(node, attribute, dispatch, root) {
         if (stop) event.stopPropagation();
 
         let node = event.target;
+        let node = event.currentTarget;
         let path =
           node[meta].key ||
           [].indexOf.call(node.parentNode.childNodes, node).toString();
