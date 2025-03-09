@@ -1,5 +1,4 @@
 // IMPORTS ---------------------------------------------------------------------
-
 import { diff } from "../../vdom/diff.mjs";
 import * as Events from "../../vdom/events.mjs";
 import { Reconciler } from "./reconciler.ffi.mjs";
@@ -66,7 +65,6 @@ export class Runtime {
     const virtualised = virtualise(this.#root);
     this.#vdom = this.#view(this.#model);
     const { patch, events } = diff(virtualised, this.#vdom, Events.new$(), 0);
-
     this.#events = events;
     this.#reconciler.push(patch);
     this.#tick(effects.all, false);
@@ -151,6 +149,11 @@ export async function adoptStylesheets(shadowRoot) {
   }
 
   await Promise.allSettled(pendingParentStylesheets);
+
+  // the element might have been removed while we were waiting.
+  if (!shadowRoot.host.isConnected) {
+    return [];
+  }
 
   shadowRoot.adoptedStyleSheets =
     shadowRoot.host.getRootNode().adoptedStyleSheets;
