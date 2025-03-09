@@ -3,10 +3,8 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type DecodeError, type Decoder}
 import gleam/int
-import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
-import gleam/string
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/attribute.{type Attribute, Event}
 import lustre/vdom/node.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
@@ -39,16 +37,14 @@ pub fn new(mapper: fn(Dynamic) -> Dynamic) -> Events(msg) {
   Events(handlers: mutable_map.new(), mapper:, children: mutable_map.new())
 }
 
-///
-///
-pub fn from_handlers(
+pub fn from_attributes(
+  attributes: List(Attribute(msg)),
   mapper: fn(Dynamic) -> Dynamic,
-  handlers: MutableMap(String, Decoder(msg)),
-) -> Events(msg) {
-  Events(handlers:, mapper:, children: mutable_map.new())
+) {
+  add_events(attributes, mapper, mutable_map.new())
 }
 
-fn attributes_to_handlers(
+fn add_events(
   attributes: List(Attribute(msg)),
   mapper: fn(Dynamic) -> Dynamic,
   handlers: MutableMap(String, Decoder(msg)),
@@ -59,44 +55,13 @@ fn attributes_to_handlers(
     [Event(..) as event, ..rest] ->
       handlers
       |> mutable_map.insert(event.name, event.handler)
-      |> attributes_to_handlers(rest, mapper, _)
+      |> add_events(rest, mapper, _)
 
-    [_, ..rest] -> attributes_to_handlers(rest, mapper, handlers)
+    [_, ..rest] -> add_events(rest, mapper, handlers)
   }
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
-
-///
-///
-pub fn add_event_listener(
-  events: Events(msg),
-  name: String,
-  handler: Decoder(msg),
-) -> Events(msg) {
-  Events(..events, handlers: mutable_map.insert(events.handlers, name, handler))
-}
-
-///
-///
-pub fn add_child_events(
-  parent: Events(msg),
-  index: Int,
-  child: Events(msg),
-) -> Events(msg) {
-  Events(
-    ..parent,
-    children: mutable_map.insert(parent.children, int.to_string(index), child),
-  )
-}
-
-pub fn add_keyed_child_events(
-  parent: Events(msg),
-  key: String,
-  child: Events(msg),
-) -> Events(msg) {
-  Events(..parent, children: mutable_map.insert(parent.children, key, child))
-}
 
 ///
 ///
@@ -113,10 +78,9 @@ pub fn add_child(
         Some(child_mapper) -> fn(msg) { msg |> child_mapper |> mapper }
       }
 
-      attributes
-      |> attributes_to_handlers(composed_mapper, parent.handlers)
-      |> add_children(composed_mapper, index, children)
-      |> insert_child_events(parent, index, key, _)
+      from_attributes(attributes, composed_mapper)
+      |> add_children(composed_mapper, 0, children)
+      |> add_child_events(parent, index, key, _)
     }
 
     Fragment(children:, ..) -> {
@@ -125,9 +89,7 @@ pub fn add_child(
         Some(child_mapper) -> fn(msg) { msg |> child_mapper |> mapper }
       }
 
-      list.index_fold(children, parent, fn(parent, child, i) {
-        add_child(parent, composed_mapper, index + i, child)
-      })
+      add_children(parent, composed_mapper, index, children)
     }
 
     UnsafeInnerHtml(key:, attributes:, ..) -> {
@@ -136,27 +98,38 @@ pub fn add_child(
         Some(child_mapper) -> fn(msg) { msg |> child_mapper |> mapper }
       }
 
-      attributes
-      |> attributes_to_handlers(composed_mapper, parent.handlers)
-      |> insert_child_events(parent, index, key, _)
+      from_attributes(attributes, composed_mapper)
+      |> add_child_events(parent, index, key, _)
     }
 
     Text(..) -> parent
   }
 }
 
-fn insert_child_events(
+///
+///
+pub fn add_child_events(
   events: Events(msg),
   index: Int,
   key: String,
   child_events: Events(msg),
 ) -> Events(msg) {
-  let key = case key {
-    "" -> int.to_string(index)
-    key -> key
+  case is_empty(child_events) {
+    True -> events
+    False if key != "" ->
+      Events(
+        ..events,
+        children: mutable_map.insert(events.children, key, child_events),
+      )
+
+    False -> {
+      let key = int.to_string(index)
+      Events(
+        ..events,
+        children: mutable_map.insert(events.children, key, child_events),
+      )
+    }
   }
-  let children = mutable_map.insert(events.children, key, child_events)
-  Events(..events, children:)
 }
 
 ///
@@ -170,15 +143,10 @@ pub fn add_children(
   case children {
     [] -> parent
 
-    [Fragment(..) as fragment, ..rest] ->
-      parent
-      |> add_child(mapper, index, fragment)
-      |> add_children(mapper, index + fragment.children_count, rest)
-
     [child, ..rest] ->
       parent
       |> add_child(mapper, index, child)
-      |> add_children(mapper, index + 1, rest)
+      |> add_children(mapper, index + node.advance(child), rest)
   }
 }
 

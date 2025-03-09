@@ -761,20 +761,10 @@ pub fn keyed_replace_fragment_test() {
 
   let diff =
     Patch(0, 0, [], [
-      Patch(
-        0,
-        0,
-        [
-          Insert([to_keyed("c", html.text("c"))], 3),
-          Remove(2, 1),
-          SetKey(1, "b"),
-          SetKey(0, "a"),
-        ],
-        [
-          Patch(1, 0, [Replace(to_keyed("b", html.text("b")))], []),
-          Patch(0, 0, [Replace(to_keyed("a", html.text("a")))], []),
-        ],
-      ),
+      Patch(0, 0, [Insert([to_keyed("c", html.text("c"))], 3), Remove(2, 1)], [
+        Patch(1, 0, [Replace(to_keyed("b", html.text("b")))], []),
+        Patch(0, 0, [Replace(to_keyed("a", html.text("a")))], []),
+      ]),
     ])
 
   diff.diff(prev, next, 0).patch
