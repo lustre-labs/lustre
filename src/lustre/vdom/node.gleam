@@ -2,6 +2,7 @@
 
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
+import gleam/int
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string
@@ -123,9 +124,66 @@ pub fn advance(node: Node(msg)) {
 pub fn to_keyed(key: String, node: Node(msg)) -> Node(msg) {
   case node {
     Element(..) -> Element(..node, key:)
-    Fragment(..) -> Fragment(..node, key:)
     Text(..) -> Text(..node, key:)
     UnsafeInnerHtml(..) -> UnsafeInnerHtml(..node, key:)
+    Fragment(children:, ..) -> {
+      let #(children, keyed_children) =
+        set_fragment_key(
+          key,
+          children,
+          0,
+          constants.empty_list,
+          constants.empty_dict(),
+        )
+      Fragment(..node, key:, children:, keyed_children:)
+    }
+  }
+}
+
+fn set_fragment_key(key, children, index, new_children, keyed_children) {
+  case children {
+    [] -> #(list.reverse(new_children), keyed_children)
+
+    [Fragment(..) as node, ..children] if node.key == "" -> {
+      // if the child of this fragment is an unkeyed fragment, we do not want to
+      // give it a key itself, but make sure all the children have prefixed keys.
+      let child_key = key <> "::" <> int.to_string(index)
+
+      let #(node_children, node_keyed_children) =
+        set_fragment_key(
+          child_key,
+          node.children,
+          0,
+          constants.empty_list,
+          constants.empty_dict(),
+        )
+
+      let new_node =
+        Fragment(
+          ..node,
+          children: node_children,
+          keyed_children: node_keyed_children,
+        )
+
+      let new_children = [new_node, ..new_children]
+      let index = index + 1
+
+      set_fragment_key(key, children, index, new_children, keyed_children)
+    }
+
+    [node, ..children] if node.key != "" -> {
+      let child_key = key <> "::" <> node.key
+      let new_children = [to_keyed(child_key, node), ..new_children]
+      let keyed_children = dict.insert(keyed_children, child_key, node)
+      let index = index + 1
+      set_fragment_key(key, children, index, new_children, keyed_children)
+    }
+
+    [node, ..children] -> {
+      let new_children = [node, ..new_children]
+      let index = index + 1
+      set_fragment_key(key, children, index, new_children, keyed_children)
+    }
   }
 }
 
@@ -145,39 +203,29 @@ pub fn to_string_tree(node: Node(msg)) -> StringTree {
     Fragment(children:, ..) ->
       children_to_string_tree(string_tree.new(), children)
 
-    Element(namespace:, tag:, attributes:, self_closing:, ..) if self_closing -> {
+    Element(key:, namespace:, tag:, attributes:, self_closing:, ..)
+      if self_closing
+    -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes =
-        attribute.to_string_tree(case namespace {
-          "" -> attributes
-          _ -> [Attribute("xmlns", namespace), ..attributes]
-        })
+      let attributes = attribute.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.append_tree(attributes)
       |> string_tree.append("/>")
     }
 
-    Element(namespace:, tag:, attributes:, void:, ..) if void -> {
+    Element(key:, namespace:, tag:, attributes:, void:, ..) if void -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes =
-        attribute.to_string_tree(case namespace {
-          "" -> attributes
-          _ -> [Attribute("xmlns", namespace), ..attributes]
-        })
+      let attributes = attribute.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.append_tree(attributes)
       |> string_tree.append(">")
     }
 
-    Element(namespace:, tag:, attributes:, children:, ..) -> {
+    Element(key:, namespace:, tag:, attributes:, children:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes =
-        attribute.to_string_tree(case namespace {
-          "" -> attributes
-          _ -> [Attribute("xmlns", namespace), ..attributes]
-        })
+      let attributes = attribute.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.append_tree(attributes)
@@ -186,13 +234,9 @@ pub fn to_string_tree(node: Node(msg)) -> StringTree {
       |> string_tree.append("</" <> tag <> ">")
     }
 
-    UnsafeInnerHtml(namespace:, tag:, attributes:, inner_html:, ..) -> {
+    UnsafeInnerHtml(key:, namespace:, tag:, attributes:, inner_html:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes =
-        attribute.to_string_tree(case namespace {
-          "" -> attributes
-          _ -> [Attribute("xmlns", namespace), ..attributes]
-        })
+      let attributes = attribute.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.append_tree(attributes)
@@ -234,21 +278,16 @@ fn do_to_snapshot_builder(
     Text(content:, ..) -> string_tree.from_strings([spaces, escape(content)])
 
     Fragment(children: [], ..) -> string_tree.new()
-    Fragment(children:, ..) ->
-      children_to_snapshot_builder(
-        string_tree.new(),
-        children,
-        raw_text,
-        indent,
-      )
 
-    Element(namespace:, tag:, attributes:, self_closing:, ..) if self_closing -> {
+    Fragment(children:, ..) ->
+      string_tree.new()
+      |> children_to_snapshot_builder(children, raw_text, indent)
+
+    Element(key, namespace:, tag:, attributes:, self_closing:, ..)
+      if self_closing
+    -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes =
-        attribute.to_string_tree(case namespace {
-          "" -> attributes
-          _ -> [Attribute("xmlns", namespace), ..attributes]
-        })
+      let attributes = attribute.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.prepend(spaces)
@@ -256,13 +295,9 @@ fn do_to_snapshot_builder(
       |> string_tree.append("/>")
     }
 
-    Element(namespace:, tag:, attributes:, void:, ..) if void -> {
+    Element(key, namespace:, tag:, attributes:, void:, ..) if void -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes =
-        attribute.to_string_tree(case namespace {
-          "" -> attributes
-          _ -> [Attribute("xmlns", namespace), ..attributes]
-        })
+      let attributes = attribute.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.prepend(spaces)
@@ -270,9 +305,9 @@ fn do_to_snapshot_builder(
       |> string_tree.append(">")
     }
 
-    Element(namespace: "", tag:, attributes:, children: [], ..) -> {
+    Element(key, namespace:, tag:, attributes:, children: [], ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = attribute.to_string_tree(attributes)
+      let attributes = attribute.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.prepend(spaces)
@@ -281,13 +316,9 @@ fn do_to_snapshot_builder(
       |> string_tree.append("</" <> tag <> ">")
     }
 
-    Element(namespace:, tag:, attributes:, children:, ..) -> {
+    Element(key, namespace:, tag:, attributes:, children:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes =
-        attribute.to_string_tree(case namespace {
-          "" -> attributes
-          _ -> [Attribute("xmlns", namespace), ..attributes]
-        })
+      let attributes = attribute.to_string_tree(key, namespace, attributes)
       html
       |> string_tree.prepend(spaces)
       |> string_tree.append_tree(attributes)
@@ -297,13 +328,9 @@ fn do_to_snapshot_builder(
       |> string_tree.append("</" <> tag <> ">")
     }
 
-    UnsafeInnerHtml(namespace:, tag:, attributes:, inner_html:, ..) -> {
+    UnsafeInnerHtml(key, namespace:, tag:, attributes:, inner_html:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes =
-        attribute.to_string_tree(case namespace {
-          "" -> attributes
-          _ -> [Attribute("xmlns", namespace), ..attributes]
-        })
+      let attributes = attribute.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.append_tree(attributes)
@@ -328,6 +355,12 @@ fn children_to_snapshot_builder(
         raw_text,
         indent,
       )
+
+    [Fragment(..) as child, ..rest] ->
+      child
+      |> do_to_snapshot_builder(raw_text, indent)
+      |> string_tree.append_tree(html, _)
+      |> children_to_snapshot_builder(rest, raw_text, indent)
 
     [child, ..rest] ->
       child

@@ -1,0 +1,15 @@
+---
+version: 1.2.6
+title: [html] Keyed children are still prefixed if there is a non-prefixed fragment in-between
+---
+<div data-lustre-key="a::0::a">
+  a
+</div>
+<div data-lustre-key="a::0::b">
+  b
+</div>
+<div data-lustre-key="a::1::0::a">
+  <div data-lustre-key="not-prefixed">
+    not-prefixed
+  </div>
+</div>

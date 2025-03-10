@@ -3,6 +3,7 @@
 import birdie
 import lustre/element.{type Element}
 import lustre/element/html
+import lustre/element/keyed
 import lustre_test
 
 // ELEMENT TESTS ---------------------------------------------------------------
@@ -82,6 +83,76 @@ pub fn fragment_multiple_mixed_test() {
   input
   |> snapshot(
     "Fragment with multiple mix elements should render on multiple lines",
+  )
+}
+
+pub fn keyed_fragment_test() {
+  use <- lustre_test.test_filter("keyed_fragment_test")
+
+  let input =
+    keyed.fragment([
+      #("a", html.div([], [html.text("a")])),
+      #("b", html.div([], [html.text("b")])),
+      #("c", html.div([], [html.text("c")])),
+    ])
+
+  input
+  |> snapshot("Keyed fragment adds keys to its children")
+}
+
+pub fn fragment_with_key_prefixes_children_test() {
+  use <- lustre_test.test_filter("fragment_with_key_prefixes_children_test")
+
+  let input =
+    keyed.fragment([
+      #(
+        "a",
+        keyed.fragment([
+          #("a", html.div([], [html.text("a")])),
+          #("b", html.div([], [html.text("b")])),
+          #(
+            "c",
+            keyed.div([], [
+              #("not-prefixed", html.div([], [html.text("not-prefixed")])),
+            ]),
+          ),
+        ]),
+      ),
+    ])
+
+  input
+  |> snapshot("Fragment with key prefixes all children")
+}
+
+pub fn deep_keyed_fragment_children_prefixes_test() {
+  use <- lustre_test.test_filter("deep_keyed_children_prefixes_test")
+
+  let input =
+    keyed.fragment([
+      #(
+        "a",
+        element.fragment([
+          keyed.fragment([
+            #("a", html.div([], [html.text("a")])),
+            #("b", html.div([], [html.text("b")])),
+          ]),
+          element.fragment([
+            keyed.fragment([
+              #(
+                "a",
+                keyed.div([], [
+                  #("not-prefixed", html.div([], [html.text("not-prefixed")])),
+                ]),
+              ),
+            ]),
+          ]),
+        ]),
+      ),
+    ])
+
+  input
+  |> snapshot(
+    "Keyed children are still prefixed if there is a non-prefixed fragment in-between",
   )
 }
 
