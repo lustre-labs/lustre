@@ -102,7 +102,7 @@ pub fn fragment_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = ["0"]
+  let path = ["1"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -122,7 +122,7 @@ pub fn nested_fragment_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = ["0", "0"]
+  let path = ["0", "1"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok("hello!"))
@@ -149,7 +149,7 @@ pub fn nested_fragment_with_multiple_children_event_test() {
     events.new(function.identity)
     |> events.add_child(function.identity, 0, vdom)
 
-  let path = ["0", "3"]
+  let path = ["0", "5"]
 
   events.handle(events, path, "click", dynamic.from(Nil))
   |> should.equal(Ok(4))

@@ -73,7 +73,20 @@ pub fn compare(a: Attribute(msg), b: Attribute(msg)) -> Order {
 
 // STRING RENDERING ------------------------------------------------------------
 
-pub fn to_string_tree(attributes: List(Attribute(msg))) -> StringTree {
+pub fn to_string_tree(
+  key: String,
+  namespace: String,
+  attributes: List(Attribute(msg)),
+) -> StringTree {
+  let attributes = case key != "" {
+    True -> [Attribute("data-lustre-key", key), ..attributes]
+    False -> attributes
+  }
+  let attributes = case namespace != "" {
+    True -> [Attribute("xmlns", namespace), ..attributes]
+    False -> attributes
+  }
+
   use html, attr <- list.fold(attributes, string_tree.new())
   case to_string_parts(attr) {
     Ok(#("class", "")) | Ok(#("style", "")) -> html

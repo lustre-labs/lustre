@@ -2,7 +2,6 @@ import { Element, Text, Fragment, UnsafeInnerHtml } from "../../vdom/node.mjs";
 import { Attribute, Property, Event } from "../../vdom/attribute.mjs";
 import {
   Insert,
-  SetKey,
   Move,
   Remove,
   RemoveKey,
@@ -47,10 +46,6 @@ export class Reconciler {
             );
             break;
 
-          case SetKey:
-            setKey(node, change.index, change.key);
-            break;
-
           case Move:
             move(node, change.key, change.before, change.count);
             break;
@@ -64,7 +59,7 @@ export class Reconciler {
             break;
 
           case Replace:
-            replace(node, change.element, this.#dispatch, this.#root);
+            replace(node, change.from, change.count, change.with, this.#dispatch, this.#root);
             break;
 
           case ReplaceText:
@@ -87,19 +82,12 @@ export class Reconciler {
         }
       }
 
-      for (let i = 0; i < patch.removed; ++i) {
-        const child = node.lastChild;
-        const key = child[meta].key;
-
-        if (key) {
-          node[meta].keyedChildren.delete(key);
-        }
-
-        node.removeChild(child);
-      }
+      remove(node, node.childNodes.length - patch.removed, patch.removed);
 
       for (let list = patch.children; list.tail; list = list.tail) {
         const child = list.head;
+
+        // TODO: use linked-list style but skip to indices if distance is great enough?
 
         this.#stack.push({
           node: node.childNodes[child.index],
@@ -118,26 +106,11 @@ function insert(node, children, before, dispatch, root) {
   for (let list = children; list.tail; list = list.tail) {
     const child = list.head;
     const el = createElement(child, dispatch, root);
-
-    if (child.key) {
-      const ref = new WeakRef(unwrapFragment(el));
-      node[meta].keyedChildren.set(child.key, ref);
-    }
-
+    addToMetadata(node, el);
     fragment.appendChild(el);
   }
 
   node.insertBefore(fragment, node.childNodes[before] ?? null);
-}
-
-function setKey(node, index, key) {
-  const el = node.childNodes[index];
-  if (el[meta].key) {
-    node[meta].keyedChildren.delete(el[meta].key);
-  }
-
-  el[meta].key = key;
-  node[meta].keyedChildren.set(key, new WeakRef(el));
 }
 
 function move(node, key, before, count) {
@@ -159,36 +132,33 @@ function move(node, key, before, count) {
 }
 
 function removeKey(node, key, count) {
-  let el = node[meta].keyedChildren.get(key).deref();
-  node[meta].keyedChildren.delete(key);
-
-  while (count-- > 0 && el !== null) {
-    let next = el.nextSibling;
-    node.removeChild(el);
-    el = next;
-  }
+  removeFromChild(node, node[meta].keyedChildren.get(key).deref(), count);
 }
 
 function remove(node, from, count) {
-  let el = node.childNodes[from];
+  removeFromChild(node, node.childNodes[from], count);
+}
 
-  while (count-- > 0 && el !== null) {
-    const next = el.nextSibling;
-    node.removeChild(el);
-    el = next;
+function removeFromChild(parent, child, count) {
+  while (count-- > 0 && child !== null) {
+    const next = child.nextSibling;
+    
+    const key = child[meta].key;
+    if (key) {
+      parent[meta].keyedChildren.delete(key);
+    }
+    
+    parent.removeChild(child);
+    child = next;
   }
 }
 
-function replace(node, child, dispatch, root) {
+function replace(parent, from, count, child, dispatch, root) {
+  remove(parent, from, count);
+
   const el = createElement(child, dispatch, root);
-  const parent = node.parentNode;
-
-  if (child.key) {
-    const ref = new WeakRef(unwrapFragment(el));
-    parent[meta].keyedChildren.set(child.key, ref);
-  }
-
-  parent.replaceChild(el, node);
+  addToMetadata(parent, el);
+  parent.insertBefore(el, parent.childNodes[from] ?? null);
 }
 
 function replaceText(node, content) {
@@ -219,12 +189,17 @@ function update(node, added, removed, dispatch, root) {
 
 // ELEMENTS --------------------------------------------------------------------
 
-function unwrapFragment(node) {
-  while (node.nodeType === DocumentFragment.DOCUMENT_FRAGMENT_NODE) {
-    node = node.firstChild;
+function addToMetadata(node, child) {
+  if (child.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+    for (child = child.firstChild; child; child = child.nextSibling) {
+      addToMetadata(node, child);
+    }
+  } else {
+    const key=  child[meta].key;
+    if (key) {
+      node[meta].keyedChildren.set(key, new WeakRef(child));
+    }
   }
-
-  return node;
 }
 
 function createElement(vnode, dispatch, root) {
@@ -254,6 +229,10 @@ function createElement(vnode, dispatch, root) {
 
     case Fragment: {
       const node = document.createDocumentFragment();
+
+      const head = document.createTextNode('');
+      initialiseMetadata(head, vnode.key);
+      node.appendChild(head);
 
       for (let list = vnode.children; list.tail; list = list.tail) {
         node.appendChild(createElement(list.head, dispatch, root));
@@ -292,7 +271,7 @@ export function initialiseMetadata(node, key = '') {
       };
       break;
 
-    case Node.ELEMENT_TEXT:
+    case Node.TEXT_NODE:
       node[meta] = { key };
       break;
   }
