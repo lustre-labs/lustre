@@ -6,7 +6,7 @@ import lustre/attribute.{type Attribute} as _
 import lustre/element.{type Element}
 import lustre/internals/constants
 import lustre/vdom/attribute
-import lustre/vdom/node.{Element, Fragment}
+import lustre/vdom/node
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -47,7 +47,7 @@ pub fn element(
 ) -> Element(msg) {
   let #(keyed_children, children, _) = extract_keyed_children(children)
 
-  Element(
+  node.element(
     key: "",
     namespace: "",
     tag:,
@@ -68,7 +68,7 @@ pub fn namespaced(
 ) -> Element(msg) {
   let #(keyed_children, children, _) = extract_keyed_children(children)
 
-  Element(
+  node.element(
     key: "",
     mapper: constants.option_none,
     namespace:,
@@ -85,7 +85,7 @@ pub fn fragment(children: List(#(String, Element(msg)))) -> Element(msg) {
   let #(keyed_children, children, children_count) =
     extract_keyed_children(children)
 
-  Fragment(
+  node.fragment(
     key: "",
     mapper: constants.option_none,
     children:,

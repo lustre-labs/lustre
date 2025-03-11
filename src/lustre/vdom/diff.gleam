@@ -11,38 +11,12 @@ import lustre/internals/constants
 import lustre/vdom/attribute.{type Attribute, Attribute, Event, Property}
 import lustre/vdom/events.{type Events}
 import lustre/vdom/node.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
+import lustre/vdom/patch.{type Change, type Patch, Patch}
 
 // TYPES -----------------------------------------------------------------------
 
 pub type Diff(msg) {
   Diff(patch: Patch(msg), events: Events(msg))
-}
-
-pub type Patch(msg) {
-  Patch(
-    index: Int,
-    removed: Int,
-    changes: List(Change(msg)),
-    children: List(Patch(msg)),
-  )
-}
-
-pub type Change(msg) {
-  // node updates
-  ReplaceText(content: String)
-  ReplaceInnerHtml(inner_html: String)
-  Update(added: List(Attribute(msg)), removed: List(Attribute(msg)))
-  // keyed changes
-  Move(key: String, before: Int, count: Int)
-  RemoveKey(key: String, count: Int)
-  // unkeyed changes
-  Replace(from: Int, count: Int, with: Node(msg))
-  Insert(children: List(Node(msg)), before: Int)
-  Remove(from: Int, count: Int)
-}
-
-type AttributeChange(msg) {
-  AttributeChange(added: List(Attribute(msg)), removed: List(Attribute(msg)))
 }
 
 // DIFFING ---------------------------------------------------------------------
@@ -84,13 +58,12 @@ fn offset_root_patch(root: Patch(msg), offset: Int) -> Patch(msg) {
   let changes =
     list.map(root.changes, fn(change) {
       case change {
-        Insert(before:, ..) -> Insert(..change, before: before + offset)
-        Move(before:, ..) -> Move(..change, before: before + offset)
-        Remove(from:, ..) -> Remove(..change, from: from + offset)
-        Replace(from:, ..) -> Replace(..change, from: from + offset)
-
-        ReplaceText(..) | ReplaceInnerHtml(..) | Update(..) | RemoveKey(..) ->
-          change
+        patch.Insert(before:, ..) ->
+          patch.Insert(..change, before: before + offset)
+        patch.Move(before:, ..) -> patch.Move(..change, before: before + offset)
+        patch.Remove(from:, ..) -> patch.Remove(..change, from: from + offset)
+        patch.Replace(from:, ..) -> patch.Replace(..change, from: from + offset)
+        _ -> change
       }
     })
 
@@ -162,7 +135,8 @@ fn do_diff(
     [], [_, ..] -> {
       let events =
         events.add_children(events, mapper, node_index - moved_offset, new)
-      let insert = Insert(children: new, before: node_index - moved_offset)
+      let insert =
+        patch.insert(children: new, before: node_index - moved_offset)
       let changes = [insert, ..changes]
 
       Diff(
@@ -243,7 +217,7 @@ fn do_diff(
         Ok(_), Ok(match) -> {
           let count = node.advance(next)
           let before = node_index - moved_offset
-          let move = Move(key: next.key, before:, count:)
+          let move = patch.move(key: next.key, before:, count:)
           let changes = [move, ..changes]
           let moved = set.insert(moved, next.key)
           let moved_offset = moved_offset + count
@@ -271,7 +245,7 @@ fn do_diff(
         Error(_), Ok(_) -> {
           let count = node.advance(prev)
           let moved_offset = moved_offset - count
-          let remove = RemoveKey(key: prev.key, count:)
+          let remove = patch.remove_key(key: prev.key, count:)
           let changes = [remove, ..changes]
 
           do_diff(
@@ -298,7 +272,7 @@ fn do_diff(
           let before = node_index - moved_offset
           let count = node.advance(next)
           let events = events.add_child(events, mapper, node_index, next)
-          let insert = Insert(children: [next], before:)
+          let insert = patch.insert(children: [next], before:)
           let changes = [insert, ..changes]
 
           do_diff(
@@ -325,7 +299,7 @@ fn do_diff(
           let next_count = node.advance(next)
 
           let change =
-            Replace(
+            patch.replace(
               from: node_index - moved_offset,
               count: prev_count,
               with: next,
@@ -364,7 +338,7 @@ fn do_diff(
       let changes = case prev_count - next_count {
         remove_count if remove_count > 0 -> {
           let remove_from = node_index + next_count - moved_offset
-          let remove = Remove(from: remove_from, count: remove_count)
+          let remove = patch.remove(from: remove_from, count: remove_count)
 
           [remove, ..changes]
         }
@@ -426,7 +400,7 @@ fn do_diff(
         None -> mapper
       }
 
-      let attribute_change =
+      let update =
         diff_attributes(
           old: prev.attributes,
           new: next.attributes,
@@ -434,12 +408,10 @@ fn do_diff(
           removed: constants.empty_list,
         )
 
-      let initial_child_changes = case
-        attribute_change.added,
-        attribute_change.removed
-      {
-        [], [] -> constants.empty_list
-        added, removed -> [Update(added:, removed:)]
+      let initial_child_changes = case update {
+        patch.Update(added: [], removed: [], ..) -> constants.empty_list
+        patch.Update(added: _, removed: _, ..) -> [update]
+        _ -> constants.empty_list
       }
 
       let child =
@@ -509,10 +481,10 @@ fn do_diff(
     // the text content of the node without replacing the node itself.
     [Text(..), ..old], [Text(..) as next, ..new] -> {
       let child =
-        Patch(
+        patch.new(
           index: node_index,
           removed: 0,
-          changes: [ReplaceText(next.content)],
+          changes: [patch.replace_text(next.content)],
           children: constants.empty_list,
         )
 
@@ -534,7 +506,7 @@ fn do_diff(
     }
 
     [UnsafeInnerHtml(..) as prev, ..old], [UnsafeInnerHtml(..) as next, ..new] -> {
-      let AttributeChange(added: added_attrs, removed: removed_attrs) =
+      let update =
         diff_attributes(
           old: prev.attributes,
           new: next.attributes,
@@ -542,19 +514,20 @@ fn do_diff(
           removed: constants.empty_list,
         )
 
-      let child_changes = case added_attrs, removed_attrs {
-        [], [] -> constants.empty_list
-        _, _ -> [Update(added: added_attrs, removed: removed_attrs)]
+      let child_changes = case update {
+        patch.Update(added: [], removed: [], ..) -> constants.empty_list
+        patch.Update(added: _, removed: _, ..) -> [update]
+        _ -> constants.empty_list
       }
 
       let child_changes = case prev.inner_html == next.inner_html {
         True -> child_changes
-        False -> [ReplaceInnerHtml(next.inner_html), ..child_changes]
+        False -> [patch.replace_inner_html(next.inner_html), ..child_changes]
       }
 
       let children = case child_changes {
         [] -> children
-        _ -> [Patch(node_index, 0, child_changes, []), ..children]
+        _ -> [patch.new(node_index, 0, child_changes, []), ..children]
       }
 
       let events = events.add_child(events, mapper, node_index, next)
@@ -584,7 +557,11 @@ fn do_diff(
       let next_count = node.advance(next)
 
       let change =
-        Replace(from: node_index - moved_offset, count: prev_count, with: next)
+        patch.replace(
+          from: node_index - moved_offset,
+          count: prev_count,
+          with: next,
+        )
 
       let events = events.add_child(events, mapper, node_index, next)
 
@@ -614,9 +591,9 @@ fn diff_attributes(
   new new: List(Attribute(msg)),
   added added: List(Attribute(msg)),
   removed removed: List(Attribute(msg)),
-) -> AttributeChange(msg) {
+) -> Change(msg) {
   case old, new {
-    [], [] -> AttributeChange(added:, removed:)
+    [], [] -> patch.update(added:, removed:)
 
     [prev, ..old], [] ->
       diff_attributes(old:, new:, added:, removed: [prev, ..removed])

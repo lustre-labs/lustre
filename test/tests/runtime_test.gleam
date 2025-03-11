@@ -12,7 +12,7 @@ import lustre/event
 import lustre/runtime/server/runtime
 import lustre/runtime/transport
 import lustre/server_component
-import lustre/vdom/diff.{Patch}
+import lustre/vdom/patch
 import lustre_test
 
 // CLIENT INTERACTION TESTS ----------------------------------------------------
@@ -22,7 +22,7 @@ pub fn client_connect_test() {
   use <- lustre_test.test_filter("client_connect_test")
   use client, _ <- with_erlang_runtime
 
-  process.receive_forever(client) |> should.equal(transport.Mount(view(0)))
+  process.receive_forever(client) |> should.equal(transport.mount(view(0)))
 }
 
 @target(erlang)
@@ -33,18 +33,18 @@ pub fn client_send_event_test() {
   // Discard the `Mount` message
   let _ = process.receive_forever(client)
 
-  let click = transport.EventFired(incr, "click", dynamic.from(Nil))
+  let click = transport.event_fired(incr, "click", dynamic.from(Nil))
 
   process.send(runtime, runtime.ClientDispatchedMessage(click))
 
   let patch =
-    Patch(0, 0, [], [
-      Patch(0, 0, [], [
-        Patch(1, 0, [], [Patch(0, 0, [diff.ReplaceText("1")], [])]),
+    patch.new(0, 0, [], [
+      patch.new(0, 0, [], [
+        patch.new(1, 0, [], [patch.new(0, 0, [patch.replace_text("1")], [])]),
       ]),
     ])
 
-  process.receive_forever(client) |> should.equal(transport.Reconcile(patch))
+  process.receive_forever(client) |> should.equal(transport.reconcile(patch))
 }
 
 @target(erlang)
@@ -55,7 +55,7 @@ pub fn client_send_multiple_events_test() {
   // Discard the `Mount` message
   let _ = process.receive_forever(client)
 
-  let click = transport.EventFired(incr, "click", dynamic.from(Nil))
+  let click = transport.event_fired(incr, "click", dynamic.from(Nil))
 
   process.send(runtime, runtime.ClientDispatchedMessage(click))
   process.send(runtime, runtime.ClientDispatchedMessage(click))
@@ -64,13 +64,13 @@ pub fn client_send_multiple_events_test() {
   let _ = process.receive_forever(client)
 
   let patch =
-    Patch(0, 0, [], [
-      Patch(0, 0, [], [
-        Patch(1, 0, [], [Patch(0, 0, [diff.ReplaceText("2")], [])]),
+    patch.new(0, 0, [], [
+      patch.new(0, 0, [], [
+        patch.new(1, 0, [], [patch.new(0, 0, [patch.replace_text("2")], [])]),
       ]),
     ])
 
-  process.receive_forever(client) |> should.equal(transport.Reconcile(patch))
+  process.receive_forever(client) |> should.equal(transport.reconcile(patch))
 }
 
 // SERVER MESSAGE TESTS --------------------------------------------------------
@@ -83,14 +83,14 @@ pub fn server_emit_event_test() {
   // Discard the `Mount` message
   let _ = process.receive_forever(client)
 
-  let click = transport.EventFired(reset, "click", dynamic.from(Nil))
+  let click = transport.event_fired(reset, "click", dynamic.from(Nil))
 
   process.send(runtime, runtime.ClientDispatchedMessage(click))
 
   // Discard the first `Reconcile` message
   let _ = process.receive_forever(client)
 
-  let emit = transport.Emit("reset", json.null())
+  let emit = transport.emit("reset", json.null())
 
   process.receive_forever(client) |> should.equal(emit)
 }

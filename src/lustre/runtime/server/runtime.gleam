@@ -108,10 +108,10 @@ fn loop(
   state: State(model, msg),
 ) -> Next(Message(msg), State(model, msg)) {
   case message {
-    ClientDispatchedMessage(message: transport.AttributesChanged(attributes:)) -> {
+    ClientDispatchedMessage(message: transport.AttributesChanged(..) as message) -> {
       let #(model, effect, did_update) =
         handle_attribute_changes(
-          attributes,
+          message.attributes,
           state.on_attribute_change,
           state.update,
           False,
@@ -123,13 +123,15 @@ fn loop(
       let Diff(patch:, events:) = diff(state.vdom, vdom, 0)
 
       handle_effect(state.self, effect)
-      broadcast(state.subscribers, state.callbacks, transport.Reconcile(patch))
+      broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))
 
       actor.continue(State(..state, model:, vdom:, events:))
     }
 
-    ClientDispatchedMessage(message: transport.EventFired(path:, name:, event:)) ->
-      case events.handle(state.events, path, name, event) {
+    ClientDispatchedMessage(message: transport.EventFired(..) as message) ->
+      case
+        events.handle(state.events, message.path, message.name, message.event)
+      {
         Error(_) -> actor.continue(state)
         Ok(message) -> {
           let #(model, effect) = state.update(state.model, message)
@@ -140,7 +142,7 @@ fn loop(
           broadcast(
             state.subscribers,
             state.callbacks,
-            transport.Reconcile(patch),
+            transport.reconcile(patch),
           )
 
           actor.continue(State(..state, model:, vdom:, events:))
@@ -164,7 +166,7 @@ fn loop(
             })
           }
 
-          process.send(client, transport.Mount(state.vdom))
+          process.send(client, transport.mount(state.vdom))
 
           actor.Continue(
             State(..state, subscribers:, selector:),
@@ -202,7 +204,7 @@ fn loop(
         False -> {
           let callbacks = set.insert(state.callbacks, callback)
 
-          callback(transport.Mount(state.vdom))
+          callback(transport.mount(state.vdom))
           actor.continue(State(..state, callbacks:))
         }
       }
@@ -230,13 +232,13 @@ fn loop(
       let Diff(patch:, events:) = diff(state.vdom, vdom, 0)
 
       handle_effect(state.self, effect)
-      broadcast(state.subscribers, state.callbacks, transport.Reconcile(patch))
+      broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))
 
       actor.continue(State(..state, model:, vdom:, events:))
     }
 
     EffectEmitEvent(name:, data:) -> {
-      broadcast(state.subscribers, state.callbacks, transport.Emit(name, data))
+      broadcast(state.subscribers, state.callbacks, transport.emit(name, data))
 
       actor.continue(state)
     }
@@ -246,7 +248,7 @@ fn loop(
       let Diff(patch:, events:) = diff(state.vdom, vdom, 0)
 
       handle_effect(state.self, effect)
-      broadcast(state.subscribers, state.callbacks, transport.Reconcile(patch))
+      broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))
 
       actor.continue(State(..state, vdom:, events:))
     }
