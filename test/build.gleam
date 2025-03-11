@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/bool
+import esgleam
+import esgleam/mod/install
 import gleam/io
 import gleam/regexp.{Options}
 import gleam/result
@@ -12,12 +13,14 @@ import simplifile
 
 pub fn main() {
   io.debug({
-    use exists <- try(verify_esbuild(), SimplifileError)
-    use <- bool.guard(!exists, Error(MissingEsbuild))
+    case simplifile.is_file("build/dev/bin/package/bin/esbuild") {
+      Ok(True) -> Nil
+      _ -> install.fetch()
+    }
 
     use _ <- try(build_for_javascript(), ShelloutError)
-    use _ <- try(bundle_server_component(), ShelloutError)
-    use _ <- try(bundle_minified_server_component(), ShelloutError)
+    use _ <- try(bundle_server_component(), SimplifileError)
+    use _ <- try(bundle_minified_server_component(), SimplifileError)
 
     use script <- try(read_script(), SimplifileError)
     use module <- try(read_module(), SimplifileError)
@@ -31,19 +34,15 @@ pub fn main() {
 
 // CONSTANTS -------------------------------------------------------------------
 
-const esbuild = "./build/dev/bin/esbuild"
-
-const runtime = "./src/lustre/runtime/client/server_component.ffi.mjs"
+// For whatever reason, esgleam needs the input path to be relative to the location
+// of the esbuild binary
+const runtime = "../../../../src/lustre/runtime/client/server_component.ffi.mjs"
 
 const outfile = "./priv/static/lustre-server-component"
 
 const module = "./src/lustre/server_component.gleam"
 
 // STEPS -----------------------------------------------------------------------
-
-fn verify_esbuild() {
-  simplifile.is_file(esbuild)
-}
 
 fn build_for_javascript() {
   shellout.command(
@@ -55,32 +54,18 @@ fn build_for_javascript() {
 }
 
 fn bundle_server_component() {
-  shellout.command(
-    run: esbuild,
-    with: [
-      runtime,
-      "--bundle",
-      "--format=esm",
-      "--outfile=" <> outfile <> ".mjs",
-    ],
-    in: ".",
-    opt: [],
-  )
+  esgleam.new("")
+  |> esgleam.entry(runtime)
+  |> esgleam.raw("--outfile=" <> outfile <> ".mjs")
+  |> esgleam.bundle
 }
 
 fn bundle_minified_server_component() {
-  shellout.command(
-    run: esbuild,
-    with: [
-      runtime,
-      "--bundle",
-      "--minify",
-      "--format=esm",
-      "--outfile=" <> outfile <> ".min.mjs",
-    ],
-    in: ".",
-    opt: [],
-  )
+  esgleam.new("")
+  |> esgleam.entry(runtime)
+  |> esgleam.minify(True)
+  |> esgleam.raw("--outfile=" <> outfile <> ".min.mjs")
+  |> esgleam.bundle
 }
 
 fn read_script() {
