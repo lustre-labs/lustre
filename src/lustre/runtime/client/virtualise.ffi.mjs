@@ -19,6 +19,9 @@ export function virtualise(root) {
   } else if (vdom.children instanceof NonEmpty && vdom.children.tail instanceof Empty) {
     return vdom.children.head;
   } else {
+    const head = document.createTextNode('');
+    initialiseMetadata(head);
+    root.insertBefore(head, root.firstChild);
     return fragment(vdom.children);
   }
 }
