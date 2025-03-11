@@ -207,27 +207,13 @@ pub fn none() -> Element(msg) {
 /// used downstream.
 ///
 pub fn fragment(children: List(Element(msg))) -> Element(msg) {
-  case children {
-    // we never want to produce empty fragments - this is required by the
-    // reconciler to have at least one node to refer to.
-    [] ->
-      Fragment(
-        key: "",
-        mapper: constants.option_none,
-        children: [Text(key: "", mapper: constants.option_none, content: "")],
-        keyed_children: constants.empty_dict(),
-        children_count: 1,
-      )
-
-    _ ->
-      Fragment(
-        key: "",
-        mapper: constants.option_none,
-        children:,
-        keyed_children: constants.empty_dict(),
-        children_count: count_fragment_children(children, 0),
-      )
-  }
+  Fragment(
+    key: "",
+    mapper: constants.option_none,
+    children:,
+    keyed_children: constants.empty_dict(),
+    children_count: count_fragment_children(children, 0),
+  )
 }
 
 fn count_fragment_children(children: List(Element(msg)), count: Int) -> Int {

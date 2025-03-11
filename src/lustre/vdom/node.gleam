@@ -90,31 +90,9 @@ pub type Node(msg) {
 
 ///
 ///
-pub fn count(node: Node(msg)) -> Int {
-  case node {
-    Element(..) | Text(..) | UnsafeInnerHtml(..) -> 1
-    Fragment(children:, ..) -> count_fragment_children(children, 0)
-  }
-}
-
-pub fn count_fragment_children(children: List(Node(msg)), count: Int) -> Int {
-  case children {
-    [] -> count
-
-    [Fragment(..) as fragment, ..rest] ->
-      fragment.children
-      |> count_fragment_children(count)
-      |> count_fragment_children(rest, _)
-
-    [_, ..rest] -> count_fragment_children(rest, count + 1)
-  }
-}
-
-///
-///
 pub fn advance(node: Node(msg)) {
   case node {
-    Fragment(children_count:, ..) -> children_count
+    Fragment(children_count:, ..) -> 1 + children_count
     _ -> 1
   }
 }
@@ -173,8 +151,9 @@ fn set_fragment_key(key, children, index, new_children, keyed_children) {
 
     [node, ..children] if node.key != "" -> {
       let child_key = key <> "::" <> node.key
-      let new_children = [to_keyed(child_key, node), ..new_children]
-      let keyed_children = dict.insert(keyed_children, child_key, node)
+      let keyed_node = to_keyed(child_key, node)
+      let new_children = [keyed_node, ..new_children]
+      let keyed_children = dict.insert(keyed_children, child_key, keyed_node)
       let index = index + 1
       set_fragment_key(key, children, index, new_children, keyed_children)
     }

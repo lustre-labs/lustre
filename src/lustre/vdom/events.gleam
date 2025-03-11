@@ -89,7 +89,7 @@ pub fn add_child(
         Some(child_mapper) -> fn(msg) { msg |> child_mapper |> mapper }
       }
 
-      add_children(parent, composed_mapper, index, children)
+      add_children(parent, composed_mapper, index + 1, children)
     }
 
     UnsafeInnerHtml(key:, attributes:, ..) -> {

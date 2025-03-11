@@ -1,6 +1,7 @@
 import { Empty, NonEmpty } from '../../../gleam.mjs';
 import { element, namespaced, fragment, text, none } from '../../element.mjs';
 import { attribute } from '../../attribute.mjs';
+import { to_keyed } from '../../vdom/node.mjs';
 import { empty_list } from '../../internals/constants.mjs';
 import { initialiseMetadata } from './reconciler.ffi.mjs';
 
@@ -11,7 +12,9 @@ export function virtualise(root) {
   // at this point we know the element is empty - but we have to have at least
   // an empty text node child in the root element to be able to mount
   if (vdom === null || vdom.children instanceof Empty) {
-    root.appendChild(document.createTextNode(''));
+    const empty = document.createTextNode('');
+    initialiseMetadata(empty);
+    root.appendChild(empty);
     return none();
   } else if (vdom.children instanceof NonEmpty && vdom.children.tail instanceof Empty) {
     return vdom.children.head;
@@ -23,7 +26,8 @@ export function virtualise(root) {
 function virtualise_node(node) {
   switch (node.nodeType) {
     case Node.ELEMENT_NODE: {
-      initialiseMetadata(node);
+      const key = node.getAttribute('data-lustre-key');
+      initialiseMetadata(node, key);
  
       const tag = node.localName;
       const namespace = node.namespaceURI;
@@ -31,9 +35,11 @@ function virtualise_node(node) {
       const attributes = virtualise_attributes(node);
       const children = virtualise_child_nodes(node);
 
-      return !namespace || namespace === HTML_NAMESPACE
+      const vnode = !namespace || namespace === HTML_NAMESPACE
         ? element(tag, attributes, children)
         : namespaced(namespace, tag, attributes, children);
+
+      return key ? to_keyed(key, vnode) : vnode;
     };
 
     case Node.TEXT_NODE:
@@ -52,23 +58,18 @@ function virtualise_node(node) {
 }
 
 function virtualise_child_nodes(node) {
-  let index = node.childNodes.length;
-
   let children = empty_list;
-  const nodesToRemove = [];
-  while (index-- > 0) {
-    const child = virtualise_node(node.childNodes[index]);
-    if (child) {
-      children = new NonEmpty(child, children);
-    } else {
-      nodesToRemove.push(node.childNodes[index]);
-    }
-  }
 
-  // we have to remove all nodes we cannot virtualise to make sure the indices
-  // used in the patch line up.
-  for (const child of nodesToRemove) {
-    node.removeChild(child);
+  let child = node.lastChild;
+  while (child) {
+    const vnode = virtualise_node(child);
+    const next = child.previousSibling;
+    if (vnode) {
+      children = new NonEmpty(vnode, children);
+    } else {
+      node.removeChild(child);
+    }
+    child = next;
   }
 
   return children;

@@ -29,15 +29,14 @@ pub type Patch(msg) {
 
 pub type Change(msg) {
   // node updates
-  Replace(element: Node(msg))
   ReplaceText(content: String)
   ReplaceInnerHtml(inner_html: String)
   Update(added: List(Attribute(msg)), removed: List(Attribute(msg)))
   // keyed changes
-  SetKey(index: Int, key: String)
   Move(key: String, before: Int, count: Int)
   RemoveKey(key: String, count: Int)
   // unkeyed changes
+  Replace(from: Int, count: Int, with: Node(msg))
   Insert(children: List(Node(msg)), before: Int)
   Remove(from: Int, count: Int)
 }
@@ -88,12 +87,10 @@ fn offset_root_patch(root: Patch(msg), offset: Int) -> Patch(msg) {
         Insert(before:, ..) -> Insert(..change, before: before + offset)
         Move(before:, ..) -> Move(..change, before: before + offset)
         Remove(from:, ..) -> Remove(..change, from: from + offset)
-        SetKey(index:, ..) -> SetKey(..change, index: index + offset)
-        Replace(..)
-        | ReplaceText(..)
-        | ReplaceInnerHtml(..)
-        | Update(..)
-        | RemoveKey(..) -> change
+        Replace(from:, ..) -> Replace(..change, from: from + offset)
+
+        ReplaceText(..) | ReplaceInnerHtml(..) | Update(..) | RemoveKey(..) ->
+          change
       }
     })
 
@@ -321,52 +318,17 @@ fn do_diff(
           )
         }
 
-        // The previous child was a non-keyed element *and* the new child is new
-        // for this render. The new element can "steal" the previous one to
-        // continue diffing like normal by setting its key!
-        Error(_), Error(_) if prev.key == "" -> {
-          let prev_with_key = node.to_keyed(next.key, prev)
-
-          let set_key = SetKey(index: node_index - moved_offset, key: next.key)
-          let changes = [set_key, ..changes]
-
-          do_diff(
-            old: [prev_with_key, ..old_remaining],
-            old_keyed:,
-            new:,
-            new_keyed:,
-            moved:,
-            moved_offset:,
-            removed:,
-            node_index:,
-            patch_index:,
-            changes:,
-            children:,
-            events:,
-            mapper:,
-          )
-        }
-
         // The previous child no longer exists in the incoming tree *and* the new
         // child is new for this render. That means we can do a straight `Replace`.
         Error(_), Error(_) -> {
           let prev_count = node.advance(prev)
-          let changes = case prev_count > 1 {
-            False -> changes
-            True -> {
-              let from = node_index - moved_offset + 1
-              let remove = Remove(from:, count: prev_count - 1)
+          let next_count = node.advance(next)
 
-              [remove, ..changes]
-            }
-          }
-
-          let child =
-            Patch(
-              index: node_index,
-              removed: 0,
-              changes: [Replace(next)],
-              children: constants.empty_list,
+          let change =
+            Replace(
+              from: node_index - moved_offset,
+              count: prev_count,
+              with: next,
             )
 
           let events = events.add_child(events, mapper, node_index, next)
@@ -377,12 +339,12 @@ fn do_diff(
             new: new_remaining,
             new_keyed:,
             moved:,
-            moved_offset: moved_offset - prev_count + 1,
+            moved_offset: moved_offset - prev_count + next_count,
             removed:,
-            node_index: node_index + 1,
+            node_index: node_index + next_count,
             patch_index:,
-            changes:,
-            children: [child, ..children],
+            changes: [change, ..changes],
+            children:,
             events:,
             mapper:,
           )
@@ -394,6 +356,9 @@ fn do_diff(
     // cases these means we can morph the existing DOM node into the new one by
     // producing precise changes.
     [Fragment(..) as prev, ..old], [Fragment(..) as next, ..new] -> {
+      // skip the fragment head
+      let node_index = node_index + 1
+
       let prev_count = prev.children_count
       let next_count = next.children_count
       let changes = case prev_count - next_count {
@@ -614,40 +579,27 @@ fn do_diff(
     // If we land here we've exhausted any other possibility for a more focused
     // diff of these two nodes. In this case, we just replace the old node with
     // the new one.
-    [prev, ..old], [next, ..new] -> {
+    [prev, ..old_remaining], [next, ..new_remaining] -> {
       let prev_count = node.advance(prev)
-      let changes = case prev_count > 1 {
-        False -> changes
-        True -> {
-          let from = node_index - moved_offset + 1
-          let remove = Remove(from:, count: prev_count - 1)
+      let next_count = node.advance(next)
 
-          [remove, ..changes]
-        }
-      }
-
-      let child =
-        Patch(
-          index: node_index,
-          removed: 0,
-          changes: [Replace(next)],
-          children: constants.empty_list,
-        )
+      let change =
+        Replace(from: node_index - moved_offset, count: prev_count, with: next)
 
       let events = events.add_child(events, mapper, node_index, next)
 
       do_diff(
-        old:,
+        old: old_remaining,
         old_keyed:,
-        new:,
+        new: new_remaining,
         new_keyed:,
         moved:,
-        moved_offset: moved_offset - prev_count + 1,
+        moved_offset: moved_offset - prev_count + next_count,
         removed:,
-        node_index: node_index + 1,
+        node_index: node_index + next_count,
         patch_index:,
-        changes:,
-        children: [child, ..children],
+        changes: [change, ..changes],
+        children:,
         events:,
         mapper:,
       )
