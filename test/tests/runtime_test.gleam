@@ -3,7 +3,6 @@
 import gleam/dynamic
 import gleam/erlang/process
 import gleam/int
-import gleam/javascript/promise
 import gleam/json
 import gleeunit/should
 import lustre
@@ -133,9 +132,9 @@ fn update(model, msg) {
   }
 }
 
-const incr = "0.2"
+const incr = ["0", "2"]
 
-const reset = "0.3"
+const reset = ["0", "3"]
 
 fn view(model) {
   html.div([], [

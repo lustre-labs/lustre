@@ -341,66 +341,84 @@ function createElement(vnode, dispatch, root) {
 
 function createAttribute(node, attribute, dispatch, root) {
   switch (attribute[0]) {
-    case attribute_variant:
-      {
-        const name = attribute[attribute_name];
-        const value = attribute[attribute_value];
+    case attribute_variant: {
+      const name = attribute[attribute_name];
+      const value = attribute[attribute_value];
 
-        if (value !== node.getAttribute(name)) {
-          node.setAttribute(name, value);
-        }
-
-        ATTRIBUTE_HOOKS[name]?.added?.(node, value);
+      if (value !== node.getAttribute(name)) {
+        node.setAttribute(name, value);
       }
+
+      ATTRIBUTE_HOOKS[name]?.added?.(node, value);
       break;
+    }
 
     case property_variant:
       node[attribute[property_name]] = attribute[property_value];
       break;
 
-    case event_variant:
-      {
-        if (!node[meta].handlers.has(attribute[event_name])) {
-          node.addEventListener(attribute[event_name], handleEvent, {
-            passive: !attribute[event_prevent_default],
-          });
-        }
-
-        const prevent = attribute[event_prevent_default];
-        const stop = attribute[event_stop_propagation];
-        const immediate =
-          attribute[event_immediate] ||
-          IMMEDIATE_EVENTS.includes(attribute[event_name]);
-
-        node[meta].handlers.set(attribute[event_name], (event) => {
-          if (prevent) event.preventDefault();
-          if (stop) event.stopPropagation();
-
-          let node = event.target;
-          let path =
-            node[meta].key ||
-            [].indexOf.call(node.parentNode.childNodes, node).toString();
-
-          node = node.parentNode;
-
-          while (node !== root) {
-            const key = node[meta].key;
-
-            if (key) {
-              path = `${key}.${path}`;
-            } else {
-              const index = [].indexOf.call(node.parentNode.childNodes, node);
-              path = `${index}.${path}`;
-            }
-
-            node = node.parentNode;
-          }
-
-          dispatch(event, path, event.type, immediate);
+    case event_variant: {
+      if (!node[meta].handlers.has(attribute[event_name])) {
+        node.addEventListener(attribute[event_name], handleEvent, {
+          passive: !attribute[event_prevent_default],
         });
       }
+
+      const prevent = attribute[event_prevent_default];
+      const stop = attribute[event_stop_propagation];
+      const immediate =
+        attribute[event_immediate] ||
+        IMMEDIATE_EVENTS.includes(attribute[event_name]);
+      const include = attribute[event_include];
+
+      node[meta].handlers.set(attribute[event_name], (event) => {
+        if (prevent) event.preventDefault();
+        if (stop) event.stopPropagation();
+
+        let path = [];
+        for (
+          let node = event.currentTarget;
+          node !== root;
+          node = node.parentNode
+        ) {
+          const key = node[meta].key;
+          if (key) {
+            path.push(key);
+          } else {
+            const index = [].indexOf.call(node.parentNode.childNodes, node);
+            path.push(index.toString());
+          }
+        }
+        path.reverse();
+
+        dispatch(extract(event, include), path, event.type, immediate);
+      });
       break;
+    }
   }
+}
+
+function extract(event, include = []) {
+  const data = {};
+
+  if (event.type === "input" || event.type === "change") {
+    include.push("target.value");
+  }
+
+  for (const property of include) {
+    const path = property.split(".");
+
+    for (let i = 0, input = event, output = data; i < path.length; i++) {
+      if (i === path.length - 1) {
+        output[path[i]] = input[path[i]];
+      } else {
+        output = output[path[i]] ??= {};
+        input = input[path[i]];
+      }
+    }
+  }
+
+  return data;
 }
 
 function handleEvent(event) {

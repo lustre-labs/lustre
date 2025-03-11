@@ -20,50 +20,39 @@ pub type ClientMessage(msg) {
 
 pub type ServerMessage {
   AttributesChanged(attributes: List(#(String, Dynamic)))
-  EventFired(path: String, name: String, event: Dynamic)
+  EventFired(path: List(String), name: String, event: Dynamic)
 }
 
 // DECODERS --------------------------------------------------------------------
 // SERVER MESSAGE DECODERS -----------------------------------------------------
 
 pub fn server_message_decoder() -> Decoder(ServerMessage) {
-  use list <- decode.then(decode.list(decode.dynamic))
+  use tag <- decode.field(0, decode.int)
 
-  case list {
-    [tag, ..rest] ->
-      case decode.run(tag, decode.int), rest {
-        Ok(tag), [attributes] if tag == attributes_changed_variant ->
-          case decode.run(attributes, changed_attributes_decoder()) {
-            Ok(attributes) -> decode.success(AttributesChanged(attributes))
-            _ -> decode.failure(AttributesChanged([]), "")
-          }
-
-        Ok(tag), [path, name, event] if tag == event_fired_variant ->
-          case
-            decode.run(path, decode.string),
-            decode.run(name, decode.string)
-          {
-            Ok(path), Ok(name) -> decode.success(EventFired(path, name, event))
-            _, _ -> decode.failure(AttributesChanged([]), "")
-          }
-        _, _ -> decode.failure(AttributesChanged([]), "")
-      }
+  case tag {
+    _ if tag == attributes_changed_variant -> changed_attributes_decoder()
+    _ if tag == event_fired_variant -> event_fired_decoder()
     _ -> decode.failure(AttributesChanged([]), "")
   }
 }
 
-fn changed_attributes_decoder() -> Decoder(List(#(String, Dynamic))) {
-  decode.list({
-    use name <- decode.field(0, decode.string)
-    use value <- decode.field(1, decode.dynamic)
+fn changed_attributes_decoder() -> Decoder(ServerMessage) {
+  use attributes <- decode.field(
+    attributes_changed_attributes,
+    decode.list({
+      use name <- decode.field(0, decode.string)
+      use value <- decode.field(1, decode.dynamic)
 
-    decode.success(#(name, value))
-  })
+      decode.success(#(name, value))
+    }),
+  )
+
+  decode.success(AttributesChanged(attributes))
 }
 
 fn event_fired_decoder() -> Decoder(ServerMessage) {
-  use path <- decode.field(event_fired_path, decode.string)
-  use name <- decode.field(event_fired_name, decode.string)
+  use path <- decode.field(event_fired_name, decode.list(decode.string))
+  use name <- decode.field(event_fired_path, decode.string)
   use event <- decode.field(event_fired_event, decode.dynamic)
 
   decode.success(EventFired(path, name, event))

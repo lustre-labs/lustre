@@ -23,28 +23,27 @@ var List = class {
   }
   // @internal
   atLeastLength(desired) {
-    for (let _ of this) {
-      if (desired <= 0)
-        return true;
-      desired--;
-    }
-    return desired <= 0;
+    let current = this;
+    while (desired-- > 0 && current)
+      current = current.tail;
+    return current !== void 0;
   }
   // @internal
   hasLength(desired) {
-    for (let _ of this) {
-      if (desired <= 0)
-        return false;
-      desired--;
-    }
-    return desired === 0;
+    let current = this;
+    while (desired-- > 0 && current)
+      current = current.tail;
+    return desired === -1 && current instanceof Empty;
   }
   // @internal
   countLength() {
+    let current = this;
     let length2 = 0;
-    for (let _ of this)
+    while (current) {
+      current = current.tail;
       length2++;
-    return length2;
+    }
+    return length2 - 1;
   }
 };
 var ListIterator = class {
@@ -71,6 +70,199 @@ var NonEmpty = class extends List {
     this.tail = tail;
   }
 };
+var BitArray = class {
+  /**
+   * The size in bits of this bit array's data.
+   *
+   * @type {number}
+   */
+  bitSize;
+  /**
+   * The size in bytes of this bit array's data. If this bit array doesn't store
+   * a whole number of bytes then this value is rounded up.
+   *
+   * @type {number}
+   */
+  byteSize;
+  /**
+   * The number of unused high bits in the first byte of this bit array's
+   * buffer prior to the start of its data. The value of any unused high bits is
+   * undefined.
+   *
+   * The bit offset will be in the range 0-7.
+   *
+   * @type {number}
+   */
+  bitOffset;
+  /**
+   * The raw bytes that hold this bit array's data.
+   *
+   * If `bitOffset` is not zero then there are unused high bits in the first
+   * byte of this buffer.
+   *
+   * If `bitOffset + bitSize` is not a multiple of 8 then there are unused low
+   * bits in the last byte of this buffer.
+   *
+   * @type {Uint8Array}
+   */
+  rawBuffer;
+  /**
+   * Constructs a new bit array from a `Uint8Array`, an optional size in
+   * bits, and an optional bit offset.
+   *
+   * If no bit size is specified it is taken as `buffer.length * 8`, i.e. all
+   * bytes in the buffer make up the new bit array's data.
+   *
+   * If no bit offset is specified it defaults to zero, i.e. there are no unused
+   * high bits in the first byte of the buffer.
+   *
+   * @param {Uint8Array} buffer
+   * @param {number} [bitSize]
+   * @param {number} [bitOffset]
+   */
+  constructor(buffer, bitSize, bitOffset) {
+    if (!(buffer instanceof Uint8Array)) {
+      throw globalThis.Error(
+        "BitArray can only be constructed from a Uint8Array"
+      );
+    }
+    this.bitSize = bitSize ?? buffer.length * 8;
+    this.byteSize = Math.trunc((this.bitSize + 7) / 8);
+    this.bitOffset = bitOffset ?? 0;
+    if (this.bitSize < 0) {
+      throw globalThis.Error(`BitArray bit size is invalid: ${this.bitSize}`);
+    }
+    if (this.bitOffset < 0 || this.bitOffset > 7) {
+      throw globalThis.Error(
+        `BitArray bit offset is invalid: ${this.bitOffset}`
+      );
+    }
+    if (buffer.length !== Math.trunc((this.bitOffset + this.bitSize + 7) / 8)) {
+      throw globalThis.Error("BitArray buffer length is invalid");
+    }
+    this.rawBuffer = buffer;
+  }
+  /**
+   * Returns a specific byte in this bit array. If the byte index is out of
+   * range then `undefined` is returned.
+   *
+   * When returning the final byte of a bit array with a bit size that's not a
+   * multiple of 8, the content of the unused low bits are undefined.
+   *
+   * @param {number} index
+   * @returns {number | undefined}
+   */
+  byteAt(index3) {
+    if (index3 < 0 || index3 >= this.byteSize) {
+      return void 0;
+    }
+    return bitArrayByteAt(this.rawBuffer, this.bitOffset, index3);
+  }
+  /** @internal */
+  equals(other) {
+    if (this.bitSize !== other.bitSize) {
+      return false;
+    }
+    const wholeByteCount = Math.trunc(this.bitSize / 8);
+    if (this.bitOffset === 0 && other.bitOffset === 0) {
+      for (let i = 0; i < wholeByteCount; i++) {
+        if (this.rawBuffer[i] !== other.rawBuffer[i]) {
+          return false;
+        }
+      }
+      const trailingBitsCount = this.bitSize % 8;
+      if (trailingBitsCount) {
+        const unusedLowBitCount = 8 - trailingBitsCount;
+        if (this.rawBuffer[wholeByteCount] >> unusedLowBitCount !== other.rawBuffer[wholeByteCount] >> unusedLowBitCount) {
+          return false;
+        }
+      }
+    } else {
+      for (let i = 0; i < wholeByteCount; i++) {
+        const a = bitArrayByteAt(this.rawBuffer, this.bitOffset, i);
+        const b = bitArrayByteAt(other.rawBuffer, other.bitOffset, i);
+        if (a !== b) {
+          return false;
+        }
+      }
+      const trailingBitsCount = this.bitSize % 8;
+      if (trailingBitsCount) {
+        const a = bitArrayByteAt(
+          this.rawBuffer,
+          this.bitOffset,
+          wholeByteCount
+        );
+        const b = bitArrayByteAt(
+          other.rawBuffer,
+          other.bitOffset,
+          wholeByteCount
+        );
+        const unusedLowBitCount = 8 - trailingBitsCount;
+        if (a >> unusedLowBitCount !== b >> unusedLowBitCount) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  /**
+   * Returns this bit array's internal buffer.
+   *
+   * @deprecated Use `BitArray.byteAt()` or `BitArray.rawBuffer` instead.
+   *
+   * @returns {Uint8Array}
+   */
+  get buffer() {
+    bitArrayPrintDeprecationWarning(
+      "buffer",
+      "Use BitArray.byteAt() or BitArray.rawBuffer instead"
+    );
+    if (this.bitOffset !== 0 || this.bitSize % 8 !== 0) {
+      throw new globalThis.Error(
+        "BitArray.buffer does not support unaligned bit arrays"
+      );
+    }
+    return this.rawBuffer;
+  }
+  /**
+   * Returns the length in bytes of this bit array's internal buffer.
+   *
+   * @deprecated Use `BitArray.bitSize` or `BitArray.byteSize` instead.
+   *
+   * @returns {number}
+   */
+  get length() {
+    bitArrayPrintDeprecationWarning(
+      "length",
+      "Use BitArray.bitSize or BitArray.byteSize instead"
+    );
+    if (this.bitOffset !== 0 || this.bitSize % 8 !== 0) {
+      throw new globalThis.Error(
+        "BitArray.length does not support unaligned bit arrays"
+      );
+    }
+    return this.rawBuffer.length;
+  }
+};
+function bitArrayByteAt(buffer, bitOffset, index3) {
+  if (bitOffset === 0) {
+    return buffer[index3] ?? 0;
+  } else {
+    const a = buffer[index3] << bitOffset & 255;
+    const b = buffer[index3 + 1] >> 8 - bitOffset;
+    return a | b;
+  }
+}
+var isBitArrayDeprecationMessagePrinted = {};
+function bitArrayPrintDeprecationWarning(name, message) {
+  if (isBitArrayDeprecationMessagePrinted[name]) {
+    return;
+  }
+  console.warn(
+    `Deprecated BitArray.${name} property used in JavaScript FFI code. ${message}.`
+  );
+  isBitArrayDeprecationMessagePrinted[name] = true;
+}
 function isEqual(x, y) {
   let values2 = [x, y];
   while (values2.length) {
@@ -112,7 +304,7 @@ function unequalDates(a, b) {
   return a instanceof Date && (a > b || a < b);
 }
 function unequalBuffers(a, b) {
-  return a.buffer instanceof ArrayBuffer && a.BYTES_PER_ELEMENT && !(a.byteLength === b.byteLength && a.every((n, i) => n === b[i]));
+  return !(a instanceof BitArray) && a.buffer instanceof ArrayBuffer && a.BYTES_PER_ELEMENT && !(a.byteLength === b.byteLength && a.every((n, i) => n === b[i]));
 }
 function unequalArrays(a, b) {
   return Array.isArray(a) && a.length !== b.length;
@@ -934,6 +1126,7 @@ var property_name = 1;
 var property_value = 2;
 var event_variant = 2;
 var event_name = 1;
+var event_include = 2;
 var event_prevent_default = 3;
 var event_stop_propagation = 4;
 var event_immediate = 5;
@@ -950,17 +1143,17 @@ var replace_inner_html_inner_html = 1;
 var update_variant = 3;
 var update_added = 1;
 var update_removed = 2;
-var move_variant = 4;
+var move_variant = 5;
 var move_key = 1;
 var move_before = 2;
 var move_count = 3;
-var remove_key_variant = 5;
+var remove_key_variant = 6;
 var remove_key_key = 1;
 var remove_key_count = 2;
-var insert_variant = 6;
+var insert_variant = 7;
 var insert_children = 1;
 var insert_before = 2;
-var remove_variant = 7;
+var remove_variant = 8;
 var remove_from = 1;
 var remove_count = 2;
 
@@ -1181,52 +1374,67 @@ function createElement(vnode, dispatch, root) {
 }
 function createAttribute(node, attribute2, dispatch, root) {
   switch (attribute2[0]) {
-    case attribute_variant:
-      {
-        const name = attribute2[attribute_name];
-        const value = attribute2[attribute_value];
-        if (value !== node.getAttribute(name)) {
-          node.setAttribute(name, value);
-        }
-        ATTRIBUTE_HOOKS[name]?.added?.(node, value);
+    case attribute_variant: {
+      const name = attribute2[attribute_name];
+      const value = attribute2[attribute_value];
+      if (value !== node.getAttribute(name)) {
+        node.setAttribute(name, value);
       }
+      ATTRIBUTE_HOOKS[name]?.added?.(node, value);
       break;
+    }
     case property_variant:
       node[attribute2[property_name]] = attribute2[property_value];
       break;
-    case event_variant:
-      {
-        if (!node[meta].handlers.has(attribute2[event_name])) {
-          node.addEventListener(attribute2[event_name], handleEvent, {
-            passive: !attribute2[event_prevent_default]
-          });
-        }
-        const prevent = attribute2[event_prevent_default];
-        const stop = attribute2[event_stop_propagation];
-        const immediate = attribute2[event_immediate] || IMMEDIATE_EVENTS.includes(attribute2[event_name]);
-        node[meta].handlers.set(attribute2[event_name], (event) => {
-          if (prevent)
-            event.preventDefault();
-          if (stop)
-            event.stopPropagation();
-          let node2 = event.target;
-          let path = node2[meta].key || [].indexOf.call(node2.parentNode.childNodes, node2).toString();
-          node2 = node2.parentNode;
-          while (node2 !== root) {
-            const key = node2[meta].key;
-            if (key) {
-              path = `${key}.${path}`;
-            } else {
-              const index3 = [].indexOf.call(node2.parentNode.childNodes, node2);
-              path = `${index3}.${path}`;
-            }
-            node2 = node2.parentNode;
-          }
-          dispatch(event, path, event.type, immediate);
+    case event_variant: {
+      if (!node[meta].handlers.has(attribute2[event_name])) {
+        node.addEventListener(attribute2[event_name], handleEvent, {
+          passive: !attribute2[event_prevent_default]
         });
       }
+      const prevent = attribute2[event_prevent_default];
+      const stop = attribute2[event_stop_propagation];
+      const immediate = attribute2[event_immediate] || IMMEDIATE_EVENTS.includes(attribute2[event_name]);
+      const include = attribute2[event_include];
+      node[meta].handlers.set(attribute2[event_name], (event) => {
+        if (prevent)
+          event.preventDefault();
+        if (stop)
+          event.stopPropagation();
+        let path = [];
+        for (let node2 = event.currentTarget; node2 !== root; node2 = node2.parentNode) {
+          const key = node2[meta].key;
+          if (key) {
+            path.push(key);
+          } else {
+            const index3 = [].indexOf.call(node2.parentNode.childNodes, node2);
+            path.push(index3.toString());
+          }
+        }
+        path.reverse();
+        dispatch(extract(event, include), path, event.type, immediate);
+      });
       break;
+    }
   }
+}
+function extract(event, include = []) {
+  const data = {};
+  if (event.type === "input" || event.type === "change") {
+    include.push("target.value");
+  }
+  for (const property of include) {
+    const path = property.split(".");
+    for (let i = 0, input = event, output = data; i < path.length; i++) {
+      if (i === path.length - 1) {
+        output[path[i]] = input[path[i]];
+      } else {
+        output = output[path[i]] ??= {};
+        input = input[path[i]];
+      }
+    }
+  }
+  return data;
 }
 function handleEvent(event) {
   const target = event.currentTarget;
@@ -1291,7 +1499,11 @@ var ATTRIBUTE_HOOKS2 = {
   },
   autoplay: {
     added(node) {
-      node.play?.();
+      try {
+        node.play?.();
+      } catch (e) {
+        console.error(e);
+      }
     }
   }
 };
@@ -1328,6 +1540,9 @@ async function adoptStylesheets(shadowRoot) {
     );
   }
   await Promise.allSettled(pendingParentStylesheets);
+  if (!shadowRoot.host.isConnected) {
+    return [];
+  }
   shadowRoot.adoptedStyleSheets = shadowRoot.host.getRootNode().adoptedStyleSheets;
   const pending = [];
   for (const sheet of document.styleSheets) {

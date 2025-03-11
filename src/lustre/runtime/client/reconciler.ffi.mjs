@@ -260,7 +260,7 @@ function createElement(vnode, dispatch, root) {
 }
 
 /// @internal
-export function initialiseMetadata(node, key = '') {
+export function initialiseMetadata(node, key = "") {
   switch (node.nodeType) {
     case Node.ELEMENT_NODE:
     case Node.DOCUMENT_FRAGMENT_NODE:
@@ -281,52 +281,60 @@ export function initialiseMetadata(node, key = '') {
 
 function createAttribute(node, attribute, dispatch, root) {
   switch (attribute.constructor) {
-    case Attribute: {
-      const name = attribute.name;
-      const value = attribute.value;
+    case Attribute:
+      {
+        const name = attribute.name;
+        const value = attribute.value;
 
-      if (value !== node.getAttribute(name)) {
-        node.setAttribute(name, value);
+        if (value !== node.getAttribute(name)) {
+          node.setAttribute(name, value);
+        }
+
+        ATTRIBUTE_HOOKS[name]?.added?.(node, value);
       }
-
-      ATTRIBUTE_HOOKS[name]?.added?.(node, value);
-    } break;
+      break;
 
     case Property:
       node[attribute.name] = attribute.value;
       break;
 
-    case Event: {
-      if (!node[meta].handlers.has(attribute.name)) {
-        node.addEventListener(attribute.name, handleEvent, {
-          passive: !attribute.prevent_default,
+    case Event:
+      {
+        if (!node[meta].handlers.has(attribute.name)) {
+          node.addEventListener(attribute.name, handleEvent, {
+            passive: !attribute.prevent_default,
+          });
+        }
+
+        const prevent = attribute.prevent_default;
+        const stop = attribute.stop_propagation;
+        const immediate =
+          attribute.immediate || IMMEDIATE_EVENTS.includes(attribute.name);
+
+        node[meta].handlers.set(attribute.name, (event) => {
+          if (prevent) event.preventDefault();
+          if (stop) event.stopPropagation();
+
+          let path = [];
+          for (
+            let node = event.currentTarget;
+            node !== root;
+            node = node.parentNode
+          ) {
+            const key = node[meta].key;
+            if (key) {
+              path.push(key);
+            } else {
+              const index = [].indexOf.call(node.parentNode.childNodes, node);
+              path.push(index.toString());
+            }
+          }
+          path.reverse();
+
+          dispatch(event, path, event.type, immediate);
         });
       }
-
-      const prevent = attribute.prevent_default;
-      const stop = attribute.stop_propagation;
-      const immediate =
-        attribute.immediate || IMMEDIATE_EVENTS.includes(attribute.name);
-
-      node[meta].handlers.set(attribute.name, (event) => {
-        if (prevent) event.preventDefault();
-        if (stop) event.stopPropagation();
-
-        let path = [];
-        for (let node = event.currentTarget; node !== root; node = node.parentNode) {
-          const key = node[meta].key;
-          if (key) {
-            path.push(key);
-          } else {
-            const index = [].indexOf.call(node.parentNode.childNodes, node);
-            path.push(index.toString());
-          }
-        }
-        path.reverse();
-
-        dispatch(event, path, event.type, immediate);
-      });
-    } break;
+      break;
   }
 }
 
@@ -338,44 +346,44 @@ function handleEvent(event) {
 }
 
 const ATTRIBUTE_HOOKS = {
-  checked: syncedBooleanAttribute('checked'),
-  selected: syncedBooleanAttribute('selected'),
-  value: syncedAttribute('value'),
+  checked: syncedBooleanAttribute("checked"),
+  selected: syncedBooleanAttribute("selected"),
+  value: syncedAttribute("value"),
 
   autofocus: {
     added(node) {
-      node.focus?.()
-    }
+      node.focus?.();
+    },
   },
 
   autoplay: {
     added(node) {
       try {
-        node.play?.()
-      } catch(e) {
-        console.error(e)
+        node.play?.();
+      } catch (e) {
+        console.error(e);
       }
-    }
-  }
-}
+    },
+  },
+};
 
 function syncedBooleanAttribute(name) {
   return {
     added(node, value) {
-      node[name] = true
+      node[name] = true;
     },
     removed(node) {
-      node[name] = false
-    }
-  }
+      node[name] = false;
+    },
+  };
 }
 
 function syncedAttribute(name) {
   return {
     added(node, value) {
-      node[name] = value
-    }
-  }
+      node[name] = value;
+    },
+  };
 }
 
 const IMMEDIATE_EVENTS = [
