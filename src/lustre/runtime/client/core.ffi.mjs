@@ -42,7 +42,9 @@ export class Runtime {
   #vdom;
   #events;
   #reconciler;
-  #viewTimer = null;
+
+  #queue = [];
+  #isTicking = false;
 
   initialNodeOffset = 0;
 
@@ -72,41 +74,45 @@ export class Runtime {
   }
 
   dispatch(msg, immediate = false) {
-    const [model, effects] = this.#update(this.#model, msg);
+    if (this.#isTicking) {
+      this.#queue.push(msg);
+    } else {
+      const [model, effects] = this.#update(this.#model, msg);
 
-    this.#model = model;
-    this.#tick(effects.all, immediate);
+      this.#model = model;
+      this.#tick(effects.all, immediate);
+    }
   }
 
   #tick(effects, immediate = false) {
-    const queue = [];
+    
     const effect_params = {
       root: this.#root,
       emit: (event, data) => this.#emit(event, data),
-      dispatch: (msg) => queue.push(msg),
+      dispatch: (msg) => this.dispatch(msg),
       select: () => {},
     };
 
+    this.#isTicking = true;
     while (true) {
       for (let list = effects; list.tail; list = list.tail) {
         list.head(effect_params);
       }
 
-      if (!queue.length) {
+      if (!this.#queue.length) {
         break;
       }
 
-      const msg = queue.shift();
+      const msg = this.#queue.shift();
 
       [this.#model, effects] = this.#update(this.#model, msg);
     }
+    this.#isTicking = false;
 
     this.#render();
   }
 
   #render() {
-    this.#viewTimer = null;
-
     const next = this.#view(this.#model);
     const { patch, events } = diff(
       this.#vdom,
