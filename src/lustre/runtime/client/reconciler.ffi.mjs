@@ -1,288 +1,266 @@
-import { Element, Text, Fragment, UnsafeInnerHtml } from "../../vdom/node.mjs";
-import { Attribute, Property, Event } from "../../vdom/attribute.mjs";
-import {
-  Insert,
-  Move,
-  Remove,
-  RemoveKey,
-  Replace,
-  ReplaceInnerHtml,
-  ReplaceText,
-  Update,
-} from "../../vdom/diff.mjs";
+// IMPORTS ---------------------------------------------------------------------
 
-const meta = Symbol("metadata");
+import {
+  element_kind,
+  text_kind,
+  fragment_kind,
+  unsafe_inner_html_kind,
+} from "../../vdom/node.mjs";
+
+import {
+  attribute_kind,
+  property_kind,
+  event_kind,
+} from "../../vdom/attribute.mjs";
+
+import {
+  insert_kind,
+  move_kind,
+  remove_kind,
+  remove_key_kind,
+  replace_kind,
+  replace_inner_html_kind,
+  replace_text_kind,
+  update_kind,
+} from "../../vdom/patch.mjs";
+
+//
 
 export class Reconciler {
   #root = null;
   #dispatch = () => {};
-  #stack = [];
 
-  constructor(root, dispatch) {
+  #useServerEvents = false;
+
+  constructor(root, dispatch, { useServerEvents = false } = {}) {
     this.#root = root;
     this.#dispatch = dispatch;
+    this.#useServerEvents = useServerEvents;
   }
+
+  mount(vdom) {
+    this.#root.appendChild(this.#createElement(vdom));
+  }
+
+  #stack = [];
 
   push(patch) {
     this.#stack.push({ node: this.#root, patch });
     this.#reconcile();
   }
 
+  // PATCHING ------------------------------------------------------------------
+
   #reconcile() {
     while (this.#stack.length) {
       const { node, patch } = this.#stack.pop();
 
-      for (let list = patch.changes; list.tail; list = list.tail) {
-        const change = list.head;
-
-        switch (change.constructor) {
-          case Insert:
-            insert(
-              node,
-              change.children,
-              change.before,
-              this.#dispatch,
-              this.#root,
-            );
+      iterate(patch.changes, (change) => {
+        switch (change.kind) {
+          case insert_kind:
+            this.#insert(node, change.children, change.before);
             break;
 
-          case Move:
-            move(node, change.key, change.before, change.count);
+          case move_kind:
+            this.#move(node, change.key, change.before, change.count);
             break;
 
-          case RemoveKey:
-            removeKey(node, change.key, change.count);
+          case remove_key_kind:
+            this.#removeKey(node, change.key, change.count);
             break;
 
-          case Remove:
-            remove(node, change.from, change.count);
+          case remove_kind:
+            this.#remove(node, change.from, change.count);
             break;
 
-          case Replace:
-            replace(node, change.from, change.count, change.with, this.#dispatch, this.#root);
+          case replace_kind:
+            this.#replace(node, change.from, change.count, change.with);
             break;
 
-          case ReplaceText:
-            replaceText(node, change.content);
+          case replace_text_kind:
+            this.#replaceText(node, change.content);
             break;
 
-          case ReplaceInnerHtml:
-            replaceInnerHtml(node, change.inner_html);
+          case replace_inner_html_kind:
+            this.#replaceInnerHtml(node, change.inner_html);
             break;
 
-          case Update:
-            update(
-              node,
-              change.added,
-              change.removed,
-              this.#dispatch,
-              this.#root,
-            );
+          case update_kind:
+            this.#update(node, change.added, change.removed);
             break;
         }
-      }
+      });
 
-      remove(node, node.childNodes.length - patch.removed, patch.removed);
+      this.#remove(node, node.childNodes.length - patch.removed, patch.removed);
 
-      for (let list = patch.children; list.tail; list = list.tail) {
-        const child = list.head;
-
+      iterate(patch.children, (child) => {
         // TODO: use linked-list style but skip to indices if distance is great enough?
 
         this.#stack.push({
           node: node.childNodes[child.index],
           patch: child,
         });
-      }
+      });
     }
   }
-}
 
-// CHANGES ---------------------------------------------------------------------
+  // CHANGES -------------------------------------------------------------------
 
-function insert(node, children, before, dispatch, root) {
-  const fragment = document.createDocumentFragment();
-
-  for (let list = children; list.tail; list = list.tail) {
-    const child = list.head;
-    const el = createElement(child, dispatch, root);
-    addToMetadata(node, el);
-    fragment.appendChild(el);
-  }
-
-  node.insertBefore(fragment, node.childNodes[before] ?? null);
-}
-
-function move(node, key, before, count) {
-  let el = node[meta].keyedChildren.get(key).deref();
-
-  if (count > 1) {
+  #insert(node, children, before) {
     const fragment = document.createDocumentFragment();
 
-    for (let i = 0; i < count && el !== null; ++i) {
-      let next = el.nextSibling;
-      fragment.append(el);
-      el = next;
-    }
+    iterate(children, (child) => {
+      const el = this.#createElement(child);
 
-    el = fragment;
+      addKeyedChild(node, el);
+      fragment.appendChild(el);
+    });
+
+    node.insertBefore(fragment, node.childNodes[before] ?? null);
   }
 
-  node.insertBefore(el, node.childNodes[before] ?? null);
-}
+  #move(node, key, before, count) {
+    let el = node[meta].keyedChildren.get(key).deref();
 
-function removeKey(node, key, count) {
-  removeFromChild(node, node[meta].keyedChildren.get(key).deref(), count);
-}
+    if (count > 1) {
+      const fragment = document.createDocumentFragment();
 
-function remove(node, from, count) {
-  removeFromChild(node, node.childNodes[from], count);
-}
-
-function removeFromChild(parent, child, count) {
-  while (count-- > 0 && child !== null) {
-    const next = child.nextSibling;
-    
-    const key = child[meta].key;
-    if (key) {
-      parent[meta].keyedChildren.delete(key);
-    }
-    
-    parent.removeChild(child);
-    child = next;
-  }
-}
-
-function replace(parent, from, count, child, dispatch, root) {
-  remove(parent, from, count);
-
-  const el = createElement(child, dispatch, root);
-  addToMetadata(parent, el);
-  parent.insertBefore(el, parent.childNodes[from] ?? null);
-}
-
-function replaceText(node, content) {
-  node.data = content;
-}
-
-function replaceInnerHtml(node, inner_html) {
-  node.innerHTML = inner_html;
-}
-
-function update(node, added, removed, dispatch, root) {
-  for (let list = removed; list.tail; list = list.tail) {
-    const name = list.head.name;
-
-    if (node[meta].handlers.has(name)) {
-      node.removeEventListener(name, handleEvent);
-      node[meta].handlers.delete(name);
-    } else {
-      node.removeAttribute(name);
-      ATTRIBUTE_HOOKS[name]?.removed?.(node, name);
-    }
-  }
-
-  for (let list = added; list.tail; list = list.tail) {
-    createAttribute(node, list.head, dispatch, root);
-  }
-}
-
-// ELEMENTS --------------------------------------------------------------------
-
-function addToMetadata(node, child) {
-  if (child.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
-    for (child = child.firstChild; child; child = child.nextSibling) {
-      addToMetadata(node, child);
-    }
-  } else {
-    const key=  child[meta].key;
-    if (key) {
-      node[meta].keyedChildren.set(key, new WeakRef(child));
-    }
-  }
-}
-
-function createElement(vnode, dispatch, root) {
-  switch (vnode.constructor) {
-    case Element: {
-      const node = vnode.namespace
-        ? document.createElementNS(vnode.namespace, vnode.tag)
-        : document.createElement(vnode.tag);
-
-      initialiseMetadata(node, vnode.key);
-
-      for (let list = vnode.attributes; list.tail; list = list.tail) {
-        createAttribute(node, list.head, dispatch, root);
+      for (let i = 0; i < count && el !== null; ++i) {
+        let next = el.nextSibling;
+        fragment.append(el);
+        el = next;
       }
 
-      insert(node, vnode.children, 0, dispatch, root);
-
-      return node;
+      el = fragment;
     }
 
-    case Text: {
-      const node = document.createTextNode(vnode.content);
-      initialiseMetadata(node, vnode.key);
+    node.insertBefore(el, node.childNodes[before] ?? null);
+  }
 
-      return node;
-    }
+  #removeKey(node, key, count) {
+    this.#removeFromChild(
+      node,
+      node[meta].keyedChildren.get(key).deref(),
+      count,
+    );
+  }
 
-    case Fragment: {
-      const node = document.createDocumentFragment();
+  #remove(node, from, count) {
+    this.#removeFromChild(node, node.childNodes[from], count);
+  }
 
-      const head = document.createTextNode('');
-      initialiseMetadata(head, vnode.key);
-      node.appendChild(head);
+  #removeFromChild(parent, child, count) {
+    while (count-- > 0 && child !== null) {
+      const next = child.nextSibling;
 
-      for (let list = vnode.children; list.tail; list = list.tail) {
-        node.appendChild(createElement(list.head, dispatch, root));
+      const key = child[meta].key;
+      if (key) {
+        parent[meta].keyedChildren.delete(key);
       }
 
-      return node;
+      parent.removeChild(child);
+      child = next;
     }
+  }
 
-    case UnsafeInnerHtml: {
-      const node = vnode.namespace
-        ? document.createElementNS(vnode.namespace, vnode.tag)
-        : document.createElement(vnode.tag);
+  #replace(parent, from, count, child) {
+    this.#remove(parent, from, count);
 
-      initialiseMetadata(node, vnode.key);
+    const el = this.#createElement(child);
 
-      for (let list = vnode.attributes; list.tail; list = list.tail) {
-        createAttribute(node, list.head, dispatch, root);
+    addKeyedChild(parent, el);
+    parent.insertBefore(el, parent.childNodes[from] ?? null);
+  }
+
+  #replaceText(node, content) {
+    node.data = content;
+  }
+
+  #replaceInnerHtml(node, inner_html) {
+    node.innerHTML = inner_html;
+  }
+
+  #update(node, added, removed) {
+    iterate(removed, (attribute) => {
+      const name = attribute.name;
+
+      if (node[meta].handlers.has(name)) {
+        node.removeEventListener(name, handleEvent);
+        node[meta].handlers.delete(name);
+      } else {
+        node.removeAttribute(name);
+        ATTRIBUTE_HOOKS[name]?.removed?.(node, name);
+      }
+    });
+
+    iterate(added, (attribute) => {
+      this.#createAttribute(node, attribute);
+    });
+  }
+
+  // CONSTRUCTORS --------------------------------------------------------------
+
+  #createElement(vnode) {
+    switch (vnode.kind) {
+      case element_kind: {
+        const node = vnode.namespace
+          ? document.createElementNS(vnode.namespace, vnode.tag)
+          : document.createElement(vnode.tag);
+
+        initialiseMetadata(node, vnode.key);
+
+        iterate(vnode.attributes, (attribute) => {
+          this.#createAttribute(node, attribute);
+        });
+
+        this.#insert(node, vnode.children, 0);
+
+        return node;
       }
 
-      replaceInnerHtml(node, vnode.inner_html);
+      case text_kind: {
+        const node = document.createTextNode(vnode.content);
 
-      return node;
+        initialiseMetadata(node, vnode.key);
+
+        return node;
+      }
+
+      case fragment_kind: {
+        const node = document.createDocumentFragment();
+        const head = document.createTextNode("");
+
+        initialiseMetadata(head, vnode.key, true);
+        node.appendChild(head);
+
+        iterate(vnode.children, (child) => {
+          node.appendChild(this.#createElement(child));
+        });
+
+        return node;
+      }
+
+      case unsafe_inner_html_kind: {
+        const node = vnode.namespace
+          ? document.createElementNS(vnode.namespace, vnode.tag)
+          : document.createElement(vnode.tag);
+
+        initialiseMetadata(node, vnode.key);
+
+        iterate(vnode.attributes, (attribute) => {
+          this.#createAttribute(node, attribute);
+        });
+
+        this.#replaceInnerHtml(node, vnode.inner_html);
+
+        return node;
+      }
     }
   }
-}
 
-/// @internal
-export function initialiseMetadata(node, key = "") {
-  switch (node.nodeType) {
-    case Node.ELEMENT_NODE:
-    case Node.DOCUMENT_FRAGMENT_NODE:
-      node[meta] = {
-        key,
-        keyedChildren: new Map(),
-        handlers: new Map(),
-      };
-      break;
-
-    case Node.TEXT_NODE:
-      node[meta] = { key };
-      break;
-  }
-}
-
-// ATTRIBUTES ------------------------------------------------------------------
-
-function createAttribute(node, attribute, dispatch, root) {
-  switch (attribute.constructor) {
-    case Attribute:
-      {
+  #createAttribute(node, attribute) {
+    switch (attribute.kind) {
+      case attribute_kind: {
         const name = attribute.name;
         const value = attribute.value;
 
@@ -291,15 +269,15 @@ function createAttribute(node, attribute, dispatch, root) {
         }
 
         ATTRIBUTE_HOOKS[name]?.added?.(node, value);
+
+        break;
       }
-      break;
 
-    case Property:
-      node[attribute.name] = attribute.value;
-      break;
+      case property_kind:
+        node[attribute.name] = attribute.value;
+        break;
 
-    case Event:
-      {
+      case event_kind: {
         if (!node[meta].handlers.has(attribute.name)) {
           node.addEventListener(attribute.name, handleEvent, {
             passive: !attribute.prevent_default,
@@ -311,39 +289,170 @@ function createAttribute(node, attribute, dispatch, root) {
         const immediate =
           attribute.immediate || IMMEDIATE_EVENTS.includes(attribute.name);
 
+        const include = Array.isArray(attribute.include)
+          ? attribute.include
+          : [];
+
         node[meta].handlers.set(attribute.name, (event) => {
           if (prevent) event.preventDefault();
           if (stop) event.stopPropagation();
 
           let path = [];
-          for (
-            let node = event.currentTarget;
-            node !== root;
-            node = node.parentNode
-          ) {
+          let node = event.currentTarget;
+
+          while (node !== this.#root) {
             const key = node[meta].key;
+
             if (key) {
               path.push(key);
             } else {
               const index = [].indexOf.call(node.parentNode.childNodes, node);
               path.push(index.toString());
             }
+
+            node = node.parentNode;
           }
+
           path.reverse();
 
-          dispatch(event, path, event.type, immediate);
+          const data = this.#useServerEvents
+            ? createServerEvent(event, include)
+            : event;
+
+          this.#dispatch(data, path, event.type, immediate);
         });
+
+        break;
       }
-      break;
+    }
   }
 }
 
+// UTILS -----------------------------------------------------------------------
+
+/** Our reconciler is written in such a way that it can work without modification
+ *  both in typical client-side Lustre apps like SPAs and client components, but
+ *  also in the server component runtime.
+ *
+ *  This is notable because the typical client runtimes are working directly with
+ *  Gleam values, but the server component runtime is working with deserialised
+ *  JSON.
+ *
+ *  The most immediate discrepancy is that Gleam uses linked lists but of course
+ *  these are serialised as arrays in JSON. This function lets us iterate over
+ *  both kinds of collection without dropping into Gleam's slow list iterator.
+ *
+ */
+function iterate(list, callback) {
+  if (Array.isArray(list)) {
+    for (let i = 0; i < list.length; i++) {
+      callback(list[i]);
+    }
+  } else {
+    for (list; list.tail; list = list.tail) {
+      callback(list.head);
+    }
+  }
+}
+
+// METADATA --------------------------------------------------------------------
+
+const meta = Symbol("metadata");
+
+export function initialiseMetadata(node, key = "", fragment = false) {
+  // TODO: Originally this checked if nodeType was also DOCUMENT_FRAGMENT_NODE
+  // but it didn't look like we ever pass in a document framgnet in the first
+  // place.
+  if (node.nodeType === Node.ELEMENT_NODE || fragment) {
+    node[meta] = {
+      key,
+      keyedChildren: new Map(),
+      handlers: new Map(),
+    };
+
+    return;
+  }
+
+  node[meta] = { key };
+}
+
+function addKeyedChild(node, child) {
+  if (child.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+    for (child = child.firstChild; child; child = child.nextSibling) {
+      addKeyedChild(node, child);
+    }
+
+    return;
+  }
+
+  const key = child[meta].key;
+
+  if (key) {
+    node[meta].keyedChildren.set(key, new WeakRef(child));
+  }
+}
+
+// EVENTS ----------------------------------------------------------------------
+
+/** Stable references to an element's event handler is necessary if you ever want
+ *  to actually remove them. To achieve that we define this shell `handleEvent`
+ *  function that just delegates to an actual event handler stored on the node
+ *  itself.
+ *
+ *  Doing things this way lets us swap out the underlying handler – which may
+ *  happen
+ *
+ */
 function handleEvent(event) {
   const target = event.currentTarget;
   const handler = target[meta].handlers.get(event.type);
 
   handler(event);
 }
+
+/** Server components send the event data as a JSON object over the network to
+ *  the server component runtime. Out of the box this would effectively do nothing
+ *  because the event object is not serialisable: almost every property is
+ *  non-enumerable.
+ *
+ *  To counter this, users can provide a list of properties they'd like the runtime
+ *  to include in the event data. Each property is a dot-separated string that
+ *  represents the traversal path to the desired property.
+ *
+ */
+function createServerEvent(event, include = []) {
+  const data = {};
+
+  // It's overwhelmingly likely that if someone is listening for input or change
+  // events that they're interested in the value of the input. Regardless of
+  // whether they remember to include it in the event, we'll include it for them.
+  if (event.type === "input" || event.type === "change") {
+    include.push("target.value");
+  }
+
+  for (const property of include) {
+    const path = property.split(".");
+
+    for (let i = 0, input = event, output = data; i < path.length; i++) {
+      // If we're at the end of the path we just do a straight assignment. If the
+      // value at this path is an object it's likely the properties are still
+      // unenumerable, but that's what they asked for!
+      if (i === path.length - 1) {
+        output[path[i]] = input[path[i]];
+        break;
+      }
+
+      // For every step, we make sure to insert an empty object if we haven't
+      // already visited this particular key in the path.
+      output = output[path[i]] ??= {};
+      input = input[path[i]];
+    }
+  }
+
+  return data;
+}
+
+// ATTRIBUTE SPECIAL CASES -----------------------------------------------------
 
 const ATTRIBUTE_HOOKS = {
   checked: syncedBooleanAttribute("checked"),

@@ -4,18 +4,14 @@
 // used as the entry module when running esbuild so we *cant* use imports relative
 // to src/.
 
-import { Reconciler } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/server_component_reconciler.ffi.mjs";
+import { Reconciler } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/reconciler.ffi.mjs";
 import { adoptStylesheets } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/core.ffi.mjs";
 import {
-  mount_variant,
-  mount_vdom,
-  reconcile_variant,
-  reconcile_patch,
-  emit_variant,
-  emit_name,
-  emit_data,
-  attributes_changed_variant,
-  event_fired_variant,
+  mount_kind,
+  reconcile_kind,
+  emit_kind,
+  attributes_changed_kind,
+  event_fired_kind,
 } from "../../../../build/dev/javascript/lustre/lustre/runtime/transport.mjs";
 
 //
@@ -117,23 +113,29 @@ export class ServerComponent extends HTMLElement {
     }
 
     this.internals = this.attachInternals();
-    this.#reconciler = new Reconciler(this.shadowRoot, (event, path, name) => {
-      this.#transport?.send([event_fired_variant, path, name, event]);
-    });
+    this.#reconciler = new Reconciler(
+      this.shadowRoot,
+      (event, path, name) => {
+        this.#transport?.send({ kind: event_fired_kind, path, name, event });
+      },
+      {
+        useServerEvents: true,
+      },
+    );
 
     this.#observer = new MutationObserver((mutations) => {
-      const changed = [];
+      const attributes = [];
 
       for (const mutation of mutations) {
         if (mutation.type !== "attributes") continue;
         const name = mutation.attributeName;
         if (!this.#remoteObservedAttributes.includes(name)) continue;
 
-        changed.push([name, this.getAttribute(name)]);
+        attributes.push([name, this.getAttribute(name)]);
       }
 
-      if (changed.length) {
-        this.#transport?.send([attributes_changed_variant, changed]);
+      if (attributes.length) {
+        this.#transport?.send({ kind: attributes_changed_kind, attributes });
       }
     });
   }
@@ -189,27 +191,27 @@ export class ServerComponent extends HTMLElement {
   }
 
   messageReceivedCallback(data) {
-    switch (data[0]) {
-      case mount_variant: {
+    console.log(data);
+
+    switch (data.kind) {
+      case mount_kind: {
         while (this.shadowRoot.children[this.#adoptedStyleNodes.length]) {
           this.shadowRoot.children[this.#adoptedStyleNodes.length].remove();
         }
 
-        this.#reconciler.mount(data[mount_vdom]);
+        this.#reconciler.mount(data.vdom);
 
         break;
       }
 
-      case reconcile_variant: {
-        this.#reconciler.push(data[reconcile_patch]);
+      case reconcile_kind: {
+        this.#reconciler.push(data.patch);
 
         break;
       }
 
-      case emit_variant: {
-        this.dispatchEvent(
-          new CustomEvent(data[emit_name], { detail: data[emit_data] }),
-        );
+      case emit_kind: {
+        this.dispatchEvent(new CustomEvent(data.name, { detail: data.data }));
 
         break;
       }

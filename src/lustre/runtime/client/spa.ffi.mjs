@@ -17,7 +17,7 @@ export class Spa {
 
     if (!root) return new Error(new ElementNotFound(selector));
 
-    return new Spa(root, init(flags), update, view);
+    return new Ok(new Spa(root, init(flags), update, view));
   }
 
   #runtime;
