@@ -203,10 +203,10 @@ export class Runtime {
   }
 
   #emit(event, data) {
-    const event = new Emit(event, data);
+    const message = new Emit(event, data);
 
     for (const callback of this.#callbacks) {
-      callback(event);
+      callback(message);
     }
   }
 }
