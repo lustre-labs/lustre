@@ -7,69 +7,6 @@ var CustomType = class {
     return new this.constructor(...properties);
   }
 };
-var List = class {
-  static fromArray(array3, tail) {
-    let t = tail || new Empty();
-    for (let i = array3.length - 1; i >= 0; --i) {
-      t = new NonEmpty(array3[i], t);
-    }
-    return t;
-  }
-  [Symbol.iterator]() {
-    return new ListIterator(this);
-  }
-  toArray() {
-    return [...this];
-  }
-  // @internal
-  atLeastLength(desired) {
-    let current = this;
-    while (desired-- > 0 && current)
-      current = current.tail;
-    return current !== void 0;
-  }
-  // @internal
-  hasLength(desired) {
-    let current = this;
-    while (desired-- > 0 && current)
-      current = current.tail;
-    return desired === -1 && current instanceof Empty;
-  }
-  // @internal
-  countLength() {
-    let current = this;
-    let length2 = 0;
-    while (current) {
-      current = current.tail;
-      length2++;
-    }
-    return length2 - 1;
-  }
-};
-var ListIterator = class {
-  #current;
-  constructor(current) {
-    this.#current = current;
-  }
-  next() {
-    if (this.#current instanceof Empty) {
-      return { done: true };
-    } else {
-      let { head, tail } = this.#current;
-      this.#current = tail;
-      return { value: head, done: false };
-    }
-  }
-};
-var Empty = class extends List {
-};
-var NonEmpty = class extends List {
-  constructor(head, tail) {
-    super();
-    this.head = head;
-    this.tail = tail;
-  }
-};
 var BitArray = class {
   /**
    * The size in bits of this bit array's data.
@@ -292,11 +229,11 @@ function isEqual(x, y) {
   }
   return true;
 }
-function getters(object2) {
-  if (object2 instanceof Map) {
+function getters(object3) {
+  if (object3 instanceof Map) {
     return [(x) => x.keys(), (x, y) => x.get(y)];
   } else {
-    let extra = object2 instanceof globalThis.Error ? ["message"] : [];
+    let extra = object3 instanceof globalThis.Error ? ["message"] : [];
     return [(x) => [...extra, ...Object.keys(x)], (x, y) => x[y]];
   }
 }
@@ -1091,355 +1028,303 @@ var GT = new Gt();
 var LT = new Lt();
 var EQ = new Eq();
 
-// build/dev/javascript/lustre/lustre/runtime/transport.mjs
-var mount_variant = 0;
-var mount_vdom = 1;
-var reconcile_variant = 1;
-var reconcile_patch = 1;
-var emit_variant = 2;
-var emit_name = 1;
-var emit_data = 2;
-var attributes_changed_variant = 0;
-var event_fired_variant = 1;
-var fragment_variant = 0;
-var fragment_children = 2;
-var element_variant = 1;
-var element_key = 1;
-var element_namespace = 2;
-var element_tag = 3;
-var element_attributes = 4;
-var element_children = 5;
-var unsafe_inner_html_variant = 2;
-var unsafe_inner_html_key = 1;
-var unsafe_inner_html_namespace = 2;
-var unsafe_inner_html_tag = 3;
-var unsafe_inner_html_attributes = 4;
-var unsafe_inner_html_inner_html = 5;
-var text_variant = 3;
-var text_key = 1;
-var text_content = 2;
-var attribute_variant = 0;
-var attribute_name = 1;
-var attribute_value = 2;
-var property_variant = 1;
-var property_name = 1;
-var property_value = 2;
-var event_variant = 2;
-var event_name = 1;
-var event_include = 2;
-var event_prevent_default = 3;
-var event_stop_propagation = 4;
-var event_immediate = 5;
-var patch_index = 0;
-var patch_removed = 1;
-var patch_changes = 2;
-var patch_children = 3;
-var replace_variant = 0;
-var replace_element = 1;
-var replace_text_variant = 1;
-var replace_text_content = 1;
-var replace_inner_html_variant = 2;
-var replace_inner_html_inner_html = 1;
-var update_variant = 3;
-var update_added = 1;
-var update_removed = 2;
-var move_variant = 5;
-var move_key = 1;
-var move_before = 2;
-var move_count = 3;
-var remove_key_variant = 6;
-var remove_key_key = 1;
-var remove_key_count = 2;
-var insert_variant = 7;
-var insert_children = 1;
-var insert_before = 2;
-var remove_variant = 8;
-var remove_from = 1;
-var remove_count = 2;
+// build/dev/javascript/lustre/lustre/vdom/attribute.mjs
+var attribute_kind = 0;
+var property_kind = 1;
+var event_kind = 2;
 
-// build/dev/javascript/lustre/lustre/runtime/client/server_component_reconciler.ffi.mjs
-var meta = Symbol("metadata");
+// build/dev/javascript/lustre/lustre/vdom/node.mjs
+var fragment_kind = 0;
+var element_kind = 1;
+var text_kind = 2;
+var unsafe_inner_html_kind = 3;
+
+// build/dev/javascript/lustre/lustre/vdom/patch.mjs
+var replace_text_kind = 0;
+var replace_inner_html_kind = 1;
+var update_kind = 2;
+var move_kind = 3;
+var remove_key_kind = 4;
+var replace_kind = 5;
+var insert_kind = 6;
+var remove_kind = 7;
+
+// build/dev/javascript/lustre/lustre/runtime/client/reconciler.ffi.mjs
 var Reconciler = class {
   #root = null;
   #dispatch = () => {
   };
-  #stack = [];
-  constructor(root, dispatch) {
+  #useServerEvents = false;
+  constructor(root, dispatch, { useServerEvents = false } = {}) {
     this.#root = root;
     this.#dispatch = dispatch;
+    this.#useServerEvents = useServerEvents;
   }
   mount(vdom) {
-    this.#root.appendChild(createElement(vdom, this.#dispatch, this.#root));
+    this.#root.appendChild(this.#createElement(vdom));
   }
+  #stack = [];
   push(patch) {
     this.#stack.push({ node: this.#root, patch });
     this.#reconcile();
   }
+  // PATCHING ------------------------------------------------------------------
   #reconcile() {
     while (this.#stack.length) {
       const { node, patch } = this.#stack.pop();
-      for (let i = 0; i < patch[patch_changes].length; i++) {
-        const change = patch[patch_changes][i];
-        switch (change[0]) {
-          case insert_variant:
-            insert4(
-              node,
-              change[insert_children],
-              change[insert_before],
-              this.#dispatch,
-              this.#root
-            );
+      iterate(patch.changes, (change) => {
+        switch (change.kind) {
+          case insert_kind:
+            this.#insert(node, change.children, change.before);
             break;
-          case move_variant:
-            move(
-              node,
-              change[move_key],
-              change[move_before],
-              change[move_count]
-            );
+          case move_kind:
+            this.#move(node, change.key, change.before, change.count);
             break;
-          case remove_key_variant:
-            removeKey(node, change[remove_key_key], change[remove_key_count]);
+          case remove_key_kind:
+            this.#removeKey(node, change.key, change.count);
             break;
-          case remove_variant:
-            remove(node, change[remove_from], change[remove_count]);
+          case remove_kind:
+            this.#remove(node, change.from, change.count);
             break;
-          case replace_variant:
-            replace2(node, change[replace_element], this.#dispatch, this.#root);
+          case replace_kind:
+            this.#replace(node, change.from, change.count, change.with);
             break;
-          case replace_text_variant:
-            replaceText(node, change[replace_text_content]);
+          case replace_text_kind:
+            this.#replaceText(node, change.content);
             break;
-          case replace_inner_html_variant:
-            replaceInnerHtml(node, change[replace_inner_html_inner_html]);
+          case replace_inner_html_kind:
+            this.#replaceInnerHtml(node, change.inner_html);
             break;
-          case update_variant:
-            update(
-              node,
-              change[update_added],
-              change[update_removed],
-              this.#dispatch,
-              this.#root
-            );
+          case update_kind:
+            this.#update(node, change.added, change.removed);
             break;
         }
-      }
-      for (let i = 0; i < patch[patch_removed]; ++i) {
-        const child = node.lastChild;
-        const key = child[meta].key;
-        if (key) {
-          node[meta].keyedChildren.delete(key);
-        }
-        node.removeChild(child);
-      }
-      for (let i = 0; i < patch[patch_children].length; i++) {
-        const child = patch[patch_children][i];
+      });
+      this.#remove(node, node.childNodes.length - patch.removed, patch.removed);
+      iterate(patch.children, (child) => {
         this.#stack.push({
-          node: node.childNodes[child[patch_index]],
+          node: node.childNodes[child.index],
           patch: child
         });
+      });
+    }
+  }
+  // CHANGES -------------------------------------------------------------------
+  #insert(node, children, before) {
+    const fragment3 = document.createDocumentFragment();
+    iterate(children, (child) => {
+      const el = this.#createElement(child);
+      addKeyedChild(node, el);
+      fragment3.appendChild(el);
+    });
+    node.insertBefore(fragment3, node.childNodes[before] ?? null);
+  }
+  #move(node, key, before, count) {
+    let el = node[meta].keyedChildren.get(key).deref();
+    if (count > 1) {
+      const fragment3 = document.createDocumentFragment();
+      for (let i = 0; i < count && el !== null; ++i) {
+        let next = el.nextSibling;
+        fragment3.append(el);
+        el = next;
+      }
+      el = fragment3;
+    }
+    node.insertBefore(el, node.childNodes[before] ?? null);
+  }
+  #removeKey(node, key, count) {
+    this.#removeFromChild(
+      node,
+      node[meta].keyedChildren.get(key).deref(),
+      count
+    );
+  }
+  #remove(node, from, count) {
+    this.#removeFromChild(node, node.childNodes[from], count);
+  }
+  #removeFromChild(parent, child, count) {
+    while (count-- > 0 && child !== null) {
+      const next = child.nextSibling;
+      const key = child[meta].key;
+      if (key) {
+        parent[meta].keyedChildren.delete(key);
+      }
+      parent.removeChild(child);
+      child = next;
+    }
+  }
+  #replace(parent, from, count, child) {
+    this.#remove(parent, from, count);
+    const el = this.#createElement(child);
+    addKeyedChild(parent, el);
+    parent.insertBefore(el, parent.childNodes[from] ?? null);
+  }
+  #replaceText(node, content) {
+    node.data = content;
+  }
+  #replaceInnerHtml(node, inner_html) {
+    node.innerHTML = inner_html;
+  }
+  #update(node, added, removed) {
+    iterate(removed, (attribute3) => {
+      const name = attribute3.name;
+      if (node[meta].handlers.has(name)) {
+        node.removeEventListener(name, handleEvent);
+        node[meta].handlers.delete(name);
+      } else {
+        node.removeAttribute(name);
+        ATTRIBUTE_HOOKS[name]?.removed?.(node, name);
+      }
+    });
+    iterate(added, (attribute3) => {
+      this.#createAttribute(node, attribute3);
+    });
+  }
+  // CONSTRUCTORS --------------------------------------------------------------
+  #createElement(vnode) {
+    switch (vnode.kind) {
+      case element_kind: {
+        const node = vnode.namespace ? document.createElementNS(vnode.namespace, vnode.tag) : document.createElement(vnode.tag);
+        initialiseMetadata(node, vnode.key);
+        iterate(vnode.attributes, (attribute3) => {
+          this.#createAttribute(node, attribute3);
+        });
+        this.#insert(node, vnode.children, 0);
+        return node;
+      }
+      case text_kind: {
+        const node = document.createTextNode(vnode.content);
+        initialiseMetadata(node, vnode.key);
+        return node;
+      }
+      case fragment_kind: {
+        const node = document.createDocumentFragment();
+        const head = document.createTextNode("");
+        initialiseMetadata(head, vnode.key, true);
+        node.appendChild(head);
+        iterate(vnode.children, (child) => {
+          node.appendChild(this.#createElement(child));
+        });
+        return node;
+      }
+      case unsafe_inner_html_kind: {
+        const node = vnode.namespace ? document.createElementNS(vnode.namespace, vnode.tag) : document.createElement(vnode.tag);
+        initialiseMetadata(node, vnode.key);
+        iterate(vnode.attributes, (attribute3) => {
+          this.#createAttribute(node, attribute3);
+        });
+        this.#replaceInnerHtml(node, vnode.inner_html);
+        return node;
+      }
+    }
+  }
+  #createAttribute(node, attribute3) {
+    switch (attribute3.kind) {
+      case attribute_kind: {
+        const name = attribute3.name;
+        const value = attribute3.value;
+        if (value !== node.getAttribute(name)) {
+          node.setAttribute(name, value);
+        }
+        ATTRIBUTE_HOOKS[name]?.added?.(node, value);
+        break;
+      }
+      case property_kind:
+        node[attribute3.name] = attribute3.value;
+        break;
+      case event_kind: {
+        if (!node[meta].handlers.has(attribute3.name)) {
+          node.addEventListener(attribute3.name, handleEvent, {
+            passive: !attribute3.prevent_default
+          });
+        }
+        const prevent = attribute3.prevent_default;
+        const stop = attribute3.stop_propagation;
+        const immediate = attribute3.immediate || IMMEDIATE_EVENTS.includes(attribute3.name);
+        const include = Array.isArray(attribute3.include) ? attribute3.include : [];
+        node[meta].handlers.set(attribute3.name, (event2) => {
+          if (prevent)
+            event2.preventDefault();
+          if (stop)
+            event2.stopPropagation();
+          let path = [];
+          let node2 = event2.currentTarget;
+          while (node2 !== this.#root) {
+            const key = node2[meta].key;
+            if (key) {
+              path.push(key);
+            } else {
+              const index3 = [].indexOf.call(node2.parentNode.childNodes, node2);
+              path.push(index3.toString());
+            }
+            node2 = node2.parentNode;
+          }
+          path.reverse();
+          const data = this.#useServerEvents ? createServerEvent(event2, include) : event2;
+          this.#dispatch(data, path, event2.type, immediate);
+        });
+        break;
       }
     }
   }
 };
-function insert4(node, children, before, dispatch, root) {
-  const fragment2 = document.createDocumentFragment();
-  for (let i = 0; i < children.length; i++) {
-    const child = children[i];
-    const el = createElement(child, dispatch, root);
-    if (child[element_key]) {
-      const ref = new WeakRef(unwrapFragment(el));
-      node[meta].keyedChildren.set(child[element_key], ref);
+function iterate(list3, callback) {
+  if (Array.isArray(list3)) {
+    for (let i = 0; i < list3.length; i++) {
+      callback(list3[i]);
     }
-    fragment2.appendChild(el);
-  }
-  node.insertBefore(fragment2, node.childNodes[before] ?? null);
-}
-function move(node, key, before, count) {
-  let el = node[meta].keyedChildren.get(key).deref();
-  if (count > 1) {
-    const fragment2 = document.createDocumentFragment();
-    for (let i = 0; i < count && el !== null; ++i) {
-      let next = el.nextSibling;
-      fragment2.append(el);
-      el = next;
-    }
-    el = fragment2;
-  }
-  node.insertBefore(el, node.childNodes[before] ?? null);
-}
-function removeKey(node, key, count) {
-  let el = node[meta].keyedChildren.get(key).deref();
-  node[meta].keyedChildren.delete(key);
-  while (count-- > 0 && el !== null) {
-    let next = el.nextSibling;
-    node.removeChild(el);
-    el = next;
-  }
-}
-function remove(node, from, count) {
-  let el = node.childNodes[from];
-  while (count-- > 0 && el !== null) {
-    const next = el.nextSibling;
-    node.removeChild(el);
-    el = next;
-  }
-}
-function replace2(node, child, dispatch, root) {
-  const el = createElement(child, dispatch, root);
-  const parent = node.parentNode;
-  if (child[element_key]) {
-    const ref = new WeakRef(unwrapFragment(el));
-    parent[meta].keyedChildren.set(child[element_key], ref);
-  }
-  parent.replaceChild(el, node);
-}
-function replaceText(node, content) {
-  node.data = content;
-}
-function replaceInnerHtml(node, inner_html) {
-  node.innerHTML = inner_html;
-}
-function update(node, added, removed, dispatch, root) {
-  for (let i = 0; i < removed.length; i++) {
-    const name = removed[i][attribute_name];
-    if (node[meta].handlers.has(name)) {
-      node.removeEventListener(name, handleEvent);
-      node[meta].handlers.delete(name);
-    } else {
-      node.removeAttribute(name);
-      ATTRIBUTE_HOOKS[name]?.removed?.(node, name);
-    }
-  }
-  for (let i = 0; i < added.length; i++) {
-    createAttribute(node, added[i], dispatch, root);
-  }
-}
-function unwrapFragment(node) {
-  while (node.nodeType === DocumentFragment.DOCUMENT_FRAGMENT_NODE) {
-    node = node.firstChild;
-  }
-  return node;
-}
-function createElement(vnode, dispatch, root) {
-  switch (vnode[0]) {
-    case element_variant: {
-      const node = vnode[element_namespace] ? document.createElementNS(vnode[element_namespace], vnode[element_tag]) : document.createElement(vnode[element_tag]);
-      node[meta] = {
-        key: vnode[element_key],
-        keyedChildren: /* @__PURE__ */ new Map(),
-        handlers: /* @__PURE__ */ new Map()
-      };
-      for (let i = 0; i < vnode[element_attributes].length; i++) {
-        createAttribute(node, vnode[element_attributes][i], dispatch, root);
-      }
-      insert4(node, vnode[element_children], 0, dispatch, root);
-      return node;
-    }
-    case text_variant: {
-      const node = document.createTextNode(vnode[text_content]);
-      node[meta] = { key: vnode[text_key] };
-      return node;
-    }
-    case fragment_variant: {
-      const node = document.createDocumentFragment();
-      for (let i = 0; i < vnode[fragment_children].length; i++) {
-        node.appendChild(
-          createElement(vnode[fragment_children][i], dispatch, root)
-        );
-      }
-      return node;
-    }
-    case unsafe_inner_html_variant: {
-      const node = vnode[unsafe_inner_html_namespace] ? document.createElementNS(
-        vnode[unsafe_inner_html_namespace],
-        vnode[unsafe_inner_html_tag]
-      ) : document.createElement(vnode[unsafe_inner_html_tag]);
-      node[meta] = {
-        key: vnode[unsafe_inner_html_key],
-        handlers: /* @__PURE__ */ new Map()
-      };
-      for (let i = 0; i < vnode[unsafe_inner_html_attributes].length; i++) {
-        createAttribute(
-          node,
-          vnode[unsafe_inner_html_attributes][i],
-          dispatch,
-          root
-        );
-      }
-      replaceInnerHtml(node, vnode[unsafe_inner_html_inner_html]);
-      return node;
+  } else {
+    for (list3; list3.tail; list3 = list3.tail) {
+      callback(list3.head);
     }
   }
 }
-function createAttribute(node, attribute2, dispatch, root) {
-  switch (attribute2[0]) {
-    case attribute_variant: {
-      const name = attribute2[attribute_name];
-      const value = attribute2[attribute_value];
-      if (value !== node.getAttribute(name)) {
-        node.setAttribute(name, value);
-      }
-      ATTRIBUTE_HOOKS[name]?.added?.(node, value);
-      break;
+var meta = Symbol("metadata");
+function initialiseMetadata(node, key = "", fragment3 = false) {
+  if (node.nodeType === Node.ELEMENT_NODE || fragment3) {
+    node[meta] = {
+      key,
+      keyedChildren: /* @__PURE__ */ new Map(),
+      handlers: /* @__PURE__ */ new Map()
+    };
+    return;
+  }
+  node[meta] = { key };
+}
+function addKeyedChild(node, child) {
+  if (child.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+    for (child = child.firstChild; child; child = child.nextSibling) {
+      addKeyedChild(node, child);
     }
-    case property_variant:
-      node[attribute2[property_name]] = attribute2[property_value];
-      break;
-    case event_variant: {
-      if (!node[meta].handlers.has(attribute2[event_name])) {
-        node.addEventListener(attribute2[event_name], handleEvent, {
-          passive: !attribute2[event_prevent_default]
-        });
-      }
-      const prevent = attribute2[event_prevent_default];
-      const stop = attribute2[event_stop_propagation];
-      const immediate = attribute2[event_immediate] || IMMEDIATE_EVENTS.includes(attribute2[event_name]);
-      const include = attribute2[event_include];
-      node[meta].handlers.set(attribute2[event_name], (event) => {
-        if (prevent)
-          event.preventDefault();
-        if (stop)
-          event.stopPropagation();
-        let path = [];
-        for (let node2 = event.currentTarget; node2 !== root; node2 = node2.parentNode) {
-          const key = node2[meta].key;
-          if (key) {
-            path.push(key);
-          } else {
-            const index3 = [].indexOf.call(node2.parentNode.childNodes, node2);
-            path.push(index3.toString());
-          }
-        }
-        path.reverse();
-        dispatch(extract(event, include), path, event.type, immediate);
-      });
-      break;
-    }
+    return;
+  }
+  const key = child[meta].key;
+  if (key) {
+    node[meta].keyedChildren.set(key, new WeakRef(child));
   }
 }
-function extract(event, include = []) {
+function handleEvent(event2) {
+  const target = event2.currentTarget;
+  const handler = target[meta].handlers.get(event2.type);
+  handler(event2);
+}
+function createServerEvent(event2, include = []) {
   const data = {};
-  if (event.type === "input" || event.type === "change") {
+  if (event2.type === "input" || event2.type === "change") {
     include.push("target.value");
   }
-  for (const property of include) {
-    const path = property.split(".");
-    for (let i = 0, input = event, output = data; i < path.length; i++) {
+  for (const property2 of include) {
+    const path = property2.split(".");
+    for (let i = 0, input = event2, output = data; i < path.length; i++) {
       if (i === path.length - 1) {
         output[path[i]] = input[path[i]];
-      } else {
-        output = output[path[i]] ??= {};
-        input = input[path[i]];
+        break;
       }
+      output = output[path[i]] ??= {};
+      input = input[path[i]];
     }
   }
   return data;
-}
-function handleEvent(event) {
-  const target = event.currentTarget;
-  const handler = target[meta].handlers.get(event.type);
-  handler(event);
 }
 var ATTRIBUTE_HOOKS = {
   checked: syncedBooleanAttribute("checked"),
@@ -1452,7 +1337,11 @@ var ATTRIBUTE_HOOKS = {
   },
   autoplay: {
     added(node) {
-      node.play?.();
+      try {
+        node.play?.();
+      } catch (e) {
+        console.error(e);
+      }
     }
   }
 };
@@ -1485,45 +1374,6 @@ var IMMEDIATE_EVENTS = [
   // Text selection
   "select"
 ];
-
-// build/dev/javascript/lustre/lustre/runtime/client/reconciler.ffi.mjs
-var meta2 = Symbol("metadata");
-var ATTRIBUTE_HOOKS2 = {
-  checked: syncedBooleanAttribute2("checked"),
-  selected: syncedBooleanAttribute2("selected"),
-  value: syncedAttribute2("value"),
-  autofocus: {
-    added(node) {
-      node.focus?.();
-    }
-  },
-  autoplay: {
-    added(node) {
-      try {
-        node.play?.();
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }
-};
-function syncedBooleanAttribute2(name) {
-  return {
-    added(node, value) {
-      node[name] = true;
-    },
-    removed(node) {
-      node[name] = false;
-    }
-  };
-}
-function syncedAttribute2(name) {
-  return {
-    added(node, value) {
-      node[name] = value;
-    }
-  };
-}
 
 // build/dev/javascript/lustre/lustre/runtime/client/core.ffi.mjs
 var copiedStyleSheets = /* @__PURE__ */ new WeakMap();
@@ -1568,6 +1418,13 @@ async function adoptStylesheets(shadowRoot) {
   }
   return pending;
 }
+
+// build/dev/javascript/lustre/lustre/runtime/transport.mjs
+var mount_kind = 0;
+var reconcile_kind = 1;
+var emit_kind = 2;
+var attributes_changed_kind = 0;
+var event_fired_kind = 1;
 
 // src/lustre/runtime/client/server_component.ffi.mjs
 var WebsocketTransport = class {
@@ -1648,21 +1505,27 @@ var ServerComponent = class extends HTMLElement {
       this.attachShadow({ mode: "open" });
     }
     this.internals = this.attachInternals();
-    this.#reconciler = new Reconciler(this.shadowRoot, (event, path, name) => {
-      this.#transport?.send([event_fired_variant, path, name, event]);
-    });
+    this.#reconciler = new Reconciler(
+      this.shadowRoot,
+      (event2, path, name) => {
+        this.#transport?.send({ kind: event_fired_kind, path, name, event: event2 });
+      },
+      {
+        useServerEvents: true
+      }
+    );
     this.#observer = new MutationObserver((mutations) => {
-      const changed = [];
+      const attributes = [];
       for (const mutation of mutations) {
         if (mutation.type !== "attributes")
           continue;
         const name = mutation.attributeName;
         if (!this.#remoteObservedAttributes.includes(name))
           continue;
-        changed.push([name, this.getAttribute(name)]);
+        attributes.push([name, this.getAttribute(name)]);
       }
-      if (changed.length) {
-        this.#transport?.send([attributes_changed_variant, changed]);
+      if (attributes.length) {
+        this.#transport?.send({ kind: attributes_changed_kind, attributes });
       }
     });
   }
@@ -1705,26 +1568,25 @@ var ServerComponent = class extends HTMLElement {
       }
     }
   }
-  eventReceivedCallback(event, path, name) {
+  eventReceivedCallback(event2, path, name) {
     this.#transport?.send("hi!");
   }
   messageReceivedCallback(data) {
-    switch (data[0]) {
-      case mount_variant: {
+    console.log(data);
+    switch (data.kind) {
+      case mount_kind: {
         while (this.shadowRoot.children[this.#adoptedStyleNodes.length]) {
           this.shadowRoot.children[this.#adoptedStyleNodes.length].remove();
         }
-        this.#reconciler.mount(data[mount_vdom]);
+        this.#reconciler.mount(data.vdom);
         break;
       }
-      case reconcile_variant: {
-        this.#reconciler.push(data[reconcile_patch]);
+      case reconcile_kind: {
+        this.#reconciler.push(data.patch);
         break;
       }
-      case emit_variant: {
-        this.dispatchEvent(
-          new CustomEvent(data[emit_name], { detail: data[emit_data] })
-        );
+      case emit_kind: {
+        this.dispatchEvent(new CustomEvent(data.name, { detail: data.data }));
         break;
       }
     }
