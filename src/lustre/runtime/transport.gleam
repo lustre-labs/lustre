@@ -99,8 +99,8 @@ fn attributes_changed_decoder() -> Decoder(ServerMessage) {
   use attributes <- decode.field(
     "attributes",
     decode.list({
-      use name <- decode.field("name", decode.string)
-      use value <- decode.field("value", decode.dynamic)
+      use name <- decode.field(0, decode.string)
+      use value <- decode.field(1, decode.dynamic)
 
       decode.success(#(name, value))
     }),
