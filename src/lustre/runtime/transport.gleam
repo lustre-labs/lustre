@@ -105,8 +105,8 @@ pub fn attribute_to_json(attribute: Attribute(msg)) -> Json {
   case attribute {
     Attribute(name:, value:) -> attribute_variant_to_json(name, value)
     Property(name:, value:) -> property_to_json(name, value)
-    Event(name:, include:, prevent_default:, stop_propagation:, immediate:, ..) ->
-      event_to_json(name, include, prevent_default, stop_propagation, immediate)
+    Event(name:, include:, prevent_default:, stop_propagation:, ..) ->
+      event_to_json(name, include, prevent_default, stop_propagation)
   }
 }
 
@@ -144,14 +144,11 @@ pub const event_prevent_default: Int = 3
 
 pub const event_stop_propagation: Int = 4
 
-pub const event_immediate: Int = 5
-
 fn event_to_json(
   name: String,
   include: List(String),
   prevent_default: Bool,
   stop_propagation: Bool,
-  immediate: Bool,
 ) -> Json {
   json.preprocessed_array([
     json.int(event_variant),
@@ -159,7 +156,6 @@ fn event_to_json(
     json.array(include, json.string),
     json.bool(prevent_default),
     json.bool(stop_propagation),
-    json.bool(immediate),
   ])
 }
 

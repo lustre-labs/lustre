@@ -1,5 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
-import { toList } from "../../../gleam.mjs";
+import { toList, prepend as listPrepend, NonEmpty } from "../../../gleam.mjs";
+import { fold as listFold } from '../../../../gleam_stdlib/gleam/list.mjs';
+import { empty_list } from '../../internals/constants.mjs';
 import { diff } from "../../vdom/diff.mjs";
 import * as Events from "../../vdom/events.mjs";
 import { Reconciler } from "./reconciler.ffi.mjs";
@@ -44,7 +46,10 @@ export class Runtime {
   #reconciler;
 
   #queue = [];
+  #afterRender = empty_list;
+  #afterPaint = empty_list;
   #isTicking = false;
+  #renderTimer = null;
 
   initialNodeOffset = 0;
 
@@ -56,11 +61,11 @@ export class Runtime {
 
     this.#reconciler = new Reconciler(
       this.#root,
-      (event, path, name, immediate) => {
+      (event, path, name) => {
         const msg = Events.handle(this.#events, toList(path), name, event);
 
         if (msg.isOk()) {
-          this.dispatch(msg[0], immediate);
+          this.dispatch(msg[0]);
         }
       },
     );
@@ -70,33 +75,41 @@ export class Runtime {
     const { patch, events } = diff(virtualised, this.#vdom, Events.new$(), 0);
     this.#events = events;
     this.#reconciler.push(patch);
-    this.#tick(effects.all, false);
+    this.#tick(effects);
   }
 
-  dispatch(msg, immediate = false) {
+  dispatch(msg) {
     if (this.#isTicking) {
       this.#queue.push(msg);
     } else {
       const [model, effects] = this.#update(this.#model, msg);
 
       this.#model = model;
-      this.#tick(effects.all, immediate);
+      this.#tick(effects);
     }
   }
 
-  #tick(effects, immediate = false) {
-    
-    const effect_params = {
+  #tick(effects) {
+    let force_render = false;
+    const actions = {
       root: this.#root,
       emit: (event, data) => this.#emit(event, data),
+      force_render: () => (force_render = true),
       dispatch: (msg) => this.dispatch(msg),
       select: () => {},
     };
 
     this.#isTicking = true;
     while (true) {
-      for (let list = effects; list.tail; list = list.tail) {
-        list.head(effect_params);
+      // No mind to think, so I wrote functional code instead.
+      if (effects.after_paint instanceof NonEmpty) {
+        this.#afterPaint = listFold(effects.after_paint, this.#afterPaint, listPrepend);
+      }
+      if (effects.after_render instanceof NonEmpty) {
+        this.#afterRender = listFold(effects.after_render, this.#afterRender, listPrepend);
+      }
+      for (let list = effects.synchronous; list.tail; list = list.tail) {
+        list.head(actions);
       }
 
       if (!this.#queue.length) {
@@ -109,10 +122,17 @@ export class Runtime {
     }
     this.#isTicking = false;
 
-    this.#render();
+    if (force_render) {
+      cancelAnimationFrame(this.#renderTimer);
+      this.#render();
+    } else if (!this.#renderTimer) {
+      this.#renderTimer = requestAnimationFrame(() => this.#render());
+    }
   }
 
   #render() {
+    this.#renderTimer = null;
+
     const next = this.#view(this.#model);
     const { patch, events } = diff(
       this.#vdom,
@@ -123,6 +143,20 @@ export class Runtime {
     this.#events = events;
     this.#vdom = next;
     this.#reconciler.push(patch, this.#events);
+
+    // copy here to make sure new afterRender effects happen _next_ frame.
+    const afterRender = this.#afterRender;
+    this.#afterRender = empty_list;
+
+    const afterPaint = this.#afterPaint;
+    this.#afterPaint = empty_list;
+
+    if (afterRender instanceof NonEmpty) {
+      this.#tick({ synchronous: afterRender });
+    }
+    if (afterPaint instanceof NonEmpty) {
+      requestAnimationFrame(() => this.#tick({ synchronous: afterPaint }));
+    }
   }
 
   #emit(event, data) {

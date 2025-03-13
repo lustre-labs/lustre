@@ -42,10 +42,9 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Dynamic}
-import gleam/erlang/process.{type Selector}
+import gleam/erlang/process.{type Selector, type Subject}
 import gleam/json.{type Json}
 import gleam/list
-import lustre/internals/constants
 
 // TYPES -----------------------------------------------------------------------
 
@@ -59,7 +58,11 @@ import lustre/internals/constants
 ///
 ///
 pub opaque type Effect(msg) {
-  Effect(all: List(fn(Actions(msg)) -> Nil))
+  Effect(
+    synchronous: List(fn(Actions(msg)) -> Nil),
+    after_render: List(fn(Actions(msg)) -> Nil),
+    after_paint: List(fn(Actions(msg)) -> Nil),
+  )
 }
 
 type Actions(msg) {
@@ -104,9 +107,15 @@ type Actions(msg) {
 /// }
 /// ```
 pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  use dispatch, _, _, _ <- custom
+  Effect(..none, synchronous: [task(effect)])
+}
 
-  effect(dispatch)
+pub fn after_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
+  Effect(..none, after_paint: [task(effect)])
+}
+
+pub fn after_render(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
+  Effect(..none, after_render: [task(effect)])
 }
 
 /// Emit a custom event from a component as an effect. Parents can listen to these
@@ -116,35 +125,39 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 ///
 @internal
 pub fn event(name: String, data: Json) -> Effect(msg) {
-  use _, emit, _, _ <- custom
-
-  emit(name, data)
+  let task = fn(actions: Actions(msg)) { actions.emit(name, data) }
+  Effect(..none, synchronous: [task])
 }
 
-///
-///
+fn task(effect: fn(fn(msg) -> Nil) -> Nil) -> fn(Actions(msg)) -> Nil {
+  fn(actions: Actions(msg)) { effect(actions.dispatch) }
+}
+
+@target(erlang)
 @internal
-pub fn custom(
-  run: fn(
-    fn(msg) -> Nil,
-    fn(String, Json) -> Nil,
-    fn(Selector(msg)) -> Nil,
-    Dynamic,
-  ) ->
-    Nil,
+pub fn select(
+  sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
 ) -> Effect(msg) {
-  Effect([
-    fn(actions: Actions(msg)) {
-      run(actions.dispatch, actions.emit, actions.select, actions.root)
-    },
-  ])
+  let task = fn(actions: Actions(msg)) {
+    let self = process.new_subject()
+    let selector = sel(actions.dispatch, self)
+    actions.select(selector)
+  }
+
+  Effect(..none, synchronous: [task])
+}
+
+@target(javascript)
+@internal
+pub fn select(_sel) {
+  none
 }
 
 /// Most Lustre applications need to return a tuple of `#(model, Effect(msg))`
 /// from their `init` and `update` functions. If you don't want to perform any
 /// side effects, you can use `none` to tell the runtime there's no work to do.
 ///
-pub const none: Effect(msg) = Effect([])
+pub const none: Effect(msg) = Effect([], [], [])
 
 // MANIPULATIONS ---------------------------------------------------------------
 
@@ -161,80 +174,57 @@ pub const none: Effect(msg) = Effect([])
 ///    the sequencing inside the effect itself.
 ///
 pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
-  Effect({
-    use b, Effect(a) <- list.fold(effects, constants.empty_list)
-    list.append(b, a)
-  })
+  use acc, eff <- list.fold(effects, none)
+  Effect(
+    synchronous: list.fold(eff.synchronous, acc.synchronous, list.prepend),
+    after_render: list.fold(eff.after_render, acc.after_render, list.prepend),
+    after_paint: list.fold(eff.after_paint, acc.after_paint, list.prepend),
+  )
+}
+
+/// Transform the result of an effect. This is useful for mapping over effects
+/// produced by other libraries or modules.
+///
+/// **Note**: Remember that effects are not _required_ to dispatch any messages.
+/// Your mapping function may never be called!
+///
+pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
+  Effect(
+    synchronous: map_effects(effect.synchronous, f),
+    after_render: map_effects(effect.after_render, f),
+    after_paint: map_effects(effect.after_paint, f),
+  )
+}
+
+fn map_effects(
+  effects: List(fn(Actions(a)) -> Nil),
+  f: fn(a) -> b,
+) -> List(fn(Actions(b)) -> Nil) {
+  use effects, effect <- list.fold(effects, [])
+  let effect = fn(actions) { effect(comap_actions(actions, f)) }
+  [effect, ..effects]
 }
 
 @target(erlang)
-/// Transform the result of an effect. This is useful for mapping over effects
-/// produced by other libraries or modules.
-///
-/// **Note**: Remember that effects are not _required_ to dispatch any messages.
-/// Your mapping function may never be called!
-///
-pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
-  Effect({
-    use eff <- list.map(effect.all)
-    fn(actions: Actions(b)) {
-      eff(Actions(
-        dispatch: fn(msg) { actions.dispatch(f(msg)) },
-        emit: actions.emit,
-        select: fn(selector) {
-          actions.select(process.map_selector(selector, f))
-        },
-        root: actions.root,
-      ))
-    }
-  })
+fn comap_actions(actions: Actions(b), f: fn(a) -> b) -> Actions(a) {
+  Actions(
+    dispatch: fn(msg) { actions.dispatch(f(msg)) },
+    emit: actions.emit,
+    select: fn(selector) { actions.select(process.map_selector(selector, f)) },
+    root: actions.root,
+  )
 }
 
 @target(javascript)
-/// Transform the result of an effect. This is useful for mapping over effects
-/// produced by other libraries or modules.
-///
-/// **Note**: Remember that effects are not _required_ to dispatch any messages.
-/// Your mapping function may never be called!
-///
-pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
-  Effect({
-    use eff <- list.map(effect.all)
-    fn(actions: Actions(b)) {
-      eff(Actions(
-        dispatch: fn(msg) { actions.dispatch(f(msg)) },
-        emit: actions.emit,
-        // Selectors don't exist for the JavaScript target so there's no way
-        // for anyone to legitimately construct one. It's kind of clunky that
-        // we have to use `@target` for this and duplicate the function but
-        // so be it.
-        select: fn(_) { Nil },
-        root: actions.root,
-      ))
-    }
-  })
-}
-
-/// Perform a side effect by supplying your own `dispatch` and `emit`functions.
-/// This is primarily used internally by the server component runtime, but it is
-/// may also useful for testing.
-///
-/// **Note**: For now, you should **not** consider this function a part of the
-/// public API. It may be removed in a future minor or patch release. If you have
-/// a specific use case for this function, we'd love to hear about it! Please
-/// reach out on the [Gleam Discord](https://discord.gg/Fm8Pwmy) or
-/// [open an issue](https://github.com/lustre-labs/lustre/issues/new)!
-///
-@internal
-pub fn perform(
-  effect: Effect(a),
-  dispatch: fn(a) -> Nil,
-  emit: fn(String, Json) -> Nil,
-  select: fn(Selector(a)) -> Nil,
-  root: Dynamic,
-) -> Nil {
-  let actions = Actions(dispatch, emit, select, root)
-  use eff <- list.each(effect.all)
-
-  eff(actions)
+fn comap_actions(actions: Actions(b), f: fn(a) -> b) -> Actions(a) {
+  Actions(
+    dispatch: fn(msg) { actions.dispatch(f(msg)) },
+    emit: actions.emit,
+    // Selectors don't exist for the JavaScript target so there's no way
+    // for anyone to legitimately construct one. It's kind of clunky that
+    // we have to use `@target` for this and duplicate the function but
+    // so be it.
+    select: fn(_selector) { Nil },
+    root: actions.root,
+  )
 }

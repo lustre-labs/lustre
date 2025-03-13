@@ -49,7 +49,6 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
     include: constants.empty_list,
     prevent_default: False,
     stop_propagation: False,
-    immediate: False,
   )
 }
 

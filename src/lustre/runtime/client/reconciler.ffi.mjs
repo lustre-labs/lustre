@@ -305,8 +305,6 @@ function createAttribute(node, attribute, dispatch, root) {
 
       const prevent = attribute.prevent_default;
       const stop = attribute.stop_propagation;
-      const immediate =
-        attribute.immediate || IMMEDIATE_EVENTS.includes(attribute.name);
 
       node[meta].handlers.set(attribute.name, (event) => {
         if (prevent) event.preventDefault();
@@ -324,7 +322,7 @@ function createAttribute(node, attribute, dispatch, root) {
         }
         path.reverse();
 
-        dispatch(event, path, event.type, immediate);
+        dispatch(event, path, event.type);
       });
     } break;
   }
@@ -377,18 +375,3 @@ function syncedAttribute(name) {
     }
   }
 }
-
-const IMMEDIATE_EVENTS = [
-  // Input synchronization
-  "input",
-  "change",
-
-  // Focus management
-  "focusin",
-  "focusout",
-  "focus",
-  "blur",
-
-  // Text selection
-  "select",
-];

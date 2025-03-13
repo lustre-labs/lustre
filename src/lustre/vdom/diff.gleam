@@ -664,7 +664,6 @@ fn diff_attributes(
         Event(..), Eq, Event(..)
           if prev.prevent_default != next.prevent_default
           || prev.stop_propagation != next.stop_propagation
-          || prev.immediate != next.immediate
         -> {
           let added = [next, ..added]
           diff_attributes(remaining_old, remaining_new, added, removed)

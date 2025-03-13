@@ -226,28 +226,12 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
 /// that same `Subject` to unsubscribe.
 ///
 /// **Note**: This effect does nothing on the JavaScript runtime, where `Subjects`
-/// and `Selectors` don't exist, and is the equivalent of returning `effect.none()`.
+/// and `Selectors` don't exist, and is the equivalent of returning `effect.none`.
 ///
 pub fn select(
   sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
 ) -> Effect(msg) {
-  do_select(sel)
-}
-
-@target(erlang)
-fn do_select(
-  sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
-) -> Effect(msg) {
-  use dispatch, _, select, _ <- effect.custom
-  let self = process.new_subject()
-  let selector = sel(dispatch, self)
-
-  select(selector)
-}
-
-@target(javascript)
-fn do_select(_: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg)) -> Effect(msg) {
-  effect.none
+  effect.select(sel)
 }
 /// The server component client runtime sends JSON encoded actions for the server
 /// runtime to execute. Because your own WebSocket server sits between the two

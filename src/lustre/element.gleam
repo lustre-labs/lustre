@@ -297,14 +297,6 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
 @external(javascript, "../../gleam_stdlib/gleam/function.mjs", "identity")
 fn coerce(a: a) -> b
 
-// EFFECTS ---------------------------------------------------------------------
-
-@internal
-pub fn get_root(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
-  use dispatch, _, _, root <- effect.custom
-
-  effect(dispatch, root)
-}
 
 // CONVERSIONS -----------------------------------------------------------------
 
