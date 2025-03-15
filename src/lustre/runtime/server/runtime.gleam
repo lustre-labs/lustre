@@ -120,7 +120,7 @@ fn loop(
 
       use <- bool.lazy_guard(!did_update, fn() { actor.continue(state) })
       let vdom = state.view(model)
-      let Diff(patch:, events:) = diff(state.vdom, vdom, 0)
+      let Diff(patch:, events:) = diff(state.vdom, vdom)
 
       handle_effect(state.self, effect)
       broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))
@@ -136,7 +136,7 @@ fn loop(
         Ok(message) -> {
           let #(model, effect) = state.update(state.model, message)
           let vdom = state.view(model)
-          let Diff(patch:, events:) = diff(state.vdom, vdom, 0)
+          let Diff(patch:, events:) = diff(state.vdom, vdom)
 
           handle_effect(state.self, effect)
           broadcast(
@@ -229,7 +229,7 @@ fn loop(
     EffectDispatchedMessage(message:) -> {
       let #(model, effect) = state.update(state.model, message)
       let vdom = state.view(state.model)
-      let Diff(patch:, events:) = diff(state.vdom, vdom, 0)
+      let Diff(patch:, events:) = diff(state.vdom, vdom)
 
       handle_effect(state.self, effect)
       broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))
@@ -245,7 +245,7 @@ fn loop(
 
     SelfDispatchedMessages(messages: [], effect:) -> {
       let vdom = state.view(state.model)
-      let Diff(patch:, events:) = diff(state.vdom, vdom, 0)
+      let Diff(patch:, events:) = diff(state.vdom, vdom)
 
       handle_effect(state.self, effect)
       broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))
@@ -306,6 +306,7 @@ fn handle_attribute_changes(
 
             Ok(message) -> {
               let #(new_model, effect) = update(model.0, message)
+
               handle_attribute_changes(
                 attributes,
                 on_attribute_change,

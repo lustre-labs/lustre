@@ -1064,7 +1064,28 @@ var Reconciler = class {
     this.#root.appendChild(this.#createElement(vdom));
   }
   #stack = [];
-  push(patch) {
+  push(patch, offset = 0) {
+    if (offset) {
+      iterate(patch.changes, (change) => {
+        switch (change.kind) {
+          case insert_kind:
+            change.before += offset;
+            break;
+          case move_kind:
+            change.before += offset;
+            break;
+          case remove_kind:
+            change.from += offset;
+            break;
+          case replace_kind:
+            change.from += offset;
+            break;
+        }
+      });
+      iterate(patch.children, (child) => {
+        child.index += offset;
+      });
+    }
     this.#stack.push({ node: this.#root, patch });
     this.#reconcile();
   }
@@ -1200,7 +1221,7 @@ var Reconciler = class {
       case fragment_kind: {
         const node = document.createDocumentFragment();
         const head = document.createTextNode("");
-        initialiseMetadata(head, vnode.key, true);
+        initialiseMetadata(head, vnode.key);
         node.appendChild(head);
         iterate(vnode.children, (child) => {
           node.appendChild(this.#createElement(child));
@@ -1280,16 +1301,20 @@ function iterate(list3, callback) {
   }
 }
 var meta = Symbol("metadata");
-function initialiseMetadata(node, key = "", fragment3 = false) {
-  if (node.nodeType === Node.ELEMENT_NODE || fragment3) {
-    node[meta] = {
-      key,
-      keyedChildren: /* @__PURE__ */ new Map(),
-      handlers: /* @__PURE__ */ new Map()
-    };
-    return;
+function initialiseMetadata(node, key = "") {
+  switch (node.nodeType) {
+    case Node.ELEMENT_NODE:
+    case Node.DOCUMENT_FRAGMENT_NODE:
+      node[meta] = {
+        key,
+        keyedChildren: /* @__PURE__ */ new Map(),
+        handlers: /* @__PURE__ */ new Map()
+      };
+      break;
+    case Node.TEXT_NODE:
+      node[meta] = { key };
+      break;
   }
-  node[meta] = { key };
 }
 function addKeyedChild(node, child) {
   if (child.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
@@ -1427,67 +1452,6 @@ var attributes_changed_kind = 0;
 var event_fired_kind = 1;
 
 // src/lustre/runtime/client/server_component.ffi.mjs
-var WebsocketTransport = class {
-  #url;
-  #socket;
-  constructor(url, onMessage, {}) {
-    this.#url = url;
-    this.#socket = new WebSocket(this.#url);
-    this.#socket.onmessage = ({ data }) => {
-      try {
-        onMessage(JSON.parse(data));
-      } catch {
-      }
-    };
-  }
-  send(data) {
-    this.#socket.send(JSON.stringify(data));
-  }
-  close() {
-    this.#socket.close();
-  }
-};
-var SseTransport = class {
-  #url;
-  #eventSource;
-  constructor(url, onMessage, {}) {
-    this.#url = url;
-    this.#eventSource = new EventSource(url);
-    this.#eventSource.onmessage = ({ data }) => {
-      try {
-        onMessage(JSON.parse(data));
-      } catch {
-      }
-    };
-  }
-  send(data) {
-  }
-  close() {
-    this.#eventSource.close();
-  }
-};
-var PollingTransport = class {
-  #url;
-  #onMessage;
-  #interval;
-  #timer;
-  constructor(url, onMessage, opts = {}) {
-    this.#url = url;
-    this.#onMessage = onMessage;
-    this.#interval = opts.interval ?? 5e3;
-    this.#fetch().finally(() => {
-      this.#timer = window.setInterval(() => this.#fetch(), this.#interval);
-    });
-  }
-  async send(data) {
-  }
-  close() {
-    clearInterval(this.#timer);
-  }
-  #fetch() {
-    return fetch(this.#url).then((response) => response.json()).then(this.#onMessage).catch(console.error);
-  }
-};
 var ServerComponent = class extends HTMLElement {
   static get observedAttributes() {
     return ["route", "method"];
@@ -1497,8 +1461,25 @@ var ServerComponent = class extends HTMLElement {
   #transport = null;
   #adoptedStyleNodes = [];
   #reconciler;
-  #observer;
+  #observer = new MutationObserver((mutations) => {
+    const attributes = [];
+    for (const mutation of mutations) {
+      if (mutation.type !== "attributes")
+        continue;
+      const name = mutation.attributeName;
+      if (!this.#remoteObservedAttributes.includes(name))
+        continue;
+      attributes.push([name, this.getAttribute(name)]);
+    }
+    if (attributes.length && this.#connected) {
+      this.#transport?.send({ kind: attributes_changed_kind, attributes });
+    } else {
+      this.#changedAttributesQueue.push(...attributes);
+    }
+  });
   #remoteObservedAttributes = [];
+  #connected = false;
+  #changedAttributesQueue = [];
   constructor() {
     super();
     if (!this.shadowRoot) {
@@ -1514,26 +1495,12 @@ var ServerComponent = class extends HTMLElement {
         useServerEvents: true
       }
     );
-    this.#observer = new MutationObserver((mutations) => {
-      const attributes = [];
-      for (const mutation of mutations) {
-        if (mutation.type !== "attributes")
-          continue;
-        const name = mutation.attributeName;
-        if (!this.#remoteObservedAttributes.includes(name))
-          continue;
-        attributes.push([name, this.getAttribute(name)]);
-      }
-      if (attributes.length) {
-        this.#transport?.send({ kind: attributes_changed_kind, attributes });
-      }
+    this.#observer.observe(this, {
+      attributes: true
     });
   }
   connectedCallback() {
     this.#adoptStyleSheets();
-    this.#observer.observe(this, {
-      attributes: true
-    });
     this.#method = this.getAttribute("method") || "ws";
     if (this.hasAttribute("route")) {
       this.#route = new URL(this.getAttribute("route"), window.location.href);
@@ -1554,7 +1521,7 @@ var ServerComponent = class extends HTMLElement {
         const normalised = next.toLowerCase();
         if (normalised == this.#method)
           return;
-        if (["ws", "sse", "polling", "http"].includes(normalised)) {
+        if (["ws", "sse", "polling"].includes(normalised)) {
           this.#method = normalised;
           if (this.#method == "ws") {
             if (this.#route.protocol == "https:")
@@ -1568,21 +1535,15 @@ var ServerComponent = class extends HTMLElement {
       }
     }
   }
-  eventReceivedCallback(event2, path, name) {
-    this.#transport?.send("hi!");
-  }
   messageReceivedCallback(data) {
-    console.log(data);
     switch (data.kind) {
       case mount_kind: {
-        while (this.shadowRoot.children[this.#adoptedStyleNodes.length]) {
-          this.shadowRoot.children[this.#adoptedStyleNodes.length].remove();
-        }
         this.#reconciler.mount(data.vdom);
+        this.dispatchEvent(new CustomEvent("lustre:mount"));
         break;
       }
       case reconcile_kind: {
-        this.#reconciler.push(data.patch);
+        this.#reconciler.push(data.patch, this.#adoptedStyleNodes.length);
         break;
       }
       case emit_kind: {
@@ -1597,18 +1558,44 @@ var ServerComponent = class extends HTMLElement {
       return;
     if (this.#transport)
       this.#transport.close();
+    const onConnect = () => {
+      this.#connected = true;
+      this.dispatchEvent(new CustomEvent("lustre:connect"), {
+        detail: {
+          route: this.#route,
+          method: this.#method
+        }
+      });
+      if (this.#changedAttributesQueue.length) {
+        this.#transport.send({
+          kind: attributes_changed_kind,
+          attributes: this.#changedAttributesQueue
+        });
+        this.#changedAttributesQueue = [];
+      }
+    };
     const onMessage = (data) => {
       this.messageReceivedCallback(data);
     };
+    const onClose = () => {
+      this.#connected = false;
+      this.dispatchEvent(new CustomEvent("lustre:close"), {
+        detail: {
+          route: this.#route,
+          method: this.#method
+        }
+      });
+    };
+    const options = { onConnect, onMessage, onClose };
     switch (this.#method) {
       case "ws":
-        this.#transport = new WebsocketTransport(this.#route, onMessage, {});
+        this.#transport = new WebsocketTransport(this.#route, options);
         break;
       case "sse":
-        this.#transport = new SseTransport(this.#route, onMessage, {});
+        this.#transport = new SseTransport(this.#route, options);
         break;
       case "polling":
-        this.#transport = new PollingTransport(this.#route, onMessage, {});
+        this.#transport = new PollingTransport(this.#route, options);
         break;
     }
   }
@@ -1619,6 +1606,94 @@ var ServerComponent = class extends HTMLElement {
       this.shadowRoot.firstChild.remove();
     }
     this.#adoptedStyleNodes = await adoptStylesheets(this.shadowRoot);
+  }
+};
+var WebsocketTransport = class {
+  #url;
+  #socket;
+  #onConnect;
+  #onMessage;
+  #onClose;
+  constructor(url, { onConnect, onMessage, onClose }) {
+    this.#url = url;
+    this.#socket = new WebSocket(this.#url);
+    this.#onConnect = onConnect;
+    this.#onMessage = onMessage;
+    this.#onClose = onClose;
+    this.#socket.onopen = () => {
+      this.#onConnect();
+    };
+    this.#socket.onmessage = ({ data }) => {
+      try {
+        this.#onMessage(JSON.parse(data));
+      } catch {
+      }
+    };
+    this.#socket.onclose = () => {
+      this.#onClose();
+    };
+  }
+  send(data) {
+    this.#socket.send(JSON.stringify(data));
+  }
+  close() {
+    this.#socket.close();
+  }
+};
+var SseTransport = class {
+  #url;
+  #eventSource;
+  #onConnect;
+  #onMessage;
+  #onClose;
+  constructor(url, { onConnect, onMessage, onClose }) {
+    this.#url = url;
+    this.#eventSource = new EventSource(this.#url);
+    this.#onMessage = onMessage;
+    this.#onClose = onClose;
+    this.#eventSource.onopen = () => {
+      this.#onConnect();
+    };
+    this.#eventSource.onmessage = ({ data }) => {
+      try {
+        this.#onMessage(JSON.parse(data));
+      } catch {
+      }
+    };
+  }
+  send(data) {
+  }
+  close() {
+    this.#eventSource.close();
+    this.#onClose();
+  }
+};
+var PollingTransport = class {
+  #url;
+  #interval;
+  #timer;
+  #onConnect;
+  #onMessage;
+  #onClose;
+  constructor(url, { onConnect, onMessage, onClose, ...opts }) {
+    this.#url = url;
+    this.#onConnect = onConnect;
+    this.#onMessage = onMessage;
+    this.#onClose = onClose;
+    this.#interval = opts.interval ?? 5e3;
+    this.#fetch().finally(() => {
+      this.#onConnect();
+      this.#timer = window.setInterval(() => this.#fetch(), this.#interval);
+    });
+  }
+  async send(data) {
+  }
+  close() {
+    clearInterval(this.#timer);
+    this.#onClose();
+  }
+  #fetch() {
+    return fetch(this.#url).then((response) => response.json()).then(this.#onMessage).catch(console.error);
   }
 };
 window.customElements.define("lustre-server-component", ServerComponent);

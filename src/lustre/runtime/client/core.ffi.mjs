@@ -65,9 +65,9 @@ export class Runtime {
 
     const virtualised = virtualise(this.#root);
     this.#vdom = this.#view(this.#model);
-    const { patch, events } = diff(virtualised, this.#vdom, Events.new$(), 0);
+    const { patch, events } = diff(virtualised, this.#vdom, Events.new$());
     this.#events = events;
-    this.#reconciler.push(patch);
+    this.#reconciler.push(patch, this.initialNodeOffset);
     this.#tick(effects.all, false);
   }
 

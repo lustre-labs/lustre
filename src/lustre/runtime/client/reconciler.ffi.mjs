@@ -44,7 +44,33 @@ export class Reconciler {
 
   #stack = [];
 
-  push(patch) {
+  push(patch, offset = 0) {
+    if (offset) {
+      iterate(patch.changes, (change) => {
+        switch (change.kind) {
+          case insert_kind:
+            change.before += offset;
+            break;
+
+          case move_kind:
+            change.before += offset;
+            break;
+
+          case remove_kind:
+            change.from += offset;
+            break;
+
+          case replace_kind:
+            change.from += offset;
+            break;
+        }
+      });
+
+      iterate(patch.children, (child) => {
+        child.index += offset;
+      });
+    }
+
     this.#stack.push({ node: this.#root, patch });
     this.#reconcile();
   }
@@ -230,7 +256,7 @@ export class Reconciler {
         const node = document.createDocumentFragment();
         const head = document.createTextNode("");
 
-        initialiseMetadata(head, vnode.key, true);
+        initialiseMetadata(head, vnode.key);
         node.appendChild(head);
 
         iterate(vnode.children, (child) => {
@@ -359,21 +385,21 @@ function iterate(list, callback) {
 
 const meta = Symbol("metadata");
 
-export function initialiseMetadata(node, key = "", fragment = false) {
-  // TODO: Originally this checked if nodeType was also DOCUMENT_FRAGMENT_NODE
-  // but it didn't look like we ever pass in a document framgnet in the first
-  // place.
-  if (node.nodeType === Node.ELEMENT_NODE || fragment) {
-    node[meta] = {
-      key,
-      keyedChildren: new Map(),
-      handlers: new Map(),
-    };
+export function initialiseMetadata(node, key = "") {
+  switch (node.nodeType) {
+    case Node.ELEMENT_NODE:
+    case Node.DOCUMENT_FRAGMENT_NODE:
+      node[meta] = {
+        key,
+        keyedChildren: new Map(),
+        handlers: new Map(),
+      };
+      break;
 
-    return;
+    case Node.TEXT_NODE:
+      node[meta] = { key };
+      break;
   }
-
-  node[meta] = { key };
 }
 
 function addKeyedChild(node, child) {
@@ -400,7 +426,7 @@ function addKeyedChild(node, child) {
  *  itself.
  *
  *  Doing things this way lets us swap out the underlying handler – which may
- *  happen
+ *  happen - without needing to rebind the event listener.
  *
  */
 function handleEvent(event) {

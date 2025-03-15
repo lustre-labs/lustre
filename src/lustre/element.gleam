@@ -15,6 +15,7 @@ import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute} as _
 import lustre/effect.{type Effect}
 import lustre/internals/constants
+import lustre/internals/mutable_map
 import lustre/vdom/attribute
 import lustre/vdom/node.{Element, Fragment, Text, UnsafeInnerHtml}
 
@@ -116,7 +117,7 @@ pub fn element(
         tag: tag,
         attributes: attribute.prepare(attributes),
         children: constants.empty_list,
-        keyed_children: constants.empty_dict(),
+        keyed_children: mutable_map.shared_empty(),
         self_closing: False,
         void: True,
       )
@@ -129,7 +130,7 @@ pub fn element(
         tag: tag,
         attributes: attribute.prepare(attributes),
         children:,
-        keyed_children: constants.empty_dict(),
+        keyed_children: mutable_map.shared_empty(),
         self_closing: False,
         void: False,
       )
@@ -152,7 +153,7 @@ pub fn namespaced(
     tag:,
     attributes: attribute.prepare(attributes),
     children:,
-    keyed_children: constants.empty_dict(),
+    keyed_children: mutable_map.shared_empty(),
     self_closing: False,
     void: False,
   )
@@ -178,7 +179,7 @@ pub fn advanced(
     tag:,
     attributes: attribute.prepare(attributes),
     children:,
-    keyed_children: constants.empty_dict(),
+    keyed_children: mutable_map.shared_empty(),
     self_closing:,
     void:,
   )
@@ -211,7 +212,7 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
     key: "",
     mapper: constants.option_none,
     children:,
-    keyed_children: constants.empty_dict(),
+    keyed_children: mutable_map.shared_empty(),
     children_count: count_fragment_children(children, 0),
   )
 }

@@ -114,16 +114,19 @@ fn with_erlang_runtime(run_test) {
 
 // COUNTER APP -----------------------------------------------------------------
 
+@target(erlang)
 fn init(count) {
   #(count, effect.none)
 }
 
+@target(erlang)
 type Msg {
   Incr
   Decr
   Reset
 }
 
+@target(erlang)
 fn update(model, msg) {
   case msg {
     Incr -> #(model + 1, effect.none)
@@ -132,10 +135,13 @@ fn update(model, msg) {
   }
 }
 
+@target(erlang)
 const incr = ["0", "2"]
 
+@target(erlang)
 const reset = ["0", "3"]
 
+@target(erlang)
 fn view(model) {
   html.div([], [
     html.button([event.on_click(Decr)], [html.text("-")]),

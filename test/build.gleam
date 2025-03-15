@@ -2,7 +2,6 @@
 
 import esgleam
 import esgleam/mod/install
-import gleam/io
 import gleam/regexp.{Options}
 import gleam/result
 import gleam/string
@@ -12,7 +11,7 @@ import simplifile
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
-  io.debug({
+  echo {
     case simplifile.is_file("build/dev/bin/package/bin/esbuild") {
       Ok(True) -> Nil
       _ -> install.fetch()
@@ -29,7 +28,7 @@ pub fn main() {
     use _ <- try(format_project(), ShelloutError)
 
     Ok(Nil)
-  })
+  }
 }
 
 // CONSTANTS -------------------------------------------------------------------

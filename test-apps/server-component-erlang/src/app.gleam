@@ -1,19 +1,13 @@
 import counter
-import gleam/bytes_tree
 import gleam/erlang
 import gleam/erlang/process.{type Selector, type Subject}
 import gleam/function
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
-import gleam/io
 import gleam/json
 import gleam/option.{type Option, None, Some}
 import gleam/otp/actor
-import gleam/result
 import lustre
-import lustre/attribute
-import lustre/element.{element}
-import lustre/element/html.{html}
 import lustre/server_component
 import mist.{
   type Connection, type ResponseData, type WebsocketConnection,
@@ -127,15 +121,10 @@ fn socket_update(
     mist.Text(json) -> {
       // we attempt to decode the incoming text as an action to send to our
       // server component runtime.
-      let message =
-        json.parse(json, server_component.runtime_message_decoder())
-        |> io.debug
+      let message = json.parse(json, server_component.runtime_message_decoder())
 
       case message {
-        Ok(message) ->
-          message
-          |> io.debug
-          |> process.send(counter, _)
+        Ok(message) -> process.send(counter, message)
         Error(_) -> Nil
       }
 

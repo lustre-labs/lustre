@@ -117,15 +117,6 @@ export class ServerComponent extends HTMLElement {
   messageReceivedCallback(data) {
     switch (data.kind) {
       case mount_kind: {
-        // TODO: we need to add the offset compensation directly to the reconciler.
-        // For now that is handled in the `diff` but there is no diff for server
-        // components!
-        //
-        // As a temporary workaround this just removes any style nodes on mount.
-        while (this.shadowRoot.children[this.#adoptedStyleNodes.length]) {
-          this.shadowRoot.children[this.#adoptedStyleNodes.length].remove();
-        }
-
         this.#reconciler.mount(data.vdom);
 
         // Once the component is mounted there is finally something displayed on
@@ -137,7 +128,7 @@ export class ServerComponent extends HTMLElement {
       }
 
       case reconcile_kind: {
-        this.#reconciler.push(data.patch);
+        this.#reconciler.push(data.patch, this.#adoptedStyleNodes.length);
 
         break;
       }
@@ -217,7 +208,7 @@ export class ServerComponent extends HTMLElement {
   }
 }
 
-//
+// TRANSPORT OPTIONS -----------------------------------------------------------
 
 class WebsocketTransport {
   #url;
@@ -328,7 +319,7 @@ class PollingTransport {
   }
 }
 
-//
+// UTILS -----------------------------------------------------------------------
 
 // It's important that this comes right at the bottom, otherwise the different
 // transport classes would be undefined when the custom element is defined!

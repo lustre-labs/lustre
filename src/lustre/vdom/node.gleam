@@ -1,6 +1,5 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/int
 import gleam/json.{type Json}
@@ -10,6 +9,7 @@ import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/internals/constants
 import lustre/internals/escape.{escape}
+import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/attribute.{type Attribute, Attribute}
 
 // TYPES -----------------------------------------------------------------------
@@ -20,19 +20,7 @@ pub type Node(msg) {
     key: String,
     mapper: Option(fn(Dynamic) -> Dynamic),
     children: List(Node(msg)),
-    // When encountering keyed children, we need to be able to differentiate
-    // between these cases:
-    //
-    // - A child moved, so we need to access to the old child tree using its key
-    // - A child got inserted, which means the key doesn't exist in the old tree
-    // - A child got removed, which means the key doesn't exist in the new tree
-    //
-    // This requires us to have build a lookup table for every pair of trees we
-    // diff. We therefore keep the lookup table on the node directly, meaning
-    // we can re-use the old tree every tick.
-    //
-    // The table can constructed using the `vdom.to_keyed_children` function.
-    keyed_children: Dict(String, Node(msg)),
+    keyed_children: MutableMap(String, Node(msg)),
     // When diffing Fragments, we need to know how many elements this fragment
     // spans when moving/deleting/updating it.
     children_count: Int,
@@ -44,7 +32,6 @@ pub type Node(msg) {
     mapper: Option(fn(Dynamic) -> Dynamic),
     namespace: String,
     tag: String,
-    //
     // To efficiently compare attributes during the diff, attribute are always
     // stored sorted. We do this while constructing the tree to not have to sort
     // the attribute in the previous tree again. The order does not matter, as
@@ -52,26 +39,16 @@ pub type Node(msg) {
     //
     // When constructing a Node with attributes provided by a user, attributes
     // have to be sorted with the `vdom.prepare_attributes` function.
+    //
     attributes: List(Attribute(msg)),
     children: List(Node(msg)),
-    // When encountering keyed children, we need to be able to differentiate
-    // between these cases:
-    //
-    // - A child moved, so we need to access to the old child tree using its key
-    // - A child got inserted, which means the key doesn't exist in the old tree
-    // - A child got removed, which means the key doesn't exist in the new tree
-    //
-    // This requires us to have build a lookup table for every pair of trees we
-    // diff. We therefore keep the lookup table on the node directly, meaning
-    // we can re-use the old tree every tick.
-    //
-    // The table can constructed using the `vdom.to_keyed_children` function.
-    keyed_children: Dict(String, Node(msg)),
+    keyed_children: MutableMap(String, Node(msg)),
     // These two properties are only useful when rendering Elements to strings.
     // Certain HTML tags like <img> and <input> are called "void" elements,
     // which means they cannot have children and should not have a closing tag.
     // On the other hand, XML and SVG documents support self-closing tags like
     // <path /> and can *not* be void...
+    //
     self_closing: Bool,
     void: Bool,
   )
@@ -103,7 +80,7 @@ pub fn fragment(
   key key: String,
   mapper mapper: Option(fn(Dynamic) -> Dynamic),
   children children: List(Node(msg)),
-  keyed_children keyed_children: Dict(String, Node(msg)),
+  keyed_children keyed_children: MutableMap(String, Node(msg)),
   children_count children_count: Int,
 ) -> Node(msg) {
   Fragment(
@@ -125,7 +102,7 @@ pub fn element(
   tag tag: String,
   attributes attributes: List(Attribute(msg)),
   children children: List(Node(msg)),
-  keyed_children keyed_children: Dict(String, Node(msg)),
+  keyed_children keyed_children: MutableMap(String, Node(msg)),
   self_closing self_closing: Bool,
   void void: Bool,
 ) -> Node(msg) {
@@ -199,7 +176,7 @@ pub fn to_keyed(key: String, node: Node(msg)) -> Node(msg) {
           children,
           0,
           constants.empty_list,
-          constants.empty_dict(),
+          mutable_map.new(),
         )
       Fragment(..node, key:, children:, keyed_children:)
     }
@@ -221,7 +198,7 @@ fn set_fragment_key(key, children, index, new_children, keyed_children) {
           node.children,
           0,
           constants.empty_list,
-          constants.empty_dict(),
+          mutable_map.new(),
         )
 
       let new_node =
@@ -241,14 +218,17 @@ fn set_fragment_key(key, children, index, new_children, keyed_children) {
       let child_key = key <> "::" <> node.key
       let keyed_node = to_keyed(child_key, node)
       let new_children = [keyed_node, ..new_children]
-      let keyed_children = dict.insert(keyed_children, child_key, keyed_node)
+      let keyed_children =
+        mutable_map.insert(keyed_children, child_key, keyed_node)
       let index = index + 1
+
       set_fragment_key(key, children, index, new_children, keyed_children)
     }
 
     [node, ..children] -> {
       let new_children = [node, ..new_children]
       let index = index + 1
+
       set_fragment_key(key, children, index, new_children, keyed_children)
     }
   }
