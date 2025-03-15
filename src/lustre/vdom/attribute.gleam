@@ -21,6 +21,7 @@ pub type Attribute(msg) {
     include: List(String),
     prevent_default: Bool,
     stop_propagation: Bool,
+    immediate: Bool,
   )
 }
 
