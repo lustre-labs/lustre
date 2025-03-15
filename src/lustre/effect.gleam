@@ -60,7 +60,7 @@ import gleam/list
 pub opaque type Effect(msg) {
   Effect(
     synchronous: List(fn(Actions(msg)) -> Nil),
-    after_render: List(fn(Actions(msg)) -> Nil),
+    before_paint: List(fn(Actions(msg)) -> Nil),
     after_paint: List(fn(Actions(msg)) -> Nil),
   )
 }
@@ -114,8 +114,8 @@ pub fn after_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
   Effect(..none, after_paint: [task(effect)])
 }
 
-pub fn after_render(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  Effect(..none, after_render: [task(effect)])
+pub fn before_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
+  Effect(..none, before_paint: [task(effect)])
 }
 
 /// Emit a custom event from a component as an effect. Parents can listen to these
@@ -177,7 +177,7 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
   use acc, eff <- list.fold(effects, none)
   Effect(
     synchronous: list.fold(eff.synchronous, acc.synchronous, list.prepend),
-    after_render: list.fold(eff.after_render, acc.after_render, list.prepend),
+    before_paint: list.fold(eff.before_paint, acc.before_paint, list.prepend),
     after_paint: list.fold(eff.after_paint, acc.after_paint, list.prepend),
   )
 }
@@ -191,7 +191,7 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
 pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
   Effect(
     synchronous: map_effects(effect.synchronous, f),
-    after_render: map_effects(effect.after_render, f),
+    before_paint: map_effects(effect.before_paint, f),
     after_paint: map_effects(effect.after_paint, f),
   )
 }
@@ -200,9 +200,9 @@ fn map_effects(
   effects: List(fn(Actions(a)) -> Nil),
   f: fn(a) -> b,
 ) -> List(fn(Actions(b)) -> Nil) {
-  use effects, effect <- list.fold(effects, [])
-  let effect = fn(actions) { effect(comap_actions(actions, f)) }
-  [effect, ..effects]
+  list.map(effects, fn(effect) {
+    fn(actions) { effect(comap_actions(actions, f)) }
+  })
 }
 
 @target(erlang)
@@ -227,4 +227,29 @@ fn comap_actions(actions: Actions(b), f: fn(a) -> b) -> Actions(a) {
     select: fn(_selector) { Nil },
     root: actions.root,
   )
+}
+
+/// Perform a side effect by supplying your own `dispatch` and `emit`functions.
+/// This is primarily used internally by the server component runtime, but it is
+/// may also useful for testing.
+///
+/// **Note**: For now, you should **not** consider this function a part of the
+/// public API. It may be removed in a future minor or patch release. If you have
+/// a specific use case for this function, we'd love to hear about it! Please
+/// reach out on the [Gleam Discord](https://discord.gg/Fm8Pwmy) or
+/// [open an issue](https://github.com/lustre-labs/lustre/issues/new)!
+///
+@internal
+pub fn perform(
+  effect: Effect(a),
+  dispatch: fn(a) -> Nil,
+  emit: fn(String, Json) -> Nil,
+  select: fn(Selector(a)) -> Nil,
+  root: Dynamic,
+) -> Nil {
+  let actions = Actions(dispatch, emit, select, root)
+
+  list.each(effect.synchronous, fn(eff) { eff(actions) })
+  list.each(effect.before_paint, fn(eff) { eff(actions) })
+  list.each(effect.after_paint, fn(eff) { eff(actions) })
 }
