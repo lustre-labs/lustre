@@ -15,7 +15,7 @@ export const is_registered = (name) =>
 export const is_reference_equal = (a, b) => a === b;
 
 export const throw_server_component_error = () => {
-  throw new window.Error(
+  throw new globalThis.Error(
     [
       "It looks like you're trying to use the server component runtime written ",
       "using `gleam_otp`. You can only end up here if you were poking around ",
@@ -67,9 +67,9 @@ export class Runtime {
 
     const virtualised = virtualise(this.#root);
     this.#vdom = this.#view(this.#model);
-    const { patch, events } = diff(virtualised, this.#vdom, Events.new$(), 0);
+    const { patch, events } = diff(virtualised, this.#vdom, Events.new$());
     this.#events = events;
-    this.#reconciler.push(patch);
+    this.#reconciler.push(patch, this.initialNodeOffset);
     this.#tick(effects.all, false);
   }
 
@@ -137,6 +137,10 @@ export class Runtime {
     );
   }
 }
+
+export const send = (runtime, message) => {
+  runtime.send(message);
+};
 
 //
 

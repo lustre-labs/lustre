@@ -17,9 +17,7 @@ export class Spa {
 
     if (!root) return new Error(new ElementNotFound(selector));
 
-    const app = new Spa(root, init(flags), update, view);
-
-    return new Ok((action) => app.send(action));
+    return new Ok(new Spa(root, init(flags), update, view));
   }
 
   #runtime;

@@ -4,8 +4,15 @@
 // used as the entry module when running esbuild so we *cant* use imports relative
 // to src/.
 
-import { Reconciler } from "../../../../build/dev/javascript/lustre/lustre/client_runtime/server_component_reconciler.ffi.mjs";
-import { adoptStylesheets } from "../../../../build/dev/javascript/lustre/lustre/client_runtime/core.ffi.mjs";
+import { Reconciler } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/reconciler.ffi.mjs";
+import { adoptStylesheets } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/core.ffi.mjs";
+import {
+  mount_kind,
+  reconcile_kind,
+  emit_kind,
+  attributes_changed_kind,
+  event_fired_kind,
+} from "../../../../build/dev/javascript/lustre/lustre/runtime/transport.mjs";
 
 //
 
@@ -19,17 +26,60 @@ export class ServerComponent extends HTMLElement {
   #transport = null;
   #adoptedStyleNodes = [];
   #reconciler;
-  #remoteObservedAttributes = [];
 
-  construct() {
+  #observer = new MutationObserver((mutations) => {
+    const attributes = [];
+
+    for (const mutation of mutations) {
+      if (mutation.type !== "attributes") continue;
+      const name = mutation.attributeName;
+      if (!this.#remoteObservedAttributes.includes(name)) continue;
+
+      attributes.push([name, this.getAttribute(name)]);
+    }
+
+    if (attributes.length && this.#connected) {
+      this.#transport?.send({ kind: attributes_changed_kind, attributes });
+    } else {
+      this.#changedAttributesQueue.push(...attributes);
+    }
+  });
+
+  #remoteObservedAttributes = [];
+  #connected = false;
+  #changedAttributesQueue = [];
+
+  constructor() {
+    super();
+
     if (!this.shadowRoot) {
       this.attachShadow({ mode: "open" });
     }
 
     this.internals = this.attachInternals();
-    this.#reconciler = new Reconciler(this.shadowRoot, (event, path, name) => {
-      this.eventReceivedCallback(event, path, name);
+    this.#reconciler = new Reconciler(
+      this.shadowRoot,
+      (event, path, name) => {
+        this.#transport?.send({ kind: event_fired_kind, path, name, event });
+      },
+      {
+        useServerEvents: true,
+      },
+    );
+
+    this.#observer.observe(this, {
+      attributes: true,
     });
+  }
+
+  connectedCallback() {
+    this.#adoptStyleSheets();
+    this.#method = this.getAttribute("method") || "ws";
+
+    if (this.hasAttribute("route")) {
+      this.#route = new URL(this.getAttribute("route"), window.location.href);
+      this.#connect();
+    }
   }
 
   adoptedCallback() {
@@ -48,7 +98,7 @@ export class ServerComponent extends HTMLElement {
         const normalised = next.toLowerCase();
 
         if (normalised == this.#method) return;
-        if (["ws", "sse", "polling", "http"].includes(normalised)) {
+        if (["ws", "sse", "polling"].includes(normalised)) {
           this.#method = normalised;
 
           if (this.#method == "ws") {
@@ -64,11 +114,32 @@ export class ServerComponent extends HTMLElement {
     }
   }
 
-  eventReceivedCallback(event, path, name) {
-    this.#transport?.send("hi!");
-  }
+  messageReceivedCallback(data) {
+    switch (data.kind) {
+      case mount_kind: {
+        this.#reconciler.mount(data.vdom);
 
-  messageReceivedCallback(data) {}
+        // Once the component is mounted there is finally something displayed on
+        // the screen! Occassionally clients will want to know when this happens
+        // so they can kick off other work.
+        this.dispatchEvent(new CustomEvent("lustre:mount"));
+
+        break;
+      }
+
+      case reconcile_kind: {
+        this.#reconciler.push(data.patch, this.#adoptedStyleNodes.length);
+
+        break;
+      }
+
+      case emit_kind: {
+        this.dispatchEvent(new CustomEvent(data.name, { detail: data.data }));
+
+        break;
+      }
+    }
+  }
 
   //
 
@@ -76,25 +147,51 @@ export class ServerComponent extends HTMLElement {
     if (!this.#route || !this.#method) return;
     if (this.#transport) this.#transport.close();
 
+    const onConnect = () => {
+      this.#connected = true;
+      this.dispatchEvent(new CustomEvent("lustre:connect"), {
+        detail: {
+          route: this.#route,
+          method: this.#method,
+        },
+      });
+
+      if (this.#changedAttributesQueue.length) {
+        this.#transport.send({
+          kind: attributes_changed_kind,
+          attributes: this.#changedAttributesQueue,
+        });
+        this.#changedAttributesQueue = [];
+      }
+    };
+
     const onMessage = (data) => {
       this.messageReceivedCallback(data);
     };
 
+    const onClose = () => {
+      this.#connected = false;
+      this.dispatchEvent(new CustomEvent("lustre:close"), {
+        detail: {
+          route: this.#route,
+          method: this.#method,
+        },
+      });
+    };
+
+    const options = { onConnect, onMessage, onClose };
+
     switch (this.#method) {
       case "ws":
-        this.#transport = new WebsocketTransport(this.#route, onMessage, {});
+        this.#transport = new WebsocketTransport(this.#route, options);
         break;
 
       case "sse":
-        this.#transport = new SseTransport(this.#route, onMessage, {});
+        this.#transport = new SseTransport(this.#route, options);
         break;
 
       case "polling":
-        this.#transport = new PollingTransport(this.#route, onMessage, {});
-        break;
-
-      case "http":
-        this.#transport = new HttpTransport(this.#route, onMessage);
+        this.#transport = new PollingTransport(this.#route, options);
         break;
     }
   }
@@ -111,16 +208,36 @@ export class ServerComponent extends HTMLElement {
   }
 }
 
-//
+// TRANSPORT OPTIONS -----------------------------------------------------------
 
 class WebsocketTransport {
   #url;
   #socket;
 
-  constructor(url, onMessage, {}) {
+  #onConnect;
+  #onMessage;
+  #onClose;
+
+  constructor(url, { onConnect, onMessage, onClose }) {
     this.#url = url;
     this.#socket = new WebSocket(this.#url);
-    this.#socket.onmessage = onMessage;
+    this.#onConnect = onConnect;
+    this.#onMessage = onMessage;
+    this.#onClose = onClose;
+
+    this.#socket.onopen = () => {
+      this.#onConnect();
+    };
+
+    this.#socket.onmessage = ({ data }) => {
+      try {
+        this.#onMessage(JSON.parse(data));
+      } catch {}
+    };
+
+    this.#socket.onclose = () => {
+      this.#onClose();
+    };
   }
 
   send(data) {
@@ -136,89 +253,74 @@ class SseTransport {
   #url;
   #eventSource;
 
-  constructor(url, onMessage, {}) {
+  #onConnect;
+  #onMessage;
+  #onClose;
+
+  constructor(url, { onConnect, onMessage, onClose }) {
     this.#url = url;
-    this.#eventSource = new EventSource(url);
-    this.#eventSource.onmessage = onMessage;
+    this.#eventSource = new EventSource(this.#url);
+    this.#onMessage = onMessage;
+    this.#onClose = onClose;
+
+    this.#eventSource.onopen = () => {
+      this.#onConnect();
+    };
+
+    this.#eventSource.onmessage = ({ data }) => {
+      try {
+        this.#onMessage(JSON.parse(data));
+      } catch {}
+    };
   }
 
-  send(data) {
-    fetch(this.#url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-  }
+  send(data) {}
 
   close() {
     this.#eventSource.close();
+    this.#onClose();
   }
 }
 
 class PollingTransport {
   #url;
-  #onMessage;
   #interval;
   #timer;
 
-  constructor(url, onMessage, opts = {}) {
+  #onConnect;
+  #onMessage;
+  #onClose;
+
+  constructor(url, { onConnect, onMessage, onClose, ...opts }) {
     this.#url = url;
+    this.#onConnect = onConnect;
     this.#onMessage = onMessage;
-    this.#interval = opts.interval ?? 1000;
-    this.#timer = window.setInterval(() => {
-      fetch(this.#url)
-        .then((response) => response.json())
-        .then(this.#onMessage);
-    }, this.#interval);
-  }
+    this.#onClose = onClose;
+    this.#interval = opts.interval ?? 5000;
 
-  async send(data) {
-    const res = await fetch(this.#url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
+    this.#fetch().finally(() => {
+      this.#onConnect();
+      this.#timer = window.setInterval(() => this.#fetch(), this.#interval);
     });
-    const json = await res.json();
-
-    window.clearInterval(this.#timer);
-
-    this.#onMessage(json);
-    this.#timer = window.setInterval(() => {
-      fetch(this.#url)
-        .then((response) => response.json())
-        .then(this.#onMessage);
-    }, this.#interval);
   }
+
+  async send(data) {}
 
   close() {
     clearInterval(this.#timer);
+    this.#onClose();
+  }
+
+  #fetch() {
+    return fetch(this.#url)
+      .then((response) => response.json())
+      .then(this.#onMessage)
+      .catch(console.error);
   }
 }
 
-class HttpTransport {
-  #url;
-  #onMessage;
+// UTILS -----------------------------------------------------------------------
 
-  constructor(url, onMessage) {
-    this.#url = url;
-    this.#onMessage = onMessage;
-  }
-
-  send(data) {
-    fetch(this.#url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    })
-      .then((res) => res.json())
-      .then((data) => this.#onMessage(data));
-  }
-
-  close() {}
-}
+// It's important that this comes right at the bottom, otherwise the different
+// transport classes would be undefined when the custom element is defined!
+window.customElements.define("lustre-server-component", ServerComponent);

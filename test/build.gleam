@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/bool
-import gleam/io
+import esgleam
+import esgleam/mod/install
 import gleam/regexp.{Options}
 import gleam/result
 import gleam/string
@@ -11,13 +11,15 @@ import simplifile
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
-  io.debug({
-    use exists <- try(verify_esbuild(), SimplifileError)
-    use <- bool.guard(!exists, Error(MissingEsbuild))
+  echo {
+    case simplifile.is_file("build/dev/bin/package/bin/esbuild") {
+      Ok(True) -> Nil
+      _ -> install.fetch()
+    }
 
     use _ <- try(build_for_javascript(), ShelloutError)
-    use _ <- try(bundle_server_component(), ShelloutError)
-    use _ <- try(bundle_minified_server_component(), ShelloutError)
+    use _ <- try(bundle_server_component(), SimplifileError)
+    use _ <- try(bundle_minified_server_component(), SimplifileError)
 
     use script <- try(read_script(), SimplifileError)
     use module <- try(read_module(), SimplifileError)
@@ -26,18 +28,20 @@ pub fn main() {
     use _ <- try(format_project(), ShelloutError)
 
     Ok(Nil)
-  })
+  }
 }
 
 // CONSTANTS -------------------------------------------------------------------
 
-const esbuild = "./build/dev/bin/package/bin/esbuild"
+// For whatever reason, esgleam needs the input path to be relative to the location
+// of the esbuild binary
+const runtime = "../../../../src/lustre/runtime/client/server_component.ffi.mjs"
+
+const outfile = "./priv/static/lustre-server-component"
+
+const module = "./src/lustre/server_component.gleam"
 
 // STEPS -----------------------------------------------------------------------
-
-fn verify_esbuild() {
-  simplifile.is_file(esbuild)
-}
 
 fn build_for_javascript() {
   shellout.command(
@@ -49,51 +53,44 @@ fn build_for_javascript() {
 }
 
 fn bundle_server_component() {
-  shellout.command(
-    run: esbuild,
-    with: [
-      "./src/server-component.mjs", "--bundle", "--format=esm",
-      "--outfile=./priv/static/lustre-server-component.mjs",
-    ],
-    in: ".",
-    opt: [],
-  )
+  esgleam.new("")
+  |> esgleam.entry(runtime)
+  |> esgleam.raw("--outfile=" <> outfile <> ".mjs")
+  |> esgleam.bundle
 }
 
 fn bundle_minified_server_component() {
-  shellout.command(
-    run: esbuild,
-    with: [
-      "./src/server-component.mjs", "--bundle", "--minify", "--format=esm",
-      "--outfile=./priv/static/lustre-server-component.min.mjs",
-    ],
-    in: ".",
-    opt: [],
-  )
+  esgleam.new("")
+  |> esgleam.entry(runtime)
+  |> esgleam.minify(True)
+  |> esgleam.raw("--outfile=" <> outfile <> ".min.mjs")
+  |> esgleam.bundle
 }
 
 fn read_script() {
-  simplifile.read("./priv/static/lustre-server-component.min.mjs")
+  simplifile.read(outfile <> ".min.mjs")
+  |> result.map(string.replace(_, "\n", "\\n"))
+  |> result.map(string.replace(_, "\\", "\\\\"))
   |> result.map(string.replace(_, "\"", "\\\""))
   |> result.map(string.trim)
 }
 
 fn read_module() {
-  simplifile.read("./src/lustre/server_component.gleam")
+  simplifile.read(module)
 }
 
 fn inject_script(script, module) {
-  let inject_regexp = "// <<INJECT RUNTIME>>\\n.+\\n.+\\n    \\),"
+  let inject_regexp = "// <<INJECT RUNTIME>>\\n    .+,"
   let options = Options(case_insensitive: False, multi_line: True)
-  let assert Ok(re) = regexp.compile(inject_regex, options)
-  let assert [before, after] = regexp.split(re, module)
+  let assert Ok(re) = regexp.compile(inject_regexp, options)
+  let assert [before, after] = regexp.split(re, src)
 
   simplifile.write(
-    "./src/lustre/server_component.gleam",
-    before
-      <> "// <<INJECT RUNTIME>>\n    element.text(\""
+    to: module,
+    contents: before
+      <> "// <<INJECT RUNTIME>>\n    \""
       <> script
-      <> "\"),"
+      <> "\","
       <> after,
   )
 }

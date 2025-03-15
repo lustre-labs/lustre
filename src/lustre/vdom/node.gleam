@@ -1,47 +1,37 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/int
+import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/internals/constants
 import lustre/internals/escape.{escape}
+import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/attribute.{type Attribute, Attribute}
 
 // TYPES -----------------------------------------------------------------------
 
 pub type Node(msg) {
   Fragment(
+    kind: Int,
     key: String,
     mapper: Option(fn(Dynamic) -> Dynamic),
     children: List(Node(msg)),
-    // When encountering keyed children, we need to be able to differentiate
-    // between these cases:
-    //
-    // - A child moved, so we need to access to the old child tree using its key
-    // - A child got inserted, which means the key doesn't exist in the old tree
-    // - A child got removed, which means the key doesn't exist in the new tree
-    //
-    // This requires us to have build a lookup table for every pair of trees we
-    // diff. We therefore keep the lookup table on the node directly, meaning
-    // we can re-use the old tree every tick.
-    //
-    // The table can constructed using the `vdom.to_keyed_children` function.
-    keyed_children: Dict(String, Node(msg)),
+    keyed_children: MutableMap(String, Node(msg)),
     // When diffing Fragments, we need to know how many elements this fragment
     // spans when moving/deleting/updating it.
     children_count: Int,
   )
 
   Element(
+    kind: Int,
     key: String,
     mapper: Option(fn(Dynamic) -> Dynamic),
     namespace: String,
     tag: String,
-    //
     // To efficiently compare attributes during the diff, attribute are always
     // stored sorted. We do this while constructing the tree to not have to sort
     // the attribute in the previous tree again. The order does not matter, as
@@ -49,33 +39,29 @@ pub type Node(msg) {
     //
     // When constructing a Node with attributes provided by a user, attributes
     // have to be sorted with the `vdom.prepare_attributes` function.
+    //
     attributes: List(Attribute(msg)),
     children: List(Node(msg)),
-    // When encountering keyed children, we need to be able to differentiate
-    // between these cases:
-    //
-    // - A child moved, so we need to access to the old child tree using its key
-    // - A child got inserted, which means the key doesn't exist in the old tree
-    // - A child got removed, which means the key doesn't exist in the new tree
-    //
-    // This requires us to have build a lookup table for every pair of trees we
-    // diff. We therefore keep the lookup table on the node directly, meaning
-    // we can re-use the old tree every tick.
-    //
-    // The table can constructed using the `vdom.to_keyed_children` function.
-    keyed_children: Dict(String, Node(msg)),
+    keyed_children: MutableMap(String, Node(msg)),
     // These two properties are only useful when rendering Elements to strings.
     // Certain HTML tags like <img> and <input> are called "void" elements,
     // which means they cannot have children and should not have a closing tag.
     // On the other hand, XML and SVG documents support self-closing tags like
     // <path /> and can *not* be void...
+    //
     self_closing: Bool,
     void: Bool,
   )
 
-  Text(key: String, mapper: Option(fn(Dynamic) -> Dynamic), content: String)
+  Text(
+    kind: Int,
+    key: String,
+    mapper: Option(fn(Dynamic) -> Dynamic),
+    content: String,
+  )
 
   UnsafeInnerHtml(
+    kind: Int,
     key: String,
     mapper: Option(fn(Dynamic) -> Dynamic),
     namespace: String,
@@ -83,6 +69,85 @@ pub type Node(msg) {
     //
     attributes: List(Attribute(msg)),
     inner_html: String,
+  )
+}
+
+// CONSTRUCTORS ----------------------------------------------------------------
+
+pub const fragment_kind: Int = 0
+
+pub fn fragment(
+  key key: String,
+  mapper mapper: Option(fn(Dynamic) -> Dynamic),
+  children children: List(Node(msg)),
+  keyed_children keyed_children: MutableMap(String, Node(msg)),
+  children_count children_count: Int,
+) -> Node(msg) {
+  Fragment(
+    kind: fragment_kind,
+    key:,
+    mapper:,
+    children:,
+    keyed_children:,
+    children_count:,
+  )
+}
+
+pub const element_kind: Int = 1
+
+pub fn element(
+  key key: String,
+  mapper mapper: Option(fn(Dynamic) -> Dynamic),
+  namespace namespace: String,
+  tag tag: String,
+  attributes attributes: List(Attribute(msg)),
+  children children: List(Node(msg)),
+  keyed_children keyed_children: MutableMap(String, Node(msg)),
+  self_closing self_closing: Bool,
+  void void: Bool,
+) -> Node(msg) {
+  Element(
+    kind: element_kind,
+    key:,
+    mapper:,
+    namespace:,
+    tag:,
+    attributes:,
+    children:,
+    keyed_children:,
+    self_closing:,
+    void:,
+  )
+}
+
+pub const text_kind: Int = 2
+
+pub fn text(
+  key key: String,
+  mapper mapper: Option(fn(Dynamic) -> Dynamic),
+  content content: String,
+) -> Node(msg) {
+  Text(kind: text_kind, key: key, mapper: mapper, content: content)
+}
+
+pub const unsafe_inner_html_kind: Int = 3
+
+pub fn unsafe_inner_html(
+  key key: String,
+  mapper mapper: Option(fn(Dynamic) -> Dynamic),
+  namespace namespace: String,
+  tag tag: String,
+  attributes attributes: List(Attribute(msg)),
+  inner_html inner_html: String,
+) -> Node(msg) {
+  UnsafeInnerHtml(
+    kind: unsafe_inner_html_kind,
+    key:,
+    mapper:,
+    namespace:,
+    tag:,
+    attributes:,
+    inner_html:,
   )
 }
 
@@ -111,7 +176,7 @@ pub fn to_keyed(key: String, node: Node(msg)) -> Node(msg) {
           children,
           0,
           constants.empty_list,
-          constants.empty_dict(),
+          mutable_map.new(),
         )
       Fragment(..node, key:, children:, keyed_children:)
     }
@@ -133,7 +198,7 @@ fn set_fragment_key(key, children, index, new_children, keyed_children) {
           node.children,
           0,
           constants.empty_list,
-          constants.empty_dict(),
+          mutable_map.new(),
         )
 
       let new_node =
@@ -153,17 +218,80 @@ fn set_fragment_key(key, children, index, new_children, keyed_children) {
       let child_key = key <> "::" <> node.key
       let keyed_node = to_keyed(child_key, node)
       let new_children = [keyed_node, ..new_children]
-      let keyed_children = dict.insert(keyed_children, child_key, keyed_node)
+      let keyed_children =
+        mutable_map.insert(keyed_children, child_key, keyed_node)
       let index = index + 1
+
       set_fragment_key(key, children, index, new_children, keyed_children)
     }
 
     [node, ..children] -> {
       let new_children = [node, ..new_children]
       let index = index + 1
+
       set_fragment_key(key, children, index, new_children, keyed_children)
     }
   }
+}
+
+// ENCODERS --------------------------------------------------------------------
+
+pub fn to_json(node: Node(msg)) -> Json {
+  case node {
+    Fragment(kind:, key:, children:, children_count:, ..) ->
+      fragment_to_json(kind, key, children, children_count)
+    Element(kind:, key:, namespace:, tag:, attributes:, children:, ..) ->
+      element_to_json(kind, key, namespace, tag, attributes, children)
+    Text(kind:, key:, content:, ..) -> text_to_json(kind, key, content)
+    UnsafeInnerHtml(kind:, key:, namespace:, tag:, attributes:, inner_html:, ..) ->
+      unsafe_inner_html_to_json(
+        kind,
+        key,
+        namespace,
+        tag,
+        attributes,
+        inner_html,
+      )
+  }
+}
+
+fn fragment_to_json(kind, key, children, children_count) {
+  json.object([
+    #("kind", json.int(kind)),
+    #("key", json.string(key)),
+    #("children", json.array(children, to_json)),
+    #("children_count", json.int(children_count)),
+  ])
+}
+
+fn element_to_json(kind, key, namespace, tag, attributes, children) {
+  json.object([
+    #("kind", json.int(kind)),
+    #("key", json.string(key)),
+    #("namespace", json.string(namespace)),
+    #("tag", json.string(tag)),
+    #("attributes", json.array(attributes, attribute.to_json)),
+    #("children", json.array(children, to_json)),
+  ])
+}
+
+fn text_to_json(kind, key, content) {
+  json.object([
+    #("kind", json.int(kind)),
+    #("key", json.string(key)),
+    #("content", json.string(content)),
+  ])
+}
+
+fn unsafe_inner_html_to_json(kind, key, namespace, tag, attributes, inner_html) {
+  json.object([
+    #("kind", json.int(kind)),
+    #("key", json.string(key)),
+    #("namespace", json.string(namespace)),
+    #("tag", json.string(tag)),
+    #("attributes", json.array(attributes, attribute.to_json)),
+    #("inner_html", json.string(inner_html)),
+  ])
 }
 
 // STRING RENDERING ------------------------------------------------------------
@@ -262,7 +390,7 @@ fn do_to_snapshot_builder(
       string_tree.new()
       |> children_to_snapshot_builder(children, raw_text, indent)
 
-    Element(key, namespace:, tag:, attributes:, self_closing:, ..)
+    Element(key:, namespace:, tag:, attributes:, self_closing:, ..)
       if self_closing
     -> {
       let html = string_tree.from_string("<" <> tag)
@@ -274,7 +402,7 @@ fn do_to_snapshot_builder(
       |> string_tree.append("/>")
     }
 
-    Element(key, namespace:, tag:, attributes:, void:, ..) if void -> {
+    Element(key:, namespace:, tag:, attributes:, void:, ..) if void -> {
       let html = string_tree.from_string("<" <> tag)
       let attributes = attribute.to_string_tree(key, namespace, attributes)
 
@@ -284,7 +412,7 @@ fn do_to_snapshot_builder(
       |> string_tree.append(">")
     }
 
-    Element(key, namespace:, tag:, attributes:, children: [], ..) -> {
+    Element(key:, namespace:, tag:, attributes:, children: [], ..) -> {
       let html = string_tree.from_string("<" <> tag)
       let attributes = attribute.to_string_tree(key, namespace, attributes)
 
@@ -295,7 +423,7 @@ fn do_to_snapshot_builder(
       |> string_tree.append("</" <> tag <> ">")
     }
 
-    Element(key, namespace:, tag:, attributes:, children:, ..) -> {
+    Element(key:, namespace:, tag:, attributes:, children:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
       let attributes = attribute.to_string_tree(key, namespace, attributes)
       html
@@ -307,7 +435,7 @@ fn do_to_snapshot_builder(
       |> string_tree.append("</" <> tag <> ">")
     }
 
-    UnsafeInnerHtml(key, namespace:, tag:, attributes:, inner_html:, ..) -> {
+    UnsafeInnerHtml(key:, namespace:, tag:, attributes:, inner_html:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
       let attributes = attribute.to_string_tree(key, namespace, attributes)
 
@@ -330,7 +458,15 @@ fn children_to_snapshot_builder(
     [Text(content: a, ..), Text(content: b, ..), ..rest] ->
       children_to_snapshot_builder(
         html,
-        [Text(key: "", mapper: constants.option_none, content: a <> b), ..rest],
+        [
+          Text(
+            kind: text_kind,
+            key: "",
+            mapper: constants.option_none,
+            content: a <> b,
+          ),
+          ..rest
+        ],
         raw_text,
         indent,
       )
