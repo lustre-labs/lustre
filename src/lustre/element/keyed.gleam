@@ -1,12 +1,12 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dict.{type Dict}
 import gleam/list
 import lustre/attribute.{type Attribute} as _
 import lustre/element.{type Element}
 import lustre/internals/constants
+import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/attribute
-import lustre/vdom/node.{Element, Fragment}
+import lustre/vdom/node
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -47,7 +47,7 @@ pub fn element(
 ) -> Element(msg) {
   let #(keyed_children, children, _) = extract_keyed_children(children)
 
-  Element(
+  node.element(
     key: "",
     namespace: "",
     tag:,
@@ -68,7 +68,7 @@ pub fn namespaced(
 ) -> Element(msg) {
   let #(keyed_children, children, _) = extract_keyed_children(children)
 
-  Element(
+  node.element(
     key: "",
     mapper: constants.option_none,
     namespace:,
@@ -85,7 +85,7 @@ pub fn fragment(children: List(#(String, Element(msg)))) -> Element(msg) {
   let #(keyed_children, children, children_count) =
     extract_keyed_children(children)
 
-  Fragment(
+  node.fragment(
     key: "",
     mapper: constants.option_none,
     children:,
@@ -135,8 +135,8 @@ pub fn dl(
 
 fn extract_keyed_children(
   children: List(#(String, Element(msg))),
-) -> #(Dict(String, Element(msg)), List(Element(msg)), Int) {
-  let init = #(constants.empty_dict(), constants.empty_list, 0)
+) -> #(MutableMap(String, Element(msg)), List(Element(msg)), Int) {
+  let init = #(mutable_map.new(), constants.empty_list, 0)
   let #(keyed_children, children, children_count) = {
     use #(keyed_children, children, children_count), #(key, element) <- list.fold(
       children,
@@ -149,7 +149,7 @@ fn extract_keyed_children(
     // still returned in the children list.
     let keyed_children = case key {
       "" -> keyed_children
-      _ -> dict.insert(keyed_children, key, keyed_element)
+      _ -> mutable_map.insert(keyed_children, key, keyed_element)
     }
 
     #(keyed_children, [keyed_element, ..children], children_count + 1)

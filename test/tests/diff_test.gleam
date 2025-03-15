@@ -5,20 +5,21 @@ import lustre/attribute.{attribute}
 import lustre/element
 import lustre/element/html
 import lustre/element/keyed
-import lustre/vdom/diff.{
-  Insert, Move, Patch, Remove, RemoveKey, Replace, ReplaceText, Update,
-}
+import lustre/vdom/diff
 import lustre/vdom/node.{to_keyed}
+import lustre/vdom/patch
 import lustre_test
+
+//
 
 pub fn empty_node_test() {
   use <- lustre_test.test_filter("empty_node_test")
 
   let prev = html.div([], [])
   let next = html.div([], [])
-  let diff = Patch(0, 0, [], [])
+  let diff = patch.new(0, 0, [], [])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -29,9 +30,12 @@ pub fn text_element_replaced_test() {
 
   let prev = html.text("Hello, World!")
   let next = html.text("Hello, Joe!")
-  let diff = Patch(0, 0, [], [Patch(0, 0, [ReplaceText("Hello, Joe!")], [])])
+  let diff =
+    patch.new(0, 0, [], [
+      patch.new(0, 0, [patch.replace_text("Hello, Joe!")], []),
+    ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -41,11 +45,16 @@ pub fn text_to_element_replacement_test() {
   let prev = html.div([], [html.text("Hello")])
   let next = html.div([], [html.span([], [html.text("Hello")])])
   let diff =
-    Patch(0, 0, [], [
-      Patch(0, 0, [Replace(0, 1, html.span([], [html.text("Hello")]))], []),
+    patch.new(0, 0, [], [
+      patch.new(
+        0,
+        0,
+        [patch.replace(0, 1, html.span([], [html.text("Hello")]))],
+        [],
+      ),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -69,15 +78,20 @@ pub fn nested_attribute_changes_test() {
     ])
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(0, 0, [], [
-        Patch(0, 0, [Update([attribute.class("new")], [])], [
-          Patch(0, 0, [Update([attribute("data-test", "456")], [])], []),
+    patch.new(0, 0, [], [
+      patch.new(0, 0, [], [
+        patch.new(0, 0, [patch.update([attribute.class("new")], [])], [
+          patch.new(
+            0,
+            0,
+            [patch.update([attribute("data-test", "456")], [])],
+            [],
+          ),
         ]),
       ]),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -87,9 +101,11 @@ pub fn node_attribute_added_test() {
   let prev = html.div([], [])
   let next = html.div([attribute.class("wibble")], [])
   let diff =
-    Patch(0, 0, [], [Patch(0, 0, [Update([attribute.class("wibble")], [])], [])])
+    patch.new(0, 0, [], [
+      patch.new(0, 0, [patch.update([attribute.class("wibble")], [])], []),
+    ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -99,9 +115,11 @@ pub fn node_attribute_removed_test() {
   let prev = html.div([attribute.class("wibble")], [])
   let next = html.div([], [])
   let diff =
-    Patch(0, 0, [], [Patch(0, 0, [Update([], [attribute.class("wibble")])], [])])
+    patch.new(0, 0, [], [
+      patch.new(0, 0, [patch.update([], [attribute.class("wibble")])], []),
+    ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -112,16 +130,16 @@ pub fn node_many_attributes_changed_test() {
     html.div([attribute("id", "cool-node"), attribute.class("wibble")], [])
   let next = html.div([attribute.class("wobble")], [])
   let diff =
-    Patch(0, 0, [], [
-      Patch(
+    patch.new(0, 0, [], [
+      patch.new(
         0,
         0,
-        [Update([attribute.class("wobble")], [attribute.id("cool-node")])],
+        [patch.update([attribute.class("wobble")], [attribute.id("cool-node")])],
         [],
       ),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -131,9 +149,11 @@ pub fn node_child_replaced_test() {
   let prev = html.div([], [html.p([], [])])
   let next = html.div([], [html.h1([], [])])
   let diff =
-    Patch(0, 0, [], [Patch(0, 0, [Replace(0, 1, html.h1([], []))], [])])
+    patch.new(0, 0, [], [
+      patch.new(0, 0, [patch.replace(0, 1, html.h1([], []))], []),
+    ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -154,23 +174,23 @@ pub fn node_many_children_changed_test() {
     ])
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(
+    patch.new(0, 0, [], [
+      patch.new(
         0,
         0,
         [
-          Insert([html.p([], [html.text("...")])], 2),
-          Replace(1, 1, html.hr([])),
+          patch.insert([html.p([], [html.text("...")])], 2),
+          patch.replace(1, 1, html.hr([])),
         ],
         [
-          Patch(0, 0, [Update([attribute.class("flash")], [])], [
-            Patch(0, 0, [ReplaceText("Hello, Joe!")], []),
+          patch.new(0, 0, [patch.update([attribute.class("flash")], [])], [
+            patch.new(0, 0, [patch.replace_text("Hello, Joe!")], []),
           ]),
         ],
       ),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -179,9 +199,9 @@ pub fn node_children_removed_test() {
 
   let prev = html.div([], [html.h1([], []), html.p([], [])])
   let next = html.div([], [html.h1([], [])])
-  let diff = Patch(0, 0, [], [Patch(0, 1, [], [])])
+  let diff = patch.new(0, 0, [], [patch.new(0, 1, [], [])])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -203,18 +223,21 @@ pub fn fragment_many_children_changed_test() {
     ])
 
   let diff =
-    Patch(
+    patch.new(
       0,
       0,
-      [Insert([html.p([], [html.text("...")])], 3), Replace(2, 1, html.hr([]))],
       [
-        Patch(1, 0, [Update([attribute.class("flash")], [])], [
-          Patch(0, 0, [ReplaceText("Hello, Joe!")], []),
+        patch.insert([html.p([], [html.text("...")])], 3),
+        patch.replace(2, 1, html.hr([])),
+      ],
+      [
+        patch.new(1, 0, [patch.update([attribute.class("flash")], [])], [
+          patch.new(0, 0, [patch.replace_text("Hello, Joe!")], []),
         ]),
       ],
     )
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -223,9 +246,9 @@ pub fn fragment_child_replaced_test() {
 
   let prev = element.fragment([html.p([], [])])
   let next = element.fragment([html.h1([], [])])
-  let diff = Patch(0, 0, [Replace(1, 1, html.h1([], []))], [])
+  let diff = patch.new(0, 0, [patch.replace(1, 1, html.h1([], []))], [])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -238,9 +261,9 @@ pub fn nested_fragment_child_replaced_test() {
   let next =
     element.fragment([element.fragment([html.h1([], [])]), html.p([], [])])
 
-  let diff = Patch(0, 0, [Replace(2, 1, html.h1([], []))], [])
+  let diff = patch.new(0, 0, [patch.replace(2, 1, html.h1([], []))], [])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -255,9 +278,10 @@ pub fn nested_fragment_children_removed_test() {
 
   let next = html.div([], [element.fragment([html.h1([], [])]), html.p([], [])])
 
-  let diff = Patch(0, 0, [], [Patch(0, 0, [Remove(from: 2, count: 2)], [])])
+  let diff =
+    patch.new(0, 0, [], [patch.new(0, 0, [patch.remove(from: 2, count: 2)], [])])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -276,20 +300,20 @@ pub fn fragment_update_with_different_children_counts_test() {
   let next = html.div([], [y, abc, x])
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(
+    patch.new(0, 0, [], [
+      patch.new(
         0,
         0,
         [
-          Replace(from: 3, count: 4, with: x),
-          Insert([html.text("b"), html.text("c")], before: 3),
-          Replace(from: 0, count: 1, with: y),
+          patch.replace(from: 3, count: 4, with: x),
+          patch.insert([html.text("b"), html.text("c")], before: 3),
+          patch.replace(from: 0, count: 1, with: y),
         ],
-        [Patch(3, 0, [ReplaceText("a")], [])],
+        [patch.new(3, 0, [patch.replace_text("a")], [])],
       ),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -303,16 +327,19 @@ pub fn fragment_prepend_and_replace_with_node_test() {
   let next = html.div([], [x, ab])
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(
+    patch.new(0, 0, [], [
+      patch.new(
         0,
         0,
-        [Insert([ab], before: 3), Replace(from: 0, count: 3, with: x)],
+        [
+          patch.insert([ab], before: 3),
+          patch.replace(from: 0, count: 3, with: x),
+        ],
         [],
       ),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -327,14 +354,14 @@ pub fn fragment_update_and_remove_test() {
   let next = html.div([], [a, de])
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(0, 3, [], [
-        Patch(3, 0, [ReplaceText("e")], []),
-        Patch(2, 0, [ReplaceText("d")], []),
+    patch.new(0, 0, [], [
+      patch.new(0, 3, [], [
+        patch.new(3, 0, [patch.replace_text("e")], []),
+        patch.new(2, 0, [patch.replace_text("d")], []),
       ]),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -356,9 +383,10 @@ pub fn multiple_nested_fragments_test() {
       html.div([], []),
     ])
 
-  let diff = Patch(0, 0, [], [Patch(3, 0, [ReplaceText("changed")], [])])
+  let diff =
+    patch.new(0, 0, [], [patch.new(3, 0, [patch.replace_text("changed")], [])])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -373,9 +401,9 @@ pub fn keyed_swap_test() {
   let next =
     keyed.div([], [#("b", html.text("wobble")), #("a", html.text("wibble"))])
 
-  let diff = Patch(0, 0, [], [Patch(0, 0, [Move("b", 0, 1)], [])])
+  let diff = patch.new(0, 0, [], [patch.new(0, 0, [patch.move("b", 0, 1)], [])])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -396,9 +424,9 @@ pub fn keyed_reorder_test() {
       #("b", html.div([], [])),
     ])
 
-  let diff = Patch(0, 0, [], [Patch(0, 0, [Move("c", 1, 1)], [])])
+  let diff = patch.new(0, 0, [], [patch.new(0, 0, [patch.move("c", 1, 1)], [])])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -421,16 +449,19 @@ pub fn keyed_insert_test() {
     ])
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(
+    patch.new(0, 0, [], [
+      patch.new(
         0,
         0,
-        [Insert([to_keyed("d", html.span([], []))], 1), Move("c", 0, 1)],
+        [
+          patch.insert([to_keyed("d", html.span([], []))], 1),
+          patch.move("c", 0, 1),
+        ],
         [],
       ),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -450,14 +481,14 @@ pub fn keyed_list_with_updates_test() {
     ])
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(0, 0, [Move("2", 0, 1)], [
-        Patch(1, 0, [Update([attribute.class("new")], [])], []),
-        Patch(0, 0, [Update([attribute.class("new")], [])], []),
+    patch.new(0, 0, [], [
+      patch.new(0, 0, [patch.move("2", 0, 1)], [
+        patch.new(1, 0, [patch.update([attribute.class("new")], [])], []),
+        patch.new(0, 0, [patch.update([attribute.class("new")], [])], []),
       ]),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -483,14 +514,16 @@ pub fn mixed_keyed_and_regular_nodes_test() {
     ])
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(0, 0, [], [
-        Patch(1, 0, [], [Patch(0, 0, [ReplaceText("changed")], [])]),
-        Patch(0, 0, [Move("2", 0, 1)], []),
+    patch.new(0, 0, [], [
+      patch.new(0, 0, [], [
+        patch.new(1, 0, [], [
+          patch.new(0, 0, [patch.replace_text("changed")], []),
+        ]),
+        patch.new(0, 0, [patch.move("2", 0, 1)], []),
       ]),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -518,12 +551,12 @@ pub fn complex_attribute_changes_test() {
     )
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(
+    patch.new(0, 0, [], [
+      patch.new(
         0,
         0,
         [
-          Update(
+          patch.update(
             [
               attribute("style", "color: blue"),
               attribute.class("two three"),
@@ -536,7 +569,7 @@ pub fn complex_attribute_changes_test() {
       ),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -566,12 +599,12 @@ pub fn multiple_class_and_styles_test() {
     )
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(
+    patch.new(0, 0, [], [
+      patch.new(
         0,
         0,
         [
-          Update(
+          patch.update(
             [
               attribute("style", "color: blue;font-size: 2em"),
               attribute.class("two three four"),
@@ -583,7 +616,7 @@ pub fn multiple_class_and_styles_test() {
       ),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -599,12 +632,12 @@ pub fn empty_to_multiple_children_test() {
     ])
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(
+    patch.new(0, 0, [], [
+      patch.new(
         0,
         0,
         [
-          Insert(
+          patch.insert(
             [
               html.h1([], [html.text("Title")]),
               html.p([], [html.text("Paragraph")]),
@@ -617,7 +650,7 @@ pub fn empty_to_multiple_children_test() {
       ),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -639,15 +672,17 @@ pub fn mixed_text_and_element_changes_test() {
     ])
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(0, 0, [], [
-        Patch(2, 0, [ReplaceText("new end")], []),
-        Patch(1, 0, [], [Patch(0, 0, [ReplaceText("new middle")], [])]),
-        Patch(0, 0, [ReplaceText("new start")], []),
+    patch.new(0, 0, [], [
+      patch.new(0, 0, [], [
+        patch.new(2, 0, [patch.replace_text("new end")], []),
+        patch.new(1, 0, [], [
+          patch.new(0, 0, [patch.replace_text("new middle")], []),
+        ]),
+        patch.new(0, 0, [patch.replace_text("new start")], []),
       ]),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -673,18 +708,26 @@ pub fn keyed_move_fragment_with_replace_with_different_count_test() {
     ])
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(0, 0, [Insert([to_keyed("cd", cd)], 5), RemoveKey("x", 2)], []),
+    patch.new(0, 0, [], [
+      patch.new(
+        0,
+        0,
+        [patch.insert([to_keyed("cd", cd)], 5), patch.remove_key("x", 2)],
+        [],
+      ),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 
   // reverse
 
-  let diff = Patch(0, 0, [], [Patch(0, 3, [Insert([to_keyed("x", x)], 0)], [])])
+  let diff =
+    patch.new(0, 0, [], [
+      patch.new(0, 3, [patch.insert([to_keyed("x", x)], 0)], []),
+    ])
 
-  diff.diff(next, prev, 0).patch
+  diff.diff(next, prev).patch
   |> should.equal(diff)
 }
 
@@ -706,23 +749,23 @@ pub fn keyed_move_fragment_with_replace_to_simple_node_test() {
     ])
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(
+    patch.new(0, 0, [], [
+      patch.new(
         0,
         0,
         [
-          Insert(
+          patch.insert(
             [to_keyed("b", html.text("b")), to_keyed("c", html.text("c"))],
             5,
           ),
-          Replace(2, 3, to_keyed("a", html.text("a"))),
-          RemoveKey("x", 2),
+          patch.replace(2, 3, to_keyed("a", html.text("a"))),
+          patch.remove_key("x", 2),
         ],
         [],
       ),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -741,20 +784,20 @@ pub fn keyed_replace_fragment_test() {
     ])
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(
+    patch.new(0, 0, [], [
+      patch.new(
         0,
         0,
         [
-          Insert([to_keyed("c", html.text("c"))], 5),
-          Replace(2, 3, to_keyed("b", html.text("b"))),
-          Replace(0, 2, to_keyed("a", html.text("a"))),
+          patch.insert([to_keyed("c", html.text("c"))], 5),
+          patch.replace(2, 3, to_keyed("b", html.text("b"))),
+          patch.replace(0, 2, to_keyed("a", html.text("a"))),
         ],
         [],
       ),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -766,13 +809,13 @@ pub fn keyed_insert_fragment_test() {
   let next = keyed.div([], [#("xyz", xyz), #("a", html.text("A"))])
 
   let diff =
-    Patch(0, 0, [], [
-      Patch(0, 0, [Insert([to_keyed("xyz", xyz)], 0)], [
-        Patch(4, 0, [ReplaceText("A")], []),
+    patch.new(0, 0, [], [
+      patch.new(0, 0, [patch.insert([to_keyed("xyz", xyz)], 0)], [
+        patch.new(4, 0, [patch.replace_text("A")], []),
       ]),
     ])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -787,9 +830,9 @@ pub fn keyed_fragment_swap_test() {
   let next =
     keyed.fragment([#("b", html.text("wobble")), #("a", html.text("wibble"))])
 
-  let diff = Patch(0, 0, [Move("b", before: 1, count: 1)], [])
+  let diff = patch.new(0, 0, [patch.move("b", before: 1, count: 1)], [])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -810,9 +853,9 @@ pub fn keyed_fragment_reorder_test() {
       #("b", html.div([], [])),
     ])
 
-  let diff = Patch(0, 0, [Move("c", before: 2, count: 1)], [])
+  let diff = patch.new(0, 0, [patch.move("c", before: 2, count: 1)], [])
 
-  diff.diff(prev, next, 0).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }
 
@@ -835,90 +878,16 @@ pub fn keyed_fragment_insert_test() {
     ])
 
   let diff =
-    Patch(
+    patch.new(
       0,
       0,
-      [Insert([to_keyed("d", html.span([], []))], 2), Move("c", 1, 1)],
+      [
+        patch.insert([to_keyed("d", html.span([], []))], 2),
+        patch.move("c", 1, 1),
+      ],
       [],
     )
 
-  diff.diff(prev, next, 0).patch
-  |> should.equal(diff)
-}
-
-// INITIAL ELEMENT OFFSET ------------------------------------------------------
-
-pub fn node_initial_offset_test() {
-  use <- lustre_test.test_filter("node_initial_offset_test")
-
-  let prev =
-    html.div([], [
-      html.h1([], [html.text("Welcome!")]),
-      html.p([], [html.text("...")]),
-    ])
-
-  let next =
-    html.div([], [
-      html.h1([attribute.class("flash")], [html.text("Hello, Joe!")]),
-      html.hr([]),
-      html.p([], [html.text("...")]),
-    ])
-
-  let offset = 123
-
-  let diff =
-    Patch(0, 0, [], [
-      Patch(
-        offset,
-        0,
-        [
-          Insert([html.p([], [html.text("...")])], 2),
-          Replace(1, 1, html.hr([])),
-        ],
-        [
-          Patch(0, 0, [Update([attribute.class("flash")], [])], [
-            Patch(0, 0, [ReplaceText("Hello, Joe!")], []),
-          ]),
-        ],
-      ),
-    ])
-
-  diff.diff(prev, next, 123).patch
-  |> should.equal(diff)
-}
-
-pub fn fragment_initial_offset_test() {
-  use <- lustre_test.test_filter("fragment_initial_offset_test")
-
-  let prev =
-    element.fragment([
-      html.h1([], [html.text("Welcome!")]),
-      html.p([], [html.text("...")]),
-    ])
-  let next =
-    element.fragment([
-      html.h1([attribute.class("flash")], [html.text("Hello, Joe!")]),
-      html.hr([]),
-      html.p([], [html.text("...")]),
-    ])
-
-  let offset = 42
-
-  let diff =
-    Patch(
-      0,
-      0,
-      [
-        Insert([html.p([], [html.text("...")])], offset + 3),
-        Replace(from: offset + 2, count: 1, with: html.hr([])),
-      ],
-      [
-        Patch(offset + 1, 0, [Update([attribute.class("flash")], [])], [
-          Patch(0, 0, [ReplaceText("Hello, Joe!")], []),
-        ]),
-      ],
-    )
-
-  diff.diff(prev, next, 42).patch
+  diff.diff(prev, next).patch
   |> should.equal(diff)
 }

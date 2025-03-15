@@ -1,5 +1,4 @@
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/string
 import lustre
@@ -50,7 +49,7 @@ type Msg {
 }
 
 fn update(model: Model, msg: Msg) -> Model {
-  case io.debug(msg) {
+  case msg {
     UserChangedNext(next) -> Model(..model, next:)
     UserClickedRegenerate -> Model(..model, revision: model.revision + 1)
     UserClickedShuffle -> {

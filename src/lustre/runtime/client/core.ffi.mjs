@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 import { toList, prepend as listPrepend, NonEmpty } from "../../../gleam.mjs";
-import { fold as listFold } from '../../../../gleam_stdlib/gleam/list.mjs';
-import { empty_list } from '../../internals/constants.mjs';
+import { fold as listFold } from "../../../../gleam_stdlib/gleam/list.mjs";
+import { empty_list } from "../../internals/constants.mjs";
 import { diff } from "../../vdom/diff.mjs";
 import * as Events from "../../vdom/events.mjs";
 import { Reconciler } from "./reconciler.ffi.mjs";
@@ -17,7 +17,7 @@ export const is_registered = (name) =>
 export const is_reference_equal = (a, b) => a === b;
 
 export const throw_server_component_error = () => {
-  throw new window.Error(
+  throw new globalThis.Error(
     [
       "It looks like you're trying to use the server component runtime written ",
       "using `gleam_otp`. You can only end up here if you were poking around ",
@@ -28,7 +28,7 @@ export const throw_server_component_error = () => {
       "\n\n",
       "If you're seeing this error and you think it's a bug. Please open an ",
       "issue over on Github: https://github.com/lustre-labs/lustre/issues/new",
-    ].join(""),
+    ].join("")
   );
 };
 
@@ -59,23 +59,20 @@ export class Runtime {
     this.#view = view;
     this.#update = update;
 
-    this.#reconciler = new Reconciler(
-      this.#root,
-      (event, path, name) => {
-        const msg = Events.handle(this.#events, toList(path), name, event);
+    this.#reconciler = new Reconciler(this.#root, (event, path, name) => {
+      const msg = Events.handle(this.#events, toList(path), name, event);
 
-        if (msg.isOk()) {
-          this.dispatch(msg[0]);
-        }
-      },
-    );
+      if (msg.isOk()) {
+        this.dispatch(msg[0]);
+      }
+    });
 
     const virtualised = virtualise(this.#root);
     this.#vdom = this.#view(this.#model);
-    const { patch, events } = diff(virtualised, this.#vdom, Events.new$(), 0);
+    const { patch, events } = diff(virtualised, this.#vdom, Events.new$());
     this.#events = events;
-    this.#reconciler.push(patch);
-    this.#tick(effects);
+    this.#reconciler.push(patch, this.initialNodeOffset);
+    this.#tick(effects, false);
   }
 
   dispatch(msg) {
@@ -103,10 +100,18 @@ export class Runtime {
     while (true) {
       // No mind to think, so I wrote functional code instead.
       if (effects.after_paint instanceof NonEmpty) {
-        this.#afterPaint = listFold(effects.after_paint, this.#afterPaint, listPrepend);
+        this.#afterPaint = listFold(
+          effects.after_paint,
+          this.#afterPaint,
+          listPrepend
+        );
       }
       if (effects.after_render instanceof NonEmpty) {
-        this.#afterRender = listFold(effects.after_render, this.#afterRender, listPrepend);
+        this.#afterRender = listFold(
+          effects.after_render,
+          this.#afterRender,
+          listPrepend
+        );
       }
       for (let list = effects.synchronous; list.tail; list = list.tail) {
         list.head(actions);
@@ -138,7 +143,7 @@ export class Runtime {
       this.#vdom,
       next,
       this.#events,
-      this.initialNodeOffset,
+      this.initialNodeOffset
     );
     this.#events = events;
     this.#vdom = next;
@@ -167,10 +172,14 @@ export class Runtime {
         detail: data,
         bubbles: true,
         composed: true,
-      }),
+      })
     );
   }
 }
+
+export const send = (runtime, message) => {
+  runtime.send(message);
+};
 
 //
 
@@ -185,7 +194,7 @@ export async function adoptStylesheets(shadowRoot) {
       new Promise((resolve, reject) => {
         node.addEventListener("load", resolve);
         node.addEventListener("error", reject);
-      }),
+      })
     );
   }
 

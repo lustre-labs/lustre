@@ -26,7 +26,7 @@ pub type Attribute(msg) =
 /// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn attribute(name: String, value: String) -> Attribute(msg) {
-  Attribute(name, value)
+  attribute.attribute(name, value)
 }
 
 /// Create a DOM property. This is like saying `element.className = "wibble"` in
@@ -38,12 +38,12 @@ pub fn attribute(name: String, value: String) -> Attribute(msg) {
 /// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn property(name: String, value: Json) -> Attribute(msg) {
-  Property(name, value)
+  attribute.property(name, value)
 }
 
 ///
 pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
-  Event(
+  attribute.event(
     name:,
     handler:,
     include: constants.empty_list,
@@ -69,9 +69,9 @@ pub fn none() -> Attribute(msg) {
 ///
 pub fn map(attribute: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
   case attribute {
-    Attribute(name, value) -> Attribute(name, value)
+    Attribute(kind:, name:, value:) -> Attribute(kind:, name:, value:)
     Event(handler:, ..) -> Event(..attribute, handler: decode.map(handler, f))
-    Property(name, value) -> Property(name, value)
+    Property(kind:, name:, value:) -> Property(kind:, name:, value:)
   }
 }
 

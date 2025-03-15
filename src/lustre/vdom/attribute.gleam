@@ -12,14 +12,50 @@ import lustre/internals/escape.{escape}
 // TYPES -----------------------------------------------------------------------
 
 pub type Attribute(msg) {
-  Attribute(name: String, value: String)
-  Property(name: String, value: Json)
+  Attribute(kind: Int, name: String, value: String)
+  Property(kind: Int, name: String, value: Json)
   Event(
+    kind: Int,
     name: String,
     handler: Decoder(msg),
     include: List(String),
     prevent_default: Bool,
     stop_propagation: Bool,
+  )
+}
+
+// CONSTRUCTORS ----------------------------------------------------------------
+
+pub const attribute_kind: Int = 0
+
+pub fn attribute(name name: String, vaue value: String) -> Attribute(msg) {
+  Attribute(kind: attribute_kind, name:, value:)
+}
+
+pub const property_kind: Int = 1
+
+pub fn property(name name: String, value value: Json) -> Attribute(msg) {
+  Property(kind: property_kind, name:, value:)
+}
+
+pub const event_kind: Int = 2
+
+pub fn event(
+  name name: String,
+  handler handler: Decoder(msg),
+  include include: List(String),
+  prevent_default prevent_default: Bool,
+  stop_propagation stop_propagation: Bool,
+  immediate immediate: Bool,
+) -> Attribute(msg) {
+  Event(
+    kind: event_kind,
+    name:,
+    handler:,
+    include:,
+    prevent_default:,
+    stop_propagation:,
+    immediate:,
   )
 }
 
@@ -40,23 +76,23 @@ pub fn merge(
     [] -> merged
 
     [
-      Attribute(name: "class", value: class1),
-      Attribute(name: "class", value: class2),
+      Attribute(kind:, name: "class", value: class1),
+      Attribute(kind: _, name: "class", value: class2),
       ..rest
     ] -> {
       let value = class1 <> " " <> class2
-      let attribute = Attribute(name: "class", value: value)
+      let attribute = Attribute(kind:, name: "class", value: value)
 
       merge([attribute, ..rest], merged)
     }
 
     [
-      Attribute(name: "style", value: style1),
-      Attribute(name: "style", value: style2),
+      Attribute(kind:, name: "style", value: style1),
+      Attribute(kind: _, name: "style", value: style2),
       ..rest
     ] -> {
       let value = style1 <> ";" <> style2
-      let attribute = Attribute(name: "style", value: value)
+      let attribute = Attribute(kind:, name: "style", value: value)
 
       merge([attribute, ..rest], merged)
     }
@@ -70,6 +106,66 @@ pub fn compare(a: Attribute(msg), b: Attribute(msg)) -> Order {
   string.compare(a.name, b.name)
 }
 
+// ENCODING --------------------------------------------------------------------
+
+pub fn to_json(attribute: Attribute(msg)) -> Json {
+  case attribute {
+    Attribute(kind:, name:, value:) -> attribute_to_json(kind, name, value)
+    Property(kind:, name:, value:) -> property_to_json(kind, name, value)
+    Event(
+      kind:,
+      name:,
+      include:,
+      prevent_default:,
+      stop_propagation:,
+      immediate:,
+      ..,
+    ) ->
+      event_to_json(
+        kind,
+        name,
+        include,
+        prevent_default,
+        stop_propagation,
+        immediate,
+      )
+  }
+}
+
+fn attribute_to_json(kind, name, value) {
+  json.object([
+    #("kind", json.int(kind)),
+    #("name", json.string(name)),
+    #("value", json.string(value)),
+  ])
+}
+
+fn property_to_json(kind, name, value) {
+  json.object([
+    #("kind", json.int(kind)),
+    #("name", json.string(name)),
+    #("value", value),
+  ])
+}
+
+fn event_to_json(
+  kind,
+  name,
+  include,
+  prevent_default,
+  stop_propagation,
+  immediate,
+) {
+  json.object([
+    #("kind", json.int(kind)),
+    #("name", json.string(name)),
+    #("include", json.array(include, json.string)),
+    #("prevent_default", json.bool(prevent_default)),
+    #("stop_propagation", json.bool(stop_propagation)),
+    #("immediate", json.bool(immediate)),
+  ])
+}
+
 // STRING RENDERING ------------------------------------------------------------
 
 pub fn to_string_tree(
@@ -78,11 +174,11 @@ pub fn to_string_tree(
   attributes: List(Attribute(msg)),
 ) -> StringTree {
   let attributes = case key != "" {
-    True -> [Attribute("data-lustre-key", key), ..attributes]
+    True -> [attribute("data-lustre-key", key), ..attributes]
     False -> attributes
   }
   let attributes = case namespace != "" {
-    True -> [Attribute("xmlns", namespace), ..attributes]
+    True -> [attribute("xmlns", namespace), ..attributes]
     False -> attributes
   }
 
@@ -98,8 +194,8 @@ pub fn to_string_tree(
 
 pub fn to_string_parts(attr: Attribute(msg)) -> Result(#(String, String), Nil) {
   case attr {
-    Attribute("", _) -> constants.error_nil
-    Attribute(name, value) -> Ok(#(name, value))
+    Attribute(_, "", _) -> constants.error_nil
+    Attribute(_, name, value) -> Ok(#(name, value))
     _ -> constants.error_nil
   }
 }
