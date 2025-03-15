@@ -1,4 +1,16 @@
+/// A `MutableMap` functions like Gleam's `Dict` and exposes a subset of the same
+/// api. As the name implies, there are some important things to know:
 ///
+/// - On the JavaScript target, updates to the map are performed **in-place** and
+///   will mutate the map directly.
+///
+/// - On the JavaScript target, keys in the map are compared by reference, not by
+///   hash or value.
+///
+/// Gleam has neither mutable data structures nor reference equality, so it's
+/// incredibly important to use this module with care. It is primarily intended
+/// to be used durring diffing to avoid the expensive overhead of (re)constructing
+/// event and keyed node lookups.
 ///
 pub type MutableMap(key, value)
 
@@ -7,6 +19,15 @@ pub type MutableMap(key, value)
 @external(erlang, "gleam@dict", "new")
 @external(javascript, "./mutable_map.ffi.mjs", "make")
 pub fn new() -> MutableMap(key, value)
+
+/// Get a reference to a globally shared empty map. You should only use this if
+/// you are certain that you will not be modifying the map. This function is
+/// provided as a performance optimisation to prevent many empty maps being
+/// allocated for non-keyed nodes.
+///
+@external(erlang, "gleam@dict", "new")
+@external(javascript, "./mutable_map.ffi.mjs", "empty")
+pub fn shared_empty() -> MutableMap(key, value)
 
 ///
 ///

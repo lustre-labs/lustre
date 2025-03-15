@@ -15,6 +15,7 @@ import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute} as _
 import lustre/effect.{type Effect}
 import lustre/internals/constants
+import lustre/internals/mutable_map
 import lustre/vdom/attribute
 import lustre/vdom/node.{Element, Fragment, Text, UnsafeInnerHtml}
 
@@ -109,27 +110,27 @@ pub fn element(
     | "source"
     | "track"
     | "wbr" ->
-      Element(
+      node.element(
         key: "",
         mapper: constants.option_none,
         namespace: "",
         tag: tag,
         attributes: attribute.prepare(attributes),
         children: constants.empty_list,
-        keyed_children: constants.empty_dict(),
+        keyed_children: mutable_map.shared_empty(),
         self_closing: False,
         void: True,
       )
 
     _ ->
-      Element(
+      node.element(
         key: "",
         mapper: constants.option_none,
         namespace: "",
         tag: tag,
         attributes: attribute.prepare(attributes),
         children:,
-        keyed_children: constants.empty_dict(),
+        keyed_children: mutable_map.shared_empty(),
         self_closing: False,
         void: False,
       )
@@ -145,14 +146,14 @@ pub fn namespaced(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  Element(
+  node.element(
     key: "",
     mapper: constants.option_none,
     namespace:,
     tag:,
     attributes: attribute.prepare(attributes),
     children:,
-    keyed_children: constants.empty_dict(),
+    keyed_children: mutable_map.shared_empty(),
     self_closing: False,
     void: False,
   )
@@ -171,14 +172,14 @@ pub fn advanced(
   self_closing: Bool,
   void: Bool,
 ) -> Element(msg) {
-  Element(
+  node.element(
     key: "",
     mapper: constants.option_none,
     namespace:,
     tag:,
     attributes: attribute.prepare(attributes),
     children:,
-    keyed_children: constants.empty_dict(),
+    keyed_children: mutable_map.shared_empty(),
     self_closing:,
     void:,
   )
@@ -190,7 +191,7 @@ pub fn advanced(
 /// this function is exactly that!
 ///
 pub fn text(content: String) -> Element(msg) {
-  Text(key: "", mapper: constants.option_none, content:)
+  node.text(key: "", mapper: constants.option_none, content:)
 }
 
 /// A function for rendering nothing. This is mostly useful for conditional
@@ -198,7 +199,7 @@ pub fn text(content: String) -> Element(msg) {
 /// condition is met.
 ///
 pub fn none() -> Element(msg) {
-  Text(key: "", mapper: constants.option_none, content: "")
+  node.text(key: "", mapper: constants.option_none, content: "")
 }
 
 /// A function for wrapping elements to be rendered within a parent container without
@@ -207,11 +208,11 @@ pub fn none() -> Element(msg) {
 /// used downstream.
 ///
 pub fn fragment(children: List(Element(msg))) -> Element(msg) {
-  Fragment(
+  node.fragment(
     key: "",
     mapper: constants.option_none,
     children:,
-    keyed_children: constants.empty_dict(),
+    keyed_children: mutable_map.shared_empty(),
     children_count: count_fragment_children(children, 0),
   )
 }
@@ -242,7 +243,7 @@ pub fn unsafe_inner_html(
   attributes: List(Attribute(msg)),
   inner_html: String,
 ) -> Element(msg) {
-  UnsafeInnerHtml(
+  node.unsafe_inner_html(
     key: "",
     namespace:,
     tag:,
@@ -289,7 +290,7 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
     UnsafeInnerHtml(attributes:, ..) ->
       UnsafeInnerHtml(..element, mapper:, attributes: coerce(attributes))
 
-    Text(key:, mapper:, content:) -> Text(key:, mapper:, content:)
+    Text(..) -> coerce(element)
   }
 }
 

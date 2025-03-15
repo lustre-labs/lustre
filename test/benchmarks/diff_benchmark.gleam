@@ -23,7 +23,7 @@ pub fn benchmark_10_rows() {
     [bench.Duration(1000), bench.Warmup(100)],
   )
   |> bench.table([bench.IPS, bench.Min, bench.P(99)])
-  |> birdie.snap("[benchmark] 10 table rows")
+  |> snap("10 table rows")
 }
 
 pub fn benchmark_100_rows() {
@@ -41,7 +41,7 @@ pub fn benchmark_100_rows() {
     [bench.Duration(1000), bench.Warmup(100)],
   )
   |> bench.table([bench.IPS, bench.Min, bench.P(99)])
-  |> birdie.snap("[benchmark] 100 table rows")
+  |> snap("100 table rows")
 }
 
 pub fn benchmark_1000_rows() {
@@ -62,7 +62,7 @@ pub fn benchmark_1000_rows() {
     [bench.Duration(1000), bench.Warmup(100)],
   )
   |> bench.table([bench.IPS, bench.Min, bench.P(99)])
-  |> birdie.snap("[benchmark] 1000 table rows")
+  |> snap("1000 table rows")
 }
 
 pub fn benchmark_10_000_rows() {
@@ -92,13 +92,13 @@ pub fn benchmark_10_000_rows() {
     [bench.Duration(1000), bench.Warmup(100)],
   )
   |> bench.table([bench.IPS, bench.Min, bench.P(99)])
-  |> birdie.snap("[benchmark] 10000 table rows")
+  |> snap("10000 table rows")
 }
 
 //
 
 fn run_diff(input: #(Element(msg), Element(msg))) {
-  diff.diff(input.0, input.1, 0)
+  diff.diff(input.0, input.1)
 }
 
 fn table_diff(rows: Int, shuffle: Bool, keyed: Bool) {
@@ -155,4 +155,20 @@ fn view_row(id: Int, pos: Int) -> Element(msg) {
     html.td([], [html.text("Row id"), html.text(int.to_string(id))]),
     html.td([], [html.button([], [html.text("Delete")])]),
   ])
+}
+
+// UTILS -----------------------------------------------------------------------
+
+fn snap(data: String, title: String) -> Nil {
+  birdie.snap(data, "[benchmark," <> target() <> "] " <> title)
+}
+
+@target(erlang)
+fn target() {
+  "erlang"
+}
+
+@target(javascript)
+fn target() {
+  "javascript"
 }
