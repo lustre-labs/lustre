@@ -117,7 +117,13 @@ export class Reconciler {
         }
       });
 
-      this.#remove(node, node.childNodes.length - patch.removed, patch.removed);
+      if (patch.removed) {
+        this.#remove(
+          node,
+          node.childNodes.length - patch.removed,
+          patch.removed,
+        );
+      }
 
       iterate(patch.children, (child) => {
         // TODO: use linked-list style but skip to indices if distance is great enough?
@@ -167,7 +173,7 @@ export class Reconciler {
     this.#removeFromChild(
       node,
       node[meta].keyedChildren.get(key).deref(),
-      count
+      count,
     );
   }
 
@@ -312,8 +318,7 @@ export class Reconciler {
 
         const prevent = attribute.prevent_default;
         const stop = attribute.stop_propagation;
-        const immediate =
-          attribute.immediate || IMMEDIATE_EVENTS.includes(attribute.name);
+        const immediate = attribute.immediate;
 
         const include = Array.isArray(attribute.include)
           ? attribute.include

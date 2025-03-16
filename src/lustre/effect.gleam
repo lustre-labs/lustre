@@ -106,16 +106,46 @@ type Actions(msg) {
 ///   )
 /// }
 /// ```
+///
 pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
   Effect(..none, synchronous: [task(effect)])
 }
 
-pub fn after_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  Effect(..none, after_paint: [task(effect)])
+/// Schedule a side effect that is guaranteed to run after your `view` function
+/// is called but **before** the browser has painted the screen. This effect is
+/// useful when you need to read from the DOM or perform other operations that
+/// might affect the layout of your application.
+///
+/// Messages dispatched immediately in this effect will trigger a second re-render
+/// of your application before the browser paints the screen. This let's you read
+/// the state of the DOM, update your model, and then render a second time with
+/// the additional information.
+///
+/// **Note**: dispatching messages synchronously in this effect can lead to
+/// degraded performance if not used correctly. In the worst case you can lock
+/// up the browser and prevent it from painting the screen _at all_.
+///
+/// **Note**: There is no concept of a "paint" for server components. Using this
+/// effect in those contexts will run the effect synchronously, after any non-timing
+/// effects are processed.
+///
+pub fn before_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
+  Effect(..none, before_paint: [
+    fn(actions: Actions(msg)) { effect(actions.dispatch) },
+  ])
 }
 
-pub fn before_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  Effect(..none, before_paint: [task(effect)])
+/// Schedule a side effect that is guaranteed to run after the browser has painted
+/// the screen.
+///
+/// **Note**: There is no concept of a "paint" for server components. Using this
+/// effect in those contexts will run the effect synchronously, after any non-timing
+/// effects and any `before_paint` effects are processed.
+///
+pub fn after_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
+  Effect(..none, after_paint: [
+    fn(actions: Actions(msg)) { effect(actions.dispatch) },
+  ])
 }
 
 /// Emit a custom event from a component as an effect. Parents can listen to these
@@ -190,43 +220,42 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
 ///
 pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
   Effect(
-    synchronous: map_effects(effect.synchronous, f),
-    before_paint: map_effects(effect.before_paint, f),
-    after_paint: map_effects(effect.after_paint, f),
+    synchronous: do_map(effect.synchronous, f),
+    before_paint: do_map(effect.before_paint, f),
+    after_paint: do_map(effect.after_paint, f),
   )
 }
 
-fn map_effects(
+fn do_map(
   effects: List(fn(Actions(a)) -> Nil),
   f: fn(a) -> b,
 ) -> List(fn(Actions(b)) -> Nil) {
   list.map(effects, fn(effect) {
-    fn(actions) { effect(comap_actions(actions, f)) }
+    fn(actions) { effect(do_comap_actions(actions, f)) }
   })
 }
 
-@target(erlang)
-fn comap_actions(actions: Actions(b), f: fn(a) -> b) -> Actions(a) {
+fn do_comap_actions(actions: Actions(b), f: fn(a) -> b) -> Actions(a) {
   Actions(
     dispatch: fn(msg) { actions.dispatch(f(msg)) },
     emit: actions.emit,
-    select: fn(selector) { actions.select(process.map_selector(selector, f)) },
+    select: fn(selector) { do_comap_select(actions, selector, f) },
     root: actions.root,
   )
 }
 
+@target(erlang)
+fn do_comap_select(
+  actions: Actions(b),
+  selector: Selector(a),
+  f: fn(a) -> b,
+) -> Nil {
+  actions.select(process.map_selector(selector, f))
+}
+
 @target(javascript)
-fn comap_actions(actions: Actions(b), f: fn(a) -> b) -> Actions(a) {
-  Actions(
-    dispatch: fn(msg) { actions.dispatch(f(msg)) },
-    emit: actions.emit,
-    // Selectors don't exist for the JavaScript target so there's no way
-    // for anyone to legitimately construct one. It's kind of clunky that
-    // we have to use `@target` for this and duplicate the function but
-    // so be it.
-    select: fn(_selector) { Nil },
-    root: actions.root,
-  )
+fn do_comap_select(_, _, _) -> Nil {
+  Nil
 }
 
 /// Perform a side effect by supplying your own `dispatch` and `emit`functions.
@@ -247,7 +276,7 @@ pub fn perform(
   select: fn(Selector(a)) -> Nil,
   root: Dynamic,
 ) -> Nil {
-  let actions = Actions(dispatch, emit, select, root)
+  let actions = Actions(dispatch:, emit:, select:, root:)
 
   list.each(effect.synchronous, fn(eff) { eff(actions) })
   list.each(effect.before_paint, fn(eff) { eff(actions) })

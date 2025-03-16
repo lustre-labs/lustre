@@ -8,12 +8,10 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{type Dynamic}
 import gleam/option.{None, Some}
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute} as _
-import lustre/effect.{type Effect}
 import lustre/internals/constants
 import lustre/internals/mutable_map
 import lustre/vdom/attribute
@@ -297,7 +295,6 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
 @external(erlang, "gleam@function", "identity")
 @external(javascript, "../../gleam_stdlib/gleam/function.mjs", "identity")
 fn coerce(a: a) -> b
-
 
 // CONVERSIONS -----------------------------------------------------------------
 
