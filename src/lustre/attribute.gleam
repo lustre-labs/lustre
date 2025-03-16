@@ -49,9 +49,13 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
     include: constants.empty_list,
     prevent_default: False,
     stop_propagation: False,
-    immediate: False,
+    immediate: list.contains(immediate_events, name),
   )
 }
+
+const immediate_events = [
+  "input", "change", "focus", "focusin", "focusout", "blur", "select",
+]
 
 /// Create an empty attribute. This is not added to the DOM and not rendered when
 /// calling [`element.to_string`](./element.html#to_string), but it is useful for
