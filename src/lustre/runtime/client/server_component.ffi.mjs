@@ -5,7 +5,7 @@
 // to src/.
 
 import { Reconciler } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/reconciler.ffi.mjs";
-import { adoptStylesheets } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/core.ffi.mjs";
+import { adoptStylesheets } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs";
 import {
   mount_kind,
   reconcile_kind,

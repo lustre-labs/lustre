@@ -9,7 +9,12 @@ import {
   NotABrowser,
   is_browser,
 } from "../../../lustre.mjs";
-import { Runtime, adoptStylesheets } from "./core.ffi.mjs";
+import { Runtime, adoptStylesheets } from "./runtime.ffi.mjs";
+import {
+  EffectDispatchedMessage,
+  EffectEmitEvent,
+  SystemRequestedShutdown,
+} from "../server/runtime.mjs";
 
 //
 
@@ -35,6 +40,7 @@ export const make_component = (
 
     #runtime;
     #adoptedStyleNodes = [];
+    #shadowRoot;
 
     constructor() {
       super();
@@ -42,7 +48,7 @@ export const make_component = (
       this.internals = this.attachInternals();
       // shadow root elements.
       if (!this.shadowRoot) {
-        this.attachShadow({ mode: "open" });
+        this.#shadowRoot = this.attachShadow({ mode: "open" });
       }
 
       this.#adoptStyleSheets();
@@ -58,8 +64,30 @@ export const make_component = (
       this.#adoptStyleSheets();
     }
 
+    send(message) {
+      switch (message.constructor) {
+        case EffectDispatchedMessage: {
+          this.dispatch(message.message, false);
+          break;
+        }
+
+        case EffectEmitEvent: {
+          this.emit(message.name, message.data);
+          break;
+        }
+
+        case SystemRequestedShutdown:
+          //TODO
+          break;
+      }
+    }
+
     dispatch(msg, immediate = false) {
       this.#runtime.dispatch(msg, immediate);
+    }
+
+    emit(event, data) {
+      this.#runtime.emit(event, data);
     }
 
     async #adoptStyleSheets() {
