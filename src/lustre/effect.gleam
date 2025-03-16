@@ -42,10 +42,9 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Dynamic}
-import gleam/erlang/process.{type Selector}
+import gleam/erlang/process.{type Selector, type Subject}
 import gleam/json.{type Json}
 import gleam/list
-import lustre/internals/constants
 
 // TYPES -----------------------------------------------------------------------
 
@@ -59,7 +58,11 @@ import lustre/internals/constants
 ///
 ///
 pub opaque type Effect(msg) {
-  Effect(all: List(fn(Actions(msg)) -> Nil))
+  Effect(
+    synchronous: List(fn(Actions(msg)) -> Nil),
+    before_paint: List(fn(Actions(msg)) -> Nil),
+    after_paint: List(fn(Actions(msg)) -> Nil),
+  )
 }
 
 type Actions(msg) {
@@ -103,10 +106,46 @@ type Actions(msg) {
 ///   )
 /// }
 /// ```
+///
 pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  use dispatch, _, _, _ <- custom
+  Effect(..none, synchronous: [task(effect)])
+}
 
-  effect(dispatch)
+/// Schedule a side effect that is guaranteed to run after your `view` function
+/// is called but **before** the browser has painted the screen. This effect is
+/// useful when you need to read from the DOM or perform other operations that
+/// might affect the layout of your application.
+///
+/// Messages dispatched immediately in this effect will trigger a second re-render
+/// of your application before the browser paints the screen. This let's you read
+/// the state of the DOM, update your model, and then render a second time with
+/// the additional information.
+///
+/// **Note**: dispatching messages synchronously in this effect can lead to
+/// degraded performance if not used correctly. In the worst case you can lock
+/// up the browser and prevent it from painting the screen _at all_.
+///
+/// **Note**: There is no concept of a "paint" for server components. Using this
+/// effect in those contexts will run the effect synchronously, after any non-timing
+/// effects are processed.
+///
+pub fn before_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
+  Effect(..none, before_paint: [
+    fn(actions: Actions(msg)) { effect(actions.dispatch) },
+  ])
+}
+
+/// Schedule a side effect that is guaranteed to run after the browser has painted
+/// the screen.
+///
+/// **Note**: There is no concept of a "paint" for server components. Using this
+/// effect in those contexts will run the effect synchronously, after any non-timing
+/// effects and any `before_paint` effects are processed.
+///
+pub fn after_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
+  Effect(..none, after_paint: [
+    fn(actions: Actions(msg)) { effect(actions.dispatch) },
+  ])
 }
 
 /// Emit a custom event from a component as an effect. Parents can listen to these
@@ -116,35 +155,39 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 ///
 @internal
 pub fn event(name: String, data: Json) -> Effect(msg) {
-  use _, emit, _, _ <- custom
-
-  emit(name, data)
+  let task = fn(actions: Actions(msg)) { actions.emit(name, data) }
+  Effect(..none, synchronous: [task])
 }
 
-///
-///
+fn task(effect: fn(fn(msg) -> Nil) -> Nil) -> fn(Actions(msg)) -> Nil {
+  fn(actions: Actions(msg)) { effect(actions.dispatch) }
+}
+
+@target(erlang)
 @internal
-pub fn custom(
-  run: fn(
-    fn(msg) -> Nil,
-    fn(String, Json) -> Nil,
-    fn(Selector(msg)) -> Nil,
-    Dynamic,
-  ) ->
-    Nil,
+pub fn select(
+  sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
 ) -> Effect(msg) {
-  Effect([
-    fn(actions: Actions(msg)) {
-      run(actions.dispatch, actions.emit, actions.select, actions.root)
-    },
-  ])
+  let task = fn(actions: Actions(msg)) {
+    let self = process.new_subject()
+    let selector = sel(actions.dispatch, self)
+    actions.select(selector)
+  }
+
+  Effect(..none, synchronous: [task])
+}
+
+@target(javascript)
+@internal
+pub fn select(_sel) {
+  none
 }
 
 /// Most Lustre applications need to return a tuple of `#(model, Effect(msg))`
 /// from their `init` and `update` functions. If you don't want to perform any
 /// side effects, you can use `none` to tell the runtime there's no work to do.
 ///
-pub const none: Effect(msg) = Effect([])
+pub const none: Effect(msg) = Effect([], [], [])
 
 // MANIPULATIONS ---------------------------------------------------------------
 
@@ -161,58 +204,58 @@ pub const none: Effect(msg) = Effect([])
 ///    the sequencing inside the effect itself.
 ///
 pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
-  Effect({
-    use b, Effect(a) <- list.fold(effects, constants.empty_list)
-    list.append(b, a)
+  use acc, eff <- list.fold(effects, none)
+  Effect(
+    synchronous: list.fold(eff.synchronous, acc.synchronous, list.prepend),
+    before_paint: list.fold(eff.before_paint, acc.before_paint, list.prepend),
+    after_paint: list.fold(eff.after_paint, acc.after_paint, list.prepend),
+  )
+}
+
+/// Transform the result of an effect. This is useful for mapping over effects
+/// produced by other libraries or modules.
+///
+/// **Note**: Remember that effects are not _required_ to dispatch any messages.
+/// Your mapping function may never be called!
+///
+pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
+  Effect(
+    synchronous: do_map(effect.synchronous, f),
+    before_paint: do_map(effect.before_paint, f),
+    after_paint: do_map(effect.after_paint, f),
+  )
+}
+
+fn do_map(
+  effects: List(fn(Actions(a)) -> Nil),
+  f: fn(a) -> b,
+) -> List(fn(Actions(b)) -> Nil) {
+  list.map(effects, fn(effect) {
+    fn(actions) { effect(do_comap_actions(actions, f)) }
   })
+}
+
+fn do_comap_actions(actions: Actions(b), f: fn(a) -> b) -> Actions(a) {
+  Actions(
+    dispatch: fn(msg) { actions.dispatch(f(msg)) },
+    emit: actions.emit,
+    select: fn(selector) { do_comap_select(actions, selector, f) },
+    root: actions.root,
+  )
 }
 
 @target(erlang)
-/// Transform the result of an effect. This is useful for mapping over effects
-/// produced by other libraries or modules.
-///
-/// **Note**: Remember that effects are not _required_ to dispatch any messages.
-/// Your mapping function may never be called!
-///
-pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
-  Effect({
-    use eff <- list.map(effect.all)
-    fn(actions: Actions(b)) {
-      eff(Actions(
-        dispatch: fn(msg) { actions.dispatch(f(msg)) },
-        emit: actions.emit,
-        select: fn(selector) {
-          actions.select(process.map_selector(selector, f))
-        },
-        root: actions.root,
-      ))
-    }
-  })
+fn do_comap_select(
+  actions: Actions(b),
+  selector: Selector(a),
+  f: fn(a) -> b,
+) -> Nil {
+  actions.select(process.map_selector(selector, f))
 }
 
 @target(javascript)
-/// Transform the result of an effect. This is useful for mapping over effects
-/// produced by other libraries or modules.
-///
-/// **Note**: Remember that effects are not _required_ to dispatch any messages.
-/// Your mapping function may never be called!
-///
-pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
-  Effect({
-    use eff <- list.map(effect.all)
-    fn(actions: Actions(b)) {
-      eff(Actions(
-        dispatch: fn(msg) { actions.dispatch(f(msg)) },
-        emit: actions.emit,
-        // Selectors don't exist for the JavaScript target so there's no way
-        // for anyone to legitimately construct one. It's kind of clunky that
-        // we have to use `@target` for this and duplicate the function but
-        // so be it.
-        select: fn(_) { Nil },
-        root: actions.root,
-      ))
-    }
-  })
+fn do_comap_select(_, _, _) -> Nil {
+  Nil
 }
 
 /// Perform a side effect by supplying your own `dispatch` and `emit`functions.
@@ -233,8 +276,9 @@ pub fn perform(
   select: fn(Selector(a)) -> Nil,
   root: Dynamic,
 ) -> Nil {
-  let actions = Actions(dispatch, emit, select, root)
-  use eff <- list.each(effect.all)
+  let actions = Actions(dispatch:, emit:, select:, root:)
 
-  eff(actions)
+  list.each(effect.synchronous, fn(eff) { eff(actions) })
+  list.each(effect.before_paint, fn(eff) { eff(actions) })
+  list.each(effect.after_paint, fn(eff) { eff(actions) })
 }

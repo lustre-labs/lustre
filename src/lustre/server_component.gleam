@@ -329,23 +329,7 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
 pub fn select(
   sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
 ) -> Effect(msg) {
-  do_select(sel)
-}
-
-@target(erlang)
-fn do_select(
-  sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
-) -> Effect(msg) {
-  use dispatch, _, select, _ <- effect.custom
-  let self = process.new_subject()
-  let selector = sel(dispatch, self)
-
-  select(selector)
-}
-
-@target(javascript)
-fn do_select(_: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg)) -> Effect(msg) {
-  effect.none
+  effect.select(sel)
 }
 
 // DECODERS --------------------------------------------------------------------
