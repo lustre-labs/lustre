@@ -1,5 +1,22 @@
-# v5 Breaking Changes
+# v5.0.0 upgrade guide
 
+## New features
+
+### Deferred renders, `effect.before_paint`, and `effect.after_paint`
+
+Lustre now defers renders and makes sure to only call `view` and update the DOM
+once per frame. To help manage side effects that need to read or wait for the DOM,
+two new effects have been added:
+
+- `effect.before_paint` runs after the DOM has been modified but **before** the
+  browser paints the changes. Any messages dispatched synchronously from these
+  effects will be processed and rendered in the same frame.
+
+- `effect.after_paint` runs after the browser has painted the changes to the DOM.
+  This is useful for side effects that need to know the screen has been updated
+  before doing their work.
+
+## Breaking changes
 
 ### Event listeners use the `gleam/dynamic/decode` API
 
