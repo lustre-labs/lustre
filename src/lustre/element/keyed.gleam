@@ -5,7 +5,6 @@ import lustre/attribute.{type Attribute} as _
 import lustre/element.{type Element}
 import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
-import lustre/vdom/attribute
 import lustre/vdom/node
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -52,7 +51,7 @@ pub fn element(
     namespace: "",
     tag:,
     mapper: constants.option_none,
-    attributes: attribute.prepare(attributes),
+    attributes:,
     children:,
     keyed_children:,
     self_closing: False,
@@ -73,7 +72,7 @@ pub fn namespaced(
     mapper: constants.option_none,
     namespace:,
     tag:,
-    attributes: attribute.prepare(attributes),
+    attributes:,
     children:,
     keyed_children:,
     self_closing: False,

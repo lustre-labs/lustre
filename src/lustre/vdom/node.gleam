@@ -45,7 +45,7 @@ pub type Node(msg) {
     // long as the new and old tree agree on the same order relation.
     //
     // When constructing a Node with attributes provided by a user, attributes
-    // have to be sorted with the `vdom.prepare_attributes` function.
+    // have to be sorted with the `attribute.prepare` function.
     //
     attributes: List(Attribute(msg)),
     children: List(Node(msg)),
@@ -121,7 +121,7 @@ pub fn element(
     mapper:,
     namespace:,
     tag:,
-    attributes:,
+    attributes: attribute.prepare(attributes),
     children:,
     keyed_children:,
     self_closing:,
@@ -155,7 +155,7 @@ pub fn unsafe_inner_html(
     mapper:,
     namespace:,
     tag:,
-    attributes:,
+    attributes: attribute.prepare(attributes),
     inner_html:,
   )
 }
