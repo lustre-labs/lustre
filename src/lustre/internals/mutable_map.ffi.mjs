@@ -1,13 +1,7 @@
 import { Ok, Error } from "../../gleam.mjs";
 
-export function make() {
-  return new Map();
-}
-
-const EMPTY = new Map();
-
 export function empty() {
-  return EMPTY;
+  return null;
 }
 
 export function from_list(list) {
@@ -21,9 +15,9 @@ export function from_list(list) {
 }
 
 export function get(map, key) {
-  const value = map.get(key);
+  const value = map?.get(key);
 
-  if (value) {
+  if (value !== undefined) {
     return new Ok(value);
   } else {
     return new Error(undefined);
@@ -31,11 +25,12 @@ export function get(map, key) {
 }
 
 export function insert(map, key, value) {
+  map ??= new Map();
   map.set(key, value);
 
   return map;
 }
 
 export function size(map) {
-  return map.size;
+  return map?.size ?? 0;
 }

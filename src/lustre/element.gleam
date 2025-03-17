@@ -115,7 +115,7 @@ pub fn element(
         tag: tag,
         attributes: attribute.prepare(attributes),
         children: constants.empty_list,
-        keyed_children: mutable_map.shared_empty(),
+        keyed_children: mutable_map.new(),
         self_closing: False,
         void: True,
       )
@@ -128,7 +128,7 @@ pub fn element(
         tag: tag,
         attributes: attribute.prepare(attributes),
         children:,
-        keyed_children: mutable_map.shared_empty(),
+        keyed_children: mutable_map.new(),
         self_closing: False,
         void: False,
       )
@@ -151,7 +151,7 @@ pub fn namespaced(
     tag:,
     attributes: attribute.prepare(attributes),
     children:,
-    keyed_children: mutable_map.shared_empty(),
+    keyed_children: mutable_map.new(),
     self_closing: False,
     void: False,
   )
@@ -177,7 +177,7 @@ pub fn advanced(
     tag:,
     attributes: attribute.prepare(attributes),
     children:,
-    keyed_children: mutable_map.shared_empty(),
+    keyed_children: mutable_map.new(),
     self_closing:,
     void:,
   )
@@ -210,7 +210,7 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
     key: "",
     mapper: constants.option_none,
     children:,
-    keyed_children: mutable_map.shared_empty(),
+    keyed_children: mutable_map.new(),
     children_count: count_fragment_children(children, 0),
   )
 }
