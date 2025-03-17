@@ -17,7 +17,7 @@ export function from_list(list) {
 export function get(map, key) {
   const value = map?.get(key);
 
-  if (value !== undefined) {
+  if (value != null) {
     return new Ok(value);
   } else {
     return new Error(undefined);
