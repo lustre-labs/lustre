@@ -16,6 +16,12 @@ import lustre/vdom/attribute.{Attribute, Event, Property}
 pub type Attribute(msg) =
   attribute.Attribute(msg)
 
+// CONSTANTS -------------------------------------------------------------------
+
+const immediate_events = [
+  "input", "change", "focus", "focusin", "focusout", "blur", "select",
+]
+
 // CONSTRUCTORS ----------------------------------------------------------------
 
 /// Create an HTML attribute. This is like saying `element.setAttribute("class", "wibble")`
@@ -52,10 +58,6 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
     immediate: list.contains(immediate_events, name),
   )
 }
-
-const immediate_events = [
-  "input", "change", "focus", "focusin", "focusout", "blur", "select",
-]
 
 /// Create an empty attribute. This is not added to the DOM and not rendered when
 /// calling [`element.to_string`](./element.html#to_string), but it is useful for

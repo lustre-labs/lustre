@@ -130,9 +130,7 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 /// effects are processed.
 ///
 pub fn before_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  Effect(..none, before_paint: [
-    fn(actions: Actions(msg)) { effect(actions.dispatch) },
-  ])
+  Effect(..none, before_paint: [task(effect)])
 }
 
 /// Schedule a side effect that is guaranteed to run after the browser has painted
@@ -143,9 +141,7 @@ pub fn before_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 /// effects and any `before_paint` effects are processed.
 ///
 pub fn after_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  Effect(..none, after_paint: [
-    fn(actions: Actions(msg)) { effect(actions.dispatch) },
-  ])
+  Effect(..none, after_paint: [task(effect)])
 }
 
 /// Emit a custom event from a component as an effect. Parents can listen to these

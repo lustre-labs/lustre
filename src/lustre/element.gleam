@@ -8,6 +8,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
 import gleam/string_tree.{type StringTree}
@@ -16,6 +17,13 @@ import lustre/internals/constants
 import lustre/internals/mutable_map
 import lustre/vdom/attribute
 import lustre/vdom/node.{Element, Fragment, Text, UnsafeInnerHtml}
+
+// CONSTANTS -------------------------------------------------------------------
+
+const void_elements = [
+  "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
+  "param", "source", "track", "wbr",
+]
 
 // TYPES -----------------------------------------------------------------------
 
@@ -93,46 +101,17 @@ pub fn element(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  case tag {
-    "area"
-    | "base"
-    | "br"
-    | "col"
-    | "embed"
-    | "hr"
-    | "img"
-    | "input"
-    | "link"
-    | "meta"
-    | "param"
-    | "source"
-    | "track"
-    | "wbr" ->
       node.element(
         key: "",
         mapper: constants.option_none,
         namespace: "",
         tag: tag,
         attributes: attribute.prepare(attributes),
-        children: constants.empty_list,
+    children: children,
         keyed_children: mutable_map.new(),
         self_closing: False,
-        void: True,
-      )
-
-    _ ->
-      node.element(
-        key: "",
-        mapper: constants.option_none,
-        namespace: "",
-        tag: tag,
-        attributes: attribute.prepare(attributes),
-        children:,
-        keyed_children: mutable_map.new(),
-        self_closing: False,
-        void: False,
-      )
-  }
+    void: list.contains(void_elements, tag),
+  )
 }
 
 /// A function for constructing elements in a specific XML namespace. This can
