@@ -8,7 +8,6 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
 import gleam/string_tree.{type StringTree}
@@ -17,13 +16,6 @@ import lustre/internals/constants
 import lustre/internals/mutable_map
 import lustre/vdom/attribute
 import lustre/vdom/node.{Element, Fragment, Text, UnsafeInnerHtml}
-
-// CONSTANTS -------------------------------------------------------------------
-
-const void_elements = [
-  "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
-  "param", "source", "track", "wbr",
-]
 
 // TYPES -----------------------------------------------------------------------
 
@@ -101,16 +93,16 @@ pub fn element(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-      node.element(
-        key: "",
-        mapper: constants.option_none,
-        namespace: "",
-        tag: tag,
-        attributes: attribute.prepare(attributes),
+  node.element(
+    key: "",
+    mapper: constants.option_none,
+    namespace: "",
+    tag: tag,
+    attributes: attribute.prepare(attributes),
     children: children,
-        keyed_children: mutable_map.new(),
-        self_closing: False,
-    void: list.contains(void_elements, tag),
+    keyed_children: mutable_map.new(),
+    self_closing: False,
+    void: False,
   )
 }
 
@@ -147,7 +139,7 @@ pub fn advanced(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
   self_closing: Bool,
-  void: Bool,
+  void void: Bool,
 ) -> Element(msg) {
   node.element(
     key: "",
