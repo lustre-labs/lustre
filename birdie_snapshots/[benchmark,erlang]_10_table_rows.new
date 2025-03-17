@@ -1,9 +1,0 @@
----
-version: 1.2.6
-title: [benchmark,erlang] 10 table rows
----
-Input               Function                       IPS           Min           P99
-10 rows                   vdom.diff()            484584.5486        0.0018        0.0027
-10 rows (shuffled)        vdom.diff()            496991.4933        0.0018        0.0026
-10 rows (keyed)           vdom.diff()            434857.7480        0.0020        0.0028
-10 rows (keyed, shuffled) vdom.diff()            283073.1371        0.0029        0.0042
