@@ -389,6 +389,26 @@ pub fn open(is_open: Bool) -> Attribute(msg) {
   boolean_attribute("open", is_open)
 }
 
+// WEB COMPONENTS --------------------------------------------------------------
+
+///
+pub fn slot(name: String) -> Attribute(msg) {
+  attribute("slot", name)
+}
+
+///
+pub fn shadow_root_mode(is_open: Bool) -> Attribute(msg) {
+  attribute("shadowrootmode", case is_open {
+    True -> "open"
+    False -> "closed"
+  })
+}
+
+///
+pub fn shadow_root_delegates_focus(delegates_focus: Bool) -> Attribute(msg) {
+  boolean_attribute("shadowrootdelegatesfocus", delegates_focus)
+}
+
 // META ------------------------------------------------------------------------
 
 ///
