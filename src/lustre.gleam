@@ -243,8 +243,8 @@ pub fn simple(
   update: fn(model, msg) -> model,
   view: fn(model) -> Element(msg),
 ) -> App(flags, model, msg) {
-  let init = fn(flags) { #(init(flags), effect.none) }
-  let update = fn(model, msg) { #(update(model, msg), effect.none) }
+  let init = fn(flags) { #(init(flags), effect.none()) }
+  let update = fn(model, msg) { #(update(model, msg), effect.none()) }
 
   application(init, update, view)
 }

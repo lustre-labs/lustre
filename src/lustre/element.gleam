@@ -14,7 +14,6 @@ import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute} as _
 import lustre/internals/constants
 import lustre/internals/mutable_map
-import lustre/vdom/attribute
 import lustre/vdom/node.{Element, Fragment, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------

@@ -116,7 +116,7 @@ fn with_erlang_runtime(run_test) {
 
 @target(erlang)
 fn init(count) {
-  #(count, effect.none)
+  #(count, effect.none())
 }
 
 @target(erlang)
@@ -129,8 +129,8 @@ type Msg {
 @target(erlang)
 fn update(model, msg) {
   case msg {
-    Incr -> #(model + 1, effect.none)
-    Decr -> #(model - 1, effect.none)
+    Incr -> #(model + 1, effect.none())
+    Decr -> #(model - 1, effect.none())
     Reset -> #(0, event.emit("reset", json.null()))
   }
 }
