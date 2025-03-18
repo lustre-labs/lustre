@@ -139,7 +139,7 @@ pub fn advanced(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
   self_closing: Bool,
-  void void: Bool,
+  void: Bool,
 ) -> Element(msg) {
   node.element(
     key: "",

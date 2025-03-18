@@ -48,7 +48,7 @@ pub fn void_elements_test() {
 }
 
 pub fn keyed_void_elements_test() {
-  use <- lustre_test.test_filter("void_elements_test")
+  use <- lustre_test.test_filter("keyed_void_elements_test")
 
   let input =
     keyed.div([], [
