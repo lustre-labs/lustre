@@ -163,11 +163,13 @@ import gleam/dict.{type Dict}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/process.{type Subject}
 import gleam/otp/actor.{type StartError}
-import gleam/result
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/internals/constants
 import lustre/runtime/server/runtime
+
+@target(erlang)
+import gleam/result
 
 // TYPES -----------------------------------------------------------------------
 

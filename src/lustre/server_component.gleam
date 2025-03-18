@@ -227,8 +227,8 @@ fn do_subject(_: Runtime(msg)) -> Result(Subject(RuntimeMessage(msg)), Error) {
   Error(lustre.NotErlang)
 }
 
+@target(erlang)
 @external(erlang, "gleam@function", "identity")
-@external(javascript, "../../gleam_stdlib/gleam/function.mjs", "identity")
 fn coerce(value: a) -> b
 
 ///
