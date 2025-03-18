@@ -17,15 +17,13 @@ import gleam/set.{type Set}
 
 pub const empty_list = []
 
+@external(erlang, "gleam@dict", "new")
 @external(javascript, "./constants.ffi.mjs", "empty_dict")
-pub fn empty_dict() -> Dict(k, v) {
-  dict.new()
-}
+pub fn empty_dict() -> Dict(k, v)
 
+@external(erlang, "gleam@set", "new")
 @external(javascript, "./constants.ffi.mjs", "empty_set")
-pub fn empty_set() -> Set(a) {
-  set.new()
-}
+pub fn empty_set() -> Set(a)
 
 pub const option_none = option.None
 
