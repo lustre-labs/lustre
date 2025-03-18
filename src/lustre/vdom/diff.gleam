@@ -367,6 +367,8 @@ fn do_diff(
 
       let update =
         diff_attributes(
+          next.namespace,
+          next.tag,
           old: prev.attributes,
           new: next.attributes,
           added: constants.empty_list,
@@ -473,6 +475,8 @@ fn do_diff(
     [UnsafeInnerHtml(..) as prev, ..old], [UnsafeInnerHtml(..) as next, ..new] -> {
       let update =
         diff_attributes(
+          namespace: next.namespace,
+          tag: next.tag,
           old: prev.attributes,
           new: next.attributes,
           added: constants.empty_list,
@@ -552,88 +556,110 @@ fn do_diff(
 // ATTRIBUTE DIFFING -----------------------------------------------------------
 
 fn diff_attributes(
+  namespace namespace: String,
+  tag tag: String,
   old old: List(Attribute(msg)),
   new new: List(Attribute(msg)),
   added added: List(Attribute(msg)),
   removed removed: List(Attribute(msg)),
 ) -> Change(msg) {
+  let controlled = case tag {
+    "input" | "select" | "textarea" if namespace == "" -> True
+    _ -> False
+  }
+
+  do_diff_attributes(controlled:, old:, new:, added:, removed:)
+}
+
+fn do_diff_attributes(
+  controlled controlled: Bool,
+  old old: List(Attribute(msg)),
+  new new: List(Attribute(msg)),
+  added added: List(Attribute(msg)),
+  removed removed: List(Attribute(msg)),
+) {
   case old, new {
     [], [] -> patch.update(added:, removed:)
 
-    [prev, ..old], [] ->
-      diff_attributes(old:, new:, added:, removed: [prev, ..removed])
+    [prev, ..old], [] -> {
+      let removed = [prev, ..removed]
+      do_diff_attributes(controlled:, old:, new:, added:, removed:)
+    }
 
-    [], [Event(..) as next, ..new] ->
-      diff_attributes(old:, new:, added: [next, ..added], removed:)
-
-    [], [next, ..new] ->
-      diff_attributes(old:, new:, added: [next, ..added], removed:)
+    [], [next, ..new] -> {
+      let added = [next, ..added]
+      do_diff_attributes(controlled:, old:, new:, added:, removed:)
+    }
 
     [prev, ..remaining_old], [next, ..remaining_new] ->
       case prev, attribute.compare(prev, next), next {
-        Attribute(..), Eq, Attribute(..) ->
-          case next.name {
-            "value" | "checked" | "selected" -> {
-              let added = [next, ..added]
-              diff_attributes(remaining_old, remaining_new, added, removed)
-            }
-
-            _ if prev.value == next.value ->
-              diff_attributes(remaining_old, remaining_new, added, removed)
-
-            _ -> {
-              let added = [next, ..added]
-              diff_attributes(remaining_old, remaining_new, added, removed)
-            }
+        Attribute(..), Eq, Attribute(..) -> {
+          let has_changes = case next.name {
+            "value" | "checked" | "selected" -> controlled
+            _ -> prev.value != next.value
           }
 
-        Property(..), Eq, Property(..) ->
-          case next.name {
-            "value" | "checked" | "selected" | "scrollLeft" | "scrollRight" -> {
-              let added = [next, ..added]
-              diff_attributes(remaining_old, remaining_new, added, removed)
-            }
-
-            _ if prev.value == next.value ->
-              diff_attributes(remaining_old, remaining_new, added, removed)
-
-            _ -> {
-              let added = [next, ..added]
-              diff_attributes(remaining_old, remaining_new, added, removed)
-            }
+          let added = case has_changes {
+            True -> [next, ..added]
+            False -> added
           }
 
-        Event(..), Eq, Event(..)
-          if prev.prevent_default != next.prevent_default
-          || prev.stop_propagation != next.stop_propagation
-          || prev.immediate != next.immediate
-        -> {
-          let added = [next, ..added]
-          diff_attributes(remaining_old, remaining_new, added, removed)
+          let old = remaining_old
+          let new = remaining_new
+          do_diff_attributes(controlled:, old:, new:, added:, removed:)
         }
 
-        Event(..), Eq, Event(..) ->
-          diff_attributes(remaining_old, remaining_new, added, removed)
+        Property(..), Eq, Property(..) -> {
+          let has_changes = case next.name {
+            "scrollLeft" | "scrollRight" -> True
+            "value" | "checked" | "selected" -> controlled
+            _ -> prev.value != next.value
+          }
 
-        _, Eq, Event(..) -> {
-          let added = [next, ..added]
-          diff_attributes(remaining_old, remaining_new, added, removed)
+          let added = case has_changes {
+            True -> [next, ..added]
+            False -> added
+          }
+
+          let old = remaining_old
+          let new = remaining_new
+          do_diff_attributes(controlled:, old:, new:, added:, removed:)
+        }
+
+        Event(..), Eq, Event(..) -> {
+          let has_changes =
+            prev.prevent_default != next.prevent_default
+            || prev.stop_propagation != next.stop_propagation
+            || prev.immediate != next.immediate
+
+          let added = case has_changes {
+            True -> [next, ..added]
+            False -> added
+          }
+
+          let old = remaining_old
+          let new = remaining_new
+          do_diff_attributes(controlled:, old:, new:, added:, removed:)
         }
 
         _, Eq, _ -> {
           let added = [next, ..added]
           let removed = [prev, ..removed]
-          diff_attributes(remaining_old, remaining_new, added, removed)
+          let old = remaining_old
+          let new = remaining_new
+          do_diff_attributes(controlled:, old:, new:, added:, removed:)
         }
 
         _, Gt, _ -> {
           let added = [next, ..added]
-          diff_attributes(old, remaining_new, added, removed)
+          let new = remaining_new
+          do_diff_attributes(controlled:, old:, new:, added:, removed:)
         }
 
         _, Lt, _ -> {
           let removed = [prev, ..removed]
-          diff_attributes(remaining_old, new, added, removed)
+          let old = remaining_old
+          do_diff_attributes(controlled:, old:, new:, added:, removed:)
         }
       }
   }
