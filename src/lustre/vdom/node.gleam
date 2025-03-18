@@ -9,6 +9,7 @@ import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/internals/constants
 import lustre/internals/escape.{escape}
+import lustre/internals/json_object_builder
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/attribute.{type Attribute, Attribute}
 
@@ -256,42 +257,38 @@ pub fn to_json(node: Node(msg)) -> Json {
 }
 
 fn fragment_to_json(kind, key, children, children_count) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("key", json.string(key)),
-    #("children", json.array(children, to_json)),
-    #("children_count", json.int(children_count)),
-  ])
+  json_object_builder.tagged(kind)
+  |> json_object_builder.string("key", key)
+  |> json_object_builder.list("children", children, to_json)
+  |> json_object_builder.int("children_count", children_count)
+  |> json_object_builder.build
 }
 
 fn element_to_json(kind, key, namespace, tag, attributes, children) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("key", json.string(key)),
-    #("namespace", json.string(namespace)),
-    #("tag", json.string(tag)),
-    #("attributes", json.array(attributes, attribute.to_json)),
-    #("children", json.array(children, to_json)),
-  ])
+  json_object_builder.tagged(kind)
+  |> json_object_builder.string("key", key)
+  |> json_object_builder.string("namespace", namespace)
+  |> json_object_builder.string("tag", tag)
+  |> json_object_builder.list("attributes", attributes, attribute.to_json)
+  |> json_object_builder.list("children", children, to_json)
+  |> json_object_builder.build
 }
 
 fn text_to_json(kind, key, content) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("key", json.string(key)),
-    #("content", json.string(content)),
-  ])
+  json_object_builder.tagged(kind)
+  |> json_object_builder.string("key", key)
+  |> json_object_builder.string("content", content)
+  |> json_object_builder.build
 }
 
 fn unsafe_inner_html_to_json(kind, key, namespace, tag, attributes, inner_html) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("key", json.string(key)),
-    #("namespace", json.string(namespace)),
-    #("tag", json.string(tag)),
-    #("attributes", json.array(attributes, attribute.to_json)),
-    #("inner_html", json.string(inner_html)),
-  ])
+  json_object_builder.tagged(kind)
+  |> json_object_builder.string("key", key)
+  |> json_object_builder.string("namespace", namespace)
+  |> json_object_builder.string("tag", tag)
+  |> json_object_builder.list("attributes", attributes, attribute.to_json)
+  |> json_object_builder.string("inner_html", inner_html)
+  |> json_object_builder.build
 }
 
 // STRING RENDERING ------------------------------------------------------------

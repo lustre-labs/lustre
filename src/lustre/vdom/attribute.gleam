@@ -8,6 +8,7 @@ import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/internals/constants
 import lustre/internals/escape.{escape}
+import lustre/internals/json_object_builder
 
 // TYPES -----------------------------------------------------------------------
 
@@ -134,19 +135,17 @@ pub fn to_json(attribute: Attribute(msg)) -> Json {
 }
 
 fn attribute_to_json(kind, name, value) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("name", json.string(name)),
-    #("value", json.string(value)),
-  ])
+  json_object_builder.tagged(kind)
+  |> json_object_builder.string("name", name)
+  |> json_object_builder.string("value", value)
+  |> json_object_builder.build
 }
 
 fn property_to_json(kind, name, value) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("name", json.string(name)),
-    #("value", value),
-  ])
+  json_object_builder.tagged(kind)
+  |> json_object_builder.string("name", name)
+  |> json_object_builder.json("value", value)
+  |> json_object_builder.build
 }
 
 fn event_to_json(
@@ -157,14 +156,13 @@ fn event_to_json(
   stop_propagation,
   immediate,
 ) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("name", json.string(name)),
-    #("include", json.array(include, json.string)),
-    #("prevent_default", json.bool(prevent_default)),
-    #("stop_propagation", json.bool(stop_propagation)),
-    #("immediate", json.bool(immediate)),
-  ])
+  json_object_builder.tagged(kind)
+  |> json_object_builder.string("name", name)
+  |> json_object_builder.list("include", include, json.string)
+  |> json_object_builder.bool("prevent_default", prevent_default)
+  |> json_object_builder.bool("stop_propagation", stop_propagation)
+  |> json_object_builder.bool("immediate", immediate)
+  |> json_object_builder.build
 }
 
 // STRING RENDERING ------------------------------------------------------------
