@@ -2,6 +2,7 @@
 
 import gleam/dynamic.{type Dynamic}
 import gleam/function
+import gleam/int
 import gleam/option.{None, Some}
 import gleam/order.{Eq, Gt, Lt}
 import gleam/set.{type Set}
@@ -24,6 +25,7 @@ pub type Diff(msg) {
 
 pub fn diff(old: Node(msg), new: Node(msg)) -> Diff(msg) {
   do_diff(
+    event_paths: [],
     old: [old],
     old_keyed: mutable_map.new(),
     new: [new],
@@ -35,6 +37,7 @@ pub fn diff(old: Node(msg), new: Node(msg)) -> Diff(msg) {
     //
     node_index: 0,
     patch_index: 0,
+    path: [],
     changes: constants.empty_list,
     children: constants.empty_list,
     events: events.new(function.identity),
@@ -43,6 +46,7 @@ pub fn diff(old: Node(msg), new: Node(msg)) -> Diff(msg) {
 }
 
 fn do_diff(
+  event_paths event_paths: List(List(String)),
   //
   old old: List(Node(msg)),
   old_keyed old_keyed: MutableMap(String, Node(msg)),
@@ -55,6 +59,7 @@ fn do_diff(
   //
   node_index node_index: Int,
   patch_index patch_index: Int,
+  path path: List(String),
   changes changes: List(Change(msg)),
   children children: List(Patch(msg)),
   events events: Events(msg),
@@ -72,6 +77,7 @@ fn do_diff(
     // needs to be removed.
     [prev, ..old], [] -> {
       do_diff(
+        event_paths:,
         old:,
         old_keyed:,
         new:,
@@ -88,6 +94,7 @@ fn do_diff(
         },
         node_index:,
         patch_index:,
+        path:,
         changes:,
         children:,
         events:,
@@ -126,6 +133,7 @@ fn do_diff(
         // `moved_offset` to account for how many elements the prev node spanned.
         Ok(_), Ok(_) if prev_has_moved ->
           do_diff(
+            event_paths:,
             old: old_remaining,
             old_keyed:,
             new:,
@@ -135,6 +143,7 @@ fn do_diff(
             removed:,
             node_index:,
             patch_index:,
+            path:,
             changes:,
             children:,
             events:,
@@ -189,6 +198,7 @@ fn do_diff(
           let moved_offset = moved_offset + count
 
           do_diff(
+            event_paths:,
             old: [match, ..old],
             old_keyed:,
             new:,
@@ -198,6 +208,7 @@ fn do_diff(
             removed:,
             node_index:,
             patch_index:,
+            path:,
             changes:,
             children:,
             events:,
@@ -215,6 +226,7 @@ fn do_diff(
           let changes = [remove, ..changes]
 
           do_diff(
+            event_paths:,
             old: old_remaining,
             old_keyed:,
             new:,
@@ -224,6 +236,7 @@ fn do_diff(
             removed:,
             node_index:,
             patch_index:,
+            path:,
             changes:,
             children:,
             events:,
@@ -242,6 +255,7 @@ fn do_diff(
           let changes = [insert, ..changes]
 
           do_diff(
+            event_paths:,
             old:,
             old_keyed:,
             new: new_remaining,
@@ -251,6 +265,7 @@ fn do_diff(
             removed:,
             node_index: node_index + count,
             patch_index:,
+            path:,
             changes:,
             children:,
             events:,
@@ -274,6 +289,7 @@ fn do_diff(
           let events = events.add_child(events, mapper, node_index, next)
 
           do_diff(
+            event_paths:,
             old: old_remaining,
             old_keyed:,
             new: new_remaining,
@@ -283,6 +299,7 @@ fn do_diff(
             removed:,
             node_index: node_index + next_count,
             patch_index:,
+            path:,
             changes: [change, ..changes],
             children:,
             events:,
@@ -321,6 +338,7 @@ fn do_diff(
       // are just additional children of the parent node.
       let child =
         do_diff(
+          event_paths:,
           old: prev.children,
           old_keyed: prev.keyed_children,
           new: next.children,
@@ -330,6 +348,7 @@ fn do_diff(
           removed: 0,
           node_index:,
           patch_index: -1,
+          path:,
           changes:,
           children:,
           events:,
@@ -337,6 +356,7 @@ fn do_diff(
         )
 
       do_diff(
+        event_paths:,
         old:,
         old_keyed:,
         new:,
@@ -346,6 +366,7 @@ fn do_diff(
         removed:,
         node_index: node_index + next_count,
         patch_index:,
+        path:,
         changes: child.patch.changes,
         children: child.patch.children,
         events: child.events,
@@ -381,8 +402,14 @@ fn do_diff(
         _ -> constants.empty_list
       }
 
+      let path_segment = case next.key {
+        "" -> int.to_string(node_index)
+        key -> key
+      }
+
       let child =
         do_diff(
+          event_paths:,
           old: prev.children,
           old_keyed: prev.keyed_children,
           new: next.children,
@@ -392,6 +419,7 @@ fn do_diff(
           removed: 0,
           node_index: 0,
           patch_index: node_index,
+          path: [path_segment, ..path],
           changes: initial_child_changes,
           children: constants.empty_list,
           events: events.from_attributes(next.attributes, composed_mapper),
@@ -407,6 +435,7 @@ fn do_diff(
         events.add_child_events(events, node_index, next.key, child.events)
 
       do_diff(
+        event_paths:,
         old:,
         old_keyed:,
         new:,
@@ -416,6 +445,7 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index: patch_index,
+        path:,
         changes:,
         children:,
         events:,
@@ -429,6 +459,7 @@ fn do_diff(
       if prev.content == next.content
     ->
       do_diff(
+        event_paths:,
         old:,
         old_keyed:,
         new:,
@@ -438,6 +469,7 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index:,
+        path:,
         changes:,
         children:,
         events:,
@@ -456,6 +488,7 @@ fn do_diff(
         )
 
       do_diff(
+        event_paths:,
         old:,
         old_keyed:,
         new:,
@@ -465,6 +498,7 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index:,
+        path:,
         changes:,
         children: [child, ..children],
         events:,
@@ -502,6 +536,7 @@ fn do_diff(
       let events = events.add_child(events, mapper, node_index, next)
 
       do_diff(
+        event_paths:,
         old:,
         old_keyed:,
         new:,
@@ -511,6 +546,7 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index: patch_index,
+        path:,
         changes:,
         children:,
         events:,
@@ -535,6 +571,7 @@ fn do_diff(
       let events = events.add_child(events, mapper, node_index, next)
 
       do_diff(
+        event_paths:,
         old: old_remaining,
         old_keyed:,
         new: new_remaining,
@@ -544,6 +581,7 @@ fn do_diff(
         removed:,
         node_index: node_index + next_count,
         patch_index:,
+        path:,
         changes: [change, ..changes],
         children:,
         events:,
