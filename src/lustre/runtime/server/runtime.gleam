@@ -7,6 +7,7 @@ import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/process.{type ProcessMonitor, type Selector, type Subject}
 import gleam/function
 import gleam/json.{type Json}
+import gleam/list
 import gleam/option.{Some}
 import gleam/otp/actor.{type Next, type StartError, Spec}
 import gleam/set.{type Set}
@@ -120,7 +121,7 @@ fn loop(
 
       use <- bool.lazy_guard(!did_update, fn() { actor.continue(state) })
       let vdom = state.view(model)
-      let Diff(patch:, events:) = diff(state.vdom, vdom)
+      let Diff(patch:, events:) = diff([], state.vdom, vdom)
 
       handle_effect(state.self, effect)
       broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))
@@ -133,10 +134,13 @@ fn loop(
         events.handle(state.events, message.path, message.name, message.event)
       {
         Error(_) -> actor.continue(state)
-        Ok(message) -> {
-          let #(model, effect) = state.update(state.model, message)
+        Ok(msg) -> {
+          let #(model, effect) = state.update(state.model, msg)
           let vdom = state.view(model)
-          let Diff(patch:, events:) = diff(state.vdom, vdom)
+
+          // TODO: reverse paths everywhere!
+          let event_paths = [list.reverse(message.path)]
+          let Diff(patch:, events:) = diff(event_paths, state.vdom, vdom)
 
           handle_effect(state.self, effect)
           broadcast(
@@ -229,7 +233,7 @@ fn loop(
     EffectDispatchedMessage(message:) -> {
       let #(model, effect) = state.update(state.model, message)
       let vdom = state.view(state.model)
-      let Diff(patch:, events:) = diff(state.vdom, vdom)
+      let Diff(patch:, events:) = diff([], state.vdom, vdom)
 
       handle_effect(state.self, effect)
       broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))
@@ -245,7 +249,7 @@ fn loop(
 
     SelfDispatchedMessages(messages: [], effect:) -> {
       let vdom = state.view(state.model)
-      let Diff(patch:, events:) = diff(state.vdom, vdom)
+      let Diff(patch:, events:) = diff([], state.vdom, vdom)
 
       handle_effect(state.self, effect)
       broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))

@@ -3,6 +3,7 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/function
 import gleam/int
+import gleam/list
 import gleam/option.{None, Some}
 import gleam/order.{Eq, Gt, Lt}
 import gleam/set.{type Set}
@@ -23,9 +24,13 @@ pub type Diff(msg) {
 
 // DIFFING ---------------------------------------------------------------------
 
-pub fn diff(old: Node(msg), new: Node(msg)) -> Diff(msg) {
+pub fn diff(
+  event_paths: List(List(String)),
+  old: Node(msg),
+  new: Node(msg),
+) -> Diff(msg) {
   do_diff(
-    event_paths: [],
+    event_paths:,
     old: [old],
     old_keyed: mutable_map.new(),
     new: [new],
@@ -386,10 +391,19 @@ fn do_diff(
         None -> mapper
       }
 
+      let path_segment = case next.key {
+        "" -> int.to_string(node_index)
+        key -> key
+      }
+
+      let child_path = [path_segment, ..path]
+
+      let controlled =
+        is_controlled(next.namespace, next.tag, event_paths, child_path)
+
       let update =
         diff_attributes(
-          next.namespace,
-          next.tag,
+          controlled: controlled,
           old: prev.attributes,
           new: next.attributes,
           added: constants.empty_list,
@@ -400,11 +414,6 @@ fn do_diff(
         patch.Update(added: [], removed: [], ..) -> constants.empty_list
         patch.Update(added: _, removed: _, ..) -> [update]
         _ -> constants.empty_list
-      }
-
-      let path_segment = case next.key {
-        "" -> int.to_string(node_index)
-        key -> key
       }
 
       let child =
@@ -419,7 +428,7 @@ fn do_diff(
           removed: 0,
           node_index: 0,
           patch_index: node_index,
-          path: [path_segment, ..path],
+          path: child_path,
           changes: initial_child_changes,
           children: constants.empty_list,
           events: events.from_attributes(next.attributes, composed_mapper),
@@ -509,8 +518,7 @@ fn do_diff(
     [UnsafeInnerHtml(..) as prev, ..old], [UnsafeInnerHtml(..) as next, ..new] -> {
       let update =
         diff_attributes(
-          namespace: next.namespace,
-          tag: next.tag,
+          controlled: False,
           old: prev.attributes,
           new: next.attributes,
           added: constants.empty_list,
@@ -593,23 +601,20 @@ fn do_diff(
 
 // ATTRIBUTE DIFFING -----------------------------------------------------------
 
-fn diff_attributes(
-  namespace namespace: String,
-  tag tag: String,
-  old old: List(Attribute(msg)),
-  new new: List(Attribute(msg)),
-  added added: List(Attribute(msg)),
-  removed removed: List(Attribute(msg)),
-) -> Change(msg) {
-  let controlled = case tag {
-    "input" | "select" | "textarea" if namespace == "" -> True
+fn is_controlled(
+  namespace: String,
+  tag: String,
+  event_paths: List(List(String)),
+  current_path: List(String),
+) {
+  case tag {
+    "input" | "select" | "textarea" if namespace == "" ->
+      list.contains(event_paths, current_path)
     _ -> False
   }
-
-  do_diff_attributes(controlled:, old:, new:, added:, removed:)
 }
 
-fn do_diff_attributes(
+fn diff_attributes(
   controlled controlled: Bool,
   old old: List(Attribute(msg)),
   new new: List(Attribute(msg)),
@@ -621,12 +626,12 @@ fn do_diff_attributes(
 
     [prev, ..old], [] -> {
       let removed = [prev, ..removed]
-      do_diff_attributes(controlled:, old:, new:, added:, removed:)
+      diff_attributes(controlled:, old:, new:, added:, removed:)
     }
 
     [], [next, ..new] -> {
       let added = [next, ..added]
-      do_diff_attributes(controlled:, old:, new:, added:, removed:)
+      diff_attributes(controlled:, old:, new:, added:, removed:)
     }
 
     [prev, ..remaining_old], [next, ..remaining_new] ->
@@ -644,7 +649,7 @@ fn do_diff_attributes(
 
           let old = remaining_old
           let new = remaining_new
-          do_diff_attributes(controlled:, old:, new:, added:, removed:)
+          diff_attributes(controlled:, old:, new:, added:, removed:)
         }
 
         Property(..), Eq, Property(..) -> {
@@ -661,7 +666,7 @@ fn do_diff_attributes(
 
           let old = remaining_old
           let new = remaining_new
-          do_diff_attributes(controlled:, old:, new:, added:, removed:)
+          diff_attributes(controlled:, old:, new:, added:, removed:)
         }
 
         Event(..), Eq, Event(..) -> {
@@ -677,7 +682,7 @@ fn do_diff_attributes(
 
           let old = remaining_old
           let new = remaining_new
-          do_diff_attributes(controlled:, old:, new:, added:, removed:)
+          diff_attributes(controlled:, old:, new:, added:, removed:)
         }
 
         _, Eq, _ -> {
@@ -685,19 +690,19 @@ fn do_diff_attributes(
           let removed = [prev, ..removed]
           let old = remaining_old
           let new = remaining_new
-          do_diff_attributes(controlled:, old:, new:, added:, removed:)
+          diff_attributes(controlled:, old:, new:, added:, removed:)
         }
 
         _, Gt, _ -> {
           let added = [next, ..added]
           let new = remaining_new
-          do_diff_attributes(controlled:, old:, new:, added:, removed:)
+          diff_attributes(controlled:, old:, new:, added:, removed:)
         }
 
         _, Lt, _ -> {
           let removed = [prev, ..removed]
           let old = remaining_old
-          do_diff_attributes(controlled:, old:, new:, added:, removed:)
+          diff_attributes(controlled:, old:, new:, added:, removed:)
         }
       }
   }
