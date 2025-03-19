@@ -58,8 +58,6 @@ export const make_component = (
       this.#adoptStyleSheets();
     }
 
-    send(action) {}
-
     dispatch(msg, immediate = false) {
       this.#runtime.dispatch(msg, immediate);
     }

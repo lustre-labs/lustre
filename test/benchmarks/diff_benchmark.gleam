@@ -98,7 +98,7 @@ pub fn benchmark_10_000_rows() {
 //
 
 fn run_diff(input: #(Element(msg), Element(msg))) {
-  diff.diff(input.0, input.1)
+  diff.diff([], input.0, input.1)
 }
 
 fn table_diff(rows: Int, shuffle: Bool, keyed: Bool) {

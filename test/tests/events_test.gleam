@@ -206,7 +206,7 @@ pub fn event_added_test() {
   let prev = html.button([], [html.text("Click me!")])
   let next = html.button([event.on_click("hello!")], [html.text("Click me!")])
 
-  let events = diff.diff(prev, next).events
+  let events = diff.diff([], prev, next).events
 
   let path = ["0"]
 
@@ -220,7 +220,7 @@ pub fn event_removed_test() {
   let prev = html.button([event.on_click("hello!")], [html.text("Click me!")])
   let next = html.button([], [html.text("Click me!")])
 
-  let events = diff.diff(prev, next).events
+  let events = diff.diff([], prev, next).events
 
   let path = ["0"]
 
@@ -238,7 +238,7 @@ pub fn element_added_test() {
       #("b", html.button([event.on_click("hello!")], [html.text("Click me!")])),
     ])
 
-  let events = diff.diff(prev, next).events
+  let events = diff.diff([], prev, next).events
 
   let path = ["0", "b"]
 
@@ -256,7 +256,7 @@ pub fn element_removed_test() {
     ])
   let next = keyed.div([], [#("a", html.h1([], [html.text("Testing...")]))])
 
-  let events = diff.diff(prev, next).events
+  let events = diff.diff([], prev, next).events
 
   let path = ["0", "b"]
 
@@ -279,7 +279,7 @@ pub fn element_replaced_test() {
       #("b", html.button([event.on_click("hello!")], [html.text("Click me!")])),
     ])
 
-  let events = diff.diff(prev, next).events
+  let events = diff.diff([], prev, next).events
 
   let path = ["0", "b"]
 
@@ -320,7 +320,7 @@ pub fn keyed_element_replaced_test() {
       ),
     ])
 
-  let events = diff.diff(prev, next).events
+  let events = diff.diff([], prev, next).events
 
   let path = ["0", "v2", "0"]
   events.handle(events, path, "click", dynamic.from(Nil))
