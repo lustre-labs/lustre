@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/json.{type Json}
+import lustre/internals/json_object_builder
 import lustre/vdom/attribute.{type Attribute}
 import lustre/vdom/events.{type Events}
 import lustre/vdom/node.{type Node}
@@ -174,12 +175,12 @@ pub fn add_child(parent: Patch(msg), child: Patch(msg)) -> Patch(msg) {
 // ENCODING --------------------------------------------------------------------
 
 pub fn to_json(patch: Patch(msg)) -> Json {
-  json.object([
-    #("index", json.int(patch.index)),
-    #("removed", json.int(patch.removed)),
-    #("changes", json.array(patch.changes, change_to_json)),
-    #("children", json.array(patch.children, to_json)),
-  ])
+  json_object_builder.new()
+  |> json_object_builder.int("index", patch.index)
+  |> json_object_builder.int("removed", patch.removed)
+  |> json_object_builder.list("changes", patch.changes, change_to_json)
+  |> json_object_builder.list("children", patch.children, to_json)
+  |> json_object_builder.build
 }
 
 fn change_to_json(change: Change(msg)) -> Json {
@@ -197,22 +198,22 @@ fn change_to_json(change: Change(msg)) -> Json {
 }
 
 fn replace_text_to_json(kind, content) {
-  json.object([#("kind", json.int(kind)), #("content", json.string(content))])
+  json_object_builder.tagged(kind)
+  |> json_object_builder.string("content", content)
+  |> json_object_builder.build
 }
 
 fn replace_inner_html_to_json(kind, inner_html) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("inner_html", json.string(inner_html)),
-  ])
+  json_object_builder.tagged(kind)
+  |> json_object_builder.string("inner_html", inner_html)
+  |> json_object_builder.build
 }
 
 fn update_to_json(kind, added, removed) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("added", json.array(added, attribute.to_json)),
-    #("removed", json.array(removed, attribute.to_json)),
-  ])
+  json_object_builder.tagged(kind)
+  |> json_object_builder.list("added", added, attribute.to_json)
+  |> json_object_builder.list("removed", removed, attribute.to_json)
+  |> json_object_builder.build
 }
 
 fn move_to_json(kind, key, before, count) {
