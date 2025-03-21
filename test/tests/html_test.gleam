@@ -24,6 +24,52 @@ pub fn element_multiple_children_test() {
   input |> snapshot("Element with multiple children should render in order")
 }
 
+pub fn void_elements_test() {
+  use <- lustre_test.test_filter("void_elements_test")
+
+  let input =
+    html.div([], [
+      html.area([]),
+      html.base([]),
+      html.br([]),
+      html.col([]),
+      html.embed([]),
+      html.hr([]),
+      html.img([]),
+      html.input([]),
+      html.link([]),
+      html.meta([]),
+      html.source([]),
+      html.track([]),
+      html.wbr([]),
+    ])
+
+  input |> snapshot("Void elements should render as such")
+}
+
+pub fn keyed_void_elements_test() {
+  use <- lustre_test.test_filter("keyed_void_elements_test")
+
+  let input =
+    keyed.div([], [
+      #("area", html.area([])),
+      #("base", html.base([])),
+      #("br", html.br([])),
+      #("col", html.col([])),
+      #("embed", html.embed([])),
+      #("hr", html.hr([])),
+      #("img", html.img([])),
+      #("input", html.input([])),
+      #("link", html.link([])),
+      #("meta", html.meta([])),
+      #("source", html.source([])),
+      #("track", html.track([])),
+      #("wbr", html.wbr([])),
+    ])
+
+  input |> snapshot("Keyed void elements should render as such")
+}
+
 // FRAGMENT TESTS --------------------------------------------------------------
 
 pub fn fragment_empty_test() {

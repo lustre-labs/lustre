@@ -46,6 +46,10 @@ import gleam/erlang/process.{type Selector, type Subject}
 import gleam/json.{type Json}
 import gleam/list
 
+// CONSTANTS -------------------------------------------------------------------
+
+const empty: Effect(msg) = Effect([], [], [])
+
 // TYPES -----------------------------------------------------------------------
 
 /// The `Effect` type treats side effects as data and is a way of saying "Hey
@@ -108,7 +112,7 @@ type Actions(msg) {
 /// ```
 ///
 pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  Effect(..none, synchronous: [task(effect)])
+  Effect(..empty, synchronous: [task(effect)])
 }
 
 /// Schedule a side effect that is guaranteed to run after your `view` function
@@ -130,9 +134,7 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 /// effects are processed.
 ///
 pub fn before_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  Effect(..none, before_paint: [
-    fn(actions: Actions(msg)) { effect(actions.dispatch) },
-  ])
+  Effect(..empty, before_paint: [task(effect)])
 }
 
 /// Schedule a side effect that is guaranteed to run after the browser has painted
@@ -143,9 +145,7 @@ pub fn before_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 /// effects and any `before_paint` effects are processed.
 ///
 pub fn after_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  Effect(..none, after_paint: [
-    fn(actions: Actions(msg)) { effect(actions.dispatch) },
-  ])
+  Effect(..empty, after_paint: [task(effect)])
 }
 
 /// Emit a custom event from a component as an effect. Parents can listen to these
@@ -156,7 +156,7 @@ pub fn after_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 @internal
 pub fn event(name: String, data: Json) -> Effect(msg) {
   let task = fn(actions: Actions(msg)) { actions.emit(name, data) }
-  Effect(..none, synchronous: [task])
+  Effect(..empty, synchronous: [task])
 }
 
 fn task(effect: fn(fn(msg) -> Nil) -> Nil) -> fn(Actions(msg)) -> Nil {
@@ -174,20 +174,22 @@ pub fn select(
     actions.select(selector)
   }
 
-  Effect(..none, synchronous: [task])
+  Effect(..empty, synchronous: [task])
 }
 
 @target(javascript)
 @internal
 pub fn select(_sel) {
-  none
+  empty
 }
 
 /// Most Lustre applications need to return a tuple of `#(model, Effect(msg))`
 /// from their `init` and `update` functions. If you don't want to perform any
 /// side effects, you can use `none` to tell the runtime there's no work to do.
 ///
-pub const none: Effect(msg) = Effect([], [], [])
+pub fn none() -> Effect(msg) {
+  empty
+}
 
 // MANIPULATIONS ---------------------------------------------------------------
 
@@ -204,7 +206,7 @@ pub const none: Effect(msg) = Effect([], [], [])
 ///    the sequencing inside the effect itself.
 ///
 pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
-  use acc, eff <- list.fold(effects, none)
+  use acc, eff <- list.fold(effects, empty)
   Effect(
     synchronous: list.fold(eff.synchronous, acc.synchronous, list.prepend),
     before_paint: list.fold(eff.before_paint, acc.before_paint, list.prepend),

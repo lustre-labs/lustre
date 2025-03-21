@@ -37,8 +37,8 @@ pub opaque type Msg {
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
-    Incr -> #(model + 1, effect.none)
-    Decr -> #(model - 1, effect.none)
+    Incr -> #(model + 1, effect.none())
+    Decr -> #(model - 1, effect.none())
     Tick -> #(
       model + 1,
       effect.batch([tick(), event.emit("tick", json.int(model + 1))]),

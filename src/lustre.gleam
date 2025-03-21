@@ -163,11 +163,13 @@ import gleam/dict.{type Dict}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/process.{type Subject}
 import gleam/otp/actor.{type StartError}
-import gleam/result
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/internals/constants
 import lustre/runtime/server/runtime
+
+@target(erlang)
+import gleam/result
 
 // TYPES -----------------------------------------------------------------------
 
@@ -243,8 +245,8 @@ pub fn simple(
   update: fn(model, msg) -> model,
   view: fn(model) -> Element(msg),
 ) -> App(flags, model, msg) {
-  let init = fn(flags) { #(init(flags), effect.none) }
-  let update = fn(model, msg) { #(update(model, msg), effect.none) }
+  let init = fn(flags) { #(init(flags), effect.none()) }
+  let update = fn(model, msg) { #(update(model, msg), effect.none()) }
 
   application(init, update, view)
 }

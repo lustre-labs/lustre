@@ -139,9 +139,7 @@ pub fn register() {
       init,
       update,
       view,
-      dict.from_list([
-        #("column", decode.map(decoder(), ParentUpdatedColumn))
-      ]),
+      dict.from_list([#("column", decode.map(decoder(), ParentUpdatedColumn))]),
     )
 
   lustre.register(component, component_tag)
@@ -178,7 +176,7 @@ pub fn column(column column: Column) -> Element(OutMsg) {
 fn init(_) {
   let empty_column =
     Column(id: random_id(), kind: Unset, name: "", value: "", open: False)
-  #(empty_column, effect.none)
+  #(empty_column, effect.none())
 }
 
 // -- UPDATE -------------------------------------------------------------------
@@ -196,7 +194,7 @@ type Msg {
 
 fn update(column: Column, msg: Msg) -> #(Column, effect.Effect(Msg)) {
   case msg {
-    ParentUpdatedColumn(column:) -> #(column, effect.none)
+    ParentUpdatedColumn(column:) -> #(column, effect.none())
     UserClickedCreateAbove -> #(column, event.emit("create-above", json.null()))
     UserClickedCreateBelow -> #(column, event.emit("create-below", json.null()))
     UserClickedDelete -> #(column, event.emit("delete", json.null()))

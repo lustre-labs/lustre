@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { toList, NonEmpty } from "../../../gleam.mjs";
+import { toList, NonEmpty, Empty } from "../../../gleam.mjs";
+import * as $list from '../../../../gleam_stdlib/gleam/list.mjs';
 import { empty_list } from "../../internals/constants.mjs";
 import { diff } from "../../vdom/diff.mjs";
 import * as Events from "../../vdom/events.mjs";
@@ -88,8 +89,6 @@ export class Runtime {
     );
   }
 
-  select() {}
-
   // PRIVATE API ---------------------------------------------------------------
 
   #model;
@@ -121,6 +120,7 @@ export class Runtime {
 
   // A `#tick` is where we process effects and trigger any synchronous updates.
   // Once a tick has been processed a render will be scheduled if none is already.
+  // p0
   #tick(effects, mayScheduleRender = true) {
     // By flipping this on before we process the list of synchronous effects, we
     // make it so that any messages dispatched immediately will be queued up and
@@ -141,27 +141,8 @@ export class Runtime {
       // Both `before_paint` and `after_paint` are lists of effects that should
       // be deferred until we next perform a render. That means we need to collect
       // them all up in order and save them for later.
-      if (effects.before_paint.head) {
-        let existingEffects = this.#beforePaint;
-        let incomingEffects = effects.before_paint;
-
-        this.#beforePaint = incomingEffects;
-
-        for (let list = existingEffects; list.tail; list = list.tail) {
-          this.#beforePaint = { head: list.head, tail: this.#beforePaint };
-        }
-      }
-
-      for (let list = effects.after_paint; list.tail; list = list.tail) {
-        let existingEffects = this.#afterPaint;
-        let incomingEffects = effects.after_paint;
-
-        this.#afterPaint = incomingEffects;
-
-        for (let list = existingEffects; list.tail; list = list.tail) {
-          this.#afterPaint = { head: list.head, tail: this.#afterPaint };
-        }
-      }
+      this.#beforePaint = listAppend(this.#beforePaint, effects.before_paint);
+      this.#afterPaint = listAppend(this.#afterPaint, effects.after_paint);
 
       // Once we've batched any deferred effects, we check if there are any
       // messages in the queue. If not, we can break out of the loop and continue
@@ -203,12 +184,7 @@ export class Runtime {
     // the browser from painting until we have processed any effects that need to
     // be run first.
     if (this.#beforePaint instanceof NonEmpty) {
-      const effects = {
-        synchronous: this.#beforePaint,
-        before_paint: empty_list,
-        after_paint: empty_list,
-      };
-
+      const effects = makeEffect(this.#beforePaint);
       this.#beforePaint = empty_list;
 
       // We explicitly queue a microtask instead of synchronously calling the
@@ -223,13 +199,9 @@ export class Runtime {
     // If there are effects to schedule for after the browser has painted, we can
     // request an animation frame and process them then.
     if (this.#afterPaint instanceof NonEmpty) {
-      const effects = {
-        synchronous: this.#afterPaint,
-        before_paint: empty_list,
-        after_paint: empty_list,
-      };
-
+      const effects = makeEffect(this.#afterPaint);
       this.#afterPaint = empty_list;
+
       window.requestAnimationFrame(() => {
         this.#shouldFlush = true;
         this.#tick(effects);
@@ -243,6 +215,24 @@ export const send = (runtime, message) => {
 };
 
 //
+
+function makeEffect(synchronous) {
+  return {
+    synchronous,
+    after_paint: empty_list,
+    before_paint: empty_list
+  }
+}
+
+function listAppend(a, b) {
+  if (a instanceof Empty) {
+    return b;
+  } else if (b instanceof Empty) {
+    return  a;
+  } else {
+    return $list.append(a, b);
+  }
+}
 
 const copiedStyleSheets = new WeakMap();
 
