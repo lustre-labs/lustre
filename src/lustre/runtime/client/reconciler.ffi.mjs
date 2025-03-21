@@ -51,25 +51,19 @@ export class Reconciler {
       iterate(patch.changes, (change) => {
         switch (change.kind) {
           case insert_kind:
-            change.before += offset;
-            break;
-
           case move_kind:
-            change.before += offset;
+            change.before = (change.before|0) + offset;
             break;
 
           case remove_kind:
-            change.from += offset;
-            break;
-
           case replace_kind:
-            change.from += offset;
+            change.from = (change.from|0) + offset;
             break;
         }
       });
 
       iterate(patch.children, (child) => {
-        child.index += offset;
+        child.index = (child.index|0) + offset;
       });
     }
 
@@ -131,7 +125,7 @@ export class Reconciler {
         // TODO: use linked-list style but skip to indices if distance is great enough?
 
         this.#stack.push({
-          node: node.childNodes[child.index],
+          node: node.childNodes[child.index|0],
           patch: child,
         });
       });
@@ -150,7 +144,7 @@ export class Reconciler {
       fragment.appendChild(el);
     });
 
-    node.insertBefore(fragment, node.childNodes[before] ?? null);
+    node.insertBefore(fragment, node.childNodes[before|0] ?? null);
   }
 
   #move(node, key, before, count) {
@@ -176,7 +170,7 @@ export class Reconciler {
   }
 
   #remove(node, from, count) {
-    this.#removeFromChild(node, node.childNodes[from], count);
+    this.#removeFromChild(node, node.childNodes[from|0], count);
   }
 
   #removeFromChild(parent, child, count) {
@@ -199,15 +193,15 @@ export class Reconciler {
     const el = this.#createElement(child);
 
     addKeyedChild(parent, el);
-    parent.insertBefore(el, parent.childNodes[from] ?? null);
+    parent.insertBefore(el, parent.childNodes[from|0] ?? null);
   }
 
   #replaceText(node, content) {
-    node.data = content;
+    node.data = content ?? "";
   }
 
   #replaceInnerHtml(node, inner_html) {
-    node.innerHTML = inner_html;
+    node.innerHTML = inner_html ?? "";
   }
 
   #update(node, added, removed) {
@@ -249,7 +243,7 @@ export class Reconciler {
       }
 
       case text_kind: {
-        const node = document.createTextNode(vnode.content);
+        const node = document.createTextNode(vnode.content ?? "");
 
         initialiseMetadata(node, vnode.key);
 
@@ -292,7 +286,7 @@ export class Reconciler {
     switch (attribute.kind) {
       case attribute_kind: {
         const name = attribute.name;
-        const value = attribute.value;
+        const value = attribute.value ?? "";
 
         if (value !== node.getAttribute(name)) {
           node.setAttribute(name, value);
@@ -377,7 +371,7 @@ function iterate(list, callback) {
     for (let i = 0; i < list.length; i++) {
       callback(list[i]);
     }
-  } else {
+  } else if (list) {
     for (list; list.tail; list = list.tail) {
       callback(list.head);
     }
@@ -507,7 +501,7 @@ const ATTRIBUTE_HOOKS = {
 
 function syncedBooleanAttribute(name) {
   return {
-    added(node, value) {
+    added(node, _value) {
       node[name] = true;
     },
     removed(node) {
