@@ -16,6 +16,12 @@ import lustre/vdom/attribute.{Attribute, Event, Property}
 pub type Attribute(msg) =
   attribute.Attribute(msg)
 
+// CONSTANTS -------------------------------------------------------------------
+
+const immediate_events = [
+  "input", "change", "focus", "focusin", "focusout", "blur", "select",
+]
+
 // CONSTRUCTORS ----------------------------------------------------------------
 
 /// Create an HTML attribute. This is like saying `element.setAttribute("class", "wibble")`
@@ -52,10 +58,6 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
     immediate: list.contains(immediate_events, name),
   )
 }
-
-const immediate_events = [
-  "input", "change", "focus", "focusin", "focusout", "blur", "select",
-]
 
 /// Create an empty attribute. This is not added to the DOM and not rendered when
 /// calling [`element.to_string`](./element.html#to_string), but it is useful for
@@ -385,6 +387,26 @@ pub fn form_target(target: String) -> Attribute(msg) {
 ///
 pub fn open(is_open: Bool) -> Attribute(msg) {
   boolean_attribute("open", is_open)
+}
+
+// WEB COMPONENTS --------------------------------------------------------------
+
+///
+pub fn slot(name: String) -> Attribute(msg) {
+  attribute("slot", name)
+}
+
+///
+pub fn shadow_root_mode(is_open: Bool) -> Attribute(msg) {
+  attribute("shadowrootmode", case is_open {
+    True -> "open"
+    False -> "closed"
+  })
+}
+
+///
+pub fn shadow_root_delegates_focus(delegates_focus: Bool) -> Attribute(msg) {
+  boolean_attribute("shadowrootdelegatesfocus", delegates_focus)
 }
 
 // META ------------------------------------------------------------------------

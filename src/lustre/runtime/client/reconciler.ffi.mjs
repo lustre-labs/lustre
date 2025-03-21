@@ -26,6 +26,8 @@ import {
 
 //
 
+const SUPPORTS_MOVE_BEFORE = !!HTMLElement.prototype.moveBefore;
+
 export class Reconciler {
   #root = null;
   #dispatch = () => {};
@@ -147,20 +149,16 @@ export class Reconciler {
 
   #move(node, key, before, count) {
     let el = node[meta].keyedChildren.get(key).deref();
-
-    if (count > 1) {
-      const fragment = document.createDocumentFragment();
-
-      for (let i = 0; i < count && el !== null; ++i) {
-        let next = el.nextSibling;
-        fragment.append(el);
-        el = next;
+    const beforeEl = node.childNodes[before] ?? null;
+    for (let i = 0; i < count && el !== null; ++i) {
+      const next = el.nextSibling;
+      if (SUPPORTS_MOVE_BEFORE) {
+        node.moveBefore(el, beforeEl);
+      } else {
+        node.insertBefore(el, beforeEl);
       }
-
-      el = fragment;
+      el = next;
     }
-
-    node.insertBefore(el, node.childNodes[before|0] ?? null);
   }
 
   #removeKey(node, key, count) {

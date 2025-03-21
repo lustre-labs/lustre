@@ -25,9 +25,9 @@ pub type Diff(msg) {
 pub fn diff(old: Node(msg), new: Node(msg)) -> Diff(msg) {
   do_diff(
     old: [old],
-    old_keyed: mutable_map.shared_empty(),
+    old_keyed: mutable_map.new(),
     new: [new],
-    new_keyed: mutable_map.shared_empty(),
+    new_keyed: mutable_map.new(),
     //
     moved: constants.empty_set(),
     moved_offset: 0,

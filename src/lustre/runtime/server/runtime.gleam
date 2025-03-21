@@ -115,7 +115,7 @@ fn loop(
           state.on_attribute_change,
           state.update,
           False,
-          #(state.model, effect.none),
+          #(state.model, effect.none()),
         )
 
       use <- bool.lazy_guard(!did_update, fn() { actor.continue(state) })

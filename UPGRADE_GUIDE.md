@@ -76,8 +76,3 @@ completely invisible in the final rendered HTML.
 They also interact slightly differently with keyed elements now. The fragment as
 a whole can now have a `key` associated with it, and children of the fragment
 can either be keyed or not separately from the fragment itself.
-
-
-### `effect.none()` becomes `effect.none`
-
-A small change that makes the common case slightly shorter and more efficient.

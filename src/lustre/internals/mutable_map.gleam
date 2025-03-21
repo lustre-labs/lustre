@@ -17,17 +17,8 @@ pub type MutableMap(key, value)
 ///
 ///
 @external(erlang, "gleam@dict", "new")
-@external(javascript, "./mutable_map.ffi.mjs", "make")
-pub fn new() -> MutableMap(key, value)
-
-/// Get a reference to a globally shared empty map. You should only use this if
-/// you are certain that you will not be modifying the map. This function is
-/// provided as a performance optimisation to prevent many empty maps being
-/// allocated for non-keyed nodes.
-///
-@external(erlang, "gleam@dict", "new")
 @external(javascript, "./mutable_map.ffi.mjs", "empty")
-pub fn shared_empty() -> MutableMap(key, value)
+pub fn new() -> MutableMap(key, value)
 
 ///
 ///
