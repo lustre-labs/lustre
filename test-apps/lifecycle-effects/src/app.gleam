@@ -24,7 +24,7 @@ type Model =
   Int
 
 fn init(_) -> #(Model, Effect(Msg)) {
-  #(0, effect.none)
+  #(0, effect.none())
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -46,7 +46,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         alert_after_paint(model + 500, should_flush),
       ]),
     )
-    Flush -> #(model - 500, effect.none)
+    Flush -> #(model - 500, effect.none())
   }
 }
 

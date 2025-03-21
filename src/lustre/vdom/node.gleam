@@ -12,6 +12,13 @@ import lustre/internals/escape.{escape}
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/attribute.{type Attribute, Attribute}
 
+// CONSTANTS -------------------------------------------------------------------
+
+const void_elements = [
+  "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
+  "param", "source", "track", "wbr",
+]
+
 // TYPES -----------------------------------------------------------------------
 
 pub type Node(msg) {
@@ -38,7 +45,7 @@ pub type Node(msg) {
     // long as the new and old tree agree on the same order relation.
     //
     // When constructing a Node with attributes provided by a user, attributes
-    // have to be sorted with the `vdom.prepare_attributes` function.
+    // have to be sorted with the `attribute.prepare` function.
     //
     attributes: List(Attribute(msg)),
     children: List(Node(msg)),
@@ -106,13 +113,15 @@ pub fn element(
   self_closing self_closing: Bool,
   void void: Bool,
 ) -> Node(msg) {
+  let void = void || { namespace == "" && list.contains(void_elements, tag) }
+
   Element(
     kind: element_kind,
     key:,
     mapper:,
     namespace:,
     tag:,
-    attributes:,
+    attributes: attribute.prepare(attributes),
     children:,
     keyed_children:,
     self_closing:,
@@ -146,7 +155,7 @@ pub fn unsafe_inner_html(
     mapper:,
     namespace:,
     tag:,
-    attributes:,
+    attributes: attribute.prepare(attributes),
     inner_html:,
   )
 }

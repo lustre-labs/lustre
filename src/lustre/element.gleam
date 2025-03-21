@@ -14,7 +14,6 @@ import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute} as _
 import lustre/internals/constants
 import lustre/internals/mutable_map
-import lustre/vdom/attribute
 import lustre/vdom/node.{Element, Fragment, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
@@ -93,46 +92,17 @@ pub fn element(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  case tag {
-    "area"
-    | "base"
-    | "br"
-    | "col"
-    | "embed"
-    | "hr"
-    | "img"
-    | "input"
-    | "link"
-    | "meta"
-    | "param"
-    | "source"
-    | "track"
-    | "wbr" ->
-      node.element(
-        key: "",
-        mapper: constants.option_none,
-        namespace: "",
-        tag: tag,
-        attributes: attribute.prepare(attributes),
-        children: constants.empty_list,
-        keyed_children: mutable_map.shared_empty(),
-        self_closing: False,
-        void: True,
-      )
-
-    _ ->
-      node.element(
-        key: "",
-        mapper: constants.option_none,
-        namespace: "",
-        tag: tag,
-        attributes: attribute.prepare(attributes),
-        children:,
-        keyed_children: mutable_map.shared_empty(),
-        self_closing: False,
-        void: False,
-      )
-  }
+  node.element(
+    key: "",
+    mapper: constants.option_none,
+    namespace: "",
+    tag: tag,
+    attributes:,
+    children: children,
+    keyed_children: mutable_map.new(),
+    self_closing: False,
+    void: False,
+  )
 }
 
 /// A function for constructing elements in a specific XML namespace. This can
@@ -149,9 +119,9 @@ pub fn namespaced(
     mapper: constants.option_none,
     namespace:,
     tag:,
-    attributes: attribute.prepare(attributes),
+    attributes:,
     children:,
-    keyed_children: mutable_map.shared_empty(),
+    keyed_children: mutable_map.new(),
     self_closing: False,
     void: False,
   )
@@ -175,9 +145,9 @@ pub fn advanced(
     mapper: constants.option_none,
     namespace:,
     tag:,
-    attributes: attribute.prepare(attributes),
+    attributes:,
     children:,
-    keyed_children: mutable_map.shared_empty(),
+    keyed_children: mutable_map.new(),
     self_closing:,
     void:,
   )
@@ -210,7 +180,7 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
     key: "",
     mapper: constants.option_none,
     children:,
-    keyed_children: mutable_map.shared_empty(),
+    keyed_children: mutable_map.new(),
     children_count: count_fragment_children(children, 0),
   )
 }
@@ -246,7 +216,7 @@ pub fn unsafe_inner_html(
     namespace:,
     tag:,
     mapper: constants.option_none,
-    attributes: attribute.prepare(attributes),
+    attributes:,
     inner_html:,
   )
 }
