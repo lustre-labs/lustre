@@ -56,9 +56,7 @@ pub fn start(
       |> process.selecting(self, function.identity)
 
     let vdom = view(init.0)
-    let events =
-      events.new(function.identity)
-      |> events.add_child(function.identity, 0, vdom)
+    let events = events.from_node(vdom)
 
     let state =
       State(
@@ -120,7 +118,7 @@ fn loop(
 
       use <- bool.lazy_guard(!did_update, fn() { actor.continue(state) })
       let vdom = state.view(model)
-      let Diff(patch:, events:) = diff(state.vdom, vdom)
+      let Diff(patch:, events:) = diff(state.events, state.vdom, vdom)
 
       handle_effect(state.self, effect)
       broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))
@@ -132,11 +130,12 @@ fn loop(
       case
         events.handle(state.events, message.path, message.name, message.event)
       {
-        Error(_) -> actor.continue(state)
-        Ok(message) -> {
-          let #(model, effect) = state.update(state.model, message)
+        #(events, Error(_)) -> actor.continue(State(..state, events:))
+        #(events, Ok(msg)) -> {
+          let #(model, effect) = state.update(state.model, msg)
           let vdom = state.view(model)
-          let Diff(patch:, events:) = diff(state.vdom, vdom)
+
+          let Diff(patch:, events:) = diff(events, state.vdom, vdom)
 
           handle_effect(state.self, effect)
           broadcast(
@@ -229,7 +228,7 @@ fn loop(
     EffectDispatchedMessage(message:) -> {
       let #(model, effect) = state.update(state.model, message)
       let vdom = state.view(state.model)
-      let Diff(patch:, events:) = diff(state.vdom, vdom)
+      let Diff(patch:, events:) = diff(state.events, state.vdom, vdom)
 
       handle_effect(state.self, effect)
       broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))
@@ -245,7 +244,7 @@ fn loop(
 
     SelfDispatchedMessages(messages: [], effect:) -> {
       let vdom = state.view(state.model)
-      let Diff(patch:, events:) = diff(state.vdom, vdom)
+      let Diff(patch:, events:) = diff(state.events, state.vdom, vdom)
 
       handle_effect(state.self, effect)
       broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))

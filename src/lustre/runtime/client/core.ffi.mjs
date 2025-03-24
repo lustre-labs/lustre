@@ -45,16 +45,17 @@ export class Runtime {
     this.#update = update;
 
     this.#reconciler = new Reconciler(this.root, (event, path, name) => {
-      const msg = Events.handle(this.#events, toList(path), name, event);
-
+      const [events, msg] = Events.handle(this.#events, path, name, event);
+      this.#events = events;
+      
       if (msg.isOk()) {
-        this.dispatch(msg[0]);
+        this.dispatch(msg[0], false);
       }
     });
 
     const virtualised = virtualise(this.root);
     this.#vdom = this.#view(this.#model);
-    const { patch, events } = diff(virtualised, this.#vdom, Events.new$());
+    const { patch, events } = diff(Events.new$(), virtualised, this.#vdom);
     this.#events = events;
     this.#reconciler.push(patch, this.initialNodeOffset);
     this.#tick(effects, false);
@@ -173,7 +174,7 @@ export class Runtime {
     this.#renderTimer = null;
 
     const next = this.#view(this.#model);
-    const { patch, events } = diff(this.#vdom, next, this.#events);
+    const { patch, events } = diff(this.#events, this.#vdom, next);
 
     this.#events = events;
     this.#vdom = next;

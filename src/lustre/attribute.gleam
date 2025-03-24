@@ -55,7 +55,8 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
     include: constants.empty_list,
     prevent_default: False,
     stop_propagation: False,
-    immediate: list.contains(immediate_events, name),
+    // use list.any instead of list.contains to avoid calling the generic isEqual
+    immediate: list.any(immediate_events, fn(immediate) { immediate == name }),
   )
 }
 

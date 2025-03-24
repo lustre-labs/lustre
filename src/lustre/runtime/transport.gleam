@@ -16,7 +16,7 @@ pub type ClientMessage(msg) {
 
 pub type ServerMessage {
   AttributesChanged(kind: Int, attributes: List(#(String, Dynamic)))
-  EventFired(kind: Int, path: List(String), name: String, event: Dynamic)
+  EventFired(kind: Int, path: String, name: String, event: Dynamic)
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -50,7 +50,7 @@ pub fn attributes_changed(
 pub const event_fired_kind: Int = 1
 
 pub fn event_fired(
-  path path: List(String),
+  path path: String,
   name name: String,
   event event: Dynamic,
 ) -> ServerMessage {
@@ -110,7 +110,7 @@ fn attributes_changed_decoder() -> Decoder(ServerMessage) {
 }
 
 fn event_fired_decoder() -> Decoder(ServerMessage) {
-  use path <- decode.field("path", decode.list(decode.string))
+  use path <- decode.field("path", decode.string)
   use name <- decode.field("name", decode.string)
   use event <- decode.field("event", decode.dynamic)
 

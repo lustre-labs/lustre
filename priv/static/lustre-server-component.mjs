@@ -73,21 +73,17 @@ var Reconciler = class {
       iterate(patch.changes, (change) => {
         switch (change.kind) {
           case insert_kind:
-            change.before += offset;
-            break;
           case move_kind:
-            change.before += offset;
+            change.before = (change.before | 0) + offset;
             break;
           case remove_kind:
-            change.from += offset;
-            break;
           case replace_kind:
-            change.from += offset;
+            change.from = (change.from | 0) + offset;
             break;
         }
       });
       iterate(patch.children, (child) => {
-        child.index += offset;
+        child.index = (child.index | 0) + offset;
       });
     }
     this.#stack.push({ node: this.#root, patch });
@@ -134,7 +130,7 @@ var Reconciler = class {
       }
       iterate(patch.children, (child) => {
         this.#stack.push({
-          node: node.childNodes[child.index],
+          node: node.childNodes[child.index | 0],
           patch: child
         });
       });
@@ -148,7 +144,7 @@ var Reconciler = class {
       addKeyedChild(node, el);
       fragment3.appendChild(el);
     });
-    node.insertBefore(fragment3, node.childNodes[before] ?? null);
+    node.insertBefore(fragment3, node.childNodes[before | 0] ?? null);
   }
   #move(node, key, before, count) {
     let el = node[meta].keyedChildren.get(key).deref();
@@ -171,7 +167,7 @@ var Reconciler = class {
     );
   }
   #remove(node, from, count) {
-    this.#removeFromChild(node, node.childNodes[from], count);
+    this.#removeFromChild(node, node.childNodes[from | 0], count);
   }
   #removeFromChild(parent, child, count) {
     while (count-- > 0 && child !== null) {
@@ -188,13 +184,13 @@ var Reconciler = class {
     this.#remove(parent, from, count);
     const el = this.#createElement(child);
     addKeyedChild(parent, el);
-    parent.insertBefore(el, parent.childNodes[from] ?? null);
+    parent.insertBefore(el, parent.childNodes[from | 0] ?? null);
   }
   #replaceText(node, content) {
-    node.data = content;
+    node.data = content ?? "";
   }
   #replaceInnerHtml(node, inner_html) {
-    node.innerHTML = inner_html;
+    node.innerHTML = inner_html ?? "";
   }
   #update(node, added, removed) {
     iterate(removed, (attribute3) => {
@@ -224,7 +220,7 @@ var Reconciler = class {
         return node;
       }
       case text_kind: {
-        const node = document.createTextNode(vnode.content);
+        const node = document.createTextNode(vnode.content ?? "");
         initialiseMetadata(node, vnode.key);
         return node;
       }
@@ -253,7 +249,7 @@ var Reconciler = class {
     switch (attribute3.kind) {
       case attribute_kind: {
         const name = attribute3.name;
-        const value = attribute3.value;
+        const value = attribute3.value ?? "";
         if (value !== node.getAttribute(name)) {
           node.setAttribute(name, value);
         }
@@ -274,8 +270,10 @@ var Reconciler = class {
         const immediate = attribute3.immediate;
         const include = Array.isArray(attribute3.include) ? attribute3.include : [];
         node[meta].handlers.set(attribute3.name, (event2) => {
-          if (prevent) event2.preventDefault();
-          if (stop) event2.stopPropagation();
+          if (prevent)
+            event2.preventDefault();
+          if (stop)
+            event2.stopPropagation();
           let path = [];
           let node2 = event2.currentTarget;
           while (node2 !== this.#root) {
@@ -297,14 +295,14 @@ var Reconciler = class {
     }
   }
 };
-function iterate(list3, callback) {
-  if (Array.isArray(list3)) {
-    for (let i = 0; i < list3.length; i++) {
-      callback(list3[i]);
+function iterate(list4, callback) {
+  if (Array.isArray(list4)) {
+    for (let i = 0; i < list4.length; i++) {
+      callback(list4[i]);
     }
-  } else {
-    for (list3; list3.tail; list3 = list3.tail) {
-      callback(list3.head);
+  } else if (list4) {
+    for (list4; list4.tail; list4 = list4.tail) {
+      callback(list4.head);
     }
   }
 }
@@ -380,7 +378,7 @@ var ATTRIBUTE_HOOKS = {
 };
 function syncedBooleanAttribute(name) {
   return {
-    added(node, value) {
+    added(node, _value) {
       node[name] = true;
     },
     removed(node) {
@@ -401,7 +399,8 @@ var copiedStyleSheets = /* @__PURE__ */ new WeakMap();
 async function adoptStylesheets(shadowRoot) {
   const pendingParentStylesheets = [];
   for (const node of document.querySelectorAll("link[rel=stylesheet], style")) {
-    if (node.sheet) continue;
+    if (node.sheet)
+      continue;
     pendingParentStylesheets.push(
       new Promise((resolve, reject) => {
         node.addEventListener("load", resolve);
@@ -459,9 +458,11 @@ var ServerComponent = class extends HTMLElement {
   #observer = new MutationObserver((mutations) => {
     const attributes = [];
     for (const mutation of mutations) {
-      if (mutation.type !== "attributes") continue;
+      if (mutation.type !== "attributes")
+        continue;
       const name = mutation.attributeName;
-      if (!this.#remoteObservedAttributes.includes(name)) continue;
+      if (!this.#remoteObservedAttributes.includes(name))
+        continue;
       attributes.push([name, this.getAttribute(name)]);
     }
     if (attributes.length && this.#connected) {
@@ -512,12 +513,15 @@ var ServerComponent = class extends HTMLElement {
       }
       case "method": {
         const normalised = next.toLowerCase();
-        if (normalised == this.#method) return;
+        if (normalised == this.#method)
+          return;
         if (["ws", "sse", "polling"].includes(normalised)) {
           this.#method = normalised;
           if (this.#method == "ws") {
-            if (this.#route.protocol == "https:") this.#route.protocol = "wss:";
-            if (this.#route.protocol == "http:") this.#route.protocol = "ws:";
+            if (this.#route.protocol == "https:")
+              this.#route.protocol = "wss:";
+            if (this.#route.protocol == "http:")
+              this.#route.protocol = "ws:";
           }
           this.#connect();
         }
@@ -544,8 +548,10 @@ var ServerComponent = class extends HTMLElement {
   }
   //
   #connect() {
-    if (!this.#route || !this.#method) return;
-    if (this.#transport) this.#transport.close();
+    if (!this.#route || !this.#method)
+      return;
+    if (this.#transport)
+      this.#transport.close();
     const onConnect = () => {
       this.#connected = true;
       this.dispatchEvent(new CustomEvent("lustre:connect"), {

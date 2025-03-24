@@ -31,6 +31,12 @@ export function insert(map, key, value) {
   return map;
 }
 
+export function remove(map, key) {
+  map?.delete(key);
+
+  return map;
+}
+
 export function size(map) {
   return map?.size ?? 0;
 }

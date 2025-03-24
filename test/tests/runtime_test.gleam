@@ -136,10 +136,10 @@ fn update(model, msg) {
 }
 
 @target(erlang)
-const incr = ["0", "2"]
+const incr = "0\f2"
 
 @target(erlang)
-const reset = ["0", "3"]
+const reset = "0\f3"
 
 @target(erlang)
 fn view(model) {
