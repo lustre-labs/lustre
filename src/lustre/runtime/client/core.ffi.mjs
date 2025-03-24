@@ -45,16 +45,17 @@ export class Runtime {
     this.#update = update;
 
     this.#reconciler = new Reconciler(this.root, (event, path, name) => {
-      const msg = Events.handle(this.#events, toList(path), name, event);
-
+      const [events, msg] = Events.handle(this.#events, path, name, event);
+      this.#events = events;
+      
       if (msg.isOk()) {
-        this.dispatch(msg[0], false, toList(path.toReversed()));
+        this.dispatch(msg[0], false);
       }
     });
 
     const virtualised = virtualise(this.root);
     this.#vdom = this.#view(this.#model);
-    const { patch, events } = diff([], virtualised, this.#vdom, Events.new$());
+    const { patch, events } = diff(Events.new$(), virtualised, this.#vdom);
     this.#events = events;
     this.#reconciler.push(patch, this.initialNodeOffset);
     this.#tick(effects, false);
@@ -64,12 +65,8 @@ export class Runtime {
 
   root = null;
 
-  dispatch(msg, immediate = false, path = null) {
+  dispatch(msg, immediate = false) {
     this.#shouldFlush ||= immediate;
-
-    if (path) {
-      this.#eventPaths = new NonEmpty(path, this.#eventPaths);
-    }
 
     if (this.#shouldQueue) {
       this.#queue.push(msg);
@@ -106,7 +103,6 @@ export class Runtime {
   #shouldQueue = false;
   #queue = [];
 
-  #eventPaths = empty_list;
   #beforePaint = empty_list;
   #afterPaint = empty_list;
   #renderTimer = null;
@@ -178,9 +174,8 @@ export class Runtime {
     this.#renderTimer = null;
 
     const next = this.#view(this.#model);
-    const { patch, events } = diff(this.#eventPaths, this.#vdom, next, this.#events);
+    const { patch, events } = diff(this.#events, this.#vdom, next);
 
-    this.#eventPaths = empty_list;
     this.#events = events;
     this.#vdom = next;
     this.#reconciler.push(patch, this.initialNodeOffset);

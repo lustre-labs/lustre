@@ -38,6 +38,12 @@ pub fn insert(
 
 ///
 ///
+@external(erlang, "gleam@dict", "delete")
+@external(javascript, "./mutable_map.ffi.mjs", "remove")
+pub fn delete(map: MutableMap(key, value), key: key) -> MutableMap(key, value)
+
+///
+///
 @external(erlang, "gleam@dict", "size")
 @external(javascript, "./mutable_map.ffi.mjs", "size")
 pub fn size(map: MutableMap(key, value)) -> Int

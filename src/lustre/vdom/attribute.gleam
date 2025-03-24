@@ -193,8 +193,8 @@ pub fn to_string_tree(
 
 pub fn to_string_parts(attr: Attribute(msg)) -> Result(#(String, String), Nil) {
   case attr {
-    Attribute(_, "", _) -> constants.error_nil
+    Attribute(_, "", _) -> Error(Nil)
     Attribute(_, name, value) -> Ok(#(name, value))
-    _ -> constants.error_nil
+    _ -> Error(Nil)
   }
 }

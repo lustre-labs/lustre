@@ -1,10 +1,10 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Dynamic}
+import gleam/function
 import gleam/int
 import gleam/json.{type Json}
 import gleam/list
-import gleam/option.{type Option}
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/internals/constants
@@ -26,7 +26,7 @@ pub type Node(msg) {
   Fragment(
     kind: Int,
     key: String,
-    mapper: Option(fn(Dynamic) -> Dynamic),
+    mapper: fn(Dynamic) -> Dynamic,
     children: List(Node(msg)),
     keyed_children: MutableMap(String, Node(msg)),
     // When diffing Fragments, we need to know how many elements this fragment
@@ -37,7 +37,7 @@ pub type Node(msg) {
   Element(
     kind: Int,
     key: String,
-    mapper: Option(fn(Dynamic) -> Dynamic),
+    mapper: fn(Dynamic) -> Dynamic,
     namespace: String,
     tag: String,
     // To efficiently compare attributes during the diff, attribute are always
@@ -61,17 +61,12 @@ pub type Node(msg) {
     void: Bool,
   )
 
-  Text(
-    kind: Int,
-    key: String,
-    mapper: Option(fn(Dynamic) -> Dynamic),
-    content: String,
-  )
+  Text(kind: Int, key: String, mapper: fn(Dynamic) -> Dynamic, content: String)
 
   UnsafeInnerHtml(
     kind: Int,
     key: String,
-    mapper: Option(fn(Dynamic) -> Dynamic),
+    mapper: fn(Dynamic) -> Dynamic,
     namespace: String,
     tag: String,
     //
@@ -86,7 +81,7 @@ pub const fragment_kind: Int = 0
 
 pub fn fragment(
   key key: String,
-  mapper mapper: Option(fn(Dynamic) -> Dynamic),
+  mapper mapper: fn(Dynamic) -> Dynamic,
   children children: List(Node(msg)),
   keyed_children keyed_children: MutableMap(String, Node(msg)),
   children_count children_count: Int,
@@ -105,7 +100,7 @@ pub const element_kind: Int = 1
 
 pub fn element(
   key key: String,
-  mapper mapper: Option(fn(Dynamic) -> Dynamic),
+  mapper mapper: fn(Dynamic) -> Dynamic,
   namespace namespace: String,
   tag tag: String,
   attributes attributes: List(Attribute(msg)),
@@ -134,7 +129,7 @@ pub const text_kind: Int = 2
 
 pub fn text(
   key key: String,
-  mapper mapper: Option(fn(Dynamic) -> Dynamic),
+  mapper mapper: fn(Dynamic) -> Dynamic,
   content content: String,
 ) -> Node(msg) {
   Text(kind: text_kind, key: key, mapper: mapper, content: content)
@@ -144,7 +139,7 @@ pub const unsafe_inner_html_kind: Int = 3
 
 pub fn unsafe_inner_html(
   key key: String,
-  mapper mapper: Option(fn(Dynamic) -> Dynamic),
+  mapper mapper: fn(Dynamic) -> Dynamic,
   namespace namespace: String,
   tag tag: String,
   attributes attributes: List(Attribute(msg)),
@@ -468,7 +463,7 @@ fn children_to_snapshot_builder(
           Text(
             kind: text_kind,
             key: "",
-            mapper: constants.option_none,
+            mapper: function.identity,
             content: a <> b,
           ),
           ..rest

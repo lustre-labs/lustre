@@ -320,23 +320,23 @@ export class Reconciler {
           if (prevent) event.preventDefault();
           if (stop) event.stopPropagation();
 
-          let path = [];
+          let path = "";
           let node = event.currentTarget;
 
           while (node !== this.#root) {
             const key = node[meta].key;
-
             if (key) {
-              path.push(key);
+              path = `${key}\f${path}`;
             } else {
               const index = [].indexOf.call(node.parentNode.childNodes, node);
-              path.push(index.toString());
+              path = `${index}\f${path}`
             }
 
             node = node.parentNode;
           }
 
-          path.reverse();
+          // remove the trailing \f
+          path = path.slice(0, -1);
 
           const data = this.#useServerEvents
             ? createServerEvent(event, include)

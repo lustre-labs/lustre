@@ -8,12 +8,12 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/option.{None, Some}
+import gleam/function
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute} as _
-import lustre/internals/constants
 import lustre/internals/mutable_map
+import lustre/vdom/events
 import lustre/vdom/node.{Element, Fragment, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
@@ -94,7 +94,7 @@ pub fn element(
 ) -> Element(msg) {
   node.element(
     key: "",
-    mapper: constants.option_none,
+    mapper: function.identity,
     namespace: "",
     tag: tag,
     attributes:,
@@ -116,7 +116,7 @@ pub fn namespaced(
 ) -> Element(msg) {
   node.element(
     key: "",
-    mapper: constants.option_none,
+    mapper: function.identity,
     namespace:,
     tag:,
     attributes:,
@@ -142,7 +142,7 @@ pub fn advanced(
 ) -> Element(msg) {
   node.element(
     key: "",
-    mapper: constants.option_none,
+    mapper: function.identity,
     namespace:,
     tag:,
     attributes:,
@@ -159,7 +159,7 @@ pub fn advanced(
 /// this function is exactly that!
 ///
 pub fn text(content: String) -> Element(msg) {
-  node.text(key: "", mapper: constants.option_none, content:)
+  node.text(key: "", mapper: function.identity, content:)
 }
 
 /// A function for rendering nothing. This is mostly useful for conditional
@@ -167,7 +167,7 @@ pub fn text(content: String) -> Element(msg) {
 /// condition is met.
 ///
 pub fn none() -> Element(msg) {
-  node.text(key: "", mapper: constants.option_none, content: "")
+  node.text(key: "", mapper: function.identity, content: "")
 }
 
 /// A function for wrapping elements to be rendered within a parent container without
@@ -178,7 +178,7 @@ pub fn none() -> Element(msg) {
 pub fn fragment(children: List(Element(msg))) -> Element(msg) {
   node.fragment(
     key: "",
-    mapper: constants.option_none,
+    mapper: function.identity,
     children:,
     keyed_children: mutable_map.new(),
     children_count: count_fragment_children(children, 0),
@@ -215,7 +215,7 @@ pub fn unsafe_inner_html(
     key: "",
     namespace:,
     tag:,
-    mapper: constants.option_none,
+    mapper: function.identity,
     attributes:,
     inner_html:,
   )
@@ -232,10 +232,7 @@ pub fn unsafe_inner_html(
 /// Think of it like `list.map` or `result.map` but for HTML events!
 ///
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
-  let mapper = case element.mapper {
-    Some(m) -> Some(fn(msg) { msg |> m |> coerce(f) })
-    None -> Some(coerce(f))
-  }
+  let mapper = coerce(events.compose_mapper(element.mapper, coerce(f)))
 
   case element {
     Fragment(children:, keyed_children:, ..) ->

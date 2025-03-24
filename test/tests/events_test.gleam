@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic
-import gleam/function
+import gleam/pair
 import gleam/string
 import gleeunit/should
 import lustre/element
@@ -19,13 +19,12 @@ pub fn single_event_test() {
 
   let vdom = html.button([event.on_click("hello!")], [html.text("Click me!")])
 
-  let events =
-    events.new(function.identity)
-    |> events.add_child(function.identity, 0, vdom)
+  let events = events.from_node(vdom)
 
-  let path = ["0"]
+  let path = "0"
 
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Ok("hello!"))
 }
 
@@ -37,13 +36,12 @@ pub fn single_nested_event_test() {
       html.button([event.on_click("hello!")], [html.text("Click me!")]),
     ])
 
-  let events =
-    events.new(function.identity)
-    |> events.add_child(function.identity, 0, vdom)
+  let events = events.from_node(vdom)
 
-  let path = ["0", "0"]
+  let path = "0\f0"
 
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Ok("hello!"))
 }
 
@@ -56,13 +54,12 @@ pub fn single_nested_keyed_event_test() {
       #("b", html.button([event.on_click("hello!")], [html.text("Click me!")])),
     ])
 
-  let events =
-    events.new(function.identity)
-    |> events.add_child(function.identity, 0, vdom)
+  let events = events.from_node(vdom)
 
-  let path = ["0", "b"]
+  let path = "0\fb"
 
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Ok("hello!"))
 }
 
@@ -78,13 +75,12 @@ pub fn single_nested_keyed_event_with_period_test() {
       ),
     ])
 
-  let events =
-    events.new(function.identity)
-    |> events.add_child(function.identity, 0, vdom)
+  let events = events.from_node(vdom)
 
-  let path = ["0", "b.c"]
+  let path = "0\fb.c"
 
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Ok("hello!"))
 }
 
@@ -98,13 +94,12 @@ pub fn fragment_event_test() {
       html.button([event.on_click("hello!")], [html.text("Click me!")]),
     ])
 
-  let events =
-    events.new(function.identity)
-    |> events.add_child(function.identity, 0, vdom)
+  let events = events.from_node(vdom)
 
-  let path = ["1"]
+  let path = "1"
 
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Ok("hello!"))
 }
 
@@ -118,13 +113,12 @@ pub fn nested_fragment_event_test() {
       ]),
     ])
 
-  let events =
-    events.new(function.identity)
-    |> events.add_child(function.identity, 0, vdom)
+  let events = events.from_node(vdom)
 
-  let path = ["0", "1"]
+  let path = "0\f1"
 
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Ok("hello!"))
 }
 
@@ -145,13 +139,12 @@ pub fn nested_fragment_with_multiple_children_event_test() {
       ]),
     ])
 
-  let events =
-    events.new(function.identity)
-    |> events.add_child(function.identity, 0, vdom)
+  let events = events.from_node(vdom)
 
-  let path = ["0", "5"]
+  let path = "0\f5"
 
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Ok(4))
 }
 
@@ -166,13 +159,12 @@ pub fn single_mapped_event_test() {
       string.uppercase,
     )
 
-  let events =
-    events.new(function.identity)
-    |> events.add_child(function.identity, 0, vdom)
+  let events = events.from_node(vdom)
 
-  let path = ["0"]
+  let path = "0"
 
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Ok("HELLO!"))
 }
 
@@ -188,13 +180,12 @@ pub fn multiple_mapped_event_test() {
       string.append(_, "!"),
     )
 
-  let events =
-    events.new(function.identity)
-    |> events.add_child(function.identity, 0, vdom)
+  let events = events.from_node(vdom)
 
-  let path = ["0"]
+  let path = "0"
 
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Ok("HELLO!!"))
 }
 
@@ -206,11 +197,12 @@ pub fn event_added_test() {
   let prev = html.button([], [html.text("Click me!")])
   let next = html.button([event.on_click("hello!")], [html.text("Click me!")])
 
-  let events = diff.diff([], prev, next).events
+  let events = diff.diff(events.new(), prev, next).events
 
-  let path = ["0"]
+  let path = "0"
 
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Ok("hello!"))
 }
 
@@ -220,11 +212,12 @@ pub fn event_removed_test() {
   let prev = html.button([event.on_click("hello!")], [html.text("Click me!")])
   let next = html.button([], [html.text("Click me!")])
 
-  let events = diff.diff([], prev, next).events
+  let events = diff.diff(events.new(), prev, next).events
 
-  let path = ["0"]
+  let path = "0"
 
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Error([]))
 }
 
@@ -238,11 +231,12 @@ pub fn element_added_test() {
       #("b", html.button([event.on_click("hello!")], [html.text("Click me!")])),
     ])
 
-  let events = diff.diff([], prev, next).events
+  let events = diff.diff(events.new(), prev, next).events
 
-  let path = ["0", "b"]
+  let path = "0\fb"
 
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Ok("hello!"))
 }
 
@@ -256,11 +250,12 @@ pub fn element_removed_test() {
     ])
   let next = keyed.div([], [#("a", html.h1([], [html.text("Testing...")]))])
 
-  let events = diff.diff([], prev, next).events
+  let events = diff.diff(events.new(), prev, next).events
 
-  let path = ["0", "b"]
+  let path = "0\fb"
 
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Error([]))
 }
 
@@ -279,11 +274,12 @@ pub fn element_replaced_test() {
       #("b", html.button([event.on_click("hello!")], [html.text("Click me!")])),
     ])
 
-  let events = diff.diff([], prev, next).events
+  let events = diff.diff(events.new(), prev, next).events
 
-  let path = ["0", "b"]
+  let path = "0\fb"
 
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Ok("hello!"))
 }
 
@@ -320,13 +316,15 @@ pub fn keyed_element_replaced_test() {
       ),
     ])
 
-  let events = diff.diff([], prev, next).events
+  let events = diff.diff(events.new(), prev, next).events
 
-  let path = ["0", "v2", "0"]
+  let path = "0\fv2\f0"
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Ok("hello from 1"))
 
-  let path = ["0", "v2", "1", "0"]
+  let path = "0\fv2\f1\f0"
   events.handle(events, path, "click", dynamic.from(Nil))
+  |> pair.second
   |> should.equal(Ok("hello from 2"))
 }

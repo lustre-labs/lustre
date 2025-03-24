@@ -1,5 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/function
 import gleam/list
 import lustre/attribute.{type Attribute} as _
 import lustre/element.{type Element}
@@ -50,7 +51,7 @@ pub fn element(
     key: "",
     namespace: "",
     tag:,
-    mapper: constants.option_none,
+    mapper: function.identity,
     attributes:,
     children:,
     keyed_children:,
@@ -69,7 +70,7 @@ pub fn namespaced(
 
   node.element(
     key: "",
-    mapper: constants.option_none,
+    mapper: function.identity,
     namespace:,
     tag:,
     attributes:,
@@ -86,7 +87,7 @@ pub fn fragment(children: List(#(String, Element(msg)))) -> Element(msg) {
 
   node.fragment(
     key: "",
-    mapper: constants.option_none,
+    mapper: function.identity,
     children:,
     children_count:,
     keyed_children:,

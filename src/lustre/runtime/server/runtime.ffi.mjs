@@ -41,7 +41,7 @@ export class Runtime {
     this.#on_attribute_change = on_attribute_change;
 
     this.#vdom = this.#view(this.#model);
-    this.#events = Events.add_child(Events.new$(), (msg) => msg, 0, this.#vdom);
+    this.#events = Events.from_node(this.#vdom);
 
     this.#tick(effects.all, false);
   }
@@ -81,11 +81,11 @@ export class Runtime {
           }
 
           case EventFired: {
-            const path = message.message.path;
-            const name = message.message.name;
-            const event = message.message.event;
-            const result = Events.handle(this.#events, path, name, event);
+            const { path, name, event } = message.message;
+            const [events, result] = Events.handle(this.#events, path, name, event);
 
+            this.#events = events;
+            
             if (result.constructor === Ok) {
               this.dispatch(result[0]);
             }
@@ -191,7 +191,7 @@ export class Runtime {
 
   #render() {
     const next = this.#view(this.#model);
-    const { patch, events } = diff(this.#vdom, next, this.#events, 0);
+    const { patch, events } = diff(this.#events, this.#vdom, next);
     this.#events = events;
     this.#vdom = next;
 
