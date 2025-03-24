@@ -27,7 +27,10 @@ pub type Mapper =
 // MAPPERS ---------------------------------------------------------------------
 
 pub fn compose_mapper(mapper: Mapper, child_mapper: Mapper) -> Mapper {
-  case mapper == function.identity, child_mapper == function.identity {
+  case
+    is_reference_equal(mapper, function.identity),
+    is_reference_equal(child_mapper, function.identity)
+  {
     _, True -> mapper
     True, False -> child_mapper
     False, False -> fn(msg) { mapper(child_mapper(msg)) }
@@ -308,3 +311,8 @@ pub fn has_dispatched_events(events: Events(msg), path: String) {
 @external(erlang, "gleam@function", "identity")
 @external(javascript, "../../../gleam_stdlib/gleam/function.mjs", "identity")
 fn coerce(a: a) -> b
+
+@external(javascript, "../runtime/client/core.ffi.mjs", "is_reference_equal")
+fn is_reference_equal(a: a, b: a) -> Bool {
+  a == b
+}
