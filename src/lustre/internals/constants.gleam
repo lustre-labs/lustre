@@ -10,21 +10,20 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dict.{type Dict}
-import gleam/option
 import gleam/set.{type Set}
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
 pub const empty_list = []
 
-@external(erlang, "gleam@dict", "new")
 @external(javascript, "./constants.ffi.mjs", "empty_dict")
-pub fn empty_dict() -> Dict(k, v)
+pub fn empty_dict() -> Dict(k, v) {
+  dict.new()
+}
 
-@external(erlang, "gleam@set", "new")
 @external(javascript, "./constants.ffi.mjs", "empty_set")
-pub fn empty_set() -> Set(a)
-
-pub const option_none = option.None
+pub fn empty_set() -> Set(a) {
+  set.new()
+}
 
 pub const error_nil = Error(Nil)

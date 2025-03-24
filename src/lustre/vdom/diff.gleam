@@ -1,8 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{type Dynamic}
 import gleam/function
-import gleam/option.{None, Some}
 import gleam/order.{Eq, Gt, Lt}
 import gleam/set.{type Set}
 import lustre/internals/constants
@@ -22,7 +20,7 @@ pub type Diff(msg) {
 
 // DIFFING ---------------------------------------------------------------------
 
-pub fn diff(old: Node(msg), new: Node(msg)) -> Diff(msg) {
+pub fn diff(events: Events(msg), old: Node(msg), new: Node(msg)) -> Diff(msg) {
   do_diff(
     old: [old],
     old_keyed: mutable_map.new(),
@@ -35,15 +33,15 @@ pub fn diff(old: Node(msg), new: Node(msg)) -> Diff(msg) {
     //
     node_index: 0,
     patch_index: 0,
+    path: "",
     changes: constants.empty_list,
     children: constants.empty_list,
-    events: events.new(function.identity),
     mapper: function.identity,
+    events: events.tick(events),
   )
 }
 
 fn do_diff(
-  //
   old old: List(Node(msg)),
   old_keyed old_keyed: MutableMap(String, Node(msg)),
   new new: List(Node(msg)),
@@ -55,10 +53,11 @@ fn do_diff(
   //
   node_index node_index: Int,
   patch_index patch_index: Int,
+  path path: String,
   changes changes: List(Change(msg)),
   children children: List(Patch(msg)),
+  mapper mapper: events.Mapper,
   events events: Events(msg),
-  mapper mapper: fn(Dynamic) -> Dynamic,
 ) -> Diff(msg) {
   case old, new {
     [], [] ->
@@ -71,6 +70,17 @@ fn do_diff(
     // each remaining child has been moved (and so can be ignored) here, or if it
     // needs to be removed.
     [prev, ..old], [] -> {
+      let removed = case prev.key == "" || !set.contains(moved, prev.key) {
+        // This node wasn't keyed or it wasn't moved during a keyed diff. Either
+        // way, we need to remove it! We call `advance` because if this vdom
+        // node is a fragment, we need to account for however many children it
+        // contains.
+        True -> removed + node.advance(prev)
+        False -> removed
+      }
+
+      let events = events.remove_child(events, path, node_index, prev)
+
       do_diff(
         old:,
         old_keyed:,
@@ -78,16 +88,10 @@ fn do_diff(
         new_keyed:,
         moved:,
         moved_offset:,
-        removed: case prev.key == "" || !set.contains(moved, prev.key) {
-          // This node wasn't keyed or it wasn't moved during a keyed diff. Either
-          // way, we need to remove it! We call `advance` because if this vdom
-          // node is a fragment, we need to account for however many children it
-          // contains.
-          True -> removed + node.advance(prev)
-          False -> removed
-        },
+        removed:,
         node_index:,
         patch_index:,
+        path:,
         changes:,
         children:,
         events:,
@@ -100,9 +104,9 @@ fn do_diff(
     // walk the list and extract their event handlers (and their children's
     // event handlers...)
     [], [_, ..] -> {
-      let offset_index = node_index - moved_offset
-      let events = events.add_children(events, mapper, offset_index, new)
-      let insert = patch.insert(children: new, before: offset_index)
+      let events = events.add_children(events, mapper, path, node_index, new)
+      let insert =
+        patch.insert(children: new, before: node_index - moved_offset)
       let changes = [insert, ..changes]
 
       Diff(
@@ -135,6 +139,7 @@ fn do_diff(
             removed:,
             node_index:,
             patch_index:,
+            path:,
             changes:,
             children:,
             events:,
@@ -198,6 +203,7 @@ fn do_diff(
             removed:,
             node_index:,
             patch_index:,
+            path:,
             changes:,
             children:,
             events:,
@@ -211,6 +217,7 @@ fn do_diff(
         Error(_), Ok(_) -> {
           let count = node.advance(prev)
           let moved_offset = moved_offset - count
+          let events = events.remove_child(events, path, node_index, prev)
           let remove = patch.remove_key(key: prev.key, count:)
           let changes = [remove, ..changes]
 
@@ -224,6 +231,7 @@ fn do_diff(
             removed:,
             node_index:,
             patch_index:,
+            path:,
             changes:,
             children:,
             events:,
@@ -237,7 +245,7 @@ fn do_diff(
         Ok(_), Error(_) -> {
           let before = node_index - moved_offset
           let count = node.advance(next)
-          let events = events.add_child(events, mapper, node_index, next)
+          let events = events.add_child(events, mapper, path, node_index, next)
           let insert = patch.insert(children: [next], before:)
           let changes = [insert, ..changes]
 
@@ -251,6 +259,7 @@ fn do_diff(
             removed:,
             node_index: node_index + count,
             patch_index:,
+            path:,
             changes:,
             children:,
             events:,
@@ -271,7 +280,10 @@ fn do_diff(
               with: next,
             )
 
-          let events = events.add_child(events, mapper, node_index, next)
+          let events =
+            events
+            |> events.remove_child(path, node_index, prev)
+            |> events.add_child(mapper, path, node_index, next)
 
           do_diff(
             old: old_remaining,
@@ -283,6 +295,7 @@ fn do_diff(
             removed:,
             node_index: node_index + next_count,
             patch_index:,
+            path:,
             changes: [change, ..changes],
             children:,
             events:,
@@ -311,10 +324,7 @@ fn do_diff(
         _ -> changes
       }
 
-      let composed_mapper = case next.mapper {
-        Some(child_mapper) -> fn(msg) { msg |> child_mapper |> mapper }
-        None -> mapper
-      }
+      let composed_mapper = events.compose_mapper(mapper, next.mapper)
 
       // We diff fragments as if they are "real" nodes with children, but we must
       // remember to update our offsets and indices to account for the fact these
@@ -330,6 +340,7 @@ fn do_diff(
           removed: 0,
           node_index:,
           patch_index: -1,
+          path:,
           changes:,
           children:,
           events:,
@@ -346,6 +357,7 @@ fn do_diff(
         removed:,
         node_index: node_index + next_count,
         patch_index:,
+        path:,
         changes: child.patch.changes,
         children: child.patch.children,
         events: child.events,
@@ -360,25 +372,27 @@ fn do_diff(
     [Element(..) as prev, ..old], [Element(..) as next, ..new]
       if prev.namespace == next.namespace && prev.tag == next.tag
     -> {
-      let composed_mapper = case next.mapper {
-        Some(child_mapper) -> fn(msg) { msg |> child_mapper |> mapper }
-        None -> mapper
-      }
+      let composed_mapper = events.compose_mapper(mapper, next.mapper)
+      let child_path = events.child_path(path, node_index, next.key)
 
-      let update =
+      let controlled =
+        is_controlled(events, next.namespace, next.tag, child_path)
+
+      let AttributeChange(events:, added: added_attrs, removed: removed_attrs) =
         diff_attributes(
-          next.namespace,
-          next.tag,
+          controlled: controlled,
+          path: child_path,
+          mapper: composed_mapper,
+          events:,
           old: prev.attributes,
           new: next.attributes,
           added: constants.empty_list,
           removed: constants.empty_list,
         )
 
-      let initial_child_changes = case update {
-        patch.Update(added: [], removed: [], ..) -> constants.empty_list
-        patch.Update(added: _, removed: _, ..) -> [update]
-        _ -> constants.empty_list
+      let initial_child_changes = case added_attrs, removed_attrs {
+        [], [] -> constants.empty_list
+        _, _ -> [patch.update(added: added_attrs, removed: removed_attrs)]
       }
 
       let child =
@@ -392,9 +406,10 @@ fn do_diff(
           removed: 0,
           node_index: 0,
           patch_index: node_index,
+          path: child_path,
           changes: initial_child_changes,
           children: constants.empty_list,
-          events: events.from_attributes(next.attributes, composed_mapper),
+          events:,
           mapper: composed_mapper,
         )
 
@@ -402,9 +417,6 @@ fn do_diff(
         Patch(removed: 0, changes: [], children: [], ..) -> children
         _ -> [child.patch, ..children]
       }
-
-      let events =
-        events.add_child_events(events, node_index, next.key, child.events)
 
       do_diff(
         old:,
@@ -416,9 +428,10 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index: patch_index,
+        path:,
         changes:,
         children:,
-        events:,
+        events: child.events,
         mapper:,
       )
     }
@@ -438,6 +451,7 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index:,
+        path:,
         changes:,
         children:,
         events:,
@@ -465,6 +479,7 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index:,
+        path:,
         changes:,
         children: [child, ..children],
         events:,
@@ -473,20 +488,24 @@ fn do_diff(
     }
 
     [UnsafeInnerHtml(..) as prev, ..old], [UnsafeInnerHtml(..) as next, ..new] -> {
-      let update =
+      let composed_mapper = events.compose_mapper(mapper, next.mapper)
+      let child_path = events.child_path(path, node_index, next.key)
+
+      let AttributeChange(events:, added: added_attrs, removed: removed_attrs) =
         diff_attributes(
-          namespace: next.namespace,
-          tag: next.tag,
+          controlled: False,
+          path: child_path,
+          mapper: composed_mapper,
+          events:,
           old: prev.attributes,
           new: next.attributes,
           added: constants.empty_list,
           removed: constants.empty_list,
         )
 
-      let child_changes = case update {
-        patch.Update(added: [], removed: [], ..) -> constants.empty_list
-        patch.Update(added: _, removed: _, ..) -> [update]
-        _ -> constants.empty_list
+      let child_changes = case added_attrs, removed_attrs {
+        [], [] -> constants.empty_list
+        _, _ -> [patch.update(added: added_attrs, removed: removed_attrs)]
       }
 
       let child_changes = case prev.inner_html == next.inner_html {
@@ -499,8 +518,6 @@ fn do_diff(
         _ -> [patch.new(node_index, 0, child_changes, []), ..children]
       }
 
-      let events = events.add_child(events, mapper, node_index, next)
-
       do_diff(
         old:,
         old_keyed:,
@@ -511,6 +528,7 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index: patch_index,
+        path:,
         changes:,
         children:,
         events:,
@@ -532,7 +550,10 @@ fn do_diff(
           with: next,
         )
 
-      let events = events.add_child(events, mapper, node_index, next)
+      let events =
+        events
+        |> events.remove_child(path, node_index, prev)
+        |> events.add_child(mapper, path, node_index, next)
 
       do_diff(
         old: old_remaining,
@@ -544,6 +565,7 @@ fn do_diff(
         removed:,
         node_index: node_index + next_count,
         patch_index:,
+        path:,
         changes: [change, ..changes],
         children:,
         events:,
@@ -555,47 +577,103 @@ fn do_diff(
 
 // ATTRIBUTE DIFFING -----------------------------------------------------------
 
-fn diff_attributes(
-  namespace namespace: String,
-  tag tag: String,
-  old old: List(Attribute(msg)),
-  new new: List(Attribute(msg)),
-  added added: List(Attribute(msg)),
-  removed removed: List(Attribute(msg)),
-) -> Change(msg) {
-  let controlled = case tag {
-    "input" | "select" | "textarea" if namespace == "" -> True
+fn is_controlled(
+  events: Events(msg),
+  namespace: String,
+  tag: String,
+  path: String,
+) {
+  case tag {
+    "input" | "select" | "textarea" if namespace == "" ->
+      events.has_dispatched_events(events, path)
     _ -> False
   }
-
-  do_diff_attributes(controlled:, old:, new:, added:, removed:)
 }
 
-fn do_diff_attributes(
+type AttributeChange(msg) {
+  AttributeChange(
+    added: List(Attribute(msg)),
+    removed: List(Attribute(msg)),
+    events: Events(msg),
+  )
+}
+
+fn diff_attributes(
   controlled controlled: Bool,
+  path path: String,
+  mapper mapper: events.Mapper,
+  events events: Events(msg),
   old old: List(Attribute(msg)),
   new new: List(Attribute(msg)),
   added added: List(Attribute(msg)),
   removed removed: List(Attribute(msg)),
-) {
+) -> AttributeChange(msg) {
   case old, new {
-    [], [] -> patch.update(added:, removed:)
+    [], [] -> AttributeChange(events:, added:, removed:)
 
+    [Event(name:, ..) as prev, ..old], [] -> {
+      let removed = [prev, ..removed]
+      let events = events.remove_event(events, path, name)
+      diff_attributes(
+        controlled:,
+        path:,
+        mapper:,
+        events:,
+        old:,
+        new:,
+        added:,
+        removed:,
+      )
+    }
     [prev, ..old], [] -> {
       let removed = [prev, ..removed]
-      do_diff_attributes(controlled:, old:, new:, added:, removed:)
+      diff_attributes(
+        controlled:,
+        path:,
+        mapper:,
+        events:,
+        old:,
+        new:,
+        added:,
+        removed:,
+      )
+    }
+
+    [], [Event(name:, handler:, ..) as next, ..new] -> {
+      let added = [next, ..added]
+      let events = events.add_event(events, mapper, path, name, handler)
+      diff_attributes(
+        controlled:,
+        path:,
+        mapper:,
+        events:,
+        old:,
+        new:,
+        added:,
+        removed:,
+      )
     }
 
     [], [next, ..new] -> {
       let added = [next, ..added]
-      do_diff_attributes(controlled:, old:, new:, added:, removed:)
+      diff_attributes(
+        controlled:,
+        path:,
+        mapper:,
+        events:,
+        old:,
+        new:,
+        added:,
+        removed:,
+      )
     }
 
     [prev, ..remaining_old], [next, ..remaining_new] ->
       case prev, attribute.compare(prev, next), next {
         Attribute(..), Eq, Attribute(..) -> {
           let has_changes = case next.name {
-            "value" | "checked" | "selected" -> controlled
+            "value" | "checked" | "selected" ->
+              controlled || prev.value != next.value
             _ -> prev.value != next.value
           }
 
@@ -604,15 +682,23 @@ fn do_diff_attributes(
             False -> added
           }
 
-          let old = remaining_old
-          let new = remaining_new
-          do_diff_attributes(controlled:, old:, new:, added:, removed:)
+          diff_attributes(
+            controlled:,
+            path:,
+            mapper:,
+            events:,
+            old: remaining_old,
+            new: remaining_new,
+            added:,
+            removed:,
+          )
         }
 
         Property(..), Eq, Property(..) -> {
           let has_changes = case next.name {
             "scrollLeft" | "scrollRight" -> True
-            "value" | "checked" | "selected" -> controlled
+            "value" | "checked" | "selected" ->
+              controlled || prev.value != next.value
             _ -> prev.value != next.value
           }
 
@@ -621,12 +707,19 @@ fn do_diff_attributes(
             False -> added
           }
 
-          let old = remaining_old
-          let new = remaining_new
-          do_diff_attributes(controlled:, old:, new:, added:, removed:)
+          diff_attributes(
+            controlled:,
+            path:,
+            mapper:,
+            events:,
+            old: remaining_old,
+            new: remaining_new,
+            added:,
+            removed:,
+          )
         }
 
-        Event(..), Eq, Event(..) -> {
+        Event(..), Eq, Event(name:, handler:, ..) -> {
           let has_changes =
             prev.prevent_default != next.prevent_default
             || prev.stop_propagation != next.stop_propagation
@@ -637,29 +730,130 @@ fn do_diff_attributes(
             False -> added
           }
 
-          let old = remaining_old
-          let new = remaining_new
-          do_diff_attributes(controlled:, old:, new:, added:, removed:)
+          let events = events.add_event(events, mapper, path, name, handler)
+
+          diff_attributes(
+            controlled:,
+            path:,
+            mapper:,
+            events:,
+            old: remaining_old,
+            new: remaining_new,
+            added:,
+            removed:,
+          )
+        }
+
+        Event(name:, ..), Eq, _ -> {
+          let added = [next, ..added]
+          let removed = [prev, ..removed]
+          let events = events.remove_event(events, path, name)
+
+          diff_attributes(
+            controlled:,
+            path:,
+            mapper:,
+            events:,
+            old: remaining_old,
+            new: remaining_new,
+            added:,
+            removed:,
+          )
+        }
+
+        _, Eq, Event(name:, handler:, ..) -> {
+          let added = [next, ..added]
+          let removed = [prev, ..removed]
+          let events = events.add_event(events, mapper, path, name, handler)
+
+          diff_attributes(
+            controlled:,
+            path:,
+            mapper:,
+            events:,
+            old: remaining_old,
+            new: remaining_new,
+            added:,
+            removed:,
+          )
         }
 
         _, Eq, _ -> {
           let added = [next, ..added]
           let removed = [prev, ..removed]
-          let old = remaining_old
-          let new = remaining_new
-          do_diff_attributes(controlled:, old:, new:, added:, removed:)
+
+          diff_attributes(
+            controlled:,
+            path:,
+            mapper:,
+            events:,
+            old: remaining_old,
+            new: remaining_new,
+            added:,
+            removed:,
+          )
+        }
+
+        _, Gt, Event(name:, handler:, ..) -> {
+          let added = [next, ..added]
+          let events = events.add_event(events, mapper, path, name, handler)
+
+          diff_attributes(
+            controlled:,
+            path:,
+            mapper:,
+            events:,
+            old:,
+            new: remaining_new,
+            added:,
+            removed:,
+          )
         }
 
         _, Gt, _ -> {
           let added = [next, ..added]
-          let new = remaining_new
-          do_diff_attributes(controlled:, old:, new:, added:, removed:)
+
+          diff_attributes(
+            controlled:,
+            path:,
+            mapper:,
+            events:,
+            old:,
+            new: remaining_new,
+            added:,
+            removed:,
+          )
+        }
+
+        Event(name:, ..), Lt, _ -> {
+          let removed = [prev, ..removed]
+          let events = events.remove_event(events, path, name)
+
+          diff_attributes(
+            controlled:,
+            path:,
+            mapper:,
+            events:,
+            old: remaining_old,
+            new:,
+            added:,
+            removed:,
+          )
         }
 
         _, Lt, _ -> {
           let removed = [prev, ..removed]
-          let old = remaining_old
-          do_diff_attributes(controlled:, old:, new:, added:, removed:)
+
+          diff_attributes(
+            controlled:,
+            path:,
+            mapper:,
+            events:,
+            old: remaining_old,
+            new:,
+            added:,
+            removed:,
+          )
         }
       }
   }
