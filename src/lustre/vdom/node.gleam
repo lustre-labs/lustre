@@ -109,7 +109,11 @@ pub fn element(
   self_closing self_closing: Bool,
   void void: Bool,
 ) -> Node(msg) {
-  let void = void || { namespace == "" && list.contains(void_elements, tag) }
+  let void = case namespace {
+    // use list.any here instead of list.contains to not call the generic isEqual.
+    "" if !void -> list.any(void_elements, fn(void_elem) { tag == void_elem })
+    _ -> void
+  }
 
   Element(
     kind: element_kind,
