@@ -4,6 +4,7 @@ import gleam/int
 import gleam/list
 import lustre
 import lustre/attribute
+import lustre/component
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
@@ -12,7 +13,7 @@ import lustre/event
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
-  let app = lustre.application(init, update, view)
+  let app = lustre.component(init, update, view, [])
   let assert Ok(_) = lustre.start(app, "#app", Nil)
 
   Nil
@@ -24,7 +25,7 @@ type Model =
   Int
 
 fn init(_) -> #(Model, Effect(Msg)) {
-  #(0, effect.none())
+  #(0, effect.none)
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -46,7 +47,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         alert_after_paint(model + 500, should_flush),
       ]),
     )
-    Flush -> #(model - 500, effect.none())
+    Flush -> #(model - 500, effect.none)
   }
 }
 

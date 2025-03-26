@@ -15,7 +15,7 @@ import {
   Reconcile,
   Emit,
   //
-  AttributesChanged,
+  AttributeChanged,
   EventFired,
 } from "../transport.mjs";
 import { run as decode } from "../../../../gleam_stdlib/gleam/dynamic/decode.mjs";
@@ -52,28 +52,23 @@ export class Runtime {
     switch (message.constructor) {
       case ClientDispatchedMessage:
         switch (message.message.constructor) {
-          case AttributesChanged: {
-            const attributes = message.message.attributes;
-
+          case AttributeChanged: {
+            const { name, value } = message.messgae;
             let effects = [];
 
-            for (let list = attributes; list.tail; list = list.tail) {
-              const decoder = this.#on_attribute_change.get(list.head[0]);
+            const decoder = this.#on_attribute_change.get(name);
+            if (!decoder) break;
 
-              if (!decoder) continue;
+            const result = decode(value, decoder);
+            if (result.constructor !== Ok) break;
 
-              const result = decode(list.head[1], decoder);
+            const [model, more_effects] = this.#update(
+              this.#model,
+              result[0],
+            );
 
-              if (result.constructor !== Ok) continue;
-
-              const [model, more_effects] = this.#update(
-                this.#model,
-                result[0],
-              );
-
-              this.#model = model;
-              effects.push(more_effects);
-            }
+            this.#model = model;
+            effects.push(more_effects);
 
             while (effects.length) {
               this.#tick(effects.shift().all);
@@ -85,7 +80,7 @@ export class Runtime {
             const [events, result] = Events.handle(this.#events, path, name, event);
 
             this.#events = events;
-            
+
             if (result.constructor === Ok) {
               this.dispatch(result[0]);
             }

@@ -109,14 +109,11 @@ export class Runtime {
   #shouldFlush = false;
 
   #actions = {
-    dispatch: (msg) => this.dispatch(msg),
+    dispatch: (msg, immediate) => this.dispatch(msg, immediate),
     emit: (event, data) => this.emit(event, data),
-    flush: () => (this.#shouldFlush = true),
     select: () => {},
-
-    get root() {
-      return this.root;
-    },
+    internals: () =>
+      this.root?.host ? this.root.host.internals : this.root?.internals,
   };
 
   // A `#tick` is where we process effects and trigger any synchronous updates.

@@ -878,8 +878,11 @@ pub fn summary(
 // HTML ELEMENTS: WEB COMPONENTS -----------------------------------------------
 
 ///
-pub fn slot(attrs: List(Attribute(msg))) -> Element(msg) {
-  element.element("slot", attrs, constants.empty_list)
+pub fn slot(
+  attrs: List(Attribute(msg)),
+  fallback: List(Element(msg)),
+) -> Element(msg) {
+  element.element("slot", attrs, fallback)
 }
 
 ///

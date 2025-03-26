@@ -1,18 +1,32 @@
 // IMPORTS ---------------------------------------------------------------------
 
+@target(erlang)
 import gleam/dynamic
+@target(erlang)
 import gleam/erlang/process
+@target(erlang)
 import gleam/int
+@target(erlang)
 import gleam/json
+@target(erlang)
 import gleeunit/should
+@target(erlang)
 import lustre
+@target(erlang)
 import lustre/effect
+@target(erlang)
 import lustre/element/html
+@target(erlang)
 import lustre/event
+@target(erlang)
 import lustre/runtime/server/runtime
+@target(erlang)
 import lustre/runtime/transport
+@target(erlang)
 import lustre/server_component
+@target(erlang)
 import lustre/vdom/patch
+@target(erlang)
 import lustre_test
 
 // CLIENT INTERACTION TESTS ----------------------------------------------------
@@ -22,7 +36,8 @@ pub fn client_connect_test() {
   use <- lustre_test.test_filter("client_connect_test")
   use client, _ <- with_erlang_runtime
 
-  process.receive_forever(client) |> should.equal(transport.mount(view(0)))
+  process.receive_forever(client)
+  |> should.equal(transport.mount(False, True, [], [], view(0)))
 }
 
 @target(erlang)

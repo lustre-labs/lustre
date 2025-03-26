@@ -9,6 +9,10 @@ import lustre/element/keyed
 import lustre/vdom/diff
 import lustre/vdom/events
 
+const duration = bench.Duration(5000)
+
+const warmup = bench.Warmup(100)
+
 pub fn benchmark_10_rows() {
   use <- exception.rescue
   let rows = 10
@@ -21,7 +25,7 @@ pub fn benchmark_10_rows() {
       bench.Input("10 rows (keyed, shuffled) ", table_diff(rows, True, True)),
     ],
     [bench.Function("vdom.diff()", run_diff)],
-    [bench.Duration(1000), bench.Warmup(100)],
+    [duration, warmup],
   )
   |> bench.table([bench.IPS, bench.Min, bench.P(99)])
   |> snap("10 table rows")
@@ -39,7 +43,7 @@ pub fn benchmark_100_rows() {
       bench.Input("100 rows (keyed, shuffled) ", table_diff(rows, True, True)),
     ],
     [bench.Function("vdom.diff()", run_diff)],
-    [bench.Duration(1000), bench.Warmup(100)],
+    [duration, warmup],
   )
   |> bench.table([bench.IPS, bench.Min, bench.P(99)])
   |> snap("100 table rows")
@@ -60,7 +64,7 @@ pub fn benchmark_1000_rows() {
       bench.Input("1000 rows (keyed, shuffled) ", table_diff(rows, True, True)),
     ],
     [bench.Function("vdom.diff()", run_diff)],
-    [bench.Duration(1000), bench.Warmup(100)],
+    [duration, warmup],
   )
   |> bench.table([bench.IPS, bench.Min, bench.P(99)])
   |> snap("1000 table rows")
@@ -90,7 +94,7 @@ pub fn benchmark_10_000_rows() {
       ),
     ],
     [bench.Function("vdom.diff()", run_diff)],
-    [bench.Duration(1000), bench.Warmup(100)],
+    [duration, warmup],
   )
   |> bench.table([bench.IPS, bench.Min, bench.P(99)])
   |> snap("10000 table rows")

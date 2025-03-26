@@ -9,13 +9,22 @@ import lustre/vdom/patch.{type Patch}
 // TYPES -----------------------------------------------------------------------
 
 pub type ClientMessage(msg) {
-  Mount(kind: Int, vdom: Node(msg))
+  Mount(
+    kind: Int,
+    open_shadow_root: Bool,
+    will_adopt_styles: Bool,
+    observed_attributes: List(String),
+    observed_properties: List(String),
+    vdom: Node(msg),
+  )
   Reconcile(kind: Int, patch: Patch(msg))
   Emit(kind: Int, name: String, data: Json)
 }
 
 pub type ServerMessage {
-  AttributesChanged(kind: Int, attributes: List(#(String, Dynamic)))
+  Batch(kind: Int, messages: List(ServerMessage))
+  AttributeChanged(kind: Int, name: String, value: String)
+  PropertyChanged(kind: Int, name: String, value: Dynamic)
   EventFired(kind: Int, path: String, name: String, event: Dynamic)
 }
 
@@ -23,8 +32,21 @@ pub type ServerMessage {
 
 pub const mount_kind: Int = 0
 
-pub fn mount(vdom vdom: Node(msg)) -> ClientMessage(msg) {
-  Mount(kind: mount_kind, vdom:)
+pub fn mount(
+  open_shadow_root: Bool,
+  will_adopt_styles: Bool,
+  observed_attributes: List(String),
+  observed_properties: List(String),
+  vdom: Node(msg),
+) -> ClientMessage(msg) {
+  Mount(
+    kind: mount_kind,
+    open_shadow_root:,
+    will_adopt_styles:,
+    observed_attributes:,
+    observed_properties:,
+    vdom:,
+  )
 }
 
 pub const reconcile_kind: Int = 1
@@ -39,12 +61,13 @@ pub fn emit(name name: String, data data: Json) -> ClientMessage(msg) {
   Emit(kind: emit_kind, name:, data:)
 }
 
-pub const attributes_changed_kind: Int = 0
+pub const attribute_changed_kind: Int = 0
 
-pub fn attributes_changed(
-  attributes attributes: List(#(String, Dynamic)),
+pub fn attribute_changed(
+  name name: String,
+  value value: String,
 ) -> ServerMessage {
-  AttributesChanged(kind: attributes_changed_kind, attributes:)
+  AttributeChanged(kind: attribute_changed_kind, name:, value:)
 }
 
 pub const event_fired_kind: Int = 1
@@ -57,18 +80,62 @@ pub fn event_fired(
   EventFired(kind: event_fired_kind, path:, name:, event:)
 }
 
+pub const property_changed_kind: Int = 2
+
+pub fn property_changed(
+  name name: String,
+  value value: Dynamic,
+) -> ServerMessage {
+  PropertyChanged(kind: property_changed_kind, name:, value:)
+}
+
+pub const batch_kind: Int = 3
+
+pub fn batch(messages messages: List(ServerMessage)) -> ServerMessage {
+  Batch(kind: batch_kind, messages:)
+}
+
 // ENCODING --------------------------------------------------------------------
 
 pub fn client_message_to_json(message: ClientMessage(msg)) -> Json {
   case message {
-    Mount(kind:, vdom:) -> mount_to_json(kind, vdom)
+    Mount(
+      kind:,
+      open_shadow_root:,
+      will_adopt_styles:,
+      observed_attributes:,
+      observed_properties:,
+      vdom:,
+    ) ->
+      mount_to_json(
+        kind,
+        open_shadow_root,
+        will_adopt_styles,
+        observed_attributes,
+        observed_properties,
+        vdom,
+      )
     Reconcile(kind:, patch:) -> reconcile_to_json(kind, patch)
     Emit(kind:, name:, data:) -> emit_to_json(kind, name, data)
   }
 }
 
-fn mount_to_json(kind: Int, vdom: Node(msg)) -> Json {
-  json.object([#("kind", json.int(kind)), #("vdom", node.to_json(vdom))])
+fn mount_to_json(
+  kind: Int,
+  open_shadow_root: Bool,
+  will_adopt_styles: Bool,
+  observed_attributes: List(String),
+  observed_properties: List(String),
+  vdom: Node(msg),
+) -> Json {
+  json.object([
+    #("kind", json.int(kind)),
+    #("open_shadow_root", json.bool(open_shadow_root)),
+    #("will_adopt_styles", json.bool(will_adopt_styles)),
+    #("observed_attributes", json.array(observed_attributes, json.string)),
+    #("observed_properties", json.array(observed_properties, json.string)),
+    #("vdom", node.to_json(vdom)),
+  ])
 }
 
 fn reconcile_to_json(kind: Int, patch: Patch(msg)) -> Json {
@@ -89,24 +156,18 @@ pub fn server_message_decoder() -> Decoder(ServerMessage) {
   use kind <- decode.field("kind", decode.int)
 
   case kind {
-    _ if kind == attributes_changed_kind -> attributes_changed_decoder()
+    _ if kind == attribute_changed_kind -> attribute_changed_decoder()
     _ if kind == event_fired_kind -> event_fired_decoder()
-    _ -> decode.failure(attributes_changed([]), "")
+    _ if kind == batch_kind -> batch_decoder()
+    _ -> decode.failure(batch([]), "")
   }
 }
 
-fn attributes_changed_decoder() -> Decoder(ServerMessage) {
-  use attributes <- decode.field(
-    "attributes",
-    decode.list({
-      use name <- decode.field(0, decode.string)
-      use value <- decode.field(1, decode.dynamic)
+fn attribute_changed_decoder() -> Decoder(ServerMessage) {
+  use name <- decode.field("name", decode.string)
+  use value <- decode.field("value", decode.string)
 
-      decode.success(#(name, value))
-    }),
-  )
-
-  decode.success(attributes_changed(attributes))
+  decode.success(attribute_changed(name, value))
 }
 
 fn event_fired_decoder() -> Decoder(ServerMessage) {
@@ -115,4 +176,13 @@ fn event_fired_decoder() -> Decoder(ServerMessage) {
   use event <- decode.field("event", decode.dynamic)
 
   decode.success(event_fired(path, name, event))
+}
+
+fn batch_decoder() -> Decoder(ServerMessage) {
+  use messages <- decode.field(
+    "messages",
+    decode.list(server_message_decoder()),
+  )
+
+  decode.success(batch(messages))
 }

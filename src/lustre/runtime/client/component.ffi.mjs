@@ -1,7 +1,8 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { Ok, Error, isEqual } from "../../../gleam.mjs";
+import { Ok, Error } from "../../../gleam.mjs";
 import { run as decode } from "../../../../gleam_stdlib/gleam/dynamic/decode.mjs";
+import { Some } from "../../../../gleam_stdlib/gleam/option.mjs";
 
 import {
   BadComponentName,
@@ -18,10 +19,7 @@ import {
 
 //
 
-export const make_component = (
-  { init, update, view, on_attribute_change },
-  name,
-) => {
+export const make_component = ({ init, update, view, config }, name) => {
   if (!is_browser()) return new Error(new NotABrowser());
   if (!name.includes("-")) return new Error(new BadComponentName(name));
   if (window.customElements.get(name)) {
@@ -29,14 +27,14 @@ export const make_component = (
   }
 
   const [model, effects] = init(undefined);
-  const observedAttributes = on_attribute_change
-    .entries()
-    .map(([name]) => name);
+  const observedAttributes = config.attributes.entries().map(([name]) => name);
 
   const component = class Component extends HTMLElement {
     static get observedAttributes() {
       return observedAttributes;
     }
+
+    static formAssociated = config.is_form_associated;
 
     #runtime;
     #adoptedStyleNodes = [];
@@ -47,13 +45,20 @@ export const make_component = (
       // a shadow root may have already been constructed through declarative
       this.internals = this.attachInternals();
       // shadow root elements.
-      if (!this.shadowRoot) {
-        this.#shadowRoot = this.attachShadow({ mode: "open" });
+      if (!this.internals.shadowRoot) {
+        this.#shadowRoot = this.attachShadow({
+          mode: config.open_shadow_root ? "open" : "closed",
+        });
+      } else {
+        this.#shadowRoot = this.internals.shadowRoot;
       }
 
-      this.#adoptStyleSheets();
+      if (config.adopt_styles) {
+        this.#adoptStyleSheets();
+      }
+
       this.#runtime = new Runtime(
-        this.shadowRoot,
+        this.#shadowRoot,
         [model, effects],
         view,
         update,
@@ -61,7 +66,39 @@ export const make_component = (
     }
 
     adoptedCallback() {
-      this.#adoptStyleSheets();
+      if (config.adopt_styles) {
+        this.#adoptStyleSheets();
+      }
+    }
+
+    attributeChangedCallback(name, _, value) {
+      const decoded = decode(value, config.attributes.get(name));
+
+      if (decoded.constructor === Ok) {
+        this.dispatch(decoded[0]);
+      }
+    }
+
+    formResetCallback() {
+      if (config.on_form_reset instanceof Some) {
+        this.dispatch(config.on_form_reset[0]);
+      }
+    }
+
+    formStateRestoreCallback(state, reason) {
+      switch (reason) {
+        case "restore":
+          if (config.on_form_restore instanceof Some) {
+            this.dispatch(config.on_form_restore[0](state));
+          }
+          break;
+
+        case "autocomplete":
+          if (config.on_form_populate instanceof Some) {
+            this.dispatch(config.on_form_autofill[0](state));
+          }
+          break;
+      }
     }
 
     send(message) {
@@ -96,21 +133,18 @@ export const make_component = (
         this.shadowRoot.firstChild.remove();
       }
 
-      this.#adoptedStyleNodes = await adoptStylesheets(this.shadowRoot);
+      this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
       this.#runtime.initialNodeOffset = this.#adoptedStyleNodes.length;
     }
   };
 
-  on_attribute_change.forEach((decoder, name) => {
+  config.properties.forEach((decoder, name) => {
     Object.defineProperty(component.prototype, name, {
       get() {
         return this[`_${name}`];
       },
 
       set(value) {
-        const prev = this[`_${name}`];
-        if (isEqual(prev, value)) return;
-
         this[`_${name}`] = value;
         const decoded = decode(value, decoder);
 
@@ -124,4 +158,35 @@ export const make_component = (
   window.customElements.define(name, component);
 
   return new Ok(undefined);
+};
+
+//
+
+export const set_form_value = (internals, value) => {
+  if (!is_browser()) return;
+  if (internals instanceof ElementInternals) {
+    console.log(internals);
+    internals.setFormValue(value);
+  }
+};
+
+export const clear_form_value = (internals) => {
+  if (!is_browser()) return;
+  if (internals instanceof ElementInternals) {
+    internals.setFormValue(undefined);
+  }
+};
+
+export const set_psuedo_state = (internals, value) => {
+  if (!is_browser()) return;
+  if (internals instanceof ElementInternals) {
+    internals.states.add(value);
+  }
+};
+
+export const remove_psuedo_state = (internals, value) => {
+  if (!is_browser()) return;
+  if (internals instanceof ElementInternals) {
+    internals.states.delete(value);
+  }
 };
