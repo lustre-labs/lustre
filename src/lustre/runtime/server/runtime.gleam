@@ -1,14 +1,15 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/process.{type ProcessMonitor, type Selector, type Subject}
 import gleam/function
 import gleam/json.{type Json}
+import gleam/list
 import gleam/option.{Some}
 import gleam/otp/actor.{type Next, type StartError, Spec}
+import gleam/result
 import gleam/set.{type Set}
 import lustre/effect.{type Effect}
 import lustre/runtime/transport.{type ClientMessage, type ServerMessage}
@@ -31,7 +32,7 @@ pub type State(model, msg) {
     model: model,
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Node(msg),
-    on_attribute_change: Dict(String, Decoder(msg)),
+    config: Config(msg),
     //
     vdom: Node(msg),
     events: Events(msg),
@@ -41,12 +42,21 @@ pub type State(model, msg) {
   )
 }
 
-@external(javascript, "../client/core.ffi.mjs", "throw_server_component_error")
+pub type Config(msg) {
+  Config(
+    open_shadow_root: Bool,
+    adopt_styles: Bool,
+    attributes: Dict(String, fn(String) -> Result(msg, Nil)),
+    properties: Dict(String, Decoder(msg)),
+  )
+}
+
+@external(javascript, "../client/runtime.ffi.mjs", "throw_server_component_error")
 pub fn start(
   init: #(model, Effect(msg)),
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Node(msg),
-  on_attribute_change: Dict(String, Decoder(msg)),
+  config: Config(msg),
 ) -> Result(Subject(Message(msg)), StartError) {
   actor.start_spec({
     use <- Spec(init: _, init_timeout: 1000, loop:)
@@ -67,7 +77,7 @@ pub fn start(
         model: init.0,
         update:,
         view:,
-        on_attribute_change:,
+        config:,
         //
         vdom:,
         events:,
@@ -100,53 +110,20 @@ pub type Message(msg) {
   SystemRequestedShutdown
 }
 
-@external(javascript, "../client/core.ffi.mjs", "throw_server_component_error")
+@external(javascript, "../client/runtime.ffi.mjs", "throw_server_component_error")
 fn loop(
   message: Message(msg),
   state: State(model, msg),
 ) -> Next(Message(msg), State(model, msg)) {
   case message {
-    ClientDispatchedMessage(message: transport.AttributesChanged(..) as message) -> {
-      let #(model, effect, did_update) =
-        handle_attribute_changes(
-          message.attributes,
-          state.on_attribute_change,
-          state.update,
-          False,
-          #(state.model, effect.none()),
-        )
+    ClientDispatchedMessage(message:) -> {
+      let next = handle_client_message(state, message)
+      let Diff(patch:, events:) = diff(state.events, state.vdom, next.vdom)
 
-      use <- bool.lazy_guard(!did_update, fn() { actor.continue(state) })
-      let vdom = state.view(model)
-      let Diff(patch:, events:) = diff(state.events, state.vdom, vdom)
-
-      handle_effect(state.self, effect)
       broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))
 
-      actor.continue(State(..state, model:, vdom:, events:))
+      actor.continue(State(..next, events:))
     }
-
-    ClientDispatchedMessage(message: transport.EventFired(..) as message) ->
-      case
-        events.handle(state.events, message.path, message.name, message.event)
-      {
-        #(events, Error(_)) -> actor.continue(State(..state, events:))
-        #(events, Ok(msg)) -> {
-          let #(model, effect) = state.update(state.model, msg)
-          let vdom = state.view(model)
-
-          let Diff(patch:, events:) = diff(events, state.vdom, vdom)
-
-          handle_effect(state.self, effect)
-          broadcast(
-            state.subscribers,
-            state.callbacks,
-            transport.reconcile(patch),
-          )
-
-          actor.continue(State(..state, model:, vdom:, events:))
-        }
-      }
 
     ClientRegisteredSubject(client:) ->
       case dict.has_key(state.subscribers, client) {
@@ -165,7 +142,16 @@ fn loop(
             })
           }
 
-          process.send(client, transport.mount(state.vdom))
+          process.send(
+            client,
+            transport.mount(
+              state.config.open_shadow_root,
+              state.config.adopt_styles,
+              dict.keys(state.config.attributes),
+              dict.keys(state.config.properties),
+              state.vdom,
+            ),
+          )
 
           actor.Continue(
             State(..state, subscribers:, selector:),
@@ -203,7 +189,14 @@ fn loop(
         False -> {
           let callbacks = set.insert(state.callbacks, callback)
 
-          callback(transport.mount(state.vdom))
+          callback(transport.mount(
+            state.config.open_shadow_root,
+            state.config.adopt_styles,
+            dict.keys(state.config.attributes),
+            dict.keys(state.config.properties),
+            state.vdom,
+          ))
+
           actor.continue(State(..state, callbacks:))
         }
       }
@@ -270,10 +263,58 @@ fn loop(
   }
 }
 
-@external(javascript, "../client/core.ffi.mjs", "throw_server_component_error")
+fn handle_client_message(
+  state: State(model, msg),
+  message: ServerMessage,
+) -> State(model, msg) {
+  case message {
+    transport.Batch(messages:, ..) ->
+      list.fold(messages, state, handle_client_message)
+
+    transport.AttributeChanged(name:, value:, ..) ->
+      case handle_attribute_change(state.config.attributes, name, value) {
+        Error(_) -> state
+        Ok(msg) -> {
+          let #(model, effect) = state.update(state.model, msg)
+          let vdom = state.view(model)
+
+          handle_effect(state.self, effect)
+
+          State(..state, model:, vdom:)
+        }
+      }
+
+    transport.PropertyChanged(name:, value:, ..) ->
+      case handle_property_change(state.config.properties, name, value) {
+        Error(_) -> state
+        Ok(msg) -> {
+          let #(model, effect) = state.update(state.model, msg)
+          let vdom = state.view(model)
+
+          handle_effect(state.self, effect)
+
+          State(..state, model:, vdom:)
+        }
+      }
+
+    transport.EventFired(path:, name:, event:, ..) ->
+      case events.handle(state.events, path, name, event) {
+        #(events, Error(_)) -> State(..state, events:)
+        #(events, Ok(message)) -> {
+          let #(model, effect) = state.update(state.model, message)
+          let vdom = state.view(model)
+
+          handle_effect(state.self, effect)
+
+          State(..state, model:, vdom:, events:)
+        }
+      }
+  }
+}
+
 fn handle_attribute_changes(
-  attributes: List(#(String, Dynamic)),
-  on_attribute_change: Dict(String, Decoder(msg)),
+  attributes: List(#(String, String)),
+  handlers: Dict(String, fn(String) -> Result(msg, Nil)),
   update: fn(model, msg) -> #(model, Effect(msg)),
   did_update: Bool,
   model: #(model, Effect(msg)),
@@ -282,44 +323,51 @@ fn handle_attribute_changes(
     [] -> #(model.0, model.1, did_update)
 
     [#(name, value), ..attributes] ->
-      case dict.get(on_attribute_change, name) {
+      case handle_attribute_change(handlers, name, value) {
+        Ok(message) -> {
+          let #(new_model, effect) = update(model.0, message)
+
+          handle_attribute_changes(attributes, handlers, update, True, #(
+            new_model,
+            effect.batch([effect, model.1]),
+          ))
+        }
+
         Error(_) ->
           handle_attribute_changes(
             attributes,
-            on_attribute_change,
+            handlers,
             update,
             did_update,
             model,
           )
-
-        Ok(decoder) ->
-          case decode.run(value, decoder) {
-            Error(_) ->
-              handle_attribute_changes(
-                attributes,
-                on_attribute_change,
-                update,
-                did_update,
-                model,
-              )
-
-            Ok(message) -> {
-              let #(new_model, effect) = update(model.0, message)
-
-              handle_attribute_changes(
-                attributes,
-                on_attribute_change,
-                update,
-                True,
-                #(new_model, effect.batch([effect, model.1])),
-              )
-            }
-          }
       }
   }
 }
 
-@external(javascript, "../client/core.ffi.mjs", "throw_server_component_error")
+fn handle_attribute_change(
+  attributes: Dict(String, fn(String) -> Result(msg, Nil)),
+  name: String,
+  value: String,
+) -> Result(msg, Nil) {
+  case dict.get(attributes, name) {
+    Error(_) -> Error(Nil)
+    Ok(handler) -> handler(value)
+  }
+}
+
+fn handle_property_change(
+  properties: Dict(String, Decoder(msg)),
+  name: String,
+  value: Dynamic,
+) -> Result(msg, Nil) {
+  case dict.get(properties, name) {
+    Error(_) -> Error(Nil)
+    Ok(decoder) -> decode.run(value, decoder) |> result.replace_error(Nil)
+  }
+}
+
+@external(javascript, "../client/runtime.ffi.mjs", "throw_server_component_error")
 fn handle_effect(self: Subject(Message(msg)), effect: Effect(msg)) -> Nil {
   let send = process.send(self, _)
   let dispatch = fn(message) { send(EffectDispatchedMessage(message:)) }
@@ -332,12 +380,12 @@ fn handle_effect(self: Subject(Message(msg)), effect: Effect(msg)) -> Nil {
     |> send
   }
 
-  let root = dynamic.from(Nil)
+  let internals = fn() { dynamic.from(Nil) }
 
-  effect.perform(effect, dispatch, emit, select, root)
+  effect.perform(effect, dispatch, emit, select, internals)
 }
 
-@external(javascript, "../client/core.ffi.mjs", "throw_server_component_error")
+@external(javascript, "../client/runtime.ffi.mjs", "throw_server_component_error")
 fn broadcast(
   clients: Dict(Subject(ClientMessage(msg)), ProcessMonitor),
   callbacks: Set(fn(ClientMessage(msg)) -> Nil),

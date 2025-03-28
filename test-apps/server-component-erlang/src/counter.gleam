@@ -2,6 +2,7 @@ import gleam/erlang/process
 import gleam/int
 import gleam/json
 import lustre
+import lustre/component
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
@@ -24,7 +25,7 @@ fn init(initial_count: Int) -> #(Model, Effect(Msg)) {
     False -> initial_count
   }
 
-  #(model, tick())
+  #(model, effect.none)
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -70,7 +71,7 @@ fn view(model: Model) -> Element(Msg) {
 
   html.div([], [
     html.button([event.on_click(Incr)], [html.text("+")]),
-    html.slot([]),
+    component.default_slot([], []),
     html.p([], [html.text(count)]),
     html.button([event.on_click(Decr)], [html.text("-")]),
   ])

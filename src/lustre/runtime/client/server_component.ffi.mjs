@@ -5,13 +5,15 @@
 // to src/.
 
 import { Reconciler } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/reconciler.ffi.mjs";
-import { adoptStylesheets } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/core.ffi.mjs";
+import { adoptStylesheets } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs";
 import {
   mount_kind,
   reconcile_kind,
   emit_kind,
-  attributes_changed_kind,
+  attribute_changed_kind,
+  property_changed_kind,
   event_fired_kind,
+  batch_kind,
 } from "../../../../build/dev/javascript/lustre/lustre/runtime/transport.mjs";
 
 //
@@ -21,11 +23,17 @@ export class ServerComponent extends HTMLElement {
     return ["route", "method"];
   }
 
+  #shadowRoot;
   #method = "ws";
   #route = null;
   #transport = null;
+  #adoptStyles = true;
   #adoptedStyleNodes = [];
   #reconciler;
+  #remoteObservedAttributes = new Set();
+  #remoteObservedProperties = new Set();
+  #connected = false;
+  #changedAttributesQueue = [];
 
   #observer = new MutationObserver((mutations) => {
     const attributes = [];
@@ -33,57 +41,42 @@ export class ServerComponent extends HTMLElement {
     for (const mutation of mutations) {
       if (mutation.type !== "attributes") continue;
       const name = mutation.attributeName;
-      if (!this.#remoteObservedAttributes.includes(name)) continue;
 
-      attributes.push([name, this.getAttribute(name)]);
+      if (this.#connected || this.#remoteObservedAttributes.includes(name)) {
+        attributes.push([name, this.getAttribute(name)]);
+      }
     }
 
     if (attributes.length && this.#connected) {
-      this.#transport?.send({ kind: attributes_changed_kind, attributes });
+      this.#transport?.send({
+        kind: batch,
+        messages: attributes.map(([name, value]) => ({
+          kind: attribute_changed_kind,
+          name,
+          value,
+        })),
+      });
     } else {
       this.#changedAttributesQueue.push(...attributes);
     }
   });
 
-  #remoteObservedAttributes = [];
-  #connected = false;
-  #changedAttributesQueue = [];
-
   constructor() {
     super();
 
-    if (!this.shadowRoot) {
-      this.attachShadow({ mode: "open" });
-    }
-
     this.internals = this.attachInternals();
-    this.#reconciler = new Reconciler(
-      this.shadowRoot,
-      (event, path, name) => {
-        this.#transport?.send({ kind: event_fired_kind, path, name, event });
-      },
-      {
-        useServerEvents: true,
-      },
-    );
-
     this.#observer.observe(this, {
       attributes: true,
     });
   }
 
   connectedCallback() {
-    this.#adoptStyleSheets();
     this.#method = this.getAttribute("method") || "ws";
 
     if (this.hasAttribute("route")) {
       this.#route = new URL(this.getAttribute("route"), window.location.href);
       this.#connect();
     }
-  }
-
-  adoptedCallback() {
-    this.#adoptStyleSheets();
   }
 
   attributeChangedCallback(name, prev, next) {
@@ -114,9 +107,69 @@ export class ServerComponent extends HTMLElement {
     }
   }
 
-  messageReceivedCallback(data) {
+  async messageReceivedCallback(data) {
     switch (data.kind) {
       case mount_kind: {
+        this.#shadowRoot = this.attachShadow({
+          mode: data.open_shadow_root ? "open" : "closed",
+        });
+
+        this.#reconciler = new Reconciler(
+          this.#shadowRoot,
+          (event, path, name) => {
+            this.#transport?.send({
+              kind: event_fired_kind,
+              path,
+              name,
+              event,
+            });
+          },
+          {
+            useServerEvents: true,
+          },
+        );
+
+        this.#remoteObservedAttributes = new Set(data.observed_attributes);
+        const filteredQueuedAttributes = this.#changedAttributesQueue.filter(
+          ([name]) => this.#remoteObservedAttributes.has(name),
+        );
+
+        if (filteredQueuedAttributes.length) {
+          this.#transport.send({
+            kind: batch_kind,
+            messages: filteredQueuedAttributes.map(([name, value]) => ({
+              kind: attribute_changed_kind,
+              name,
+              value,
+            })),
+          });
+        }
+
+        this.#changedAttributesQueue = [];
+
+        this.#remoteObservedProperties = new Set(data.observed_properties);
+
+        for (const name of this.#remoteObservedProperties) {
+          Object.defineProperty(this, name, {
+            get() {
+              return this[`_${name}`];
+            },
+
+            set(value) {
+              this[`_${name}`] = value;
+              this.#transport?.send({
+                kind: property_changed_kind,
+                name,
+                value,
+              });
+            },
+          });
+        }
+
+        if (data.will_adopt_styles) {
+          await this.#adoptStyleSheets();
+        }
+
         this.#reconciler.mount(data.vdom);
 
         // Once the component is mounted there is finally something displayed on
@@ -155,14 +208,6 @@ export class ServerComponent extends HTMLElement {
           method: this.#method,
         },
       });
-
-      if (this.#changedAttributesQueue.length) {
-        this.#transport.send({
-          kind: attributes_changed_kind,
-          attributes: this.#changedAttributesQueue,
-        });
-        this.#changedAttributesQueue = [];
-      }
     };
 
     const onMessage = (data) => {
@@ -201,10 +246,10 @@ export class ServerComponent extends HTMLElement {
   async #adoptStyleSheets() {
     while (this.#adoptedStyleNodes.length) {
       this.#adoptedStyleNodes.pop().remove();
-      this.shadowRoot.firstChild.remove();
+      this.#shadowRoot.firstChild.remove();
     }
 
-    this.#adoptedStyleNodes = await adoptStylesheets(this.shadowRoot);
+    this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
   }
 }
 
@@ -213,6 +258,9 @@ export class ServerComponent extends HTMLElement {
 class WebsocketTransport {
   #url;
   #socket;
+
+  #waitingForResponse = false;
+  #queue = [];
 
   #onConnect;
   #onMessage;
@@ -232,7 +280,20 @@ class WebsocketTransport {
     this.#socket.onmessage = ({ data }) => {
       try {
         this.#onMessage(JSON.parse(data));
-      } catch {}
+      } finally {
+        if (this.#queue.length) {
+          this.#socket.send(
+            JSON.stringify({
+              kind: batch_kind,
+              messages: this.#queue,
+            }),
+          );
+        } else {
+          this.#waitingForResponse = false;
+        }
+
+        this.#queue = [];
+      }
     };
 
     this.#socket.onclose = () => {
@@ -241,7 +302,13 @@ class WebsocketTransport {
   }
 
   send(data) {
-    this.#socket.send(JSON.stringify(data));
+    if (this.#waitingForResponse) {
+      this.#queue.push(data);
+      return;
+    } else {
+      this.#socket.send(JSON.stringify(data));
+      this.#waitingForResponse = true;
+    }
   }
 
   close() {
@@ -260,6 +327,7 @@ class SseTransport {
   constructor(url, { onConnect, onMessage, onClose }) {
     this.#url = url;
     this.#eventSource = new EventSource(this.#url);
+    this.#onConnect = onConnect;
     this.#onMessage = onMessage;
     this.#onClose = onClose;
 

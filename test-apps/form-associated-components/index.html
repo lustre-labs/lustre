@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <title>Lifecycle effects</title>
+        <script type="module" src="/priv/static/app.mjs"></script>
+    </head>
+
+    <body>
+        <form>
+            <label>
+                <input type="checkbox" name="toggle" />
+                Toggle
+            </label>
+
+            <label>
+                <input type="text" name="input" />
+                Input
+            </label>
+
+            <label>
+                <double-number-input name="double"></double-number-input>
+                Double
+            </label>
+
+            <button type="submit">Submit</button>
+        </form>
+
+        <script>
+            document.querySelector("form").addEventListener("submit", (e) => {
+                e.preventDefault();
+
+                console.log(e.target.elements);
+
+                const formData = new FormData(e.target);
+
+                console.log(Object.fromEntries(formData));
+            });
+        </script>
+    </body>
+</html>

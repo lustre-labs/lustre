@@ -64,7 +64,7 @@ pub fn main() {
         // version of this script for production.
         ["lustre-server-component.mjs"] -> {
           let assert Ok(priv) = erlang.priv_directory("lustre")
-          let path = priv <> "/static/lustre-server-component.min.mjs"
+          let path = priv <> "/static/lustre-server-component.mjs"
           let assert Ok(script) = mist.send_file(path, offset: 0, limit: None)
 
           response.new(200)

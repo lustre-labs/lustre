@@ -42,9 +42,14 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Dynamic}
-import gleam/erlang/process.{type Selector, type Subject}
 import gleam/json.{type Json}
 import gleam/list
+
+@target(javascript)
+import gleam/erlang/process.{type Selector}
+
+@target(erlang)
+import gleam/erlang/process.{type Selector, type Subject}
 
 // CONSTANTS -------------------------------------------------------------------
 
@@ -74,11 +79,19 @@ type Actions(msg) {
     dispatch: fn(msg) -> Nil,
     emit: fn(String, Json) -> Nil,
     select: fn(Selector(msg)) -> Nil,
-    root: Dynamic,
+    internals: fn() -> Dynamic,
   )
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
+
+/// Most Lustre applications need to return a tuple of `#(model, Effect(msg))`
+/// from their `init` and `update` functions. If you don't want to perform any
+/// side effects, you can use `none` to tell the runtime there's no work to do.
+///
+pub fn none() -> Effect(msg) {
+  empty
+}
 
 /// Construct your own reusable effect from a custom callback. This callback is
 /// called with a `dispatch` function you can use to send messages back to your
@@ -183,12 +196,15 @@ pub fn select(_sel) {
   empty
 }
 
-/// Most Lustre applications need to return a tuple of `#(model, Effect(msg))`
-/// from their `init` and `update` functions. If you don't want to perform any
-/// side effects, you can use `none` to tell the runtime there's no work to do.
-///
-pub fn none() -> Effect(msg) {
-  empty
+@internal
+pub fn with_element_internals(
+  callback: fn(fn(msg) -> Nil, Dynamic) -> Nil,
+) -> Effect(msg) {
+  let task = fn(actions: Actions(msg)) {
+    callback(actions.dispatch, actions.internals())
+  }
+
+  Effect(..empty, synchronous: [task])
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
@@ -242,7 +258,7 @@ fn do_comap_actions(actions: Actions(b), f: fn(a) -> b) -> Actions(a) {
     dispatch: fn(msg) { actions.dispatch(f(msg)) },
     emit: actions.emit,
     select: fn(selector) { do_comap_select(actions, selector, f) },
-    root: actions.root,
+    internals: actions.internals,
   )
 }
 
@@ -276,9 +292,9 @@ pub fn perform(
   dispatch: fn(a) -> Nil,
   emit: fn(String, Json) -> Nil,
   select: fn(Selector(a)) -> Nil,
-  root: Dynamic,
+  internals: fn() -> Dynamic,
 ) -> Nil {
-  let actions = Actions(dispatch:, emit:, select:, root:)
+  let actions = Actions(dispatch:, emit:, select:, internals:)
 
   list.each(effect.synchronous, fn(eff) { eff(actions) })
   list.each(effect.before_paint, fn(eff) { eff(actions) })
