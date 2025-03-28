@@ -42,6 +42,50 @@ var element_kind = 1;
 var text_kind = 2;
 var unsafe_inner_html_kind = 3;
 
+// build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs
+var copiedStyleSheets = /* @__PURE__ */ new WeakMap();
+async function adoptStylesheets(shadowRoot) {
+  const pendingParentStylesheets = [];
+  for (const node of document.querySelectorAll("link[rel=stylesheet], style")) {
+    if (node.sheet)
+      continue;
+    pendingParentStylesheets.push(
+      new Promise((resolve, reject) => {
+        node.addEventListener("load", resolve);
+        node.addEventListener("error", reject);
+      })
+    );
+  }
+  await Promise.allSettled(pendingParentStylesheets);
+  if (!shadowRoot.host.isConnected) {
+    return [];
+  }
+  shadowRoot.adoptedStyleSheets = shadowRoot.host.getRootNode().adoptedStyleSheets;
+  const pending = [];
+  for (const sheet of document.styleSheets) {
+    try {
+      shadowRoot.adoptedStyleSheets.push(sheet);
+    } catch {
+      try {
+        let copiedSheet = copiedStyleSheets.get(sheet);
+        if (!copiedSheet) {
+          copiedSheet = new CSSStyleSheet();
+          for (const rule of sheet.cssRules) {
+            copiedSheet.insertRule(rule.cssText, copiedSheet.cssRules.length);
+          }
+          copiedStyleSheets.set(sheet, copiedSheet);
+        }
+        shadowRoot.adoptedStyleSheets.push(copiedSheet);
+      } catch {
+        const node = sheet.ownerNode.cloneNode();
+        shadowRoot.prepend(node);
+        pending.push(node);
+      }
+    }
+  }
+  return pending;
+}
+
 // build/dev/javascript/lustre/lustre/vdom/patch.mjs
 var replace_text_kind = 0;
 var replace_inner_html_kind = 1;
@@ -274,19 +318,19 @@ var Reconciler = class {
             event2.preventDefault();
           if (stop)
             event2.stopPropagation();
-          let path = [];
+          let path = "";
           let node2 = event2.currentTarget;
           while (node2 !== this.#root) {
             const key = node2[meta].key;
             if (key) {
-              path.push(key);
+              path = `${key}\f${path}`;
             } else {
               const index2 = [].indexOf.call(node2.parentNode.childNodes, node2);
-              path.push(index2.toString());
+              path = `${index2}\f${path}`;
             }
             node2 = node2.parentNode;
           }
-          path.reverse();
+          path = path.slice(0, -1);
           const data = this.#useServerEvents ? createServerEvent(event2, include) : event2;
           this.#dispatch(data, path, event2.type, immediate);
         });
@@ -394,115 +438,67 @@ function syncedAttribute(name) {
   };
 }
 
-// build/dev/javascript/lustre/lustre/runtime/client/core.ffi.mjs
-var copiedStyleSheets = /* @__PURE__ */ new WeakMap();
-async function adoptStylesheets(shadowRoot) {
-  const pendingParentStylesheets = [];
-  for (const node of document.querySelectorAll("link[rel=stylesheet], style")) {
-    if (node.sheet)
-      continue;
-    pendingParentStylesheets.push(
-      new Promise((resolve, reject) => {
-        node.addEventListener("load", resolve);
-        node.addEventListener("error", reject);
-      })
-    );
-  }
-  await Promise.allSettled(pendingParentStylesheets);
-  if (!shadowRoot.host.isConnected) {
-    return [];
-  }
-  shadowRoot.adoptedStyleSheets = shadowRoot.host.getRootNode().adoptedStyleSheets;
-  const pending = [];
-  for (const sheet of document.styleSheets) {
-    try {
-      shadowRoot.adoptedStyleSheets.push(sheet);
-    } catch {
-      try {
-        let copiedSheet = copiedStyleSheets.get(sheet);
-        if (!copiedSheet) {
-          copiedSheet = new CSSStyleSheet();
-          for (const rule of sheet.cssRules) {
-            copiedSheet.insertRule(rule.cssText, copiedSheet.cssRules.length);
-          }
-          copiedStyleSheets.set(sheet, copiedSheet);
-        }
-        shadowRoot.adoptedStyleSheets.push(copiedSheet);
-      } catch {
-        const node = sheet.ownerNode.cloneNode();
-        shadowRoot.prepend(node);
-        pending.push(node);
-      }
-    }
-  }
-  return pending;
-}
-
 // build/dev/javascript/lustre/lustre/runtime/transport.mjs
 var mount_kind = 0;
 var reconcile_kind = 1;
 var emit_kind = 2;
-var attributes_changed_kind = 0;
+var attribute_changed_kind = 0;
 var event_fired_kind = 1;
+var property_changed_kind = 2;
+var batch_kind = 3;
 
 // src/lustre/runtime/client/server_component.ffi.mjs
 var ServerComponent = class extends HTMLElement {
   static get observedAttributes() {
     return ["route", "method"];
   }
+  #shadowRoot;
   #method = "ws";
   #route = null;
   #transport = null;
+  #adoptStyles = true;
   #adoptedStyleNodes = [];
   #reconciler;
+  #remoteObservedAttributes = /* @__PURE__ */ new Set();
+  #remoteObservedProperties = /* @__PURE__ */ new Set();
+  #connected = false;
+  #changedAttributesQueue = [];
   #observer = new MutationObserver((mutations) => {
     const attributes = [];
     for (const mutation of mutations) {
       if (mutation.type !== "attributes")
         continue;
       const name = mutation.attributeName;
-      if (!this.#remoteObservedAttributes.includes(name))
-        continue;
-      attributes.push([name, this.getAttribute(name)]);
+      if (this.#connected || this.#remoteObservedAttributes.includes(name)) {
+        attributes.push([name, this.getAttribute(name)]);
+      }
     }
     if (attributes.length && this.#connected) {
-      this.#transport?.send({ kind: attributes_changed_kind, attributes });
+      this.#transport?.send({
+        kind: batch,
+        messages: attributes.map(([name, value]) => ({
+          kind: attribute_changed_kind,
+          name,
+          value
+        }))
+      });
     } else {
       this.#changedAttributesQueue.push(...attributes);
     }
   });
-  #remoteObservedAttributes = [];
-  #connected = false;
-  #changedAttributesQueue = [];
   constructor() {
     super();
-    if (!this.shadowRoot) {
-      this.attachShadow({ mode: "open" });
-    }
     this.internals = this.attachInternals();
-    this.#reconciler = new Reconciler(
-      this.shadowRoot,
-      (event2, path, name) => {
-        this.#transport?.send({ kind: event_fired_kind, path, name, event: event2 });
-      },
-      {
-        useServerEvents: true
-      }
-    );
     this.#observer.observe(this, {
       attributes: true
     });
   }
   connectedCallback() {
-    this.#adoptStyleSheets();
     this.#method = this.getAttribute("method") || "ws";
     if (this.hasAttribute("route")) {
       this.#route = new URL(this.getAttribute("route"), window.location.href);
       this.#connect();
     }
-  }
-  adoptedCallback() {
-    this.#adoptStyleSheets();
   }
   attributeChangedCallback(name, prev, next) {
     switch (name) {
@@ -529,9 +525,60 @@ var ServerComponent = class extends HTMLElement {
       }
     }
   }
-  messageReceivedCallback(data) {
+  async messageReceivedCallback(data) {
     switch (data.kind) {
       case mount_kind: {
+        this.#shadowRoot = this.attachShadow({
+          mode: data.open_shadow_root ? "open" : "closed"
+        });
+        this.#reconciler = new Reconciler(
+          this.#shadowRoot,
+          (event2, path, name) => {
+            this.#transport?.send({
+              kind: event_fired_kind,
+              path,
+              name,
+              event: event2
+            });
+          },
+          {
+            useServerEvents: true
+          }
+        );
+        this.#remoteObservedAttributes = new Set(data.observed_attributes);
+        const filteredQueuedAttributes = this.#changedAttributesQueue.filter(
+          ([name]) => this.#remoteObservedAttributes.has(name)
+        );
+        if (filteredQueuedAttributes.length) {
+          this.#transport.send({
+            kind: batch_kind,
+            messages: filteredQueuedAttributes.map(([name, value]) => ({
+              kind: attribute_changed_kind,
+              name,
+              value
+            }))
+          });
+        }
+        this.#changedAttributesQueue = [];
+        this.#remoteObservedProperties = new Set(data.observed_properties);
+        for (const name of this.#remoteObservedProperties) {
+          Object.defineProperty(this, name, {
+            get() {
+              return this[`_${name}`];
+            },
+            set(value) {
+              this[`_${name}`] = value;
+              this.#transport?.send({
+                kind: property_changed_kind,
+                name,
+                value
+              });
+            }
+          });
+        }
+        if (data.will_adopt_styles) {
+          await this.#adoptStyleSheets();
+        }
         this.#reconciler.mount(data.vdom);
         this.dispatchEvent(new CustomEvent("lustre:mount"));
         break;
@@ -560,13 +607,6 @@ var ServerComponent = class extends HTMLElement {
           method: this.#method
         }
       });
-      if (this.#changedAttributesQueue.length) {
-        this.#transport.send({
-          kind: attributes_changed_kind,
-          attributes: this.#changedAttributesQueue
-        });
-        this.#changedAttributesQueue = [];
-      }
     };
     const onMessage = (data) => {
       this.messageReceivedCallback(data);
@@ -597,14 +637,16 @@ var ServerComponent = class extends HTMLElement {
   async #adoptStyleSheets() {
     while (this.#adoptedStyleNodes.length) {
       this.#adoptedStyleNodes.pop().remove();
-      this.shadowRoot.firstChild.remove();
+      this.#shadowRoot.firstChild.remove();
     }
-    this.#adoptedStyleNodes = await adoptStylesheets(this.shadowRoot);
+    this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
   }
 };
 var WebsocketTransport = class {
   #url;
   #socket;
+  #waitingForResponse = false;
+  #queue = [];
   #onConnect;
   #onMessage;
   #onClose;
@@ -620,7 +662,18 @@ var WebsocketTransport = class {
     this.#socket.onmessage = ({ data }) => {
       try {
         this.#onMessage(JSON.parse(data));
-      } catch {
+      } finally {
+        if (this.#queue.length) {
+          this.#socket.send(
+            JSON.stringify({
+              kind: batch_kind,
+              messages: this.#queue
+            })
+          );
+        } else {
+          this.#waitingForResponse = false;
+        }
+        this.#queue = [];
       }
     };
     this.#socket.onclose = () => {
@@ -628,7 +681,13 @@ var WebsocketTransport = class {
     };
   }
   send(data) {
-    this.#socket.send(JSON.stringify(data));
+    if (this.#waitingForResponse) {
+      this.#queue.push(data);
+      return;
+    } else {
+      this.#socket.send(JSON.stringify(data));
+      this.#waitingForResponse = true;
+    }
   }
   close() {
     this.#socket.close();
@@ -643,6 +702,7 @@ var SseTransport = class {
   constructor(url, { onConnect, onMessage, onClose }) {
     this.#url = url;
     this.#eventSource = new EventSource(this.#url);
+    this.#onConnect = onConnect;
     this.#onMessage = onMessage;
     this.#onClose = onClose;
     this.#eventSource.onopen = () => {

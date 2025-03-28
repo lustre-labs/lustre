@@ -159,10 +159,9 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/bool
-import gleam/dict.{type Dict}
-import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/process.{type Subject}
 import gleam/otp/actor.{type StartError}
+import lustre/component.{type Config, type Option}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/internals/constants
@@ -204,7 +203,7 @@ pub opaque type App(flags, model, msg) {
     init: fn(flags) -> #(model, Effect(msg)),
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
-    on_attribute_change: Dict(String, Decoder(msg)),
+    config: Config(msg),
   )
 }
 
@@ -264,7 +263,7 @@ pub fn application(
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
 ) -> App(flags, model, msg) {
-  App(init, update, view, constants.empty_dict())
+  App(init, update, view, component.new(constants.empty_list))
 }
 
 /// A `component` is a type of Lustre application designed to be embedded within
@@ -289,9 +288,9 @@ pub fn component(
   init: fn(flags) -> #(model, Effect(msg)),
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
-  on_attribute_change: Dict(String, Decoder(msg)),
+  options: List(Option(msg)),
 ) -> App(flags, model, msg) {
-  App(init, update, view, on_attribute_change)
+  App(init, update, view, component.new(options))
 }
 
 // RUNTIME ---------------------------------------------------------------------
@@ -358,7 +357,11 @@ fn do_start_actor(
   with flags: flags,
 ) -> Result(Subject(RuntimeMessage(msg)), Error) {
   app.init(flags)
-  |> runtime.start(app.update, app.view, app.on_attribute_change)
+  |> runtime.start(
+    app.update,
+    app.view,
+    component.to_server_component_config(app.config),
+  )
   |> result.map_error(ActorError)
 }
 
@@ -409,10 +412,9 @@ pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error)
 /// api for sending messages to actors and the `Subject` returned from
 /// [`start_actor`](#start_actor).
 ///
-@external(javascript, "./lustre/runtime/client/core.ffi.mjs", "send")
-pub fn send(runtime: Runtime(msg), message: RuntimeMessage(msg)) -> Nil {
-  coerce(runtime) |> process.send(message)
-}
+@external(erlang, "gleam@erlang@process", "send")
+@external(javascript, "./lustre/runtime/client/runtime.ffi.mjs", "send")
+pub fn send(runtime: Runtime(msg), message: RuntimeMessage(msg)) -> Nil
 
 /// Dispatch a message to a running application's `update` function. This can be
 /// used as a way for the outside world to communicate with a Lustre app without
@@ -444,7 +446,7 @@ pub fn shutdown() -> RuntimeMessage(msg) {
 /// backend because you'll want to know whether you're currently running on your
 /// server or in the browser: this function tells you that!
 ///
-@external(javascript, "./lustre/runtime/client/core.ffi.mjs", "is_browser")
+@external(javascript, "./lustre/runtime/client/runtime.ffi.mjs", "is_browser")
 pub fn is_browser() -> Bool {
   False
 }
@@ -453,7 +455,7 @@ pub fn is_browser() -> Bool {
 /// Element. This is particularly useful in contexts where _other web components_
 /// may have been registered and you must avoid collisions.
 ///
-@external(javascript, "./lustre/runtime/client/core.ffi.mjs", "is_registered")
+@external(javascript, "./lustre/runtime/client/runtime.ffi.mjs", "is_registered")
 pub fn is_registered(_name: String) -> Bool {
   False
 }

@@ -5,6 +5,7 @@ import gleam/json.{type Json}
 import gleam/list
 import lustre
 import lustre/attribute
+import lustre/component
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
@@ -135,12 +136,13 @@ const component_tag = "table-column"
 
 pub fn register() {
   let component =
-    lustre.component(
-      init,
-      update,
-      view,
-      dict.from_list([#("column", decode.map(decoder(), ParentUpdatedColumn))]),
-    )
+    lustre.component(init, update, view, [
+      component.on_property_change(
+        "column",
+        decode.map(decoder(), ParentUpdatedColumn),
+      ),
+      component.adopt_styles(True),
+    ])
 
   lustre.register(component, component_tag)
 }

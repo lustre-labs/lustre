@@ -10,6 +10,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dict.{type Dict}
+import gleam/option.{type Option, None}
 import gleam/set.{type Set}
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -26,4 +27,4 @@ pub fn empty_set() -> Set(a) {
   set.new()
 }
 
-pub const error_nil = Error(Nil)
+pub const option_none: Option(a) = None

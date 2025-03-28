@@ -2,7 +2,12 @@
 
 import { Ok, Error } from "../../../gleam.mjs";
 import { ElementNotFound, NotABrowser } from "../../../lustre.mjs";
-import { is_browser, Runtime } from "./core.ffi.mjs";
+import { is_browser, Runtime } from "./runtime.ffi.mjs";
+import {
+  EffectDispatchedMessage,
+  EffectEmitEvent,
+  SystemRequestedShutdown,
+} from "../server/runtime.mjs";
 
 //
 
@@ -26,7 +31,31 @@ export class Spa {
     this.#runtime = new Runtime(root, [init, effects], view, update);
   }
 
-  send(action) {}
+  send(message) {
+    switch (message.constructor) {
+      case EffectDispatchedMessage: {
+        this.dispatch(message.message, false);
+        break;
+      }
+
+      case EffectEmitEvent: {
+        this.emit(message.name, message.data);
+        break;
+      }
+
+      case SystemRequestedShutdown:
+        //TODO
+        break;
+    }
+  }
+
+  dispatch(msg, immediate) {
+    this.#runtime.dispatch(msg, immediate);
+  }
+
+  emit(event, data) {
+    this.#runtime.emit(event, data);
+  }
 }
 
 export const start = Spa.start;
