@@ -8,7 +8,7 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/string
 import gleam/string_tree.{type StringTree}
-import lustre/internals/escape.{escape}
+import houdini
 
 // TYPES -----------------------------------------------------------------------
 
@@ -192,7 +192,7 @@ fn do_element_to_string_builder(
   case element {
     Text("") -> string_tree.new()
     Text(content) if raw_text -> string_tree.from_string(content)
-    Text(content) -> string_tree.from_string(escape(content))
+    Text(content) -> string_tree.from_string(houdini.escape(content))
 
     Map(subtree) -> do_element_to_string_builder(subtree(), raw_text)
 
@@ -288,7 +288,7 @@ fn do_element_to_snapshot_builder(
   case element {
     Text("") -> string_tree.new()
     Text(content) if raw_text -> string_tree.from_strings([spaces, content])
-    Text(content) -> string_tree.from_strings([spaces, escape(content)])
+    Text(content) -> string_tree.from_strings([spaces, houdini.escape(content)])
 
     Map(subtree) -> do_element_to_snapshot_builder(subtree(), raw_text, indent)
 
@@ -413,26 +413,26 @@ fn attributes_to_string_builder(
       )
       Ok(#("class", val)) if class == "" -> #(
         html,
-        escape(val),
+        houdini.escape(val),
         style,
         inner_html,
       )
       Ok(#("class", val)) -> #(
         html,
-        class <> " " <> escape(val),
+        class <> " " <> houdini.escape(val),
         style,
         inner_html,
       )
       Ok(#("style", val)) if style == "" -> #(
         html,
         class,
-        escape(val),
+        houdini.escape(val),
         inner_html,
       )
       Ok(#("style", val)) -> #(
         html,
         class,
-        style <> " " <> escape(val),
+        style <> " " <> houdini.escape(val),
         inner_html,
       )
       Ok(#(key, "")) -> #(
@@ -442,7 +442,10 @@ fn attributes_to_string_builder(
         inner_html,
       )
       Ok(#(key, val)) -> #(
-        string_tree.append(html, " " <> key <> "=\"" <> escape(val) <> "\""),
+        string_tree.append(
+          html,
+          " " <> key <> "=\"" <> houdini.escape(val) <> "\"",
+        ),
         class,
         style,
         inner_html,
