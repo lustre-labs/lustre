@@ -26,7 +26,7 @@ import {
 
 //
 
-const SUPPORTS_MOVE_BEFORE = !!HTMLElement.prototype.moveBefore;
+const SUPPORTS_MOVE_BEFORE = globalThis.HTMLElement && !!HTMLElement.prototype.moveBefore;
 
 export class Reconciler {
   #root = null;
