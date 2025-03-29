@@ -7,8 +7,8 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/string
 import gleam/string_tree.{type StringTree}
+import houdini.{escape}
 import lustre/internals/constants
-import lustre/internals/escape.{escape}
 import lustre/internals/json_object_builder
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/attribute.{type Attribute, Attribute}

@@ -6,8 +6,8 @@ import gleam/list
 import gleam/order.{type Order}
 import gleam/string
 import gleam/string_tree.{type StringTree}
+import houdini.{escape}
 import lustre/internals/constants
-import lustre/internals/escape.{escape}
 import lustre/internals/json_object_builder
 
 // TYPES -----------------------------------------------------------------------

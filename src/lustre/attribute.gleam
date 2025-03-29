@@ -450,6 +450,7 @@ pub fn http_equiv(name: String) -> Attribute(msg) {
 ///
 pub fn lang(name: String) -> Attribute(msg) {
   attribute("lang", name)
+}
 
 // HELPERS ---------------------------------------------------------------------
 

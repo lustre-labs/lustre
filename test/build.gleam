@@ -79,7 +79,7 @@ fn read_module() {
   simplifile.read(module)
 }
 
-fn inject_script(script, module) {
+fn inject_script(script, src) {
   let inject_regexp = "// <<INJECT RUNTIME>>\\n    .+,"
   let options = Options(case_insensitive: False, multi_line: True)
   let assert Ok(re) = regexp.compile(inject_regexp, options)
