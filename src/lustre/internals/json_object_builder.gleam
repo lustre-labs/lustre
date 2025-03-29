@@ -58,3 +58,10 @@ pub fn list(
     _ -> [#(key, json.array(values, to_json)), ..entries]
   }
 }
+
+pub fn object(entries: Builder, key: String, nested: Builder) -> Builder {
+  case nested {
+    [] -> entries
+    _ -> [#(key, json.object(nested)), ..entries]
+  }
+}

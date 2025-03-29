@@ -11,6 +11,8 @@ import {
   attribute_kind,
   property_kind,
   event_kind,
+  debounce_kind,
+  throttle_kind,
 } from "../../vdom/attribute.mjs";
 
 import {
@@ -24,14 +26,12 @@ import {
   update_kind,
 } from "../../vdom/patch.mjs";
 
-import {
-  separator_index,
-  separator_key,
-} from "../../vdom/path.mjs";
+import { separator_index, separator_key } from "../../vdom/path.mjs";
 
 //
 
-const SUPPORTS_MOVE_BEFORE = globalThis.HTMLElement && !!HTMLElement.prototype.moveBefore;
+const SUPPORTS_MOVE_BEFORE =
+  globalThis.HTMLElement && !!HTMLElement.prototype.moveBefore;
 
 export class Reconciler {
   #root = null;
@@ -57,18 +57,18 @@ export class Reconciler {
         switch (change.kind) {
           case insert_kind:
           case move_kind:
-            change.before = (change.before|0) + offset;
+            change.before = (change.before | 0) + offset;
             break;
 
           case remove_kind:
           case replace_kind:
-            change.from = (change.from|0) + offset;
+            change.from = (change.from | 0) + offset;
             break;
         }
       });
 
       iterate(patch.children, (child) => {
-        child.index = (child.index|0) + offset;
+        child.index = (child.index | 0) + offset;
       });
     }
 
@@ -130,7 +130,7 @@ export class Reconciler {
         // TODO: use linked-list style but skip to indices if distance is great enough?
 
         this.#stack.push({
-          node: node.childNodes[child.index|0],
+          node: node.childNodes[child.index | 0],
           patch: child,
         });
       });
@@ -149,7 +149,7 @@ export class Reconciler {
       fragment.appendChild(el);
     });
 
-    node.insertBefore(fragment, node.childNodes[before|0] ?? null);
+    node.insertBefore(fragment, node.childNodes[before | 0] ?? null);
   }
 
   #move(node, key, before, count) {
@@ -175,7 +175,7 @@ export class Reconciler {
   }
 
   #remove(node, from, count) {
-    this.#removeFromChild(node, node.childNodes[from|0], count);
+    this.#removeFromChild(node, node.childNodes[from | 0], count);
   }
 
   #removeFromChild(parent, child, count) {
@@ -183,8 +183,13 @@ export class Reconciler {
       const next = child.nextSibling;
 
       const key = child[meta].key;
+
       if (key) {
         parent[meta].keyedChildren.delete(key);
+      }
+
+      for (const [_, { timeout }] of child[meta].debouncers) {
+        window.clearTimeout(timeout);
       }
 
       parent.removeChild(child);
@@ -198,7 +203,7 @@ export class Reconciler {
     const el = this.#createElement(child);
 
     addKeyedChild(parent, el);
-    parent.insertBefore(el, parent.childNodes[from|0] ?? null);
+    parent.insertBefore(el, parent.childNodes[from | 0] ?? null);
   }
 
   #replaceText(node, content) {
@@ -216,6 +221,15 @@ export class Reconciler {
       if (node[meta].handlers.has(name)) {
         node.removeEventListener(name, handleEvent);
         node[meta].handlers.delete(name);
+
+        if (node[meta].throttles.has(name)) {
+          node[meta].throttles.delete(name);
+        }
+
+        if (node[meta].debouncers.has(name)) {
+          window.clearTimeout(node[meta].debouncers.get(name).timeout);
+          node[meta].debouncers.delete(name);
+        }
       } else {
         node.removeAttribute(name);
         ATTRIBUTE_HOOKS[name]?.removed?.(node, name);
@@ -321,6 +335,24 @@ export class Reconciler {
           ? attribute.include
           : [];
 
+        if (attribute.limit?.kind === throttle_kind) {
+          const throttle = node[meta].throttles.get(attribute.name) ?? {
+            last: 0,
+            delay: attribute.limit.delay,
+          };
+
+          node[meta].throttles.set(attribute.name, throttle);
+        }
+
+        if (attribute.limit?.kind === debounce_kind) {
+          const debounce = node[meta].debouncers.get(attribute.name) ?? {
+            timeout: null,
+            delay: attribute.limit.delay,
+          };
+
+          node[meta].debouncers.set(attribute.name, debounce);
+        }
+
         node[meta].handlers.set(attribute.name, (event) => {
           if (prevent) event.preventDefault();
           if (stop) event.stopPropagation();
@@ -334,12 +366,11 @@ export class Reconciler {
               path = `${separator_key}${key}${path}`;
             } else {
               const index = [].indexOf.call(node.parentNode.childNodes, node);
-              path = `${separator_index}${index}${path}`
+              path = `${separator_index}${index}${path}`;
             }
 
             node = node.parentNode;
           }
-
 
           // remove the leading separator
           path = path.slice(1);
@@ -348,7 +379,28 @@ export class Reconciler {
             ? createServerEvent(event, include)
             : event;
 
-          this.#dispatch(data, path, event.type, immediate);
+          if (event.target[meta].throttles.has(event.type)) {
+            const throttle = event.target[meta].throttles.get(event.type);
+            const now = Date.now();
+            const last = throttle.last || 0;
+
+            if (now > last + throttle.delay) {
+              throttle.last = now;
+              this.#dispatch(data, path, event.type, immediate);
+            } else {
+              event.preventDefault();
+            }
+          } else if (event.target[meta].debouncers.has(event.type)) {
+            const debounce = event.target[meta].debouncers.get(event.type);
+
+            window.clearTimeout(debounce.timeout);
+
+            debounce.timeout = window.setTimeout(() => {
+              this.#dispatch(data, path, event.type, immediate);
+            }, debounce.delay);
+          } else {
+            this.#dispatch(data, path, event.type, immediate);
+          }
         });
 
         break;
@@ -396,11 +448,13 @@ export function initialiseMetadata(node, key = "") {
         key,
         keyedChildren: new Map(),
         handlers: new Map(),
+        throttles: new Map(),
+        debouncers: new Map(),
       };
       break;
 
     case Node.TEXT_NODE:
-      node[meta] = { key };
+      node[meta] = { key, debouncers: new Map() };
       break;
   }
 }

@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { toList, NonEmpty, Empty } from "../../../gleam.mjs";
-import * as $list from '../../../../gleam_stdlib/gleam/list.mjs';
+import { NonEmpty, Empty } from "../../../gleam.mjs";
+import * as $list from "../../../../gleam_stdlib/gleam/list.mjs";
 import { empty_list } from "../../internals/constants.mjs";
 import { diff } from "../../vdom/diff.mjs";
 import * as Events from "../../vdom/events.mjs";
@@ -47,7 +47,7 @@ export class Runtime {
     this.#reconciler = new Reconciler(this.root, (event, path, name) => {
       const [events, msg] = Events.handle(this.#events, path, name, event);
       this.#events = events;
-      
+
       if (msg.isOk()) {
         this.dispatch(msg[0], false);
       }
@@ -119,7 +119,7 @@ export class Runtime {
   // A `#tick` is where we process effects and trigger any synchronous updates.
   // Once a tick has been processed a render will be scheduled if none is already.
   // p0
-  #tick(effects, mayScheduleRender = true) {
+  #tick(effects) {
     // By flipping this on before we process the list of synchronous effects, we
     // make it so that any messages dispatched immediately will be queued up and
     // applied before the next render.
@@ -218,15 +218,15 @@ function makeEffect(synchronous) {
   return {
     synchronous,
     after_paint: empty_list,
-    before_paint: empty_list
-  }
+    before_paint: empty_list,
+  };
 }
 
 function listAppend(a, b) {
   if (a instanceof Empty) {
     return b;
   } else if (b instanceof Empty) {
-    return  a;
+    return a;
   } else {
     return $list.append(a, b);
   }

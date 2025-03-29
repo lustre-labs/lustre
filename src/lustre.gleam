@@ -127,7 +127,6 @@
 //// Both of these packages are heavy works in progress: any feedback or contributions
 //// are very welcome!
 ////
-////
 //// ## Getting help
 ////
 //// If you're having trouble with Lustre or not sure what the right way to do

@@ -50,6 +50,7 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
     prevent_default: False,
     stop_propagation: False,
     immediate: is_immediate_event(name),
+    limit: attribute.NoLimit(kind: 0),
   )
 }
 

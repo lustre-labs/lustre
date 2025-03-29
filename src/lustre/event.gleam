@@ -4,7 +4,9 @@ import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
-import lustre/vdom/attribute.{Event} as _
+import lustre/vdom/attribute.{
+  Debounce, Event, Throttle, debounce_kind, throttle_kind,
+} as _
 
 // EFFECTS ---------------------------------------------------------------------
 
@@ -44,6 +46,22 @@ pub fn prevent_default(event: Attribute(msg)) -> Attribute(msg) {
 pub fn stop_propagation(event: Attribute(msg)) -> Attribute(msg) {
   case event {
     Event(..) -> Event(..event, stop_propagation: True)
+    _ -> event
+  }
+}
+
+///
+pub fn debounce(event: Attribute(msg), delay: Int) -> Attribute(msg) {
+  case event {
+    Event(..) -> Event(..event, limit: Debounce(kind: debounce_kind, delay:))
+    _ -> event
+  }
+}
+
+///
+pub fn throttle(event: Attribute(msg), delay: Int) -> Attribute(msg) {
+  case event {
+    Event(..) -> Event(..event, limit: Throttle(kind: throttle_kind, delay:))
     _ -> event
   }
 }
