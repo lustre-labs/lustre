@@ -10,6 +10,7 @@ import lustre/element/keyed
 import lustre/event
 import lustre/vdom/diff
 import lustre/vdom/events
+import lustre/vdom/path
 import lustre_test
 
 //
@@ -38,9 +39,9 @@ pub fn single_nested_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = "0\f0"
+  let path = path.new() |> path.to(0, "") |> path.to(0, "")
 
-  events.handle(events, path, "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -56,9 +57,9 @@ pub fn single_nested_keyed_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = "0\fb"
+  let path = path.new() |> path.to(0, "") |> path.to(1, "b")
 
-  events.handle(events, path, "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -77,9 +78,8 @@ pub fn single_nested_keyed_event_with_period_test() {
 
   let events = events.from_node(vdom)
 
-  let path = "0\fb.c"
-
-  events.handle(events, path, "click", dynamic.from(Nil))
+  let path = path.new() |> path.to(0, "") |> path.to(1, "b.c")
+  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -115,9 +115,9 @@ pub fn nested_fragment_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = "0\f1"
+  let path = path.new() |> path.to(0, "") |> path.to(1, "")
 
-  events.handle(events, path, "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -141,9 +141,9 @@ pub fn nested_fragment_with_multiple_children_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = "0\f5"
+  let path = path.new() |> path.to(0, "") |> path.to(5, "")
 
-  events.handle(events, path, "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Ok(4))
 }
@@ -161,9 +161,9 @@ pub fn single_mapped_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = "0"
+  let path = path.new() |> path.to(0, "")
 
-  events.handle(events, path, "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Ok("HELLO!"))
 }
@@ -182,9 +182,9 @@ pub fn multiple_mapped_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = "0"
+  let path = path.new() |> path.to(0, "")
 
-  events.handle(events, path, "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Ok("HELLO!!"))
 }
@@ -199,9 +199,9 @@ pub fn event_added_test() {
 
   let events = diff.diff(events.new(), prev, next).events
 
-  let path = "0"
+  let path = path.new() |> path.to(0, "")
 
-  events.handle(events, path, "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -214,9 +214,9 @@ pub fn event_removed_test() {
 
   let events = diff.diff(events.new(), prev, next).events
 
-  let path = "0"
+  let path = path.new() |> path.to(0, "")
 
-  events.handle(events, path, "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Error([]))
 }
@@ -233,9 +233,9 @@ pub fn element_added_test() {
 
   let events = diff.diff(events.new(), prev, next).events
 
-  let path = "0\fb"
+  let path = path.new() |> path.to(0, "") |> path.to(1, "b")
 
-  events.handle(events, path, "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -252,9 +252,9 @@ pub fn element_removed_test() {
 
   let events = diff.diff(events.new(), prev, next).events
 
-  let path = "0\fb"
+  let path = path.new() |> path.to(0, "") |> path.to(1, "b")
 
-  events.handle(events, path, "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Error([]))
 }
@@ -276,9 +276,9 @@ pub fn element_replaced_test() {
 
   let events = diff.diff(events.new(), prev, next).events
 
-  let path = "0\fb"
+  let path = path.new() |> path.to(0, "") |> path.to(1, "b")
 
-  events.handle(events, path, "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -318,13 +318,19 @@ pub fn keyed_element_replaced_test() {
 
   let events = diff.diff(events.new(), prev, next).events
 
-  let path = "0\fv2\f0"
-  events.handle(events, path, "click", dynamic.from(Nil))
+  let path = path.new() |> path.to(0, "") |> path.to(0, "v2") |> path.to(0, "")
+  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Ok("hello from 1"))
 
-  let path = "0\fv2\f1\f0"
-  events.handle(events, path, "click", dynamic.from(Nil))
+  let path =
+    path.new()
+    |> path.to(0, "")
+    |> path.to(0, "v2")
+    |> path.to(1, "")
+    |> path.to(0, "")
+
+  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Ok("hello from 2"))
 }

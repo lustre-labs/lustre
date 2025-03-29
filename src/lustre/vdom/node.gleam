@@ -13,13 +13,6 @@ import lustre/internals/json_object_builder
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/attribute.{type Attribute, Attribute}
 
-// CONSTANTS -------------------------------------------------------------------
-
-const void_elements = [
-  "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
-  "param", "source", "track", "wbr",
-]
-
 // TYPES -----------------------------------------------------------------------
 
 pub type Node(msg) {
@@ -109,12 +102,6 @@ pub fn element(
   self_closing self_closing: Bool,
   void void: Bool,
 ) -> Node(msg) {
-  let void = case namespace {
-    // use list.any here instead of list.contains to not call the generic isEqual.
-    "" if !void -> list.any(void_elements, fn(void_elem) { tag == void_elem })
-    _ -> void
-  }
-
   Element(
     kind: element_kind,
     key:,
@@ -125,8 +112,32 @@ pub fn element(
     children:,
     keyed_children:,
     self_closing:,
-    void:,
+    void: void || is_void_element(tag, namespace),
   )
+}
+
+fn is_void_element(tag: String, namespace: String) -> Bool {
+  case namespace {
+    "" ->
+      case tag {
+        "area"
+        | "base"
+        | "br"
+        | "col"
+        | "embed"
+        | "hr"
+        | "img"
+        | "input"
+        | "link"
+        | "meta"
+        | "param"
+        | "source"
+        | "track"
+        | "wbr" -> True
+        _ -> False
+      }
+    _ -> False
+  }
 }
 
 pub const text_kind: Int = 2

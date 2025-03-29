@@ -1,6 +1,5 @@
 // IMPORTS ---------------------------------------------------------------------
 
-@target(erlang)
 import gleam/dynamic
 @target(erlang)
 import gleam/erlang/process
@@ -26,6 +25,8 @@ import lustre/runtime/transport
 import lustre/server_component
 @target(erlang)
 import lustre/vdom/patch
+@target(erlang)
+import lustre/vdom/path
 @target(erlang)
 import lustre_test
 
@@ -151,10 +152,10 @@ fn update(model, msg) {
 }
 
 @target(erlang)
-const incr = "0\f2"
+const incr = "0" <> path.separator_index <> "2"
 
 @target(erlang)
-const reset = "0\f3"
+const reset = "0" <> path.separator_index <> "3"
 
 @target(erlang)
 fn view(model) {

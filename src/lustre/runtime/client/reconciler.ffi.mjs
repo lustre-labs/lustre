@@ -24,9 +24,14 @@ import {
   update_kind,
 } from "../../vdom/patch.mjs";
 
+import {
+  separator_index,
+  separator_key,
+} from "../../vdom/path.mjs";
+
 //
 
-const SUPPORTS_MOVE_BEFORE = !!HTMLElement.prototype.moveBefore;
+const SUPPORTS_MOVE_BEFORE = globalThis.HTMLElement && !!HTMLElement.prototype.moveBefore;
 
 export class Reconciler {
   #root = null;
@@ -326,17 +331,18 @@ export class Reconciler {
           while (node !== this.#root) {
             const key = node[meta].key;
             if (key) {
-              path = `${key}\f${path}`;
+              path = `${separator_key}${key}${path}`;
             } else {
               const index = [].indexOf.call(node.parentNode.childNodes, node);
-              path = `${index}\f${path}`
+              path = `${separator_index}${index}${path}`
             }
 
             node = node.parentNode;
           }
 
-          // remove the trailing \f
-          path = path.slice(0, -1);
+
+          // remove the leading separator
+          path = path.slice(1);
 
           const data = this.#useServerEvents
             ? createServerEvent(event, include)
