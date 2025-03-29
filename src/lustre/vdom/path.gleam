@@ -8,9 +8,11 @@ pub opaque type Path {
   Index(index: Int, parent: Path)
 }
 
-const separator_index = "\n"
+pub const separator_index = "\n"
 
-const separator_key = "\r"
+pub const separator_key = "\t"
+
+pub const separator_event = "\f"
 
 pub fn new() -> Path {
   Root
@@ -21,6 +23,10 @@ pub fn to(parent: Path, index: Int, key: String) -> Path {
     "" -> Index(index:, parent:)
     _ -> Key(key:, parent:)
   }
+}
+
+pub fn event(path: Path, event: String) -> String {
+  do_to_string(path, [separator_event, event])
 }
 
 pub fn to_string(path: Path) -> String {
