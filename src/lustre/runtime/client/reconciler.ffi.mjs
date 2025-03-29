@@ -331,18 +331,18 @@ export class Reconciler {
           while (node !== this.#root) {
             const key = node[meta].key;
             if (key) {
-              path = `${key}${separator_key}${path}`;
+              path = `${separator_key}${key}${path}`;
             } else {
               const index = [].indexOf.call(node.parentNode.childNodes, node);
-              path = `${index}${separator_index}${path}`
+              path = `${separator_index}${index}${path}`
             }
 
             node = node.parentNode;
           }
 
 
-          // remove the trailing separator
-          path = path.slice(0, -1);
+          // remove the leading separator
+          path = path.slice(1);
 
           const data = this.#useServerEvents
             ? createServerEvent(event, include)
