@@ -1,0 +1,9 @@
+---
+version: 1.2.6
+title: [benchmark,javascript] 10 table rows
+---
+Input               Function                       IPS           Min           P99
+10 rows                   vdom.diff()            145460.4748        0.0059        0.0080
+10 rows (shuffled)        vdom.diff()            146281.4725        0.0062        0.0078
+10 rows (keyed)           vdom.diff()            142007.3488        0.0064        0.0081
+10 rows (keyed, shuffled) vdom.diff()             97360.5975        0.0092        0.0121
