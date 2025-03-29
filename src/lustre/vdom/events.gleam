@@ -3,17 +3,16 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type DecodeError, type Decoder}
 import gleam/function
-import gleam/int
 import gleam/list
-import gleam/string
 import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/attribute.{type Attribute, Event}
 import lustre/vdom/node.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
+import lustre/vdom/path.{type Path}
 
 // TYPES -----------------------------------------------------------------------
 
-pub type Events(msg) {
+pub opaque type Events(msg) {
   Events(
     handlers: MutableMap(String, Decoder(msg)),
     dispatched_paths: List(String),
@@ -43,20 +42,10 @@ fn apply_mapper(mapper: Mapper, handler: Decoder(msg)) -> Decoder(msg) {
 
 // PATH ------------------------------------------------------------------------
 
-pub fn child_path(path: String, index: Int, key: String) -> String {
-  let child_part = case key {
-    "" -> int.to_string(index)
-    _ -> key
-  }
+const separator_event = "\f"
 
-  case path {
-    "" -> child_part
-    _ -> path <> "\f" <> child_part
-  }
-}
-
-fn event_path(path: String, event_name: String) -> String {
-  path <> "\f\f" <> event_name
+fn event_path(path: path.Path, event_name: String) -> String {
+  path.to_string(path) <> separator_event <> event_name
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -72,7 +61,7 @@ pub fn new() -> Events(msg) {
 }
 
 pub fn from_node(root: Node(msg)) -> Events(msg) {
-  add_child(new(), function.identity, "", 0, root)
+  add_child(new(), function.identity, path.new(), 0, root)
 }
 
 pub fn tick(events: Events(msg)) -> Events(msg) {
@@ -88,7 +77,7 @@ pub fn tick(events: Events(msg)) -> Events(msg) {
 pub fn add_event(
   events: Events(msg),
   mapper: Mapper,
-  path: String,
+  path: Path,
   name: String,
   handler: Decoder(msg),
 ) -> Events(msg) {
@@ -99,7 +88,7 @@ pub fn add_event(
 fn do_add_event(
   handlers: MutableMap(String, Decoder(msg)),
   mapper: fn(Dynamic) -> Dynamic,
-  path: String,
+  path: Path,
   name: String,
   handler: Decoder(msg),
 ) -> MutableMap(String, Decoder(msg)) {
@@ -112,7 +101,7 @@ fn do_add_event(
 
 pub fn remove_event(
   events: Events(msg),
-  path: String,
+  path: Path,
   name: String,
 ) -> Events(msg) {
   let handlers = do_remove_event(events.handlers, path, name)
@@ -121,7 +110,7 @@ pub fn remove_event(
 
 fn do_remove_event(
   handlers: MutableMap(String, msg),
-  path: String,
+  path: Path,
   name: String,
 ) -> MutableMap(String, msg) {
   mutable_map.delete(handlers, event_path(path, name))
@@ -130,7 +119,7 @@ fn do_remove_event(
 pub fn add_child(
   events: Events(msg),
   mapper: Mapper,
-  parent: String,
+  parent: Path,
   index: Int,
   child: Node(msg),
 ) -> Events(msg) {
@@ -141,13 +130,13 @@ pub fn add_child(
 fn do_add_child(
   handlers: MutableMap(String, Decoder(msg)),
   mapper: Mapper,
-  parent: String,
+  parent: Path,
   child_index: Int,
   child: Node(msg),
 ) -> MutableMap(String, Decoder(msg)) {
   case child {
     Element(attributes:, children:, ..) -> {
-      let path = child_path(parent, child_index, child.key)
+      let path = path.to(parent, child_index, child.key)
       let composed_mapper = compose_mapper(mapper, child.mapper)
 
       handlers
@@ -163,7 +152,7 @@ fn do_add_child(
     }
 
     UnsafeInnerHtml(attributes:, ..) -> {
-      let path = child_path(parent, child_index, child.key)
+      let path = path.to(parent, child_index, child.key)
       let composed_mapper = compose_mapper(mapper, child.mapper)
 
       add_attributes(handlers, composed_mapper, path, attributes)
@@ -176,7 +165,7 @@ fn do_add_child(
 fn add_attributes(
   handlers: MutableMap(String, Decoder(msg)),
   mapper: fn(Dynamic) -> Dynamic,
-  path: String,
+  path: Path,
   attributes: List(Attribute(msg)),
 ) -> MutableMap(String, Decoder(msg)) {
   use events, attribute <- list.fold(attributes, handlers)
@@ -192,7 +181,7 @@ fn add_attributes(
 pub fn add_children(
   events: Events(msg),
   mapper: Mapper,
-  path: String,
+  path: Path,
   child_index: Int,
   children: List(Node(msg)),
 ) -> Events(msg) {
@@ -204,7 +193,7 @@ pub fn add_children(
 fn do_add_children(
   handlers: MutableMap(String, Decoder(msg)),
   mapper: Mapper,
-  path: String,
+  path: Path,
   child_index: Int,
   children: List(Node(msg)),
 ) -> MutableMap(String, Decoder(msg)) {
@@ -220,7 +209,7 @@ fn do_add_children(
 
 pub fn remove_child(
   events: Events(msg),
-  parent: String,
+  parent: Path,
   child_index: Int,
   child: Node(msg),
 ) -> Events(msg) {
@@ -230,13 +219,13 @@ pub fn remove_child(
 
 fn do_remove_child(
   handlers: MutableMap(String, Decoder(msg)),
-  parent: String,
+  parent: Path,
   child_index: Int,
   child: Node(msg),
 ) -> MutableMap(String, Decoder(msg)) {
   case child {
     Element(attributes:, children:, ..) -> {
-      let path = child_path(parent, child_index, child.key)
+      let path = path.to(parent, child_index, child.key)
 
       handlers
       |> remove_attributes(path, attributes)
@@ -248,7 +237,7 @@ fn do_remove_child(
     }
 
     UnsafeInnerHtml(attributes:, ..) -> {
-      let path = child_path(parent, child_index, child.key)
+      let path = path.to(parent, child_index, child.key)
       remove_attributes(handlers, path, attributes)
     }
 
@@ -258,7 +247,7 @@ fn do_remove_child(
 
 fn remove_attributes(
   handlers: MutableMap(String, Decoder(msg)),
-  path: String,
+  path: Path,
   attributes: List(Attribute(msg)),
 ) -> MutableMap(String, Decoder(msg)) {
   use events, attribute <- list.fold(attributes, handlers)
@@ -270,7 +259,7 @@ fn remove_attributes(
 
 fn do_remove_children(
   handlers: MutableMap(String, Decoder(msg)),
-  path: String,
+  path: Path,
   child_index: Int,
   children: List(Node(msg)),
 ) -> MutableMap(String, Decoder(msg)) {
@@ -297,15 +286,14 @@ pub fn handle(
   let next_dispatched_paths = [path, ..events.next_dispatched_paths]
   let events = Events(..events, next_dispatched_paths:)
 
-  case mutable_map.get(events.handlers, event_path(path, name)) {
+  case mutable_map.get(events.handlers, path <> "\f\f" <> name) {
     Ok(handler) -> #(events, decode.run(event, handler))
     Error(_) -> #(events, Error([]))
   }
 }
 
-pub fn has_dispatched_events(events: Events(msg), path: String) {
-  use dispatch_path <- list.any(events.dispatched_paths)
-  string.starts_with(path, dispatch_path)
+pub fn has_dispatched_events(events: Events(msg), path: Path) {
+  path.matches_any(path, events.dispatched_paths)
 }
 
 @external(erlang, "gleam@function", "identity")

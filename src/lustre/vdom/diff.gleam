@@ -9,6 +9,7 @@ import lustre/vdom/attribute.{type Attribute, Attribute, Event, Property}
 import lustre/vdom/events.{type Events}
 import lustre/vdom/node.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
 import lustre/vdom/patch.{type Change, type Patch, Patch}
+import lustre/vdom/path.{type Path}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -33,7 +34,7 @@ pub fn diff(events: Events(msg), old: Node(msg), new: Node(msg)) -> Diff(msg) {
     //
     node_index: 0,
     patch_index: 0,
-    path: "",
+    path: path.new(),
     changes: constants.empty_list,
     children: constants.empty_list,
     mapper: function.identity,
@@ -53,7 +54,7 @@ fn do_diff(
   //
   node_index node_index: Int,
   patch_index patch_index: Int,
-  path path: String,
+  path path: Path,
   changes changes: List(Change(msg)),
   children children: List(Patch(msg)),
   mapper mapper: events.Mapper,
@@ -373,7 +374,7 @@ fn do_diff(
       if prev.namespace == next.namespace && prev.tag == next.tag
     -> {
       let composed_mapper = events.compose_mapper(mapper, next.mapper)
-      let child_path = events.child_path(path, node_index, next.key)
+      let child_path = path.to(path, node_index, next.key)
 
       let controlled =
         is_controlled(events, next.namespace, next.tag, child_path)
@@ -489,7 +490,7 @@ fn do_diff(
 
     [UnsafeInnerHtml(..) as prev, ..old], [UnsafeInnerHtml(..) as next, ..new] -> {
       let composed_mapper = events.compose_mapper(mapper, next.mapper)
-      let child_path = events.child_path(path, node_index, next.key)
+      let child_path = path.to(path, node_index, next.key)
 
       let AttributeChange(events:, added: added_attrs, removed: removed_attrs) =
         diff_attributes(
@@ -581,7 +582,7 @@ fn is_controlled(
   events: Events(msg),
   namespace: String,
   tag: String,
-  path: String,
+  path: Path,
 ) {
   case tag {
     "input" | "select" | "textarea" if namespace == "" ->
@@ -600,7 +601,7 @@ type AttributeChange(msg) {
 
 fn diff_attributes(
   controlled controlled: Bool,
-  path path: String,
+  path path: Path,
   mapper mapper: events.Mapper,
   events events: Events(msg),
   old old: List(Attribute(msg)),
