@@ -40,14 +40,6 @@ fn apply_mapper(mapper: Mapper, handler: Decoder(msg)) -> Decoder(msg) {
   decode.map(handler, coerce(mapper))
 }
 
-// PATH ------------------------------------------------------------------------
-
-const separator_event = "\f"
-
-fn event_path(path: path.Path, event_name: String) -> String {
-  path.to_string(path) <> separator_event <> event_name
-}
-
 // CONSTRUCTORS ----------------------------------------------------------------
 
 ///
@@ -94,7 +86,7 @@ fn do_add_event(
 ) -> MutableMap(String, Decoder(msg)) {
   mutable_map.insert(
     handlers,
-    event_path(path, name),
+    path.event(path, name),
     apply_mapper(mapper, handler),
   )
 }
@@ -113,7 +105,7 @@ fn do_remove_event(
   path: Path,
   name: String,
 ) -> MutableMap(String, msg) {
-  mutable_map.delete(handlers, event_path(path, name))
+  mutable_map.delete(handlers, path.event(path, name))
 }
 
 pub fn add_child(
@@ -286,7 +278,7 @@ pub fn handle(
   let next_dispatched_paths = [path, ..events.next_dispatched_paths]
   let events = Events(..events, next_dispatched_paths:)
 
-  case mutable_map.get(events.handlers, path <> "\f\f" <> name) {
+  case mutable_map.get(events.handlers, path <> path.separator_event <> name) {
     Ok(handler) -> #(events, decode.run(event, handler))
     Error(_) -> #(events, Error([]))
   }
