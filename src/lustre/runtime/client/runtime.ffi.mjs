@@ -5,7 +5,7 @@ import * as $list from "../../../../gleam_stdlib/gleam/list.mjs";
 import { empty_list } from "../../internals/constants.mjs";
 import { diff } from "../../vdom/diff.mjs";
 import * as Events from "../../vdom/events.mjs";
-import { Reconciler } from "./reconciler.ffi.mjs";
+import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
 import { virtualise } from "./virtualise.ffi.mjs";
 
 //

@@ -5,7 +5,7 @@ import {
   text_kind,
   fragment_kind,
   unsafe_inner_html_kind,
-} from "../../vdom/node.mjs";
+} from "./node.mjs";
 
 import {
   attribute_kind,
@@ -13,7 +13,7 @@ import {
   event_kind,
   debounce_kind,
   throttle_kind,
-} from "../../vdom/attribute.mjs";
+} from "./attribute.mjs";
 
 import {
   insert_kind,
@@ -24,9 +24,9 @@ import {
   replace_inner_html_kind,
   replace_text_kind,
   update_kind,
-} from "../../vdom/patch.mjs";
+} from "./patch.mjs";
 
-import { separator_index, separator_key } from "../../vdom/path.mjs";
+import { separator_index, separator_key } from "./path.mjs";
 
 //
 

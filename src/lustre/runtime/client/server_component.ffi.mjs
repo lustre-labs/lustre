@@ -4,7 +4,7 @@
 // used as the entry module when running esbuild so we *cant* use imports relative
 // to src/.
 
-import { Reconciler } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/reconciler.ffi.mjs";
+import { Reconciler } from "../../../../build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs";
 import { adoptStylesheets } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs";
 import {
   mount_kind,
