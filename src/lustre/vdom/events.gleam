@@ -6,9 +6,9 @@ import gleam/function
 import gleam/list
 import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
-import lustre/vdom/attribute.{type Attribute, Event}
-import lustre/vdom/node.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
 import lustre/vdom/path.{type Path}
+import lustre/vdom/vattr.{type Attribute, Event}
+import lustre/vdom/vnode.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -195,7 +195,7 @@ fn do_add_children(
     [child, ..rest] ->
       handlers
       |> do_add_child(mapper, path, child_index, child)
-      |> do_add_children(mapper, path, child_index + node.advance(child), rest)
+      |> do_add_children(mapper, path, child_index + vnode.advance(child), rest)
   }
 }
 
@@ -261,7 +261,7 @@ fn do_remove_children(
     [child, ..rest] ->
       handlers
       |> do_remove_child(path, child_index, child)
-      |> do_remove_children(path, child_index + node.advance(child), rest)
+      |> do_remove_children(path, child_index + vnode.advance(child), rest)
   }
 }
 

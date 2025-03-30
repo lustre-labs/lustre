@@ -15,7 +15,7 @@ import lustre/effect.{type Effect}
 import lustre/runtime/transport.{type ClientMessage, type ServerMessage}
 import lustre/vdom/diff.{Diff, diff}
 import lustre/vdom/events.{type Events}
-import lustre/vdom/node.{type Node}
+import lustre/vdom/vnode.{type Node}
 
 // STATE -----------------------------------------------------------------------
 

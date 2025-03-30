@@ -5,11 +5,11 @@ import gleam/order.{Eq, Gt, Lt}
 import gleam/set.{type Set}
 import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
-import lustre/vdom/attribute.{type Attribute, Attribute, Event, Property}
 import lustre/vdom/events.{type Events}
-import lustre/vdom/node.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
 import lustre/vdom/patch.{type Change, type Patch, Patch}
 import lustre/vdom/path.{type Path}
+import lustre/vdom/vattr.{type Attribute, Attribute, Event, Property}
+import lustre/vdom/vnode.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -76,7 +76,7 @@ fn do_diff(
         // way, we need to remove it! We call `advance` because if this vdom
         // node is a fragment, we need to account for however many children it
         // contains.
-        True -> removed + node.advance(prev)
+        True -> removed + vnode.advance(prev)
         False -> removed
       }
 
@@ -119,7 +119,7 @@ fn do_diff(
     // We might be able to diff these two nodes, but at least one of them has a
     // key so we need to treat this like a keyed diff. That involves working out
     // if there's a node somewhere else in the tree with the same key we can diff
-    // against, or if we need to insert the incoming node.
+    // against, or if we need to insert the incoming vnode.
     [prev, ..old_remaining], [next, ..new_remaining] if prev.key != next.key -> {
       let next_did_exist = mutable_map.get(old_keyed, next.key)
       let prev_does_exist = mutable_map.get(new_keyed, prev.key)
@@ -136,7 +136,7 @@ fn do_diff(
             new:,
             new_keyed:,
             moved:,
-            moved_offset: moved_offset - node.advance(prev),
+            moved_offset: moved_offset - vnode.advance(prev),
             removed:,
             node_index:,
             patch_index:,
@@ -187,7 +187,7 @@ fn do_diff(
         // ↓ 8. update d at idx=3   ↓ [d]         [d]       3   0    ↑ 0. [a b c d] ↑ 3. [c b a D]
         //
         Ok(_), Ok(match) -> {
-          let count = node.advance(next)
+          let count = vnode.advance(next)
           let before = node_index - moved_offset
           let move = patch.move(key: next.key, before:, count:)
           let changes = [move, ..changes]
@@ -216,7 +216,7 @@ fn do_diff(
         // child did exist in the old tree. That means we need to add a `RemoveKey`
         // change and continue diffing the remaining nodes.
         Error(_), Ok(_) -> {
-          let count = node.advance(prev)
+          let count = vnode.advance(prev)
           let moved_offset = moved_offset - count
           let events = events.remove_child(events, path, node_index, prev)
           let remove = patch.remove_key(key: prev.key, count:)
@@ -245,7 +245,7 @@ fn do_diff(
         // That means we need to add an `Insert` change.
         Ok(_), Error(_) -> {
           let before = node_index - moved_offset
-          let count = node.advance(next)
+          let count = vnode.advance(next)
           let events = events.add_child(events, mapper, path, node_index, next)
           let insert = patch.insert(children: [next], before:)
           let changes = [insert, ..changes]
@@ -271,8 +271,8 @@ fn do_diff(
         // The previous child no longer exists in the incoming tree *and* the new
         // child is new for this render. That means we can do a straight `Replace`.
         Error(_), Error(_) -> {
-          let prev_count = node.advance(prev)
-          let next_count = node.advance(next)
+          let prev_count = vnode.advance(prev)
+          let next_count = vnode.advance(next)
 
           let change =
             patch.replace(
@@ -329,7 +329,7 @@ fn do_diff(
 
       // We diff fragments as if they are "real" nodes with children, but we must
       // remember to update our offsets and indices to account for the fact these
-      // are just additional children of the parent node.
+      // are just additional children of the parent vnode.
       let child =
         do_diff(
           old: prev.children,
@@ -541,8 +541,8 @@ fn do_diff(
     // diff of these two nodes. In this case, we just replace the old node with
     // the new one.
     [prev, ..old_remaining], [next, ..new_remaining] -> {
-      let prev_count = node.advance(prev)
-      let next_count = node.advance(next)
+      let prev_count = vnode.advance(prev)
+      let next_count = vnode.advance(next)
 
       let change =
         patch.replace(
@@ -670,7 +670,7 @@ fn diff_attributes(
     }
 
     [prev, ..remaining_old], [next, ..remaining_new] ->
-      case prev, attribute.compare(prev, next), next {
+      case prev, vattr.compare(prev, next), next {
         Attribute(..), Eq, Attribute(..) -> {
           let has_changes = case next.name {
             "value" | "checked" | "selected" ->

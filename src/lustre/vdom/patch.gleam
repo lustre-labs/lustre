@@ -2,9 +2,9 @@
 
 import gleam/json.{type Json}
 import lustre/internals/json_object_builder
-import lustre/vdom/attribute.{type Attribute}
 import lustre/vdom/events.{type Events}
-import lustre/vdom/node.{type Node}
+import lustre/vdom/vattr.{type Attribute}
+import lustre/vdom/vnode.{type Node}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -67,7 +67,7 @@ pub type Change(msg) {
 
   // Indexed children changes:
   //
-  /// Replace a node at the given index with a new node. The `count` field is
+  /// Replace a node at the given index with a new vnode. The `count` field is
   /// used in cases where we're actually replacing a fragment: we need to know
   /// how many siblings to remove in the process.
   ///
@@ -211,8 +211,8 @@ fn replace_inner_html_to_json(kind, inner_html) {
 
 fn update_to_json(kind, added, removed) {
   json_object_builder.tagged(kind)
-  |> json_object_builder.list("added", added, attribute.to_json)
-  |> json_object_builder.list("removed", removed, attribute.to_json)
+  |> json_object_builder.list("added", added, vattr.to_json)
+  |> json_object_builder.list("removed", removed, vattr.to_json)
   |> json_object_builder.build
 }
 
@@ -238,14 +238,14 @@ fn replace_to_json(kind, from, count, with) {
     #("kind", json.int(kind)),
     #("from", json.int(from)),
     #("count", json.int(count)),
-    #("with", node.to_json(with)),
+    #("with", vnode.to_json(with)),
   ])
 }
 
 fn insert_to_json(kind, children, before) {
   json.object([
     #("kind", json.int(kind)),
-    #("children", json.array(children, node.to_json)),
+    #("children", json.array(children, vnode.to_json)),
     #("before", json.int(before)),
   ])
 }

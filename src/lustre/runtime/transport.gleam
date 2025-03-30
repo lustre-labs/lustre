@@ -3,8 +3,8 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
-import lustre/vdom/node.{type Node}
 import lustre/vdom/patch.{type Patch}
+import lustre/vdom/vnode.{type Node}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -134,7 +134,7 @@ fn mount_to_json(
     #("will_adopt_styles", json.bool(will_adopt_styles)),
     #("observed_attributes", json.array(observed_attributes, json.string)),
     #("observed_properties", json.array(observed_properties, json.string)),
-    #("vdom", node.to_json(vdom)),
+    #("vdom", vnode.to_json(vdom)),
   ])
 }
 

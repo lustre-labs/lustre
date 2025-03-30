@@ -7,11 +7,11 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/string
 import gleam/string_tree.{type StringTree}
-import houdini.{escape}
+import houdini
 import lustre/internals/constants
 import lustre/internals/json_object_builder
 import lustre/internals/mutable_map.{type MutableMap}
-import lustre/vdom/attribute.{type Attribute, Attribute}
+import lustre/vdom/vattr.{type Attribute, Attribute}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -108,7 +108,7 @@ pub fn element(
     mapper:,
     namespace:,
     tag:,
-    attributes: attribute.prepare(attributes),
+    attributes: vattr.prepare(attributes),
     children:,
     keyed_children:,
     self_closing:,
@@ -166,7 +166,7 @@ pub fn unsafe_inner_html(
     mapper:,
     namespace:,
     tag:,
-    attributes: attribute.prepare(attributes),
+    attributes: vattr.prepare(attributes),
     inner_html:,
   )
 }
@@ -288,7 +288,7 @@ fn element_to_json(kind, key, namespace, tag, attributes, children) {
   |> json_object_builder.string("key", key)
   |> json_object_builder.string("namespace", namespace)
   |> json_object_builder.string("tag", tag)
-  |> json_object_builder.list("attributes", attributes, attribute.to_json)
+  |> json_object_builder.list("attributes", attributes, vattr.to_json)
   |> json_object_builder.list("children", children, to_json)
   |> json_object_builder.build
 }
@@ -305,7 +305,7 @@ fn unsafe_inner_html_to_json(kind, key, namespace, tag, attributes, inner_html) 
   |> json_object_builder.string("key", key)
   |> json_object_builder.string("namespace", namespace)
   |> json_object_builder.string("tag", tag)
-  |> json_object_builder.list("attributes", attributes, attribute.to_json)
+  |> json_object_builder.list("attributes", attributes, vattr.to_json)
   |> json_object_builder.string("inner_html", inner_html)
   |> json_object_builder.build
 }
@@ -321,7 +321,7 @@ pub fn to_string(node: Node(msg)) -> String {
 pub fn to_string_tree(node: Node(msg)) -> StringTree {
   case node {
     Text(content: "", ..) -> string_tree.new()
-    Text(content:, ..) -> string_tree.from_string(escape(content))
+    Text(content:, ..) -> string_tree.from_string(houdini.escape(content))
 
     Fragment(children:, ..) ->
       children_to_string_tree(string_tree.new(), children)
@@ -330,7 +330,7 @@ pub fn to_string_tree(node: Node(msg)) -> StringTree {
       if self_closing
     -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = attribute.to_string_tree(key, namespace, attributes)
+      let attributes = vattr.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.append_tree(attributes)
@@ -339,7 +339,7 @@ pub fn to_string_tree(node: Node(msg)) -> StringTree {
 
     Element(key:, namespace:, tag:, attributes:, void:, ..) if void -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = attribute.to_string_tree(key, namespace, attributes)
+      let attributes = vattr.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.append_tree(attributes)
@@ -348,7 +348,7 @@ pub fn to_string_tree(node: Node(msg)) -> StringTree {
 
     Element(key:, namespace:, tag:, attributes:, children:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = attribute.to_string_tree(key, namespace, attributes)
+      let attributes = vattr.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.append_tree(attributes)
@@ -359,7 +359,7 @@ pub fn to_string_tree(node: Node(msg)) -> StringTree {
 
     UnsafeInnerHtml(key:, namespace:, tag:, attributes:, inner_html:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = attribute.to_string_tree(key, namespace, attributes)
+      let attributes = vattr.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.append_tree(attributes)
@@ -398,7 +398,8 @@ fn do_to_snapshot_builder(
     Text(content: "", ..) -> string_tree.new()
     Text(content:, ..) if raw_text ->
       string_tree.from_strings([spaces, content])
-    Text(content:, ..) -> string_tree.from_strings([spaces, escape(content)])
+    Text(content:, ..) ->
+      string_tree.from_strings([spaces, houdini.escape(content)])
 
     Fragment(children: [], ..) -> string_tree.new()
 
@@ -410,7 +411,7 @@ fn do_to_snapshot_builder(
       if self_closing
     -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = attribute.to_string_tree(key, namespace, attributes)
+      let attributes = vattr.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.prepend(spaces)
@@ -420,7 +421,7 @@ fn do_to_snapshot_builder(
 
     Element(key:, namespace:, tag:, attributes:, void:, ..) if void -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = attribute.to_string_tree(key, namespace, attributes)
+      let attributes = vattr.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.prepend(spaces)
@@ -430,7 +431,7 @@ fn do_to_snapshot_builder(
 
     Element(key:, namespace:, tag:, attributes:, children: [], ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = attribute.to_string_tree(key, namespace, attributes)
+      let attributes = vattr.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.prepend(spaces)
@@ -441,7 +442,7 @@ fn do_to_snapshot_builder(
 
     Element(key:, namespace:, tag:, attributes:, children:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = attribute.to_string_tree(key, namespace, attributes)
+      let attributes = vattr.to_string_tree(key, namespace, attributes)
       html
       |> string_tree.prepend(spaces)
       |> string_tree.append_tree(attributes)
@@ -453,7 +454,7 @@ fn do_to_snapshot_builder(
 
     UnsafeInnerHtml(key:, namespace:, tag:, attributes:, inner_html:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = attribute.to_string_tree(key, namespace, attributes)
+      let attributes = vattr.to_string_tree(key, namespace, attributes)
 
       html
       |> string_tree.append_tree(attributes)

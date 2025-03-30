@@ -2,11 +2,11 @@
 
 import gleam/function
 import gleam/list
-import lustre/attribute.{type Attribute} as _
+import lustre/attribute.{type Attribute}
 import lustre/element.{type Element}
 import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
-import lustre/vdom/node
+import lustre/vdom/vnode
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -47,7 +47,7 @@ pub fn element(
 ) -> Element(msg) {
   let #(keyed_children, children, _) = extract_keyed_children(children)
 
-  node.element(
+  vnode.element(
     key: "",
     namespace: "",
     tag:,
@@ -68,7 +68,7 @@ pub fn namespaced(
 ) -> Element(msg) {
   let #(keyed_children, children, _) = extract_keyed_children(children)
 
-  node.element(
+  vnode.element(
     key: "",
     mapper: function.identity,
     namespace:,
@@ -85,7 +85,7 @@ pub fn fragment(children: List(#(String, Element(msg)))) -> Element(msg) {
   let #(keyed_children, children, children_count) =
     extract_keyed_children(children)
 
-  node.fragment(
+  vnode.fragment(
     key: "",
     mapper: function.identity,
     children:,
@@ -143,7 +143,7 @@ fn extract_keyed_children(
       init,
     )
 
-    let keyed_element = node.to_keyed(key, element)
+    let keyed_element = vnode.to_keyed(key, element)
 
     // Children with empty keys are not inserted into the lookup, but they are
     // still returned in the children list.

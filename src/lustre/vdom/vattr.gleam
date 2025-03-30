@@ -6,7 +6,7 @@ import gleam/list
 import gleam/order.{type Order}
 import gleam/string
 import gleam/string_tree.{type StringTree}
-import houdini.{escape}
+import houdini
 import lustre/internals/constants
 import lustre/internals/json_object_builder
 
@@ -124,7 +124,7 @@ pub fn merge(
   }
 }
 
-@external(javascript, "./attribute.ffi.mjs", "compare")
+@external(javascript, "./vattr.ffi.mjs", "compare")
 pub fn compare(a: Attribute(msg), b: Attribute(msg)) -> Order {
   string.compare(a.name, b.name)
 }
@@ -225,7 +225,10 @@ pub fn to_string_tree(
     Ok(#("class", "")) | Ok(#("style", "")) -> html
     Ok(#(key, "")) -> string_tree.append(html, " " <> key)
     Ok(#(key, val)) ->
-      string_tree.append(html, " " <> key <> "=\"" <> escape(val) <> "\"")
+      string_tree.append(
+        html,
+        " " <> key <> "=\"" <> houdini.escape(val) <> "\"",
+      )
     Error(_) -> html
   }
 }

@@ -6,7 +6,7 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/string
 import lustre/internals/constants
-import lustre/vdom/attribute.{Attribute, Event, Property}
+import lustre/vdom/vattr.{Attribute, Event, Property}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -14,7 +14,7 @@ import lustre/vdom/attribute.{Attribute, Event, Property}
 /// event listeners.
 ///
 pub type Attribute(msg) =
-  attribute.Attribute(msg)
+  vattr.Attribute(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -26,7 +26,7 @@ pub type Attribute(msg) =
 /// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn attribute(name: String, value: String) -> Attribute(msg) {
-  attribute.attribute(name, value)
+  vattr.attribute(name, value)
 }
 
 /// Create a DOM property. This is like saying `element.className = "wibble"` in
@@ -38,19 +38,19 @@ pub fn attribute(name: String, value: String) -> Attribute(msg) {
 /// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn property(name: String, value: Json) -> Attribute(msg) {
-  attribute.property(name, value)
+  vattr.property(name, value)
 }
 
 ///
 pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
-  attribute.event(
+  vattr.event(
     name:,
     handler:,
     include: constants.empty_list,
     prevent_default: False,
     stop_propagation: False,
     immediate: is_immediate_event(name),
-    limit: attribute.NoLimit(kind: 0),
+    limit: vattr.NoLimit(kind: 0),
   )
 }
 

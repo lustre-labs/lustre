@@ -11,10 +11,10 @@
 import gleam/function
 import gleam/string
 import gleam/string_tree.{type StringTree}
-import lustre/attribute.{type Attribute} as _
+import lustre/attribute.{type Attribute}
 import lustre/internals/mutable_map
 import lustre/vdom/events
-import lustre/vdom/node.{Element, Fragment, Text, UnsafeInnerHtml}
+import lustre/vdom/vnode.{Element, Fragment, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -54,7 +54,7 @@ import lustre/vdom/node.{Element, Fragment, Text, UnsafeInnerHtml}
 /// [`lustre/element/svg`](./element/svg.html).
 ///
 pub type Element(msg) =
-  node.Node(msg)
+  vnode.Node(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -92,7 +92,7 @@ pub fn element(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  node.element(
+  vnode.element(
     key: "",
     mapper: function.identity,
     namespace: "",
@@ -114,7 +114,7 @@ pub fn namespaced(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  node.element(
+  vnode.element(
     key: "",
     mapper: function.identity,
     namespace:,
@@ -140,7 +140,7 @@ pub fn advanced(
   self_closing: Bool,
   void: Bool,
 ) -> Element(msg) {
-  node.element(
+  vnode.element(
     key: "",
     mapper: function.identity,
     namespace:,
@@ -159,7 +159,7 @@ pub fn advanced(
 /// this function is exactly that!
 ///
 pub fn text(content: String) -> Element(msg) {
-  node.text(key: "", mapper: function.identity, content:)
+  vnode.text(key: "", mapper: function.identity, content:)
 }
 
 /// A function for rendering nothing. This is mostly useful for conditional
@@ -167,7 +167,7 @@ pub fn text(content: String) -> Element(msg) {
 /// condition is met.
 ///
 pub fn none() -> Element(msg) {
-  node.text(key: "", mapper: function.identity, content: "")
+  vnode.text(key: "", mapper: function.identity, content: "")
 }
 
 /// A function for wrapping elements to be rendered within a parent container without
@@ -176,7 +176,7 @@ pub fn none() -> Element(msg) {
 /// used downstream.
 ///
 pub fn fragment(children: List(Element(msg))) -> Element(msg) {
-  node.fragment(
+  vnode.fragment(
     key: "",
     mapper: function.identity,
     children:,
@@ -211,7 +211,7 @@ pub fn unsafe_inner_html(
   attributes: List(Attribute(msg)),
   inner_html: String,
 ) -> Element(msg) {
-  node.unsafe_inner_html(
+  vnode.unsafe_inner_html(
     key: "",
     namespace:,
     tag:,
@@ -272,7 +272,7 @@ fn coerce(a: a) -> b
 /// use case and we'll see what we can do!
 ///
 pub fn to_string(element: Element(msg)) -> String {
-  node.to_string(element)
+  vnode.to_string(element)
 }
 
 /// Converts an element to a string like [`to_string`](#to_string), but prepends
@@ -283,7 +283,7 @@ pub fn to_string(element: Element(msg)) -> String {
 /// a `html` and `body` element.
 ///
 pub fn to_document_string(el: Element(msg)) -> String {
-  node.to_string(case el {
+  vnode.to_string(case el {
     Element(tag: "html", ..) -> el
     Element(tag: "head", ..) | Element(tag: "body", ..) ->
       element("html", [], [el])
@@ -299,7 +299,7 @@ pub fn to_document_string(el: Element(msg)) -> String {
 /// use case and we'll see what we can do!
 ///
 pub fn to_string_tree(element: Element(msg)) -> StringTree {
-  node.to_string_tree(element)
+  vnode.to_string_tree(element)
 }
 
 /// Converts an element to a `StringTree` like [`to_string_builder`](#to_string_builder),
@@ -310,7 +310,7 @@ pub fn to_string_tree(element: Element(msg)) -> StringTree {
 /// a `html` and `body` element.
 ///
 pub fn to_document_string_tree(el: Element(msg)) -> StringTree {
-  node.to_string_tree(case el {
+  vnode.to_string_tree(case el {
     Element(tag: "html", ..) -> el
     Element(tag: "head", ..) | Element(tag: "body", ..) ->
       element("html", [], [el])
@@ -344,5 +344,5 @@ pub fn to_document_string_tree(el: Element(msg)) -> StringTree {
 /// ```
 ///
 pub fn to_readable_string(el: Element(msg)) -> String {
-  node.to_snapshot(el)
+  vnode.to_snapshot(el)
 }
