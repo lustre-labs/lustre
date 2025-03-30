@@ -34,7 +34,7 @@ pub fn diff(events: Events(msg), old: Node(msg), new: Node(msg)) -> Diff(msg) {
     //
     node_index: 0,
     patch_index: 0,
-    path: path.new(),
+    path: path.root,
     changes: constants.empty_list,
     children: constants.empty_list,
     mapper: function.identity,
@@ -374,7 +374,7 @@ fn do_diff(
       if prev.namespace == next.namespace && prev.tag == next.tag
     -> {
       let composed_mapper = events.compose_mapper(mapper, next.mapper)
-      let child_path = path.to(path, node_index, next.key)
+      let child_path = path.add(path, node_index, next.key)
 
       let controlled =
         is_controlled(events, next.namespace, next.tag, child_path)
@@ -490,7 +490,7 @@ fn do_diff(
 
     [UnsafeInnerHtml(..) as prev, ..old], [UnsafeInnerHtml(..) as next, ..new] -> {
       let composed_mapper = events.compose_mapper(mapper, next.mapper)
-      let child_path = path.to(path, node_index, next.key)
+      let child_path = path.add(path, node_index, next.key)
 
       let AttributeChange(events:, added: added_attrs, removed: removed_attrs) =
         diff_attributes(

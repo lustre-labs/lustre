@@ -53,7 +53,7 @@ pub fn new() -> Events(msg) {
 }
 
 pub fn from_node(root: Node(msg)) -> Events(msg) {
-  add_child(new(), function.identity, path.new(), 0, root)
+  add_child(new(), function.identity, path.root, 0, root)
 }
 
 pub fn tick(events: Events(msg)) -> Events(msg) {
@@ -128,7 +128,7 @@ fn do_add_child(
 ) -> MutableMap(String, Decoder(msg)) {
   case child {
     Element(attributes:, children:, ..) -> {
-      let path = path.to(parent, child_index, child.key)
+      let path = path.add(parent, child_index, child.key)
       let composed_mapper = compose_mapper(mapper, child.mapper)
 
       handlers
@@ -144,7 +144,7 @@ fn do_add_child(
     }
 
     UnsafeInnerHtml(attributes:, ..) -> {
-      let path = path.to(parent, child_index, child.key)
+      let path = path.add(parent, child_index, child.key)
       let composed_mapper = compose_mapper(mapper, child.mapper)
 
       add_attributes(handlers, composed_mapper, path, attributes)
@@ -217,7 +217,7 @@ fn do_remove_child(
 ) -> MutableMap(String, Decoder(msg)) {
   case child {
     Element(attributes:, children:, ..) -> {
-      let path = path.to(parent, child_index, child.key)
+      let path = path.add(parent, child_index, child.key)
 
       handlers
       |> remove_attributes(path, attributes)
@@ -229,7 +229,7 @@ fn do_remove_child(
     }
 
     UnsafeInnerHtml(attributes:, ..) -> {
-      let path = path.to(parent, child_index, child.key)
+      let path = path.add(parent, child_index, child.key)
       remove_attributes(handlers, path, attributes)
     }
 
@@ -285,7 +285,7 @@ pub fn handle(
 }
 
 pub fn has_dispatched_events(events: Events(msg), path: Path) {
-  path.matches_any(path, events.dispatched_paths)
+  path.matches(path, any: events.dispatched_paths)
 }
 
 @external(erlang, "gleam@function", "identity")

@@ -7,8 +7,8 @@ import lustre/element/html
 import lustre/element/keyed
 import lustre/vdom/diff
 import lustre/vdom/events
-import lustre/vdom/node.{to_keyed}
 import lustre/vdom/patch
+import lustre/vdom/vnode
 import lustre_test
 
 //
@@ -455,7 +455,7 @@ pub fn keyed_insert_test() {
         0,
         0,
         [
-          patch.insert([to_keyed("d", html.span([], []))], 1),
+          patch.insert([vnode.to_keyed("d", html.span([], []))], 1),
           patch.move("c", 0, 1),
         ],
         [],
@@ -713,7 +713,7 @@ pub fn keyed_move_fragment_with_replace_with_different_count_test() {
       patch.new(
         0,
         0,
-        [patch.insert([to_keyed("cd", cd)], 5), patch.remove_key("x", 2)],
+        [patch.insert([vnode.to_keyed("cd", cd)], 5), patch.remove_key("x", 2)],
         [],
       ),
     ])
@@ -725,7 +725,7 @@ pub fn keyed_move_fragment_with_replace_with_different_count_test() {
 
   let diff =
     patch.new(0, 0, [], [
-      patch.new(0, 3, [patch.insert([to_keyed("x", x)], 0)], []),
+      patch.new(0, 3, [patch.insert([vnode.to_keyed("x", x)], 0)], []),
     ])
 
   diff.diff(events.new(), next, prev).patch
@@ -756,10 +756,13 @@ pub fn keyed_move_fragment_with_replace_to_simple_node_test() {
         0,
         [
           patch.insert(
-            [to_keyed("b", html.text("b")), to_keyed("c", html.text("c"))],
+            [
+              vnode.to_keyed("b", html.text("b")),
+              vnode.to_keyed("c", html.text("c")),
+            ],
             5,
           ),
-          patch.replace(2, 3, to_keyed("a", html.text("a"))),
+          patch.replace(2, 3, vnode.to_keyed("a", html.text("a"))),
           patch.remove_key("x", 2),
         ],
         [],
@@ -790,9 +793,9 @@ pub fn keyed_replace_fragment_test() {
         0,
         0,
         [
-          patch.insert([to_keyed("c", html.text("c"))], 5),
-          patch.replace(2, 3, to_keyed("b", html.text("b"))),
-          patch.replace(0, 2, to_keyed("a", html.text("a"))),
+          patch.insert([vnode.to_keyed("c", html.text("c"))], 5),
+          patch.replace(2, 3, vnode.to_keyed("b", html.text("b"))),
+          patch.replace(0, 2, vnode.to_keyed("a", html.text("a"))),
         ],
         [],
       ),
@@ -811,7 +814,7 @@ pub fn keyed_insert_fragment_test() {
 
   let diff =
     patch.new(0, 0, [], [
-      patch.new(0, 0, [patch.insert([to_keyed("xyz", xyz)], 0)], [
+      patch.new(0, 0, [patch.insert([vnode.to_keyed("xyz", xyz)], 0)], [
         patch.new(4, 0, [patch.replace_text("A")], []),
       ]),
     ])
@@ -883,7 +886,7 @@ pub fn keyed_fragment_insert_test() {
       0,
       0,
       [
-        patch.insert([to_keyed("d", html.span([], []))], 2),
+        patch.insert([vnode.to_keyed("d", html.span([], []))], 2),
         patch.move("c", 1, 1),
       ],
       [],

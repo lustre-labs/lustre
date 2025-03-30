@@ -39,7 +39,7 @@ pub fn single_nested_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = path.new() |> path.to(0, "") |> path.to(0, "")
+  let path = path.root |> path.add(0, "") |> path.add(0, "")
 
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
@@ -57,7 +57,7 @@ pub fn single_nested_keyed_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = path.new() |> path.to(0, "") |> path.to(1, "b")
+  let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
@@ -78,7 +78,7 @@ pub fn single_nested_keyed_event_with_period_test() {
 
   let events = events.from_node(vdom)
 
-  let path = path.new() |> path.to(0, "") |> path.to(1, "b.c")
+  let path = path.root |> path.add(0, "") |> path.add(1, "b.c")
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Ok("hello!"))
@@ -115,7 +115,7 @@ pub fn nested_fragment_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = path.new() |> path.to(0, "") |> path.to(1, "")
+  let path = path.root |> path.add(0, "") |> path.add(1, "")
 
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
@@ -141,7 +141,7 @@ pub fn nested_fragment_with_multiple_children_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = path.new() |> path.to(0, "") |> path.to(5, "")
+  let path = path.root |> path.add(0, "") |> path.add(5, "")
 
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
@@ -161,7 +161,7 @@ pub fn single_mapped_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = path.new() |> path.to(0, "")
+  let path = path.root |> path.add(0, "")
 
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
@@ -182,7 +182,7 @@ pub fn multiple_mapped_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = path.new() |> path.to(0, "")
+  let path = path.root |> path.add(0, "")
 
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
@@ -199,7 +199,7 @@ pub fn event_added_test() {
 
   let events = diff.diff(events.new(), prev, next).events
 
-  let path = path.new() |> path.to(0, "")
+  let path = path.root |> path.add(0, "")
 
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
@@ -214,7 +214,7 @@ pub fn event_removed_test() {
 
   let events = diff.diff(events.new(), prev, next).events
 
-  let path = path.new() |> path.to(0, "")
+  let path = path.root |> path.add(0, "")
 
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
@@ -233,7 +233,7 @@ pub fn element_added_test() {
 
   let events = diff.diff(events.new(), prev, next).events
 
-  let path = path.new() |> path.to(0, "") |> path.to(1, "b")
+  let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
@@ -252,7 +252,7 @@ pub fn element_removed_test() {
 
   let events = diff.diff(events.new(), prev, next).events
 
-  let path = path.new() |> path.to(0, "") |> path.to(1, "b")
+  let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
@@ -276,7 +276,7 @@ pub fn element_replaced_test() {
 
   let events = diff.diff(events.new(), prev, next).events
 
-  let path = path.new() |> path.to(0, "") |> path.to(1, "b")
+  let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
@@ -318,17 +318,18 @@ pub fn keyed_element_replaced_test() {
 
   let events = diff.diff(events.new(), prev, next).events
 
-  let path = path.new() |> path.to(0, "") |> path.to(0, "v2") |> path.to(0, "")
+  let path =
+    path.root |> path.add(0, "") |> path.add(0, "v2") |> path.add(0, "")
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
   |> should.equal(Ok("hello from 1"))
 
   let path =
-    path.new()
-    |> path.to(0, "")
-    |> path.to(0, "v2")
-    |> path.to(1, "")
-    |> path.to(0, "")
+    path.root
+    |> path.add(0, "")
+    |> path.add(0, "v2")
+    |> path.add(1, "")
+    |> path.add(0, "")
 
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second

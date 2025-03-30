@@ -1,5 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
+@target(erlang)
 import gleam/dynamic
 @target(erlang)
 import gleam/erlang/process
