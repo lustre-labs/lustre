@@ -10,7 +10,7 @@ links = [
     { title = "Sponsor", href = "https://github.com/sponsors/hayleigh-dot-dev" },
 ]
 
-internal_modules = ["lustre/internals", "lustre/internals/*"]
+internal_modules = ["lustre/internals/*", "lustre/runtime/*", "lustre/vdom/*"]
 
 [documentation]
 pages = [
@@ -34,15 +34,16 @@ pages = [
 ]
 
 [dependencies]
-gleam_erlang = "~> 0.24"
+gleam_erlang = ">= 0.34.0 and < 1.0.0"
 gleam_json = ">= 1.0.0 and < 3.0.0"
-gleam_otp = "~> 0.9"
+gleam_otp = ">= 0.16.0 and < 1.0.0"
 gleam_stdlib = ">= 0.56.0 and < 2.0.0"
 houdini = ">= 1.0.0 and < 2.0.0"
 
 [dev-dependencies]
 argv = ">= 1.0.2 and < 2.0.0"
 birdie = "~> 1.0"
+esgleam = ">= 0.8.0 and < 1.0.0"
 exception = ">= 2.0.0 and < 3.0.0"
 gleam_regexp = ">= 1.1.0 and < 2.0.0"
 gleamy_bench = ">= 0.5.0 and < 1.0.0"
@@ -50,4 +51,3 @@ gleeunit = "~> 1.0"
 pprint = ">= 1.0.4 and < 2.0.0"
 shellout = "~> 1.6"
 simplifile = "~> 2.0"
-esgleam = ">= 0.8.0 and < 1.0.0"
