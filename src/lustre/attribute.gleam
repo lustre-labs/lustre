@@ -195,8 +195,10 @@ pub fn autocomplete(name: String) -> Attribute(msg) {
 
 /// Sets the `autofocus` attribute.
 ///
-/// Lustre will focus the element every time this attribute switches from `False`
-/// to `True`.
+/// Lustre's runtime augments that native behaviour of this attribute. Whenever
+/// it is toggled true, the element will be automatically focused even if it already
+/// exists in the DOM.
+///
 pub fn autofocus(should_autofocus: Bool) -> Attribute(msg) {
   boolean_attribute("autofocus", should_autofocus)
 }

@@ -140,8 +140,8 @@ pub fn on_attribute_change(
 /// function or in JavaScript by setting a property directly on the component
 /// object.
 ///
-/// Properties can be any JavaScript object. For server components properties
-/// will be any JSON-serializable value.
+/// Properties can be any JavaScript object. For server components, properties
+/// will be any _JSON-serialisable_ value.
 ///
 pub fn on_property_change(name: String, decoder: Decoder(msg)) -> Option(msg) {
   use config <- Option
@@ -154,13 +154,23 @@ pub fn on_property_change(name: String, decoder: Decoder(msg)) -> Option(msg) {
 /// in form submission and respond to additional form-specific events such as
 /// the form being reset or the browser autofilling this component's value.
 ///
+/// **Note**: form-associated components are not supported in server components
+/// for both technical and ideological reasons. If you'd like a component that
+/// participates in form submission, you should use a client component!
+///
 pub fn form_associated() -> Option(msg) {
   use config <- Option
 
   Config(..config, is_form_associated: True)
 }
 
+/// Register a callback that runs when the browser autofills this
+/// [form-associated](#form_associated) component's `"value"` attribute. The
+/// callback should convert the autofilled value into a message that you handle
+/// in your `update` function.
 ///
+/// **Note**: server components cannot participate in form submission and configuring
+/// this option will do nothing.
 ///
 pub fn on_form_autofill(handler: fn(String) -> msg) -> Option(msg) {
   use config <- Option
@@ -168,7 +178,11 @@ pub fn on_form_autofill(handler: fn(String) -> msg) -> Option(msg) {
   Config(..config, is_form_associated: True, on_form_autofill: Some(handler))
 }
 
+/// Set a message to be dispatched whenever a form containing this
+/// [form-associated](#form_associated) component is reset.
 ///
+/// **Note**: server components cannot participate in form submission and configuring
+/// this option will do nothing.
 ///
 pub fn on_form_reset(msg: msg) -> Option(msg) {
   use config <- Option
@@ -176,7 +190,12 @@ pub fn on_form_reset(msg: msg) -> Option(msg) {
   Config(..config, is_form_associated: True, on_form_reset: Some(msg))
 }
 
+/// Set a callback that runs when the browser restores this
+/// [form-associated](#form_associated) component's `"value"` attribute. This is
+/// often triggered when the user navigates back or forward in their history.
 ///
+/// **Note**: server components cannot participate in form submission and configuring
+/// this option will do nothing.
 ///
 pub fn on_form_restore(handler: fn(String) -> msg) -> Option(msg) {
   use config <- Option
@@ -184,7 +203,13 @@ pub fn on_form_restore(handler: fn(String) -> msg) -> Option(msg) {
   Config(..config, is_form_associated: True, on_form_restore: Some(handler))
 }
 
+/// Configure whether a component's [Shadow Root](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot)
+/// is open or closed. A closed shadow root means the elements rendered inside
+/// the component are not accessible from JavaScript outside the component.
 ///
+/// By default a component's shadow root is **open**. You may want to configure
+/// this option manually if you intend to build a component for use outside of
+/// Lustre.
 ///
 pub fn open_shadow_root(open: Bool) -> Option(msg) {
   use config <- Option
@@ -192,7 +217,19 @@ pub fn open_shadow_root(open: Bool) -> Option(msg) {
   Config(..config, open_shadow_root: open)
 }
 
+/// Configure whether a component should attempt to adopt stylesheets from
+/// its parent document. Components in Lustre use the shadow DOM to unlock native
+/// web component features like slots, but this means elements rendered inside a
+/// component are isolated from the document's styles.
 ///
+/// To get around this, Lustre can attempt to adopt all stylesheets from the
+/// parent document when the component is first created; meaning in many cases
+/// you can use the same CSS to style your components as you do the rest of your
+/// application.
+///
+/// By default, this option is **enabled**. You may want to disable this option
+/// if you are building a component for use outside of Lustre and do not want
+/// document styles to interfere with your component's styling
 ///
 pub fn adopt_styles(adopt: Bool) -> Option(msg) {
   use config <- Option
@@ -254,19 +291,120 @@ pub fn named_slot(
 
 // ATTRIBUTES ------------------------------------------------------------------
 
+/// Lustre's component system is built on top the Custom Elements API and the
+/// Shadow DOM API. A component's `view` function is rendered inside a shadow
+/// root, which means the component's HTML is isolated from the rest of the
+/// document.
 ///
+/// This can make it difficult to style components from CSS outside the component.
+/// To help with this, the `part` attribute lets you expose parts of your component
+/// by name to be styled by external CSS.
+///
+/// For example, if the `view` function for a component called `"my-component`"
+/// looks like this:
+///
+/// ```gleam
+/// import gleam/int
+/// import lustre/component
+/// import lustre/element/html
+///
+/// fn view(model) {
+///   html.div([], [
+///     html.button([], [html.text("-")]),
+///     html.p([component.part("count")], [html.text(int.to_string(model.count))]),
+///     html.button([], [html.text("+")]),
+///   ])
+/// }
+/// ```
+///
+/// Then the following CSS in the **parent** document can be used to style the
+/// `<p>` element:
+///
+/// ```css
+/// my-component::part(count) {
+///   color: red;
+/// }
+/// ```
+///
+/// To learn more about the CSS Shadow Parts specification, see:
+///
+///   - https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/part
+///
+///   - https://developer.mozilla.org/en-US/docs/Web/CSS/::part
 ///
 pub fn part(name: String) -> Attribute(msg) {
   attribute("part", name)
 }
 
+/// While the [`part`](#part) attribute can be used to expose parts of a component
+/// to its parent, these parts will not automatically become available to the
+/// _document_ when components are nested inside each other.
 ///
+/// The `exportparts` attribute lets you forward the parts of a nested component
+/// to the parent component so they can be styled from the parent document.
+///
+/// Consider we have two components, `"my-component"` and `"my-nested-component"`
+/// with the following `view` functions:
+///
+/// ```gleam
+/// import gleam/int
+/// import lustre/attribute.{property}
+/// import lustre/component
+/// import lustre/element.{element}
+/// import lustre/element/html
+///
+/// fn my_component_view(model) {
+///   html.div([], [
+///     html.button([], [html.text("-")]),
+///     element(
+///       "my-nested-component",
+///       [
+///         property("count", model.count),
+///         component.exportparts(["count"]),
+///       ],
+///       []
+///     )
+///     html.button([], [html.text("+")]),
+///   ])
+/// }
+///
+/// fn my_nested_component_view(model) {
+///   html.p([component.part("count")], [html.text(int.to_string(model.count))])
+/// }
+/// ```
+///
+/// The `<my-nested-component />` component has a part called `"count"` which the
+/// `<my-component />` then forwards to the parent document using the `"exportparts"`
+/// attribute. Now the following CSS can be used to style the `<p>` element nested
+/// deep inside the `<my-component />`:
+///
+/// ```css
+/// my-component::part(count) {
+///   color: red;
+/// }
+/// ```
+///
+/// Notice how the styles are applied to the `<my-component />` element, not the
+/// `<my-nested-component />` element!
+///
+/// To learn more about the CSS Shadow Parts specification, see:
+///
+///   - https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/exportparts
+///
+///   - https://developer.mozilla.org/en-US/docs/Web/CSS/::part
 ///
 pub fn exportparts(names: List(String)) -> Attribute(msg) {
   attribute("exportparts", string.join(names, ", "))
 }
 
+/// Associate an element with a [named slot](#named_slot) in a component. Multiple
+/// elements can be associated with the same slot name.
 ///
+/// To learn more about Shadow DOM and slots, see:
+///
+///   https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/slot
+///
+///   https://javascript.info/slots-composition
 ///
 pub fn slot(name: String) -> Attribute(msg) {
   attribute("slot", name)

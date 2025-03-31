@@ -20,18 +20,24 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
 
 // CUSTOM EVENTS ---------------------------------------------------------------
 
-/// Listens for the given event and applies the handler to the event object. If
-/// the handler returns an `Ok` the resulting message will be dispatched, otherwise
-/// the event (and any decoding error) will be ignored.
+/// Listens for the given event and then runs the given decoder on the event
+/// object. If the decoder succeeds, the decoded event is dispatched to your
+/// application's `update` function. If it fails, the event is silently ignored.
 ///
 /// The event name is typically an all-lowercase string such as "click" or "mousemove".
 /// If you're listening for non-standard events (like those emitted by a custom
 /// element) their event names might be slightly different.
 ///
+/// **Note**: if you are developing a server component, it is important to also
+/// use [`server_component.include`](./server_component.html#include) to state
+/// which properties of the event you need to be sent to the server.
+///
 pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
   attribute.on(name, handler)
 }
 
+/// Indicate that the event should have its default behaviour cancelled. This is
+/// equivalent to calling `event.preventDefault()` in JavaScript.
 ///
 pub fn prevent_default(event: Attribute(msg)) -> Attribute(msg) {
   case event {
@@ -40,6 +46,8 @@ pub fn prevent_default(event: Attribute(msg)) -> Attribute(msg) {
   }
 }
 
+/// Indicate that the event should not propagate to parent elements. This is
+/// equivalent to calling `event.stopPropagation()` in JavaScript.
 ///
 pub fn stop_propagation(event: Attribute(msg)) -> Attribute(msg) {
   case event {
@@ -48,6 +56,21 @@ pub fn stop_propagation(event: Attribute(msg)) -> Attribute(msg) {
   }
 }
 
+/// Use Lustre's built-in event debouncing to wait a delay after a burst of
+/// events before dispatching the most recent one. You can visualise debounced
+/// events like so:
+///
+/// ```
+///  original : --a-b-cd--e----------f--------
+/// debounced : ---------------e----------f---
+/// ```
+///
+/// This is particularly useful for server components where many events in quick
+/// succession can introduce problems because of network latency.
+///
+/// **Note**: debounced events inherently introduce latency. Try to consider
+/// typical interaction patterns and experiment with different delays to balance
+/// responsiveness and update frequency.
 ///
 pub fn debounce(event: Attribute(msg), delay: Int) -> Attribute(msg) {
   case event {
@@ -57,6 +80,21 @@ pub fn debounce(event: Attribute(msg), delay: Int) -> Attribute(msg) {
   }
 }
 
+/// Use Lustre's built-in event throttling to restrict the number of events
+/// that can be dispatched in a given time period. You can visualise throttled
+/// events like so:
+///
+/// ```
+/// original : --a-b-cd--e----------f--------
+/// throttled : -a------ e----------e--------
+/// ```
+///
+/// This is particularly useful for server components where many events in quick
+/// succession can introduce problems because of network latency.
+///
+/// **Note**: throttled events inherently reduce precision. Try to consider
+/// typical interaction patterns and experiment with different delays to balance
+/// responsiveness and update frequency.
 ///
 pub fn throttle(event: Attribute(msg), delay: Int) -> Attribute(msg) {
   case event {

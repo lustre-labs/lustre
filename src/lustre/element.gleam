@@ -37,7 +37,8 @@ import lustre/vdom/vnode.{Element, Fragment, Text, UnsafeInnerHtml}
 /// - The [`none`](#none) function to render nothing - useful for conditional
 ///   rendering.
 ///
-/// If you have more complex needs, there are two more-advanced functions:
+/// If you have more complex needs, there are two more-advanced ways to construct
+/// HTML elements:
 ///
 /// - The [`namespaced`](#namespaced) function to create elements in a specific
 ///   XML namespace. This is useful for SVG or MathML elements, for example.
@@ -47,11 +48,20 @@ import lustre/vdom/vnode.{Element, Fragment, Text, UnsafeInnerHtml}
 ///   necessary because some HTML, SVG, and MathML elements are self-closing or
 ///   void elements, and Lustre needs to know how to render them correctly!
 ///
-/// For most applications, you'll only need to use the simpler functions; usually
-/// the [`text`](#text) and [`none`](#none) functions are enough. This is because
-/// Lustre already provides a module with all the standard HTML and SVG elements
-/// ready to use in [`lustre/element/html`](./element/html.html) and
-/// [`lustre/element/svg`](./element/svg.html).
+/// Finally, for other niche use cases there are two additional functions:
+///
+/// - The [`fragment`](#fragment) function lets you wrap a list of `Element`s up
+///   as a single `Element`, making it useful to avoid wrapping elements in a
+///   `<div/>` or other container when you don't want to.
+///
+/// - The [`unsafe_raw_html`](#unsafe_raw_html) function lets you render raw HTML
+///   directly into an element. This function is primarily useful in cases where
+///   you have _pre-sanitised_ HTML or are working with libraries outside of Lustre
+///   that produce plain HTML strings.
+///
+///   Lustre will _not_ escape the HTML string provided to this functio, meaning
+///   inappropriate use can expose your application to XSS attacks. Make sure you
+///   never take untrusted user input and pass it to this function!
 ///
 pub type Element(msg) =
   vnode.Node(msg)
@@ -170,10 +180,10 @@ pub fn none() -> Element(msg) {
   vnode.text(key: "", mapper: function.identity, content: "")
 }
 
-/// A function for wrapping elements to be rendered within a parent container without
-/// specififying the container on definition. Allows the treatment of List(Element(msg))
-/// as if it were Element(msg). Useful when generating a list of elements from data but
-/// used downstream.
+/// A function for constructing a wrapper element with no tag name. This is
+/// useful for wrapping a list of elements together without adding an extra
+/// `<div>` or other container element, or returning multiple elements in places
+/// where only one `Element` is expected.
 ///
 pub fn fragment(children: List(Element(msg))) -> Element(msg) {
   vnode.fragment(
@@ -200,12 +210,12 @@ fn count_fragment_children(children: List(Element(msg)), count: Int) -> Int {
 /// content. Lustre will render the provided HTML verbatim, and will not touch
 /// its children except when replacing the entire inner html on changes.
 ///
-/// **Warning:** The provided HTML will not be escaped and may therefore break
-/// rendering and be a XSS attack vector! Make sure you absolutely trust the
-/// HTML you pass to this function. In particular, never use this to display
-/// un-sanitised user HTML!
+/// **Note:** The provided HTML will not be escaped automatically and may expose
+/// your applications to XSS attacks! Make sure you absolutely trust the HTML you
+/// pass to this function. In particular, never use this to display un-sanitised
+/// user HTML!
 ///
-pub fn unsafe_inner_html(
+pub fn unsafe_raw_html(
   namespace: String,
   tag: String,
   attributes: List(Attribute(msg)),
@@ -221,7 +231,6 @@ pub fn unsafe_inner_html(
   )
 }
 
-///
 // MANIPULATIONS ---------------------------------------------------------------
 
 /// The `Element` type is parameterised by the type of messages it can produce

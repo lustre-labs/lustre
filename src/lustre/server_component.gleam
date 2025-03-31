@@ -5,7 +5,7 @@
 ////
 //// Server components are an advanced feature that allows you to run components
 //// or full Lustre applications on the server. Updates are broadcast to a small
-//// (<20kb!) client runtime that patches the DOM and events are sent back to the
+//// (<10kb!) client runtime that patches the DOM and events are sent back to the
 //// server component in real-time.
 ////
 //// ```text
@@ -95,6 +95,10 @@ import lustre/vdom/vattr.{Event}
 pub type ClientMessage(msg) =
   transport.ClientMessage(msg)
 
+/// The type of transport the client runtime should use to communicate with your
+/// server component. This is set by the [`method`](#method) attribute on the
+/// server component element.
+///
 pub type TransportMethod {
   WebSocket
   ServerSentEvents
@@ -104,7 +108,18 @@ pub type TransportMethod {
 // ELEMENTS --------------------------------------------------------------------
 
 /// Render the server component custom element. This element acts as the thin
-/// client runtime for a server component running remotely.
+/// client runtime for a server component running remotely. There are a handful
+/// of attributes you should provide to configure the client runtime:
+///
+/// - [`route`](#route) is the URL your server component should connect to. This
+///   **must** be provided before the client runtime will do anything. The route
+///   can be a relative URL, in which case it will be resolved against the current
+///   page URL.
+///
+/// - [`method`](#method) is the transport method the client runtime should use.
+///   This defaults to `WebSocket` enabling duplex communication between the client
+///   and server runtime. Other options include `ServerSentEvents` and `Polling`
+///   which are unidirectional transports.
 ///
 /// **Note**: the server component runtime bundle must be included and sent to
 /// the client for this to work correctly. You can do this by including the
@@ -112,10 +127,10 @@ pub type TransportMethod {
 /// the script source directly with the [`script`](#script) element below.
 ///
 pub fn element(
-  attrs: List(Attribute(msg)),
+  attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  element.element("lustre-server-component", attrs, children)
+  element.element("lustre-server-component", attributes, children)
 }
 
 /// Inline the server component client runtime as a `<script>` tag. Where possible
@@ -152,46 +167,32 @@ pub fn method(value: TransportMethod) -> Attribute(msg) {
   })
 }
 
-/// Ocassionally you may want to attach custom data to an event sent to the server.
-/// This could be used to include a hash of the current build to detect if the
-/// event was sent from a stale client.
-///
-/// Your event decoders can access this data by decoding `data` property of the
-/// event object.
-///
-pub fn data(json: Json) -> Attribute(msg) {
-  json
-  |> json.to_string
-  |> attribute("data-lustre-data", _)
-}
-
 /// Properties of a JavaScript event object are typically not serialisable. This
-/// means if we want to pass them to the server we need to copy them into a new
-/// object first.
+/// means if we want to send them to the server we need to make a copy of any
+/// fields we want to decode first.
 ///
-/// This attribute tells Lustre what properties to include. Properties can come
-/// from nested objects by using dot notation. For example, you could include the
+/// This attribute tells Lustre what properties to include from an event. Properties
+/// can come from nested fields by using dot notation. For example, you could include
+/// the
 /// `id` of the target `element` by passing `["target.id"]`.
 ///
 /// ```gleam
-/// import gleam/dynamic
-/// import gleam/result.{try}
+/// import gleam/dynamic/decode
 /// import lustre/element.{type Element}
 /// import lustre/element/html
 /// import lustre/event
-/// import lustre/server
+/// import lustre/server_component
 ///
 /// pub fn custom_button(on_click: fn(String) -> msg) -> Element(msg) {
 ///   let handler = fn(event) {
-///     use target <- try(dynamic.field("target", dynamic.dynamic)(event))
-///     use id <- try(dynamic.field("id", dynamic.string)(target))
-///
-///     Ok(on_click(id))
+///     use id <- decode.at(["target", "id"], decode.string)
+///     decode.success(on_click(id))
 ///   }
 ///
-///   html.button([event.on_click(handler), server.include(["target.id"])], [
-///     element.text("Click me!")
-///   ])
+///   html.button(
+///     [server_component.include(["target.id"]), event.on_click(handler)],
+///     [html.text("Click me!")],
+///   )
 /// }
 /// ```
 ///
@@ -207,7 +208,13 @@ pub fn include(
 
 // ACTIONS ---------------------------------------------------------------------
 
+/// Recover the `Subject` of the server component runtime so that it can be used
+/// in supervision trees or passed to other processes. If you want to hand out
+/// different `Subject`s to send messages to your application, take a look at the
+/// [`select`](#select) effect.
 ///
+/// **Note**: this function will always fail on the JavaScript target with the
+/// `NotErlang` error.
 ///
 pub fn subject(
   runtime: Runtime(msg),
@@ -231,7 +238,12 @@ fn do_subject(_: Runtime(msg)) -> Result(Subject(RuntimeMessage(msg)), Error) {
 @external(erlang, "gleam@function", "identity")
 fn coerce(value: a) -> b
 
+/// Register a `Subject` to receive messages and updates from Lustre's server
+/// component runtime. The process that owns this will be monitored and the
+/// subject will be gracefully removed if the process dies.
 ///
+/// **Note**: if you are developing a server component for the JavaScript runtime,
+/// you should use [`register_callback`](#register_callback) instead.
 ///
 pub fn register_subject(
   runtime: Subject(RuntimeMessage(msg)),
@@ -253,7 +265,9 @@ fn do_register_subject(_, _) -> Nil {
   Nil
 }
 
-///
+/// Deregister a `Subject` to stop receiving messages and updates from Lustre's
+/// server component runtime. The subject should first have been registered with
+/// [`register_subject`](#register_subject) otherwise this will do nothing.
 ///
 pub fn deregister_subject(
   runtime: Subject(RuntimeMessage(msg)),
@@ -275,7 +289,13 @@ fn do_deregister_subject(_, _) -> Nil {
   Nil
 }
 
+/// Register a callback to be called whenever the server component runtime
+/// produces a message. Avoid using anonymous functions with this function, as
+/// they cannot later be removed using [`deregister_callback`](#deregister_callback).
 ///
+/// **Note**: server components running on the Erlang target are **strongly**
+/// encouraged to use [`register_subject`](#register_subject) instead of this
+/// function.
 ///
 pub fn register_callback(
   runtime: Runtime(msg),
@@ -284,7 +304,13 @@ pub fn register_callback(
   lustre.send(runtime, runtime.ClientRegisteredCallback(callback))
 }
 
+/// Deregister a callback to be called whenever the server component runtime
+/// produces a message. The callback to remove is determined by function equality
+/// and must be the same function that was passed to [`register_callback`](#register_callback).
 ///
+/// **Note**: server components running on the Erlang target are **strongly**
+/// encouraged to use [`register_subject`](#register_subject) instead of this
+/// function.
 ///
 pub fn deregister_callback(
   runtime: Runtime(msg),
@@ -296,7 +322,7 @@ pub fn deregister_callback(
 // EFFECTS ---------------------------------------------------------------------
 
 /// Instruct any connected clients to emit a DOM event with the given name and
-/// data. This lets your server component communicate to frontend the same way
+/// data. This lets your server component communicate to the frontend the same way
 /// any other HTML elements do: you might emit a `"change"` event when some part
 /// of the server component's state changes, for example.
 ///
@@ -324,7 +350,7 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
 /// that same `Subject` to unsubscribe.
 ///
 /// **Note**: This effect does nothing on the JavaScript runtime, where `Subject`s
-/// and `Selector`s don't exist, and is the equivalent of returning `effect.none`.
+/// and `Selector`s don't exist, and is the equivalent of returning `effect.none()`.
 ///
 pub fn select(
   sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
@@ -334,14 +360,10 @@ pub fn select(
 
 // DECODERS --------------------------------------------------------------------
 
-/// The server component client runtime sends JSON encoded actions for the server
+/// The server component client runtime sends JSON-encoded messages for the server
 /// runtime to execute. Because your own WebSocket server sits between the two
 /// parts of the runtime, you need to decode these actions and pass them to the
 /// server runtime yourself.
-///
-/// Encode a DOM patch as JSON you can send to the client runtime to apply. Whenever
-/// the server runtime re-renders, all subscribed clients will receive a patch
-/// message they must forward to the client runtime.
 ///
 pub fn runtime_message_decoder() -> Decoder(RuntimeMessage(msg)) {
   decode.map(
@@ -352,6 +374,13 @@ pub fn runtime_message_decoder() -> Decoder(RuntimeMessage(msg)) {
 
 // ENCODERS --------------------------------------------------------------------
 
+/// Encode a message you can send to the client runtime to respond to. The server
+/// component runtime will send messages to any registered clients to instruct
+/// them to update their DOM or emit events, for example.
+///
+/// Because your WebSocket server sits between the two parts of the runtime, you
+/// need to encode these actions and send them to the client runtime yourself.
+///
 pub fn client_message_to_json(message: ClientMessage(msg)) -> Json {
   transport.client_message_to_json(message)
 }
