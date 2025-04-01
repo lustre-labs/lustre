@@ -1,9 +1,9 @@
-import { Empty, NonEmpty } from "../../../gleam.mjs";
-import { element, namespaced, fragment, text, none } from "../../element.mjs";
-import { attribute } from "../../attribute.mjs";
-import { to_keyed } from "../../vdom/node.mjs";
-import { empty_list } from "../../internals/constants.mjs";
-import { initialiseMetadata } from "../../vdom/reconciler.ffi.mjs";
+import { Empty, NonEmpty } from "../../gleam.mjs";
+import { element, namespaced, fragment, text, none } from "../element.mjs";
+import { attribute } from "../attribute.mjs";
+import { to_keyed } from "./vnode.mjs";
+import { empty_list } from "../internals/constants.mjs";
+import { initialiseMetadata } from "./reconciler.ffi.mjs";
 
 const HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
 

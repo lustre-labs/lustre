@@ -6,7 +6,7 @@ import { empty_list } from "../../internals/constants.mjs";
 import { diff } from "../../vdom/diff.mjs";
 import * as Events from "../../vdom/events.mjs";
 import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
-import { virtualise } from "./virtualise.ffi.mjs";
+import { virtualise } from "../../vdom/virtualise.ffi.mjs";
 
 //
 

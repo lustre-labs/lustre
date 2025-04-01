@@ -5,7 +5,7 @@ import {
   text_kind,
   fragment_kind,
   unsafe_inner_html_kind,
-} from "./node.mjs";
+} from "./vnode.mjs";
 
 import {
   attribute_kind,
@@ -13,7 +13,7 @@ import {
   event_kind,
   debounce_kind,
   throttle_kind,
-} from "./attribute.mjs";
+} from "./vattr.mjs";
 
 import {
   insert_kind,
