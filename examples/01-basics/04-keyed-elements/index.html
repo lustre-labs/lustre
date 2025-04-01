@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <title>01-basics/04-keyed-elements</title>
+
+        <link rel="stylesheet" href="/priv/static/app.css" />
+        <style>
+            @keyframes flash {
+                0% {
+                    outline: 6px solid orangered;
+                }
+                100% {
+                    outline: 6px solid transparent;
+                }
+            }
+
+            .flash {
+                animation: flash 0.5s ease-out;
+            }
+        </style>
+
+        <script type="module" src="/priv/static/app.mjs"></script>
+        <script>
+            // This script is used to flash elements when they are modified or
+            // added to the DOM.
+
+            document.addEventListener("DOMContentLoaded", () => {
+                function flash(node) {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        node.classList.add("flash");
+                        setTimeout(() => node.classList.remove("flash"), 500);
+                    }
+                }
+
+                const observer = new MutationObserver((mutations) => {
+                    for (const mutation of mutations) {
+                        if (mutation.type === "attributes") {
+                            flash(mutation.target);
+                        } else if (mutation.type === "childList") {
+                            mutation.addedNodes.forEach(flash);
+                        }
+                    }
+                });
+
+                observer.observe(document.querySelector("#app"), {
+                    attributeFilter: ["src"],
+                    childList: true,
+                    subtree: true,
+                });
+            });
+        </script>
+    </head>
+
+    <body>
+        <div id="app"></div>
+    </body>
+</html>
