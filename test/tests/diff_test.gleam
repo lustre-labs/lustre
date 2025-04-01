@@ -895,3 +895,21 @@ pub fn keyed_fragment_insert_test() {
   diff.diff(events.new(), prev, next).patch
   |> should.equal(diff)
 }
+
+pub fn keyed_fragment_remove_test() {
+  use <- lustre_test.test_filter("keyed_fragment_remove_test")
+
+  let prev =
+    keyed.fragment([
+      #("a", html.p([], [])),
+      #("b", html.div([], [])),
+      #("c", html.img([])),
+    ])
+
+  let next = keyed.fragment([#("a", html.p([], [])), #("c", html.img([]))])
+
+  let diff = patch.new(0, 0, [patch.remove_key(key: "b", count: 1)], [])
+
+  diff.diff(events.new(), prev, next).patch
+  |> should.equal(diff)
+}

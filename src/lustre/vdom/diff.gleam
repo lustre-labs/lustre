@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/function
+import gleam/list
 import gleam/order.{Eq, Gt, Lt}
 import gleam/set.{type Set}
 import lustre/internals/constants
@@ -314,16 +315,6 @@ fn do_diff(
       let node_index = node_index + 1
       let prev_count = prev.children_count
       let next_count = next.children_count
-      let changes = case prev_count - next_count {
-        remove_count if remove_count > 0 -> {
-          let remove_from = node_index + next_count - moved_offset
-          let remove = patch.remove(from: remove_from, count: remove_count)
-
-          [remove, ..changes]
-        }
-
-        _ -> changes
-      }
 
       let composed_mapper = events.compose_mapper(mapper, next.mapper)
 
@@ -342,11 +333,21 @@ fn do_diff(
           node_index:,
           patch_index: -1,
           path:,
-          changes:,
+          changes: constants.empty_list,
           children:,
           events:,
           mapper: composed_mapper,
         )
+
+      let changes = case child.patch.removed > 0 {
+        True -> {
+          let remove_from = node_index + next_count - moved_offset
+          let patch =
+            patch.remove(from: remove_from, count: child.patch.removed)
+          list.append(child.patch.changes, [patch, ..changes])
+        }
+        False -> list.append(child.patch.changes, changes)
+      }
 
       do_diff(
         old:,
@@ -359,7 +360,7 @@ fn do_diff(
         node_index: node_index + next_count,
         patch_index:,
         path:,
-        changes: child.patch.changes,
+        changes:,
         children: child.patch.children,
         events: child.events,
         mapper:,
