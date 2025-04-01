@@ -3,7 +3,10 @@
 build
 erl_crash.dump
 
-examples/*/priv/static
+examples/*/*/.github
+examples/*/*/manifest.toml
+examples/*/*/priv/static
+
 test-apps/*/priv/static
 
 # We want to keep the static assets for apps that test server components because
