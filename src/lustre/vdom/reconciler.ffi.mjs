@@ -358,18 +358,20 @@ export class Reconciler {
           if (stop) event.stopPropagation();
 
           let path = "";
-          let node = event.currentTarget;
+          let pathNode = event.currentTarget;
 
-          while (node !== this.#root) {
-            const key = node[meta].key;
+          while (pathNode !== this.#root) {
+            const key = pathNode[meta].key;
             if (key) {
               path = `${separator_key}${key}${path}`;
             } else {
-              const index = [].indexOf.call(node.parentNode.childNodes, node);
+              const siblings = pathNode.parentNode.childNodes;
+              const index = [].indexOf.call(siblings, pathNode);
+
               path = `${separator_index}${index}${path}`;
             }
 
-            node = node.parentNode;
+            pathNode = pathNode.parentNode;
           }
 
           // remove the leading separator
@@ -379,8 +381,8 @@ export class Reconciler {
             ? createServerEvent(event, include)
             : event;
 
-          if (event.target[meta].throttles.has(event.type)) {
-            const throttle = event.target[meta].throttles.get(event.type);
+          if (node[meta].throttles.has(event.type)) {
+            const throttle = node[meta].throttles.get(event.type);
             const now = Date.now();
             const last = throttle.last || 0;
 
@@ -390,8 +392,8 @@ export class Reconciler {
             } else {
               event.preventDefault();
             }
-          } else if (event.target[meta].debouncers.has(event.type)) {
-            const debounce = event.target[meta].debouncers.get(event.type);
+          } else if (node[meta].debouncers.has(event.type)) {
+            const debounce = node[meta].debouncers.get(event.type);
 
             window.clearTimeout(debounce.timeout);
 
