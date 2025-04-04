@@ -1,11 +1,9 @@
 // build/dev/javascript/gleam_stdlib/dict.mjs
-var tempDataView = new DataView(new ArrayBuffer(8));
 var SHIFT = 5;
 var BUCKET_SIZE = Math.pow(2, SHIFT);
 var MASK = BUCKET_SIZE - 1;
 var MAX_INDEX_NODE = BUCKET_SIZE / 2;
 var MIN_ARRAY_NODE = BUCKET_SIZE / 4;
-var unequalDictSymbol = Symbol();
 
 // build/dev/javascript/gleam_stdlib/gleam_stdlib.mjs
 var unicode_whitespaces = [
@@ -28,19 +26,27 @@ var unicode_whitespaces = [
   "\u2029"
   // Paragraph separator
 ].join("");
-var trim_start_regex = new RegExp(`^[${unicode_whitespaces}]*`);
-var trim_end_regex = new RegExp(`[${unicode_whitespaces}]*$`);
+var trim_start_regex = /* @__PURE__ */ new RegExp(
+  `^[${unicode_whitespaces}]*`
+);
+var trim_end_regex = /* @__PURE__ */ new RegExp(`[${unicode_whitespaces}]*$`);
 
-// build/dev/javascript/lustre/lustre/vdom/attribute.mjs
+// build/dev/javascript/lustre/lustre/vdom/vattr.mjs
 var attribute_kind = 0;
 var property_kind = 1;
 var event_kind = 2;
+var debounce_kind = 1;
+var throttle_kind = 2;
 
-// build/dev/javascript/lustre/lustre/vdom/node.mjs
+// build/dev/javascript/lustre/lustre/vdom/vnode.mjs
 var fragment_kind = 0;
 var element_kind = 1;
 var text_kind = 2;
 var unsafe_inner_html_kind = 3;
+
+// build/dev/javascript/lustre/lustre/vdom/path.mjs
+var separator_index = "\n";
+var separator_key = "	";
 
 // build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs
 var copiedStyleSheets = /* @__PURE__ */ new WeakMap();
@@ -96,15 +102,15 @@ var replace_kind = 5;
 var insert_kind = 6;
 var remove_kind = 7;
 
-// build/dev/javascript/lustre/lustre/runtime/client/reconciler.ffi.mjs
-var SUPPORTS_MOVE_BEFORE = !!HTMLElement.prototype.moveBefore;
+// build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs
+var SUPPORTS_MOVE_BEFORE = globalThis.HTMLElement && !!HTMLElement.prototype.moveBefore;
 var Reconciler = class {
   #root = null;
   #dispatch = () => {
   };
   #useServerEvents = false;
-  constructor(root, dispatch, { useServerEvents = false } = {}) {
-    this.#root = root;
+  constructor(root2, dispatch, { useServerEvents = false } = {}) {
+    this.#root = root2;
     this.#dispatch = dispatch;
     this.#useServerEvents = useServerEvents;
   }
@@ -220,6 +226,9 @@ var Reconciler = class {
       if (key) {
         parent[meta].keyedChildren.delete(key);
       }
+      for (const [_, { timeout }] of child[meta].debouncers) {
+        window.clearTimeout(timeout);
+      }
       parent.removeChild(child);
       child = next;
     }
@@ -242,6 +251,13 @@ var Reconciler = class {
       if (node[meta].handlers.has(name)) {
         node.removeEventListener(name, handleEvent);
         node[meta].handlers.delete(name);
+        if (node[meta].throttles.has(name)) {
+          node[meta].throttles.delete(name);
+        }
+        if (node[meta].debouncers.has(name)) {
+          window.clearTimeout(node[meta].debouncers.get(name).timeout);
+          node[meta].debouncers.delete(name);
+        }
       } else {
         node.removeAttribute(name);
         ATTRIBUTE_HOOKS[name]?.removed?.(node, name);
@@ -313,26 +329,59 @@ var Reconciler = class {
         const stop = attribute3.stop_propagation;
         const immediate = attribute3.immediate;
         const include = Array.isArray(attribute3.include) ? attribute3.include : [];
-        node[meta].handlers.set(attribute3.name, (event2) => {
+        if (attribute3.limit?.kind === throttle_kind) {
+          const throttle = node[meta].throttles.get(attribute3.name) ?? {
+            last: 0,
+            delay: attribute3.limit.delay
+          };
+          node[meta].throttles.set(attribute3.name, throttle);
+        }
+        if (attribute3.limit?.kind === debounce_kind) {
+          const debounce = node[meta].debouncers.get(attribute3.name) ?? {
+            timeout: null,
+            delay: attribute3.limit.delay
+          };
+          node[meta].debouncers.set(attribute3.name, debounce);
+        }
+        node[meta].handlers.set(attribute3.name, (event3) => {
           if (prevent)
-            event2.preventDefault();
+            event3.preventDefault();
           if (stop)
-            event2.stopPropagation();
+            event3.stopPropagation();
           let path = "";
-          let node2 = event2.currentTarget;
-          while (node2 !== this.#root) {
-            const key = node2[meta].key;
+          let pathNode = event3.currentTarget;
+          while (pathNode !== this.#root) {
+            const key = pathNode[meta].key;
             if (key) {
-              path = `${key}\f${path}`;
+              path = `${separator_key}${key}${path}`;
             } else {
-              const index2 = [].indexOf.call(node2.parentNode.childNodes, node2);
-              path = `${index2}\f${path}`;
+              const siblings = pathNode.parentNode.childNodes;
+              const index2 = [].indexOf.call(siblings, pathNode);
+              path = `${separator_index}${index2}${path}`;
             }
-            node2 = node2.parentNode;
+            pathNode = pathNode.parentNode;
           }
-          path = path.slice(0, -1);
-          const data = this.#useServerEvents ? createServerEvent(event2, include) : event2;
-          this.#dispatch(data, path, event2.type, immediate);
+          path = path.slice(1);
+          const data = this.#useServerEvents ? createServerEvent(event3, include) : event3;
+          if (node[meta].throttles.has(event3.type)) {
+            const throttle = node[meta].throttles.get(event3.type);
+            const now = Date.now();
+            const last = throttle.last || 0;
+            if (now > last + throttle.delay) {
+              throttle.last = now;
+              this.#dispatch(data, path, event3.type, immediate);
+            } else {
+              event3.preventDefault();
+            }
+          } else if (node[meta].debouncers.has(event3.type)) {
+            const debounce = node[meta].debouncers.get(event3.type);
+            window.clearTimeout(debounce.timeout);
+            debounce.timeout = window.setTimeout(() => {
+              this.#dispatch(data, path, event3.type, immediate);
+            }, debounce.delay);
+          } else {
+            this.#dispatch(data, path, event3.type, immediate);
+          }
         });
         break;
       }
@@ -358,11 +407,13 @@ function initialiseMetadata(node, key = "") {
       node[meta] = {
         key,
         keyedChildren: /* @__PURE__ */ new Map(),
-        handlers: /* @__PURE__ */ new Map()
+        handlers: /* @__PURE__ */ new Map(),
+        throttles: /* @__PURE__ */ new Map(),
+        debouncers: /* @__PURE__ */ new Map()
       };
       break;
     case Node.TEXT_NODE:
-      node[meta] = { key };
+      node[meta] = { key, debouncers: /* @__PURE__ */ new Map() };
       break;
   }
 }
@@ -378,19 +429,26 @@ function addKeyedChild(node, child) {
     node[meta].keyedChildren.set(key, new WeakRef(child));
   }
 }
-function handleEvent(event2) {
-  const target = event2.currentTarget;
-  const handler = target[meta].handlers.get(event2.type);
-  handler(event2);
+function handleEvent(event3) {
+  const target = event3.currentTarget;
+  const handler = target[meta].handlers.get(event3.type);
+  if (event3.type === "submit") {
+    event3.detail ??= {};
+    event3.detail.formData = [...new FormData(event3.target).entries()];
+  }
+  handler(event3);
 }
-function createServerEvent(event2, include = []) {
+function createServerEvent(event3, include = []) {
   const data = {};
-  if (event2.type === "input" || event2.type === "change") {
+  if (event3.type === "input" || event3.type === "change") {
     include.push("target.value");
+  }
+  if (event3.type === "submit") {
+    include.push("detail.formData");
   }
   for (const property2 of include) {
     const path = property2.split(".");
-    for (let i = 0, input = event2, output = data; i < path.length; i++) {
+    for (let i = 0, input = event3, output = data; i < path.length; i++) {
       if (i === path.length - 1) {
         output[path[i]] = input[path[i]];
         break;
@@ -533,12 +591,12 @@ var ServerComponent = class extends HTMLElement {
         });
         this.#reconciler = new Reconciler(
           this.#shadowRoot,
-          (event2, path, name) => {
+          (event3, path, name) => {
             this.#transport?.send({
               kind: event_fired_kind,
               path,
               name,
-              event: event2
+              event: event3
             });
           },
           {
