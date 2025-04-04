@@ -187,12 +187,12 @@ pub fn on_check(msg: fn(Bool) -> msg) -> Attribute(msg) {
   on("change", checked() |> decode.map(msg))
 }
 
-/// Listens for the form's `submit` event, and dispatches the given message. This
-/// will automatically call [`prevent_default`](#prevent_default) to stop the form
-/// from submitting.
+/// This will automatically call [`prevent_default`](#prevent_default) to stop
+/// the browser's native form submission. In a Lustre app you'll want to handle
+/// that yourself as an [`Effect`](./effect.html#Effect).
 ///
-pub fn on_submit(msg: msg) -> Attribute(msg) {
-  on("submit", decode.success(msg)) |> prevent_default
+pub fn on_submit(msg: fn(List(#(String, String))) -> msg) -> Attribute(msg) {
+  on("submit", formdata() |> decode.map(msg)) |> prevent_default
 }
 
 // FOCUS EVENTS ----------------------------------------------------------------
@@ -231,4 +231,17 @@ pub fn mouse_position() -> Decoder(#(Float, Float)) {
   use y <- decode.field("clientY", decode.float)
 
   decode.success(#(x, y))
+}
+
+///
+///
+pub fn formdata() -> Decoder(List(#(String, String))) {
+  decode.at(["detail", "formData"], {
+    decode.list({
+      use key <- decode.field(0, decode.string)
+      use value <- decode.field(1, decode.string)
+
+      decode.success(#(key, value))
+    })
+  })
 }

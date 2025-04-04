@@ -492,6 +492,11 @@ function handleEvent(event) {
   const target = event.currentTarget;
   const handler = target[meta].handlers.get(event.type);
 
+  if (event.type === "submit") {
+    event.detail ??= {};
+    event.detail.formData = [...new FormData(event.target).entries()];
+  }
+
   handler(event);
 }
 
@@ -513,6 +518,18 @@ function createServerEvent(event, include = []) {
   // whether they remember to include it in the event, we'll include it for them.
   if (event.type === "input" || event.type === "change") {
     include.push("target.value");
+  }
+
+  // We have non-standard handling of the submit event in Lustre. We automatically
+  // extract the form fields into a special `formData` property on the event's
+  // `detail` field. This is because we need a way for normal Lustre apps to get
+  // at this data without needing to go through FFI to construct a `new FormData`
+  // themselves – this would be impossible for server components!
+  //
+  // If the user is handling a submit event they almost definitely want to know
+  // about the form's data, so we always include it.
+  if (event.type === "submit") {
+    include.push("detail.formData");
   }
 
   for (const property of include) {
