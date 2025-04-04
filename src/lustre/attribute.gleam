@@ -461,6 +461,6 @@ pub fn lang(name: String) -> Attribute(msg) {
 fn boolean_attribute(name: String, value: Bool) -> Attribute(msg) {
   case value {
     True -> attribute(name, "")
-    False -> none()
+    False -> property(name, json.bool(False))
   }
 }
