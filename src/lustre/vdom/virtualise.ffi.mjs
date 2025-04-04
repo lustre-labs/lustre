@@ -35,8 +35,16 @@ function virtualise_node(node) {
       const key = node.getAttribute("data-lustre-key");
       initialiseMetadata(node, key);
 
+      if (key) {
+        node.removeAttribute("data-lustre-key");
+      }
+
       const tag = node.localName;
       const namespace = node.namespaceURI;
+
+      if (!namespace && input_elements.includes(tag)) {
+        virtualise_input_events(tag, node);
+      }
 
       const attributes = virtualise_attributes(node);
       const children = virtualise_child_nodes(node);
@@ -62,6 +70,20 @@ function virtualise_node(node) {
     default:
       return null;
   }
+}
+
+const input_elements = ["input", "select", "textarea"];
+
+function virtualise_input_events(tag, node) {
+  window.queueMicrotask(() => {
+    if (node.type === "checkbox" && "input" && node.checked) {
+      node.dispatchEvent(new Event("change", { bubbles: true }));
+    } else if (node.type === "radio" && "input" && node.checked) {
+      node.dispatchEvent(new Event("change", { bubbles: true }));
+    } else if (node.value) {
+      node.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  });
 }
 
 function virtualise_child_nodes(node) {
