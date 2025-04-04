@@ -50,7 +50,7 @@ Increment ->                 Increment ->
                              -- added -->  <img href="a">
 ```
 
-With `element.keyed`, these changes might look more like:
+With `keyed.element`, these changes might look more like:
 
 ```
 Increment ->                 Increment ->
@@ -62,16 +62,16 @@ Increment ->                 Increment ->
 ### Fixing the quickstart program
 
 As mentioned in the first section above, the way to fix this issue is to [key the
-elements](https://hexdocs.pm/lustre/lustre/element.html#keyed). This allows Lustre
-to better track which items have changed, moved, been removed, etc. Keyed elements
-were intentionally not used in the quickstart tutorial in an attempt to focus on
-the fundamentals.
+elements](https://hexdocs.pm/lustre/lustre/element/keyed.html#element). This allows
+Lustre to better track which items have changed, moved, been removed, etc. Keyed
+elements were intentionally not used in the quickstart tutorial in an attempt to
+focus on the fundamentals.
 
 Here is one possible way to use `element.keyed` in the `view` function, where the
 image slug is used as the key:
 
 ```gleam
-element.keyed(html.div([], _), list.map(model.cats, fn(cat) {
-    #(cat.id, html.img([attribute.src(cat.url)]))
-})),
+keyed.div([], list.map(model.cats, fn(cat) {
+  #(cat.id, html.img([attribute.src(cat.url)]))
+}))
 ```

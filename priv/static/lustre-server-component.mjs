@@ -1,655 +1,814 @@
-// build/dev/javascript/lustre/lustre/internals/constants.mjs
-var diff = 0;
-var emit = 1;
-var init = 2;
-var event = 4;
-var attrs = 5;
+// build/dev/javascript/gleam_stdlib/dict.mjs
+var SHIFT = 5;
+var BUCKET_SIZE = Math.pow(2, SHIFT);
+var MASK = BUCKET_SIZE - 1;
+var MAX_INDEX_NODE = BUCKET_SIZE / 2;
+var MIN_ARRAY_NODE = BUCKET_SIZE / 4;
 
-// build/dev/javascript/lustre/vdom.ffi.mjs
-if (globalThis.customElements && !globalThis.customElements.get("lustre-fragment")) {
-  globalThis.customElements.define(
-    "lustre-fragment",
-    class LustreFragment extends HTMLElement {
-      constructor() {
-        super();
+// build/dev/javascript/gleam_stdlib/gleam_stdlib.mjs
+var unicode_whitespaces = [
+  " ",
+  // Space
+  "	",
+  // Horizontal tab
+  "\n",
+  // Line feed
+  "\v",
+  // Vertical tab
+  "\f",
+  // Form feed
+  "\r",
+  // Carriage return
+  "\x85",
+  // Next line
+  "\u2028",
+  // Line separator
+  "\u2029"
+  // Paragraph separator
+].join("");
+var trim_start_regex = /* @__PURE__ */ new RegExp(
+  `^[${unicode_whitespaces}]*`
+);
+var trim_end_regex = /* @__PURE__ */ new RegExp(`[${unicode_whitespaces}]*$`);
+
+// build/dev/javascript/lustre/lustre/vdom/vattr.mjs
+var attribute_kind = 0;
+var property_kind = 1;
+var event_kind = 2;
+var debounce_kind = 1;
+var throttle_kind = 2;
+
+// build/dev/javascript/lustre/lustre/vdom/vnode.mjs
+var fragment_kind = 0;
+var element_kind = 1;
+var text_kind = 2;
+var unsafe_inner_html_kind = 3;
+
+// build/dev/javascript/lustre/lustre/vdom/path.mjs
+var separator_index = "\n";
+var separator_key = "	";
+
+// build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs
+var copiedStyleSheets = /* @__PURE__ */ new WeakMap();
+async function adoptStylesheets(shadowRoot) {
+  const pendingParentStylesheets = [];
+  for (const node of document.querySelectorAll("link[rel=stylesheet], style")) {
+    if (node.sheet)
+      continue;
+    pendingParentStylesheets.push(
+      new Promise((resolve, reject) => {
+        node.addEventListener("load", resolve);
+        node.addEventListener("error", reject);
+      })
+    );
+  }
+  await Promise.allSettled(pendingParentStylesheets);
+  if (!shadowRoot.host.isConnected) {
+    return [];
+  }
+  shadowRoot.adoptedStyleSheets = shadowRoot.host.getRootNode().adoptedStyleSheets;
+  const pending = [];
+  for (const sheet of document.styleSheets) {
+    try {
+      shadowRoot.adoptedStyleSheets.push(sheet);
+    } catch {
+      try {
+        let copiedSheet = copiedStyleSheets.get(sheet);
+        if (!copiedSheet) {
+          copiedSheet = new CSSStyleSheet();
+          for (const rule of sheet.cssRules) {
+            copiedSheet.insertRule(rule.cssText, copiedSheet.cssRules.length);
+          }
+          copiedStyleSheets.set(sheet, copiedSheet);
+        }
+        shadowRoot.adoptedStyleSheets.push(copiedSheet);
+      } catch {
+        const node = sheet.ownerNode.cloneNode();
+        shadowRoot.prepend(node);
+        pending.push(node);
       }
     }
-  );
+  }
+  return pending;
 }
-function morph(prev, next, dispatch) {
-  let out;
-  let stack = [{ prev, next, parent: prev.parentNode }];
-  while (stack.length) {
-    let { prev: prev2, next: next2, parent } = stack.pop();
-    while (next2.subtree !== void 0)
-      next2 = next2.subtree();
-    if (next2.content !== void 0) {
-      if (!prev2) {
-        const created = document.createTextNode(next2.content);
-        parent.appendChild(created);
-        out ??= created;
-      } else if (prev2.nodeType === Node.TEXT_NODE) {
-        if (prev2.textContent !== next2.content)
-          prev2.textContent = next2.content;
-        out ??= prev2;
-      } else {
-        const created = document.createTextNode(next2.content);
-        parent.replaceChild(created, prev2);
-        out ??= created;
-      }
-    } else if (next2.tag !== void 0) {
-      const created = createElementNode({
-        prev: prev2,
-        next: next2,
-        dispatch,
-        stack
+
+// build/dev/javascript/lustre/lustre/vdom/patch.mjs
+var replace_text_kind = 0;
+var replace_inner_html_kind = 1;
+var update_kind = 2;
+var move_kind = 3;
+var remove_key_kind = 4;
+var replace_kind = 5;
+var insert_kind = 6;
+var remove_kind = 7;
+
+// build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs
+var SUPPORTS_MOVE_BEFORE = globalThis.HTMLElement && !!HTMLElement.prototype.moveBefore;
+var Reconciler = class {
+  #root = null;
+  #dispatch = () => {
+  };
+  #useServerEvents = false;
+  constructor(root2, dispatch, { useServerEvents = false } = {}) {
+    this.#root = root2;
+    this.#dispatch = dispatch;
+    this.#useServerEvents = useServerEvents;
+  }
+  mount(vdom) {
+    this.#root.appendChild(this.#createElement(vdom));
+  }
+  #stack = [];
+  push(patch, offset = 0) {
+    if (offset) {
+      iterate(patch.changes, (change) => {
+        switch (change.kind) {
+          case insert_kind:
+          case move_kind:
+            change.before = (change.before | 0) + offset;
+            break;
+          case remove_kind:
+          case replace_kind:
+            change.from = (change.from | 0) + offset;
+            break;
+        }
       });
-      if (!prev2) {
-        parent.appendChild(created);
-      } else if (prev2 !== created) {
-        parent.replaceChild(created, prev2);
-      }
-      out ??= created;
+      iterate(patch.children, (child) => {
+        child.index = (child.index | 0) + offset;
+      });
     }
+    this.#stack.push({ node: this.#root, patch });
+    this.#reconcile();
   }
-  return out;
-}
-function patch(root, diff2, dispatch, stylesOffset = 0) {
-  const rootParent = root.parentNode;
-  for (const created of diff2[0]) {
-    const key = created[0].split("-");
-    const next = created[1];
-    const prev = getDeepChild(rootParent, key, stylesOffset);
-    let result;
-    if (prev !== null && prev !== rootParent) {
-      result = morph(prev, next, dispatch);
-    } else {
-      const parent = getDeepChild(rootParent, key.slice(0, -1), stylesOffset);
-      const temp = document.createTextNode("");
-      parent.appendChild(temp);
-      result = morph(temp, next, dispatch);
-    }
-    if (key === "0") {
-      root = result;
-    }
-  }
-  for (const removed of diff2[1]) {
-    const key = removed[0].split("-");
-    const deletedNode = getDeepChild(rootParent, key, stylesOffset);
-    deletedNode.remove();
-  }
-  for (const updated of diff2[2]) {
-    const key = updated[0].split("-");
-    const patches = updated[1];
-    const prev = getDeepChild(rootParent, key, stylesOffset);
-    const handlersForEl = registeredHandlers.get(prev);
-    const delegated = [];
-    for (const created of patches[0]) {
-      const name = created[0];
-      const value = created[1];
-      if (name.startsWith("data-lustre-on-")) {
-        const eventName = name.slice(15);
-        const callback = dispatch(lustreServerEventHandler);
-        if (!handlersForEl.has(eventName)) {
-          prev.addEventListener(eventName, lustreGenericEventHandler);
+  // PATCHING ------------------------------------------------------------------
+  #reconcile() {
+    while (this.#stack.length) {
+      const { node, patch } = this.#stack.pop();
+      iterate(patch.changes, (change) => {
+        switch (change.kind) {
+          case insert_kind:
+            this.#insert(node, change.children, change.before);
+            break;
+          case move_kind:
+            this.#move(node, change.key, change.before, change.count);
+            break;
+          case remove_key_kind:
+            this.#removeKey(node, change.key, change.count);
+            break;
+          case remove_kind:
+            this.#remove(node, change.from, change.count);
+            break;
+          case replace_kind:
+            this.#replace(node, change.from, change.count, change.with);
+            break;
+          case replace_text_kind:
+            this.#replaceText(node, change.content);
+            break;
+          case replace_inner_html_kind:
+            this.#replaceInnerHtml(node, change.inner_html);
+            break;
+          case update_kind:
+            this.#update(node, change.added, change.removed);
+            break;
         }
-        handlersForEl.set(eventName, callback);
-        prev.setAttribute(name, value);
-      } else if ((name.startsWith("delegate:data-") || name.startsWith("delegate:aria-")) && prev instanceof HTMLSlotElement) {
-        delegated.push([name.slice(10), value]);
+      });
+      if (patch.removed) {
+        this.#remove(
+          node,
+          node.childNodes.length - patch.removed,
+          patch.removed
+        );
+      }
+      iterate(patch.children, (child) => {
+        this.#stack.push({
+          node: node.childNodes[child.index | 0],
+          patch: child
+        });
+      });
+    }
+  }
+  // CHANGES -------------------------------------------------------------------
+  #insert(node, children, before) {
+    const fragment3 = document.createDocumentFragment();
+    iterate(children, (child) => {
+      const el = this.#createElement(child);
+      addKeyedChild(node, el);
+      fragment3.appendChild(el);
+    });
+    node.insertBefore(fragment3, node.childNodes[before | 0] ?? null);
+  }
+  #move(node, key, before, count) {
+    let el = node[meta].keyedChildren.get(key).deref();
+    const beforeEl = node.childNodes[before] ?? null;
+    for (let i = 0; i < count && el !== null; ++i) {
+      const next = el.nextSibling;
+      if (SUPPORTS_MOVE_BEFORE) {
+        node.moveBefore(el, beforeEl);
       } else {
-        prev.setAttribute(name, value);
-        if (name === "value" || name === "selected") {
-          prev[name] = value;
-        }
+        node.insertBefore(el, beforeEl);
       }
-      if (delegated.length > 0) {
-        for (const child of prev.assignedElements()) {
-          for (const [name2, value2] of delegated) {
-            child[name2] = value2;
-          }
-        }
-      }
+      el = next;
     }
-    for (const removed of patches[1]) {
-      if (removed.startsWith("data-lustre-on-")) {
-        const eventName = removed.slice(15);
-        prev.removeEventListener(eventName, lustreGenericEventHandler);
-        handlersForEl.delete(eventName);
+  }
+  #removeKey(node, key, count) {
+    this.#removeFromChild(
+      node,
+      node[meta].keyedChildren.get(key).deref(),
+      count
+    );
+  }
+  #remove(node, from, count) {
+    this.#removeFromChild(node, node.childNodes[from | 0], count);
+  }
+  #removeFromChild(parent, child, count) {
+    while (count-- > 0 && child !== null) {
+      const next = child.nextSibling;
+      const key = child[meta].key;
+      if (key) {
+        parent[meta].keyedChildren.delete(key);
+      }
+      for (const [_, { timeout }] of child[meta].debouncers) {
+        window.clearTimeout(timeout);
+      }
+      parent.removeChild(child);
+      child = next;
+    }
+  }
+  #replace(parent, from, count, child) {
+    this.#remove(parent, from, count);
+    const el = this.#createElement(child);
+    addKeyedChild(parent, el);
+    parent.insertBefore(el, parent.childNodes[from | 0] ?? null);
+  }
+  #replaceText(node, content) {
+    node.data = content ?? "";
+  }
+  #replaceInnerHtml(node, inner_html) {
+    node.innerHTML = inner_html ?? "";
+  }
+  #update(node, added, removed) {
+    iterate(removed, (attribute3) => {
+      const name = attribute3.name;
+      if (node[meta].handlers.has(name)) {
+        node.removeEventListener(name, handleEvent);
+        node[meta].handlers.delete(name);
+        if (node[meta].throttles.has(name)) {
+          node[meta].throttles.delete(name);
+        }
+        if (node[meta].debouncers.has(name)) {
+          window.clearTimeout(node[meta].debouncers.get(name).timeout);
+          node[meta].debouncers.delete(name);
+        }
       } else {
-        prev.removeAttribute(removed);
-      }
-    }
-  }
-  return root;
-}
-function createElementNode({ prev, next, dispatch, stack }) {
-  const namespace = next.namespace || "http://www.w3.org/1999/xhtml";
-  const canMorph = prev && prev.nodeType === Node.ELEMENT_NODE && prev.localName === next.tag && prev.namespaceURI === (next.namespace || "http://www.w3.org/1999/xhtml");
-  const el = canMorph ? prev : namespace ? document.createElementNS(namespace, next.tag) : document.createElement(next.tag);
-  let handlersForEl;
-  if (!registeredHandlers.has(el)) {
-    const emptyHandlers = /* @__PURE__ */ new Map();
-    registeredHandlers.set(el, emptyHandlers);
-    handlersForEl = emptyHandlers;
-  } else {
-    handlersForEl = registeredHandlers.get(el);
-  }
-  const prevHandlers = canMorph ? new Set(handlersForEl.keys()) : null;
-  const prevAttributes = canMorph ? new Set(Array.from(prev.attributes, (a) => a.name)) : null;
-  let className = null;
-  let style = null;
-  let innerHTML = null;
-  if (canMorph && next.tag === "textarea") {
-    const innertText = next.children[Symbol.iterator]().next().value?.content;
-    if (innertText !== void 0)
-      el.value = innertText;
-  }
-  const delegated = [];
-  for (const attr of next.attrs) {
-    const name = attr[0];
-    const value = attr[1];
-    if (attr.as_property) {
-      if (el[name] !== value)
-        el[name] = value;
-      if (canMorph)
-        prevAttributes.delete(name);
-    } else if (name.startsWith("on")) {
-      const eventName = name.slice(2);
-      const callback = dispatch(value, eventName === "input");
-      if (!handlersForEl.has(eventName)) {
-        el.addEventListener(eventName, lustreGenericEventHandler);
-      }
-      handlersForEl.set(eventName, callback);
-      if (canMorph)
-        prevHandlers.delete(eventName);
-    } else if (name.startsWith("data-lustre-on-")) {
-      const eventName = name.slice(15);
-      const callback = dispatch(lustreServerEventHandler);
-      if (!handlersForEl.has(eventName)) {
-        el.addEventListener(eventName, lustreGenericEventHandler);
-      }
-      handlersForEl.set(eventName, callback);
-      el.setAttribute(name, value);
-      if (canMorph) {
-        prevHandlers.delete(eventName);
-        prevAttributes.delete(name);
-      }
-    } else if (name.startsWith("delegate:data-") || name.startsWith("delegate:aria-")) {
-      el.setAttribute(name, value);
-      delegated.push([name.slice(10), value]);
-    } else if (name === "class") {
-      className = className === null ? value : className + " " + value;
-    } else if (name === "style") {
-      style = style === null ? value : style + value;
-    } else if (name === "dangerous-unescaped-html") {
-      innerHTML = value;
-    } else {
-      if (el.getAttribute(name) !== value)
-        el.setAttribute(name, value);
-      if (name === "value" || name === "selected")
-        el[name] = value;
-      if (canMorph)
-        prevAttributes.delete(name);
-    }
-  }
-  if (className !== null) {
-    el.setAttribute("class", className);
-    if (canMorph)
-      prevAttributes.delete("class");
-  }
-  if (style !== null) {
-    el.setAttribute("style", style);
-    if (canMorph)
-      prevAttributes.delete("style");
-  }
-  if (canMorph) {
-    for (const attr of prevAttributes) {
-      el.removeAttribute(attr);
-    }
-    for (const eventName of prevHandlers) {
-      handlersForEl.delete(eventName);
-      el.removeEventListener(eventName, lustreGenericEventHandler);
-    }
-  }
-  if (next.tag === "slot") {
-    window.queueMicrotask(() => {
-      for (const child of el.assignedElements()) {
-        for (const [name, value] of delegated) {
-          if (!child.hasAttribute(name)) {
-            child.setAttribute(name, value);
-          }
-        }
+        node.removeAttribute(name);
+        ATTRIBUTE_HOOKS[name]?.removed?.(node, name);
       }
     });
+    iterate(added, (attribute3) => {
+      this.#createAttribute(node, attribute3);
+    });
   }
-  if (next.key !== void 0 && next.key !== "") {
-    el.setAttribute("data-lustre-key", next.key);
-  } else if (innerHTML !== null) {
-    el.innerHTML = innerHTML;
-    return el;
-  }
-  let prevChild = el.firstChild;
-  let seenKeys = null;
-  let keyedChildren = null;
-  let incomingKeyedChildren = null;
-  let firstChild = children(next).next().value;
-  if (canMorph && firstChild !== void 0 && // Explicit checks are more verbose but truthy checks force a bunch of comparisons
-  // we don't care about: it's never gonna be a number etc.
-  firstChild.key !== void 0 && firstChild.key !== "") {
-    seenKeys = /* @__PURE__ */ new Set();
-    keyedChildren = getKeyedChildren(prev);
-    incomingKeyedChildren = getKeyedChildren(next);
-    for (const child of children(next)) {
-      prevChild = diffKeyedChild(
-        prevChild,
-        child,
-        el,
-        stack,
-        incomingKeyedChildren,
-        keyedChildren,
-        seenKeys
-      );
+  // CONSTRUCTORS --------------------------------------------------------------
+  #createElement(vnode) {
+    switch (vnode.kind) {
+      case element_kind: {
+        const node = vnode.namespace ? document.createElementNS(vnode.namespace, vnode.tag) : document.createElement(vnode.tag);
+        initialiseMetadata(node, vnode.key);
+        iterate(vnode.attributes, (attribute3) => {
+          this.#createAttribute(node, attribute3);
+        });
+        this.#insert(node, vnode.children, 0);
+        return node;
+      }
+      case text_kind: {
+        const node = document.createTextNode(vnode.content ?? "");
+        initialiseMetadata(node, vnode.key);
+        return node;
+      }
+      case fragment_kind: {
+        const node = document.createDocumentFragment();
+        const head = document.createTextNode("");
+        initialiseMetadata(head, vnode.key);
+        node.appendChild(head);
+        iterate(vnode.children, (child) => {
+          node.appendChild(this.#createElement(child));
+        });
+        return node;
+      }
+      case unsafe_inner_html_kind: {
+        const node = vnode.namespace ? document.createElementNS(vnode.namespace, vnode.tag) : document.createElement(vnode.tag);
+        initialiseMetadata(node, vnode.key);
+        iterate(vnode.attributes, (attribute3) => {
+          this.#createAttribute(node, attribute3);
+        });
+        this.#replaceInnerHtml(node, vnode.inner_html);
+        return node;
+      }
     }
-  } else {
-    for (const child of children(next)) {
-      stack.unshift({ prev: prevChild, next: child, parent: el });
-      prevChild = prevChild?.nextSibling;
+  }
+  #createAttribute(node, attribute3) {
+    switch (attribute3.kind) {
+      case attribute_kind: {
+        const name = attribute3.name;
+        const value = attribute3.value ?? "";
+        if (value !== node.getAttribute(name)) {
+          node.setAttribute(name, value);
+        }
+        ATTRIBUTE_HOOKS[name]?.added?.(node, value);
+        break;
+      }
+      case property_kind:
+        node[attribute3.name] = attribute3.value;
+        break;
+      case event_kind: {
+        if (!node[meta].handlers.has(attribute3.name)) {
+          node.addEventListener(attribute3.name, handleEvent, {
+            passive: !attribute3.prevent_default
+          });
+        }
+        const prevent = attribute3.prevent_default;
+        const stop = attribute3.stop_propagation;
+        const immediate = attribute3.immediate;
+        const include = Array.isArray(attribute3.include) ? attribute3.include : [];
+        if (attribute3.limit?.kind === throttle_kind) {
+          const throttle = node[meta].throttles.get(attribute3.name) ?? {
+            last: 0,
+            delay: attribute3.limit.delay
+          };
+          node[meta].throttles.set(attribute3.name, throttle);
+        }
+        if (attribute3.limit?.kind === debounce_kind) {
+          const debounce = node[meta].debouncers.get(attribute3.name) ?? {
+            timeout: null,
+            delay: attribute3.limit.delay
+          };
+          node[meta].debouncers.set(attribute3.name, debounce);
+        }
+        node[meta].handlers.set(attribute3.name, (event3) => {
+          if (prevent)
+            event3.preventDefault();
+          if (stop)
+            event3.stopPropagation();
+          let path = "";
+          let pathNode = event3.currentTarget;
+          while (pathNode !== this.#root) {
+            const key = pathNode[meta].key;
+            if (key) {
+              path = `${separator_key}${key}${path}`;
+            } else {
+              const siblings = pathNode.parentNode.childNodes;
+              const index2 = [].indexOf.call(siblings, pathNode);
+              path = `${separator_index}${index2}${path}`;
+            }
+            pathNode = pathNode.parentNode;
+          }
+          path = path.slice(1);
+          const data = this.#useServerEvents ? createServerEvent(event3, include) : event3;
+          if (node[meta].throttles.has(event3.type)) {
+            const throttle = node[meta].throttles.get(event3.type);
+            const now = Date.now();
+            const last = throttle.last || 0;
+            if (now > last + throttle.delay) {
+              throttle.last = now;
+              this.#dispatch(data, path, event3.type, immediate);
+            } else {
+              event3.preventDefault();
+            }
+          } else if (node[meta].debouncers.has(event3.type)) {
+            const debounce = node[meta].debouncers.get(event3.type);
+            window.clearTimeout(debounce.timeout);
+            debounce.timeout = window.setTimeout(() => {
+              this.#dispatch(data, path, event3.type, immediate);
+            }, debounce.delay);
+          } else {
+            this.#dispatch(data, path, event3.type, immediate);
+          }
+        });
+        break;
+      }
     }
   }
-  while (prevChild) {
-    const next2 = prevChild.nextSibling;
-    el.removeChild(prevChild);
-    prevChild = next2;
+};
+function iterate(list4, callback) {
+  if (Array.isArray(list4)) {
+    for (let i = 0; i < list4.length; i++) {
+      callback(list4[i]);
+    }
+  } else if (list4) {
+    for (list4; list4.tail; list4 = list4.tail) {
+      callback(list4.head);
+    }
   }
-  return el;
 }
-var registeredHandlers = /* @__PURE__ */ new WeakMap();
-function lustreGenericEventHandler(event2) {
-  const target = event2.currentTarget;
-  if (!registeredHandlers.has(target)) {
-    target.removeEventListener(event2.type, lustreGenericEventHandler);
-    return;
-  }
-  const handlersForEventTarget = registeredHandlers.get(target);
-  if (!handlersForEventTarget.has(event2.type)) {
-    target.removeEventListener(event2.type, lustreGenericEventHandler);
-    return;
-  }
-  handlersForEventTarget.get(event2.type)(event2);
-}
-function lustreServerEventHandler(event2) {
-  const el = event2.currentTarget;
-  const tag = el.getAttribute(`data-lustre-on-${event2.type}`);
-  const data = JSON.parse(el.getAttribute("data-lustre-data") || "{}");
-  const include = JSON.parse(el.getAttribute("data-lustre-include") || "[]");
-  switch (event2.type) {
-    case "input":
-    case "change":
-      include.push("target.value");
+var meta = Symbol("metadata");
+function initialiseMetadata(node, key = "") {
+  switch (node.nodeType) {
+    case Node.ELEMENT_NODE:
+    case Node.DOCUMENT_FRAGMENT_NODE:
+      node[meta] = {
+        key,
+        keyedChildren: /* @__PURE__ */ new Map(),
+        handlers: /* @__PURE__ */ new Map(),
+        throttles: /* @__PURE__ */ new Map(),
+        debouncers: /* @__PURE__ */ new Map()
+      };
+      break;
+    case Node.TEXT_NODE:
+      node[meta] = { key, debouncers: /* @__PURE__ */ new Map() };
       break;
   }
+}
+function addKeyedChild(node, child) {
+  if (child.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+    for (child = child.firstChild; child; child = child.nextSibling) {
+      addKeyedChild(node, child);
+    }
+    return;
+  }
+  const key = child[meta].key;
+  if (key) {
+    node[meta].keyedChildren.set(key, new WeakRef(child));
+  }
+}
+function handleEvent(event3) {
+  const target = event3.currentTarget;
+  const handler = target[meta].handlers.get(event3.type);
+  if (event3.type === "submit") {
+    event3.detail ??= {};
+    event3.detail.formData = [...new FormData(event3.target).entries()];
+  }
+  handler(event3);
+}
+function createServerEvent(event3, include = []) {
+  const data = {};
+  if (event3.type === "input" || event3.type === "change") {
+    include.push("target.value");
+  }
+  if (event3.type === "submit") {
+    include.push("detail.formData");
+  }
+  for (const property2 of include) {
+    const path = property2.split(".");
+    for (let i = 0, input = event3, output = data; i < path.length; i++) {
+      if (i === path.length - 1) {
+        output[path[i]] = input[path[i]];
+        break;
+      }
+      output = output[path[i]] ??= {};
+      input = input[path[i]];
+    }
+  }
+  return data;
+}
+var ATTRIBUTE_HOOKS = {
+  checked: syncedBooleanAttribute("checked"),
+  selected: syncedBooleanAttribute("selected"),
+  value: syncedAttribute("value"),
+  autofocus: {
+    added(node) {
+      node.focus?.();
+    }
+  },
+  autoplay: {
+    added(node) {
+      try {
+        node.play?.();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }
+};
+function syncedBooleanAttribute(name) {
   return {
-    tag,
-    data: include.reduce(
-      (data2, property) => {
-        const path = property.split(".");
-        for (let i = 0, o = data2, e = event2; i < path.length; i++) {
-          if (i === path.length - 1) {
-            o[path[i]] = e[path[i]];
-          } else {
-            o[path[i]] ??= {};
-            e = e[path[i]];
-            o = o[path[i]];
-          }
-        }
-        return data2;
-      },
-      { data }
-    )
+    added(node, _value) {
+      node[name] = true;
+    },
+    removed(node) {
+      node[name] = false;
+    }
   };
 }
-function getKeyedChildren(el) {
-  const keyedChildren = /* @__PURE__ */ new Map();
-  if (el) {
-    for (const child of children(el)) {
-      const key = child?.key || child?.getAttribute?.("data-lustre-key");
-      if (key)
-        keyedChildren.set(key, child);
+function syncedAttribute(name) {
+  return {
+    added(node, value) {
+      node[name] = value;
     }
-  }
-  return keyedChildren;
-}
-function getDeepChild(el, path, stylesOffset) {
-  let n;
-  let rest;
-  let child = el;
-  let isFirstInPath = true;
-  while ([n, ...rest] = path, n !== void 0) {
-    child = child.childNodes.item(isFirstInPath ? n + stylesOffset : n);
-    isFirstInPath = false;
-    path = rest;
-  }
-  return child;
-}
-function diffKeyedChild(prevChild, child, el, stack, incomingKeyedChildren, keyedChildren, seenKeys) {
-  while (prevChild && !incomingKeyedChildren.has(prevChild.getAttribute("data-lustre-key"))) {
-    const nextChild = prevChild.nextSibling;
-    el.removeChild(prevChild);
-    prevChild = nextChild;
-  }
-  if (keyedChildren.size === 0) {
-    stack.unshift({ prev: prevChild, next: child, parent: el });
-    prevChild = prevChild?.nextSibling;
-    return prevChild;
-  }
-  if (seenKeys.has(child.key)) {
-    console.warn(`Duplicate key found in Lustre vnode: ${child.key}`);
-    stack.unshift({ prev: null, next: child, parent: el });
-    return prevChild;
-  }
-  seenKeys.add(child.key);
-  const keyedChild = keyedChildren.get(child.key);
-  if (!keyedChild && !prevChild) {
-    stack.unshift({ prev: null, next: child, parent: el });
-    return prevChild;
-  }
-  if (!keyedChild && prevChild !== null) {
-    const placeholder = document.createTextNode("");
-    el.insertBefore(placeholder, prevChild);
-    stack.unshift({ prev: placeholder, next: child, parent: el });
-    return prevChild;
-  }
-  if (!keyedChild || keyedChild === prevChild) {
-    stack.unshift({ prev: prevChild, next: child, parent: el });
-    prevChild = prevChild?.nextSibling;
-    return prevChild;
-  }
-  el.insertBefore(keyedChild, prevChild);
-  stack.unshift({ prev: keyedChild, next: child, parent: el });
-  return prevChild;
-}
-function* children(element) {
-  for (const child of element.children) {
-    yield* forceChild(child);
-  }
-}
-function* forceChild(element) {
-  if (element.subtree !== void 0) {
-    yield* forceChild(element.subtree());
-  } else {
-    yield element;
-  }
+  };
 }
 
-// build/dev/javascript/prelude.mjs
-function isEqual(x, y) {
-  let values = [x, y];
-  while (values.length) {
-    let a = values.pop();
-    let b = values.pop();
-    if (a === b)
-      continue;
-    if (!isObject(a) || !isObject(b))
-      return false;
-    let unequal = !structurallyCompatibleObjects(a, b) || unequalDates(a, b) || unequalBuffers(a, b) || unequalArrays(a, b) || unequalMaps(a, b) || unequalSets(a, b) || unequalRegExps(a, b);
-    if (unequal)
-      return false;
-    const proto = Object.getPrototypeOf(a);
-    if (proto !== null && typeof proto.equals === "function") {
-      try {
-        if (a.equals(b))
-          continue;
-        else
-          return false;
-      } catch {
+// build/dev/javascript/lustre/lustre/runtime/transport.mjs
+var mount_kind = 0;
+var reconcile_kind = 1;
+var emit_kind = 2;
+var attribute_changed_kind = 0;
+var event_fired_kind = 1;
+var property_changed_kind = 2;
+var batch_kind = 3;
+
+// src/lustre/runtime/client/server_component.ffi.mjs
+var ServerComponent = class extends HTMLElement {
+  static get observedAttributes() {
+    return ["route", "method"];
+  }
+  #shadowRoot;
+  #method = "ws";
+  #route = null;
+  #transport = null;
+  #adoptStyles = true;
+  #adoptedStyleNodes = [];
+  #reconciler;
+  #remoteObservedAttributes = /* @__PURE__ */ new Set();
+  #remoteObservedProperties = /* @__PURE__ */ new Set();
+  #connected = false;
+  #changedAttributesQueue = [];
+  #observer = new MutationObserver((mutations) => {
+    const attributes = [];
+    for (const mutation of mutations) {
+      if (mutation.type !== "attributes")
+        continue;
+      const name = mutation.attributeName;
+      if (this.#connected || this.#remoteObservedAttributes.includes(name)) {
+        attributes.push([name, this.getAttribute(name)]);
       }
     }
-    let [keys, get] = getters(a);
-    for (let k of keys(a)) {
-      values.push(get(a, k), get(b, k));
+    if (attributes.length && this.#connected) {
+      this.#transport?.send({
+        kind: batch,
+        messages: attributes.map(([name, value]) => ({
+          kind: attribute_changed_kind,
+          name,
+          value
+        }))
+      });
+    } else {
+      this.#changedAttributesQueue.push(...attributes);
     }
-  }
-  return true;
-}
-function getters(object) {
-  if (object instanceof Map) {
-    return [(x) => x.keys(), (x, y) => x.get(y)];
-  } else {
-    let extra = object instanceof globalThis.Error ? ["message"] : [];
-    return [(x) => [...extra, ...Object.keys(x)], (x, y) => x[y]];
-  }
-}
-function unequalDates(a, b) {
-  return a instanceof Date && (a > b || a < b);
-}
-function unequalBuffers(a, b) {
-  return a.buffer instanceof ArrayBuffer && a.BYTES_PER_ELEMENT && !(a.byteLength === b.byteLength && a.every((n, i) => n === b[i]));
-}
-function unequalArrays(a, b) {
-  return Array.isArray(a) && a.length !== b.length;
-}
-function unequalMaps(a, b) {
-  return a instanceof Map && a.size !== b.size;
-}
-function unequalSets(a, b) {
-  return a instanceof Set && (a.size != b.size || [...a].some((e) => !b.has(e)));
-}
-function unequalRegExps(a, b) {
-  return a instanceof RegExp && (a.source !== b.source || a.flags !== b.flags);
-}
-function isObject(a) {
-  return typeof a === "object" && a !== null;
-}
-function structurallyCompatibleObjects(a, b) {
-  if (typeof a !== "object" && typeof b !== "object" && (!a || !b))
-    return false;
-  let nonstructural = [Promise, WeakSet, WeakMap, Function];
-  if (nonstructural.some((c) => a instanceof c))
-    return false;
-  return a.constructor === b.constructor;
-}
-
-// src/server-component.mjs
-var LustreServerComponent = class extends HTMLElement {
-  static get observedAttributes() {
-    return ["route"];
-  }
+  });
   constructor() {
     super();
-    this.attachShadow({ mode: "open" });
-    this.#observer = new MutationObserver((mutations) => {
-      const changed = [];
-      for (const mutation of mutations) {
-        if (mutation.type === "attributes") {
-          const { attributeName } = mutation;
-          const next = this.getAttribute(attributeName);
-          this[attributeName] = next;
-        }
-      }
-      if (changed.length) {
-        this.#socket?.send(JSON.stringify([attrs, changed]));
-      }
+    this.internals = this.attachInternals();
+    this.#observer.observe(this, {
+      attributes: true
     });
   }
   connectedCallback() {
-    this.#observer.observe(this, { attributes: true, attributeOldValue: true });
-    this.#adoptStyleSheets().finally(() => this.#connected = true);
+    this.#method = this.getAttribute("method") || "ws";
+    if (this.hasAttribute("route")) {
+      this.#route = new URL(this.getAttribute("route"), window.location.href);
+      this.#connect();
+    }
   }
   attributeChangedCallback(name, prev, next) {
     switch (name) {
-      case "route": {
-        if (!next) {
-          this.#socket?.close();
-          this.#socket = null;
-        } else if (prev !== next) {
-          const id = this.getAttribute("id");
-          const route = next + (id ? `?id=${id}` : "");
-          const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-          this.#connect(`${protocol}://${window.location.host}${route}`);
+      case prev !== next: {
+        this.#route = new URL(next, window.location.href);
+        this.#connect();
+        return;
+      }
+      case "method": {
+        const normalised = next.toLowerCase();
+        if (normalised == this.#method)
+          return;
+        if (["ws", "sse", "polling"].includes(normalised)) {
+          this.#method = normalised;
+          if (this.#method == "ws") {
+            if (this.#route.protocol == "https:")
+              this.#route.protocol = "wss:";
+            if (this.#route.protocol == "http:")
+              this.#route.protocol = "ws:";
+          }
+          this.#connect();
         }
+        return;
       }
     }
   }
-  messageReceivedCallback({ data }) {
-    const [kind, ...payload] = JSON.parse(data);
-    switch (kind) {
-      case diff:
-        return this.#diff(payload);
-      case emit:
-        return this.#emit(payload);
-      case init:
-        return this.#init(payload);
+  async messageReceivedCallback(data) {
+    switch (data.kind) {
+      case mount_kind: {
+        this.#shadowRoot = this.attachShadow({
+          mode: data.open_shadow_root ? "open" : "closed"
+        });
+        this.#reconciler = new Reconciler(
+          this.#shadowRoot,
+          (event3, path, name) => {
+            this.#transport?.send({
+              kind: event_fired_kind,
+              path,
+              name,
+              event: event3
+            });
+          },
+          {
+            useServerEvents: true
+          }
+        );
+        this.#remoteObservedAttributes = new Set(data.observed_attributes);
+        const filteredQueuedAttributes = this.#changedAttributesQueue.filter(
+          ([name]) => this.#remoteObservedAttributes.has(name)
+        );
+        if (filteredQueuedAttributes.length) {
+          this.#transport.send({
+            kind: batch_kind,
+            messages: filteredQueuedAttributes.map(([name, value]) => ({
+              kind: attribute_changed_kind,
+              name,
+              value
+            }))
+          });
+        }
+        this.#changedAttributesQueue = [];
+        this.#remoteObservedProperties = new Set(data.observed_properties);
+        for (const name of this.#remoteObservedProperties) {
+          Object.defineProperty(this, name, {
+            get() {
+              return this[`_${name}`];
+            },
+            set(value) {
+              this[`_${name}`] = value;
+              this.#transport?.send({
+                kind: property_changed_kind,
+                name,
+                value
+              });
+            }
+          });
+        }
+        if (data.will_adopt_styles) {
+          await this.#adoptStyleSheets();
+        }
+        this.#reconciler.mount(data.vdom);
+        this.dispatchEvent(new CustomEvent("lustre:mount"));
+        break;
+      }
+      case reconcile_kind: {
+        this.#reconciler.push(data.patch, this.#adoptedStyleNodes.length);
+        break;
+      }
+      case emit_kind: {
+        this.dispatchEvent(new CustomEvent(data.name, { detail: data.data }));
+        break;
+      }
     }
   }
-  disconnectedCallback() {
-    clearTimeout(this.#reconnectTimeout);
-    this.#socket?.removeEventListener("close", this.#attemptReconnect);
-    this.#socket?.close();
-  }
-  /** @type {MutationObserver} */
-  #observer;
-  /** @type {WebSocket | null} */
-  #socket;
-  /** @type {number | null} */
-  #reconnectTimeout = null;
-  /** @type {boolean} */
-  #connected = false;
-  /** @type {Element[]} */
-  #adoptedStyleElements = [];
-  #init([attrs2, vdom]) {
-    const initial = [];
-    for (const attr of attrs2) {
-      if (attr in this) {
-        initial.push([attr, this[attr]]);
-      } else if (this.hasAttribute(attr)) {
-        initial.push([attr, this.getAttribute(attr)]);
-      }
-      Object.defineProperty(this, attr, {
-        get() {
-          return this[`__mirrored__${attr}`];
-        },
-        set(value) {
-          const prev2 = this[`__mirrored__${attr}`];
-          if (isEqual(prev2, value))
-            return;
-          this[`__mirrored__${attr}`] = value;
-          this.#socket?.send(
-            JSON.stringify([attrs, [[attr, value]]])
-          );
+  //
+  #connect() {
+    if (!this.#route || !this.#method)
+      return;
+    if (this.#transport)
+      this.#transport.close();
+    const onConnect = () => {
+      this.#connected = true;
+      this.dispatchEvent(new CustomEvent("lustre:connect"), {
+        detail: {
+          route: this.#route,
+          method: this.#method
         }
       });
-    }
-    this.#observer.observe(this, {
-      attributeFilter: attrs2,
-      attributeOldValue: true,
-      attributes: true,
-      characterData: false,
-      characterDataOldValue: false,
-      childList: false,
-      subtree: false
-    });
-    const prev = this.shadowRoot.childNodes[this.#adoptedStyleElements.length] ?? this.shadowRoot.appendChild(document.createTextNode(""));
-    const dispatch = (handler) => (event2) => {
-      const data = JSON.parse(this.getAttribute("data-lustre-data") || "{}");
-      const msg = handler(event2);
-      msg.data = deep_merge(data, msg.data);
-      this.#socket?.send(JSON.stringify([event, msg.tag, msg.data]));
     };
-    morph(prev, vdom, dispatch);
-    if (initial.length) {
-      this.#socket?.send(JSON.stringify([attrs, initial]));
+    const onMessage = (data) => {
+      this.messageReceivedCallback(data);
+    };
+    const onClose = () => {
+      this.#connected = false;
+      this.dispatchEvent(new CustomEvent("lustre:close"), {
+        detail: {
+          route: this.#route,
+          method: this.#method
+        }
+      });
+    };
+    const options = { onConnect, onMessage, onClose };
+    switch (this.#method) {
+      case "ws":
+        this.#transport = new WebsocketTransport(this.#route, options);
+        break;
+      case "sse":
+        this.#transport = new SseTransport(this.#route, options);
+        break;
+      case "polling":
+        this.#transport = new PollingTransport(this.#route, options);
+        break;
     }
   }
-  #connect(socketUrl = this.#socket.url) {
-    this.#socket?.close();
-    this.#socket = new WebSocket(
-      socketUrl
-    );
-    this.#socket.addEventListener(
-      "message",
-      (message) => this.messageReceivedCallback(message)
-    );
-    this.#socket.addEventListener("open", () => {
-      this.dispatchEvent(new CustomEvent("connect"));
-    });
-    this.#socket.addEventListener("close", () => {
-      this.dispatchEvent(new CustomEvent("disconnect"));
-      this.#attemptReconnect();
-    });
-  }
-  #attemptReconnect = () => {
-    this.#reconnectTimeout = setTimeout(() => {
-      if (this.#socket.readyState === WebSocket.CLOSED) {
-        this.#connect();
-      }
-    }, 1e3);
-  };
-  #diff([diff2]) {
-    const prev = this.shadowRoot.childNodes[this.#adoptedStyleElements.length - 1] ?? this.shadowRoot.appendChild(document.createTextNode(""));
-    const dispatch = (handler) => (event2) => {
-      const msg = handler(event2);
-      this.#socket?.send(JSON.stringify([event, msg.tag, msg.data]));
-    };
-    patch(prev, diff2, dispatch, this.#adoptedStyleElements.length);
-  }
-  #emit([event2, data]) {
-    this.dispatchEvent(new CustomEvent(event2, { detail: data }));
-  }
+  //
   async #adoptStyleSheets() {
-    const pendingParentStylesheets = [];
-    for (const link of document.querySelectorAll("link[rel=stylesheet]")) {
-      if (link.sheet)
-        continue;
-      pendingParentStylesheets.push(
-        new Promise((resolve, reject) => {
-          link.addEventListener("load", resolve);
-          link.addEventListener("error", reject);
-        })
-      );
+    while (this.#adoptedStyleNodes.length) {
+      this.#adoptedStyleNodes.pop().remove();
+      this.#shadowRoot.firstChild.remove();
     }
-    await Promise.allSettled(pendingParentStylesheets);
-    while (this.#adoptedStyleElements.length) {
-      this.#adoptedStyleElements.shift().remove();
-      this.shadowRoot.firstChild.remove();
-    }
-    this.shadowRoot.adoptedStyleSheets = this.getRootNode().adoptedStyleSheets;
-    const pending = [];
-    for (const sheet of document.styleSheets) {
+    this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
+  }
+};
+var WebsocketTransport = class {
+  #url;
+  #socket;
+  #waitingForResponse = false;
+  #queue = [];
+  #onConnect;
+  #onMessage;
+  #onClose;
+  constructor(url, { onConnect, onMessage, onClose }) {
+    this.#url = url;
+    this.#socket = new WebSocket(this.#url);
+    this.#onConnect = onConnect;
+    this.#onMessage = onMessage;
+    this.#onClose = onClose;
+    this.#socket.onopen = () => {
+      this.#onConnect();
+    };
+    this.#socket.onmessage = ({ data }) => {
       try {
-        this.shadowRoot.adoptedStyleSheets.push(sheet);
-      } catch {
-        try {
-          const adoptedSheet = new CSSStyleSheet();
-          for (const rule of sheet.cssRules) {
-            adoptedSheet.insertRule(rule.cssText, adoptedSheet.cssRules.length);
-          }
-          this.shadowRoot.adoptedStyleSheets.push(adoptedSheet);
-        } catch {
-          const node = sheet.ownerNode.cloneNode();
-          this.shadowRoot.prepend(node);
-          this.#adoptedStyleElements.push(node);
-          pending.push(
-            new Promise((resolve, reject) => {
-              node.onload = resolve;
-              node.onerror = reject;
+        this.#onMessage(JSON.parse(data));
+      } finally {
+        if (this.#queue.length) {
+          this.#socket.send(
+            JSON.stringify({
+              kind: batch_kind,
+              messages: this.#queue
             })
           );
+        } else {
+          this.#waitingForResponse = false;
         }
+        this.#queue = [];
       }
+    };
+    this.#socket.onclose = () => {
+      this.#onClose();
+    };
+  }
+  send(data) {
+    if (this.#waitingForResponse) {
+      this.#queue.push(data);
+      return;
+    } else {
+      this.#socket.send(JSON.stringify(data));
+      this.#waitingForResponse = true;
     }
-    return Promise.allSettled(pending);
+  }
+  close() {
+    this.#socket.close();
   }
 };
-window.customElements.define("lustre-server-component", LustreServerComponent);
-var deep_merge = (target, source) => {
-  for (const key in source) {
-    if (source[key] instanceof Object)
-      Object.assign(source[key], deep_merge(target[key], source[key]));
+var SseTransport = class {
+  #url;
+  #eventSource;
+  #onConnect;
+  #onMessage;
+  #onClose;
+  constructor(url, { onConnect, onMessage, onClose }) {
+    this.#url = url;
+    this.#eventSource = new EventSource(this.#url);
+    this.#onConnect = onConnect;
+    this.#onMessage = onMessage;
+    this.#onClose = onClose;
+    this.#eventSource.onopen = () => {
+      this.#onConnect();
+    };
+    this.#eventSource.onmessage = ({ data }) => {
+      try {
+        this.#onMessage(JSON.parse(data));
+      } catch {
+      }
+    };
   }
-  Object.assign(target || {}, source);
-  return target;
+  send(data) {
+  }
+  close() {
+    this.#eventSource.close();
+    this.#onClose();
+  }
 };
+var PollingTransport = class {
+  #url;
+  #interval;
+  #timer;
+  #onConnect;
+  #onMessage;
+  #onClose;
+  constructor(url, { onConnect, onMessage, onClose, ...opts }) {
+    this.#url = url;
+    this.#onConnect = onConnect;
+    this.#onMessage = onMessage;
+    this.#onClose = onClose;
+    this.#interval = opts.interval ?? 5e3;
+    this.#fetch().finally(() => {
+      this.#onConnect();
+      this.#timer = window.setInterval(() => this.#fetch(), this.#interval);
+    });
+  }
+  async send(data) {
+  }
+  close() {
+    clearInterval(this.#timer);
+    this.#onClose();
+  }
+  #fetch() {
+    return fetch(this.#url).then((response) => response.json()).then(this.#onMessage).catch(console.error);
+  }
+};
+window.customElements.define("lustre-server-component", ServerComponent);
 export {
-  LustreServerComponent
+  ServerComponent
 };

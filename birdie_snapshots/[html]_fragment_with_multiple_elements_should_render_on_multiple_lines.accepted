@@ -1,8 +1,6 @@
 ---
-version: 1.2.4
+version: 1.2.6
 title: [html] Fragment with multiple elements should render on multiple lines
 ---
-<lustre-fragment style="display:contents;">
-  <div></div>
-  <div></div>
-</lustre-fragment>
+<div></div>
+<div></div>

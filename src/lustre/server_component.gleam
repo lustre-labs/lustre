@@ -1,11 +1,12 @@
-//// > **Note**: server components are currently only supported on the **erlang**
-//// > target. If it's important to you that they work on the javascript target,
+//// > **Note**: server components are currently only supported on the **Erlang**
+//// > target. If it's important to you that they work on the JavaScript target,
 //// > [open an issue](https://github.com/lustre-labs/lustre/issues/new) and tell
 //// > us why it's important to you!
 ////
-//// Server components are an advanced feature that allows you to run entire
-//// Lustre applications on the server. DOM changes are broadcasted to a small
-//// client runtime and browser events are sent back to the server.
+//// Server components are an advanced feature that allows you to run components
+//// or full Lustre applications on the server. Updates are broadcast to a small
+//// (<10kb!) client runtime that patches the DOM and events are sent back to the
+//// server component in real-time.
 ////
 //// ```text
 //// -- SERVER -----------------------------------------------------------------
@@ -73,44 +74,76 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/bool
-import gleam/dynamic.{type DecodeError, type Dynamic, DecodeError, dynamic}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/process.{type Selector, type Subject}
-import gleam/int
-import gleam/io
 import gleam/json.{type Json}
-import gleam/result
-import gleam/string
-import lustre.{type Patch, type ServerComponent}
+import lustre.{type Error, type Runtime, type RuntimeMessage}
 import lustre/attribute.{type Attribute, attribute}
 import lustre/effect.{type Effect}
-import lustre/element.{type Element, element}
-import lustre/internals/constants
-import lustre/internals/patch
-import lustre/internals/runtime.{type Action, Attrs, Event}
+import lustre/element.{type Element}
+import lustre/element/html
+import lustre/runtime/server/runtime
+import lustre/runtime/transport
+import lustre/vdom/vattr.{Event}
+
+// TYPES -----------------------------------------------------------------------
+
+/// A type representing the messages sent to the server component _client_
+/// runtime. This instruct the client runtime to do things like update the DOM
+/// or emit an event from the element.
+///
+pub type ClientMessage(msg) =
+  transport.ClientMessage(msg)
+
+/// The type of transport the client runtime should use to communicate with your
+/// server component. This is set by the [`method`](#method) attribute on the
+/// server component element.
+///
+pub type TransportMethod {
+  WebSocket
+  ServerSentEvents
+  Polling
+}
 
 // ELEMENTS --------------------------------------------------------------------
 
-/// Render the Lustre Server Component client runtime. The content of your server
-/// component will be rendered inside this element.
+/// Render the server component custom element. This element acts as the thin
+/// client runtime for a server component running remotely. There are a handful
+/// of attributes you should provide to configure the client runtime:
 ///
-/// **Note**: you must include the `lustre-server-component.mjs` script found in
-/// the `priv/` directory of the Lustre package in your project's HTML or using
-/// the [`script`](#script) function.
+/// - [`route`](#route) is the URL your server component should connect to. This
+///   **must** be provided before the client runtime will do anything. The route
+///   can be a relative URL, in which case it will be resolved against the current
+///   page URL.
 ///
-pub fn component(attrs: List(Attribute(msg))) -> Element(msg) {
-  element("lustre-server-component", attrs, [])
+/// - [`method`](#method) is the transport method the client runtime should use.
+///   This defaults to `WebSocket` enabling duplex communication between the client
+///   and server runtime. Other options include `ServerSentEvents` and `Polling`
+///   which are unidirectional transports.
+///
+/// **Note**: the server component runtime bundle must be included and sent to
+/// the client for this to work correctly. You can do this by including the
+/// JavaScript bundle found in Lustre's `priv/static` directory or by inlining
+/// the script source directly with the [`script`](#script) element below.
+///
+pub fn element(
+  attributes: List(Attribute(msg)),
+  children: List(Element(msg)),
+) -> Element(msg) {
+  element.element("lustre-server-component", attributes, children)
 }
 
-/// Inline the Lustre Server Component client runtime as a script tag.
+/// Inline the server component client runtime as a `<script>` tag. Where possible
+/// you should prefer serving the pre-built client runtime from Lustre's `priv/static`
+/// directory, but this inline script can be useful for development or scenarios
+/// where you don't control the HTML document.
 ///
 pub fn script() -> Element(msg) {
-  element("script", [attribute("type", "module")], [
+  html.script(
+    [attribute.type_("module")],
     // <<INJECT RUNTIME>>
-    element.text(
-      "globalThis.customElements&&!globalThis.customElements.get(\"lustre-fragment\")&&globalThis.customElements.define(\"lustre-fragment\",class extends HTMLElement{constructor(){super()}});function k(t,e,r){let s,i=[{prev:t,next:e,parent:t.parentNode}];for(;i.length;){let{prev:o,next:n,parent:l}=i.pop();for(;n.subtree!==void 0;)n=n.subtree();if(n.content!==void 0)if(o)if(o.nodeType===Node.TEXT_NODE)o.textContent!==n.content&&(o.textContent=n.content),s??=o;else{let a=document.createTextNode(n.content);l.replaceChild(a,o),s??=a}else{let a=document.createTextNode(n.content);l.appendChild(a),s??=a}else if(n.tag!==void 0){let a=P({prev:o,next:n,dispatch:r,stack:i});o?o!==a&&l.replaceChild(a,o):l.appendChild(a),s??=a}}return s}function R(t,e,r,s=0){let i=t.parentNode;for(let o of e[0]){let n=o[0].split(\"-\"),l=o[1],a=E(i,n,s),c;if(a!==null&&a!==i)c=k(a,l,r);else{let p=E(i,n.slice(0,-1),s),g=document.createTextNode(\"\");p.appendChild(g),c=k(g,l,r)}n===\"0\"&&(t=c)}for(let o of e[1]){let n=o[0].split(\"-\");E(i,n,s).remove()}for(let o of e[2]){let n=o[0].split(\"-\"),l=o[1],a=E(i,n,s),c=x.get(a),p=[];for(let g of l[0]){let h=g[0],y=g[1];if(h.startsWith(\"data-lustre-on-\")){let m=h.slice(15),S=r(_);c.has(m)||a.addEventListener(m,w),c.set(m,S),a.setAttribute(h,y)}else(h.startsWith(\"delegate:data-\")||h.startsWith(\"delegate:aria-\"))&&a instanceof HTMLSlotElement?p.push([h.slice(10),y]):(a.setAttribute(h,y),(h===\"value\"||h===\"selected\")&&(a[h]=y));if(p.length>0)for(let m of a.assignedElements())for(let[S,A]of p)m[S]=A}for(let g of l[1])if(g.startsWith(\"data-lustre-on-\")){let h=g.slice(15);a.removeEventListener(h,w),c.delete(h)}else a.removeAttribute(g)}return t}function P({prev:t,next:e,dispatch:r,stack:s}){let i=e.namespace||\"http://www.w3.org/1999/xhtml\",o=t&&t.nodeType===Node.ELEMENT_NODE&&t.localName===e.tag&&t.namespaceURI===(e.namespace||\"http://www.w3.org/1999/xhtml\"),n=o?t:i?document.createElementNS(i,e.tag):document.createElement(e.tag),l;if(x.has(n))l=x.get(n);else{let u=new Map;x.set(n,u),l=u}let a=o?new Set(l.keys()):null,c=o?new Set(Array.from(t.attributes,u=>u.name)):null,p=null,g=null,h=null;if(o&&e.tag===\"textarea\"){let u=e.children[Symbol.iterator]().next().value?.content;u!==void 0&&(n.value=u)}let y=[];for(let u of e.attrs){let f=u[0],d=u[1];if(u.as_property)n[f]!==d&&(n[f]=d),o&&c.delete(f);else if(f.startsWith(\"on\")){let b=f.slice(2),T=r(d,b===\"input\");l.has(b)||n.addEventListener(b,w),l.set(b,T),o&&a.delete(b)}else if(f.startsWith(\"data-lustre-on-\")){let b=f.slice(15),T=r(_);l.has(b)||n.addEventListener(b,w),l.set(b,T),n.setAttribute(f,d),o&&(a.delete(b),c.delete(f))}else f.startsWith(\"delegate:data-\")||f.startsWith(\"delegate:aria-\")?(n.setAttribute(f,d),y.push([f.slice(10),d])):f===\"class\"?p=p===null?d:p+\" \"+d:f===\"style\"?g=g===null?d:g+d:f===\"dangerous-unescaped-html\"?h=d:(n.getAttribute(f)!==d&&n.setAttribute(f,d),(f===\"value\"||f===\"selected\")&&(n[f]=d),o&&c.delete(f))}if(p!==null&&(n.setAttribute(\"class\",p),o&&c.delete(\"class\")),g!==null&&(n.setAttribute(\"style\",g),o&&c.delete(\"style\")),o){for(let u of c)n.removeAttribute(u);for(let u of a)l.delete(u),n.removeEventListener(u,w)}if(e.tag===\"slot\"&&window.queueMicrotask(()=>{for(let u of n.assignedElements())for(let[f,d]of y)u.hasAttribute(f)||u.setAttribute(f,d)}),e.key!==void 0&&e.key!==\"\")n.setAttribute(\"data-lustre-key\",e.key);else if(h!==null)return n.innerHTML=h,n;let m=n.firstChild,S=null,A=null,C=null,N=v(e).next().value;if(o&&N!==void 0&&N.key!==void 0&&N.key!==\"\"){S=new Set,A=M(t),C=M(e);for(let u of v(e))m=$(m,u,n,s,C,A,S)}else for(let u of v(e))s.unshift({prev:m,next:u,parent:n}),m=m?.nextSibling;for(;m;){let u=m.nextSibling;n.removeChild(m),m=u}return n}var x=new WeakMap;function w(t){let e=t.currentTarget;if(!x.has(e)){e.removeEventListener(t.type,w);return}let r=x.get(e);if(!r.has(t.type)){e.removeEventListener(t.type,w);return}r.get(t.type)(t)}function _(t){let e=t.currentTarget,r=e.getAttribute(`data-lustre-on-${t.type}`),s=JSON.parse(e.getAttribute(\"data-lustre-data\")||\"{}\"),i=JSON.parse(e.getAttribute(\"data-lustre-include\")||\"[]\");switch(t.type){case\"input\":case\"change\":i.push(\"target.value\");break}return{tag:r,data:i.reduce((o,n)=>{let l=n.split(\".\");for(let a=0,c=o,p=t;a<l.length;a++)a===l.length-1?c[l[a]]=p[l[a]]:(c[l[a]]??={},p=p[l[a]],c=c[l[a]]);return o},{data:s})}}function M(t){let e=new Map;if(t)for(let r of v(t)){let s=r?.key||r?.getAttribute?.(\"data-lustre-key\");s&&e.set(s,r)}return e}function E(t,e,r){let s,i,o=t,n=!0;for(;[s,...i]=e,s!==void 0;)o=o.childNodes.item(n?s+r:s),n=!1,e=i;return o}function $(t,e,r,s,i,o,n){for(;t&&!i.has(t.getAttribute(\"data-lustre-key\"));){let a=t.nextSibling;r.removeChild(t),t=a}if(o.size===0)return s.unshift({prev:t,next:e,parent:r}),t=t?.nextSibling,t;if(n.has(e.key))return console.warn(`Duplicate key found in Lustre vnode: ${e.key}`),s.unshift({prev:null,next:e,parent:r}),t;n.add(e.key);let l=o.get(e.key);if(!l&&!t)return s.unshift({prev:null,next:e,parent:r}),t;if(!l&&t!==null){let a=document.createTextNode(\"\");return r.insertBefore(a,t),s.unshift({prev:a,next:e,parent:r}),t}return!l||l===t?(s.unshift({prev:t,next:e,parent:r}),t=t?.nextSibling,t):(r.insertBefore(l,t),s.unshift({prev:l,next:e,parent:r}),t)}function*v(t){for(let e of t.children)yield*F(e)}function*F(t){t.subtree!==void 0?yield*F(t.subtree()):yield t}function q(t,e){let r=[t,e];for(;r.length;){let s=r.pop(),i=r.pop();if(s===i)continue;if(!U(s)||!U(i)||!G(s,i)||D(s,i)||I(s,i)||H(s,i)||V(s,i)||z(s,i)||K(s,i))return!1;let n=Object.getPrototypeOf(s);if(n!==null&&typeof n.equals==\"function\")try{if(s.equals(i))continue;return!1}catch{}let[l,a]=j(s);for(let c of l(s))r.push(a(s,c),a(i,c))}return!0}function j(t){if(t instanceof Map)return[e=>e.keys(),(e,r)=>e.get(r)];{let e=t instanceof globalThis.Error?[\"message\"]:[];return[r=>[...e,...Object.keys(r)],(r,s)=>r[s]]}}function D(t,e){return t instanceof Date&&(t>e||t<e)}function I(t,e){return t.buffer instanceof ArrayBuffer&&t.BYTES_PER_ELEMENT&&!(t.byteLength===e.byteLength&&t.every((r,s)=>r===e[s]))}function H(t,e){return Array.isArray(t)&&t.length!==e.length}function V(t,e){return t instanceof Map&&t.size!==e.size}function z(t,e){return t instanceof Set&&(t.size!=e.size||[...t].some(r=>!e.has(r)))}function K(t,e){return t instanceof RegExp&&(t.source!==e.source||t.flags!==e.flags)}function U(t){return typeof t==\"object\"&&t!==null}function G(t,e){return typeof t!=\"object\"&&typeof e!=\"object\"&&(!t||!e)||[Promise,WeakSet,WeakMap,Function].some(s=>t instanceof s)?!1:t.constructor===e.constructor}var O=class extends HTMLElement{static get observedAttributes(){return[\"route\"]}constructor(){super(),this.attachShadow({mode:\"open\"}),this.#n=new MutationObserver(e=>{let r=[];for(let s of e)if(s.type===\"attributes\"){let{attributeName:i}=s,o=this.getAttribute(i);this[i]=o}r.length&&this.#t?.send(JSON.stringify([5,r]))})}connectedCallback(){this.#n.observe(this,{attributes:!0,attributeOldValue:!0}),this.#u().finally(()=>this.#i=!0)}attributeChangedCallback(e,r,s){switch(e){case\"route\":if(!s)this.#t?.close(),this.#t=null;else if(r!==s){let i=this.getAttribute(\"id\"),o=s+(i?`?id=${i}`:\"\"),n=window.location.protocol===\"https:\"?\"wss\":\"ws\";this.#r(`${n}://${window.location.host}${o}`)}}}messageReceivedCallback({data:e}){let[r,...s]=JSON.parse(e);switch(r){case 0:return this.#l(s);case 1:return this.#c(s);case 2:return this.#a(s)}}disconnectedCallback(){clearTimeout(this.#s),this.#t?.removeEventListener(\"close\",this.#o),this.#t?.close()}#n;#t;#s=null;#i=!1;#e=[];#a([e,r]){let s=[];for(let n of e)n in this?s.push([n,this[n]]):this.hasAttribute(n)&&s.push([n,this.getAttribute(n)]),Object.defineProperty(this,n,{get(){return this[`__mirrored__${n}`]},set(l){let a=this[`__mirrored__${n}`];q(a,l)||(this[`__mirrored__${n}`]=l,this.#t?.send(JSON.stringify([5,[[n,l]]])))}});this.#n.observe(this,{attributeFilter:e,attributeOldValue:!0,attributes:!0,characterData:!1,characterDataOldValue:!1,childList:!1,subtree:!1});let i=this.shadowRoot.childNodes[this.#e.length]??this.shadowRoot.appendChild(document.createTextNode(\"\"));k(i,r,n=>l=>{let a=JSON.parse(this.getAttribute(\"data-lustre-data\")||\"{}\"),c=n(l);c.data=W(a,c.data),this.#t?.send(JSON.stringify([4,c.tag,c.data]))}),s.length&&this.#t?.send(JSON.stringify([5,s]))}#r(e=this.#t.url){this.#t?.close(),this.#t=new WebSocket(e),this.#t.addEventListener(\"message\",r=>this.messageReceivedCallback(r)),this.#t.addEventListener(\"open\",()=>{this.dispatchEvent(new CustomEvent(\"connect\"))}),this.#t.addEventListener(\"close\",()=>{this.dispatchEvent(new CustomEvent(\"disconnect\")),this.#o()})}#o=()=>{this.#s=setTimeout(()=>{this.#t.readyState===WebSocket.CLOSED&&this.#r()},1e3)};#l([e]){let r=this.shadowRoot.childNodes[this.#e.length-1]??this.shadowRoot.appendChild(document.createTextNode(\"\"));R(r,e,i=>o=>{let n=i(o);this.#t?.send(JSON.stringify([4,n.tag,n.data]))},this.#e.length)}#c([e,r]){this.dispatchEvent(new CustomEvent(e,{detail:r}))}async#u(){let e=[];for(let s of document.querySelectorAll(\"link[rel=stylesheet]\"))s.sheet||e.push(new Promise((i,o)=>{s.addEventListener(\"load\",i),s.addEventListener(\"error\",o)}));for(await Promise.allSettled(e);this.#e.length;)this.#e.shift().remove(),this.shadowRoot.firstChild.remove();this.shadowRoot.adoptedStyleSheets=this.getRootNode().adoptedStyleSheets;let r=[];for(let s of document.styleSheets)try{this.shadowRoot.adoptedStyleSheets.push(s)}catch{try{let i=new CSSStyleSheet;for(let o of s.cssRules)i.insertRule(o.cssText,i.cssRules.length);this.shadowRoot.adoptedStyleSheets.push(i)}catch{let i=s.ownerNode.cloneNode();this.shadowRoot.prepend(i),this.#e.push(i),r.push(new Promise((o,n)=>{i.onload=o,i.onerror=n}))}}return Promise.allSettled(r)}};window.customElements.define(\"lustre-server-component\",O);var W=(t,e)=>{for(let r in e)e[r]instanceof Object&&Object.assign(e[r],W(t[r],e[r]));return Object.assign(t||{},e),t};export{O as LustreServerComponent};",
-    ),
-  ])
+    "var Nt=5,ee=Math.pow(2,Nt),pn=ee-1,dn=ee/2,hn=ee/4;var Le=[\" \",\"	\",`\\n`,\"\\v\",\"\\f\",\"\\r\",\"\\x85\",\"\\u2028\",\"\\u2029\"].join(\"\"),jn=new RegExp(`^[${Le}]*`),Ln=new RegExp(`[${Le}]*$`);var De=0;var Pe=1;var Fe=2;var Re=1;var Ge=2;var We=0;var Je=1;var He=2;var Ve=3;var Ye=`\\n`,Ke=\"	\";var nt=new WeakMap;async function it(s){let e=[];for(let r of document.querySelectorAll(\"link[rel=stylesheet], style\"))r.sheet||e.push(new Promise((n,i)=>{r.addEventListener(\"load\",n),r.addEventListener(\"error\",i)}));if(await Promise.allSettled(e),!s.host.isConnected)return[];s.adoptedStyleSheets=s.host.getRootNode().adoptedStyleSheets;let t=[];for(let r of document.styleSheets)try{s.adoptedStyleSheets.push(r)}catch{try{let n=nt.get(r);if(!n){n=new CSSStyleSheet;for(let i of r.cssRules)n.insertRule(i.cssText,n.cssRules.length);nt.set(r,n)}s.adoptedStyleSheets.push(n)}catch{let n=r.ownerNode.cloneNode();s.prepend(n),t.push(n)}}return t}var st=0;var ut=1;var ot=2;var oe=3;var lt=4;var le=5;var ae=6;var ce=7;var pr=globalThis.HTMLElement&&!!HTMLElement.prototype.moveBefore,q=class{#n=null;#e=()=>{};#t=!1;constructor(e,t,{useServerEvents:r=!1}={}){this.#n=e,this.#e=t,this.#t=r}mount(e){this.#n.appendChild(this.#p(e))}#r=[];push(e,t=0){t&&(x(e.changes,r=>{switch(r.kind){case ae:case oe:r.before=(r.before|0)+t;break;case ce:case le:r.from=(r.from|0)+t;break}}),x(e.children,r=>{r.index=(r.index|0)+t})),this.#r.push({node:this.#n,patch:e}),this.#s()}#s(){for(;this.#r.length;){let{node:e,patch:t}=this.#r.pop();x(t.changes,r=>{switch(r.kind){case ae:this.#i(e,r.children,r.before);break;case oe:this.#u(e,r.key,r.before,r.count);break;case lt:this.#c(e,r.key,r.count);break;case ce:this.#l(e,r.from,r.count);break;case le:this.#f(e,r.from,r.count,r.with);break;case st:this.#d(e,r.content);break;case ut:this.#a(e,r.inner_html);break;case ot:this.#h(e,r.added,r.removed);break}}),t.removed&&this.#l(e,e.childNodes.length-t.removed,t.removed),x(t.children,r=>{this.#r.push({node:e.childNodes[r.index|0],patch:r})})}}#i(e,t,r){let n=document.createDocumentFragment();x(t,i=>{let d=this.#p(i);fe(e,d),n.appendChild(d)}),e.insertBefore(n,e.childNodes[r|0]??null)}#u(e,t,r,n){let i=e[u].keyedChildren.get(t).deref(),d=e.childNodes[r]??null;for(let o=0;o<n&&i!==null;++o){let _=i.nextSibling;pr?e.moveBefore(i,d):e.insertBefore(i,d),i=_}}#c(e,t,r){this.#o(e,e[u].keyedChildren.get(t).deref(),r)}#l(e,t,r){this.#o(e,e.childNodes[t|0],r)}#o(e,t,r){for(;r-- >0&&t!==null;){let n=t.nextSibling,i=t[u].key;i&&e[u].keyedChildren.delete(i);for(let[d,{timeout:o}]of t[u].debouncers)window.clearTimeout(o);e.removeChild(t),t=n}}#f(e,t,r,n){this.#l(e,t,r);let i=this.#p(n);fe(e,i),e.insertBefore(i,e.childNodes[t|0]??null)}#d(e,t){e.data=t??\"\"}#a(e,t){e.innerHTML=t??\"\"}#h(e,t,r){x(r,n=>{let i=n.name;e[u].handlers.has(i)?(e.removeEventListener(i,at),e[u].handlers.delete(i),e[u].throttles.has(i)&&e[u].throttles.delete(i),e[u].debouncers.has(i)&&(window.clearTimeout(e[u].debouncers.get(i).timeout),e[u].debouncers.delete(i))):(e.removeAttribute(i),ct[i]?.removed?.(e,i))}),x(t,n=>{this.#_(e,n)})}#p(e){switch(e.kind){case Je:{let t=e.namespace?document.createElementNS(e.namespace,e.tag):document.createElement(e.tag);return I(t,e.key),x(e.attributes,r=>{this.#_(t,r)}),this.#i(t,e.children,0),t}case He:{let t=document.createTextNode(e.content??\"\");return I(t,e.key),t}case We:{let t=document.createDocumentFragment(),r=document.createTextNode(\"\");return I(r,e.key),t.appendChild(r),x(e.children,n=>{t.appendChild(this.#p(n))}),t}case Ve:{let t=e.namespace?document.createElementNS(e.namespace,e.tag):document.createElement(e.tag);return I(t,e.key),x(e.attributes,r=>{this.#_(t,r)}),this.#a(t,e.inner_html),t}}}#_(e,t){switch(t.kind){case De:{let r=t.name,n=t.value??\"\";n!==e.getAttribute(r)&&e.setAttribute(r,n),ct[r]?.added?.(e,n);break}case Pe:e[t.name]=t.value;break;case Fe:{e[u].handlers.has(t.name)||e.addEventListener(t.name,at,{passive:!t.prevent_default});let r=t.prevent_default,n=t.stop_propagation,i=t.immediate,d=Array.isArray(t.include)?t.include:[];if(t.limit?.kind===Ge){let o=e[u].throttles.get(t.name)??{last:0,delay:t.limit.delay};e[u].throttles.set(t.name,o)}if(t.limit?.kind===Re){let o=e[u].debouncers.get(t.name)??{timeout:null,delay:t.limit.delay};e[u].debouncers.set(t.name,o)}e[u].handlers.set(t.name,o=>{r&&o.preventDefault(),n&&o.stopPropagation();let _=\"\",k=o.currentTarget;for(;k!==this.#n;){let $=k[u].key;if($)_=`${Ke}${$}${_}`;else{let U=k.parentNode.childNodes,V=[].indexOf.call(U,k);_=`${Ye}${V}${_}`}k=k.parentNode}_=_.slice(1);let H=this.#t?dr(o,d):o;if(e[u].throttles.has(o.type)){let $=e[u].throttles.get(o.type),U=Date.now(),V=$.last||0;U>V+$.delay?($.last=U,this.#e(H,_,o.type,i)):o.preventDefault()}else if(e[u].debouncers.has(o.type)){let $=e[u].debouncers.get(o.type);window.clearTimeout($.timeout),$.timeout=window.setTimeout(()=>{this.#e(H,_,o.type,i)},$.delay)}else this.#e(H,_,o.type,i)});break}}}};function x(s,e){if(Array.isArray(s))for(let t=0;t<s.length;t++)e(s[t]);else if(s)for(s;s.tail;s=s.tail)e(s.head)}var u=Symbol(\"metadata\");function I(s,e=\"\"){switch(s.nodeType){case Node.ELEMENT_NODE:case Node.DOCUMENT_FRAGMENT_NODE:s[u]={key:e,keyedChildren:new Map,handlers:new Map,throttles:new Map,debouncers:new Map};break;case Node.TEXT_NODE:s[u]={key:e,debouncers:new Map};break}}function fe(s,e){if(e.nodeType===Node.DOCUMENT_FRAGMENT_NODE){for(e=e.firstChild;e;e=e.nextSibling)fe(s,e);return}let t=e[u].key;t&&s[u].keyedChildren.set(t,new WeakRef(e))}function at(s){let t=s.currentTarget[u].handlers.get(s.type);s.type===\"submit\"&&(s.detail??={},s.detail.formData=[...new FormData(s.target).entries()]),t(s)}function dr(s,e=[]){let t={};(s.type===\"input\"||s.type===\"change\")&&e.push(\"target.value\"),s.type===\"submit\"&&e.push(\"detail.formData\");for(let r of e){let n=r.split(\".\");for(let i=0,d=s,o=t;i<n.length;i++){if(i===n.length-1){o[n[i]]=d[n[i]];break}o=o[n[i]]??={},d=d[n[i]]}}return t}var ct={checked:ft(\"checked\"),selected:ft(\"selected\"),value:hr(\"value\"),autofocus:{added(s){s.focus?.()}},autoplay:{added(s){try{s.play?.()}catch(e){console.error(e)}}}};function ft(s){return{added(e,t){e[s]=!0},removed(e){e[s]=!1}}}function hr(s){return{added(e,t){e[s]=t}}}var pt=0;var dt=1;var ht=2;var pe=0;var _t=1;var mt=2;var de=3;var he=class extends HTMLElement{static get observedAttributes(){return[\"route\",\"method\"]}#n;#e=\"ws\";#t=null;#r=null;#s=!0;#i=[];#u;#c=new Set;#l=new Set;#o=!1;#f=[];#d=new MutationObserver(e=>{let t=[];for(let r of e){if(r.type!==\"attributes\")continue;let n=r.attributeName;(this.#o||this.#c.includes(n))&&t.push([n,this.getAttribute(n)])}t.length&&this.#o?this.#r?.send({kind:batch,messages:t.map(([r,n])=>({kind:pe,name:r,value:n}))}):this.#f.push(...t)});constructor(){super(),this.internals=this.attachInternals(),this.#d.observe(this,{attributes:!0})}connectedCallback(){this.#e=this.getAttribute(\"method\")||\"ws\",this.hasAttribute(\"route\")&&(this.#t=new URL(this.getAttribute(\"route\"),window.location.href),this.#a())}attributeChangedCallback(e,t,r){switch(e){case t!==r:{this.#t=new URL(r,window.location.href),this.#a();return}case\"method\":{let n=r.toLowerCase();if(n==this.#e)return;[\"ws\",\"sse\",\"polling\"].includes(n)&&(this.#e=n,this.#e==\"ws\"&&(this.#t.protocol==\"https:\"&&(this.#t.protocol=\"wss:\"),this.#t.protocol==\"http:\"&&(this.#t.protocol=\"ws:\")),this.#a());return}}}async messageReceivedCallback(e){switch(e.kind){case pt:{this.#n=this.attachShadow({mode:e.open_shadow_root?\"open\":\"closed\"}),this.#u=new q(this.#n,(r,n,i)=>{this.#r?.send({kind:_t,path:n,name:i,event:r})},{useServerEvents:!0}),this.#c=new Set(e.observed_attributes);let t=this.#f.filter(([r])=>this.#c.has(r));t.length&&this.#r.send({kind:de,messages:t.map(([r,n])=>({kind:pe,name:r,value:n}))}),this.#f=[],this.#l=new Set(e.observed_properties);for(let r of this.#l)Object.defineProperty(this,r,{get(){return this[`_${r}`]},set(n){this[`_${r}`]=n,this.#r?.send({kind:mt,name:r,value:n})}});e.will_adopt_styles&&await this.#h(),this.#u.mount(e.vdom),this.dispatchEvent(new CustomEvent(\"lustre:mount\"));break}case dt:{this.#u.push(e.patch,this.#i.length);break}case ht:{this.dispatchEvent(new CustomEvent(e.name,{detail:e.data}));break}}}#a(){if(!this.#t||!this.#e)return;this.#r&&this.#r.close();let n={onConnect:()=>{this.#o=!0,this.dispatchEvent(new CustomEvent(\"lustre:connect\"),{detail:{route:this.#t,method:this.#e}})},onMessage:i=>{this.messageReceivedCallback(i)},onClose:()=>{this.#o=!1,this.dispatchEvent(new CustomEvent(\"lustre:close\"),{detail:{route:this.#t,method:this.#e}})}};switch(this.#e){case\"ws\":this.#r=new _e(this.#t,n);break;case\"sse\":this.#r=new me(this.#t,n);break;case\"polling\":this.#r=new $e(this.#t,n);break}}async#h(){for(;this.#i.length;)this.#i.pop().remove(),this.#n.firstChild.remove();this.#i=await it(this.#n)}},_e=class{#n;#e;#t=!1;#r=[];#s;#i;#u;constructor(e,{onConnect:t,onMessage:r,onClose:n}){this.#n=e,this.#e=new WebSocket(this.#n),this.#s=t,this.#i=r,this.#u=n,this.#e.onopen=()=>{this.#s()},this.#e.onmessage=({data:i})=>{try{this.#i(JSON.parse(i))}finally{this.#r.length?this.#e.send(JSON.stringify({kind:de,messages:this.#r})):this.#t=!1,this.#r=[]}},this.#e.onclose=()=>{this.#u()}}send(e){if(this.#t){this.#r.push(e);return}else this.#e.send(JSON.stringify(e)),this.#t=!0}close(){this.#e.close()}},me=class{#n;#e;#t;#r;#s;constructor(e,{onConnect:t,onMessage:r,onClose:n}){this.#n=e,this.#e=new EventSource(this.#n),this.#t=t,this.#r=r,this.#s=n,this.#e.onopen=()=>{this.#t()},this.#e.onmessage=({data:i})=>{try{this.#r(JSON.parse(i))}catch{}}}send(e){}close(){this.#e.close(),this.#s()}},$e=class{#n;#e;#t;#r;#s;#i;constructor(e,{onConnect:t,onMessage:r,onClose:n,...i}){this.#n=e,this.#r=t,this.#s=r,this.#i=n,this.#e=i.interval??5e3,this.#u().finally(()=>{this.#r(),this.#t=window.setInterval(()=>this.#u(),this.#e)})}async send(e){}close(){clearInterval(this.#t),this.#i()}#u(){return fetch(this.#n).then(e=>e.json()).then(this.#s).catch(console.error)}};window.customElements.define(\"lustre-server-component\",he);export{he as ServerComponent};\\n",
+  )
 }
 
 // ATTRIBUTES ------------------------------------------------------------------
@@ -124,79 +157,172 @@ pub fn route(path: String) -> Attribute(msg) {
   attribute("route", path)
 }
 
-/// Ocassionally you may want to attach custom data to an event sent to the server.
-/// This could be used to include a hash of the current build to detect if the
-/// event was sent from a stale client.
 ///
-/// Your event decoders can access this data by decoding `data` property of the
-/// event object.
 ///
-pub fn data(json: Json) -> Attribute(msg) {
-  json
-  |> json.to_string
-  |> attribute("data-lustre-data", _)
+pub fn method(value: TransportMethod) -> Attribute(msg) {
+  attribute("method", case value {
+    WebSocket -> "ws"
+    ServerSentEvents -> "sse"
+    Polling -> "polling"
+  })
 }
 
 /// Properties of a JavaScript event object are typically not serialisable. This
-/// means if we want to pass them to the server we need to copy them into a new
-/// object first.
+/// means if we want to send them to the server we need to make a copy of any
+/// fields we want to decode first.
 ///
-/// This attribute tells Lustre what properties to include. Properties can come
-/// from nested objects by using dot notation. For example, you could include the
+/// This attribute tells Lustre what properties to include from an event. Properties
+/// can come from nested fields by using dot notation. For example, you could include
+/// the
 /// `id` of the target `element` by passing `["target.id"]`.
 ///
 /// ```gleam
-/// import gleam/dynamic
-/// import gleam/result.{try}
+/// import gleam/dynamic/decode
 /// import lustre/element.{type Element}
 /// import lustre/element/html
 /// import lustre/event
-/// import lustre/server
+/// import lustre/server_component
 ///
 /// pub fn custom_button(on_click: fn(String) -> msg) -> Element(msg) {
 ///   let handler = fn(event) {
-///     use target <- try(dynamic.field("target", dynamic.dynamic)(event))
-///     use id <- try(dynamic.field("id", dynamic.string)(target))
-///
-///     Ok(on_click(id))
+///     use id <- decode.at(["target", "id"], decode.string)
+///     decode.success(on_click(id))
 ///   }
 ///
-///   html.button([event.on_click(handler), server.include(["target.id"])], [
-///     element.text("Click me!")
-///   ])
+///   html.button(
+///     [server_component.include(["target.id"]), event.on_click(handler)],
+///     [html.text("Click me!")],
+///   )
 /// }
 /// ```
 ///
-pub fn include(properties: List(String)) -> Attribute(msg) {
-  properties
-  |> json.array(json.string)
-  |> json.to_string
-  |> attribute("data-lustre-include", _)
+pub fn include(
+  event: Attribute(msg),
+  properties: List(String),
+) -> Attribute(msg) {
+  case event {
+    Event(..) -> Event(..event, include: properties)
+    _ -> event
+  }
 }
 
 // ACTIONS ---------------------------------------------------------------------
 
-/// A server component broadcasts patches to be applied to the DOM to any connected
-/// clients. This action is used to add a new client to a running server component.
+/// Recover the `Subject` of the server component runtime so that it can be used
+/// in supervision trees or passed to other processes. If you want to hand out
+/// different `Subject`s to send messages to your application, take a look at the
+/// [`select`](#select) effect.
 ///
-pub fn subscribe(
-  id: String,
-  renderer: fn(Patch(msg)) -> Nil,
-) -> Action(msg, ServerComponent) {
-  runtime.Subscribe(id, renderer)
+/// **Note**: this function will always fail on the JavaScript target with the
+/// `NotErlang` error.
+///
+pub fn subject(
+  runtime: Runtime(msg),
+) -> Result(Subject(RuntimeMessage(msg)), Error) {
+  do_subject(runtime)
 }
 
-/// Remove a registered renderer from a server component. If no renderer with the
-/// given id is found, this action has no effect.
+@target(erlang)
+fn do_subject(
+  runtime: Runtime(msg),
+) -> Result(Subject(RuntimeMessage(msg)), Error) {
+  Ok(coerce(runtime))
+}
+
+@target(javascript)
+fn do_subject(_: Runtime(msg)) -> Result(Subject(RuntimeMessage(msg)), Error) {
+  Error(lustre.NotErlang)
+}
+
+@target(erlang)
+@external(erlang, "gleam@function", "identity")
+fn coerce(value: a) -> b
+
+/// Register a `Subject` to receive messages and updates from Lustre's server
+/// component runtime. The process that owns this will be monitored and the
+/// subject will be gracefully removed if the process dies.
 ///
-pub fn unsubscribe(id: String) -> Action(msg, ServerComponent) {
-  runtime.Unsubscribe(id)
+/// **Note**: if you are developing a server component for the JavaScript runtime,
+/// you should use [`register_callback`](#register_callback) instead.
+///
+pub fn register_subject(
+  runtime: Subject(RuntimeMessage(msg)),
+  client: Subject(ClientMessage(msg)),
+) -> Nil {
+  do_register_subject(runtime, client)
+}
+
+@target(erlang)
+fn do_register_subject(
+  runtime: Subject(RuntimeMessage(msg)),
+  client: Subject(ClientMessage(msg)),
+) -> Nil {
+  process.send(runtime, runtime.ClientRegisteredSubject(client))
+}
+
+@target(javascript)
+fn do_register_subject(_, _) -> Nil {
+  Nil
+}
+
+/// Deregister a `Subject` to stop receiving messages and updates from Lustre's
+/// server component runtime. The subject should first have been registered with
+/// [`register_subject`](#register_subject) otherwise this will do nothing.
+///
+pub fn deregister_subject(
+  runtime: Subject(RuntimeMessage(msg)),
+  client: Subject(ClientMessage(msg)),
+) -> Nil {
+  do_deregister_subject(runtime, client)
+}
+
+@target(erlang)
+fn do_deregister_subject(
+  runtime: Subject(RuntimeMessage(msg)),
+  client: Subject(ClientMessage(msg)),
+) -> Nil {
+  process.send(runtime, runtime.ClientDeregisteredSubject(client))
+}
+
+@target(javascript)
+fn do_deregister_subject(_, _) -> Nil {
+  Nil
+}
+
+/// Register a callback to be called whenever the server component runtime
+/// produces a message. Avoid using anonymous functions with this function, as
+/// they cannot later be removed using [`deregister_callback`](#deregister_callback).
+///
+/// **Note**: server components running on the Erlang target are **strongly**
+/// encouraged to use [`register_subject`](#register_subject) instead of this
+/// function.
+///
+pub fn register_callback(
+  runtime: Runtime(msg),
+  callback: fn(ClientMessage(msg)) -> Nil,
+) -> Nil {
+  lustre.send(runtime, runtime.ClientRegisteredCallback(callback))
+}
+
+/// Deregister a callback to be called whenever the server component runtime
+/// produces a message. The callback to remove is determined by function equality
+/// and must be the same function that was passed to [`register_callback`](#register_callback).
+///
+/// **Note**: server components running on the Erlang target are **strongly**
+/// encouraged to use [`register_subject`](#register_subject) instead of this
+/// function.
+///
+pub fn deregister_callback(
+  runtime: Runtime(msg),
+  callback: fn(ClientMessage(msg)) -> Nil,
+) -> Nil {
+  lustre.send(runtime, runtime.ClientDeregisteredCallback(callback))
 }
 
 // EFFECTS ---------------------------------------------------------------------
 
 /// Instruct any connected clients to emit a DOM event with the given name and
-/// data. This lets your server component communicate to frontend the same way
+/// data. This lets your server component communicate to the frontend the same way
 /// any other HTML elements do: you might emit a `"change"` event when some part
 /// of the server component's state changes, for example.
 ///
@@ -223,111 +349,38 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
 /// for later use. For example you may subscribe to a pubsub service and later use
 /// that same `Subject` to unsubscribe.
 ///
-/// **Note**: This effect does nothing on the JavaScript runtime, where `Subjects`
-/// and `Selectors` don't exist, and is the equivalent of returning `effect.none()`.
+/// **Note**: This effect does nothing on the JavaScript runtime, where `Subject`s
+/// and `Selector`s don't exist, and is the equivalent of returning `effect.none()`.
 ///
 pub fn select(
   sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
 ) -> Effect(msg) {
-  do_select(sel)
-}
-
-@target(erlang)
-fn do_select(
-  sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
-) -> Effect(msg) {
-  use dispatch, _, select, _ <- effect.custom
-  let self = process.new_subject()
-  let selector = sel(dispatch, self)
-
-  select(selector)
-}
-
-@target(javascript)
-fn do_select(_: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg)) -> Effect(msg) {
-  effect.none()
-}
-
-///
-///
-@deprecated("The implementation of this effect is broken in ways that cannot be
-fixed without changing the API. If you'd like other Erlang actors and processes
-to send messages to your Lustre server component, take a look at the `select`
-effect instead.")
-pub fn set_selector(_: Selector(Action(runtime, msg))) -> Effect(msg) {
-  use _ <- effect.from
-  "
-It looks like you're trying to use `set_selector` in a server component. The
-implementation of this effect is broken in ways that cannot be fixed without
-changing the API. Please take a look at `select` instead!
-  "
-  |> string.trim
-  |> io.println_error
-
-  Nil
+  effect.select(sel)
 }
 
 // DECODERS --------------------------------------------------------------------
 
-/// The server component client runtime sends JSON encoded actions for the server
+/// The server component client runtime sends JSON-encoded messages for the server
 /// runtime to execute. Because your own WebSocket server sits between the two
 /// parts of the runtime, you need to decode these actions and pass them to the
 /// server runtime yourself.
 ///
-pub fn decode_action(
-  dyn: Dynamic,
-) -> Result(Action(runtime, ServerComponent), List(DecodeError)) {
-  dynamic.any([decode_event, decode_attrs])(dyn)
-}
-
-fn decode_event(dyn: Dynamic) -> Result(Action(runtime, msg), List(DecodeError)) {
-  use #(kind, name, data) <- result.try(dynamic.tuple3(
-    dynamic.int,
-    dynamic,
-    dynamic,
-  )(dyn))
-  use <- bool.guard(
-    kind != constants.event,
-    Error([
-      DecodeError(
-        path: ["0"],
-        found: int.to_string(kind),
-        expected: int.to_string(constants.event),
-      ),
-    ]),
+pub fn runtime_message_decoder() -> Decoder(RuntimeMessage(msg)) {
+  decode.map(
+    transport.server_message_decoder(),
+    runtime.ClientDispatchedMessage,
   )
-  use name <- result.try(dynamic.string(name))
-
-  Ok(Event(name, data))
-}
-
-fn decode_attrs(dyn: Dynamic) -> Result(Action(runtime, msg), List(DecodeError)) {
-  use #(kind, attrs) <- result.try(dynamic.tuple2(dynamic.int, dynamic)(dyn))
-  use <- bool.guard(
-    kind != constants.attrs,
-    Error([
-      DecodeError(
-        path: ["0"],
-        found: int.to_string(kind),
-        expected: int.to_string(constants.attrs),
-      ),
-    ]),
-  )
-  use attrs <- result.try(dynamic.list(decode_attr)(attrs))
-
-  Ok(Attrs(attrs))
-}
-
-fn decode_attr(dyn: Dynamic) -> Result(#(String, Dynamic), List(DecodeError)) {
-  dynamic.tuple2(dynamic.string, dynamic)(dyn)
 }
 
 // ENCODERS --------------------------------------------------------------------
 
-/// Encode a DOM patch as JSON you can send to the client runtime to apply. Whenever
-/// the server runtime re-renders, all subscribed clients will receive a patch
-/// message they must forward to the client runtime.
+/// Encode a message you can send to the client runtime to respond to. The server
+/// component runtime will send messages to any registered clients to instruct
+/// them to update their DOM or emit events, for example.
 ///
-pub fn encode_patch(patch: Patch(msg)) -> Json {
-  patch.patch_to_json(patch)
+/// Because your WebSocket server sits between the two parts of the runtime, you
+/// need to encode these actions and send them to the client runtime yourself.
+///
+pub fn client_message_to_json(message: ClientMessage(msg)) -> Json {
+  transport.client_message_to_json(message)
 }

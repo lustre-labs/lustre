@@ -3,6 +3,12 @@
 build
 erl_crash.dump
 
-.vscode
+examples/*/*/.github
+examples/*/*/manifest.toml
+examples/*/*/priv/static
 
-node_modules
+test-apps/*/priv/static
+
+# We want to keep the static assets for apps that test server components because
+# there is no bundling or generation of assets for these apps.
+!test-apps/server-component-*/priv/static

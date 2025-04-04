@@ -1,11 +1,12 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{type Decoder}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/int
+import gleam/json.{type Json}
 import gleam/list
-import gleam/result
 import gleam/string
-import lustre/internals/vdom.{Attribute, Event}
+import lustre/internals/constants
+import lustre/vdom/vattr.{Attribute, Event, Property}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -13,7 +14,7 @@ import lustre/internals/vdom.{Attribute, Event}
 /// event listeners.
 ///
 pub type Attribute(msg) =
-  vdom.Attribute(msg)
+  vattr.Attribute(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -25,7 +26,7 @@ pub type Attribute(msg) =
 /// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn attribute(name: String, value: String) -> Attribute(msg) {
-  Attribute(name, dynamic.from(value), as_property: False)
+  vattr.attribute(name, value)
 }
 
 /// Create a DOM property. This is like saying `element.className = "wibble"` in
@@ -36,13 +37,29 @@ pub fn attribute(name: String, value: String) -> Attribute(msg) {
 /// can read more about the implications of this
 /// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
-pub fn property(name: String, value: any) -> Attribute(msg) {
-  Attribute(name, dynamic.from(value), as_property: True)
+pub fn property(name: String, value: Json) -> Attribute(msg) {
+  vattr.property(name, value)
 }
 
 ///
 pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
-  Event("on" <> name, handler)
+  vattr.event(
+    name:,
+    handler:,
+    include: constants.empty_list,
+    prevent_default: False,
+    stop_propagation: False,
+    immediate: is_immediate_event(name),
+    limit: vattr.NoLimit(kind: 0),
+  )
+}
+
+fn is_immediate_event(name: String) -> Bool {
+  case name {
+    "input" | "change" | "focus" | "focusin" | "focusout" | "blur" | "select" ->
+      True
+    _ -> False
+  }
 }
 
 /// Create an empty attribute. This is not added to the DOM and not rendered when
@@ -60,10 +77,11 @@ pub fn none() -> Attribute(msg) {
 /// library or module that produces a different type of message: this function lets
 /// you map the messages produced from one type to another.
 ///
-pub fn map(attr: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
-  case attr {
-    Attribute(name, value, as_property) -> Attribute(name, value, as_property)
-    Event(on, handler) -> Event(on, fn(e) { result.map(handler(e), f) })
+pub fn map(attribute: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
+  case attribute {
+    Attribute(kind:, name:, value:) -> Attribute(kind:, name:, value:)
+    Event(handler:, ..) -> Event(..attribute, handler: decode.map(handler, f))
+    Property(kind:, name:, value:) -> Property(kind:, name:, value:)
   }
 }
 
@@ -93,23 +111,20 @@ pub fn class(name: String) -> Attribute(msg) {
 
 ///
 pub fn classes(names: List(#(String, Bool))) -> Attribute(msg) {
-  attribute(
-    "class",
-    names
-      |> list.filter_map(fn(class) {
-        case class.1 {
-          True -> Ok(class.0)
-          False -> Error(Nil)
-        }
-      })
-      |> string.join(" "),
-  )
+  attribute("class", {
+    use classes, #(class, active) <- list.fold(names, "")
+    case classes {
+      "" if active -> class
+      _ if active -> classes <> " " <> class
+      _ -> classes
+    }
+  })
 }
 
 ///
 ///
 /// Add a `data-*` attribute to an HTML element. The key will be prefixed by `data-`.
-/// 
+///
 pub fn data(key: String, value: String) -> Attribute(msg) {
   attribute("data-" <> key, value)
 }
@@ -143,7 +158,7 @@ pub fn value(val: String) -> Attribute(msg) {
 
 ///
 pub fn checked(is_checked: Bool) -> Attribute(msg) {
-  property("checked", is_checked)
+  boolean_attribute("checked", is_checked)
 }
 
 ///
@@ -153,7 +168,7 @@ pub fn placeholder(text: String) -> Attribute(msg) {
 
 ///
 pub fn selected(is_selected: Bool) -> Attribute(msg) {
-  property("selected", is_selected)
+  boolean_attribute("selected", is_selected)
 }
 
 // INPUT HELPERS ---------------------------------------------------------------
@@ -165,7 +180,7 @@ pub fn accept(types: List(String)) -> Attribute(msg) {
 
 ///
 pub fn accept_charset(types: List(String)) -> Attribute(msg) {
-  attribute("acceptCharset", string.join(types, " "))
+  attribute("accept-charset", string.join(types, " "))
 }
 
 ///
@@ -178,14 +193,19 @@ pub fn autocomplete(name: String) -> Attribute(msg) {
   attribute("autocomplete", name)
 }
 
+/// Sets the `autofocus` attribute.
+///
+/// Lustre's runtime augments that native behaviour of this attribute. Whenever
+/// it is toggled true, the element will be automatically focused even if it already
+/// exists in the DOM.
 ///
 pub fn autofocus(should_autofocus: Bool) -> Attribute(msg) {
-  property("autofocus", should_autofocus)
+  boolean_attribute("autofocus", should_autofocus)
 }
 
 ///
 pub fn disabled(is_disabled: Bool) -> Attribute(msg) {
-  property("disabled", is_disabled)
+  boolean_attribute("disabled", is_disabled)
 }
 
 ///
@@ -200,12 +220,12 @@ pub fn pattern(regex: String) -> Attribute(msg) {
 
 ///
 pub fn readonly(is_readonly: Bool) -> Attribute(msg) {
-  property("readOnly", is_readonly)
+  boolean_attribute("readonly", is_readonly)
 }
 
 ///
 pub fn required(is_required: Bool) -> Attribute(msg) {
-  property("required", is_required)
+  boolean_attribute("required", is_required)
 }
 
 ///
@@ -299,7 +319,7 @@ pub fn src(uri: String) -> Attribute(msg) {
 /// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn height(val: Int) -> Attribute(msg) {
-  property("height", val)
+  property("height", json.int(val))
 }
 
 /// **Note**: this uses [`property`](#property) to set the value directly on the
@@ -310,7 +330,7 @@ pub fn height(val: Int) -> Attribute(msg) {
 /// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn width(val: Int) -> Attribute(msg) {
-  property("width", val)
+  property("width", json.int(val))
 }
 
 ///
@@ -325,19 +345,22 @@ pub fn content(text: String) -> Attribute(msg) {
 
 // AUDIO AND VIDEO -------------------------------------------------------------
 
+/// Sets the `autofocus` attribute.
 ///
+/// Lustre will start playing every time this attribute switches from `False`
+/// to `True`.
 pub fn autoplay(should_autoplay: Bool) -> Attribute(msg) {
-  property("autoplay", should_autoplay)
+  boolean_attribute("autoplay", should_autoplay)
 }
 
 ///
 pub fn controls(visible: Bool) -> Attribute(msg) {
-  property("controls", visible)
+  boolean_attribute("controls", visible)
 }
 
 ///
 pub fn loop(should_loop: Bool) -> Attribute(msg) {
-  property("loop", should_loop)
+  boolean_attribute("loop", should_loop)
 }
 
 // FORMS -----------------------------------------------------------------------
@@ -359,7 +382,7 @@ pub fn method(method: String) -> Attribute(msg) {
 
 ///
 pub fn novalidate(value: Bool) -> Attribute(msg) {
-  property("novalidate", value)
+  boolean_attribute("novalidate", value)
 }
 
 ///
@@ -379,7 +402,7 @@ pub fn form_method(method: String) -> Attribute(msg) {
 
 ///
 pub fn form_novalidate(value: Bool) -> Attribute(msg) {
-  property("formnovalidate", value)
+  boolean_attribute("formnovalidate", value)
 }
 
 ///
@@ -391,7 +414,27 @@ pub fn form_target(target: String) -> Attribute(msg) {
 
 ///
 pub fn open(is_open: Bool) -> Attribute(msg) {
-  property("open", is_open)
+  boolean_attribute("open", is_open)
+}
+
+// WEB COMPONENTS --------------------------------------------------------------
+
+///
+pub fn slot(name: String) -> Attribute(msg) {
+  attribute("slot", name)
+}
+
+///
+pub fn shadow_root_mode(is_open: Bool) -> Attribute(msg) {
+  attribute("shadowrootmode", case is_open {
+    True -> "open"
+    False -> "closed"
+  })
+}
+
+///
+pub fn shadow_root_delegates_focus(delegates_focus: Bool) -> Attribute(msg) {
+  boolean_attribute("shadowrootdelegatesfocus", delegates_focus)
 }
 
 // META ------------------------------------------------------------------------
@@ -411,4 +454,13 @@ pub fn http_equiv(name: String) -> Attribute(msg) {
 ///
 pub fn lang(name: String) -> Attribute(msg) {
   attribute("lang", name)
+}
+
+// HELPERS ---------------------------------------------------------------------
+
+fn boolean_attribute(name: String, value: Bool) -> Attribute(msg) {
+  case value {
+    True -> attribute(name, "")
+    False -> property(name, json.bool(False))
+  }
 }

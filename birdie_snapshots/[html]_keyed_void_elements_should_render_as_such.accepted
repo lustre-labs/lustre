@@ -1,0 +1,19 @@
+---
+version: 1.2.6
+title: [html] Keyed void elements should render as such
+---
+<div>
+  <area data-lustre-key="area">
+  <base data-lustre-key="base">
+  <br data-lustre-key="br">
+  <col data-lustre-key="col">
+  <embed data-lustre-key="embed">
+  <hr data-lustre-key="hr">
+  <img data-lustre-key="img">
+  <input data-lustre-key="input">
+  <link data-lustre-key="link">
+  <meta data-lustre-key="meta">
+  <source data-lustre-key="source">
+  <track data-lustre-key="track">
+  <wbr data-lustre-key="wbr">
+</div>

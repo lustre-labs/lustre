@@ -8,13 +8,13 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{type Dynamic}
-import gleam/list
+import gleam/function
 import gleam/string
 import gleam/string_tree.{type StringTree}
-import lustre/attribute.{type Attribute, attribute}
-import lustre/effect.{type Effect}
-import lustre/internals/vdom.{Element, Map, Text}
+import lustre/attribute.{type Attribute}
+import lustre/internals/mutable_map
+import lustre/vdom/events
+import lustre/vdom/vnode.{Element, Fragment, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -37,7 +37,8 @@ import lustre/internals/vdom.{Element, Map, Text}
 /// - The [`none`](#none) function to render nothing - useful for conditional
 ///   rendering.
 ///
-/// If you have more complex needs, there are two more-advanced functions:
+/// If you have more complex needs, there are two more-advanced ways to construct
+/// HTML elements:
 ///
 /// - The [`namespaced`](#namespaced) function to create elements in a specific
 ///   XML namespace. This is useful for SVG or MathML elements, for example.
@@ -47,14 +48,23 @@ import lustre/internals/vdom.{Element, Map, Text}
 ///   necessary because some HTML, SVG, and MathML elements are self-closing or
 ///   void elements, and Lustre needs to know how to render them correctly!
 ///
-/// For most applications, you'll only need to use the simpler functions; usually
-/// the [`text`](#text) and [`none`](#none) functions are enough. This is because
-/// Lustre already provides a module with all the standard HTML and SVG elements
-/// ready to use in [`lustre/element/html`](./element/html.html) and
-/// [`lustre/element/svg`](./element/svg.html).
+/// Finally, for other niche use cases there are two additional functions:
+///
+/// - The [`fragment`](#fragment) function lets you wrap a list of `Element`s up
+///   as a single `Element`, making it useful to avoid wrapping elements in a
+///   `<div/>` or other container when you don't want to.
+///
+/// - The [`unsafe_raw_html`](#unsafe_raw_html) function lets you render raw HTML
+///   directly into an element. This function is primarily useful in cases where
+///   you have _pre-sanitised_ HTML or are working with libraries outside of Lustre
+///   that produce plain HTML strings.
+///
+///   Lustre will _not_ escape the HTML string provided to this functio, meaning
+///   inappropriate use can expose your application to XSS attacks. Make sure you
+///   never take untrusted user input and pass it to this function!
 ///
 pub type Element(msg) =
-  vdom.Element(msg)
+  vnode.Node(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -89,104 +99,20 @@ pub type Element(msg) =
 ///
 pub fn element(
   tag: String,
-  attrs: List(Attribute(msg)),
+  attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  case tag {
-    "area"
-    | "base"
-    | "br"
-    | "col"
-    | "embed"
-    | "hr"
-    | "img"
-    | "input"
-    | "link"
-    | "meta"
-    | "param"
-    | "source"
-    | "track"
-    | "wbr" ->
-      Element(
-        key: "",
-        namespace: "",
-        tag: tag,
-        attrs: attrs,
-        children: [],
-        self_closing: False,
-        void: True,
-      )
-
-    _ ->
-      Element(
-        key: "",
-        namespace: "",
-        tag: tag,
-        attrs: attrs,
-        children: children,
-        self_closing: False,
-        void: False,
-      )
-  }
-}
-
-/// Keying elements is an optimisation that helps the runtime reuse existing DOM
-/// nodes in cases where children are reordered or removed from a list. Maybe you
-/// have a list of elements that can be filtered or sorted in some way, or additions
-/// to the front are common. In these cases, keying elements can help Lustre avoid
-/// unecessary DOM manipulations by pairing the DOM nodes with the elements in the
-/// list that share the same key.
-///
-/// You can easily take an element from `lustre/element/html` and key its children
-/// by making use of Gleam's [function capturing syntax](https://tour.gleam.run/functions/function-captures/):
-///
-/// ```gleam
-/// import gleam/list
-/// import lustre/element
-/// import lustre/element/html
-///
-/// fn example() {
-///   element.keyed(html.ul([], _), {
-///     use item <- list.map(todo_list)
-///     let child = html.li([], [view_item(item)])
-///
-///     #(item.id, child)
-///   })
-/// }
-/// ```
-///
-/// **Note**: The key must be unique within the list of children, but it doesn't
-/// have to be unique across the whole application. It's fine to use the same key
-/// in different lists. Lustre will display a warning in the browser console when
-/// it detects duplicate keys in a list.
-///
-///
-pub fn keyed(
-  el: fn(List(Element(msg))) -> Element(msg),
-  children: List(#(String, Element(msg))),
-) -> Element(msg) {
-  el({
-    use #(key, child) <- list.map(children)
-    do_keyed(child, key)
-  })
-}
-
-fn do_keyed(el: Element(msg), key: String) -> Element(msg) {
-  case el {
-    Element(_, namespace, tag, attrs, children, self_closing, void) ->
-      Element(
-        key: key,
-        namespace: namespace,
-        tag: tag,
-        attrs: attrs,
-        children: children,
-        self_closing: self_closing,
-        void: void,
-      )
-    Map(subtree) -> Map(fn() { do_keyed(subtree(), key) })
-
-    _ -> el
-  }
+  vnode.element(
+    key: "",
+    mapper: function.identity,
+    namespace: "",
+    tag: tag,
+    attributes:,
+    children: children,
+    keyed_children: mutable_map.new(),
+    self_closing: False,
+    void: False,
+  )
 }
 
 /// A function for constructing elements in a specific XML namespace. This can
@@ -195,15 +121,17 @@ fn do_keyed(el: Element(msg), key: String) -> Element(msg) {
 pub fn namespaced(
   namespace: String,
   tag: String,
-  attrs: List(Attribute(msg)),
+  attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  Element(
+  vnode.element(
     key: "",
-    namespace: namespace,
-    tag: tag,
-    attrs: attrs,
-    children: children,
+    mapper: function.identity,
+    namespace:,
+    tag:,
+    attributes:,
+    children:,
+    keyed_children: mutable_map.new(),
     self_closing: False,
     void: False,
   )
@@ -217,19 +145,21 @@ pub fn namespaced(
 pub fn advanced(
   namespace: String,
   tag: String,
-  attrs: List(Attribute(msg)),
+  attributes: List(Attribute(msg)),
   children: List(Element(msg)),
   self_closing: Bool,
   void: Bool,
 ) -> Element(msg) {
-  Element(
+  vnode.element(
     key: "",
-    namespace: namespace,
-    tag: tag,
-    attrs: attrs,
-    children: children,
-    self_closing: self_closing,
-    void: void,
+    mapper: function.identity,
+    namespace:,
+    tag:,
+    attributes:,
+    children:,
+    keyed_children: mutable_map.new(),
+    self_closing:,
+    void:,
   )
 }
 
@@ -239,7 +169,7 @@ pub fn advanced(
 /// this function is exactly that!
 ///
 pub fn text(content: String) -> Element(msg) {
-  Text(content)
+  vnode.text(key: "", mapper: function.identity, content:)
 }
 
 /// A function for rendering nothing. This is mostly useful for conditional
@@ -247,19 +177,57 @@ pub fn text(content: String) -> Element(msg) {
 /// condition is met.
 ///
 pub fn none() -> Element(msg) {
-  Text("")
+  vnode.text(key: "", mapper: function.identity, content: "")
 }
 
-/// A function for wrapping elements to be rendered within a parent container without
-/// specififying the container on definition. Allows the treatment of List(Element(msg))
-/// as if it were Element(msg). Useful when generating a list of elements from data but
-/// used downstream.
+/// A function for constructing a wrapper element with no tag name. This is
+/// useful for wrapping a list of elements together without adding an extra
+/// `<div>` or other container element, or returning multiple elements in places
+/// where only one `Element` is expected.
 ///
-pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
-  element(
-    "lustre-fragment",
-    [attribute.style([#("display", "contents")])],
-    elements,
+pub fn fragment(children: List(Element(msg))) -> Element(msg) {
+  vnode.fragment(
+    key: "",
+    mapper: function.identity,
+    children:,
+    keyed_children: mutable_map.new(),
+    children_count: count_fragment_children(children, 0),
+  )
+}
+
+fn count_fragment_children(children: List(Element(msg)), count: Int) -> Int {
+  case children {
+    [] -> count
+
+    [Fragment(children_count:, ..), ..rest] ->
+      count_fragment_children(rest, count + children_count)
+
+    [_, ..rest] -> count_fragment_children(rest, count + 1)
+  }
+}
+
+/// A function for constructing a wrapper element with custom raw HTML as its
+/// content. Lustre will render the provided HTML verbatim, and will not touch
+/// its children except when replacing the entire inner html on changes.
+///
+/// **Note:** The provided HTML will not be escaped automatically and may expose
+/// your applications to XSS attacks! Make sure you absolutely trust the HTML you
+/// pass to this function. In particular, never use this to display un-sanitised
+/// user HTML!
+///
+pub fn unsafe_raw_html(
+  namespace: String,
+  tag: String,
+  attributes: List(Attribute(msg)),
+  inner_html: String,
+) -> Element(msg) {
+  vnode.unsafe_inner_html(
+    key: "",
+    namespace:,
+    tag:,
+    mapper: function.identity,
+    attributes:,
+    inner_html:,
   )
 }
 
@@ -273,32 +241,36 @@ pub fn fragment(elements: List(Element(msg))) -> Element(msg) {
 /// Think of it like `list.map` or `result.map` but for HTML events!
 ///
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
+  let mapper = coerce(events.compose_mapper(element.mapper, coerce(f)))
+
   case element {
-    Text(content) -> Text(content)
-    Map(subtree) -> Map(fn() { map(subtree(), f) })
-    Element(key, namespace, tag, attrs, children, self_closing, void) ->
-      Map(fn() {
-        Element(
-          key: key,
-          namespace: namespace,
-          tag: tag,
-          attrs: list.map(attrs, attribute.map(_, f)),
-          children: list.map(children, map(_, f)),
-          self_closing: self_closing,
-          void: void,
-        )
-      })
+    Fragment(children:, keyed_children:, ..) ->
+      Fragment(
+        ..element,
+        mapper:,
+        children: coerce(children),
+        keyed_children: coerce(keyed_children),
+      )
+
+    Element(attributes:, children:, keyed_children:, ..) ->
+      Element(
+        ..element,
+        mapper:,
+        attributes: coerce(attributes),
+        children: coerce(children),
+        keyed_children: coerce(keyed_children),
+      )
+
+    UnsafeInnerHtml(attributes:, ..) ->
+      UnsafeInnerHtml(..element, mapper:, attributes: coerce(attributes))
+
+    Text(..) -> coerce(element)
   }
 }
 
-// EFFECTS ---------------------------------------------------------------------
-
-@internal
-pub fn get_root(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
-  use dispatch, _, _, root <- effect.custom
-
-  effect(dispatch, root)
-}
+@external(erlang, "gleam@function", "identity")
+@external(javascript, "../../gleam_stdlib/gleam/function.mjs", "identity")
+fn coerce(a: a) -> b
 
 // CONVERSIONS -----------------------------------------------------------------
 
@@ -309,7 +281,7 @@ pub fn get_root(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
 /// use case and we'll see what we can do!
 ///
 pub fn to_string(element: Element(msg)) -> String {
-  vdom.element_to_string(element)
+  vnode.to_string(element)
 }
 
 /// Converts an element to a string like [`to_string`](#to_string), but prepends
@@ -320,12 +292,10 @@ pub fn to_string(element: Element(msg)) -> String {
 /// a `html` and `body` element.
 ///
 pub fn to_document_string(el: Element(msg)) -> String {
-  vdom.element_to_string(case el {
+  vnode.to_string(case el {
     Element(tag: "html", ..) -> el
     Element(tag: "head", ..) | Element(tag: "body", ..) ->
       element("html", [], [el])
-    Map(subtree) -> subtree()
-
     _ -> element("html", [], [element("body", [], [el])])
   })
   |> string.append("<!doctype html>\n", _)
@@ -337,8 +307,8 @@ pub fn to_document_string(el: Element(msg)) -> String {
 /// [open an issue](https://github.com/lustre-labs/lustre/issues/new) with your
 /// use case and we'll see what we can do!
 ///
-pub fn to_string_builder(element: Element(msg)) -> StringTree {
-  vdom.element_to_string_builder(element)
+pub fn to_string_tree(element: Element(msg)) -> StringTree {
+  vnode.to_string_tree(element)
 }
 
 /// Converts an element to a `StringTree` like [`to_string_builder`](#to_string_builder),
@@ -348,13 +318,11 @@ pub fn to_string_builder(element: Element(msg)) -> StringTree {
 /// If the provided element is not an `html` element, it will be wrapped in both
 /// a `html` and `body` element.
 ///
-pub fn to_document_string_builder(el: Element(msg)) -> StringTree {
-  vdom.element_to_string_builder(case el {
+pub fn to_document_string_tree(el: Element(msg)) -> StringTree {
+  vnode.to_string_tree(case el {
     Element(tag: "html", ..) -> el
     Element(tag: "head", ..) | Element(tag: "body", ..) ->
       element("html", [], [el])
-    Map(subtree) -> subtree()
-
     _ -> element("html", [], [element("body", [], [el])])
   })
   |> string_tree.prepend("<!doctype html>\n")
@@ -385,5 +353,5 @@ pub fn to_document_string_builder(el: Element(msg)) -> StringTree {
 /// ```
 ///
 pub fn to_readable_string(el: Element(msg)) -> String {
-  vdom.element_to_snapshot(el)
+  vnode.to_snapshot(el)
 }
