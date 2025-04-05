@@ -29,6 +29,13 @@ pub fn attribute(name: String, value: String) -> Attribute(msg) {
   vattr.attribute(name, value)
 }
 
+fn boolean_attribute(name: String, value: Bool) -> Attribute(msg) {
+  case value {
+    True -> attribute(name, "")
+    False -> property(name, json.bool(False))
+  }
+}
+
 /// Create a DOM property. This is like saying `element.className = "wibble"` in
 /// JavaScript. Properties will be **not** be rendered when calling
 /// [`element.to_string`](./element.html#to_string).
@@ -41,13 +48,7 @@ pub fn property(name: String, value: Json) -> Attribute(msg) {
   vattr.property(name, value)
 }
 
-fn boolean_attribute(name: String, value: Bool) -> Attribute(msg) {
-  case value {
-    True -> attribute(name, "")
-    False -> property(name, json.bool(False))
-  }
-}
-
+///
 ///
 pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
   vattr.event(
@@ -77,55 +78,119 @@ pub fn none() -> Attribute(msg) {
   class("")
 }
 
-// MANIPULATIONS ---------------------------------------------------------------
+// GLOBAL ATTRIBUTES -----------------------------------------------------------
 
-/// The `Attribute` type is parameterised by the type of messages it can produce
-/// from events handlers. Sometimes you might end up with an attribute from a
-/// library or module that produces a different type of message: this function lets
-/// you map the messages produced from one type to another.
+/// Defines a shortcut key to activate or focus the element. Multiple options
+/// may be provided as a set of space-separated characters that are exactly one
+/// code point each.
 ///
-pub fn map(attribute: Attribute(a), f: fn(a) -> b) -> Attribute(b) {
-  case attribute {
-    Attribute(kind:, name:, value:) -> Attribute(kind:, name:, value:)
-    Event(handler:, ..) -> Event(..attribute, handler: decode.map(handler, f))
-    Property(kind:, name:, value:) -> Property(kind:, name:, value:)
-  }
+/// The way to activate the access key depends on the browser and its platform:
+///
+/// |         | Windows           | Linux               | Mac OS              |
+/// |---------|-------------------|---------------------|---------------------|
+/// | Firefox | Alt + Shift + key | Alt + Shift + key   | Ctrl + Option + key |
+/// | Chrome  | Alt + key         | Ctrl + Option + key | Ctrl + Option + key |
+/// | Safari  |                   |                     | Ctrl + Option + key |
+///
+pub fn accesskey(key: String) -> Attribute(msg) {
+  attribute("accesskey", key)
 }
 
-// COMMON ATTRIBUTES -----------------------------------------------------------
+/// Controls whether text input is automatically capitalised. The following values
+/// are accepted:
+///
+/// | Value        | Mode       |
+/// |--------------|------------|
+/// | ""           | default    |
+/// | "none"       | none       |
+/// | "off"        |            |
+/// | "sentences"  | sentences  |
+/// | "on"         |            |
+/// | "words"      | words      |
+/// | "characters" | characters |
+///
+/// The autocapitalisation processing model is based on the following five modes:
+///
+/// - **default**: The user agent and input method should make their own determination
+///   of whether or not to enable autocapitalization.
+///
+/// - **none**: No autocapitalisation should be applied (all letters should default
+///   to lowercase).
+///
+/// - **sentences**: The first letter of each sentence should default to a capital
+///   letter; all other letters should default to lowercase.
+///
+/// - **words**: The first letter of each word should default to a capital letter;
+///   all other letters should default to lowercase.
+///
+/// - **characters**: All letters should default to uppercase.
+///
+pub fn autocapitalize(value: String) -> Attribute(msg) {
+  attribute("autocapitalize", value)
+}
 
+/// Controls whether the user agent may automatically correct mispelled words
+/// while typing. Whether or not spelling is corrected is left up to the user
+/// agent and may also depend on the user's settings.
 ///
+/// When disabled the user agent is **never** allowed to correct spelling.
 ///
-/// > **Note**: unlike most attributes, multiple `style` attributes are merged
-/// > with any existing other styles on an element. Styles added _later_ in the
-/// > list will override styles added earlier.
+pub fn autocorrect(enabled: Bool) -> Attribute(msg) {
+  boolean_attribute("autocorrect", enabled)
+}
+
+/// For server-rendered HTML, this attribute controls whether an element should
+/// be focused when the page first loads. Lustre's runtime augments the native
+/// behaviour of this attribute: when enabled, the element will automatically be
+/// focused even if it already exists in the DOM.
 ///
-pub fn style(properties: List(#(String, String))) -> Attribute(msg) {
-  attribute("style", {
-    use styles, #(name, value) <- list.fold(properties, "")
-    styles <> name <> ":" <> value <> ";"
-  })
+pub fn autofocus(should_autofocus: Bool) -> Attribute(msg) {
+  boolean_attribute("autofocus", should_autofocus)
 }
 
 ///
 ///
 /// > **Note**: unlike most attributes, multiple `class` attributes are merged
-/// > with any existing other classes on an element.
+/// > with any existing other classes on an element. Classes added _later_ in the
+/// > list will override classes added earlier.
 ///
 pub fn class(name: String) -> Attribute(msg) {
   attribute("class", name)
 }
 
 ///
+///
+/// > **Note**: unlike most attributes, multiple `class` attributes are merged
+/// > with any existing other classes on an element. Classes added _later_ in the
+/// > list will override classes added earlier.
+///
 pub fn classes(names: List(#(String, Bool))) -> Attribute(msg) {
-  attribute("class", {
-    use classes, #(class, active) <- list.fold(names, "")
-    case classes {
-      "" if active -> class
-      _ if active -> classes <> " " <> class
-      _ -> classes
-    }
-  })
+  class(do_classes(names, ""))
+}
+
+fn do_classes(names: List(#(String, Bool)), class: String) -> String {
+  case names {
+    [] -> class
+    [#(name, True), ..rest] -> class <> name <> " " <> do_classes(rest, class)
+    [#(_, False), ..rest] -> do_classes(rest, class)
+  }
+}
+
+/// Indicates whether the element's content is editable by the user, allowing them
+/// to modify the HTML content directly. The following values are accepted:
+///
+/// | Value        | Description                                           |
+/// |--------------|-------------------------------------------------------|
+/// | "true"       | The element is editable.                              |
+/// | ""           |                                                       |
+/// | "false"      | The element is not editable.                          |
+/// | "plain-text" | The element is editable without rich text formatting. |
+///
+/// > **Note**: setting the value to an empty string does *not* disable this
+/// > attribute, and is instead equivalent to setting it to `"true"`!
+///
+pub fn contenteditable(is_editable: String) -> Attribute(msg) {
+  attribute("contenteditable", is_editable)
 }
 
 /// Add a `data-*` attribute to an HTML element. The key will be prefixed by `data-`.
@@ -133,6 +198,287 @@ pub fn classes(names: List(#(String, Bool))) -> Attribute(msg) {
 pub fn data(key: String, value: String) -> Attribute(msg) {
   attribute("data-" <> key, value)
 }
+
+/// Specifies the text direction of the element's content. The following values
+/// are accepted:
+///
+/// | Value  | Description                                                          |
+/// |--------|----------------------------------------------------------------------|
+/// | "ltr"  | The element's content is left-to-right.                              |
+/// | "rtl"  | The element's content is right-to-left.                              |
+/// | "auto" | The element's content direction is determined by the content itself. |
+///
+/// > **Note**: the `"auto"` value should only be used as a last resort in cases
+/// > where the content's direction is truly unknown. The heuristic used by
+/// > browsers is naive and only considers the first character available that
+/// > indicates the direction.
+///
+pub fn dir(direction: String) -> Attribute(msg) {
+  attribute("dir", direction)
+}
+
+/// Indicates whether the element can be dragged as part of the HTML drag-and-drop
+/// API.
+///
+pub fn draggable(is_draggable: Bool) -> Attribute(msg) {
+  attribute("draggable", case is_draggable {
+    True -> "true"
+    False -> "false"
+  })
+}
+
+/// Specifies what action label (or potentially icon) to present for the "enter"
+/// key on virtual keyboards such as mobile devices. The following values are
+/// accepted:
+///
+/// | Value      | Example        |
+/// |------------|----------------|
+/// | "enter"    | "return", "↵"  |
+/// | "done"     | "done", "✅"   |
+/// | "go"       | "go"           |
+/// | "next"     | "next"         |
+/// | "previous" | "return"       |
+/// | "search"   | "search", "🔍" |
+/// | "send"     | "send"         |
+///
+/// The examples listed are demonstrative and may not be the actual labels used
+/// by user agents. When unspecified or invalid, the user agent may use contextual
+/// information such as the type of an input to determine the label.
+///
+pub fn enterkeyhint(value: String) -> Attribute(msg) {
+  attribute("enterkeyhint", value)
+}
+
+/// Indicates whether the element is relevant to the page's current state. A
+/// hidden element is not visible to the user and is inaccessible to assistive
+/// technologies such as screen readers. This makes it unsuitable for simple
+/// presentation purposes, but it can be useful for example to render something
+/// that may be made visible later.
+///
+pub fn hidden(is_hidden: Bool) -> Attribute(msg) {
+  boolean_attribute("hidden", is_hidden)
+}
+
+///
+///
+pub fn id(value: String) -> Attribute(msg) {
+  attribute("id", value)
+}
+
+/// Marks the element as inert, meaning it is not currently interactive and does
+/// not receive user input. For sighted users, it's common to style inert elements
+/// in a way that makes them visually distinct from active elements, such as by
+/// greying them out: this can help avoid confusion for users who may not otherwise
+/// know the content they are looking at is inactive.
+///
+pub fn inert(is_inert: Bool) -> Attribute(msg) {
+  boolean_attribute("inert", is_inert)
+}
+
+/// Hints to the user agent about what type of virtual keyboard to display when
+/// the user interacts with the element. The following values are accepted:
+///
+/// | Value        | Description                                                   |
+/// |--------------|---------------------------------------------------------------|
+/// | "none"       | No virtual keyboard should be displayed.                      |
+/// | "text"       | A standard text input keyboard.                               |
+/// | "decimal"    | A numeric keyboard with locale-appropriate separator.         |
+/// | "numeric"    | A numeric keyboard.                                           |
+/// | "tel"        | A telephone keypad including "#" and "*".                     |
+/// | "email"      | A keyboard for entering email addresses including "@" and "." |
+/// | "url"        | A keyboard for entering URLs including "/" and ".".           |
+/// | "search"     | A keyboard for entering search queries should be shown.       |
+///
+/// The `"none"` value should only be used in cases where you are rendering a
+/// custom input method, otherwise the user will not be able to enter any text!
+///
+pub fn inputmode(value: String) -> Attribute(msg) {
+  attribute("inputmode", value)
+}
+
+/// Specifies the [customised built-in element](https://html.spec.whatwg.org/#customized-built-in-element)
+/// to be used in place of the native element this attribute is applied to.
+///
+pub fn is(value: String) -> Attribute(msg) {
+  attribute("is", value)
+}
+
+/// Used as part of the [Microdata](https://schema.org/docs/gs.html) format to
+/// specify the global unique identifier of an item, for example books that are
+/// identifiable by their ISBN.
+///
+pub fn itemid(id: String) -> Attribute(msg) {
+  attribute("itemid", id)
+}
+
+/// Used as part of the [Microdata](https://schema.org/docs/gs.html) format to
+/// specify that the content of the element is to be treated as a value of the
+/// given property name.
+///
+pub fn itemprop(name: String) -> Attribute(msg) {
+  attribute("itemprop", name)
+}
+
+/// Used as part of the [Microdata](https://schema.org/docs/gs.html) format to
+/// indicate that the element and its descendants form a single item of key-value
+/// data.
+///
+pub fn itemscope(has_scope: Bool) -> Attribute(msg) {
+  boolean_attribute("itemscope", has_scope)
+}
+
+/// Used as part of the [Microdata](https://schema.org/docs/gs.html) format to
+/// specify the type of item being described. This is a URL that points to
+/// a schema containing the vocabulary used for an item's key-value pairs, such
+/// as a schema.org type.
+///
+pub fn itemtype(url: String) -> Attribute(msg) {
+  attribute("itemtype", url)
+}
+
+/// Specifies the language of the element's content and the language of any of
+/// this element's attributes that contain text. The `"lang"` attribute applies
+/// to the element itself and all of its descendants, unless overridden by
+/// another `"lang"` attribute on a descendant element.
+///
+/// The value must be a valid [BCP 47 language tag](https://tools.ietf.org/html/bcp47).
+///
+pub fn lang(language: String) -> Attribute(msg) {
+  attribute("lang", language)
+}
+
+/// A cryptographic nonce used by CSP (Content Security Policy) to allow or
+/// deny the fetch of a given resource.
+///
+pub fn nonce(value: String) -> Attribute(msg) {
+  attribute("nonce", value)
+}
+
+/// Specifies that the element should be treated as a popover, rendering it in
+/// the top-layer above all other content when the popover is active. The following
+/// values are accepted:
+///
+/// | Value        | Description                                    |
+/// |--------------|------------------------------------------------|
+/// | "auto"       | Closes other popovers when opened.             |
+/// | ""           |                                                |
+/// | "manual"     | Does not close other popovers when opened.     |
+/// | "hint"       | Closes only other "hint" popovers when opened. |
+///
+/// All modes except `"manual"` support "light dismiss" letting the user close
+/// the popover by clicking outside of it, as well as respond to close requests
+/// letting the user dismiss a popover by pressing the "escape" key or by using
+/// the dismiss gesture on any assistive technology.
+///
+/// Popovers can be triggered either programmatically through the `showPopover()`
+/// method, or by assigning an [`id`](#id) to the element and including the
+/// [`popovertarget`](#popovertarget) attribute on the element that should trigger
+/// the popover.
+///
+pub fn popover(value: String) -> Attribute(msg) {
+  attribute("popover", value)
+}
+
+/// Indicates whether the element's content should be checked for spelling errors.
+/// This typically only applies to inputs and textareas, or elements that are
+/// [`contenteditable`](#contenteditable).
+///
+pub fn spellcheck(should_check: Bool) -> Attribute(msg) {
+  attribute("spellcheck", case should_check {
+    True -> "true"
+    False -> "false"
+  })
+}
+
+/// Provide a single property name and value to be used as inline styles for the
+/// element. If either the property name or value is empty, this attribute will
+/// be ignored.
+///
+/// > **Note**: unlike most attributes, multiple `style` attributes are merged
+/// > with any existing other styles on an element. Styles added _later_ in the
+/// > list will override styles added earlier.
+///
+pub fn style(property: String, value: String) -> Attribute(msg) {
+  case property, value {
+    "", _ | _, "" -> class("")
+    _, _ -> attribute("style", property <> ":" <> value <> ";")
+  }
+}
+
+/// Provide a list of property-value pairs to be used as inline styles for the
+/// element. Empty properties or values are omitted from the final style string.
+///
+/// > **Note**: unlike most attributes, multiple `styles` attributes are merged
+/// > with any existing other styles on an element. Styles added _later_ in the
+/// > list will override styles added earlier.
+///
+pub fn styles(properties: List(#(String, String))) -> Attribute(msg) {
+  attribute("style", do_styles(properties, ""))
+}
+
+fn do_styles(properties: List(#(String, String)), styles: String) -> String {
+  case properties {
+    [] -> styles
+    [#("", _), ..rest] | [#(_, ""), ..rest] -> do_styles(rest, styles)
+    [#(name, value), ..rest] ->
+      do_styles(rest, styles <> name <> ":" <> value <> ";")
+  }
+}
+
+/// Specifies the tabbing order of the element. If an element is not typically
+/// focusable, such as a `<div>`, it will be made focusable when this attribute
+/// is set.
+///
+/// Any integer value is accepted, but the following values are recommended:
+///
+/// - `-1`: indicates the element may receive focus, but should not be sequentially
+///   focusable. The user agent may choose to ignore this preference if, for
+///   example, the user agent is a screen reader.
+///
+/// - `0`: indicates the element may receive focus and should be placed in the
+///   sequential focus order in the order it appears in the DOM.
+///
+/// - any positive integer: indicates the element should be placed in the sequential
+///   focus order relative to other elements with a positive tabindex.
+///
+/// Values other than `0` and `-1` are generally not recommended as managing
+/// the relative order of focusable elements can be difficult and error-prone.
+///
+pub fn tabindex(index: Int) -> Attribute(msg) {
+  attribute("tabindex", int.to_string(index))
+}
+
+/// Annotate an element with additional information that may be suitable as a
+/// tooltip, such as a description of a link or image.
+///
+/// It is **not** recommended to use the `title` attribute as a way of providing
+/// accessibility information to assistive technologies. User agents often do not
+/// expose the `title` attribute to keyboard-only users or touch devices, for
+/// example.
+///
+pub fn title(text: String) -> Attribute(msg) {
+  attribute("title", text)
+}
+
+/// Controls whether an element's content should be translated.
+///
+pub fn translate(should_translate: Bool) -> Attribute(msg) {
+  attribute("translate", case should_translate {
+    True -> "yes"
+    False -> "no"
+  })
+}
+
+/// Indicates if writing suggestions should be enabled for this element.
+///
+pub fn writingsuggestions(enabled: Bool) -> Attribute(msg) {
+  attribute("writingsuggestions", case enabled {
+    True -> "true"
+    False -> "false"
+  })
+}
+
+// ARIA ------------------------------------------------------------------------
 
 /// Add an `aria-*` attribute to an HTML element. The key will be prefixed by
 /// `aria-`.
@@ -142,333 +488,10 @@ pub fn aria(name: String, value: String) -> Attribute(msg) {
 }
 
 ///
-pub fn id(name: String) -> Attribute(msg) {
-  attribute("id", name)
-}
-
 ///
 pub fn role(name: String) -> Attribute(msg) {
   attribute("role", name)
 }
-
-///
-pub fn title(name: String) -> Attribute(msg) {
-  attribute("title", name)
-}
-
-// INPUTS ----------------------------------------------------------------------
-
-///
-pub fn type_(name: String) -> Attribute(msg) {
-  attribute("type", name)
-}
-
-///
-pub fn value(val: String) -> Attribute(msg) {
-  attribute("value", val)
-}
-
-///
-pub fn checked(is_checked: Bool) -> Attribute(msg) {
-  boolean_attribute("checked", is_checked)
-}
-
-///
-pub fn placeholder(text: String) -> Attribute(msg) {
-  attribute("placeholder", text)
-}
-
-///
-pub fn selected(is_selected: Bool) -> Attribute(msg) {
-  boolean_attribute("selected", is_selected)
-}
-
-// INPUT HELPERS ---------------------------------------------------------------
-
-///
-pub fn accept(types: List(String)) -> Attribute(msg) {
-  attribute("accept", string.join(types, ","))
-}
-
-///
-pub fn accept_charset(types: List(String)) -> Attribute(msg) {
-  attribute("accept-charset", string.join(types, " "))
-}
-
-///
-pub fn msg(uri: String) -> Attribute(msg) {
-  attribute("msg", uri)
-}
-
-///
-pub fn autocomplete(name: String) -> Attribute(msg) {
-  attribute("autocomplete", name)
-}
-
-/// Sets the `autofocus` attribute.
-///
-/// Lustre's runtime augments that native behaviour of this attribute. Whenever
-/// it is toggled true, the element will be automatically focused even if it already
-/// exists in the DOM.
-///
-pub fn autofocus(should_autofocus: Bool) -> Attribute(msg) {
-  boolean_attribute("autofocus", should_autofocus)
-}
-
-///
-pub fn disabled(is_disabled: Bool) -> Attribute(msg) {
-  boolean_attribute("disabled", is_disabled)
-}
-
-///
-pub fn name(name: String) -> Attribute(msg) {
-  attribute("name", name)
-}
-
-///
-pub fn pattern(regex: String) -> Attribute(msg) {
-  attribute("pattern", regex)
-}
-
-///
-pub fn readonly(is_readonly: Bool) -> Attribute(msg) {
-  boolean_attribute("readonly", is_readonly)
-}
-
-///
-pub fn required(is_required: Bool) -> Attribute(msg) {
-  boolean_attribute("required", is_required)
-}
-
-///
-pub fn for(id: String) -> Attribute(msg) {
-  attribute("for", id)
-}
-
-// INPUT RANGES ----------------------------------------------------------------
-
-///
-pub fn maxlength(val: String) -> Attribute(msg) {
-  attribute("maxlength", val)
-}
-
-///
-pub fn max(val: String) -> Attribute(msg) {
-  attribute("max", val)
-}
-
-///
-pub fn min(val: String) -> Attribute(msg) {
-  attribute("min", val)
-}
-
-///
-pub fn step(val: String) -> Attribute(msg) {
-  attribute("step", val)
-}
-
-// INPUT TEXT AREAS ------------------------------------------------------------
-
-///
-pub fn cols(val: Int) -> Attribute(msg) {
-  attribute("cols", int.to_string(val))
-}
-
-///
-pub fn rows(val: Int) -> Attribute(msg) {
-  attribute("rows", int.to_string(val))
-}
-
-///
-pub fn wrap(mode: String) -> Attribute(msg) {
-  attribute("wrap", mode)
-}
-
-// LINKS AND AREAS -------------------------------------------------------------
-
-///
-pub fn href(uri: String) -> Attribute(msg) {
-  attribute("href", uri)
-}
-
-///
-pub fn target(target: String) -> Attribute(msg) {
-  attribute("target", target)
-}
-
-///
-pub fn download(filename: String) -> Attribute(msg) {
-  attribute("download", filename)
-}
-
-///
-pub fn rel(relationship: String) -> Attribute(msg) {
-  attribute("rel", relationship)
-}
-
-///
-pub fn crossorigin(origin: String) -> Attribute(msg) {
-  attribute("crossorigin", origin)
-}
-
-///
-pub fn integrity(cryptographic_hash: String) -> Attribute(msg) {
-  attribute("integrity", cryptographic_hash)
-}
-
-// EMBEDDED CONTENT ------------------------------------------------------------
-
-///
-pub fn src(uri: String) -> Attribute(msg) {
-  attribute("src", uri)
-}
-
-/// **Note**: this uses [`property`](#property) to set the value directly on the
-/// DOM node, making it **incompatible** with SVG elements. To set the height of
-/// an `<svg>` element, use the [`attribute`](#attribute) function directly.
-///
-/// You can read more about the difference between attributes and properties
-/// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
-///
-pub fn height(val: Int) -> Attribute(msg) {
-  property("height", json.int(val))
-}
-
-/// **Note**: this uses [`property`](#property) to set the value directly on the
-/// DOM node, making it **incompatible** with SVG elements. To set the width of
-/// an `<svg>` element, use the [`attribute`](#attribute) function directly.
-///
-/// You can read more about the difference between attributes and properties
-/// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
-///
-pub fn width(val: Int) -> Attribute(msg) {
-  property("width", json.int(val))
-}
-
-///
-pub fn alt(text: String) -> Attribute(msg) {
-  attribute("alt", text)
-}
-
-///
-pub fn content(text: String) -> Attribute(msg) {
-  attribute("content", text)
-}
-
-// AUDIO AND VIDEO -------------------------------------------------------------
-
-/// Sets the `autofocus` attribute.
-///
-/// Lustre will start playing every time this attribute switches from `False`
-/// to `True`.
-pub fn autoplay(should_autoplay: Bool) -> Attribute(msg) {
-  boolean_attribute("autoplay", should_autoplay)
-}
-
-///
-pub fn controls(visible: Bool) -> Attribute(msg) {
-  boolean_attribute("controls", visible)
-}
-
-///
-pub fn loop(should_loop: Bool) -> Attribute(msg) {
-  boolean_attribute("loop", should_loop)
-}
-
-// FORMS -----------------------------------------------------------------------
-
-///
-pub fn action(url: String) -> Attribute(msg) {
-  attribute("action", url)
-}
-
-///
-pub fn enctype(value: String) -> Attribute(msg) {
-  attribute("enctype", value)
-}
-
-///
-pub fn method(method: String) -> Attribute(msg) {
-  attribute("method", method)
-}
-
-///
-pub fn novalidate(value: Bool) -> Attribute(msg) {
-  boolean_attribute("novalidate", value)
-}
-
-///
-pub fn form_action(action: String) -> Attribute(msg) {
-  attribute("formaction", action)
-}
-
-///
-pub fn form_enctype(value: String) -> Attribute(msg) {
-  attribute("formenctype", value)
-}
-
-///
-pub fn form_method(method: String) -> Attribute(msg) {
-  attribute("formmethod", method)
-}
-
-///
-pub fn form_novalidate(value: Bool) -> Attribute(msg) {
-  boolean_attribute("formnovalidate", value)
-}
-
-///
-pub fn form_target(target: String) -> Attribute(msg) {
-  attribute("formtarget", target)
-}
-
-// DIALOGS ---------------------------------------------------------------------
-
-///
-pub fn open(is_open: Bool) -> Attribute(msg) {
-  boolean_attribute("open", is_open)
-}
-
-// WEB COMPONENTS --------------------------------------------------------------
-
-///
-pub fn slot(name: String) -> Attribute(msg) {
-  attribute("slot", name)
-}
-
-///
-pub fn shadow_root_mode(is_open: Bool) -> Attribute(msg) {
-  attribute("shadowrootmode", case is_open {
-    True -> "open"
-    False -> "closed"
-  })
-}
-
-///
-pub fn shadow_root_delegates_focus(delegates_focus: Bool) -> Attribute(msg) {
-  boolean_attribute("shadowrootdelegatesfocus", delegates_focus)
-}
-
-// META ------------------------------------------------------------------------
-
-///
-pub fn charset(name: String) -> Attribute(msg) {
-  attribute("charset", name)
-}
-
-///
-pub fn http_equiv(name: String) -> Attribute(msg) {
-  attribute("http-equiv", name)
-}
-
-// HTML ------------------------------------------------------------------------
-
-///
-pub fn lang(name: String) -> Attribute(msg) {
-  attribute("lang", name)
-}
-
-// ARIA ------------------------------------------------------------------------
 
 /// The aria-activedescendant attribute identifies the currently active element
 /// when focus is on a composite widget, combobox, textbox, group, or application.
