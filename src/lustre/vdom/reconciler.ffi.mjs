@@ -563,7 +563,7 @@ const ATTRIBUTE_HOOKS = {
 
   autofocus: {
     added(node) {
-      node.focus?.();
+      queueMicrotask(() => node.focus?.());
     },
   },
 
