@@ -72,7 +72,7 @@ export const make_component = ({ init, update, view, config }, name) => {
     }
 
     attributeChangedCallback(name, _, value) {
-      const decoded = decode(value, config.attributes.get(name));
+      const decoded = config.attributes.get(name)(value)
 
       if (decoded.constructor === Ok) {
         this.dispatch(decoded[0]);
