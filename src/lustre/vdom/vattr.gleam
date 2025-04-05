@@ -33,6 +33,15 @@ pub type Limit {
   Throttle(kind: Int, delay: Int)
 }
 
+pub fn limit_equals(a, b) {
+  case a, b {
+    NoLimit(..), NoLimit(..) -> True
+    Debounce(delay: d1, ..), Debounce(delay: d2, ..) if d1 == d2 -> True
+    Throttle(delay: d1, ..), Throttle(delay: d2, ..) if d1 == d2 -> True
+    _, _ -> False
+  }
+}
+
 // CONSTRUCTORS ----------------------------------------------------------------
 
 pub const attribute_kind: Int = 0
