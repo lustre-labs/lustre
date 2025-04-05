@@ -11,7 +11,7 @@ import houdini
 import lustre/internals/constants
 import lustre/internals/json_object_builder
 import lustre/internals/mutable_map.{type MutableMap}
-import lustre/vdom/vattr.{type Attribute, Attribute}
+import lustre/vdom/vattr.{type Attribute}
 
 // TYPES -----------------------------------------------------------------------
 

@@ -312,39 +312,6 @@ fn handle_client_message(
   }
 }
 
-fn handle_attribute_changes(
-  attributes: List(#(String, String)),
-  handlers: Dict(String, fn(String) -> Result(msg, Nil)),
-  update: fn(model, msg) -> #(model, Effect(msg)),
-  did_update: Bool,
-  model: #(model, Effect(msg)),
-) -> #(model, Effect(msg), Bool) {
-  case attributes {
-    [] -> #(model.0, model.1, did_update)
-
-    [#(name, value), ..attributes] ->
-      case handle_attribute_change(handlers, name, value) {
-        Ok(message) -> {
-          let #(new_model, effect) = update(model.0, message)
-
-          handle_attribute_changes(attributes, handlers, update, True, #(
-            new_model,
-            effect.batch([effect, model.1]),
-          ))
-        }
-
-        Error(_) ->
-          handle_attribute_changes(
-            attributes,
-            handlers,
-            update,
-            did_update,
-            model,
-          )
-      }
-  }
-}
-
 fn handle_attribute_change(
   attributes: Dict(String, fn(String) -> Result(msg, Nil)),
   name: String,
