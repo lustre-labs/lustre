@@ -94,10 +94,17 @@ pub fn throttle(delay delay: Int) -> Limit {
 //
 
 pub fn prepare(attributes: List(Attribute(msg))) -> List(Attribute(msg)) {
-  attributes
-  // Sort in reverse because `merge` will build the list in reverse anyway.
-  |> list.sort(by: fn(a, b) { compare(b, a) })
-  |> merge(constants.empty_list)
+  case attributes {
+    // empty attribute lists or attribute lists with only a single attribute are
+    // always sorted and merged by definition, so we don't have to touch them.
+    [] | [_] -> attributes
+
+    _ ->
+      attributes
+      // Sort in reverse because `merge` will build the list in reverse anyway.
+      |> list.sort(by: fn(a, b) { compare(b, a) })
+      |> merge(constants.empty_list)
+  }
 }
 
 pub fn merge(

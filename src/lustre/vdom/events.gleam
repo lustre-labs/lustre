@@ -36,10 +36,6 @@ pub fn compose_mapper(mapper: Mapper, child_mapper: Mapper) -> Mapper {
   }
 }
 
-fn apply_mapper(mapper: Mapper, handler: Decoder(msg)) -> Decoder(msg) {
-  decode.map(handler, coerce(mapper))
-}
-
 // CONSTRUCTORS ----------------------------------------------------------------
 
 ///
@@ -87,7 +83,7 @@ fn do_add_event(
   mutable_map.insert(
     handlers,
     path.event(path, name),
-    apply_mapper(mapper, handler),
+    decode.map(handler, coerce(mapper)),
   )
 }
 
