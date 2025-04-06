@@ -831,6 +831,12 @@ pub fn disabled(is_disabled: Bool) -> Attribute(msg) {
   boolean_attribute("disabled", is_disabled)
 }
 
+///
+///
+pub fn for(id: String) -> Attribute(msg) {
+  attribute("for", id)
+}
+
 /// Associates the input with a form element located elsewhere in the document.
 ///
 pub fn form(id: String) -> Attribute(msg) {
