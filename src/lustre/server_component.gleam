@@ -46,10 +46,10 @@
 ////                            +----------------+
 //// ```
 ////
-//// **Note**: Lustre's server component runtime is separate from your application's
-//// WebSocket server. You're free to bring your own stack, connect multiple
-//// clients to the same Lustre instance, or keep the application alive even when
-//// no clients are connected.
+//// > **Note**: Lustre's server component runtime is separate from your application's
+//// > WebSocket server. You're free to bring your own stack, connect multiple
+//// > clients to the same Lustre instance, or keep the application alive even when
+//// > no clients are connected.
 ////
 //// Lustre server components run next to the rest of your backend code, your
 //// services, your database, etc. Real-time applications like chat services, games,
@@ -121,10 +121,10 @@ pub type TransportMethod {
 ///   and server runtime. Other options include `ServerSentEvents` and `Polling`
 ///   which are unidirectional transports.
 ///
-/// **Note**: the server component runtime bundle must be included and sent to
-/// the client for this to work correctly. You can do this by including the
-/// JavaScript bundle found in Lustre's `priv/static` directory or by inlining
-/// the script source directly with the [`script`](#script) element below.
+/// > **Note**: the server component runtime bundle must be included and sent to
+/// > the client for this to work correctly. You can do this by including the
+/// > JavaScript bundle found in Lustre's `priv/static` directory or by inlining
+/// > the script source directly with the [`script`](#script) element below.
 ///
 pub fn element(
   attributes: List(Attribute(msg)),
@@ -213,8 +213,8 @@ pub fn include(
 /// different `Subject`s to send messages to your application, take a look at the
 /// [`select`](#select) effect.
 ///
-/// **Note**: this function will always fail on the JavaScript target with the
-/// `NotErlang` error.
+/// > **Note**: this function will always fail on the JavaScript target with the
+/// > `NotErlang` error.
 ///
 pub fn subject(
   runtime: Runtime(msg),
@@ -242,8 +242,8 @@ fn coerce(value: a) -> b
 /// component runtime. The process that owns this will be monitored and the
 /// subject will be gracefully removed if the process dies.
 ///
-/// **Note**: if you are developing a server component for the JavaScript runtime,
-/// you should use [`register_callback`](#register_callback) instead.
+/// > **Note**: if you are developing a server component for the JavaScript runtime,
+/// > you should use [`register_callback`](#register_callback) instead.
 ///
 pub fn register_subject(
   runtime: Subject(RuntimeMessage(msg)),
@@ -293,9 +293,9 @@ fn do_deregister_subject(_, _) -> Nil {
 /// produces a message. Avoid using anonymous functions with this function, as
 /// they cannot later be removed using [`deregister_callback`](#deregister_callback).
 ///
-/// **Note**: server components running on the Erlang target are **strongly**
-/// encouraged to use [`register_subject`](#register_subject) instead of this
-/// function.
+/// > **Note**: server components running on the Erlang target are **strongly**
+/// > encouraged to use [`register_subject`](#register_subject) instead of this
+/// > function.
 ///
 pub fn register_callback(
   runtime: Runtime(msg),
@@ -308,9 +308,9 @@ pub fn register_callback(
 /// produces a message. The callback to remove is determined by function equality
 /// and must be the same function that was passed to [`register_callback`](#register_callback).
 ///
-/// **Note**: server components running on the Erlang target are **strongly**
-/// encouraged to use [`register_subject`](#register_subject) instead of this
-/// function.
+/// > **Note**: server components running on the Erlang target are **strongly**
+/// > encouraged to use [`register_subject`](#register_subject) instead of this
+/// > function.
 ///
 pub fn deregister_callback(
   runtime: Runtime(msg),
@@ -349,8 +349,8 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
 /// for later use. For example you may subscribe to a pubsub service and later use
 /// that same `Subject` to unsubscribe.
 ///
-/// **Note**: This effect does nothing on the JavaScript runtime, where `Subject`s
-/// and `Selector`s don't exist, and is the equivalent of returning `effect.none()`.
+/// > **Note**: This effect does nothing on the JavaScript runtime, where `Subject`s
+/// > and `Selector`s don't exist, and is the equivalent of returning `effect.none()`.
 ///
 pub fn select(
   sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),

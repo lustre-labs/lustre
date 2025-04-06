@@ -77,8 +77,8 @@ pub opaque type Config(msg) {
 ///   you an experience similar to components in other frameworks like React or
 ///   Vue.
 ///
-/// **Note**: Not all options are available for server components. For example
-/// server components cannot be form-associated and participate in form submission.
+/// > **Note**: Not all options are available for server components. For example
+/// > server components cannot be form-associated and participate in form submission.
 ///
 pub opaque type Option(msg) {
   Option(apply: fn(Config(msg)) -> Config(msg))
@@ -154,9 +154,9 @@ pub fn on_property_change(name: String, decoder: Decoder(msg)) -> Option(msg) {
 /// in form submission and respond to additional form-specific events such as
 /// the form being reset or the browser autofilling this component's value.
 ///
-/// **Note**: form-associated components are not supported in server components
-/// for both technical and ideological reasons. If you'd like a component that
-/// participates in form submission, you should use a client component!
+/// > **Note**: form-associated components are not supported in server components
+/// > for both technical and ideological reasons. If you'd like a component that
+/// > participates in form submission, you should use a client component!
 ///
 pub fn form_associated() -> Option(msg) {
   use config <- Option
@@ -169,8 +169,8 @@ pub fn form_associated() -> Option(msg) {
 /// callback should convert the autofilled value into a message that you handle
 /// in your `update` function.
 ///
-/// **Note**: server components cannot participate in form submission and configuring
-/// this option will do nothing.
+/// > **Note**: server components cannot participate in form submission and configuring
+/// > this option will do nothing.
 ///
 pub fn on_form_autofill(handler: fn(String) -> msg) -> Option(msg) {
   use config <- Option
@@ -181,8 +181,8 @@ pub fn on_form_autofill(handler: fn(String) -> msg) -> Option(msg) {
 /// Set a message to be dispatched whenever a form containing this
 /// [form-associated](#form_associated) component is reset.
 ///
-/// **Note**: server components cannot participate in form submission and configuring
-/// this option will do nothing.
+/// > **Note**: server components cannot participate in form submission and configuring
+/// > this option will do nothing.
 ///
 pub fn on_form_reset(msg: msg) -> Option(msg) {
   use config <- Option
@@ -194,8 +194,8 @@ pub fn on_form_reset(msg: msg) -> Option(msg) {
 /// [form-associated](#form_associated) component's `"value"` attribute. This is
 /// often triggered when the user navigates back or forward in their history.
 ///
-/// **Note**: server components cannot participate in form submission and configuring
-/// this option will do nothing.
+/// > **Note**: server components cannot participate in form submission and configuring
+/// > this option will do nothing.
 ///
 pub fn on_form_restore(handler: fn(String) -> msg) -> Option(msg) {
   use config <- Option
