@@ -8,6 +8,7 @@ examples/*/*/manifest.toml
 examples/*/*/priv/static
 
 test-apps/*/priv/static
+test-apps/*/manifest.toml
 
 # We want to keep the static assets for apps that test server components because
 # there is no bundling or generation of assets for these apps.

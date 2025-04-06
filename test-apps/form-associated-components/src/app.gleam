@@ -47,7 +47,7 @@ type Model =
   Int
 
 fn init(_) -> #(Model, Effect(Msg)) {
-  #(0, effect.none)
+  #(0, effect.none())
 }
 
 // UPDATE ----------------------------------------------------------------------

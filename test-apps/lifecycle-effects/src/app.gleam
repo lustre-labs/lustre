@@ -37,7 +37,7 @@ type Msg {
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
-    AddOne -> #(model + 1, effect.none)
+    AddOne -> #(model + 1, effect.none())
     DispatchOneThousandMessages(should_flush:) -> #(
       model,
       effect.batch([

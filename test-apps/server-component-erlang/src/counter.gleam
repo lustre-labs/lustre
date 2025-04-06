@@ -25,7 +25,7 @@ fn init(initial_count: Int) -> #(Model, Effect(Msg)) {
     False -> initial_count
   }
 
-  #(model, effect.none)
+  #(model, effect.none())
 }
 
 // UPDATE ----------------------------------------------------------------------

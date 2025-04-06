@@ -4,7 +4,6 @@ import gleam/int
 import gleam/list
 import lustre
 import lustre/attribute
-import lustre/component
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
@@ -25,7 +24,7 @@ type Model =
   Int
 
 fn init(_) -> #(Model, Effect(Msg)) {
-  #(0, effect.none)
+  #(0, effect.none())
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -38,7 +37,7 @@ type Msg {
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
-    AddOne -> #(model + 1, effect.none)
+    AddOne -> #(model + 1, effect.none())
     DispatchOneThousandMessages(should_flush:) -> #(
       model,
       effect.batch([
@@ -47,7 +46,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         alert_after_paint(model + 500, should_flush),
       ]),
     )
-    Flush -> #(model - 500, effect.none)
+    Flush -> #(model - 500, effect.none())
   }
 }
 

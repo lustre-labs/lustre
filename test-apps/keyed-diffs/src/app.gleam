@@ -101,14 +101,14 @@ fn view(model: Model) -> Element(Msg) {
   keyed.div(
     [
       attribute("data-revision", int.to_string(model.revision)),
-      attribute.style([#("margin", "2em")]),
+      attribute.style("margin", "2em"),
     ],
     [
       #(
         int.to_string(model.revision),
         html.div(
           [
-            attribute.style([
+            attribute.styles([
               #("display", "flex"),
               #("flex-direction", "column"),
               #("gap", "1em"),
@@ -127,7 +127,7 @@ fn view(model: Model) -> Element(Msg) {
             ]),
             html.div(
               [
-                attribute.style([
+                attribute.styles([
                   #("display", "flex"),
                   #("align-items", "center"),
                   #("gap", "0.5em"),
@@ -151,7 +151,7 @@ fn view(model: Model) -> Element(Msg) {
             ),
             html.div(
               [
-                attribute.style([
+                attribute.styles([
                   #("display", "grid"),
                   #("grid-template-columns", "auto 1fr"),
                   #("column-gap", "1em"),
@@ -174,14 +174,14 @@ fn view(model: Model) -> Element(Msg) {
 
 fn view_nodes_classic(children: List(Node)) {
   html.div(
-    [attribute.style([#("display", "flex"), #("gap", "1em")])],
+    [attribute.styles([#("display", "flex"), #("gap", "1em")])],
     list.index_map(children, view_node_classic),
   )
 }
 
 fn view_nodes_keyed(children: List(Node)) {
   keyed.div(
-    [attribute.style([#("display", "flex"), #("gap", "1em")])],
+    [attribute.styles([#("display", "flex"), #("gap", "1em")])],
     list.index_map(children, view_node_keyed),
   )
 }
