@@ -4,6 +4,7 @@ import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
+import lustre/internals/constants
 import lustre/vdom/vattr.{Debounce, Event, Throttle}
 
 // EFFECTS ---------------------------------------------------------------------
@@ -28,12 +29,28 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
 /// If you're listening for non-standard events (like those emitted by a custom
 /// element) their event names might be slightly different.
 ///
-/// **Note**: if you are developing a server component, it is important to also
-/// use [`server_component.include`](./server_component.html#include) to state
-/// which properties of the event you need to be sent to the server.
+/// > **Note**: if you are developing a server component, it is important to also
+/// > use [`server_component.include`](./server_component.html#include) to state
+/// > which properties of the event you need to be sent to the server.
 ///
 pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
-  attribute.on(name, handler)
+  vattr.event(
+    name:,
+    handler:,
+    include: constants.empty_list,
+    prevent_default: False,
+    stop_propagation: False,
+    immediate: is_immediate_event(name),
+    limit: vattr.NoLimit(kind: 0),
+  )
+}
+
+fn is_immediate_event(name: String) -> Bool {
+  case name {
+    "input" | "change" | "focus" | "focusin" | "focusout" | "blur" | "select" ->
+      True
+    _ -> False
+  }
 }
 
 /// Indicate that the event should have its default behaviour cancelled. This is
@@ -68,9 +85,9 @@ pub fn stop_propagation(event: Attribute(msg)) -> Attribute(msg) {
 /// This is particularly useful for server components where many events in quick
 /// succession can introduce problems because of network latency.
 ///
-/// **Note**: debounced events inherently introduce latency. Try to consider
-/// typical interaction patterns and experiment with different delays to balance
-/// responsiveness and update frequency.
+/// > **Note**: debounced events inherently introduce latency. Try to consider
+/// > typical interaction patterns and experiment with different delays to balance
+/// > responsiveness and update frequency.
 ///
 pub fn debounce(event: Attribute(msg), delay: Int) -> Attribute(msg) {
   case event {
@@ -92,9 +109,9 @@ pub fn debounce(event: Attribute(msg), delay: Int) -> Attribute(msg) {
 /// This is particularly useful for server components where many events in quick
 /// succession can introduce problems because of network latency.
 ///
-/// **Note**: throttled events inherently reduce precision. Try to consider
-/// typical interaction patterns and experiment with different delays to balance
-/// responsiveness and update frequency.
+/// > **Note**: throttled events inherently reduce precision. Try to consider
+/// > typical interaction patterns and experiment with different delays to balance
+/// > responsiveness and update frequency.
 ///
 pub fn throttle(event: Attribute(msg), delay: Int) -> Attribute(msg) {
   case event {

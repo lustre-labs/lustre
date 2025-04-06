@@ -138,13 +138,13 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 /// the state of the DOM, update your model, and then render a second time with
 /// the additional information.
 ///
-/// **Note**: dispatching messages synchronously in this effect can lead to
-/// degraded performance if not used correctly. In the worst case you can lock
-/// up the browser and prevent it from painting the screen _at all_.
+/// > **Note**: dispatching messages synchronously in this effect can lead to
+/// > degraded performance if not used correctly. In the worst case you can lock
+/// > up the browser and prevent it from painting the screen _at all_.
 ///
-/// **Note**: There is no concept of a "paint" for server components. Using this
-/// effect in those contexts will run the effect synchronously, after any non-timing
-/// effects are processed.
+/// > **Note**: There is no concept of a "paint" for server components. Using this
+/// > effect in those contexts will run the effect synchronously, after any non-timing
+/// > effects are processed.
 ///
 pub fn before_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
   Effect(..empty, before_paint: [task(effect)])
@@ -153,9 +153,9 @@ pub fn before_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 /// Schedule a side effect that is guaranteed to run after the browser has painted
 /// the screen.
 ///
-/// **Note**: There is no concept of a "paint" for server components. Using this
-/// effect in those contexts will run the effect synchronously, after any non-timing
-/// effects and any `before_paint` effects are processed.
+/// > **Note**: There is no concept of a "paint" for server components. Using this
+/// > effect in those contexts will run the effect synchronously, after any non-timing
+/// > effects and any `before_paint` effects are processed.
 ///
 pub fn after_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
   Effect(..empty, after_paint: [task(effect)])
@@ -211,15 +211,15 @@ pub fn with_element_internals(
 
 /// Batch multiple effects to be performed at the same time.
 ///
-/// **Note**: The runtime makes no guarantees about the order on which effects
-/// are performed! If you need to chain or sequence effects together, you have
-/// two broad options:
-///
-/// 1. Create variants of your `msg` type to represent each step in the sequence
-///    and fire off the next effect in response to the previous one.
-///
-/// 2. If you're defining effects yourself, consider whether or not you can handle
-///    the sequencing inside the effect itself.
+/// > **Note**: The runtime makes no guarantees about the order on which effects
+/// > are performed! If you need to chain or sequence effects together, you have
+/// > two broad options:
+/// >
+/// > 1. Create variants of your `msg` type to represent each step in the sequence
+/// >    and fire off the next effect in response to the previous one.
+/// >
+/// > 2. If you're defining effects yourself, consider whether or not you can handle
+/// >    the sequencing inside the effect itself.
 ///
 pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
   use acc, eff <- list.fold(effects, empty)
@@ -233,8 +233,8 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
 /// Transform the result of an effect. This is useful for mapping over effects
 /// produced by other libraries or modules.
 ///
-/// **Note**: Remember that effects are not _required_ to dispatch any messages.
-/// Your mapping function may never be called!
+/// > **Note**: Remember that effects are not _required_ to dispatch any messages.
+/// > Your mapping function may never be called!
 ///
 pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
   Effect(
@@ -280,11 +280,11 @@ fn do_comap_select(_, _, _) -> Nil {
 /// This is primarily used internally by the server component runtime, but it is
 /// may also useful for testing.
 ///
-/// **Note**: For now, you should **not** consider this function a part of the
-/// public API. It may be removed in a future minor or patch release. If you have
-/// a specific use case for this function, we'd love to hear about it! Please
-/// reach out on the [Gleam Discord](https://discord.gg/Fm8Pwmy) or
-/// [open an issue](https://github.com/lustre-labs/lustre/issues/new)!
+/// > **Note**: For now, you should **not** consider this function a part of the
+/// > public API. It may be removed in a future minor or patch release. If you have
+/// > a specific use case for this function, we'd love to hear about it! Please
+/// > reach out on the [Gleam Discord](https://discord.gg/Fm8Pwmy) or
+/// > [open an issue](https://github.com/lustre-labs/lustre/issues/new)!
 ///
 @internal
 pub fn perform(

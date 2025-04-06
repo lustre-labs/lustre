@@ -275,13 +275,13 @@ pub fn application(
 /// other HTML element. This dictionary of decoders allows you to specify how to
 /// decode those attributes into messages your component's update loop can handle.
 ///
-/// **Note**: Lustre components are conceptually a lot "heavier" than components
-/// in frameworks like React. They should be used for more complex UI widgets
-/// like a combobox with complex keyboard interactions rather than simple things
-/// like buttons or text inputs. Where possible try to think about how to build
-/// your UI with simple view functions (functions that return [Elements](./lustre/element.html#Element))
-/// and only reach for components when you really need to encapsulate that update
-/// loop.
+/// > **Note**: Lustre components are conceptually a lot "heavier" than components
+/// > in frameworks like React. They should be used for more complex UI widgets
+/// > like a combobox with complex keyboard interactions rather than simple things
+/// > like buttons or text inputs. Where possible try to think about how to build
+/// > your UI with simple view functions (functions that return [Elements](./lustre/element.html#Element))
+/// > and only reach for components when you really need to encapsulate that update
+/// > loop.
 ///
 pub fn component(
   init: fn(flags) -> #(model, Effect(msg)),
@@ -385,15 +385,15 @@ fn do_start_actor(
 /// with the name `my-component`, you'd use it in HTML by writing `<my-component>`
 /// or in Lustre by rendering `element("my-component", [], [])`.
 ///
-/// **Note**: There are [some rules](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define#valid_custom_element_names)
-/// for what names are valid for a Custom Element. The most important one is that
-/// the name *must* contain a hypen so that it can be distinguished from standard
-/// HTML elements.
+/// > **Note**: There are [some rules](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define#valid_custom_element_names)
+/// > for what names are valid for a Custom Element. The most important one is that
+/// > the name *must* contain a hypen so that it can be distinguished from standard
+/// > HTML elements.
 ///
-/// **Note**: This function is only meaningful when running in the browser and will
-/// produce a `NotABrowser` error if called anywhere else. For server contexts,
-/// you can render a Lustre server component using [`start_server_component`](#start_server_component)
-/// or [`start_actor`](#start_actor) instead.
+/// > **Note**: This function is only meaningful when running in the browser and will
+/// > produce a `NotABrowser` error if called anywhere else. For server contexts,
+/// > you can render a Lustre server component using [`start_server_component`](#start_server_component)
+/// > or [`start_actor`](#start_actor) instead.
 ///
 @external(javascript, "./lustre/runtime/client/component.ffi.mjs", "make_component")
 pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error) {
@@ -407,11 +407,11 @@ pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error)
 /// example by attaching event listeners to the document to dispatch messages
 /// after the app has been started.
 ///
-/// **Note**: This function is only meaningful when running on the JavaScript
-/// target as a `Runtime` can only be constructed on that target. If you are
-/// running a server component on the Erlang target, you should use Gleam's usual
-/// api for sending messages to actors and the `Subject` returned from
-/// [`start_actor`](#start_actor).
+/// > **Note**: This function is only meaningful when running on the JavaScript
+/// > target as a `Runtime` can only be constructed on that target. If you are
+/// > running a server component on the Erlang target, you should use Gleam's usual
+/// > api for sending messages to actors and the `Subject` returned from
+/// > [`start_actor`](#start_actor).
 ///
 @external(erlang, "gleam@erlang@process", "send")
 @external(javascript, "./lustre/runtime/client/runtime.ffi.mjs", "send")

@@ -42,9 +42,9 @@ pub type Patch(msg) {
 /// or removing its children).
 ///
 ///
-/// **Note**: when constructing a `Change` you should **always** use the provided
-/// constructors to ensure that the `kind` field is set correctly, never construct
-/// a variant directly.
+/// > **Note**: when constructing a `Change` you should **always** use the provided
+/// > constructors to ensure that the `kind` field is set correctly, never construct
+/// > a variant directly.
 ///
 pub type Change(msg) {
   // Self upadates:

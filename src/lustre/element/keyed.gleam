@@ -67,9 +67,9 @@ import lustre/vdom/vnode
 /// a single child can be moved around such as in a to-do list, or when elements
 /// are frequently added or removed.
 ///
-/// **Note**: the key for each child must be unique within the list of children,
-/// but it doesn't have to be unique across the whole application. It's fine to
-/// use the same key in different lists.
+/// > **Note**: the key for each child must be unique within the list of children,
+/// > but it doesn't have to be unique across the whole application. It's fine to
+/// > use the same key in different lists.
 ///
 pub fn element(
   tag: String,
@@ -96,9 +96,9 @@ pub fn element(
 /// This is useful when a single child can be moved around such as in a to-do
 /// list, or when elements are frequently added or removed.
 ///
-/// **Note**: the key for each child must be unique within the list of children,
-/// but it doesn't have to be unique across the whole application. It's fine to
-/// use the same key in different lists.
+/// > **Note**: the key for each child must be unique within the list of children,
+/// > but it doesn't have to be unique across the whole application. It's fine to
+/// > use the same key in different lists.
 ///
 pub fn namespaced(
   namespace: String,
@@ -126,9 +126,9 @@ pub fn namespaced(
 /// can be moved around such as in a to-do list, or when elements are frequently
 /// added or removed.
 ///
-/// **Note**: the key for each child must be unique within the list of children,
-/// but it doesn't have to be unique across the whole application. It's fine to
-/// use the same key in different lists.
+/// > **Note**: the key for each child must be unique within the list of children,
+/// > but it doesn't have to be unique across the whole application. It's fine to
+/// > use the same key in different lists.
 ///
 pub fn fragment(children: List(#(String, Element(msg)))) -> Element(msg) {
   let #(keyed_children, children, children_count) =

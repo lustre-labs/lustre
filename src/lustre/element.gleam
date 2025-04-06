@@ -22,9 +22,9 @@ import lustre/vdom/vnode.{Element, Fragment, Text, UnsafeInnerHtml}
 /// variable is used to represent the types of messages that can be produced from
 /// events on the element or its children.
 ///
-/// **Note**: Just because an element _can_ produces messages of a given type,
-/// doesn't mean that it _will_! The `msg` type variable is used to represent the
-/// potential for messages to be produced, not a guarantee.
+/// > **Note**: Just because an element _can_ produces messages of a given type,
+/// > doesn't mean that it _will_! The `msg` type variable is used to represent the
+/// > potential for messages to be produced, not a guarantee.
 ///
 /// The most basic ways to create elements are:
 ///
@@ -73,29 +73,29 @@ pub type Element(msg) =
 /// function is particularly handy when constructing custom elements, either
 /// from your own Lustre components or from external JavaScript libraries.
 ///
-/// **Note**: Because Lustre is primarily used to create HTML, this function
-/// special-cases the following tags which render as
-/// [void elements](https://developer.mozilla.org/en-US/docs/Glossary/Void_element):
-///
-///   - area
-///   - base
-///   - br
-///   - col
-///   - embed
-///   - hr
-///   - img
-///   - input
-///   - link
-///   - meta
-///   - param
-///   - source
-///   - track
-///   - wbr
-///
-///  This will only affect the output of `to_string` and `to_string_builder`!
-///  If you need to render any of these tags with children, *or* you want to
-///  render some other tag as self-closing or void, use [`advanced`](#advanced)
-///  to construct the element instead.
+/// > **Note**: Because Lustre is primarily used to create HTML, this function
+/// > special-cases the following tags which render as
+/// > [void elements](https://developer.mozilla.org/en-US/docs/Glossary/Void_element):
+/// >
+/// >   - area
+/// >   - base
+/// >   - br
+/// >   - col
+/// >   - embed
+/// >   - hr
+/// >   - img
+/// >   - input
+/// >   - link
+/// >   - meta
+/// >   - param
+/// >   - source
+/// >   - track
+/// >   - wbr
+/// >
+/// > This will only affect the output of `to_string` and `to_string_builder`!
+/// > If you need to render any of these tags with children, *or* you want to
+/// > render some other tag as self-closing or void, use [`advanced`](#advanced)
+/// > to construct the element instead.
 ///
 pub fn element(
   tag: String,
