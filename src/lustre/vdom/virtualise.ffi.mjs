@@ -75,13 +75,29 @@ function virtualise_node(node) {
 const input_elements = ["input", "select", "textarea"];
 
 function virtualise_input_events(tag, node) {
+  // For inputs that reflect their default state (eg not checked for checkboxes
+  // and radios, empty for all other inputs) then we don't need to schedule any
+  // virtual events.
+  if (tag === "input" && node.type === "checkbox" && !node.checked) return;
+  if (tag === "input" && node.type === "radio" && !node.checked) return;
+  if (node.type !== "checkbox" && node.type !== "radio" && !node.value) return;
+
+  // We schedule a microtask instead of dispatching the events immediately to
+  // give the runtime a chance to finish virtualising the DOM and set up the
+  // runtime.
+  //
+  // Microtasks are flushed once the current task has completed, and will block
+  // the browser from painting until the queue is empty, so we can be sure that
+  // these events will be processed before the user sees the first render.
   window.queueMicrotask(() => {
-    if (node.type === "checkbox" && "input" && node.checked) {
-      node.dispatchEvent(new Event("change", { bubbles: true }));
-    } else if (node.type === "radio" && "input" && node.checked) {
-      node.dispatchEvent(new Event("change", { bubbles: true }));
-    } else if (node.value) {
-      node.dispatchEvent(new Event("input", { bubbles: true }));
+    node.dispatchEvent(new Event("input", { bubbles: true }));
+    node.dispatchEvent(new Event("change", { bubbles: true }));
+
+    // User apps may be using semi-controlled inputs where they listen to blur
+    // events to save the value rather than using the input event. To account for
+    // those, we dispatch a blur event if the input is not currently focused.
+    if (document.activeElement !== node) {
+      node.dispatchEvent(new Event("blur", { bubbles: true }));
     }
   });
 }
