@@ -1,12 +1,9 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic/decode.{type Decoder}
 import gleam/int
 import gleam/json.{type Json}
-import gleam/list
 import gleam/string
-import lustre/internals/constants
-import lustre/vdom/vattr.{Attribute, Event, Property}
+import lustre/vdom/vattr.{Attribute}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -21,9 +18,9 @@ pub type Attribute(msg) =
 /// Create an HTML attribute. This is like saying `element.setAttribute("class", "wibble")`
 /// in JavaScript. Attributes will be rendered when calling [`element.to_string`](./element.html#to_string).
 ///
-/// **Note**: there is a subtle difference between attributes and properties. You
-/// can read more about the implications of this
-/// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
+/// > **Note**: there is a subtle difference between attributes and properties. You
+/// > can read more about the implications of this
+/// > [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn attribute(name: String, value: String) -> Attribute(msg) {
   vattr.attribute(name, value)
@@ -40,34 +37,12 @@ fn boolean_attribute(name: String, value: Bool) -> Attribute(msg) {
 /// JavaScript. Properties will be **not** be rendered when calling
 /// [`element.to_string`](./element.html#to_string).
 ///
-/// **Note**: there is a subtle difference between attributes and properties. You
-/// can read more about the implications of this
-/// [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
+/// > **Note**: there is a subtle difference between attributes and properties. You
+/// > can read more about the implications of this
+/// > [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
 pub fn property(name: String, value: Json) -> Attribute(msg) {
   vattr.property(name, value)
-}
-
-///
-///
-pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
-  vattr.event(
-    name:,
-    handler:,
-    include: constants.empty_list,
-    prevent_default: False,
-    stop_propagation: False,
-    immediate: is_immediate_event(name),
-    limit: vattr.NoLimit(kind: 0),
-  )
-}
-
-fn is_immediate_event(name: String) -> Bool {
-  case name {
-    "input" | "change" | "focus" | "focusin" | "focusout" | "blur" | "select" ->
-      True
-    _ -> False
-  }
 }
 
 /// Create an empty attribute. This is not added to the DOM and not rendered when
@@ -140,15 +115,22 @@ pub fn autocorrect(enabled: Bool) -> Attribute(msg) {
 }
 
 /// For server-rendered HTML, this attribute controls whether an element should
-/// be focused when the page first loads. Lustre's runtime augments the native
-/// behaviour of this attribute: when enabled, the element will automatically be
-/// focused even if it already exists in the DOM.
+/// be focused when the page first loads.
+///
+/// > **Note**: Lustre's runtime augments that native behaviour of this attribute.
+/// > Whenever it is toggled true, the element will be automatically focused even
+/// > if it already exists in the DOM.
 ///
 pub fn autofocus(should_autofocus: Bool) -> Attribute(msg) {
   boolean_attribute("autofocus", should_autofocus)
 }
 
+/// A class is a non-unique identifier for an element primarily used for styling
+/// purposes. You can provide multiple classes as a space-separated list and any
+/// style rules that apply to any of the classes will be applied to the element.
 ///
+/// To conditionally toggle classes on and off, you can use the [`classes`](#classes)
+/// function instead.
 ///
 /// > **Note**: unlike most attributes, multiple `class` attributes are merged
 /// > with any existing other classes on an element. Classes added _later_ in the
@@ -158,7 +140,10 @@ pub fn class(name: String) -> Attribute(msg) {
   attribute("class", name)
 }
 
-///
+/// A class is a non-unique identifier for an element primarily used for styling
+/// purposes. You can provide multiple classes as a space-separated list and any
+/// style rules that apply to any of the classes will be applied to the element.
+/// This function allows you to conditionally toggle classes on and off.
 ///
 /// > **Note**: unlike most attributes, multiple `class` attributes are merged
 /// > with any existing other classes on an element. Classes added _later_ in the
@@ -193,7 +178,10 @@ pub fn contenteditable(is_editable: String) -> Attribute(msg) {
   attribute("contenteditable", is_editable)
 }
 
-/// Add a `data-*` attribute to an HTML element. The key will be prefixed by `data-`.
+/// Add a `data-*` attribute to an HTML element. The key will be prefixed by
+/// `"data-"`, and accessible from JavaScript or in Gleam decoders under the
+/// path `element.dataset.key` where `key` is the key you provide to this
+/// function.
 ///
 pub fn data(key: String, value: String) -> Attribute(msg) {
   attribute("data-" <> key, value)
@@ -259,7 +247,10 @@ pub fn hidden(is_hidden: Bool) -> Attribute(msg) {
   boolean_attribute("hidden", is_hidden)
 }
 
-///
+/// The `"id"` attribute is used to uniquely identify a single element within a
+/// document. It can be used to reference the element in CSS with the selector
+/// `#id`, in JavaScript with `document.getElementById("id")`, or by anchors on
+/// the same page with the URL `"#id"`.
 ///
 pub fn id(value: String) -> Attribute(msg) {
   attribute("id", value)
@@ -460,7 +451,23 @@ pub fn title(text: String) -> Attribute(msg) {
   attribute("title", text)
 }
 
-/// Controls whether an element's content should be translated.
+/// Controls whether an element's content may be translated by the user agent
+/// when the page is localised. This includes both the element's text content
+/// and some of its attributes:
+///
+/// | Attribute   | Element(s)                                 |
+/// |-------------|--------------------------------------------|
+/// | abbr        | th                                         |
+/// | alt         | area, img, input                           |
+/// | content     | meta                                       |
+/// | download    | a, area                                    |
+/// | label       | optgroup, option, track                    |
+/// | lang        | *                                          |
+/// | placeholder | input, textarea                            |
+/// | srcdoc      | iframe                                     |
+/// | title       | *                                          |
+/// | style       | *                                          |
+/// | value       | input (with type="button" or type="reset") |
 ///
 pub fn translate(should_translate: Bool) -> Attribute(msg) {
   attribute("translate", case should_translate {
@@ -478,7 +485,790 @@ pub fn writingsuggestions(enabled: Bool) -> Attribute(msg) {
   })
 }
 
-// ARIA ------------------------------------------------------------------------
+// ANCHOR AND LINK ATTRIBUTES --------------------------------------------------
+
+/// Specifies the URL of a linked resource. This attribute can be used on various
+/// elements to create hyperlinks or to load resources.
+///
+pub fn href(url: String) -> Attribute(msg) {
+  attribute("href", url)
+}
+
+/// Specifies where to display the linked resource or where to open the link.
+/// The following values are accepted:
+///
+/// | Value     | Description                                             |
+/// |-----------|---------------------------------------------------------|
+/// | "_self"   | Open in the same frame/window (default)                 |
+/// | "_blank"  | Open in a new window or tab                             |
+/// | "_parent" | Open in the parent frame                                |
+/// | "_top"    | Open in the full body of the window                     |
+/// | framename | Open in a named frame                                   |
+///
+/// > **Note**: consider against using `"_blank"` for links to external sites as it
+/// > removes user control over their browsing experience.
+///
+pub fn target(value: String) -> Attribute(msg) {
+  attribute("target", value)
+}
+
+/// Indicates that the linked resource should be downloaded rather than displayed.
+/// When provided with a value, it suggests a filename for the downloaded file.
+///
+pub fn download(filename: String) -> Attribute(msg) {
+  attribute("download", filename)
+}
+
+/// Provides a space-separated list of URLs that will be notified if the user
+/// follows the hyperlink. These URLs will receive POST requests with bodies
+/// of type `ping/1.0`.
+///
+pub fn ping(urls: List(String)) -> Attribute(msg) {
+  attribute("ping", string.join(urls, " "))
+}
+
+/// Specifies the relationship between the current document and the linked resource.
+/// Multiple relationship values can be provided as a space-separated list.
+///
+pub fn rel(value: String) -> Attribute(msg) {
+  attribute("rel", value)
+}
+
+/// Specifies the language of the linked resource. The value must be a valid
+/// [BCP 47 language tag](https://tools.ietf.org/html/bcp47).
+///
+pub fn hreflang(language: String) -> Attribute(msg) {
+  attribute("hreflang", language)
+}
+
+/// Specifies the referrer policy for fetches initiated by the element. The
+/// following values are accepted:
+///
+/// | Value                              | Description                                           |
+/// |-----------------------------------|--------------------------------------------------------|
+/// | "no-referrer"                     | No Referer header is sent                              |
+/// | "no-referrer-when-downgrade"      | Only send Referer for same-origin or more secure       |
+/// | "origin"                          | Send only the origin part of the URL                   |
+/// | "origin-when-cross-origin"        | Full URL for same-origin, origin only for cross-origin |
+/// | "same-origin"                     | Only send Referer for same-origin requests             |
+/// | "strict-origin"                   | Like origin, but only to equally secure destinations   |
+/// | "strict-origin-when-cross-origin" | Default policy with varying levels of restriction      |
+/// | "unsafe-url"                      | Always send the full URL                               |
+///
+pub fn referrerpolicy(value: String) -> Attribute(msg) {
+  attribute("referrerpolicy", value)
+}
+
+// IMAGE ATTRIBUTES ------------------------------------------------------------
+
+/// Specifies text that should be displayed when the image cannot be rendered.
+/// This attribute is essential for accessibility, providing context about the
+/// image to users who cannot see it, including those using screen readers.
+///
+pub fn alt(text: String) -> Attribute(msg) {
+  attribute("alt", text)
+}
+
+/// Specifies the URL of an image or resource to be used.
+///
+pub fn src(url: String) -> Attribute(msg) {
+  attribute("src", url)
+}
+
+/// Specifies a set of image sources for different display scenarios. This allows
+/// browsers to choose the most appropriate image based on factors like screen
+/// resolution and viewport size.
+///
+pub fn srcset(sources: String) -> Attribute(msg) {
+  attribute("srcset", sources)
+}
+
+/// Used with `srcset` to define the size of images in different layout scenarios.
+/// Helps the browser select the most appropriate image source.
+///
+pub fn sizes(value: String) -> Attribute(msg) {
+  attribute("sizes", value)
+}
+
+/// Configures the CORS (Cross-Origin Resource Sharing) settings for the element.
+/// Valid values are "anonymous" and "use-credentials".
+///
+pub fn crossorigin(value: String) -> Attribute(msg) {
+  attribute("crossorigin", value)
+}
+
+/// Specifies the name of an image map to be used with the image.
+///
+pub fn usemap(value: String) -> Attribute(msg) {
+  attribute("usemap", value)
+}
+
+/// Indicates that the image is a server-side image map. When a user clicks on the
+/// image, the coordinates of the click are sent to the server.
+///
+pub fn ismap(is_map: Bool) -> Attribute(msg) {
+  boolean_attribute("ismap", is_map)
+}
+
+/// Specifies the width of the element in pixels.
+///
+pub fn width(value: Int) -> Attribute(msg) {
+  property("width", json.int(value))
+}
+
+/// Specifies the height of the element in pixels.
+///
+pub fn height(value: Int) -> Attribute(msg) {
+  property("height", json.int(value))
+}
+
+/// Provides a hint about how the image should be decoded. Valid values are
+/// "sync", "async", and "auto".
+///
+pub fn decoding(value: String) -> Attribute(msg) {
+  attribute("decoding", value)
+}
+
+/// Indicates how the browser should load the image. Valid values are "eager"
+/// (load immediately) and "lazy" (defer loading until needed).
+///
+pub fn loading(value: String) -> Attribute(msg) {
+  attribute("loading", value)
+}
+
+/// Sets the priority for fetches initiated by the element. Valid values are
+/// "high", "low", and "auto".
+///
+pub fn fetchpriority(value: String) -> Attribute(msg) {
+  attribute("fetchpriority", value)
+}
+
+// FORM ATTRIBUTES -------------------------------------------------------------
+
+/// Specifies the character encodings to be used for form submission. This allows
+/// servers to know how to interpret the form data. Multiple encodings can be
+/// specified as a space-separated list.
+///
+pub fn accept_charset(charsets: String) -> Attribute(msg) {
+  attribute("accept-charset", charsets)
+}
+
+/// Specifies the URL to which the form's data should be sent when submitted.
+/// This can be overridden by formaction attributes on submit buttons.
+///
+pub fn action(url: String) -> Attribute(msg) {
+  attribute("action", url)
+}
+
+/// Specifies how form data should be encoded before sending it to the server.
+/// Valid values include:
+///
+/// | Value                             | Description                           |
+/// |-----------------------------------|---------------------------------------|
+/// | "application/x-www-form-urlencoded" | Default encoding (spaces as +, etc.)  |
+/// | "multipart/form-data"               | Required for file uploads             |
+/// | "text/plain"                        | Simple encoding with minimal escaping  |
+///
+pub fn enctype(encoding_type: String) -> Attribute(msg) {
+  attribute("enctype", encoding_type)
+}
+
+/// Specifies the HTTP method to use when submitting the form. Common values are:
+///
+/// | Value    | Description                                              |
+/// |----------|----------------------------------------------------------|
+/// | "get"    | Appends form data to URL (default)                       |
+/// | "post"   | Sends form data in the body of the HTTP request          |
+/// | "dialog" | Closes a dialog if the form is inside one                |
+///
+pub fn method(http_method: String) -> Attribute(msg) {
+  attribute("method", http_method)
+}
+
+/// When present, indicates that the form should not be validated when submitted.
+/// This allows submission of forms with invalid or incomplete data.
+///
+pub fn novalidate(disable_validation: Bool) -> Attribute(msg) {
+  boolean_attribute("novalidate", disable_validation)
+}
+
+// INPUT ATTRIBUTES ------------------------------------------------------------
+
+/// A hint for the user agent about what file types are expected to be submitted.
+/// The following values are accepted:
+///
+/// | Value     | Description                                          |
+/// |-----------|------------------------------------------------------|
+/// | "audio/*" | Any audio file type.                                 |
+/// | "video/*" | Any video file type.                                 |
+/// | "image/*" | Any image file type.                                 |
+/// | mime/type | A complete MIME type, without additional parameters. |
+/// | .ext      | Indicates any file with the given extension.         |
+///
+/// The following input types support the `"accept"` attribute:
+///
+/// - `"file"`
+///
+/// > **Note**: the `"accept"` attribute is a *hint* to the user agent and does
+/// > not guarantee that the user will only be able to select files of the specified
+/// > type.
+///
+pub fn accept(values: List(String)) -> Attribute(msg) {
+  attribute("accept", string.join(values, ","))
+}
+
+/// Allow a colour's alpha component to be manipulated, allowing the user to
+/// select a colour with transparency.
+///
+/// The following input types support the `"alpha"` attribute:
+///
+/// - `"color"`
+///
+pub fn alpha(allowed: Bool) -> Attribute(msg) {
+  boolean_attribute("alpha", allowed)
+}
+
+/// A hint for the user agent to automatically fill the value of the input with
+/// an appropriate value. The format for the `"autocomplete"` attribute is a
+/// space-separated ordered list of optional tokens:
+///
+///     "section-* (shipping | billing) [...fields] webauthn"
+///
+/// - `section-*`: used to disambiguate between two fields with otherwise identical
+///   autocomplete values. The `*` is replaced with a string that identifies the
+///   section of the form.
+///
+/// - `shipping | billing`: indicates the field is related to shipping or billing
+///   address or contact information.
+///
+/// - `[...fields]`: a space-separated list of field names that are relevant to
+///   the input, for example `"email"`, `"name family-name"`, or `"home tel"`.
+///
+/// - `webauthn`: indicates the field can be automatically filled with a WebAuthn
+///   passkey.
+///
+/// In addition, the value may instead be `"off"` to disable autocomplete for the
+/// input, or `"on"` to let the user agent decide based on context what values
+/// are appropriate.
+///
+/// The following input types support the `"autocomplete"` attribute:
+///
+/// - `"color"`
+/// - `"date"`
+/// - `"datetime-local"`
+/// - `"email"`
+/// - `"hidden"`
+/// - `"month"`
+/// - `"number"`
+/// - `"password"`
+/// - `"range"`
+/// - `"search"`
+/// - `"tel"`
+/// - `"text"`
+/// - `"time"`
+/// - `"url"`
+/// - `"week"`
+///
+pub fn autocomplete(value: String) -> Attribute(msg) {
+  attribute("autocomplete", value)
+}
+
+/// Whether the control is checked or not. When participating in a form, the
+/// value of the input is included in the form submission if it is checked. For
+/// checkboxes that do not have a value, the value of the input is `"on"` when
+/// checked.
+///
+/// The following input types support the `"checked"` attribute:
+///
+/// - `"checkbox"`
+/// - `"radio"`
+///
+pub fn checked(is_checked: Bool) -> Attribute(msg) {
+  boolean_attribute("checked", is_checked)
+}
+
+/// The color space of the serialised CSS color. It also hints to user agents
+/// about what kind of interface to present to the user for selecting a color.
+/// The following values are accepted:
+///
+/// - `"limited-srgb"`: The CSS color is converted to the 'srgb' color space and
+///   limited to 8-bits per component, e.g., `"#123456"` or
+///   `"color(srgb 0 1 0 / 0.5)"`.
+///
+/// - `"display-p3"`: The CSS color is converted to the 'display-p3' color space,
+///   e.g., `"color(display-p3 1.84 -0.19 0.72 / 0.6)"`.
+///
+/// The following input types support the `"colorspace"` attribute:
+///
+/// - `"color"`
+///
+pub fn colorspace(value: String) -> Attribute(msg) {
+  attribute("colorspace", value)
+}
+
+/// The name of the field included in a form that indicates the direcionality of
+/// the user's input.
+///
+/// The following input types support the `"dirname"` attribute:
+///
+/// - `"email"`
+/// - `"hidden"`
+/// - `"password"`
+/// - `"search"`
+/// - `"submit"
+/// - `"tel"`
+/// - `"text"`
+/// - `"url"`
+///
+pub fn dirname(direction: String) -> Attribute(msg) {
+  attribute("dirname", direction)
+}
+
+/// Controls whether or not the input is disabled. Disabled inputs are not
+/// validated during form submission and are not interactive.
+///
+pub fn disabled(is_disabled: Bool) -> Attribute(msg) {
+  boolean_attribute("disabled", is_disabled)
+}
+
+/// Associates the input with a form element located elsewhere in the document.
+///
+pub fn form(id: String) -> Attribute(msg) {
+  attribute("form", id)
+}
+
+/// The URL to use for form submission. This URL will override the [`"action"`](#action)
+/// attribute on the form element itself, if present.
+///
+/// The following input types support the `"formaction"` attribute:
+///
+/// - `"image"`
+/// - `"submit"`
+///
+pub fn formaction(url: String) -> Attribute(msg) {
+  attribute("formaction", url)
+}
+
+/// Entry list encoding type to use for form submission
+///
+/// - `"image"`
+/// - `"submit"`
+///
+pub fn formenctype(encoding_type: String) -> Attribute(msg) {
+  attribute("formenctype", encoding_type)
+}
+
+/// Variant to use for form submission
+///
+/// - `"image"`
+/// - `"submit"`
+///
+pub fn formmethod(method: String) -> Attribute(msg) {
+  attribute("formmethod", method)
+}
+
+/// Bypass form control validation for form submission
+///
+/// - `"image"`
+/// - `"submit"`
+///
+pub fn formnovalidate(no_validate: Bool) -> Attribute(msg) {
+  boolean_attribute("formnovalidate", no_validate)
+}
+
+/// Navigable for form submission
+///
+/// - `"image"`
+/// - `"submit"`
+///
+pub fn formtarget(target: String) -> Attribute(msg) {
+  attribute("formtarget", target)
+}
+
+/// List of autocomplete options
+///
+/// The following input types support the `"list"` attribute:
+///
+/// - `"color"`
+/// - `"date"`
+/// - `"datetime-local"`
+/// - `"email"`
+/// - `"month"`
+/// - `"number"`
+/// - `"range"`
+/// - `"search"`
+/// - `"tel"`
+/// - `"text"`
+/// - `"time"`
+/// - `"url"`
+/// - `"week"`
+///
+pub fn list(id: String) -> Attribute(msg) {
+  attribute("list", id)
+}
+
+/// Constrain the maximum value of a form control. The exact syntax of this value
+/// changes depending on the type of input, for example `"1"`, `"1979-12-31"`, and
+/// `"06:00"` are all potentially valid values for the `"max"` attribute.
+///
+/// The following input types support the `"max"` attribute:
+///
+/// - `"date"`
+/// - `"datetime-local"`
+/// - `"month"`
+/// - `"number"`
+/// - `"range"`
+/// - `"time"`
+/// - `"week"`
+///
+pub fn max(value: String) -> Attribute(msg) {
+  attribute("max", value)
+}
+
+/// Maximum length of value
+///
+/// The following input types support the `"maxlength"` attribute:
+///
+/// - `"email"`
+/// - `"password"`
+/// - `"search"`
+/// - `"tel"`
+/// - `"text"`
+/// - `"url"`
+///
+pub fn maxlength(length: Int) -> Attribute(msg) {
+  attribute("maxlength", int.to_string(length))
+}
+
+/// Minimum value
+///
+/// The following input types support the `"max"` attribute:
+///
+/// - `"date"`
+/// - `"datetime-local"`
+/// - `"month"`
+/// - `"number"`
+/// - `"range"`
+/// - `"time"`
+/// - `"week"`
+///
+pub fn min(value: String) -> Attribute(msg) {
+  attribute("min", value)
+}
+
+/// Minimum length of value
+///
+/// - `"email"`
+/// - `"password"`
+/// - `"search"`
+/// - `"tel"`
+/// - `"text"`
+/// - `"url"`
+///
+pub fn minlength(length: Int) -> Attribute(msg) {
+  attribute("minlength", int.to_string(length))
+}
+
+/// Whether an input or select may allow multiple values to be selected at once.
+///
+/// The following input types support the `"multiple"` attribute:
+///
+/// - `"email"`
+/// - `"file"`
+///
+pub fn multiple(allow_multiple: Bool) -> Attribute(msg) {
+  boolean_attribute("multiple", allow_multiple)
+}
+
+/// Name of the element to use for form submission and in the form.elements API
+///
+pub fn name(element_name: String) -> Attribute(msg) {
+  attribute("name", element_name)
+}
+
+/// Pattern to be matched by the form control's value
+///
+/// - `"email"`
+/// - `"password"`
+/// - `"search"`
+/// - `"tel"`
+/// - `"text"`
+/// - `"url"`
+///
+pub fn pattern(regex: String) -> Attribute(msg) {
+  attribute("pattern", regex)
+}
+
+/// User-visible label to be placed within the form control
+///
+/// - `"email"`
+/// - `"number"`
+/// - `"password"`
+/// - `"search"`
+/// - `"tel"`
+/// - `"text"`
+/// - `"url"`
+///
+pub fn placeholder(text: String) -> Attribute(msg) {
+  attribute("placeholder", text)
+}
+
+/// Targets a popover element to toggle, show, or hide
+///
+/// The following input types support the `"popovertarget"` attribute:
+///
+/// - `"button"`
+/// - `"image"`
+/// - `"reset"`
+/// - `"submit"`
+///
+pub fn popovertarget(id: String) -> Attribute(msg) {
+  attribute("popovertarget", id)
+}
+
+/// Indicates whether a targeted popover element is to be toggled, shown, or hidden
+///
+/// The following input types support the `"popovertarget"` attribute:
+///
+/// - `"button"`
+/// - `"image"`
+/// - `"reset"`
+/// - `"submit"`
+///
+pub fn popovertargetaction(action: String) -> Attribute(msg) {
+  attribute("popovertargetaction", action)
+}
+
+/// Whether to allow the value to be edited by the user
+///
+/// - `"date"`
+/// - `"datetime-local"`
+/// - `"email"`
+/// - `"month"`
+/// - `"number"`
+/// - `"password"`
+/// - `"range"`
+/// - `"search"`
+/// - `"tel"`
+/// - `"text"`
+/// - `"time"`
+/// - `"url"`
+/// - `"week"`
+///
+pub fn readonly(is_readonly: Bool) -> Attribute(msg) {
+  boolean_attribute("readonly", is_readonly)
+}
+
+/// Whether the control is required for form submission
+///
+/// - `"checkbox"`
+/// - `"date"`
+/// - `"datetime-local"`
+/// - `"email"`
+/// - `"month"`
+/// - `"number"`
+/// - `"password"`
+/// - `"radio"`
+/// - `"range"`
+/// - `"search"`
+/// - `"tel"`
+/// - `"text"`
+/// - `"time"`
+/// - `"url"`
+/// - `"week"`
+///
+pub fn required(is_required: Bool) -> Attribute(msg) {
+  boolean_attribute("required", is_required)
+}
+
+/// Controls whether or not a select's `<option>` is selected or not. Only one
+/// option can be selected at a time, unless the [`"multiple"`](#multiple)
+/// attribute is set on the select element.
+///
+pub fn selected(is_selected: Bool) -> Attribute(msg) {
+  boolean_attribute("selected", is_selected)
+}
+
+/// Size of the control
+///
+/// The following input types support the `size` attribute:
+///
+/// - `"email"`
+/// - `"password"`
+/// - `"search"`
+/// - `"tel"`
+/// - `"text"`
+/// - `"url"`
+///
+pub fn size(value: String) -> Attribute(msg) {
+  attribute("size", value)
+}
+
+/// Granularity to be matched by the form control's value
+///
+/// The following input types support the `"step"` attribute:
+///
+/// - `"date"`
+/// - `"datetime-local"`
+/// - `"month"`
+/// - `"number"`
+/// - `"range"`
+/// - `"time"`
+/// - `"week"`
+///
+pub fn step(value: String) -> Attribute(msg) {
+  attribute("step", value)
+}
+
+/// Type of form control
+///
+pub fn type_(control_type: String) -> Attribute(msg) {
+  attribute("type", control_type)
+}
+
+/// Value of the form control
+///
+pub fn value(control_value: String) -> Attribute(msg) {
+  attribute("value", control_value)
+}
+
+// META ATTRIBUTES -------------------------------------------------------------
+
+/// Sets a pragma directive for a document. This is used in meta tags to define
+/// behaviors the user agent should follow.
+///
+pub fn http_equiv(value: String) -> Attribute(msg) {
+  attribute("http-equiv", value)
+}
+
+/// Specifies the value of the meta element, which varies depending on the value
+/// of the name or http-equiv attribute.
+///
+pub fn content(value: String) -> Attribute(msg) {
+  attribute("content", value)
+}
+
+/// Declares the character encoding used in the document. When used with a meta
+/// element, this replaces the need for the `http_equiv("content-type")` attribute.
+///
+pub fn charset(value: String) -> Attribute(msg) {
+  attribute("charset", value)
+}
+
+/// Specifies the media types the resource applies to. This is commonly used with
+/// link elements for stylesheets to determine when they should be loaded.
+///
+pub fn media(query: String) -> Attribute(msg) {
+  attribute("media", query)
+}
+
+// AUDIO AND VIDEO ATTRIBUTES --------------------------------------------------
+
+/// Indicates that the media resource should automatically begin playing as soon
+/// as it can do so without stopping. When not present, the media will not
+/// automatically play until the user initiates playback.
+///
+/// > **Note**: Lustre's runtime augments this attribute. Whenever it is toggled
+/// > to true, the media will begin playing as if the element's `play()` method
+/// > was called.
+///
+pub fn autoplay(auto_play: Bool) -> Attribute(msg) {
+  boolean_attribute("autoplay", auto_play)
+}
+
+/// When present, this attribute shows the browser's built-in control panel for the
+/// media player, giving users control over playback, volume, seeking, and more.
+///
+pub fn controls(show_controls: Bool) -> Attribute(msg) {
+  boolean_attribute("controls", show_controls)
+}
+
+/// When present, this attribute indicates that the media should start over again
+/// from the beginning when it reaches the end.
+///
+pub fn loop(should_loop: Bool) -> Attribute(msg) {
+  boolean_attribute("loop", should_loop)
+}
+
+/// When present, this attribute indicates that the audio output of the media element
+/// should be initially silenced.
+///
+pub fn muted(is_muted: Bool) -> Attribute(msg) {
+  boolean_attribute("muted", is_muted)
+}
+
+/// Encourages the user agent to display video content within the element's
+/// playback area rather than in a separate window or fullscreen, especially on
+/// mobile devices.
+///
+/// This attribute only acts as a *hint* to the user agent, and setting this to
+/// false does not imply that the video will be played in fullscreen.
+///
+pub fn playsinline(play_inline: Bool) -> Attribute(msg) {
+  boolean_attribute("playsinline", play_inline)
+}
+
+/// Specifies an image to be shown while the video is downloading, or until the
+/// user hits the play button.
+///
+pub fn poster(url: String) -> Attribute(msg) {
+  attribute("poster", url)
+}
+
+/// Provides a hint to the browser about what the author thinks will lead to the
+/// best user experience. The following values are accepted:
+///
+/// | Value      | Description                                                      |
+/// |------------|------------------------------------------------------------------|
+/// | "auto"     | Let's the user agent determine the best option                   |
+/// | "metadata" | Hints to the user agent that it can fetch the metadata only.     |
+/// | "none"     | Hints to the user agent that server traffic should be minimised. |
+///
+pub fn preload(value: String) -> Attribute(msg) {
+  attribute("preload", value)
+}
+
+// TEMPLATE ATTRIBUTES ---------------------------------------------------------
+
+/// Specifies the mode for creating a shadow root on a template. Valid values
+/// include:
+///
+/// | Value     | Description                                 |
+/// |-----------|---------------------------------------------|
+/// | "open"    | Shadow root's contents are accessible       |
+/// | "closed"  | Shadow root's contents are not accessible   |
+///
+/// > **Note**: if you are pre-rendering a Lustre component you must make sure this
+/// > attribute matches the [`open_shadow_root`](./component.html#open_shadow_root)
+/// > configuration - or `"closed"` if not explicitly set - to ensure the shadow
+/// > root is created correctly.
+///
+pub fn shadowrootmode(mode: String) -> Attribute(msg) {
+  attribute("shadowrootmode", mode)
+}
+
+/// Indicates whether focus should be delegated to the shadow root when an element
+/// in the shadow tree gains focus.
+///
+pub fn shadowrootdelegatesfocus(delegates: Bool) -> Attribute(msg) {
+  boolean_attribute("shadowrootdelegatesfocus", delegates)
+}
+
+/// Determines whether the shadow root can be cloned when the host element is
+/// cloned.
+///
+pub fn shadowrootclonable(clonable: Bool) -> Attribute(msg) {
+  boolean_attribute("shadowrootclonable", clonable)
+}
+
+/// Controls whether the shadow root should be preserved during serialization
+/// operations like copying to the clipboard or saving a page.
+///
+pub fn shadowrootserializable(serializable: Bool) -> Attribute(msg) {
+  boolean_attribute("shadowrootserializable", serializable)
+}
+
+// ARIA ATTRIBUTES -------------------------------------------------------------
 
 /// Add an `aria-*` attribute to an HTML element. The key will be prefixed by
 /// `aria-`.
