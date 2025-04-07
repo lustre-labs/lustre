@@ -199,7 +199,7 @@ fn view_index() -> List(Element(Msg)) {
   [
     title("Hello, Joe"),
     leading(
-      "Or whoever you may are! This is were I will share random ramblings
+      "Or whoever you may be! This is were I will share random ramblings
        and thoughts about life.",
     ),
     html.p([attribute.class("mt-14")], [
