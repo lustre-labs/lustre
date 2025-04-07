@@ -9,6 +9,10 @@ import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
+
+// Modem is a package providing effects and functionality for routing in SPAs.
+// This means instead of links taking you to a new page and reloading everything,
+// they are intercepted and your `update` function gets told about the new URL.
 import modem
 
 // MAIN ------------------------------------------------------------------------
@@ -26,39 +30,36 @@ type Model {
   Model(posts: Dict(Int, Post), route: Route)
 }
 
-// we will build a simple Blog site here, so we need a way to store our posts!
-// In this demo, the posts are just stored as a constant list, at the end of
-// this file.
 type Post {
   Post(id: Int, title: String, summary: String, text: String)
 }
 
-// We want to show different views, depending on which URL we are on:
-//
-// - /      - show the home page
-// - /posts - show a list of posts
-// - /about - show an about page
-//
-// and so on.
-//
-// We could keep around the URL type or even the path as a String, but this
-// makes it hard to work with and change, and error prone.
-// 
-// Instead, we _parse_ the URL into a nice Gleam custom type with just the
-// variants we need! Every part of the application can then only deal with those
-// values. As a nice bonus, we get type and exhaustiveness checking on all our
-// internal links, so we know they can never be wrong and that we handled them
-// all, given we implemented the route type correctly.
+/// In a real application, we'll likely want to show different views depending on
+/// which URL we are on:
+///
+/// - /      - show the home page
+/// - /posts - show a list of posts
+/// - /about - show an about page
+/// - ...
+///
+/// We could store the `Uri` or perhaps the path as a `String` in our model, but
+/// this can be awkward to work with and error prone as our application grows.
+///
+/// Instead, we _parse_ the URL into a nice Gleam custom type with just the
+/// variants we need! This lets us benefit from Gleam's pattern matching,
+/// exhaustiveness checks, and LSP features, while also serving as documentation
+/// for our app: if you can get to a page, it must be in this type!
+///
 type Route {
   Index
   Posts
   PostById(id: Int)
   About
-  NotFound
+  /// It's good practice to store whatever `Uri` we failed to match in case we
+  /// want to log it or hint to the user that maybe they made a typo.
+  NotFound(uri: Uri)
 }
 
-// This is where we parse a URL value into a Route value for our application.
-// If we couldn't parse the value correctly, we fall back to a `NotFound` variant.
 fn parse_route(uri: Uri) -> Route {
   case uri.path_segments(uri.path) {
     [] | [""] -> Index
@@ -67,95 +68,87 @@ fn parse_route(uri: Uri) -> Route {
 
     ["post", post_id] ->
       case int.parse(post_id) {
-        Ok(post_id) -> PostById(post_id)
-        Error(_) -> NotFound
+        Ok(post_id) -> PostById(id: post_id)
+        Error(_) -> NotFound(uri:)
       }
 
     ["about"] -> About
 
-    _ -> NotFound
+    _ -> NotFound(uri:)
   }
 }
 
-// We also need a way to turn a Route back into a an `href` attribute that we
-// can then use on `html.a` elements. It is important to keep this function in
-// sync with the parsing, but once you do, all links are guaranteed to work!
+/// We also need a way to turn a Route back into a an `href` attribute that we
+/// can then use on `html.a` elements. It is important to keep this function in
+/// sync with the parsing, but once you do, all links are guaranteed to work!
+///
 fn href(route: Route) -> Attribute(msg) {
   let url = case route {
     Index -> "/"
     About -> "/about"
     Posts -> "/posts"
     PostById(post_id) -> "/post/" <> int.to_string(post_id)
-    NotFound -> "/404"
+    NotFound(_) -> "/404"
   }
 
   attribute.href(url)
 }
 
-fn init(_) {
-  // "Routing" in an SPA consists of 2 parts:
-  //
-  // - Getting the initial URL and showing the appropriate view for it.
-  //   This is what we do here by parsing the initial uri into an initial route.
-  // - Dynamically intercepting and reacting to URL changes after a link has
-  //   been clicked by the user.
-  //
-  // We will use the `modem` library for both of these. Modem allows us to use
-  // normal html.a tags, and will automatically intercept all link clicks to
-  // internal links for us and send a message to our update function.
+fn init(_) -> #(Model, Effect(Msg)) {
+  // The server for a typical SPA will often serve the application to *any*
+  // HTTP request, and let the app itself determine what to show. Modem stores
+  // the first URL so we can parse it for the app's initial route.
   let route = case modem.initial_uri() {
     Ok(uri) -> parse_route(uri)
     Error(_) -> Index
   }
 
-  let posts = posts |> list.map(fn(post) { #(post.id, post) }) |> dict.from_list
+  let posts =
+    posts
+    |> list.map(fn(post) { #(post.id, post) })
+    |> dict.from_list
 
   let model = Model(route:, posts:)
 
-  #(model, modem.init(on_uri_change))
-}
+  let effect =
+    // We need to initialise modem in order for it to intercept links. To do that
+    // we pass in a function that takes the `Uri` of the link that was clicked and
+    // turns it into a `Msg`.
+    modem.init(fn(uri) {
+      uri
+      |> parse_route
+      |> UserNavigatedTo
+    })
 
-// Whenever the URI changes, we parse it into a route and send that to our
-// update function.
-fn on_uri_change(uri: Uri) -> Msg {
-  let route = parse_route(uri)
-  OnRouteChange(route)
+  #(model, effect)
 }
 
 // UPDATE ----------------------------------------------------------------------
 
 type Msg {
-  OnRouteChange(route: Route)
+  UserNavigatedTo(route: Route)
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
-    OnRouteChange(route:) -> #(Model(..model, route:), effect.none())
+    UserNavigatedTo(route:) -> #(Model(..model, route:), effect.none())
   }
 }
 
 // VIEW ------------------------------------------------------------------------
 
 fn view(model: Model) -> Element(Msg) {
-  element.fragment([
-    html.nav(
-      [
-        attribute.class(
-          "flex justify-between items-center px-32 my-16 mx-auto w-full max-w-2xl",
-        ),
-      ],
-      [
-        html.h1([attribute.class("text-purple-600 font-medium text-xl")], [
-          html.a([href(Index)], [html.text("My little Blog")]),
-        ]),
-        html.ul([attribute.class("flex space-x-8")], [
-          view_header_link(model.route, Posts, [html.text("Posts")]),
-          view_header_link(model.route, About, [html.text("About")]),
-        ]),
-      ],
-    ),
-    html.main(
-      [attribute.class("px-32 my-16 mt mx-auto w-full max-w-2xl")],
+  html.div([attribute.class("mx-auto max-w-2xl px-32")], [
+    html.nav([attribute.class("flex justify-between items-center my-16")], [
+      html.h1([attribute.class("text-purple-600 font-medium text-xl")], [
+        html.a([href(Index)], [html.text("My little Blog")]),
+      ]),
+      html.ul([attribute.class("flex space-x-8")], [
+        view_header_link(current: model.route, to: Posts, label: "Posts"),
+        view_header_link(current: model.route, to: About, label: "About"),
+      ]),
+    ]),
+    html.main([attribute.class("my-16")], {
       // Just like we would show different HTML based on some other state in the
       // model, we can also pattern match on our Route value to show different
       // views based on the current page!
@@ -164,19 +157,17 @@ fn view(model: Model) -> Element(Msg) {
         Posts -> view_posts(model)
         PostById(post_id) -> view_post(model, post_id)
         About -> view_about()
-        NotFound -> view_not_found()
-      },
-    ),
+        NotFound(_) -> view_not_found()
+      }
+    }),
   ])
 }
 
 fn view_header_link(
-  current: Route,
-  target: Route,
-  children: List(Element(msg)),
+  to target: Route,
+  current current: Route,
+  label text: String,
 ) -> Element(msg) {
-  // The posts link is also considered active if we are _currently_ on a post
-  // detail page.
   let is_active = case current, target {
     PostById(_), Posts -> True
     _, _ -> current == target
@@ -189,13 +180,13 @@ fn view_header_link(
         #("text-purple-600", is_active),
       ]),
     ],
-    [html.a([href(target)], children)],
+    [html.a([href(target)], [html.text(text)])],
   )
 }
 
 // VIEW PAGES ------------------------------------------------------------------
 
-fn view_index() -> List(Element(Msg)) {
+fn view_index() -> List(Element(msg)) {
   [
     title("Hello, Joe"),
     leading(
@@ -210,10 +201,9 @@ fn view_index() -> List(Element(Msg)) {
   ]
 }
 
-fn view_posts(model: Model) -> List(Element(Msg)) {
-  [
-    title("Posts"),
-    ..model.posts
+fn view_posts(model: Model) -> List(Element(msg)) {
+  let posts =
+    model.posts
     |> dict.values
     |> list.sort(fn(a, b) { int.compare(a.id, b.id) })
     |> list.map(fn(post) {
@@ -226,10 +216,11 @@ fn view_posts(model: Model) -> List(Element(Msg)) {
         html.p([attribute.class("mt-1")], [html.text(post.summary)]),
       ])
     })
-  ]
+
+  [title("Posts"), ..posts]
 }
 
-fn view_post(model: Model, post_id: Int) -> List(Element(Msg)) {
+fn view_post(model: Model, post_id: Int) -> List(Element(msg)) {
   case dict.get(model.posts, post_id) {
     Error(_) -> view_not_found()
     Ok(post) -> [
@@ -243,7 +234,7 @@ fn view_post(model: Model, post_id: Int) -> List(Element(Msg)) {
   }
 }
 
-fn view_about() -> List(Element(Msg)) {
+fn view_about() -> List(Element(msg)) {
   [
     title("Me"),
     paragraph(
@@ -257,11 +248,11 @@ fn view_about() -> List(Element(Msg)) {
   ]
 }
 
-fn view_not_found() -> List(Element(Msg)) {
+fn view_not_found() -> List(Element(msg)) {
   [
     title("Not found"),
     paragraph(
-      "You climpse into the void and see -- nothing?
+      "You glimpse into the void and see -- nothing?
        Well that was somewhat expected.",
     ),
   ]
@@ -269,20 +260,25 @@ fn view_not_found() -> List(Element(Msg)) {
 
 // VIEW HELPERS ----------------------------------------------------------------
 
-fn title(title) {
+fn title(title: String) -> Element(msg) {
   html.h2([attribute.class("text-3xl text-purple-800 font-light")], [
     html.text(title),
   ])
 }
 
-fn leading(text) {
+fn leading(text: String) -> Element(msg) {
   html.p([attribute.class("mt-8 text-lg")], [html.text(text)])
 }
 
-fn paragraph(text) {
+fn paragraph(text: String) -> Element(msg) {
   html.p([attribute.class("mt-14")], [html.text(text)])
 }
 
+/// In other frameworks you might see special `<Link />` components that are
+/// used to handle navigation logic. Using modem, we can just use normal HTML
+/// `<a>` elements and pass in the `href` attribute. This means we have the option
+/// of rendering our app as static HTML in the future!
+///
 fn link(target: Route, title: String) -> Element(msg) {
   html.a(
     [
