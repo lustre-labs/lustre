@@ -161,8 +161,8 @@ fn view(model: Model) -> Element(Msg) {
       // views based on the current page!
       case model.route {
         Index -> view_index()
-        Posts -> view_posts()
-        PostById(post_id) -> view_post(post_id)
+        Posts -> view_posts(model)
+        PostById(post_id) -> view_post(model, post_id)
         About -> view_about()
         NotFound -> view_not_found()
       },
@@ -210,10 +210,13 @@ fn view_index() -> List(Element(Msg)) {
   ]
 }
 
-fn view_posts() -> List(Element(Msg)) {
+fn view_posts(model: Model) -> List(Element(Msg)) {
   [
     title("Posts"),
-    ..list.map(posts, fn(post) {
+    ..model.posts
+    |> dict.values
+    |> list.sort(fn(a, b) { int.compare(a.id, b.id) })
+    |> list.map(fn(post) {
       html.article([attribute.class("mt-14")], [
         html.h3([attribute.class("text-xl text-purple-600 font-light")], [
           html.a([attribute.class("hover:underline"), href(PostById(post.id))], [
@@ -226,8 +229,8 @@ fn view_posts() -> List(Element(Msg)) {
   ]
 }
 
-fn view_post(post_id: Int) -> List(Element(Msg)) {
-  case list.find(posts, fn(post) { post.id == post_id }) {
+fn view_post(model: Model, post_id: Int) -> List(Element(Msg)) {
+  case dict.get(model.posts, post_id) {
     Error(_) -> view_not_found()
     Ok(post) -> [
       html.article([], [
