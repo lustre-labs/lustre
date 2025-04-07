@@ -41,8 +41,8 @@ type Post {
 //
 // and so on.
 //
-// We could keep around the URL type or even the path as a String just like that
-// but this makes it hard to work with, change, and error prone.
+// We could keep around the URL type or even the path as a String, but this
+// makes it hard to work with and change, and error prone.
 // 
 // Instead, we _parse_ the URL into a nice Gleam custom type with just the
 // variants we need! Every part of the application can then only deal with those
@@ -58,7 +58,7 @@ type Route {
 }
 
 // This is where we parse a URL value into a Route value for our application.
-// If we could'nt parse the value correctly, we fall back to a `NotFound` variant.
+// If we couldn't parse the value correctly, we fall back to a `NotFound` variant.
 fn parse_route(uri: Uri) -> Route {
   case uri.path_segments(uri.path) {
     [] | [""] -> Index
