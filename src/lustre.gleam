@@ -239,9 +239,9 @@ pub type RuntimeMessage(msg) =
 /// you'll want to use the [`application`](#application) constructor instead.
 ///
 pub fn simple(
-  init: fn(flags) -> model,
-  update: fn(model, msg) -> model,
-  view: fn(model) -> Element(msg),
+  init init: fn(flags) -> model,
+  update update: fn(model, msg) -> model,
+  view view: fn(model) -> Element(msg),
 ) -> App(flags, model, msg) {
   let init = fn(flags) { #(init(flags), effect.none()) }
   let update = fn(model, msg) { #(update(model, msg), effect.none()) }
@@ -258,9 +258,9 @@ pub fn simple(
 /// [HTTP requests example](https://github.com/lustre-labs/lustre/tree/main/examples/05-http-requests).
 ///
 pub fn application(
-  init: fn(flags) -> #(model, Effect(msg)),
-  update: fn(model, msg) -> #(model, Effect(msg)),
-  view: fn(model) -> Element(msg),
+  init init: fn(flags) -> #(model, Effect(msg)),
+  update update: fn(model, msg) -> #(model, Effect(msg)),
+  view view: fn(model) -> Element(msg),
 ) -> App(flags, model, msg) {
   App(init, update, view, component.new(constants.empty_list))
 }
@@ -284,10 +284,10 @@ pub fn application(
 /// > loop.
 ///
 pub fn component(
-  init: fn(flags) -> #(model, Effect(msg)),
-  update: fn(model, msg) -> #(model, Effect(msg)),
-  view: fn(model) -> Element(msg),
-  options: List(Option(msg)),
+  init init: fn(flags) -> #(model, Effect(msg)),
+  update update: fn(model, msg) -> #(model, Effect(msg)),
+  view view: fn(model) -> Element(msg),
+  options options: List(Option(msg)),
 ) -> App(flags, model, msg) {
   App(init, update, view, component.new(options))
 }
