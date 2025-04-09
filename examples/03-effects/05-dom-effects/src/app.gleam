@@ -63,7 +63,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 }
 
 fn measure_height(of selector: String) -> Effect(Msg) {
-  use dispatch <- effect.before_paint
+  use dispatch, _ <- effect.before_paint
 
   case do_measure_height(of: selector) {
     Ok(height) -> dispatch(DomReturnedHeight(height))

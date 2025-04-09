@@ -51,7 +51,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 }
 
 fn alert_before_paint(previous: Int, should_flush: Bool) -> Effect(Msg) {
-  use dispatch <- effect.before_paint
+  use dispatch, _ <- effect.before_paint
   let count = text_content("#count")
   let previous_count = int.to_string(previous)
 
@@ -74,7 +74,7 @@ fn dispatch_one_thousand_messages() -> Effect(Msg) {
 }
 
 fn alert_after_paint(new: Int, did_flush: Bool) -> Effect(Msg) {
-  use _ <- effect.after_paint
+  use _, _ <- effect.after_paint
   let new_count = int.to_string(new)
   let info = case did_flush {
     True ->
