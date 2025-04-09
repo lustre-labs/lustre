@@ -4,7 +4,6 @@ import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option
-import gleam/string
 import lustre
 import lustre/attribute
 import lustre/effect.{type Effect}
@@ -162,19 +161,11 @@ fn view_loading() -> List(Element(Msg)) {
   ]
 }
 
-fn view_failed(error: rsvp.Error) -> List(Element(Msg)) {
+fn view_failed(_error: rsvp.Error) -> List(Element(Msg)) {
   [
     html.h1([attribute.class("font-semibold text-2xl")], [html.text("Oops!")]),
-    html.p([attribute.class("text-lg")], [
-      html.text(
-        "Something went wrong! If you meet our makers, please tell them this:",
-      ),
-    ]),
-    // In a real application, you would want to use custom error messages here
-    // instead of just relying on string.inspect.
-    html.pre([attribute.class("p-4 bg-gray-200")], [
-      html.code([], [html.text(string.inspect(error))]),
-    ]),
+    html.p([attribute.class("text-lg")], [html.text("Something went wrong!")]),
+    // TODO: show the error to the user in a nice way.
   ]
 }
 
