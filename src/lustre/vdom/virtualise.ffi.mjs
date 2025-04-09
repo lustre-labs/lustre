@@ -41,8 +41,9 @@ function virtualise_node(node) {
 
       const tag = node.localName;
       const namespace = node.namespaceURI;
+      const isHtmlElement = !namespace || namespace === HTML_NAMESPACE;
 
-      if (!namespace && input_elements.includes(tag)) {
+      if (isHtmlElement && input_elements.includes(tag)) {
         virtualise_input_events(tag, node);
       }
 
@@ -50,7 +51,7 @@ function virtualise_node(node) {
       const children = virtualise_child_nodes(node);
 
       const vnode =
-        !namespace || namespace === HTML_NAMESPACE
+        isHtmlElement
           ? element(tag, attributes, children)
           : namespaced(namespace, tag, attributes, children);
 
@@ -75,12 +76,14 @@ function virtualise_node(node) {
 const input_elements = ["input", "select", "textarea"];
 
 function virtualise_input_events(tag, node) {
+  const value = node.value;
+  const checked = node.checked;
   // For inputs that reflect their default state (eg not checked for checkboxes
   // and radios, empty for all other inputs) then we don't need to schedule any
   // virtual events.
-  if (tag === "input" && node.type === "checkbox" && !node.checked) return;
-  if (tag === "input" && node.type === "radio" && !node.checked) return;
-  if (node.type !== "checkbox" && node.type !== "radio" && !node.value) return;
+  if (tag === "input" && node.type === "checkbox" && !checked) return;
+  if (tag === "input" && node.type === "radio" && !checked) return;
+  if (node.type !== "checkbox" && node.type !== "radio" && !value) return;
 
   // We schedule a microtask instead of dispatching the events immediately to
   // give the runtime a chance to finish virtualising the DOM and set up the
@@ -90,6 +93,11 @@ function virtualise_input_events(tag, node) {
   // the browser from painting until the queue is empty, so we can be sure that
   // these events will be processed before the user sees the first render.
   window.queueMicrotask(() => {
+    // Since the first patch will have overridden our values, we will reset them
+    // here and trigger events, which the runtime can then pick up.
+    node.value = value;
+    node.checked = checked;
+
     node.dispatchEvent(new Event("input", { bubbles: true }));
     node.dispatchEvent(new Event("change", { bubbles: true }));
 

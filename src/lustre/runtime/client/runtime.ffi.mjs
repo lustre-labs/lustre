@@ -53,24 +53,20 @@ export class Runtime {
       }
     });
 
-    // We want to initially make sure we queue up any messages dispatched from
-    // hydration (such as input events) so we can handle them synchronously.
-    this.#shouldQueue = true;
     // We want the first render to be synchronous too
-    this.#shouldFlush = true;
     // The initial vdom is whatever we can virtualise from the root node when we
     // mount on to it.
     this.#vdom = virtualise(this.root);
-    // The first set of events come from running the user's view function. This
-    // function ends up being called twice: first here to get the initial event
-    // handlers, and then a second time inside `this.#tick`.
-    this.#events = Events.from_node(this.#view(this.#model));
+    // The initial set of events is empty, since we just virtualised.
+    this.#events = Events.new$();
 
-    window.queueMicrotask(() => {
-      // `#tick` will reset `#shouldQueue` and `#shouldFlush` back to false and
-      // then the runtime can carry on as normal.
-      this.#tick(effects, false);
-    });
+    // We want the first render to be synchronous...
+    this.#shouldFlush = true;
+
+    // ... and force it immediately. Tick will render our app, attach event
+    // listeners, and reset `#shouldFlush`.
+    // Afterwards, events triggered by virtualisation will dispatch, if any.
+    this.#tick(effects);
   }
 
   // PUBLIC API ----------------------------------------------------------------
