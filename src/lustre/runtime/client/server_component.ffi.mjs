@@ -181,7 +181,7 @@ export class ServerComponent extends HTMLElement {
       }
 
       case reconcile_kind: {
-        this.#reconciler.push(data.patch, this.#adoptedStyleNodes.length);
+        this.#reconciler.push(data.patch);
 
         break;
       }
@@ -250,6 +250,7 @@ export class ServerComponent extends HTMLElement {
     }
 
     this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
+    this.#reconciler.initialNodeOffset = this.#adoptedStyleNodes.length;
   }
 }
 

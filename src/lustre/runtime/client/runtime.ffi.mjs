@@ -36,8 +36,6 @@ export const throw_server_component_error = () => {
 //
 
 export class Runtime {
-  initialNodeOffset = 0;
-
   constructor(root, [model, effects], view, update) {
     this.root = root;
     this.#model = model;
@@ -72,6 +70,14 @@ export class Runtime {
   // PUBLIC API ----------------------------------------------------------------
 
   root = null;
+
+  get initialNodeOffset() {
+    return this.#reconciler.initialNodeOffset;
+  }
+
+  set initialNodeOffset(offset) {
+    this.#reconciler.initialNodeOffset = offset;
+  }
 
   dispatch(msg, immediate = false) {
     this.#shouldFlush ||= immediate;
@@ -183,7 +189,7 @@ export class Runtime {
 
     this.#events = events;
     this.#vdom = next;
-    this.#reconciler.push(patch, this.initialNodeOffset);
+    this.#reconciler.push(patch);
 
     // We have performed a render, the DOM has been updated but the browser has
     // not yet been given the opportunity to paint. We queue a microtask to block

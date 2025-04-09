@@ -34,6 +34,8 @@ const SUPPORTS_MOVE_BEFORE =
   globalThis.HTMLElement && !!HTMLElement.prototype.moveBefore;
 
 export class Reconciler {
+  initialNodeOffset = 0;
+
   #root = null;
   #dispatch = () => {};
 
@@ -51,24 +53,24 @@ export class Reconciler {
 
   #stack = [];
 
-  push(patch, offset = 0) {
-    if (offset) {
+  push(patch) {
+    if (this.initialNodeOffset) {
       iterate(patch.changes, (change) => {
         switch (change.kind) {
           case insert_kind:
           case move_kind:
-            change.before = (change.before | 0) + offset;
+            change.before = (change.before | 0) + this.initialNodeOffset;
             break;
 
           case remove_kind:
           case replace_kind:
-            change.from = (change.from | 0) + offset;
+            change.from = (change.from | 0) + this.initialNodeOffset;
             break;
         }
       });
 
       iterate(patch.children, (child) => {
-        child.index = (child.index | 0) + offset;
+        child.index = (child.index | 0) + this.initialNodeOffset;
       });
     }
 
@@ -366,7 +368,10 @@ export class Reconciler {
               path = `${separator_key}${key}${path}`;
             } else {
               const siblings = pathNode.parentNode.childNodes;
-              const index = [].indexOf.call(siblings, pathNode);
+              let index = [].indexOf.call(siblings, pathNode);
+              if (pathNode.parentNode === this.#root) {
+                index -= this.initialNodeOffset;
+              }
 
               path = `${separator_index}${index}${path}`;
             }
