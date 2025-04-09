@@ -22,7 +22,55 @@
 </head>
 
 <body>
-  <div id="app"></div>
+  <!--
+    The initial server-rendered HTML here will be made reactive by Lustre on
+    the first render. If the contents of the HTML stays the same, this only
+    involves adding a few event listeners to the existing HTML.
+
+    Lustre also handles input events that happen while the client is not yet
+    interactive yet for you, and will send your update function messages for
+    every input whose value was changed while lustre was loading!
+  -->
+  <!--
+    Note: Actually, we are lying a little bit for the sake of readability.
+    
+    This HTML is formatted and therefore slightly different to what Lustre
+    would expect as the output of `element.to_string`.
+
+    You can try the minified blob below if you're interested!
+  -->
+  <div id="app">
+    <div class="p-32 mx-auto w-full max-w-2xl space-y-4">
+      <h1 class="font-semibold text-2xl">Todo:</h1>
+      <ul class="flex flex-col gap-2">
+        <li data-lustre-key="1">
+          <label class="flex gap-2 items-baseline">
+            <p class="flex-1 line-through text-slate-400 ">Learn Lustre</p>
+            <input checked="" type="checkbox">
+          </label>
+        </li>
+        <li data-lustre-key="2">
+          <label class="flex gap-2 items-baseline">
+            <p class="flex-1 ">Play around with the hydrated data in index.html</p>
+            <input type="checkbox">
+          </label>
+        </li>
+        <li data-lustre-key="3">
+          <label class="flex gap-2 items-baseline">
+            <p class="flex-1 ">Build the rest of the app</p>
+            <input type="checkbox">
+          </label>
+        </li>
+        <li data-lustre-key="4">
+          <label class="flex gap-2 items-baseline">
+            <p class="flex-1 ">Show it off on Discord</p>
+            <input type="checkbox">
+          </label>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <!-- <div id="app"><div class="p-32 mx-auto w-full max-w-2xl space-y-4"><h1 class="font-semibold text-2xl">Todo:</h1><ul class="flex flex-col gap-2"><li data-lustre-key="1"><label class="flex gap-2 items-baseline"><p class="flex-1 line-through text-slate-400 ">Learn Lustre</p><input checked="" type="checkbox"></label></li><li data-lustre-key="2"><label class="flex gap-2 items-baseline"><p class="flex-1 ">Play around with the hydrated data in index.html</p><input type="checkbox"></label></li><li data-lustre-key="3"><label class="flex gap-2 items-baseline"><p class="flex-1 ">Build the rest of the app</p><input type="checkbox"></label></li><li data-lustre-key="4"><label class="flex gap-2 items-baseline"><p class="flex-1 ">Show it off on Discord</p><input type="checkbox"></label></li></ul></div></div> -->
 </body>
 
 </html>
