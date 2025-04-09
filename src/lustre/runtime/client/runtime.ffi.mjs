@@ -126,8 +126,7 @@ export class Runtime {
     dispatch: (msg, immediate) => this.dispatch(msg, immediate),
     emit: (event, data) => this.emit(event, data),
     select: () => {},
-    internals: () =>
-      this.root?.host ? this.root.host.internals : this.root?.internals,
+    root: () => this.root,
   };
 
   // A `#tick` is where we process effects and trigger any synchronous updates.

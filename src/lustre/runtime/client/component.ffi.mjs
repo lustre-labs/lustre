@@ -72,7 +72,7 @@ export const make_component = ({ init, update, view, config }, name) => {
     }
 
     attributeChangedCallback(name, _, value) {
-      const decoded = config.attributes.get(name)(value)
+      const decoded = config.attributes.get(name)(value);
 
       if (decoded.constructor === Ok) {
         this.dispatch(decoded[0]);
@@ -162,31 +162,30 @@ export const make_component = ({ init, update, view, config }, name) => {
 
 //
 
-export const set_form_value = (internals, value) => {
+export const set_form_value = (root, value) => {
   if (!is_browser()) return;
-  if (internals instanceof ElementInternals) {
-    console.log(internals);
-    internals.setFormValue(value);
+  if (root instanceof ShadowRoot) {
+    root.host.internals.setFormValue(value);
   }
 };
 
 export const clear_form_value = (internals) => {
   if (!is_browser()) return;
-  if (internals instanceof ElementInternals) {
-    internals.setFormValue(undefined);
+  if (root instanceof ShadowRoot) {
+    root.host.internals.setFormValue(undefined);
   }
 };
 
-export const set_pseudo_state = (internals, value) => {
+export const set_pseudo_state = (root, value) => {
   if (!is_browser()) return;
-  if (internals instanceof ElementInternals) {
-    internals.states.add(value);
+  if (root instanceof ShadowRoot) {
+    root.host.internals.states.add(value);
   }
 };
 
-export const remove_pseudo_state = (internals, value) => {
+export const remove_pseudo_state = (root, value) => {
   if (!is_browser()) return;
-  if (internals instanceof ElementInternals) {
-    internals.states.delete(value);
+  if (root instanceof ShadowRoot) {
+    root.host.internals.states.delete(value);
   }
 };

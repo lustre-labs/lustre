@@ -79,7 +79,7 @@ type Actions(msg) {
     dispatch: fn(msg) -> Nil,
     emit: fn(String, Json) -> Nil,
     select: fn(Selector(msg)) -> Nil,
-    internals: fn() -> Dynamic,
+    root: fn() -> Dynamic,
   )
 }
 
@@ -125,7 +125,13 @@ pub fn none() -> Effect(msg) {
 /// ```
 ///
 pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  Effect(..empty, synchronous: [task(effect)])
+  let task = fn(actions: Actions(msg)) {
+    let dispatch = actions.dispatch
+
+    effect(dispatch)
+  }
+
+  Effect(..empty, synchronous: [task])
 }
 
 /// Schedule a side effect that is guaranteed to run after your `view` function
@@ -146,8 +152,15 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 /// > effect in those contexts will run the effect synchronously, after any non-timing
 /// > effects are processed.
 ///
-pub fn before_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  Effect(..empty, before_paint: [task(effect)])
+pub fn before_paint(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
+  let task = fn(actions: Actions(msg)) {
+    let root = actions.root()
+    let dispatch = actions.dispatch
+
+    effect(dispatch, root)
+  }
+
+  Effect(..empty, before_paint: [task])
 }
 
 /// Schedule a side effect that is guaranteed to run after the browser has painted
@@ -157,8 +170,15 @@ pub fn before_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 /// > effect in those contexts will run the effect synchronously, after any non-timing
 /// > effects and any `before_paint` effects are processed.
 ///
-pub fn after_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  Effect(..empty, after_paint: [task(effect)])
+pub fn after_paint(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
+  let task = fn(actions: Actions(msg)) {
+    let root = actions.root()
+    let dispatch = actions.dispatch
+
+    effect(dispatch, root)
+  }
+
+  Effect(..empty, after_paint: [task])
 }
 
 /// Emit a custom event from a component as an effect. Parents can listen to these
@@ -169,11 +189,8 @@ pub fn after_paint(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 @internal
 pub fn event(name: String, data: Json) -> Effect(msg) {
   let task = fn(actions: Actions(msg)) { actions.emit(name, data) }
-  Effect(..empty, synchronous: [task])
-}
 
-fn task(effect: fn(fn(msg) -> Nil) -> Nil) -> fn(Actions(msg)) -> Nil {
-  fn(actions: Actions(msg)) { effect(actions.dispatch) }
+  Effect(..empty, synchronous: [task])
 }
 
 @target(erlang)
@@ -194,17 +211,6 @@ pub fn select(
 @internal
 pub fn select(_sel) {
   empty
-}
-
-@internal
-pub fn with_element_internals(
-  callback: fn(fn(msg) -> Nil, Dynamic) -> Nil,
-) -> Effect(msg) {
-  let task = fn(actions: Actions(msg)) {
-    callback(actions.dispatch, actions.internals())
-  }
-
-  Effect(..empty, synchronous: [task])
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
@@ -258,7 +264,7 @@ fn do_comap_actions(actions: Actions(b), f: fn(a) -> b) -> Actions(a) {
     dispatch: fn(msg) { actions.dispatch(f(msg)) },
     emit: actions.emit,
     select: fn(selector) { do_comap_select(actions, selector, f) },
-    internals: actions.internals,
+    root: actions.root,
   )
 }
 
@@ -280,11 +286,15 @@ fn do_comap_select(_, _, _) -> Nil {
 /// This is primarily used internally by the server component runtime, but it is
 /// may also useful for testing.
 ///
+/// Because this is run outside of the runtime, timing-related effects scheduled
+/// by `before_paint` and `after_paint` will **not** be run.
+///
 /// > **Note**: For now, you should **not** consider this function a part of the
 /// > public API. It may be removed in a future minor or patch release. If you have
 /// > a specific use case for this function, we'd love to hear about it! Please
 /// > reach out on the [Gleam Discord](https://discord.gg/Fm8Pwmy) or
 /// > [open an issue](https://github.com/lustre-labs/lustre/issues/new)!
+///
 ///
 @internal
 pub fn perform(
@@ -292,11 +302,10 @@ pub fn perform(
   dispatch: fn(a) -> Nil,
   emit: fn(String, Json) -> Nil,
   select: fn(Selector(a)) -> Nil,
-  internals: fn() -> Dynamic,
+  root: fn() -> Dynamic,
 ) -> Nil {
-  let actions = Actions(dispatch:, emit:, select:, internals:)
+  let actions = Actions(dispatch:, emit:, select:, root:)
+  use run <- list.each(effect.synchronous)
 
-  list.each(effect.synchronous, fn(eff) { eff(actions) })
-  list.each(effect.before_paint, fn(eff) { eff(actions) })
-  list.each(effect.after_paint, fn(eff) { eff(actions) })
+  run(actions)
 }

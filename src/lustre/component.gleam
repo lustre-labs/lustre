@@ -418,12 +418,12 @@ pub fn slot(name: String) -> Attribute(msg) {
 /// `FormData` object.
 ///
 pub fn set_form_value(value: String) -> Effect(msg) {
-  use _, internals <- effect.with_element_internals
-  do_set_form_value(internals, value)
+  use _, root <- effect.before_paint
+  do_set_form_value(root, value)
 }
 
 @external(javascript, "./runtime/client/component.ffi.mjs", "set_form_value")
-fn do_set_form_value(_internals: Dynamic, _value: String) -> Nil {
+fn do_set_form_value(_root: Dynamic, _value: String) -> Nil {
   Nil
 }
 
@@ -432,12 +432,12 @@ fn do_set_form_value(_internals: Dynamic, _value: String) -> Nil {
 /// the form data.
 ///
 pub fn clear_form_value() -> Effect(msg) {
-  use _, internals <- effect.with_element_internals
-  do_clear_form_value(internals)
+  use _, root <- effect.before_paint
+  do_clear_form_value(root)
 }
 
 @external(javascript, "./runtime/client/component.ffi.mjs", "clear_form_value")
-fn do_clear_form_value(_internals: Dynamic) -> Nil {
+fn do_clear_form_value(_root: Dynamic) -> Nil {
   Nil
 }
 
@@ -462,23 +462,23 @@ fn do_clear_form_value(_internals: Dynamic) -> Nil {
 /// ```
 ///
 pub fn set_pseudo_state(value: String) -> Effect(msg) {
-  use _, internals <- effect.with_element_internals
-  do_set_pseudo_state(internals, value)
+  use _, root <- effect.before_paint
+  do_set_pseudo_state(root, value)
 }
 
 @external(javascript, "./runtime/client/component.ffi.mjs", "set_pseudo_state")
-fn do_set_pseudo_state(_internals: Dynamic, _value: String) -> Nil {
+fn do_set_pseudo_state(_root: Dynamic, _value: String) -> Nil {
   Nil
 }
 
 /// Remove a custom state set by [`set_pseudo_state`](#set_pseudo_state).
 ///
 pub fn remove_pseudo_state(value: String) -> Effect(msg) {
-  use _, internals <- effect.with_element_internals
-  do_remove_pseudo_state(internals, value)
+  use _, root <- effect.before_paint
+  do_remove_pseudo_state(root, value)
 }
 
 @external(javascript, "./runtime/client/component.ffi.mjs", "remove_pseudo_state")
-fn do_remove_pseudo_state(_internals: Dynamic, _value: String) -> Nil {
+fn do_remove_pseudo_state(_root: Dynamic, _value: String) -> Nil {
   Nil
 }
