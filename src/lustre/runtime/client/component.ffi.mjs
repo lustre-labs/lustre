@@ -177,14 +177,14 @@ export const clear_form_value = (internals) => {
   }
 };
 
-export const set_psuedo_state = (internals, value) => {
+export const set_pseudo_state = (internals, value) => {
   if (!is_browser()) return;
   if (internals instanceof ElementInternals) {
     internals.states.add(value);
   }
 };
 
-export const remove_psuedo_state = (internals, value) => {
+export const remove_pseudo_state = (internals, value) => {
   if (!is_browser()) return;
   if (internals instanceof ElementInternals) {
     internals.states.delete(value);

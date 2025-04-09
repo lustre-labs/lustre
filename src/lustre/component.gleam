@@ -443,7 +443,7 @@ fn do_clear_form_value(_internals: Dynamic) -> Nil {
 
 /// Set a custom state on the component. This state is not reflected in the DOM
 /// but can be selected in CSS using the `:state` pseudo-class. For example,
-/// calling `set_psuedo_state("checked")` on a component called `"my-checkbox"`
+/// calling `set_pseudo_state("checked")` on a component called `"my-checkbox"`
 /// means the following CSS will apply:
 ///
 /// ```css
@@ -461,24 +461,24 @@ fn do_clear_form_value(_internals: Dynamic) -> Nil {
 /// }
 /// ```
 ///
-pub fn set_psuedo_state(value: String) -> Effect(msg) {
+pub fn set_pseudo_state(value: String) -> Effect(msg) {
   use _, internals <- effect.with_element_internals
-  do_set_psuedo_state(internals, value)
+  do_set_pseudo_state(internals, value)
 }
 
-@external(javascript, "./runtime/client/component.ffi.mjs", "set_psuedo_state")
-fn do_set_psuedo_state(_internals: Dynamic, _value: String) -> Nil {
+@external(javascript, "./runtime/client/component.ffi.mjs", "set_pseudo_state")
+fn do_set_pseudo_state(_internals: Dynamic, _value: String) -> Nil {
   Nil
 }
 
-/// Remove a custom state set by [`set_psuedo_state`](#set_psuedo_state).
+/// Remove a custom state set by [`set_pseudo_state`](#set_pseudo_state).
 ///
-pub fn remove_psuedo_state(value: String) -> Effect(msg) {
+pub fn remove_pseudo_state(value: String) -> Effect(msg) {
   use _, internals <- effect.with_element_internals
-  do_remove_psuedo_state(internals, value)
+  do_remove_pseudo_state(internals, value)
 }
 
-@external(javascript, "./runtime/client/component.ffi.mjs", "remove_psuedo_state")
-fn do_remove_psuedo_state(_internals: Dynamic, _value: String) -> Nil {
+@external(javascript, "./runtime/client/component.ffi.mjs", "remove_pseudo_state")
+fn do_remove_pseudo_state(_internals: Dynamic, _value: String) -> Nil {
   Nil
 }
