@@ -105,6 +105,7 @@ var remove_kind = 7;
 // build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs
 var SUPPORTS_MOVE_BEFORE = globalThis.HTMLElement && !!HTMLElement.prototype.moveBefore;
 var Reconciler = class {
+  initialNodeOffset = 0;
   #root = null;
   #dispatch = () => {
   };
@@ -118,22 +119,22 @@ var Reconciler = class {
     this.#root.appendChild(this.#createElement(vdom));
   }
   #stack = [];
-  push(patch, offset = 0) {
-    if (offset) {
+  push(patch) {
+    if (this.initialNodeOffset) {
       iterate(patch.changes, (change) => {
         switch (change.kind) {
           case insert_kind:
           case move_kind:
-            change.before = (change.before | 0) + offset;
+            change.before = (change.before | 0) + this.initialNodeOffset;
             break;
           case remove_kind:
           case replace_kind:
-            change.from = (change.from | 0) + offset;
+            change.from = (change.from | 0) + this.initialNodeOffset;
             break;
         }
       });
       iterate(patch.children, (child) => {
-        child.index = (child.index | 0) + offset;
+        child.index = (child.index | 0) + this.initialNodeOffset;
       });
     }
     this.#stack.push({ node: this.#root, patch });
@@ -343,44 +344,47 @@ var Reconciler = class {
           };
           node[meta].debouncers.set(attribute3.name, debounce);
         }
-        node[meta].handlers.set(attribute3.name, (event3) => {
+        node[meta].handlers.set(attribute3.name, (event2) => {
           if (prevent)
-            event3.preventDefault();
+            event2.preventDefault();
           if (stop)
-            event3.stopPropagation();
+            event2.stopPropagation();
           let path = "";
-          let pathNode = event3.currentTarget;
+          let pathNode = event2.currentTarget;
           while (pathNode !== this.#root) {
             const key = pathNode[meta].key;
             if (key) {
               path = `${separator_key}${key}${path}`;
             } else {
               const siblings = pathNode.parentNode.childNodes;
-              const index2 = [].indexOf.call(siblings, pathNode);
+              let index2 = [].indexOf.call(siblings, pathNode);
+              if (pathNode.parentNode === this.#root) {
+                index2 -= this.initialNodeOffset;
+              }
               path = `${separator_index}${index2}${path}`;
             }
             pathNode = pathNode.parentNode;
           }
           path = path.slice(1);
-          const data = this.#useServerEvents ? createServerEvent(event3, include) : event3;
-          if (node[meta].throttles.has(event3.type)) {
-            const throttle = node[meta].throttles.get(event3.type);
+          const data = this.#useServerEvents ? createServerEvent(event2, include) : event2;
+          if (node[meta].throttles.has(event2.type)) {
+            const throttle = node[meta].throttles.get(event2.type);
             const now = Date.now();
             const last = throttle.last || 0;
             if (now > last + throttle.delay) {
               throttle.last = now;
-              this.#dispatch(data, path, event3.type, immediate);
+              this.#dispatch(data, path, event2.type, immediate);
             } else {
-              event3.preventDefault();
+              event2.preventDefault();
             }
-          } else if (node[meta].debouncers.has(event3.type)) {
-            const debounce = node[meta].debouncers.get(event3.type);
+          } else if (node[meta].debouncers.has(event2.type)) {
+            const debounce = node[meta].debouncers.get(event2.type);
             window.clearTimeout(debounce.timeout);
             debounce.timeout = window.setTimeout(() => {
-              this.#dispatch(data, path, event3.type, immediate);
+              this.#dispatch(data, path, event2.type, immediate);
             }, debounce.delay);
           } else {
-            this.#dispatch(data, path, event3.type, immediate);
+            this.#dispatch(data, path, event2.type, immediate);
           }
         });
         break;
@@ -429,26 +433,26 @@ function addKeyedChild(node, child) {
     node[meta].keyedChildren.set(key, new WeakRef(child));
   }
 }
-function handleEvent(event3) {
-  const target = event3.currentTarget;
-  const handler = target[meta].handlers.get(event3.type);
-  if (event3.type === "submit") {
-    event3.detail ??= {};
-    event3.detail.formData = [...new FormData(event3.target).entries()];
+function handleEvent(event2) {
+  const target = event2.currentTarget;
+  const handler = target[meta].handlers.get(event2.type);
+  if (event2.type === "submit") {
+    event2.detail ??= {};
+    event2.detail.formData = [...new FormData(event2.target).entries()];
   }
-  handler(event3);
+  handler(event2);
 }
-function createServerEvent(event3, include = []) {
+function createServerEvent(event2, include = []) {
   const data = {};
-  if (event3.type === "input" || event3.type === "change") {
+  if (event2.type === "input" || event2.type === "change") {
     include.push("target.value");
   }
-  if (event3.type === "submit") {
+  if (event2.type === "submit") {
     include.push("detail.formData");
   }
   for (const property2 of include) {
     const path = property2.split(".");
-    for (let i = 0, input = event3, output = data; i < path.length; i++) {
+    for (let i = 0, input = event2, output = data; i < path.length; i++) {
       if (i === path.length - 1) {
         output[path[i]] = input[path[i]];
         break;
@@ -465,7 +469,7 @@ var ATTRIBUTE_HOOKS = {
   value: syncedAttribute("value"),
   autofocus: {
     added(node) {
-      node.focus?.();
+      queueMicrotask(() => node.focus?.());
     }
   },
   autoplay: {
@@ -527,13 +531,16 @@ var ServerComponent = class extends HTMLElement {
       if (mutation.type !== "attributes")
         continue;
       const name = mutation.attributeName;
-      if (this.#connected || this.#remoteObservedAttributes.includes(name)) {
+      if (!this.#connected || this.#remoteObservedAttributes.has(name)) {
         attributes.push([name, this.getAttribute(name)]);
       }
     }
-    if (attributes.length && this.#connected) {
+    if (attributes.length === 1) {
+      const [name, value] = attributes[0];
+      this.#transport?.send({ kind: attribute_changed_kind, name, value });
+    } else if (attributes.length) {
       this.#transport?.send({
-        kind: batch,
+        kind: batch_kind,
         messages: attributes.map(([name, value]) => ({
           kind: attribute_changed_kind,
           name,
@@ -553,6 +560,9 @@ var ServerComponent = class extends HTMLElement {
   }
   connectedCallback() {
     this.#method = this.getAttribute("method") || "ws";
+    for (const attribute3 of this.attributes) {
+      this.#changedAttributesQueue.push([attribute3.name, attribute3.value]);
+    }
     if (this.hasAttribute("route")) {
       this.#route = new URL(this.getAttribute("route"), window.location.href);
       this.#connect();
@@ -591,12 +601,12 @@ var ServerComponent = class extends HTMLElement {
         });
         this.#reconciler = new Reconciler(
           this.#shadowRoot,
-          (event3, path, name) => {
+          (event2, path, name) => {
             this.#transport?.send({
               kind: event_fired_kind,
               path,
               name,
-              event: event3
+              event: event2
             });
           },
           {
@@ -642,7 +652,7 @@ var ServerComponent = class extends HTMLElement {
         break;
       }
       case reconcile_kind: {
-        this.#reconciler.push(data.patch, this.#adoptedStyleNodes.length);
+        this.#reconciler.push(data.patch);
         break;
       }
       case emit_kind: {
@@ -698,6 +708,7 @@ var ServerComponent = class extends HTMLElement {
       this.#shadowRoot.firstChild.remove();
     }
     this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
+    this.#reconciler.initialNodeOffset = this.#adoptedStyleNodes.length;
   }
 };
 var WebsocketTransport = class {
