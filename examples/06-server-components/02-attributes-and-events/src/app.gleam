@@ -159,7 +159,7 @@ fn loop_counter_socket(
 ) {
   case message {
     mist.Text(json) -> {
-      case echo json.parse(json, server_component.runtime_message_decoder()) {
+      case json.parse(json, server_component.runtime_message_decoder()) {
         Ok(runtime_message) -> lustre.send(state.component, runtime_message)
         Error(_) -> Nil
       }
