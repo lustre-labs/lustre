@@ -158,16 +158,14 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/bool
-import gleam/erlang/process.{type Subject}
-import gleam/otp/actor.{type StartError}
+
+import gleam/otp/actor
+import gleam/result
 import lustre/component.{type Config, type Option}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/internals/constants
 import lustre/runtime/server/runtime
-
-@target(erlang)
-import gleam/result
 
 // TYPES -----------------------------------------------------------------------
 
@@ -183,11 +181,7 @@ import gleam/result
 ///
 /// - Use [`start_server_component`](#start_server_component) to start a Lustre
 ///   Server Component anywhere Gleam will run: Erlang, Node, Deno, or in the
-///   browser. If you're running on the BEAM though, you should...
-///
-/// - Use [`start_actor`](#start_actor) to start a Lustre Server Component only
-///   for the Erlang target. BEAM users should always prefer this over
-///   `start_server_component` so they can take advantage of OTP features.
+///   browser.
 ///
 /// - Use [`register`](#register) to register a component in the browser to be
 ///   used as a Custom Element. This is useful even if you're not using Lustre
@@ -211,7 +205,7 @@ pub opaque type App(flags, model, msg) {
 /// on certain targets.
 ///
 pub type Error {
-  ActorError(StartError)
+  ActorError(reason: actor.StartError)
   BadComponentName(name: String)
   ComponentAlreadyRegistered(name: String)
   ElementNotFound(selector: String)
@@ -340,38 +334,14 @@ pub fn start_server_component(
   app: App(flags, model, msg),
   with flags: flags,
 ) -> Result(Runtime(msg), Error) {
-  start_actor(app, with: flags) |> coerce
-}
-
-///
-///
-pub fn start_actor(
-  app: App(flags, model, msg),
-  with flags: flags,
-) -> Result(Subject(RuntimeMessage(msg)), Error) {
-  do_start_actor(app, flags)
-}
-
-@target(erlang)
-fn do_start_actor(
-  app: App(flags, model, msg),
-  with flags: flags,
-) -> Result(Subject(RuntimeMessage(msg)), Error) {
   app.init(flags)
   |> runtime.start(
     app.update,
     app.view,
     component.to_server_component_config(app.config),
   )
+  |> result.map(coerce)
   |> result.map_error(ActorError)
-}
-
-@target(javascript)
-fn do_start_actor(
-  _app: App(flags, model, msg),
-  _flags: flags,
-) -> Result(Subject(RuntimeMessage(msg)), Error) {
-  Error(NotErlang)
 }
 
 /// Register a Lustre application as a Web Component. This lets you render that
@@ -402,16 +372,6 @@ pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error)
 
 // MESSAGES --------------------------------------------------------------------
 
-/// Send a message to an application running on the JavaScript target. This can
-/// be used to communicate with a Lustre application from the outside world, for
-/// example by attaching event listeners to the document to dispatch messages
-/// after the app has been started.
-///
-/// > **Note**: This function is only meaningful when running on the JavaScript
-/// > target as a `Runtime` can only be constructed on that target. If you are
-/// > running a server component on the Erlang target, you should use Gleam's usual
-/// > api for sending messages to actors and the `Subject` returned from
-/// > [`start_actor`](#start_actor).
 ///
 @external(erlang, "gleam@erlang@process", "send")
 @external(javascript, "./lustre/runtime/client/runtime.ffi.mjs", "send")
@@ -421,11 +381,8 @@ pub fn send(runtime: Runtime(msg), message: RuntimeMessage(msg)) -> Nil
 /// used as a way for the outside world to communicate with a Lustre app without
 /// the app needing to initiate things with an effect.
 ///
-/// Both client SPAs and server components can have messages sent to them using
-/// the `dispatch` action.
-///
-pub fn dispatch(msg: msg) -> RuntimeMessage(msg) {
-  runtime.EffectDispatchedMessage(msg)
+pub fn dispatch(runtime: Runtime(msg), msg: msg) -> Nil {
+  send(runtime, runtime.EffectDispatchedMessage(msg))
 }
 
 /// Instruct a running application to shut down. For client SPAs this will stop
@@ -433,8 +390,8 @@ pub fn dispatch(msg: msg) -> RuntimeMessage(msg) {
 /// stop the runtime and prevent any further patches from being sent to connected
 /// clients.
 ///
-pub fn shutdown() -> RuntimeMessage(msg) {
-  runtime.SystemRequestedShutdown
+pub fn shutdown(runtime: Runtime(msg)) -> Nil {
+  send(runtime, runtime.SystemRequestedShutdown)
 }
 
 // UTILS -----------------------------------------------------------------------

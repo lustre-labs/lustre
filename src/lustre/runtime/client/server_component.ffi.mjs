@@ -42,14 +42,17 @@ export class ServerComponent extends HTMLElement {
       if (mutation.type !== "attributes") continue;
       const name = mutation.attributeName;
 
-      if (this.#connected || this.#remoteObservedAttributes.includes(name)) {
+      if (!this.#connected || this.#remoteObservedAttributes.has(name)) {
         attributes.push([name, this.getAttribute(name)]);
       }
     }
 
-    if (attributes.length && this.#connected) {
+    if (attributes.length === 1) {
+      const [name, value] = attributes[0];
+      this.#transport?.send({ kind: attribute_changed_kind, name, value });
+    } else if (attributes.length) {
       this.#transport?.send({
-        kind: batch,
+        kind: batch_kind,
         messages: attributes.map(([name, value]) => ({
           kind: attribute_changed_kind,
           name,
@@ -72,6 +75,10 @@ export class ServerComponent extends HTMLElement {
 
   connectedCallback() {
     this.#method = this.getAttribute("method") || "ws";
+
+    for (const attribute of this.attributes) {
+      this.#changedAttributesQueue.push([attribute.name, attribute.value]);
+    }
 
     if (this.hasAttribute("route")) {
       this.#route = new URL(this.getAttribute("route"), window.location.href);

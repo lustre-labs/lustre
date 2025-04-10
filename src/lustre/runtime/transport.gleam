@@ -157,6 +157,7 @@ pub fn server_message_decoder() -> Decoder(ServerMessage) {
 
   case kind {
     _ if kind == attribute_changed_kind -> attribute_changed_decoder()
+    _ if kind == property_changed_kind -> property_changed_decoder()
     _ if kind == event_fired_kind -> event_fired_decoder()
     _ if kind == batch_kind -> batch_decoder()
     _ -> decode.failure(batch([]), "")
@@ -168,6 +169,13 @@ fn attribute_changed_decoder() -> Decoder(ServerMessage) {
   use value <- decode.field("value", decode.string)
 
   decode.success(attribute_changed(name, value))
+}
+
+fn property_changed_decoder() -> Decoder(ServerMessage) {
+  use name <- decode.field("name", decode.string)
+  use value <- decode.field("value", decode.dynamic)
+
+  decode.success(property_changed(name, value))
 }
 
 fn event_fired_decoder() -> Decoder(ServerMessage) {
