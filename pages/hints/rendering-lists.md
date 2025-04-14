@@ -37,7 +37,7 @@ This can be pulled from the browser cache so is immediately displayed without th
 experiencing any delay. The visual issue presents as a duplicate `a` cat image until
 image `b` is downloaded, at which point it replaces the first `a` image.
 
-> **Note:** Because the cat API returns a random image, it is possible for the final
+> **Note**: Because the cat API returns a random image, it is possible for the final
 > result to be a duplicate cat image. This is a different situation from the one
 > described above. Using the slugs from above, this situation would produce
 > a list `[a, a]`.

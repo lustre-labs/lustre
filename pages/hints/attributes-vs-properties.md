@@ -53,11 +53,6 @@ is not the case.
 For SVG elements, you often cannot use properties at all (they are typically
 read-only) and must *always* use attributes.
 
-Conversely, if you're using Lustre's components and wrote your `on_attribute_change`
-decoders in a way that did not anticipate receiving strings you may find that
-only properties work as you intended (the [decipher](https://hexdocs.pm/decipher/decipher.html)
-package can help you decode number-like strings and booleans from attributes.)
-
 ## Other resources
 
 Here are some other resources from around the Web that you might also find useful:

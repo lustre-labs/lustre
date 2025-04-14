@@ -2,7 +2,7 @@
 
 Throughout Lustre's documentation you may come across references to _purity_ or
 _pure functions_. Lustre makes some fundamental assumptions around purity in your
-programs so it's important to know what it means!
+applications so it's important to know what it means!
 
 ## Functions as formulas
 
