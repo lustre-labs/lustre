@@ -14,7 +14,8 @@ internal_modules = ["lustre/internals/*", "lustre/runtime/*", "lustre/vdom/*"]
 
 [documentation]
 pages = [
-    { title = "Examples directory", path = "reference/examples.html", source = "./pages/reference/examples.md" },
+    { title = "Announcements", path = "announcements.html", source = "./pages/announcements/index.md" },
+    { title = "Examples", path = "reference/examples.html", source = "./pages/reference/examples.md" },
     { title = " ", path = "#", source = "" },
     { title = "Quickstart guide", path = "guide/01-quickstart.html", source = "./pages/guide/01-quickstart.md" },
     { title = "Managing state", path = "guide/02-state-management.html", source = "./pages/guide/02-state-management.md" },
