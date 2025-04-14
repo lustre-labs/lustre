@@ -222,25 +222,25 @@ var Reconciler = class {
   #remove(node, from, count) {
     this.#removeFromChild(node, childAt(node, from), count);
   }
-  #removeFromChild(parent2, child, count) {
+  #removeFromChild(parent, child, count) {
     while (count-- > 0 && child !== null) {
       const next = child.nextSibling;
       const key = child[meta].key;
       if (key) {
-        parent2[meta].keyedChildren.delete(key);
+        parent[meta].keyedChildren.delete(key);
       }
       for (const [_, { timeout }] of child[meta].debouncers) {
         clearTimeout(timeout);
       }
-      parent2.removeChild(child);
+      parent.removeChild(child);
       child = next;
     }
   }
-  #replace(parent2, from, count, child) {
-    this.#remove(parent2, from, count);
+  #replace(parent, from, count, child) {
+    this.#remove(parent, from, count);
     const el = this.#createElement(child);
-    addKeyedChild(parent2, el);
-    insertBefore(parent2, el, childAt(parent2, from));
+    addKeyedChild(parent, el);
+    insertBefore(parent, el, childAt(parent, from));
   }
   #replaceText(node, content) {
     node.data = content ?? "";
@@ -354,13 +354,13 @@ var Reconciler = class {
           let pathNode = event2.currentTarget;
           while (pathNode !== this.#root) {
             const key = pathNode[meta].key;
+            const parent = pathNode.parentNode;
             if (key) {
               path = `${separator_key}${key}${path}`;
             } else {
-              const parent2 = pathNode.parentNode;
-              const siblings = parent2.childNodes;
+              const siblings = parent.childNodes;
               let index2 = [].indexOf.call(siblings, pathNode);
-              if (parent2 === this.#root) {
+              if (parent === this.#root) {
                 index2 -= this.offset;
               }
               path = `${separator_index}${index2}${path}`;
@@ -406,9 +406,9 @@ var iterate = (list4, callback) => {
   }
 };
 var appendChild = (node, child) => node.appendChild(child);
-var insertBefore = (parent2, node, referenceNode) => parent2.insertBefore(node, referenceNode ?? null);
+var insertBefore = (parent, node, referenceNode) => parent.insertBefore(node, referenceNode ?? null);
 var createElement = ({ key, tag, namespace }) => {
-  const node = document.createElementNS(tag, namespace ?? NAMESPACE_HTML);
+  const node = document.createElementNS(namespace || NAMESPACE_HTML, tag);
   initialiseMetadata(node, key);
   return node;
 };
@@ -476,6 +476,23 @@ var createServerEvent = (event2, include = []) => {
   }
   return data;
 };
+var syncedBooleanAttribute = (name) => {
+  return {
+    added(node) {
+      node[name] = true;
+    },
+    removed(node) {
+      node[name] = false;
+    }
+  };
+};
+var syncedAttribute = (name) => {
+  return {
+    added(node, value) {
+      node[name] = value;
+    }
+  };
+};
 var ATTRIBUTE_HOOKS = {
   checked: syncedBooleanAttribute("checked"),
   selected: syncedBooleanAttribute("selected"),
@@ -494,23 +511,6 @@ var ATTRIBUTE_HOOKS = {
       }
     }
   }
-};
-var syncedBooleanAttribute = (name) => {
-  return {
-    added(node, _value) {
-      node[name] = true;
-    },
-    removed(node) {
-      node[name] = false;
-    }
-  };
-};
-var syncedAttribute = (name) => {
-  return {
-    added(node, value) {
-      node[name] = value;
-    }
-  };
 };
 
 // build/dev/javascript/lustre/lustre/runtime/transport.mjs
@@ -609,9 +609,13 @@ var ServerComponent = class extends HTMLElement {
   async messageReceivedCallback(data) {
     switch (data.kind) {
       case mount_kind: {
-        this.#shadowRoot = this.attachShadow({
+        this.#shadowRoot ??= this.attachShadow({
           mode: data.open_shadow_root ? "open" : "closed"
         });
+        while (this.#shadowRoot.firstChild) {
+          this.#shadowRoot.firstChild.remove();
+        }
+        initialiseMetadata(this.#shadowRoot);
         this.#reconciler = new Reconciler(
           this.#shadowRoot,
           (event2, path, name) => {
@@ -763,7 +767,7 @@ var WebsocketTransport = class {
     };
   }
   send(data) {
-    if (this.#waitingForResponse) {
+    if (this.#waitingForResponse || this.#socket.readyState !== WebSocket.OPEN) {
       this.#queue.push(data);
       return;
     } else {

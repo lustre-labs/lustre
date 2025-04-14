@@ -358,10 +358,10 @@ export class Reconciler {
 
           while (pathNode !== this.#root) {
             const key = pathNode[meta].key;
+            const parent = pathNode.parentNode;
             if (key) {
               path = `${separator_key}${key}${path}`;
             } else {
-              const parent = pathNode.parentNode;
               const siblings = parent.childNodes;
               let index = [].indexOf.call(siblings, pathNode);
               if (parent === this.#root) {
