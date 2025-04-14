@@ -22,7 +22,7 @@ import {
 export const make_component = ({ init, update, view, config }, name) => {
   if (!is_browser()) return new Error(new NotABrowser());
   if (!name.includes("-")) return new Error(new BadComponentName(name));
-  if (window.customElements.get(name)) {
+  if (customElements.get(name)) {
     return new Error(new ComponentAlreadyRegistered(name));
   }
 
@@ -134,7 +134,7 @@ export const make_component = ({ init, update, view, config }, name) => {
       }
 
       this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
-      this.#runtime.initialNodeOffset = this.#adoptedStyleNodes.length;
+      this.#runtime.offset = this.#adoptedStyleNodes.length;
     }
   };
 
@@ -155,7 +155,7 @@ export const make_component = ({ init, update, view, config }, name) => {
     });
   });
 
-  window.customElements.define(name, component);
+  customElements.define(name, component);
 
   return new Ok(undefined);
 };

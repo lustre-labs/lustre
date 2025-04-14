@@ -8,6 +8,7 @@ import {
   EffectEmitEvent,
   SystemRequestedShutdown,
 } from "../server/runtime.mjs";
+import { document } from "../../internals/constants.ffi.mjs";
 
 //
 

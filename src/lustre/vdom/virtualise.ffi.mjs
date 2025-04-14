@@ -5,14 +5,20 @@ import { to_keyed } from "./vnode.mjs";
 import { empty_list } from "../internals/constants.mjs";
 import { initialiseMetadata } from "./reconciler.ffi.mjs";
 
-const HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
+import {
+  document,
+  ELEMENT_NODE,
+  TEXT_NODE,
+  DOCUMENT_FRAGMENT_NODE,
+  NAMESPACE_HTML
+} from "../internals/constants.ffi.mjs";
 
-export function virtualise(root) {
+export const virtualise = (root) => {
   const vdom = virtualise_node(root);
   // at this point we know the element is empty - but we have to have at least
   // an empty text node child in the root element to be able to mount
   if (vdom === null || vdom.children instanceof Empty) {
-    const empty = document.createTextNode("");
+    const empty = empty_text_node();
     initialiseMetadata(empty);
     root.appendChild(empty);
     return none();
@@ -22,16 +28,20 @@ export function virtualise(root) {
   ) {
     return vdom.children.head;
   } else {
-    const head = document.createTextNode("");
+    const head = empty_text_node();
     initialiseMetadata(head);
     root.insertBefore(head, root.firstChild);
     return fragment(vdom.children);
   }
 }
 
-function virtualise_node(node) {
+const empty_text_node = () => {
+  return document.createTextNode("");
+}
+
+const virtualise_node = (node) => {
   switch (node.nodeType) {
-    case Node.ELEMENT_NODE: {
+    case ELEMENT_NODE: {
       const key = node.getAttribute("data-lustre-key");
       initialiseMetadata(node, key);
 
@@ -41,7 +51,7 @@ function virtualise_node(node) {
 
       const tag = node.localName;
       const namespace = node.namespaceURI;
-      const isHtmlElement = !namespace || namespace === HTML_NAMESPACE;
+      const isHtmlElement = !namespace || namespace === NAMESPACE_HTML;
 
       if (isHtmlElement && input_elements.includes(tag)) {
         virtualise_input_events(tag, node);
@@ -58,11 +68,11 @@ function virtualise_node(node) {
       return key ? to_keyed(key, vnode) : vnode;
     }
 
-    case Node.TEXT_NODE:
+    case TEXT_NODE:
       initialiseMetadata(node);
       return text(node.data);
 
-    case Node.DOCUMENT_FRAGMENT_NODE: // shadowRoot
+    case DOCUMENT_FRAGMENT_NODE: // shadowRoot
       initialiseMetadata(node);
       return node.childNodes.length > 0
         ? fragment(virtualise_child_nodes(node))
@@ -75,7 +85,7 @@ function virtualise_node(node) {
 
 const input_elements = ["input", "select", "textarea"];
 
-function virtualise_input_events(tag, node) {
+const virtualise_input_events = (tag, node) => {
   const value = node.value;
   const checked = node.checked;
   // For inputs that reflect their default state (eg not checked for checkboxes
@@ -92,7 +102,7 @@ function virtualise_input_events(tag, node) {
   // Microtasks are flushed once the current task has completed, and will block
   // the browser from painting until the queue is empty, so we can be sure that
   // these events will be processed before the user sees the first render.
-  window.queueMicrotask(() => {
+  queueMicrotask(() => {
     // Since the first patch will have overridden our values, we will reset them
     // here and trigger events, which the runtime can then pick up.
     node.value = value;
@@ -110,7 +120,7 @@ function virtualise_input_events(tag, node) {
   });
 }
 
-function virtualise_child_nodes(node) {
+const virtualise_child_nodes = (node) => {
   let children = empty_list;
 
   let child = node.lastChild;
@@ -128,7 +138,7 @@ function virtualise_child_nodes(node) {
   return children;
 }
 
-function virtualise_attributes(node) {
+const virtualise_attributes = (node) => {
   let index = node.attributes.length;
 
   let attributes = empty_list;
@@ -142,7 +152,7 @@ function virtualise_attributes(node) {
   return attributes;
 }
 
-function virtualise_attribute(attr) {
+const virtualise_attribute = (attr) => {
   const name = attr.localName;
   const value = attr.value;
   return attribute(name, value);

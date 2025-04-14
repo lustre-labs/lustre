@@ -27,7 +27,6 @@ export class ServerComponent extends HTMLElement {
   #method = "ws";
   #route = null;
   #transport = null;
-  #adoptStyles = true;
   #adoptedStyleNodes = [];
   #reconciler;
   #remoteObservedAttributes = new Set();
@@ -80,16 +79,17 @@ export class ServerComponent extends HTMLElement {
       this.#changedAttributesQueue.push([attribute.name, attribute.value]);
     }
 
-    if (this.hasAttribute("route")) {
-      this.#route = new URL(this.getAttribute("route"), window.location.href);
+    const route = this.getAttribute("route")
+    if (route) {
+      this.#route = new URL(route, location.href);
       this.#connect();
     }
   }
 
   attributeChangedCallback(name, prev, next) {
     switch (name) {
-      case "route" && prev !== next: {
-        this.#route = new URL(next, window.location.href);
+      case prev !== next && "route": {
+        this.#route = new URL(next, location.href);
         this.#connect();
         return;
       }
@@ -257,7 +257,7 @@ export class ServerComponent extends HTMLElement {
     }
 
     this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
-    this.#reconciler.initialNodeOffset = this.#adoptedStyleNodes.length;
+    this.#reconciler.offset = this.#adoptedStyleNodes.length;
   }
 }
 
@@ -376,7 +376,7 @@ class PollingTransport {
 
     this.#fetch().finally(() => {
       this.#onConnect();
-      this.#timer = window.setInterval(() => this.#fetch(), this.#interval);
+      this.#timer = setInterval(() => this.#fetch(), this.#interval);
     });
   }
 
@@ -399,4 +399,4 @@ class PollingTransport {
 
 // It's important that this comes right at the bottom, otherwise the different
 // transport classes would be undefined when the custom element is defined!
-window.customElements.define("lustre-server-component", ServerComponent);
+customElements.define("lustre-server-component", ServerComponent);

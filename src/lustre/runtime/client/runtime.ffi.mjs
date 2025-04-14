@@ -7,13 +7,13 @@ import { diff } from "../../vdom/diff.mjs";
 import * as Events from "../../vdom/events.mjs";
 import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
 import { virtualise } from "../../vdom/virtualise.ffi.mjs";
+import { document } from "../../internals/constants.ffi.mjs";
 
 //
 
-export const is_browser = () => globalThis.window && window.document;
+export const is_browser = () => !!document;
 
-export const is_registered = (name) =>
-  globalThis.window && globalThis.window.customElements.get(name);
+export const is_registered = (name) => is_browser() && customElements.get(name);
 
 export const is_reference_equal = (a, b) => a === b;
 
@@ -71,12 +71,8 @@ export class Runtime {
 
   root = null;
 
-  get initialNodeOffset() {
-    return this.#reconciler.initialNodeOffset;
-  }
-
-  set initialNodeOffset(offset) {
-    this.#reconciler.initialNodeOffset = offset;
+  set offset(offset) {
+    this.#reconciler.offset = offset;
   }
 
   dispatch(msg, immediate = false) {
@@ -170,10 +166,10 @@ export class Runtime {
 
     // Work out whether we need to schedule a render or if we need to
     if (this.#shouldFlush) {
-      window.cancelAnimationFrame(this.#renderTimer);
+      cancelAnimationFrame(this.#renderTimer);
       this.#render();
     } else if (!this.#renderTimer) {
-      this.#renderTimer = window.requestAnimationFrame(() => {
+      this.#renderTimer = requestAnimationFrame(() => {
         this.#render();
       });
     }
@@ -201,7 +197,7 @@ export class Runtime {
       // We explicitly queue a microtask instead of synchronously calling the
       // `#tick` function to allow the runtime to process any microtasks queued
       // by synchronous effects first such as promise callbacks.
-      window.queueMicrotask(() => {
+      queueMicrotask(() => {
         this.#shouldFlush = true;
         this.#tick(effects);
       });
@@ -213,7 +209,7 @@ export class Runtime {
       const effects = makeEffect(this.#afterPaint);
       this.#afterPaint = empty_list;
 
-      window.requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
         this.#shouldFlush = true;
         this.#tick(effects);
       });

@@ -31,6 +31,14 @@ var trim_start_regex = /* @__PURE__ */ new RegExp(
 );
 var trim_end_regex = /* @__PURE__ */ new RegExp(`[${unicode_whitespaces}]*$`);
 
+// build/dev/javascript/lustre/lustre/internals/constants.ffi.mjs
+var document = globalThis?.document;
+var NAMESPACE_HTML = "http://www.w3.org/1999/xhtml";
+var ELEMENT_NODE = 1;
+var TEXT_NODE = 3;
+var DOCUMENT_FRAGMENT_NODE = 11;
+var SUPPORTS_MOVE_BEFORE = !!globalThis.HTMLElement?.prototype?.moveBefore;
+
 // build/dev/javascript/lustre/lustre/vdom/vattr.mjs
 var attribute_kind = 0;
 var property_kind = 1;
@@ -103,9 +111,8 @@ var insert_kind = 6;
 var remove_kind = 7;
 
 // build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs
-var SUPPORTS_MOVE_BEFORE = globalThis.HTMLElement && !!HTMLElement.prototype.moveBefore;
 var Reconciler = class {
-  initialNodeOffset = 0;
+  offset = 0;
   #root = null;
   #dispatch = () => {
   };
@@ -116,25 +123,26 @@ var Reconciler = class {
     this.#useServerEvents = useServerEvents;
   }
   mount(vdom) {
-    this.#root.appendChild(this.#createElement(vdom));
+    appendChild(this.#root, this.#createElement(vdom));
   }
   #stack = [];
   push(patch) {
-    if (this.initialNodeOffset) {
+    const offset = this.offset;
+    if (offset) {
       iterate(patch.changes, (change) => {
         switch (change.kind) {
           case insert_kind:
           case move_kind:
-            change.before = (change.before | 0) + this.initialNodeOffset;
+            change.before = (change.before | 0) + offset;
             break;
           case remove_kind:
           case replace_kind:
-            change.from = (change.from | 0) + this.initialNodeOffset;
+            change.from = (change.from | 0) + offset;
             break;
         }
       });
       iterate(patch.children, (child) => {
-        child.index = (child.index | 0) + this.initialNodeOffset;
+        child.index = (child.index | 0) + offset;
       });
     }
     this.#stack.push({ node: this.#root, patch });
@@ -142,103 +150,97 @@ var Reconciler = class {
   }
   // PATCHING ------------------------------------------------------------------
   #reconcile() {
-    while (this.#stack.length) {
-      const { node, patch } = this.#stack.pop();
+    const self = this;
+    while (self.#stack.length) {
+      const { node, patch } = self.#stack.pop();
       iterate(patch.changes, (change) => {
         switch (change.kind) {
           case insert_kind:
-            this.#insert(node, change.children, change.before);
+            self.#insert(node, change.children, change.before);
             break;
           case move_kind:
-            this.#move(node, change.key, change.before, change.count);
+            self.#move(node, change.key, change.before, change.count);
             break;
           case remove_key_kind:
-            this.#removeKey(node, change.key, change.count);
+            self.#removeKey(node, change.key, change.count);
             break;
           case remove_kind:
-            this.#remove(node, change.from, change.count);
+            self.#remove(node, change.from, change.count);
             break;
           case replace_kind:
-            this.#replace(node, change.from, change.count, change.with);
+            self.#replace(node, change.from, change.count, change.with);
             break;
           case replace_text_kind:
-            this.#replaceText(node, change.content);
+            self.#replaceText(node, change.content);
             break;
           case replace_inner_html_kind:
-            this.#replaceInnerHtml(node, change.inner_html);
+            self.#replaceInnerHtml(node, change.inner_html);
             break;
           case update_kind:
-            this.#update(node, change.added, change.removed);
+            self.#update(node, change.added, change.removed);
             break;
         }
       });
       if (patch.removed) {
-        this.#remove(
+        self.#remove(
           node,
           node.childNodes.length - patch.removed,
           patch.removed
         );
       }
       iterate(patch.children, (child) => {
-        this.#stack.push({
-          node: node.childNodes[child.index | 0],
-          patch: child
-        });
+        self.#stack.push({ node: childAt(node, child.index), patch: child });
       });
     }
   }
   // CHANGES -------------------------------------------------------------------
   #insert(node, children, before) {
-    const fragment3 = document.createDocumentFragment();
+    const fragment3 = createDocumentFragment();
     iterate(children, (child) => {
       const el = this.#createElement(child);
       addKeyedChild(node, el);
-      fragment3.appendChild(el);
+      appendChild(fragment3, el);
     });
-    node.insertBefore(fragment3, node.childNodes[before | 0] ?? null);
+    insertBefore(node, fragment3, childAt(node, before));
   }
   #move(node, key, before, count) {
-    let el = node[meta].keyedChildren.get(key).deref();
-    const beforeEl = node.childNodes[before] ?? null;
+    let el = getKeyedChild(node, key);
+    const beforeEl = childAt(node, before);
     for (let i = 0; i < count && el !== null; ++i) {
       const next = el.nextSibling;
       if (SUPPORTS_MOVE_BEFORE) {
         node.moveBefore(el, beforeEl);
       } else {
-        node.insertBefore(el, beforeEl);
+        insertBefore(node, el, beforeEl);
       }
       el = next;
     }
   }
   #removeKey(node, key, count) {
-    this.#removeFromChild(
-      node,
-      node[meta].keyedChildren.get(key).deref(),
-      count
-    );
+    this.#removeFromChild(node, getKeyedChild(node, key), count);
   }
   #remove(node, from, count) {
-    this.#removeFromChild(node, node.childNodes[from | 0], count);
+    this.#removeFromChild(node, childAt(node, from), count);
   }
-  #removeFromChild(parent, child, count) {
+  #removeFromChild(parent2, child, count) {
     while (count-- > 0 && child !== null) {
       const next = child.nextSibling;
       const key = child[meta].key;
       if (key) {
-        parent[meta].keyedChildren.delete(key);
+        parent2[meta].keyedChildren.delete(key);
       }
       for (const [_, { timeout }] of child[meta].debouncers) {
-        window.clearTimeout(timeout);
+        clearTimeout(timeout);
       }
-      parent.removeChild(child);
+      parent2.removeChild(child);
       child = next;
     }
   }
-  #replace(parent, from, count, child) {
-    this.#remove(parent, from, count);
+  #replace(parent2, from, count, child) {
+    this.#remove(parent2, from, count);
     const el = this.#createElement(child);
-    addKeyedChild(parent, el);
-    parent.insertBefore(el, parent.childNodes[from | 0] ?? null);
+    addKeyedChild(parent2, el);
+    insertBefore(parent2, el, childAt(parent2, from));
   }
   #replaceText(node, content) {
     node.data = content ?? "";
@@ -256,7 +258,7 @@ var Reconciler = class {
           node[meta].throttles.delete(name);
         }
         if (node[meta].debouncers.has(name)) {
-          window.clearTimeout(node[meta].debouncers.get(name).timeout);
+          clearTimeout(node[meta].debouncers.get(name).timeout);
           node[meta].debouncers.delete(name);
         }
       } else {
@@ -272,41 +274,39 @@ var Reconciler = class {
   #createElement(vnode) {
     switch (vnode.kind) {
       case element_kind: {
-        const node = vnode.namespace ? document.createElementNS(vnode.namespace, vnode.tag) : document.createElement(vnode.tag);
-        initialiseMetadata(node, vnode.key);
-        iterate(vnode.attributes, (attribute3) => {
-          this.#createAttribute(node, attribute3);
-        });
+        const node = createElement(vnode);
+        this.#createAttributes(node, vnode);
         this.#insert(node, vnode.children, 0);
         return node;
       }
       case text_kind: {
-        const node = document.createTextNode(vnode.content ?? "");
+        const node = createTextNode(vnode.content);
         initialiseMetadata(node, vnode.key);
         return node;
       }
       case fragment_kind: {
-        const node = document.createDocumentFragment();
-        const head = document.createTextNode("");
+        const node = createDocumentFragment();
+        const head = createTextNode();
         initialiseMetadata(head, vnode.key);
-        node.appendChild(head);
+        appendChild(node, head);
         iterate(vnode.children, (child) => {
-          node.appendChild(this.#createElement(child));
+          appendChild(node, this.#createElement(child));
         });
         return node;
       }
       case unsafe_inner_html_kind: {
-        const node = vnode.namespace ? document.createElementNS(vnode.namespace, vnode.tag) : document.createElement(vnode.tag);
-        initialiseMetadata(node, vnode.key);
-        iterate(vnode.attributes, (attribute3) => {
-          this.#createAttribute(node, attribute3);
-        });
+        const node = createElement(vnode);
+        this.#createAttributes(node, vnode);
         this.#replaceInnerHtml(node, vnode.inner_html);
         return node;
       }
     }
   }
+  #createAttributes(node, { attributes }) {
+    iterate(attributes, (attribute3) => this.#createAttribute(node, attribute3));
+  }
   #createAttribute(node, attribute3) {
+    const nodeMeta = node[meta];
     switch (attribute3.kind) {
       case attribute_kind: {
         const name = attribute3.name;
@@ -321,7 +321,7 @@ var Reconciler = class {
         node[attribute3.name] = attribute3.value;
         break;
       case event_kind: {
-        if (!node[meta].handlers.has(attribute3.name)) {
+        if (!nodeMeta.handlers.has(attribute3.name)) {
           node.addEventListener(attribute3.name, handleEvent, {
             passive: !attribute3.prevent_default
           });
@@ -331,24 +331,25 @@ var Reconciler = class {
         const immediate = attribute3.immediate;
         const include = Array.isArray(attribute3.include) ? attribute3.include : [];
         if (attribute3.limit?.kind === throttle_kind) {
-          const throttle = node[meta].throttles.get(attribute3.name) ?? {
+          const throttle = nodeMeta.throttles.get(attribute3.name) ?? {
             last: 0,
             delay: attribute3.limit.delay
           };
-          node[meta].throttles.set(attribute3.name, throttle);
+          nodeMeta.throttles.set(attribute3.name, throttle);
         }
         if (attribute3.limit?.kind === debounce_kind) {
-          const debounce = node[meta].debouncers.get(attribute3.name) ?? {
+          const debounce = nodeMeta.debouncers.get(attribute3.name) ?? {
             timeout: null,
             delay: attribute3.limit.delay
           };
-          node[meta].debouncers.set(attribute3.name, debounce);
+          nodeMeta.debouncers.set(attribute3.name, debounce);
         }
-        node[meta].handlers.set(attribute3.name, (event2) => {
+        nodeMeta.handlers.set(attribute3.name, (event2) => {
           if (prevent)
             event2.preventDefault();
           if (stop)
             event2.stopPropagation();
+          const type = event2.type;
           let path = "";
           let pathNode = event2.currentTarget;
           while (pathNode !== this.#root) {
@@ -356,35 +357,36 @@ var Reconciler = class {
             if (key) {
               path = `${separator_key}${key}${path}`;
             } else {
-              const siblings = pathNode.parentNode.childNodes;
+              const parent2 = pathNode.parentNode;
+              const siblings = parent2.childNodes;
               let index2 = [].indexOf.call(siblings, pathNode);
-              if (pathNode.parentNode === this.#root) {
-                index2 -= this.initialNodeOffset;
+              if (parent2 === this.#root) {
+                index2 -= this.offset;
               }
               path = `${separator_index}${index2}${path}`;
             }
-            pathNode = pathNode.parentNode;
+            pathNode = parent;
           }
           path = path.slice(1);
           const data = this.#useServerEvents ? createServerEvent(event2, include) : event2;
-          if (node[meta].throttles.has(event2.type)) {
-            const throttle = node[meta].throttles.get(event2.type);
+          if (nodeMeta.throttles.has(type)) {
+            const throttle = nodeMeta.throttles.get(type);
             const now = Date.now();
             const last = throttle.last || 0;
             if (now > last + throttle.delay) {
               throttle.last = now;
-              this.#dispatch(data, path, event2.type, immediate);
+              this.#dispatch(data, path, type, immediate);
             } else {
               event2.preventDefault();
             }
-          } else if (node[meta].debouncers.has(event2.type)) {
-            const debounce = node[meta].debouncers.get(event2.type);
-            window.clearTimeout(debounce.timeout);
-            debounce.timeout = window.setTimeout(() => {
-              this.#dispatch(data, path, event2.type, immediate);
+          } else if (nodeMeta.debouncers.has(type)) {
+            const debounce = nodeMeta.debouncers.get(type);
+            clearTimeout(debounce.timeout);
+            debounce.timeout = setTimeout(() => {
+              this.#dispatch(data, path, type, immediate);
             }, debounce.delay);
           } else {
-            this.#dispatch(data, path, event2.type, immediate);
+            this.#dispatch(data, path, type, immediate);
           }
         });
         break;
@@ -392,7 +394,7 @@ var Reconciler = class {
     }
   }
 };
-function iterate(list4, callback) {
+var iterate = (list4, callback) => {
   if (Array.isArray(list4)) {
     for (let i = 0; i < list4.length; i++) {
       callback(list4[i]);
@@ -402,12 +404,22 @@ function iterate(list4, callback) {
       callback(list4.head);
     }
   }
-}
-var meta = Symbol("metadata");
-function initialiseMetadata(node, key = "") {
+};
+var appendChild = (node, child) => node.appendChild(child);
+var insertBefore = (parent2, node, referenceNode) => parent2.insertBefore(node, referenceNode ?? null);
+var createElement = ({ key, tag, namespace }) => {
+  const node = document.createElementNS(tag, namespace ?? NAMESPACE_HTML);
+  initialiseMetadata(node, key);
+  return node;
+};
+var createTextNode = (text3) => document.createTextNode(text3 ?? "");
+var createDocumentFragment = () => document.createDocumentFragment();
+var childAt = (node, at) => node.childNodes[at | 0];
+var meta = Symbol("lustre");
+var initialiseMetadata = (node, key = "") => {
   switch (node.nodeType) {
-    case Node.ELEMENT_NODE:
-    case Node.DOCUMENT_FRAGMENT_NODE:
+    case ELEMENT_NODE:
+    case DOCUMENT_FRAGMENT_NODE:
       node[meta] = {
         key,
         keyedChildren: /* @__PURE__ */ new Map(),
@@ -416,13 +428,13 @@ function initialiseMetadata(node, key = "") {
         debouncers: /* @__PURE__ */ new Map()
       };
       break;
-    case Node.TEXT_NODE:
+    case TEXT_NODE:
       node[meta] = { key, debouncers: /* @__PURE__ */ new Map() };
       break;
   }
-}
-function addKeyedChild(node, child) {
-  if (child.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+};
+var addKeyedChild = (node, child) => {
+  if (child.nodeType === DOCUMENT_FRAGMENT_NODE) {
     for (child = child.firstChild; child; child = child.nextSibling) {
       addKeyedChild(node, child);
     }
@@ -432,8 +444,9 @@ function addKeyedChild(node, child) {
   if (key) {
     node[meta].keyedChildren.set(key, new WeakRef(child));
   }
-}
-function handleEvent(event2) {
+};
+var getKeyedChild = (node, key) => node[meta].keyedChildren.get(key).deref();
+var handleEvent = (event2) => {
   const target = event2.currentTarget;
   const handler = target[meta].handlers.get(event2.type);
   if (event2.type === "submit") {
@@ -441,8 +454,8 @@ function handleEvent(event2) {
     event2.detail.formData = [...new FormData(event2.target).entries()];
   }
   handler(event2);
-}
-function createServerEvent(event2, include = []) {
+};
+var createServerEvent = (event2, include = []) => {
   const data = {};
   if (event2.type === "input" || event2.type === "change") {
     include.push("target.value");
@@ -462,7 +475,7 @@ function createServerEvent(event2, include = []) {
     }
   }
   return data;
-}
+};
 var ATTRIBUTE_HOOKS = {
   checked: syncedBooleanAttribute("checked"),
   selected: syncedBooleanAttribute("selected"),
@@ -482,7 +495,7 @@ var ATTRIBUTE_HOOKS = {
     }
   }
 };
-function syncedBooleanAttribute(name) {
+var syncedBooleanAttribute = (name) => {
   return {
     added(node, _value) {
       node[name] = true;
@@ -491,14 +504,14 @@ function syncedBooleanAttribute(name) {
       node[name] = false;
     }
   };
-}
-function syncedAttribute(name) {
+};
+var syncedAttribute = (name) => {
   return {
     added(node, value) {
       node[name] = value;
     }
   };
-}
+};
 
 // build/dev/javascript/lustre/lustre/runtime/transport.mjs
 var mount_kind = 0;
@@ -518,7 +531,6 @@ var ServerComponent = class extends HTMLElement {
   #method = "ws";
   #route = null;
   #transport = null;
-  #adoptStyles = true;
   #adoptedStyleNodes = [];
   #reconciler;
   #remoteObservedAttributes = /* @__PURE__ */ new Set();
@@ -563,15 +575,16 @@ var ServerComponent = class extends HTMLElement {
     for (const attribute3 of this.attributes) {
       this.#changedAttributesQueue.push([attribute3.name, attribute3.value]);
     }
-    if (this.hasAttribute("route")) {
-      this.#route = new URL(this.getAttribute("route"), window.location.href);
+    const route = this.getAttribute("route");
+    if (route) {
+      this.#route = new URL(route, location.href);
       this.#connect();
     }
   }
   attributeChangedCallback(name, prev, next) {
     switch (name) {
-      case prev !== next: {
-        this.#route = new URL(next, window.location.href);
+      case (prev !== next && "route"): {
+        this.#route = new URL(next, location.href);
         this.#connect();
         return;
       }
@@ -708,7 +721,7 @@ var ServerComponent = class extends HTMLElement {
       this.#shadowRoot.firstChild.remove();
     }
     this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
-    this.#reconciler.initialNodeOffset = this.#adoptedStyleNodes.length;
+    this.#reconciler.offset = this.#adoptedStyleNodes.length;
   }
 };
 var WebsocketTransport = class {
@@ -806,7 +819,7 @@ var PollingTransport = class {
     this.#interval = opts.interval ?? 5e3;
     this.#fetch().finally(() => {
       this.#onConnect();
-      this.#timer = window.setInterval(() => this.#fetch(), this.#interval);
+      this.#timer = setInterval(() => this.#fetch(), this.#interval);
     });
   }
   async send(data) {
@@ -819,7 +832,7 @@ var PollingTransport = class {
     return fetch(this.#url).then((response) => response.json()).then(this.#onMessage).catch(console.error);
   }
 };
-window.customElements.define("lustre-server-component", ServerComponent);
+customElements.define("lustre-server-component", ServerComponent);
 export {
   ServerComponent
 };

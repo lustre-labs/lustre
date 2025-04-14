@@ -28,13 +28,19 @@ import {
 
 import { separator_index, separator_key } from "./path.mjs";
 
+import {
+  document,
+  ELEMENT_NODE,
+  TEXT_NODE,
+  DOCUMENT_FRAGMENT_NODE,
+  SUPPORTS_MOVE_BEFORE,
+  NAMESPACE_HTML
+} from "../internals/constants.ffi.mjs";
+
 //
 
-const SUPPORTS_MOVE_BEFORE =
-  globalThis.HTMLElement && !!HTMLElement.prototype.moveBefore;
-
 export class Reconciler {
-  initialNodeOffset = 0;
+  offset = 0;
 
   #root = null;
   #dispatch = () => {};
@@ -48,29 +54,30 @@ export class Reconciler {
   }
 
   mount(vdom) {
-    this.#root.appendChild(this.#createElement(vdom));
+    appendChild(this.#root, this.#createElement(vdom));
   }
 
   #stack = [];
 
   push(patch) {
-    if (this.initialNodeOffset) {
+    const offset = this.offset
+    if (offset) {
       iterate(patch.changes, (change) => {
         switch (change.kind) {
           case insert_kind:
           case move_kind:
-            change.before = (change.before | 0) + this.initialNodeOffset;
+            change.before = (change.before | 0) + offset;
             break;
 
           case remove_kind:
           case replace_kind:
-            change.from = (change.from | 0) + this.initialNodeOffset;
+            change.from = (change.from | 0) + offset;
             break;
         }
       });
 
       iterate(patch.children, (child) => {
-        child.index = (child.index | 0) + this.initialNodeOffset;
+        child.index = (child.index | 0) + offset;
       });
     }
 
@@ -81,47 +88,49 @@ export class Reconciler {
   // PATCHING ------------------------------------------------------------------
 
   #reconcile() {
-    while (this.#stack.length) {
-      const { node, patch } = this.#stack.pop();
+    const self = this;
+
+    while (self.#stack.length) {
+      const { node, patch } = self.#stack.pop();
 
       iterate(patch.changes, (change) => {
         switch (change.kind) {
           case insert_kind:
-            this.#insert(node, change.children, change.before);
+            self.#insert(node, change.children, change.before);
             break;
 
           case move_kind:
-            this.#move(node, change.key, change.before, change.count);
+            self.#move(node, change.key, change.before, change.count);
             break;
 
           case remove_key_kind:
-            this.#removeKey(node, change.key, change.count);
+            self.#removeKey(node, change.key, change.count);
             break;
 
           case remove_kind:
-            this.#remove(node, change.from, change.count);
+            self.#remove(node, change.from, change.count);
             break;
 
           case replace_kind:
-            this.#replace(node, change.from, change.count, change.with);
+            self.#replace(node, change.from, change.count, change.with);
             break;
 
           case replace_text_kind:
-            this.#replaceText(node, change.content);
+            self.#replaceText(node, change.content);
             break;
 
           case replace_inner_html_kind:
-            this.#replaceInnerHtml(node, change.inner_html);
+            self.#replaceInnerHtml(node, change.inner_html);
             break;
 
           case update_kind:
-            this.#update(node, change.added, change.removed);
+            self.#update(node, change.added, change.removed);
             break;
         }
       });
 
       if (patch.removed) {
-        this.#remove(
+        self.#remove(
           node,
           node.childNodes.length - patch.removed,
           patch.removed,
@@ -131,10 +140,7 @@ export class Reconciler {
       iterate(patch.children, (child) => {
         // TODO: use linked-list style but skip to indices if distance is great enough?
 
-        this.#stack.push({
-          node: node.childNodes[child.index | 0],
-          patch: child,
-        });
+        self.#stack.push({ node: childAt(node, child.index), patch: child, });
       });
     }
   }
@@ -142,42 +148,38 @@ export class Reconciler {
   // CHANGES -------------------------------------------------------------------
 
   #insert(node, children, before) {
-    const fragment = document.createDocumentFragment();
+    const fragment = createDocumentFragment();
 
     iterate(children, (child) => {
       const el = this.#createElement(child);
 
       addKeyedChild(node, el);
-      fragment.appendChild(el);
+      appendChild(fragment, el);
     });
 
-    node.insertBefore(fragment, node.childNodes[before | 0] ?? null);
+    insertBefore(node, fragment, childAt(node, before));
   }
 
   #move(node, key, before, count) {
-    let el = node[meta].keyedChildren.get(key).deref();
-    const beforeEl = node.childNodes[before] ?? null;
+    let el = getKeyedChild(node, key);
+    const beforeEl = childAt(node, before)
     for (let i = 0; i < count && el !== null; ++i) {
       const next = el.nextSibling;
       if (SUPPORTS_MOVE_BEFORE) {
         node.moveBefore(el, beforeEl);
       } else {
-        node.insertBefore(el, beforeEl);
+        insertBefore(node, el, beforeEl);
       }
       el = next;
     }
   }
 
   #removeKey(node, key, count) {
-    this.#removeFromChild(
-      node,
-      node[meta].keyedChildren.get(key).deref(),
-      count,
-    );
+    this.#removeFromChild(node, getKeyedChild(node, key), count);
   }
 
   #remove(node, from, count) {
-    this.#removeFromChild(node, node.childNodes[from | 0], count);
+    this.#removeFromChild(node, childAt(node, from), count);
   }
 
   #removeFromChild(parent, child, count) {
@@ -191,7 +193,7 @@ export class Reconciler {
       }
 
       for (const [_, { timeout }] of child[meta].debouncers) {
-        window.clearTimeout(timeout);
+        clearTimeout(timeout);
       }
 
       parent.removeChild(child);
@@ -205,7 +207,7 @@ export class Reconciler {
     const el = this.#createElement(child);
 
     addKeyedChild(parent, el);
-    parent.insertBefore(el, parent.childNodes[from | 0] ?? null);
+    insertBefore(parent, el, childAt(parent, from));
   }
 
   #replaceText(node, content) {
@@ -229,7 +231,7 @@ export class Reconciler {
         }
 
         if (node[meta].debouncers.has(name)) {
-          window.clearTimeout(node[meta].debouncers.get(name).timeout);
+          clearTimeout(node[meta].debouncers.get(name).timeout);
           node[meta].debouncers.delete(name);
         }
       } else {
@@ -248,15 +250,8 @@ export class Reconciler {
   #createElement(vnode) {
     switch (vnode.kind) {
       case element_kind: {
-        const node = vnode.namespace
-          ? document.createElementNS(vnode.namespace, vnode.tag)
-          : document.createElement(vnode.tag);
-
-        initialiseMetadata(node, vnode.key);
-
-        iterate(vnode.attributes, (attribute) => {
-          this.#createAttribute(node, attribute);
-        });
+        const node = createElement(vnode);
+        this.#createAttributes(node, vnode);
 
         this.#insert(node, vnode.children, 0);
 
@@ -264,7 +259,7 @@ export class Reconciler {
       }
 
       case text_kind: {
-        const node = document.createTextNode(vnode.content ?? "");
+        const node = createTextNode(vnode.content);
 
         initialiseMetadata(node, vnode.key);
 
@@ -272,29 +267,22 @@ export class Reconciler {
       }
 
       case fragment_kind: {
-        const node = document.createDocumentFragment();
-        const head = document.createTextNode("");
+        const node = createDocumentFragment();
+        const head = createTextNode();
 
         initialiseMetadata(head, vnode.key);
-        node.appendChild(head);
+        appendChild(node, head);
 
         iterate(vnode.children, (child) => {
-          node.appendChild(this.#createElement(child));
+          appendChild(node, this.#createElement(child));
         });
 
         return node;
       }
 
       case unsafe_inner_html_kind: {
-        const node = vnode.namespace
-          ? document.createElementNS(vnode.namespace, vnode.tag)
-          : document.createElement(vnode.tag);
-
-        initialiseMetadata(node, vnode.key);
-
-        iterate(vnode.attributes, (attribute) => {
-          this.#createAttribute(node, attribute);
-        });
+        const node = createElement(vnode)
+        this.#createAttributes(node, vnode);
 
         this.#replaceInnerHtml(node, vnode.inner_html);
 
@@ -303,7 +291,12 @@ export class Reconciler {
     }
   }
 
+  #createAttributes(node, { attributes }) {
+    iterate(attributes, (attribute) => this.#createAttribute(node, attribute))
+  }
+
   #createAttribute(node, attribute) {
+    const nodeMeta = node[meta];
     switch (attribute.kind) {
       case attribute_kind: {
         const name = attribute.name;
@@ -323,7 +316,7 @@ export class Reconciler {
         break;
 
       case event_kind: {
-        if (!node[meta].handlers.has(attribute.name)) {
+        if (!nodeMeta.handlers.has(attribute.name)) {
           node.addEventListener(attribute.name, handleEvent, {
             passive: !attribute.prevent_default,
           });
@@ -338,27 +331,28 @@ export class Reconciler {
           : [];
 
         if (attribute.limit?.kind === throttle_kind) {
-          const throttle = node[meta].throttles.get(attribute.name) ?? {
+          const throttle = nodeMeta.throttles.get(attribute.name) ?? {
             last: 0,
             delay: attribute.limit.delay,
           };
 
-          node[meta].throttles.set(attribute.name, throttle);
+          nodeMeta.throttles.set(attribute.name, throttle);
         }
 
         if (attribute.limit?.kind === debounce_kind) {
-          const debounce = node[meta].debouncers.get(attribute.name) ?? {
+          const debounce = nodeMeta.debouncers.get(attribute.name) ?? {
             timeout: null,
             delay: attribute.limit.delay,
           };
 
-          node[meta].debouncers.set(attribute.name, debounce);
+          nodeMeta.debouncers.set(attribute.name, debounce);
         }
 
-        node[meta].handlers.set(attribute.name, (event) => {
+        nodeMeta.handlers.set(attribute.name, (event) => {
           if (prevent) event.preventDefault();
           if (stop) event.stopPropagation();
 
+          const type = event.type;
           let path = "";
           let pathNode = event.currentTarget;
 
@@ -367,16 +361,17 @@ export class Reconciler {
             if (key) {
               path = `${separator_key}${key}${path}`;
             } else {
-              const siblings = pathNode.parentNode.childNodes;
+              const parent = pathNode.parentNode;
+              const siblings = parent.childNodes;
               let index = [].indexOf.call(siblings, pathNode);
-              if (pathNode.parentNode === this.#root) {
-                index -= this.initialNodeOffset;
+              if (parent === this.#root) {
+                index -= this.offset;
               }
 
               path = `${separator_index}${index}${path}`;
             }
 
-            pathNode = pathNode.parentNode;
+            pathNode = parent;
           }
 
           // remove the leading separator
@@ -386,27 +381,27 @@ export class Reconciler {
             ? createServerEvent(event, include)
             : event;
 
-          if (node[meta].throttles.has(event.type)) {
-            const throttle = node[meta].throttles.get(event.type);
+          if (nodeMeta.throttles.has(type)) {
+            const throttle = nodeMeta.throttles.get(type);
             const now = Date.now();
             const last = throttle.last || 0;
 
             if (now > last + throttle.delay) {
               throttle.last = now;
-              this.#dispatch(data, path, event.type, immediate);
+              this.#dispatch(data, path, type, immediate);
             } else {
               event.preventDefault();
             }
-          } else if (node[meta].debouncers.has(event.type)) {
-            const debounce = node[meta].debouncers.get(event.type);
+          } else if (nodeMeta.debouncers.has(type)) {
+            const debounce = nodeMeta.debouncers.get(type);
 
-            window.clearTimeout(debounce.timeout);
+            clearTimeout(debounce.timeout);
 
-            debounce.timeout = window.setTimeout(() => {
-              this.#dispatch(data, path, event.type, immediate);
+            debounce.timeout = setTimeout(() => {
+              this.#dispatch(data, path, type, immediate);
             }, debounce.delay);
           } else {
-            this.#dispatch(data, path, event.type, immediate);
+            this.#dispatch(data, path, type, immediate);
           }
         });
 
@@ -431,7 +426,7 @@ export class Reconciler {
  *  both kinds of collection without dropping into Gleam's slow list iterator.
  *
  */
-function iterate(list, callback) {
+const iterate = (list, callback) => {
   if (Array.isArray(list)) {
     for (let i = 0; i < list.length; i++) {
       callback(list[i]);
@@ -443,14 +438,28 @@ function iterate(list, callback) {
   }
 }
 
+const appendChild = (node, child) => node.appendChild(child)
+const insertBefore = (parent, node, referenceNode) =>
+  parent.insertBefore(node, referenceNode ?? null)
+
+const createElement = ({ key, tag, namespace }) => {
+  const node = document.createElementNS(namespace || NAMESPACE_HTML, tag)
+  initialiseMetadata(node, key)
+  return node
+}
+
+const createTextNode = (text) => document.createTextNode(text ?? "")
+const createDocumentFragment = () => document.createDocumentFragment()
+const childAt = (node, at)  => node.childNodes[at|0]
+
 // METADATA --------------------------------------------------------------------
 
-const meta = Symbol("metadata");
+const meta = Symbol("lustre");
 
-export function initialiseMetadata(node, key = "") {
+export const initialiseMetadata = (node, key = "") => {
   switch (node.nodeType) {
-    case Node.ELEMENT_NODE:
-    case Node.DOCUMENT_FRAGMENT_NODE:
+    case ELEMENT_NODE:
+    case DOCUMENT_FRAGMENT_NODE:
       node[meta] = {
         key,
         keyedChildren: new Map(),
@@ -460,14 +469,14 @@ export function initialiseMetadata(node, key = "") {
       };
       break;
 
-    case Node.TEXT_NODE:
+    case TEXT_NODE:
       node[meta] = { key, debouncers: new Map() };
       break;
   }
 }
 
-function addKeyedChild(node, child) {
-  if (child.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+const addKeyedChild = (node, child) => {
+  if (child.nodeType === DOCUMENT_FRAGMENT_NODE) {
     for (child = child.firstChild; child; child = child.nextSibling) {
       addKeyedChild(node, child);
     }
@@ -482,6 +491,8 @@ function addKeyedChild(node, child) {
   }
 }
 
+const getKeyedChild = (node, key) =>  node[meta].keyedChildren.get(key).deref()
+
 // EVENTS ----------------------------------------------------------------------
 
 /** Stable references to an element's event handler is necessary if you ever want
@@ -493,7 +504,7 @@ function addKeyedChild(node, child) {
  *  happen - without needing to rebind the event listener.
  *
  */
-function handleEvent(event) {
+const handleEvent = (event) => {
   const target = event.currentTarget;
   const handler = target[meta].handlers.get(event.type);
 
@@ -515,7 +526,7 @@ function handleEvent(event) {
  *  represents the traversal path to the desired property.
  *
  */
-function createServerEvent(event, include = []) {
+const createServerEvent = (event, include = []) => {
   const data = {};
 
   // It's overwhelmingly likely that if someone is listening for input or change
@@ -561,6 +572,25 @@ function createServerEvent(event, include = []) {
 
 // ATTRIBUTE SPECIAL CASES -----------------------------------------------------
 
+const syncedBooleanAttribute = (name) => {
+  return {
+    added(node) {
+      node[name] = true;
+    },
+    removed(node) {
+      node[name] = false;
+    },
+  };
+}
+
+const syncedAttribute = (name) => {
+  return {
+    added(node, value) {
+      node[name] = value;
+    },
+  };
+}
+
 const ATTRIBUTE_HOOKS = {
   checked: syncedBooleanAttribute("checked"),
   selected: syncedBooleanAttribute("selected"),
@@ -583,21 +613,3 @@ const ATTRIBUTE_HOOKS = {
   },
 };
 
-function syncedBooleanAttribute(name) {
-  return {
-    added(node, _value) {
-      node[name] = true;
-    },
-    removed(node) {
-      node[name] = false;
-    },
-  };
-}
-
-function syncedAttribute(name) {
-  return {
-    added(node, value) {
-      node[name] = value;
-    },
-  };
-}

@@ -3,7 +3,7 @@
 import gleam/int
 import gleam/json.{type Json}
 import gleam/string
-import lustre/vdom/vattr.{Attribute}
+import lustre/vdom/vattr
 
 // TYPES -----------------------------------------------------------------------
 
