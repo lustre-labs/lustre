@@ -509,7 +509,6 @@ const handleEvent = (event) => {
   const handler = target[meta].handlers.get(event.type);
 
   if (event.type === "submit") {
-    event.detail ??= {};
     event.detail.formData = [...new FormData(event.target).entries()];
   }
 

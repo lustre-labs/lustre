@@ -16,14 +16,39 @@
 //// By going through this abstraction we discourage side effects from being
 //// performed in the middle of our program.
 ////
+//// ## Related packages
+////
+//// While Lustre doesn't include many built-in effects, there are a number of
+//// community packages define useful common effects for your applications.
+////
+//// - [`rsvp`](https://hexdocs.pm/rsvp) – Send HTTP requests from Lustre
+////   applications and server components.
+////
+//// - [`modem`](https://hexdocs.pm/modem) – A friendly Lustre package to help
+////   you build a router, handle links, and manage URLs.
+////
+////  - [`plinth`](https://hexdocs.pm/plinth) – Bindings to Node.js and browser
+////    platform APIs. (This package does not include any effects directly, but
+////    it does provide bindings to many APIs that you can use to create your
+////    own.)
+////
 //// ## Examples
 ////
 //// For folks coming from other languages (or other Gleam code!) where side
-//// effects are often performed in-place, this can feel a bit strange. A couple
-//// of the examples in the repo tackle effects:
+//// effects are often performed in-place, this can feel a bit strange. We have
+//// a category of example apps dedicated to showing various effects in action:
 ////
-//// - [`05-http-requests`](https://github.com/lustre-labs/lustre/tree/main/examples/05-http-requests)
-//// - [`06-custom-effects`](https://github.com/lustre-labs/lustre/tree/main/examples/06-custom-effects)
+//// - [HTTP requests](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/01-http-requests)
+////
+//// - [Generating random values](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/02-random)
+////
+//// - [Setting up timers](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/03-timers)
+////
+//// - [Working with LocalStorage](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/04-local-storage)
+////
+//// - [Reading from the DOM](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/05-dom-effects)
+////
+//// - [Optimistic state updates](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/06-optimistic-requests)
 ////
 //// This list of examples is likely to grow over time, so be sure to check back
 //// every now and then to see what's new!
@@ -33,10 +58,6 @@
 //// If you're having trouble with Lustre or not sure what the right way to do
 //// something is, the best place to get help is the [Gleam Discord server](https://discord.gg/Fm8Pwmy).
 //// You could also open an issue on the [Lustre GitHub repository](https://github.com/lustre-labs/lustre/issues).
-////
-//// While our docs are still a work in progress, the official [Elm guide](https://guide.elm-lang.org)
-//// is also a great resource for learning about the Model-View-Update architecture
-//// and the kinds of patterns that Lustre is built around.
 ////
 
 // IMPORTS ---------------------------------------------------------------------

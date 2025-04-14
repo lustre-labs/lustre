@@ -1,11 +1,6 @@
-//// > **Note**: server components are currently only supported on the **Erlang**
-//// > target. If it's important to you that they work on the JavaScript target,
-//// > [open an issue](https://github.com/lustre-labs/lustre/issues/new) and tell
-//// > us why it's important to you!
-////
 //// Server components are an advanced feature that allows you to run components
 //// or full Lustre applications on the server. Updates are broadcast to a small
-//// (<10kb!) client runtime that patches the DOM and events are sent back to the
+//// (10kb!) client runtime that patches the DOM and events are sent back to the
 //// server component in real-time.
 ////
 //// ```text
@@ -60,10 +55,16 @@
 //// ## Examples
 ////
 //// Server components are a new feature in Lustre and we're still working on the
-//// best ways to use them and show them off. For now, you can find a simple
-//// undocumented example in the `examples/` directory:
+//// best ways to use them and show them off. Here are a few examples we've
+//// developed so far:
 ////
-//// - [`99-server-components`](https://github.com/lustre-labs/lustre/tree/main/examples/99-server-components)
+//// - [Basic setup](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/01-basic-setup)
+////
+//// - [Custom attributes and events](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/02-attributes-and-events)
+////
+//// - [Decoding DOM events](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/03-event-include)
+////
+//// - [Connecting more than one client](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/04-multiple-clients)
 ////
 //// ## Getting help
 ////

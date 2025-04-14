@@ -12,8 +12,7 @@
 ////
 //// 2. A client-side component: an encapsulated Lustre application that can be
 ////    rendered inside another Lustre application as a Web Component. Communication
-////    happens via attributes and event listeners, like any other encapsulated
-////    HTML element.
+////    happens via attributes and event listeners, like any other HTML element.
 ////
 //// 3. A server component. These are applications that run anywhere Gleam runs
 ////    and communicate with any number of connected clients by sending them
@@ -24,9 +23,9 @@
 ////    that listens for patches over a WebSocket and applies them to the DOM.
 ////
 ////    The server component runtime can run anywhere Gleam does, but the
-////    client-side runtime must be run in a browser. To use it either render the
-////    [provided script element](./lustre/server_component.html#script) or use the script files
-////    from Lustre's `priv/` directory directly.
+////    client-side runtime must be run in a browser. To use it, either render the
+////    [provided script element](./lustre/server_component.html#script) or serve
+////    the pre-bundled scripts found in Lustre's `priv/` directory directly.
 ////
 //// No matter where a Lustre application runs, it will always follow the same
 //// Model-View-Update architecture. Popularised by Elm (where it is known as The
@@ -91,6 +90,14 @@
 //// or frontend development, we recommend reading through them in order:
 ////
 //// - [`01-quickstart`](/guide/01-quickstart.html)
+//// - [`02-state-management`](/guide/02-state-management.html)
+//// - [`03-side-effects`](/guide/03-side-effects.html)
+//// - [`04-spa-deployments`](/guide/04-spa-deployments.html)
+//// - [`05-server-side-rendering`](/guide/05-server-side-rendering.html)
+//// - [`06-full-stack-applications`](/guide/06-full-stack-applications.html)
+//// - [`07-full-stack-deployments`](/guide/07-full-stack-deployments.html)
+//// - [`08-components`](/guide/08-components.html)
+//// - [`09-server-components`](/guide/09-server-components.html)
 ////
 //// This list of guides is likely to grow over time, so be sure to check back
 //// every now and then to see what's new!
@@ -99,17 +106,15 @@
 ////
 //// If you prefer to learn by seeing and adapting existing code, there are also
 //// a number of examples in the [Lustre GitHub repository](https://github.com/lustre-labs/lustre)
-//// that each demonstrate a different concept or idea:
+//// that each demonstrate a different concept or idea. While we can't list them
+//// all here, some of the more important ones are:
 ////
-//// - [`01-hello-world`](https://github.com/lustre-labs/lustre/tree/main/examples/01-hello-world)
-//// - [`02-interactivity`](https://github.com/lustre-labs/lustre/tree/main/examples/02-interactivity)
-//// - [`03-controlled-inputs`](https://github.com/lustre-labs/lustre/tree/main/examples/03-controlled-inputs)
-//// - [`04-custom-event-handlers`](https://github.com/lustre-labs/lustre/tree/main/examples/04-custom-event-handlers)
-//// - [`05-http-requests`](https://github.com/lustre-labs/lustre/tree/main/examples/05-http-requests)
-//// - [`06-custom-effects`](https://github.com/lustre-labs/lustre/tree/main/examples/06-custom-effects)
-////
-//// This list of examples is likely to grow over time, so be sure to check back
-//// every now and then to see what's new!
+//// - [`Controlled inputs`](https://github.com/lustre-labs/lustre/tree/main/examples/02-inputs/01-controlled-inputs)
+//// - [`Handling forms`](https://github.com/lustre-labs/lustre/tree/main/examples/02-inputs/04-forms)
+//// - [`Making HTTP requests`](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/01-http-requests)
+//// - [`Routing`](https://github.com/lustre-labs/lustre/tree/main/examples/04-applications/01-routing)
+//// - [`Creating components`](https://github.com/lustre-labs/lustre/tree/main/examples/05-components/01-basic-setup)
+//// - [`Creating server components`](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/01-basic-setup)
 ////
 //// ## Companion libraries
 ////
@@ -133,17 +138,12 @@
 //// something is, the best place to get help is the [Gleam Discord server](https://discord.gg/Fm8Pwmy).
 //// You could also open an issue on the [Lustre GitHub repository](https://github.com/lustre-labs/lustre/issues).
 ////
-//// While our docs are still a work in progress, the official [Elm guide](https://guide.elm-lang.org)
-//// is also a great resource for learning about the Model-View-Update architecture
-//// and the kinds of patterns that Lustre is built around.
-////
 //// ## Contributing
 ////
 //// The best way to contribute to Lustre is by building things! If you've built
 //// something cool with Lustre you want to share then please share it on the
 //// `#sharing` channel in the  [Gleam Discord server](https://discord.gg/Fm8Pwmy).
-//// You can also tag Hayleigh on Twitter [@hayleigh-dot-dev](https://twitter.com/hayleighdotdev)
-//// or on BlueSky [@hayleigh.dev](https://bsky.app/profile/hayleigh.dev).
+//// You can also tag Hayleigh on BlueSky [@hayleigh.dev](https://bsky.app/profile/hayleigh.dev).
 ////
 //// If you run into any issues or have ideas for how to improve Lustre, please
 //// open an issue on the [Lustre GitHub repository](https://github.com/lustre-labs/lustre/issues).
@@ -158,7 +158,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/bool
-
 import gleam/otp/actor
 import gleam/result
 import lustre/component.{type Config, type Option}
@@ -191,9 +190,9 @@ import lustre/runtime/server/runtime
 /// don't need an `App` at all! You can render an element directly using the
 /// [`element.to_string`](./lustre/element.html#to_string) function.
 ///
-pub opaque type App(flags, model, msg) {
+pub opaque type App(start_args, model, msg) {
   App(
-    init: fn(flags) -> #(model, Effect(msg)),
+    init: fn(start_args) -> #(model, Effect(msg)),
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
     config: Config(msg),
@@ -213,16 +212,45 @@ pub type Error {
   NotErlang
 }
 
-///
+/// Once you start a Lustre application, you get back a `Runtime` you can later
+/// use to send messages to your application using the [`dispatch`](#dispatch)
+/// function.
 ///
 pub type Runtime(msg)
 
+/// From outside your Lustre applications, it is possible to communicate with the
+/// runtime by sending more than just messages to your app's `update` function.
+/// Communication to the runtime itself is mediated by the `RuntimeMessage` type
+/// and can be constructed in a few different ways:
 ///
+/// - [`dispatch`](#dispatch) lets you send a message to your app's `update`
+///   function the same way effects do.
+///
+/// - [`shutdown`](#shutdown) instructs a running application to stop and clean
+///   up. For JavaScript applications, this is often imperfect and may leave an
+///   empty shell app running. For Erlang server components, this will stop the
+///   process.
+///
+/// - When running a server component, you can decode messages from the client
+///   runtime using [`runtime_message_decoder`](./lustre/server_component.html#runtime_message_decoder)
+///   and [`send`](#send) them manually.
 ///
 pub type RuntimeMessage(msg) =
   runtime.Message(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
+
+/// The simplest type of Lustre application. The `element` application is
+/// primarily used for demonstration purposes. It renders a static Lustre `Element`
+/// on the page and does not have any state or update logic.
+///
+pub fn element(view: Element(msg)) -> App(start_args, Nil, msg) {
+  application(
+    init: fn(_) { #(Nil, effect.none()) },
+    update: fn(_, _) { #(Nil, effect.none()) },
+    view: fn(_) { view },
+  )
+}
 
 /// A `simple` application has the basic Model-View-Update building blocks present
 /// in all Lustre applications, but it cannot handle effects. This is a great way
@@ -233,11 +261,11 @@ pub type RuntimeMessage(msg) =
 /// you'll want to use the [`application`](#application) constructor instead.
 ///
 pub fn simple(
-  init init: fn(flags) -> model,
+  init init: fn(start_args) -> model,
   update update: fn(model, msg) -> model,
   view view: fn(model) -> Element(msg),
-) -> App(flags, model, msg) {
-  let init = fn(flags) { #(init(flags), effect.none()) }
+) -> App(start_args, model, msg) {
+  let init = fn(start_args) { #(init(start_args), effect.none()) }
   let update = fn(model, msg) { #(update(model, msg), effect.none()) }
 
   application(init, update, view)
@@ -252,10 +280,10 @@ pub fn simple(
 /// [HTTP requests example](https://github.com/lustre-labs/lustre/tree/main/examples/05-http-requests).
 ///
 pub fn application(
-  init init: fn(flags) -> #(model, Effect(msg)),
+  init init: fn(start_args) -> #(model, Effect(msg)),
   update update: fn(model, msg) -> #(model, Effect(msg)),
   view view: fn(model) -> Element(msg),
-) -> App(flags, model, msg) {
+) -> App(start_args, model, msg) {
   App(init, update, view, component.new(constants.empty_list))
 }
 
@@ -278,11 +306,11 @@ pub fn application(
 /// > loop.
 ///
 pub fn component(
-  init init: fn(flags) -> #(model, Effect(msg)),
+  init init: fn(start_args) -> #(model, Effect(msg)),
   update update: fn(model, msg) -> #(model, Effect(msg)),
   view view: fn(model) -> Element(msg),
   options options: List(Option(msg)),
-) -> App(flags, model, msg) {
+) -> App(start_args, model, msg) {
   App(init, update, view, component.new(options))
 }
 
@@ -301,20 +329,20 @@ pub fn component(
 /// to the application's `init` function.
 ///
 pub fn start(
-  app: App(flags, model, msg),
+  app: App(start_args, model, msg),
   onto selector: String,
-  with flags: flags,
+  with start_args: start_args,
 ) -> Result(Runtime(msg), Error) {
   use <- bool.guard(!is_browser(), Error(NotABrowser))
 
-  do_start(app, selector, flags)
+  do_start(app, selector, start_args)
 }
 
 @external(javascript, "./lustre/runtime/client/spa.ffi.mjs", "start")
 fn do_start(
-  _app: App(flags, model, msg),
+  _app: App(start_args, model, msg),
   _selector: String,
-  _flags: flags,
+  _start_args: start_args,
 ) -> Result(Runtime(msg), Error) {
   Error(NotABrowser)
 }
@@ -331,10 +359,10 @@ fn do_start(
 ///
 @external(javascript, "./lustre/runtime/server/runtime.ffi.mjs", "start")
 pub fn start_server_component(
-  app: App(flags, model, msg),
-  with flags: flags,
+  app: App(start_args, model, msg),
+  with start_args: start_args,
 ) -> Result(Runtime(msg), Error) {
-  app.init(flags)
+  app.init(start_args)
   |> runtime.start(
     app.update,
     app.view,
@@ -346,8 +374,8 @@ pub fn start_server_component(
 
 /// Register a Lustre application as a Web Component. This lets you render that
 /// application in another Lustre application's view or use it as a Custom Element
-/// outside of Lustre entirely.The provided application can only have `Nil` flags
-/// because there is no way to provide an initial value for flags when using a
+/// outside of Lustre entirely.The provided application can only have `Nil` start_args
+/// because there is no way to provide an initial value for start_args when using a
 /// Custom Element!
 ///
 /// The second argument is the name of the Custom Element. This is the name you'd
@@ -372,6 +400,9 @@ pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error)
 
 // MESSAGES --------------------------------------------------------------------
 
+/// Send a message to a running application's runtime directly. This function is
+/// primarily used for sending decoded client messages to a server component's
+/// runtime.
 ///
 @external(erlang, "gleam@erlang@process", "send")
 @external(javascript, "./lustre/runtime/client/runtime.ffi.mjs", "send")

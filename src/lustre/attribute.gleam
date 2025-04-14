@@ -10,6 +10,15 @@ import lustre/vdom/vattr
 /// The `Attribute` type encompasses HTML attributes, DOM properties, and
 /// event listeners.
 ///
+/// - [`attribute`](#attribute) constructs string-based HTML attributes. These
+///   exist on the HTML element directly and can be server-rendered.
+///
+/// - [`property`](#property) constructs JavaScript DOM properties. These exist
+///   on the DOM element and can be arbitrary serialisable values such as arrays
+///   and objects. These are not server-rendered.
+///
+/// - [`event.on`](./event.html#on) can be used to construct event listeners.
+///
 pub type Attribute(msg) =
   vattr.Attribute(msg)
 

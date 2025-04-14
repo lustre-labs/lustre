@@ -237,22 +237,16 @@ pub fn to_string_tree(
   }
 
   use html, attr <- list.fold(attributes, string_tree.new())
-  case to_string_parts(attr) {
-    Ok(#("class", "")) | Ok(#("style", "")) -> html
-    Ok(#(key, "")) -> string_tree.append(html, " " <> key)
-    Ok(#(key, val)) ->
-      string_tree.append(
-        html,
-        " " <> key <> "=\"" <> houdini.escape(val) <> "\"",
-      )
-    Error(_) -> html
-  }
-}
 
-pub fn to_string_parts(attr: Attribute(msg)) -> Result(#(String, String), Nil) {
   case attr {
-    Attribute(_, "", _) -> Error(Nil)
-    Attribute(_, name, value) -> Ok(#(name, value))
-    _ -> Error(Nil)
+    Attribute(name: "", ..) -> html
+    Attribute(name: "class", value: "", ..) -> html
+    Attribute(name: "style", value: "", ..) -> html
+    Attribute(name:, value: "", ..) -> string_tree.append(html, " " <> name)
+    Attribute(name:, value:, ..) ->
+      string_tree.append(html, {
+        " " <> name <> "=\"" <> houdini.escape(value) <> "\""
+      })
+    _ -> html
   }
 }

@@ -210,10 +210,10 @@ fn count_fragment_children(children: List(Element(msg)), count: Int) -> Int {
 /// content. Lustre will render the provided HTML verbatim, and will not touch
 /// its children except when replacing the entire inner html on changes.
 ///
-/// **Note:** The provided HTML will not be escaped automatically and may expose
-/// your applications to XSS attacks! Make sure you absolutely trust the HTML you
-/// pass to this function. In particular, never use this to display un-sanitised
-/// user HTML!
+/// > **Note:** The provided HTML will not be escaped automatically and may expose
+/// > your applications to XSS attacks! Make sure you absolutely trust the HTML you
+/// > pass to this function. In particular, never use this to display un-sanitised
+/// > user HTML!
 ///
 pub fn unsafe_raw_html(
   namespace: String,

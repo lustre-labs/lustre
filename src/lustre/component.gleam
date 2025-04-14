@@ -1,3 +1,38 @@
+//// Lustre's component system is built on top of the Custom Elements API and
+//// the Shadow DOM API. This module helps you configure new components and
+//// interact with existing ones.
+////
+//// While it's not required, understanding the spec and how it works will help
+//// you get the most out of Lustre's component system. The following resources
+//// are a great place to start:
+////
+////   - https://developer.mozilla.org/en-US/docs/Web/Web_Components
+////
+////   - https://css-tricks.com/web-components-demystified/
+////
+////   - https://github.com/web-padawan/awesome-web-components
+////
+//// ## Examples
+////
+//// We have a small number of examples showing how to set up and use components
+//// that are a great place to see some code:
+////
+//// - [`Basic setup`](https://github.com/lustre-labs/lustre/tree/main/examples/05-components/01-basic-setup)
+////
+//// - [`Custom attributes and events`](https://github.com/lustre-labs/lustre/tree/main/examples/05-components/02-attributes-and-events)
+////
+//// - [`Slots`](https://github.com/lustre-labs/lustre/tree/main/examples/05-components/03-slots)
+////
+//// This list of examples is likely to grow over time, so be sure to check back
+//// every now and then to see what's new!
+////
+//// ## Getting help
+////
+//// If you're having trouble with Lustre or not sure what the right way to do
+//// something is, the best place to get help is the [Gleam Discord server](https://discord.gg/Fm8Pwmy).
+//// You could also open an issue on the [Lustre GitHub repository](https://github.com/lustre-labs/lustre/issues).
+////
+
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dict.{type Dict}
@@ -239,6 +274,16 @@ pub fn adopt_styles(adopt: Bool) -> Option(msg) {
 
 // CONVERSIONS -----------------------------------------------------------------
 
+/// 🚨 This is an **internal** function and should not be consumed by user code.
+/// Internal functions may depend on unstable APIs or require certain usage
+/// patterns: no guarantees are made about the stability _or_ reliability of
+/// internal functions.
+///
+/// The server component runtime has to define its own `Config` type to avoid
+/// circular dependencies. This function converts the public-facing component
+/// config into an internal server component one: which is handy because not all
+/// options are available in server components anyway.
+///
 @internal
 pub fn to_server_component_config(config: Config(msg)) -> runtime.Config(msg) {
   runtime.Config(
