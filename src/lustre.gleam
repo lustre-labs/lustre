@@ -209,7 +209,6 @@ pub type Error {
   ComponentAlreadyRegistered(name: String)
   ElementNotFound(selector: String)
   NotABrowser
-  NotErlang
 }
 
 /// Once you start a Lustre application, you get back a `Runtime` you can later

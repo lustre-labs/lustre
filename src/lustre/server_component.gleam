@@ -76,9 +76,8 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic/decode.{type Decoder}
-import gleam/erlang/process.{type Selector, type Subject}
 import gleam/json.{type Json}
-import lustre.{type Error, type Runtime, type RuntimeMessage}
+import lustre.{type Runtime, type RuntimeMessage}
 import lustre/attribute.{type Attribute, attribute}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -86,6 +85,15 @@ import lustre/element/html
 import lustre/runtime/server/runtime
 import lustre/runtime/transport
 import lustre/vdom/vattr.{Event}
+
+@target(erlang)
+import gleam/erlang/process.{type Pid, type Selector, type Subject}
+
+// We don't want users of the JavaScript target to see warnings about an unused
+// `Pid` type so we use target-specific imports to only pull in the types we need
+// for each target.
+@target(javascript)
+import gleam/erlang/process.{type Selector, type Subject}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -209,30 +217,28 @@ pub fn include(
 
 // ACTIONS ---------------------------------------------------------------------
 
+@target(erlang)
 /// Recover the `Subject` of the server component runtime so that it can be used
 /// in supervision trees or passed to other processes. If you want to hand out
 /// different `Subject`s to send messages to your application, take a look at the
 /// [`select`](#select) effect.
 ///
-/// > **Note**: this function will always fail on the JavaScript target with the
-/// > `NotErlang` error.
+/// > **Note**: this function is not available on the JavaScript target.
 ///
-pub fn subject(
-  runtime: Runtime(msg),
-) -> Result(Subject(RuntimeMessage(msg)), Error) {
-  do_subject(runtime)
+pub fn subject(runtime: Runtime(msg)) -> Subject(RuntimeMessage(msg)) {
+  coerce(runtime)
 }
 
 @target(erlang)
-fn do_subject(
-  runtime: Runtime(msg),
-) -> Result(Subject(RuntimeMessage(msg)), Error) {
-  Ok(coerce(runtime))
-}
-
-@target(javascript)
-fn do_subject(_: Runtime(msg)) -> Result(Subject(RuntimeMessage(msg)), Error) {
-  Error(lustre.NotErlang)
+/// Recover the `Pid` of the server component runtime so that it can be used in
+/// supervision trees or passed to other processes. If you want to hand out
+/// different `Subject`s to send messages to your application, take a look at the
+/// [`select`](#select) effect.
+///
+/// > **Note**: this function is not available on the JavaScript target.
+///
+pub fn pid(runtime: Runtime(msg)) -> Pid {
+  runtime |> subject |> process.subject_owner
 }
 
 @target(erlang)
