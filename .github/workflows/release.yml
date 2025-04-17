@@ -10,11 +10,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: erlef/setup-beam@v1.16.0
+      - uses: erlef/setup-beam@v1.18.2
         with:
           otp-version: "27.0"
           rebar3-version: "3"
-          gleam-version: "1.5.1"
+          gleam-version: "1.10.0"
 
       - run: |
           version="v$(cat gleam.toml | grep -m 1 "version" | sed -r "s/version *= *\"([[:digit:].]+)\"/\1/")"
@@ -23,15 +23,17 @@ jobs:
             echo "expected a tag name 'v$version'"
             exit 1
           fi
+
         name: check version
 
       - run: gleam format --check
 
-      - run: gleam test
+      - run: gleam test --target erlang
+
+      - run: gleam test --target javascript
 
       - run: gleam publish -y
         env:
-          HEXPM_USER: ${{ secrets.HEX_USERNAME }}
-          HEXPM_PASS: ${{ secrets.HEX_PASSWORD }}
+          HEXPM_API_KEY: ${{ secrets.HEXPM_API_KEY }}
 
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
