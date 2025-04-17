@@ -28,11 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [lustre/server_component] Added a `TransportMethod` type and `method` attribute to choose between websocket, sse, and http methods for server component clients.
 - [lustre/server_component] Adds an `element` function to more-conveniently create the `<lustre-server-component>` HTML element.
 - [lustre/server_component] Adds a `subject` function to recover the `process.Subject` of a server component's runtime.
+- [lustre/server_component] Adds a `pid` function to recover the `process.Pid` of a server component's runtime.
 - [lustre/server_component] Adds `register_subject` and `deregister_subject` functions for Erlang-based server components.
 - [lustre/server_component] Adds `register_callback` and `deregister_callback` functions for JavaScript-based server components.
 
 ### Changed
 
+- [lustre] App constructors such as `simple` and `application` now have labelled arguments.
 - [lustre] `component` no longer takes a `Dict` of attribute change callbacks and now takes a list of configuration options.
 - [lustre] `start` and `start_server_component` now return the new `Runtime` type.
 - [lustre/attribute] `property` now requires a `Json` value instead of any `dynamic.Dynamic` value.
