@@ -64,7 +64,7 @@ import lustre/vdom/vnode.{Element, Fragment, Text, UnsafeInnerHtml}
 ///   never take untrusted user input and pass it to this function!
 ///
 pub type Element(msg) =
-  vnode.Node(msg)
+  vnode.Element(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 

@@ -4,7 +4,7 @@ import gleam/json.{type Json}
 import lustre/internals/json_object_builder
 import lustre/vdom/events.{type Events}
 import lustre/vdom/vattr.{type Attribute}
-import lustre/vdom/vnode.{type Node}
+import lustre/vdom/vnode.{type Element}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -71,8 +71,8 @@ pub type Change(msg) {
   /// used in cases where we're actually replacing a fragment: we need to know
   /// how many siblings to remove in the process.
   ///
-  Replace(kind: Int, from: Int, count: Int, with: Node(msg))
-  Insert(kind: Int, children: List(Node(msg)), before: Int)
+  Replace(kind: Int, from: Int, count: Int, with: Element(msg))
+  Insert(kind: Int, children: List(Element(msg)), before: Int)
   /// Remove `count` number of children starting at the given index. In most cases
   /// this is equivlaent to removing *all* children from the given index, but for
   /// fragments we need to know exactly how many children to remove so we don't
@@ -134,7 +134,7 @@ pub const replace_kind: Int = 5
 pub fn replace(
   from from: Int,
   count count: Int,
-  with with: Node(msg),
+  with with: Element(msg),
 ) -> Change(msg) {
   Replace(kind: replace_kind, from:, count:, with:)
 }
@@ -142,7 +142,7 @@ pub fn replace(
 pub const insert_kind: Int = 6
 
 pub fn insert(
-  children children: List(Node(msg)),
+  children children: List(Element(msg)),
   before before: Int,
 ) -> Change(msg) {
   Insert(kind: insert_kind, children:, before:)

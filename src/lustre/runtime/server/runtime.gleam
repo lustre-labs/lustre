@@ -15,7 +15,7 @@ import lustre/effect.{type Effect}
 import lustre/runtime/transport.{type ClientMessage, type ServerMessage}
 import lustre/vdom/diff.{Diff, diff}
 import lustre/vdom/events.{type Events}
-import lustre/vdom/vnode.{type Node}
+import lustre/vdom/vnode.{type Element}
 
 // STATE -----------------------------------------------------------------------
 
@@ -31,10 +31,10 @@ pub type State(model, msg) {
     //
     model: model,
     update: fn(model, msg) -> #(model, Effect(msg)),
-    view: fn(model) -> Node(msg),
+    view: fn(model) -> Element(msg),
     config: Config(msg),
     //
-    vdom: Node(msg),
+    vdom: Element(msg),
     events: Events(msg),
     //
     subscribers: Dict(Subject(ClientMessage(msg)), ProcessMonitor),
@@ -55,7 +55,7 @@ pub type Config(msg) {
 pub fn start(
   init: #(model, Effect(msg)),
   update: fn(model, msg) -> #(model, Effect(msg)),
-  view: fn(model) -> Node(msg),
+  view: fn(model) -> Element(msg),
   config: Config(msg),
 ) -> Result(Subject(Message(msg)), StartError) {
   actor.start_spec({

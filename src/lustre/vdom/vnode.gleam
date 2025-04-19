@@ -15,13 +15,13 @@ import lustre/vdom/vattr.{type Attribute}
 
 // TYPES -----------------------------------------------------------------------
 
-pub type Node(msg) {
+pub type Element(msg) {
   Fragment(
     kind: Int,
     key: String,
     mapper: fn(Dynamic) -> Dynamic,
-    children: List(Node(msg)),
-    keyed_children: MutableMap(String, Node(msg)),
+    children: List(Element(msg)),
+    keyed_children: MutableMap(String, Element(msg)),
     // When diffing Fragments, we need to know how many elements this fragment
     // spans when moving/deleting/updating it.
     children_count: Int,
@@ -42,8 +42,8 @@ pub type Node(msg) {
     // have to be sorted with the `attribute.prepare` function.
     //
     attributes: List(Attribute(msg)),
-    children: List(Node(msg)),
-    keyed_children: MutableMap(String, Node(msg)),
+    children: List(Element(msg)),
+    keyed_children: MutableMap(String, Element(msg)),
     // These two properties are only useful when rendering Elements to strings.
     // Certain HTML tags like <img> and <input> are called "void" elements,
     // which means they cannot have children and should not have a closing tag.
@@ -75,10 +75,10 @@ pub const fragment_kind: Int = 0
 pub fn fragment(
   key key: String,
   mapper mapper: fn(Dynamic) -> Dynamic,
-  children children: List(Node(msg)),
-  keyed_children keyed_children: MutableMap(String, Node(msg)),
+  children children: List(Element(msg)),
+  keyed_children keyed_children: MutableMap(String, Element(msg)),
   children_count children_count: Int,
-) -> Node(msg) {
+) -> Element(msg) {
   Fragment(
     kind: fragment_kind,
     key:,
@@ -97,11 +97,11 @@ pub fn element(
   namespace namespace: String,
   tag tag: String,
   attributes attributes: List(Attribute(msg)),
-  children children: List(Node(msg)),
-  keyed_children keyed_children: MutableMap(String, Node(msg)),
+  children children: List(Element(msg)),
+  keyed_children keyed_children: MutableMap(String, Element(msg)),
   self_closing self_closing: Bool,
   void void: Bool,
-) -> Node(msg) {
+) -> Element(msg) {
   Element(
     kind: element_kind,
     key:,
@@ -146,7 +146,7 @@ pub fn text(
   key key: String,
   mapper mapper: fn(Dynamic) -> Dynamic,
   content content: String,
-) -> Node(msg) {
+) -> Element(msg) {
   Text(kind: text_kind, key: key, mapper: mapper, content: content)
 }
 
@@ -159,7 +159,7 @@ pub fn unsafe_inner_html(
   tag tag: String,
   attributes attributes: List(Attribute(msg)),
   inner_html inner_html: String,
-) -> Node(msg) {
+) -> Element(msg) {
   UnsafeInnerHtml(
     kind: unsafe_inner_html_kind,
     key:,
@@ -175,7 +175,7 @@ pub fn unsafe_inner_html(
 
 ///
 ///
-pub fn advance(node: Node(msg)) {
+pub fn advance(node: Element(msg)) {
   case node {
     Fragment(children_count:, ..) -> 1 + children_count
     _ -> 1
@@ -184,7 +184,7 @@ pub fn advance(node: Node(msg)) {
 
 // MANIPULATION ----------------------------------------------------------------
 
-pub fn to_keyed(key: String, node: Node(msg)) -> Node(msg) {
+pub fn to_keyed(key: String, node: Element(msg)) -> Element(msg) {
   case node {
     Element(..) -> Element(..node, key:)
     Text(..) -> Text(..node, key:)
@@ -256,7 +256,7 @@ fn set_fragment_key(key, children, index, new_children, keyed_children) {
 
 // ENCODERS --------------------------------------------------------------------
 
-pub fn to_json(node: Node(msg)) -> Json {
+pub fn to_json(node: Element(msg)) -> Json {
   case node {
     Fragment(kind:, key:, children:, children_count:, ..) ->
       fragment_to_json(kind, key, children, children_count)
@@ -312,13 +312,13 @@ fn unsafe_inner_html_to_json(kind, key, namespace, tag, attributes, inner_html) 
 
 // STRING RENDERING ------------------------------------------------------------
 
-pub fn to_string(node: Node(msg)) -> String {
+pub fn to_string(node: Element(msg)) -> String {
   node
   |> to_string_tree
   |> string_tree.to_string
 }
 
-pub fn to_string_tree(node: Node(msg)) -> StringTree {
+pub fn to_string_tree(node: Element(msg)) -> StringTree {
   case node {
     Text(content: "", ..) -> string_tree.new()
     Text(content:, ..) -> string_tree.from_string(houdini.escape(content))
@@ -372,7 +372,7 @@ pub fn to_string_tree(node: Node(msg)) -> StringTree {
 
 fn children_to_string_tree(
   html: StringTree,
-  children: List(Node(msg)),
+  children: List(Element(msg)),
 ) -> StringTree {
   use html, child <- list.fold(children, html)
 
@@ -381,14 +381,14 @@ fn children_to_string_tree(
   |> string_tree.append_tree(html, _)
 }
 
-pub fn to_snapshot(node: Node(msg)) -> String {
+pub fn to_snapshot(node: Element(msg)) -> String {
   node
   |> do_to_snapshot_builder(False, 0)
   |> string_tree.to_string
 }
 
 fn do_to_snapshot_builder(
-  node: Node(msg),
+  node: Element(msg),
   raw_text: Bool,
   indent: Int,
 ) -> StringTree {
@@ -467,7 +467,7 @@ fn do_to_snapshot_builder(
 
 fn children_to_snapshot_builder(
   html: StringTree,
-  children: List(Node(msg)),
+  children: List(Element(msg)),
   raw_text: Bool,
   indent: Int,
 ) -> StringTree {

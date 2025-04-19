@@ -8,7 +8,7 @@ import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{type Attribute, Event}
-import lustre/vdom/vnode.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
+import lustre/vdom/vnode.{type Element, Element, Fragment, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -48,7 +48,7 @@ pub fn new() -> Events(msg) {
   )
 }
 
-pub fn from_node(root: Node(msg)) -> Events(msg) {
+pub fn from_node(root: Element(msg)) -> Events(msg) {
   add_child(new(), function.identity, path.root, 0, root)
 }
 
@@ -109,7 +109,7 @@ pub fn add_child(
   mapper: Mapper,
   parent: Path,
   index: Int,
-  child: Node(msg),
+  child: Element(msg),
 ) -> Events(msg) {
   let handlers = do_add_child(events.handlers, mapper, parent, index, child)
   Events(..events, handlers:)
@@ -120,7 +120,7 @@ fn do_add_child(
   mapper: Mapper,
   parent: Path,
   child_index: Int,
-  child: Node(msg),
+  child: Element(msg),
 ) -> MutableMap(String, Decoder(msg)) {
   case child {
     Element(attributes:, children:, ..) -> {
@@ -171,7 +171,7 @@ pub fn add_children(
   mapper: Mapper,
   path: Path,
   child_index: Int,
-  children: List(Node(msg)),
+  children: List(Element(msg)),
 ) -> Events(msg) {
   let handlers =
     do_add_children(events.handlers, mapper, path, child_index, children)
@@ -183,7 +183,7 @@ fn do_add_children(
   mapper: Mapper,
   path: Path,
   child_index: Int,
-  children: List(Node(msg)),
+  children: List(Element(msg)),
 ) -> MutableMap(String, Decoder(msg)) {
   case children {
     [] -> handlers
@@ -199,7 +199,7 @@ pub fn remove_child(
   events: Events(msg),
   parent: Path,
   child_index: Int,
-  child: Node(msg),
+  child: Element(msg),
 ) -> Events(msg) {
   let handlers = do_remove_child(events.handlers, parent, child_index, child)
   Events(..events, handlers:)
@@ -209,7 +209,7 @@ fn do_remove_child(
   handlers: MutableMap(String, Decoder(msg)),
   parent: Path,
   child_index: Int,
-  child: Node(msg),
+  child: Element(msg),
 ) -> MutableMap(String, Decoder(msg)) {
   case child {
     Element(attributes:, children:, ..) -> {
@@ -249,7 +249,7 @@ fn do_remove_children(
   handlers: MutableMap(String, Decoder(msg)),
   path: Path,
   child_index: Int,
-  children: List(Node(msg)),
+  children: List(Element(msg)),
 ) -> MutableMap(String, Decoder(msg)) {
   case children {
     [] -> handlers

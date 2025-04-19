@@ -10,7 +10,7 @@ import lustre/vdom/events.{type Events}
 import lustre/vdom/patch.{type Change, type Patch, Patch}
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{type Attribute, Attribute, Event, Property}
-import lustre/vdom/vnode.{type Node, Element, Fragment, Text, UnsafeInnerHtml}
+import lustre/vdom/vnode.{type Element, Element, Fragment, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -22,7 +22,11 @@ pub type Diff(msg) {
 
 // DIFFING ---------------------------------------------------------------------
 
-pub fn diff(events: Events(msg), old: Node(msg), new: Node(msg)) -> Diff(msg) {
+pub fn diff(
+  events: Events(msg),
+  old: Element(msg),
+  new: Element(msg),
+) -> Diff(msg) {
   do_diff(
     old: [old],
     old_keyed: mutable_map.new(),
@@ -44,10 +48,10 @@ pub fn diff(events: Events(msg), old: Node(msg), new: Node(msg)) -> Diff(msg) {
 }
 
 fn do_diff(
-  old old: List(Node(msg)),
-  old_keyed old_keyed: MutableMap(String, Node(msg)),
-  new new: List(Node(msg)),
-  new_keyed new_keyed: MutableMap(String, Node(msg)),
+  old old: List(Element(msg)),
+  old_keyed old_keyed: MutableMap(String, Element(msg)),
+  new new: List(Element(msg)),
+  new_keyed new_keyed: MutableMap(String, Element(msg)),
   //
   moved moved: Set(String),
   moved_offset moved_offset: Int,

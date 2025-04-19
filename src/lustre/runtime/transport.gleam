@@ -4,7 +4,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import lustre/vdom/patch.{type Patch}
-import lustre/vdom/vnode.{type Node}
+import lustre/vdom/vnode.{type Element}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -15,7 +15,7 @@ pub type ClientMessage(msg) {
     will_adopt_styles: Bool,
     observed_attributes: List(String),
     observed_properties: List(String),
-    vdom: Node(msg),
+    vdom: Element(msg),
   )
   Reconcile(kind: Int, patch: Patch(msg))
   Emit(kind: Int, name: String, data: Json)
@@ -37,7 +37,7 @@ pub fn mount(
   will_adopt_styles: Bool,
   observed_attributes: List(String),
   observed_properties: List(String),
-  vdom: Node(msg),
+  vdom: Element(msg),
 ) -> ClientMessage(msg) {
   Mount(
     kind: mount_kind,
@@ -126,7 +126,7 @@ fn mount_to_json(
   will_adopt_styles: Bool,
   observed_attributes: List(String),
   observed_properties: List(String),
-  vdom: Node(msg),
+  vdom: Element(msg),
 ) -> Json {
   json.object([
     #("kind", json.int(kind)),
