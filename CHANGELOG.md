@@ -11,6 +11,12 @@ request to fix it.
 
 ## [5.0.0] - 2025-04-19
 
+### Changed
+
+- [lustre/event] Fixed a bug with some internal decoders incorrectly using `decode.field` instead of `decode.subfield`.
+
+## [5.0.0] - 2025-04-19
+
 ### Added
 
 - [lustre] Added a `send` function for sending messages to an app's runtime.
