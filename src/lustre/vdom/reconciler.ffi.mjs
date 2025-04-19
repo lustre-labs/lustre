@@ -34,7 +34,7 @@ import {
   TEXT_NODE,
   DOCUMENT_FRAGMENT_NODE,
   SUPPORTS_MOVE_BEFORE,
-  NAMESPACE_HTML
+  NAMESPACE_HTML,
 } from "../internals/constants.ffi.mjs";
 
 //
@@ -60,7 +60,7 @@ export class Reconciler {
   #stack = [];
 
   push(patch) {
-    const offset = this.offset
+    const offset = this.offset;
     if (offset) {
       iterate(patch.changes, (change) => {
         switch (change.kind) {
@@ -140,7 +140,7 @@ export class Reconciler {
       iterate(patch.children, (child) => {
         // TODO: use linked-list style but skip to indices if distance is great enough?
 
-        self.#stack.push({ node: childAt(node, child.index), patch: child, });
+        self.#stack.push({ node: childAt(node, child.index), patch: child });
       });
     }
   }
@@ -162,7 +162,7 @@ export class Reconciler {
 
   #move(node, key, before, count) {
     let el = getKeyedChild(node, key);
-    const beforeEl = childAt(node, before)
+    const beforeEl = childAt(node, before);
     for (let i = 0; i < count && el !== null; ++i) {
       const next = el.nextSibling;
       if (SUPPORTS_MOVE_BEFORE) {
@@ -281,7 +281,7 @@ export class Reconciler {
       }
 
       case unsafe_inner_html_kind: {
-        const node = createElement(vnode)
+        const node = createElement(vnode);
         this.#createAttributes(node, vnode);
 
         this.#replaceInnerHtml(node, vnode.inner_html);
@@ -292,7 +292,7 @@ export class Reconciler {
   }
 
   #createAttributes(node, { attributes }) {
-    iterate(attributes, (attribute) => this.#createAttribute(node, attribute))
+    iterate(attributes, (attribute) => this.#createAttribute(node, attribute));
   }
 
   #createAttribute(node, attribute) {
@@ -436,21 +436,21 @@ const iterate = (list, callback) => {
       callback(list.head);
     }
   }
-}
+};
 
-const appendChild = (node, child) => node.appendChild(child)
+const appendChild = (node, child) => node.appendChild(child);
 const insertBefore = (parent, node, referenceNode) =>
-  parent.insertBefore(node, referenceNode ?? null)
+  parent.insertBefore(node, referenceNode ?? null);
 
 const createElement = ({ key, tag, namespace }) => {
-  const node = document.createElementNS(namespace || NAMESPACE_HTML, tag)
-  initialiseMetadata(node, key)
-  return node
-}
+  const node = document.createElementNS(namespace || NAMESPACE_HTML, tag);
+  initialiseMetadata(node, key);
+  return node;
+};
 
-const createTextNode = (text) => document.createTextNode(text ?? "")
-const createDocumentFragment = () => document.createDocumentFragment()
-const childAt = (node, at)  => node.childNodes[at|0]
+const createTextNode = (text) => document.createTextNode(text ?? "");
+const createDocumentFragment = () => document.createDocumentFragment();
+const childAt = (node, at) => node.childNodes[at | 0];
 
 // METADATA --------------------------------------------------------------------
 
@@ -473,7 +473,7 @@ export const initialiseMetadata = (node, key = "") => {
       node[meta] = { key, debouncers: new Map() };
       break;
   }
-}
+};
 
 const addKeyedChild = (node, child) => {
   if (child.nodeType === DOCUMENT_FRAGMENT_NODE) {
@@ -489,9 +489,9 @@ const addKeyedChild = (node, child) => {
   if (key) {
     node[meta].keyedChildren.set(key, new WeakRef(child));
   }
-}
+};
 
-const getKeyedChild = (node, key) =>  node[meta].keyedChildren.get(key).deref()
+const getKeyedChild = (node, key) => node[meta].keyedChildren.get(key).deref();
 
 // EVENTS ----------------------------------------------------------------------
 
@@ -514,7 +514,7 @@ const handleEvent = (event) => {
   }
 
   handler(event);
-}
+};
 
 /** Server components send the event data as a JSON object over the network to
  *  the server component runtime. Out of the box this would effectively do nothing
@@ -568,7 +568,7 @@ const createServerEvent = (event, include = []) => {
   }
 
   return data;
-}
+};
 
 // ATTRIBUTE SPECIAL CASES -----------------------------------------------------
 
@@ -581,7 +581,7 @@ const syncedBooleanAttribute = (name) => {
       node[name] = false;
     },
   };
-}
+};
 
 const syncedAttribute = (name) => {
   return {
@@ -589,7 +589,7 @@ const syncedAttribute = (name) => {
       node[name] = value;
     },
   };
-}
+};
 
 const ATTRIBUTE_HOOKS = {
   checked: syncedBooleanAttribute("checked"),
@@ -612,4 +612,3 @@ const ATTRIBUTE_HOOKS = {
     },
   },
 };
-
