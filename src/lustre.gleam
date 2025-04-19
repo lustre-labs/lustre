@@ -405,14 +405,17 @@ pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error)
 ///
 @external(erlang, "gleam@erlang@process", "send")
 @external(javascript, "./lustre/runtime/client/runtime.ffi.mjs", "send")
-pub fn send(runtime: Runtime(msg), message: RuntimeMessage(msg)) -> Nil
+pub fn send(
+  to runtime: Runtime(msg),
+  message message: RuntimeMessage(msg),
+) -> Nil
 
 /// Dispatch a message to a running application's `update` function. This can be
 /// used as a way for the outside world to communicate with a Lustre app without
 /// the app needing to initiate things with an effect.
 ///
-pub fn dispatch(runtime: Runtime(msg), msg: msg) -> Nil {
-  send(runtime, runtime.EffectDispatchedMessage(msg))
+pub fn dispatch(msg: msg) -> RuntimeMessage(msg) {
+  runtime.EffectDispatchedMessage(msg)
 }
 
 /// Instruct a running application to shut down. For client SPAs this will stop
@@ -420,8 +423,8 @@ pub fn dispatch(runtime: Runtime(msg), msg: msg) -> Nil {
 /// stop the runtime and prevent any further patches from being sent to connected
 /// clients.
 ///
-pub fn shutdown(runtime: Runtime(msg)) -> Nil {
-  send(runtime, runtime.SystemRequestedShutdown)
+pub fn shutdown() -> RuntimeMessage(msg) {
+  runtime.SystemRequestedShutdown
 }
 
 // UTILS -----------------------------------------------------------------------

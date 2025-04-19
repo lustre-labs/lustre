@@ -253,23 +253,9 @@ fn coerce(value: a) -> b
 /// > you should use [`register_callback`](#register_callback) instead.
 ///
 pub fn register_subject(
-  runtime: Runtime(msg),
   client: Subject(ClientMessage(msg)),
-) -> Nil {
-  do_register_subject(runtime, client)
-}
-
-@target(erlang)
-fn do_register_subject(
-  runtime: Runtime(msg),
-  client: Subject(ClientMessage(msg)),
-) -> Nil {
-  lustre.send(runtime, runtime.ClientRegisteredSubject(client))
-}
-
-@target(javascript)
-fn do_register_subject(_, _) -> Nil {
-  Nil
+) -> RuntimeMessage(msg) {
+  runtime.ClientRegisteredSubject(client)
 }
 
 /// Deregister a `Subject` to stop receiving messages and updates from Lustre's
@@ -277,23 +263,9 @@ fn do_register_subject(_, _) -> Nil {
 /// [`register_subject`](#register_subject) otherwise this will do nothing.
 ///
 pub fn deregister_subject(
-  runtime: Runtime(msg),
   client: Subject(ClientMessage(msg)),
-) -> Nil {
-  do_deregister_subject(runtime, client)
-}
-
-@target(erlang)
-fn do_deregister_subject(
-  runtime: Runtime(msg),
-  client: Subject(ClientMessage(msg)),
-) -> Nil {
-  lustre.send(runtime, runtime.ClientDeregisteredSubject(client))
-}
-
-@target(javascript)
-fn do_deregister_subject(_, _) -> Nil {
-  Nil
+) -> RuntimeMessage(msg) {
+  runtime.ClientDeregisteredSubject(client)
 }
 
 /// Register a callback to be called whenever the server component runtime
@@ -305,10 +277,9 @@ fn do_deregister_subject(_, _) -> Nil {
 /// > function.
 ///
 pub fn register_callback(
-  runtime: Runtime(msg),
   callback: fn(ClientMessage(msg)) -> Nil,
-) -> Nil {
-  lustre.send(runtime, runtime.ClientRegisteredCallback(callback))
+) -> RuntimeMessage(msg) {
+  runtime.ClientRegisteredCallback(callback)
 }
 
 /// Deregister a callback to be called whenever the server component runtime
@@ -320,10 +291,9 @@ pub fn register_callback(
 /// > function.
 ///
 pub fn deregister_callback(
-  runtime: Runtime(msg),
   callback: fn(ClientMessage(msg)) -> Nil,
-) -> Nil {
-  lustre.send(runtime, runtime.ClientDeregisteredCallback(callback))
+) -> RuntimeMessage(msg) {
+  runtime.ClientDeregisteredCallback(callback)
 }
 
 // EFFECTS ---------------------------------------------------------------------

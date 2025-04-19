@@ -157,7 +157,8 @@ fn init_counter_socket(_) -> CounterSocketInit {
   // components are not opinionated about the transport layer or your network
   // setup: instead the runtime broadcasts messages to any registered subjects
   // and lets you handle the transport layer yourself.
-  server_component.register_subject(component, self)
+  server_component.register_subject(self)
+  |> lustre.send(to: component)
 
   #(CounterSocket(component:, self:), Some(selector))
 }
@@ -200,12 +201,15 @@ fn loop_counter_socket(
       // The server component runtime sets up a process monitor that can clean
       // up if our socket process dies or is killed, but it's good practice to
       // clean up ourselves if we get the opportunity.
-      server_component.deregister_subject(state.component, state.self)
+      server_component.deregister_subject(state.self)
+      |> lustre.send(to: state.component)
+
       actor.Stop(process.Normal)
     }
   }
 }
 
 fn close_counter_socket(state: CounterSocket) -> Nil {
-  server_component.deregister_subject(state.component, state.self)
+  server_component.deregister_subject(state.self)
+  |> lustre.send(to: state.component)
 }

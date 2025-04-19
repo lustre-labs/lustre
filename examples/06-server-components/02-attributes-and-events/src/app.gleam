@@ -147,7 +147,8 @@ fn init_counter_socket(_) -> CounterSocketInit {
     process.new_selector()
     |> process.selecting(self, function.identity)
 
-  server_component.register_subject(component, self)
+  server_component.register_subject(self)
+  |> lustre.send(to: component)
 
   #(CounterSocket(component:, self:), Some(selector))
 }
@@ -179,12 +180,15 @@ fn loop_counter_socket(
     }
 
     mist.Closed | mist.Shutdown -> {
-      server_component.deregister_subject(state.component, state.self)
+      server_component.deregister_subject(state.self)
+      |> lustre.send(to: state.component)
+
       actor.Stop(process.Normal)
     }
   }
 }
 
 fn close_counter_socket(state: CounterSocket) -> Nil {
-  server_component.deregister_subject(state.component, state.self)
+  server_component.deregister_subject(state.self)
+  |> lustre.send(to: state.component)
 }

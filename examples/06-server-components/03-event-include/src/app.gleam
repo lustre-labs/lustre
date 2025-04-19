@@ -118,7 +118,8 @@ fn init_chat_socket(_) -> ChatSocketInit {
     process.new_selector()
     |> process.selecting(self, function.identity)
 
-  server_component.register_subject(component, self)
+  server_component.register_subject(self)
+  |> lustre.send(to: component)
 
   #(ChatSocket(component:, self:), Some(selector))
 }
@@ -150,12 +151,15 @@ fn loop_chat_socket(
     }
 
     mist.Closed | mist.Shutdown -> {
-      server_component.deregister_subject(state.component, state.self)
+      server_component.deregister_subject(state.self)
+      |> lustre.send(to: state.component)
+
       actor.Stop(process.Normal)
     }
   }
 }
 
 fn close_chat_socket(state: ChatSocket) -> Nil {
-  server_component.deregister_subject(state.component, state.self)
+  server_component.deregister_subject(state.self)
+  |> lustre.send(to: state.component)
 }

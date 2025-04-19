@@ -52,7 +52,7 @@ pub fn client_send_event_test() {
 
   let click = transport.event_fired(incr, "click", dynamic.from(Nil))
 
-  lustre.send(runtime, runtime.ClientDispatchedMessage(click))
+  runtime.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
 
   let patch =
     patch.new(0, 0, [], [
@@ -74,8 +74,8 @@ pub fn client_send_multiple_events_test() {
 
   let click = transport.event_fired(incr, "click", dynamic.from(Nil))
 
-  lustre.send(runtime, runtime.ClientDispatchedMessage(click))
-  lustre.send(runtime, runtime.ClientDispatchedMessage(click))
+  runtime.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
+  runtime.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
 
   // Discard the first `Reconcile` message
   let _ = process.receive_forever(client)
@@ -102,7 +102,7 @@ pub fn server_emit_event_test() {
 
   let click = transport.event_fired(reset, "click", dynamic.from(Nil))
 
-  lustre.send(runtime, runtime.ClientDispatchedMessage(click))
+  runtime.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
 
   // Discard the first `Reconcile` message
   let _ = process.receive_forever(client)
@@ -120,13 +120,13 @@ fn with_erlang_runtime(run_test) {
   let assert Ok(runtime) = lustre.start_server_component(app, 0)
   let client = process.new_subject()
 
-  server_component.register_subject(runtime, client)
+  server_component.register_subject(client) |> lustre.send(to: runtime)
 
   run_test(client, runtime)
 
-  server_component.deregister_subject(runtime, client)
+  server_component.deregister_subject(client) |> lustre.send(to: runtime)
 
-  lustre.shutdown(runtime)
+  lustre.shutdown() |> lustre.send(to: runtime)
 }
 
 // COUNTER APP -----------------------------------------------------------------
