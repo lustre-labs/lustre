@@ -43,6 +43,7 @@ request to fix it.
 - [lustre] `start` and `start_server_component` now return the new `Runtime` type.
 - [lustre/attribute] `property` now requires a `Json` value instead of any `dynamic.Dynamic` value.
 - [lustre/element] `fragment` no longer renders a wrapper div around its children.
+- [lustre/element] `to_string_builder` and `to_document_string_builder` have been renamed to `to_string_tree` and `to_document_string_tree` respectively.
 - [lustre/event] Event handlers written using `on` now use the new `gleam/dynamic/decode` API.
 - [lustre/event] The `submit` event now includes a list for form data entries for processing.
 - [lustre/event] `prevent_default` and `stop_propagation` are now modifiers of the event attribute itself.
