@@ -166,23 +166,6 @@ like to install:
 gleam add --dev lustre_dev_tools
 ```
 
-If you're using a different build tool, like Rebar3 or Mix, you can add Lustre
-to your `rebar.config` or `mix.exs` file respectively.
-
-```erlang
-{deps, [
-  {lustre, "4.0.0"}
-]}
-```
-
-```elixir
-defp deps do
-  [
-    {:lustre, "~> 4.0"}
-  ]
-end
-```
-
 ## Where next {#where-next}
 
 To get up to speed with Lustre, check out the [quickstart guide](https://hexdocs.pm/lustre/guide/01-quickstart.html).
