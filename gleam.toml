@@ -15,6 +15,9 @@ internal_modules = ["lustre/internals/*", "lustre/runtime/*", "lustre/vdom/*"]
 [documentation]
 pages = [
     { title = "Announcements", path = "announcements.html", source = "./pages/announcements/index.md" },
+    { title = "", path = "announcements/2025-04-19.html", source = "./pages/announcements/2025-04-14.md" },
+
+    { title = "Changelog", path = "changelog.html", source = "./CHANGELOG.md" },
     { title = "Examples", path = "reference/examples.html", source = "./pages/reference/examples.md" },
     { title = " ", path = "#", source = "" },
     { title = "Quickstart guide", path = "guide/01-quickstart.html", source = "./pages/guide/01-quickstart.md" },
@@ -22,9 +25,6 @@ pages = [
     { title = "Side effects", path = "guide/03-side-effects.html", source = "./pages/guide/03-side-effects.md" },
     { title = "Server side rendering", path = "guide/05-server-side-rendering.html", source = "./pages/guide/05-server-side-rendering.md" },
     { title = "Full stack applications", path = "guide/06-full-stack-applications.html", source = "./pages/guide/06-full-stack-applications.md" },
-    { title = " ", path = "#", source = "" },
-    { title = "Components", path = "guide/08-components.html", source = "./pages/guide/08-components.md" },
-    { title = "Server components", path = "guide/09-server-components.html", source = "./pages/guide/09-server-components.md" },
     { title = " ", path = "#", source = "" },
     { title = "SPA deployments", path = "guide/04-spa-deployments.html", source = "./pages/guide/04-spa-deployments.md" },
     { title = "Full stack deployments", path = "guide/07-full-stack-deployments.html", source = "./pages/guide/07-full-stack-deployments.md" },

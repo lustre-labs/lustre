@@ -68,7 +68,7 @@ state in Lustre applications.
 
 ## The best model is not always a record
 
-It is overwhelmingly common to see the model of a Lustre application as a single
+It is common to see the model of a Lustre application as a single
 record. This is a sensible place to start, but there are other options! Gleam's
 custom types allow us to model our data as disjoint variants. Using these as your
 application's model can be particularly useful when you have different states that
@@ -81,11 +81,11 @@ type Model {
 }
 
 type LoggedInModel {
-  ...
+  LoggedInModel(user: User, settings: Settings)
 }
 
 type PublicModel {
-  ...
+  PublicModel(current_page: Page)
 }
 ```
 
@@ -232,10 +232,13 @@ there are some tangible benefits to this approach:
 ## Related examples
 
 If you'd like to see some of the ideas in action, we have a number of examples
-that demonstrate how to use Lustre in practice:
+that demonstrate how Lustre's state management loop works:
 
-- [`02-interactivity`](https://github.com/lustre-labs/lustre/tree/main/examples/02-interactivity)
-- [`03-controlled-inputs`](https://github.com/lustre-labs/lustre/tree/main/examples/03-controlled-inputs)
+- [`Hello world`](https://github.com/lustre-labs/lustre/tree/main/examples/01-basics/01-hello-world)
+
+- [`Controlled inputs`](https://github.com/lustre-labs/lustre/tree/main/examples/02-inputs/01-controlled-inputs)
+
+To get an overview of every example, check out the [examples directory](../reference/examples.html).
 
 ## Getting help
 

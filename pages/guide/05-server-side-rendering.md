@@ -187,13 +187,15 @@ pub fn main() {
     |> result.map(element.inner_text)
 
   let flags =
-    case json.decode_string(json, dynamic.int) {
+    case json.parse(json, decode.int) {
       Ok(count) -> count
       Error(_) -> 0
     }
 
   let app = lustre.application(init, update, view)
   let assert Ok(_) = lustre.start(app, "#app", flags)
+
+  Nil
 }
 ```
 
@@ -210,8 +212,8 @@ reduce the amount of data you serialise and _derive_ the rest of your model from
 that.
 
 We brushed over quite a few details showing how hydration could work here, but in
-the [next guide](https://hexdocs.pm/lustre/guide/06-full-stack-applications.html)
-we'll go into a lot more detail on how to set up and run a full-stack Lustre app.
+the [next guide](./06-full-stack-applications.html) we'll go into a lot more detail
+on how to set up and run a full-stack Lustre app.
 
 ## Getting help
 

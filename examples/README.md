@@ -1,46 +1,120 @@
-# Lustre examples
+# Lustre examples directory
 
 Each of the examples in this directory is a self-contained, complete Gleam app
 that demonstrates a particular feature or concept of the library. For newcomers,
 we recommend looking through them in order, as each example tends to build on
 the previous ones. Feel free to jump in to any example that interests you, though!
 
-> **Note**: these examples all use [`lustre/ui`](https://github.com/lustre-labs/ui)
-> to show off something a little more visually interesting than unstyled HTML. None
-> of the ideas in these examples are specific to `lustre/ui`, though, and you should
-> know that you can follow along with any of these examples using only the standard
-> `lustre/element/html` module.
+## 01-basics
 
-## Examples
+These examples cover the fundamentals of Lustre such as setting up an application
+or rendering elements that can handle events.
 
-- [`01-hello-world`](./01-hello-world) is a simple example to just get something
-  on the screen.
+- [`01-hello-world`](https://github.com/lustre-labs/lustre/tree/main/examples/01-basics/01-hello-world)
+  is a simple example to just get something on the screen.
 
-- [`02-interactivity`](./02-interactivity) introduces the core Model-View-Update
-  loop that underpins every Lustre application.
+- [`02-attributes`](https://github.com/lustre-labs/lustre/tree/main/examples/01-basics/02-attributes)
+  demonstrates how to add attributes to HTML elements.
 
-- [`03-controlled-inputs`](./03-controlled-inputs) demonstrates the most common
-  way to handle `<input />` elements in Lustre.
+- [`03-view-functions`](https://github.com/lustre-labs/lustre/tree/main/examples/01-basics/03-view-functions)
+  shows how to organize your view code into functions.
 
-- [`04-custom-event-handlers`](./04-custom-event-handlers) shows you how to
-  write your own event handlers and decoders, instead of relying on the ones
-  provided by `lustre/event`.
+- [`04-keyed-elements`](https://github.com/lustre-labs/lustre/tree/main/examples/01-basics/04-keyed-elements)
+  explains how to use keyed elements for optimized rendering.
 
-- [`05-http-requests`](./05-http-requests) demonstrates how side effects are
-  handled in Lustre, using the third-party [`lustre_http`](https://hexdocs.pm/lustre_http/)
-  package.
+- [`05-fragments`](https://github.com/lustre-labs/lustre/tree/main/examples/01-basics/05-fragments)
+  demonstrates how to use fragments to group elements.
 
-- [`06-custom-effects`](./06-custom-effects) builds on the previous example and
-  shows you how to write your own side effects for Lustre to perform.
+- [`06-flags`](https://github.com/lustre-labs/lustre/tree/main/examples/01-basics/06-flags) shows
+  how to pass initialization data to your Lustre application.
 
-- [`07-routing`](./07-routing) shows you how to use [`modem`](https://hexdocs.pm/modem/)
-  to set up routing and navigating between pages in a Lustre app.
+## 02-inputs
 
-- [99-components](./99-components)
-- [99-full-stack-applications](./99-full-stack-applications)
-- [99-server-components](./99-server-components)
+Handling inputs and interactive elements is an important part of any application!
+These examples cover how to work with user input within the Model-View-Update
+architecture.
 
-👷‍♀️ These examples are under construction.
+- [`01-controlled-inputs`](https://github.com/lustre-labs/lustre/tree/main/examples/02-inputs/01-controlled-inputs)
+  demonstrates the most common way to handle `<input />` elements in Lustre.
+
+- [`02-decoding-events`](https://github.com/lustre-labs/lustre/tree/main/examples/02-inputs/02-decoding-events)
+  shows you how to write your own event handlers and decoders, instead of relying
+  on the ones provided by `lustre/event`.
+
+- [`03-debouncing`](https://github.com/lustre-labs/lustre/tree/main/examples/02-inputs/03-debouncing)
+  demonstrates how to implement debouncing for user inputs.
+
+- [`04-forms`](https://github.com/lustre-labs/lustre/tree/main/examples/02-inputs/04-forms)
+  shows how to work with form submissions in Lustre.
+
+## 03-effects
+
+These examples demonstrate how to handle side effects in Lustre applications.
+Side effects are actions that read from or affect change to the outside world,
+such as making HTTP requests, manipulating the DOM, or working with timers.
+
+- [`01-http-requests`](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/01-http-requests)
+  demonstrates how side effects are handled in Lustre, using HTTP requests as an example.
+
+- [`02-random`](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/02-random)
+  shows how to generate random values in a Lustre application.
+
+- [`03-timers`](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/03-timers)
+  demonstrates working with timers and intervals.
+
+- [`04-local-storage`](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/04-local-storage)
+  shows how to interact with browser local storage.
+
+- [`05-dom-effects`](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/05-dom-effects)
+  demonstrates direct DOM manipulation effects.
+
+- [`06-optimistic-requests`](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/06-optimistic-requests)
+  shows how to implement optimistic UI updates.
+
+## 04-applications
+
+Examples related to building full Lustre single-page applications (SPAs), covering
+concepts like routing, page organisation, and state hydration.
+
+- [`01-routing`](https://github.com/lustre-labs/lustre/tree/main/examples/04-applications/01-routing)
+  shows you how to set up routing and navigation between pages.
+
+- [`04-hydration`](https://github.com/lustre-labs/lustre/tree/main/examples/04-applications/04-hydration)
+  demonstrates client-side hydration of server-rendered Lustre apps.
+
+## 05-components
+
+These examples demonstrate how to create reusable components in Lustre. Components
+are an advanced feature that let you construct real Custom Elements that have
+access to native features like shadow DOM, slotted content, and custom attributes
+and events.
+
+- [`01-basic-setup`](https://github.com/lustre-labs/lustre/tree/main/examples/05-components/01-basic-setup)
+  introduces web components with Lustre.
+
+- [`02-attributes-and-events`](https://github.com/lustre-labs/lustre/tree/main/examples/05-components/02-attributes-and-events)
+  shows how to handle attributes and events in components.
+
+- [`03-slots`](https://github.com/lustre-labs/lustre/tree/main/examples/05-components/03-slots)
+  demonstrates using slots in web components.
+
+## 06-server-components
+
+Lustre components can also be run in real-time on the server, allowing you to
+take a part of your application and move it closer to the data source. These
+examples demonstrate Lustre's _server components_.
+
+- [`01-basic-setup`](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/01-basic-setup)
+  introduces server components in Lustre.
+
+- [`02-attributes-and-events`](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/02-attributes-and-events)
+  shows working with attributes and events in server components.
+
+- [`03-event-include`](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/03-event-include)
+  demonstrates how to include events in server components.
+
+- [`04-multiple-clients`](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/04-multiple-clients)
+  shows how to handle multiple clients with server components.
 
 ## Getting help
 

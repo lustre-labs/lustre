@@ -71,25 +71,21 @@ from the outside world_:
 
 ## Packages for common effects
 
-The community has started to build packages that cover common side effects. For
-many applications it's enough to drop these packages in and start using them
-without needing to write any custom effects.
+The community has developed packages that cover common side effects. For many
+applications it's enough to use these packages without writing any custom effects.
 
 > **Note**: _all_ of these packages are community maintained and unrelated to the
 > core Lustre organisation. If you run into issues please open an issue on the
 > package's repository!
 
-- [`lustre_http`](https://hexdocs.pm/lustre_http/) lets you make HTTP requests
+- [`rsvp`](https://hexdocs.pm/rsvp/) lets you make HTTP requests
   and describe what responses to expect from them.
 
-- [`lustre_websocket`](https://hexdocs.pm/lustre_websocket/) handles WebSocket
-  connections and messages.
+- [`modem`](https://hexdocs.pm/modem/) is a package that helps you manage navigation
+  and routing.
 
-- [`modem`](https://hexdocs.pm/modem/) and [`lustre_routed`](https://hexdocs.pm/lustre_routed/)
-  are two packages that help you manage navigation and routing.
-
-- [`lustre_animation`](https://hexdocs.pm/lustre_animation/) is a simple package
-  for interpolating between values over time.
+- [`plinth`](https://hexdocs.pm/plinth/) provides bindings to Node.js and browser
+  platform APIs for creating your own effects.
 
 ## Running effects
 
@@ -116,15 +112,15 @@ pub fn application(
 ) -> App(flags, model, msg)
 ```
 
-We can, for example, launch an HTTP request on application start by using `lustre_http.get`
+We can, for example, launch an HTTP request on application start by using `rsvp.get`
 in our `init` function:
 
 ```gleam
 fn init(_flags) {
-  let model = Model(...)
-  let get_ip = lustre_http.get(
+  let model = Model(loading: True, ip: None)
+  let get_ip = rsvp.get(
     "https://api.ipify.org",
-    ApiReturnedIpAddress
+    rsvp.expect_text(ApiReturnedIpAddress)
   )
 
   #(model, get_ip)
@@ -136,8 +132,8 @@ fn init(_flags) {
 
 ## Writing your own effects
 
-When you need to do something one of the existing packages doesn't cover, you need
-to write your own effect. You can do that by passing a callback to
+When you need to do something the existing packages don't cover, you can write
+your own effect. You can do that by passing a callback to
 [`effect.from`](https://hexdocs.pm/lustre/lustre/effect.html#from). Custom effects
 are called with an argument – commonly called `dispatch` – that you can use to
 send messages back to your application's `update` function.
@@ -177,23 +173,44 @@ fn do_read(key: String) -> Result(String, Nil) {
 
 ### Effects that touch the DOM
 
-Lustre runs all your side effects after your `update` function returns but _before_
-your `view` function is called. A common bug folks run into is trying to interact
-with a particular element in the DOM before it's had a chance to render. As a
-rule of thumb, you should _always_ wrap custom effects that interact with the DOM
-in a [`requestAnimationFrame`](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame)
-call to ensure the DOM has had a chance to update first.
+Effects made using `effect.from` always run after your `update` function returns
+but _before_ your `view` function is called. A common source of problems is folks
+trying to interact with a particular element in the DOM before it's had a chance
+to render!
+
+Lustre provides two special effect constructors for working with the DOM's
+rendering lifecycle:
+
+1. `effect.before_paint` - Runs after your view function but before the browser
+   paints the screen
+
+2. `effect.after_paint` - Runs after the browser has painted the screen
+
+These are useful when you need to measure or manipulate DOM elements at specific
+points in the rendering cycle:
+
+```gleam
+import lustre/effect
+
+// Measure the width of an element after it's been rendered but before paint
+fn measure_element(id: String, to_msg: fn(Int) -> msg) -> Effect(msg) {
+  effect.before_paint(fn(dispatch, _) {
+    let element = document.get_element_by_id(id)
+    let width = element.client_width
+    dispatch(to_msg(width))
+  })
+}
+```
 
 ### Effects without dispatch
 
 So far, we have seen side effects that are expected to _return something_ to our
 program. If we fire an HTTP request, it wouldn't be much use if we couldn't get
-the response back! Sometimes folks wrongly assume effects _must_ use the `dispatch`
-function they're given, but this isn't true!
+the response back! However, effects don't always need to dispatch messages.
 
-It's also totally valid to write effects that don't dispatch any messages. Earlier
+It's perfectly valid to write effects that don't dispatch any messages. Earlier
 we saw an example of how to read from local storage, we might also want an effect
-to _write_ to local storage and there's not much to dispatch in that case!
+to _write_ to local storage where there's no response needed:
 
 ```js
 // ffi.mjs
@@ -218,16 +235,15 @@ fn do_write(key: String, value: String) -> Nil {
 
 ### Effects with multiple dispatch
 
-Similar to effects that don't dispatch any messages, some folks skip over the fact
-effects can dispatch _multiple_ messages. Packages like [`lustre_websocket`](https://hexdocs.pm/lustre_websocket/)
-and [`modem`](https://hexdocs.pm/modem/) set up effects that will dispatch many
-messages over the lifetime of your program.
+Effects can also dispatch _multiple_ messages over time. This is particularly
+useful for subscription-based functionality like WebSockets, timers, or event
+listeners. [`Modem`](https://hexdocs.pm/modem/) for example, calls the dispatch
+function any time a link is clicked on the page.
 
-Once you have a reference to that `dispatch` function, you're free to call it as
-many times as you want!
+Here's a simple timer effect that dispatches a message at regular intervals:
 
 ```js
-// ffi.mjs
+// app.ffi.mjs
 export function every(interval, cb) {
   window.setInterval(cb, interval);
 }
@@ -243,23 +259,44 @@ fn every(interval: Int, tick: msg) -> Effect(msg) {
   })
 }
 
-@external(javascript, "ffi.mjs", "every")
+@external(javascript, "./app.ffi.mjs", "every")
 fn do_every(interval: Int, cb: fn() -> Nil) -> Nil {
   Nil
 }
 ```
 
-Here we set up an effect that will continuously dispatch a `tick` message at a
-fixed interval.
+### Batching effects
+
+If you need to perform multiple effects at once, you can use `effect.batch` to
+combine them:
+
+```gleam
+fn update(model, msg) {
+  case msg {
+    UserClickedRefresh -> #(
+      Model(..model, loading: True),
+      effect.batch([
+        fetch_user_profile(model.user_id),
+        fetch_user_settings(model.user_id),
+      ]),
+    )
+    // Other cases...
+  }
+}
+```
 
 ## Related examples
 
 If you'd like to see some of the ideas in action, we have a number of examples
 that demonstrate how Lustre's effects system works in practice:
 
-- [`05-http-requests`](https://github.com/lustre-labs/lustre/tree/main/examples/05-http-requests)
-- [`06-custom-effects`](https://github.com/lustre-labs/lustre/tree/main/examples/06-custom-effects)
-- [`07-routing`](https://github.com/lustre-labs/lustre/tree/main/examples/07-routing)
+- [HTTP Requests](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/01-http-requests)
+- [Random values](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/02-random)
+- [Timers](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/03-timers)
+- [LocalStorage](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/04-local-storage)
+- [DOM effects](https://github.com/lustre-labs/lustre/tree/main/examples/03-effects/05-dom-effects)
+
+To get an overview of every example, check out the [examples directory](../reference/examples.html).
 
 ## Getting help
 

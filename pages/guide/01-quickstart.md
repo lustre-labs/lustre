@@ -142,8 +142,8 @@ separate templating syntax like JSX or HEEx for a few reasons:
   great developer experience.
 
 - Templating languages hide the fact that your ui is made of _just functions_.
-  This is a powerful realisation, because all of the same patterns you might use
-  to abstract or organise your code _also apply to your ui_: pass ui-generating
+  This is a powerful realization, because all of the same patterns you might use
+  to abstract or organize your code _also apply to your UI_: pass UI-generating
   functions as arguments, return them from other functions, partial apply them,
   and so on!
 
@@ -192,7 +192,8 @@ The state of our counter app can just be a single `Int`, and the `init` function
 will return `0`.
 
 ```gleam
-type Model = Int
+type Model =
+  Int
 
 fn init(_args) -> Model {
   0
@@ -206,7 +207,7 @@ fn init(_args) -> Model {
 > data when your app starts.
 
 The core of every Lustre application is its `Msg` type and update function. By
-looking at these, we can get a hollistic understanding of how our application
+looking at these, we can get a holistic understanding of how our application
 works by seeing up-front all the different ways the outside world can affect
 changes to our model.
 
@@ -341,7 +342,7 @@ update function to fetch a new cat image.
 type Msg {
   UserClickedAddCat
   UserClickedRemoveCat
-  ApiReturnedCats(Result(List(Cat), rsvp.Error)
+  ApiReturnedCats(Result(List(Cat), rsvp.Error))
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
@@ -361,7 +362,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       effect.none()
     )
 
-    ApiReturnedCats(Error()) -> #(model, effect.none())
+    ApiReturnedCats(Error(_)) -> #(model, effect.none())
   }
 }
 ```
@@ -384,8 +385,8 @@ fn get_cat() -> Effect(Msg) {
 ```
 
 Notice how this function returns an `Effect(Msg)` rather than a `Msg` or the result
-of the api call. Instead, we added the `ApiReturnedCats` message variant and
-passed this to rsvp. The library will dispatch this message to our `update`
+of the API call. Instead, we added the `ApiReturnedCats` message variant and
+passed this to `rsvp`. The library will dispatch this message to our `update`
 function when the request completes.
 
 This model of managed effects can feel cumbersome at first, but it comes with some
@@ -400,15 +401,13 @@ Before we forget, let's also update our `view` function to actually display the
 cat images we're fetching:
 
 ```gleam
-pub fn view(model: Model) -> element.Element(Msg) {
-  let count = int.to_string(model.count)
-
+pub fn view(model: Model) -> Element(Msg) {
   html.div([], [
     html.div([], [
       html.button([event.on_click(UserClickedAddCat)], [
         html.text("Add cat")
       ]),
-      element.text(count),
+      html.p([], [html.text(int.to_string(model.total))]),
       html.button([event.on_click(UserClickedRemoveCat)], [
         html.text("Remove cat")
       ]),
@@ -436,7 +435,7 @@ hint.
 
 Believe it or not, we've seen a large part of what Lustre has to offer. From these
 core concepts you can build rich interactive applications that are robust and
-maintable. As your application grows you can introduce server-side rendering,
+maintainable. As your application grows you can introduce server-side rendering,
 hydration, components, and even interactive server components.
 
 Where to go from here depends on what you want to build and how you like to
