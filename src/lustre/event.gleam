@@ -250,7 +250,7 @@ pub fn on_check(msg: fn(Bool) -> msg) -> Attribute(msg) {
 ///
 pub fn on_submit(msg: fn(List(#(String, String))) -> msg) -> Attribute(msg) {
   on("submit", {
-    use formdata <- decode.field(["detail", "formData"], formdata_decoder())
+    use formdata <- decode.subfield(["detail", "formData"], formdata_decoder())
 
     formdata
     |> msg
