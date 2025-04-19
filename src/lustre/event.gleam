@@ -2,6 +2,8 @@
 
 import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
+import gleam/pair
+import gleam/result
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
 import lustre/internals/constants
@@ -195,21 +197,88 @@ pub fn on_keyup(msg: fn(String) -> msg) -> Attribute(msg) {
 
 // FORM EVENTS -----------------------------------------------------------------
 
+/// Listens for input events on elements such as `<input>`, `<textarea>` and
+/// `<select>`. This handler automatically decodes the string value of the input
+/// and passes it to the given message function. This is commonly used to
+/// implement [controlled inputs](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
 ///
 pub fn on_input(msg: fn(String) -> msg) -> Attribute(msg) {
-  on("input", value() |> decode.map(msg))
+  on("input", {
+    use value <- decode.field(["target", "value"], decode.string)
+
+    decode.success(msg(value))
+  })
 }
 
+/// Listens for change events on elements such as `<input>`, `<textarea>` and
+/// `<select>`. This handler automatically decodes the string value of the input
+/// and passes it to the given message function. This is commonly used to
+/// implement [controlled inputs](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
+///
+pub fn on_change(msg: fn(String) -> msg) -> Attribute(msg) {
+  on("change", {
+    use value <- decode.field(["target", "value"], decode.string)
+
+    decode.success(msg(value))
+  })
+}
+
+/// Listens for change events on `<input type="checkbox">` elements. This handler
+/// automatically decodes the boolean value of the checkbox and passes it to
+/// the given message function. This is commonly used to implement
+/// [controlled inputs](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
+///
 pub fn on_check(msg: fn(Bool) -> msg) -> Attribute(msg) {
-  on("change", checked() |> decode.map(msg))
+  on("change", {
+    use checked <- decode.field(["target", "checked"], decode.bool)
+
+    decode.success(msg(checked))
+  })
 }
 
+/// Listens for submit events on a `<form>` element and receives a list of
+/// name/value pairs for each field in the form. Files are not included in this
+/// list: if you need them, you can write your own handler for the `"submit"`
+/// event and decode the non-standard `detail.formData` property manually.
+///
+/// This handler is best paired with the [`formal`](https://hexdocs.pm/formal/)
+/// package which lets you process form submissions in a type-safe way.
+///
 /// This will automatically call [`prevent_default`](#prevent_default) to stop
 /// the browser's native form submission. In a Lustre app you'll want to handle
 /// that yourself as an [`Effect`](./effect.html#Effect).
 ///
 pub fn on_submit(msg: fn(List(#(String, String))) -> msg) -> Attribute(msg) {
-  on("submit", formdata() |> decode.map(msg)) |> prevent_default
+  on("submit", {
+    use formdata <- decode.field(["detail", "formData"], formdata_decoder())
+
+    formdata
+    |> msg
+    |> decode.success
+  })
+  |> prevent_default
+}
+
+fn formdata_decoder() -> Decoder(List(#(String, String))) {
+  let string_value_decoder = {
+    use key <- decode.field(0, decode.string)
+    use value <- decode.field(
+      1,
+      // Our `formData` entries will include the string values of any fields *and*
+      // any `File` objects selected for file inputs. Our built-in `on_submit`
+      // handler only supports those string values so we decode into a `Result`
+      // so we can filter the files out without failing spectacularly.
+      decode.one_of(decode.map(decode.string, Ok), [decode.success(Error(Nil))]),
+    )
+
+    value
+    |> result.map(pair.new(key, _))
+    |> decode.success
+  }
+
+  string_value_decoder
+  |> decode.list
+  |> decode.map(result.values)
 }
 
 // FOCUS EVENTS ----------------------------------------------------------------
@@ -220,45 +289,4 @@ pub fn on_focus(msg: msg) -> Attribute(msg) {
 
 pub fn on_blur(msg: msg) -> Attribute(msg) {
   on("blur", decode.success(msg))
-}
-
-// DECODERS --------------------------------------------------------------------
-
-/// Decoding an input element's `value` is such a common operation that we have
-/// a dedicated decoder for it. This attempts to decoder `event.target.value` as
-/// a string.
-///
-pub fn value() -> Decoder(String) {
-  decode.at(["target", "value"], decode.string)
-}
-
-/// Similar to [`value`](#value), decoding a checkbox's `checked` state is common
-/// enough to warrant a dedicated decoder. This attempts to decode
-/// `event.target.checked` as a boolean.
-///
-pub fn checked() -> Decoder(Bool) {
-  decode.at(["target", "checked"], decode.bool)
-}
-
-/// Decodes the mouse position from any event that has a `clientX` and `clientY`
-/// property.
-///
-pub fn mouse_position() -> Decoder(#(Float, Float)) {
-  use x <- decode.field("clientX", decode.float)
-  use y <- decode.field("clientY", decode.float)
-
-  decode.success(#(x, y))
-}
-
-///
-///
-pub fn formdata() -> Decoder(List(#(String, String))) {
-  decode.at(["detail", "formData"], {
-    decode.list({
-      use key <- decode.field(0, decode.string)
-      use value <- decode.field(1, decode.string)
-
-      decode.success(#(key, value))
-    })
-  })
 }
