@@ -77,7 +77,6 @@
 
 import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
-import lustre.{type Runtime, type RuntimeMessage}
 import lustre/attribute.{type Attribute, attribute}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -88,12 +87,16 @@ import lustre/vdom/vattr.{Event}
 
 @target(erlang)
 import gleam/erlang/process.{type Pid, type Selector, type Subject}
+@target(erlang)
+import lustre.{type Runtime, type RuntimeMessage}
 
 // We don't want users of the JavaScript target to see warnings about an unused
 // `Pid` type so we use target-specific imports to only pull in the types we need
 // for each target.
 @target(javascript)
 import gleam/erlang/process.{type Selector, type Subject}
+@target(javascript)
+import lustre.{type RuntimeMessage}
 
 // TYPES -----------------------------------------------------------------------
 
