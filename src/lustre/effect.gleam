@@ -169,9 +169,8 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 /// > degraded performance if not used correctly. In the worst case you can lock
 /// > up the browser and prevent it from painting the screen _at all_.
 ///
-/// > **Note**: There is no concept of a "paint" for server components. Using this
-/// > effect in those contexts will run the effect synchronously, after any non-timing
-/// > effects are processed.
+/// > **Note**: There is no concept of a "paint" for server components. These
+/// > effects will be ignored in those contexts and never run.
 ///
 pub fn before_paint(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
   let task = fn(actions: Actions(msg)) {
@@ -187,9 +186,8 @@ pub fn before_paint(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
 /// Schedule a side effect that is guaranteed to run after the browser has painted
 /// the screen.
 ///
-/// > **Note**: There is no concept of a "paint" for server components. Using this
-/// > effect in those contexts will run the effect synchronously, after any non-timing
-/// > effects and any `before_paint` effects are processed.
+/// > **Note**: There is no concept of a "paint" for server components. These
+/// > effects will be ignored in those contexts and never run.
 ///
 pub fn after_paint(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
   let task = fn(actions: Actions(msg)) {
