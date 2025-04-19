@@ -204,7 +204,7 @@ pub fn on_keyup(msg: fn(String) -> msg) -> Attribute(msg) {
 ///
 pub fn on_input(msg: fn(String) -> msg) -> Attribute(msg) {
   on("input", {
-    use value <- decode.field(["target", "value"], decode.string)
+    use value <- decode.subfield(["target", "value"], decode.string)
 
     decode.success(msg(value))
   })
@@ -217,7 +217,7 @@ pub fn on_input(msg: fn(String) -> msg) -> Attribute(msg) {
 ///
 pub fn on_change(msg: fn(String) -> msg) -> Attribute(msg) {
   on("change", {
-    use value <- decode.field(["target", "value"], decode.string)
+    use value <- decode.subfield(["target", "value"], decode.string)
 
     decode.success(msg(value))
   })
@@ -230,7 +230,7 @@ pub fn on_change(msg: fn(String) -> msg) -> Attribute(msg) {
 ///
 pub fn on_check(msg: fn(Bool) -> msg) -> Attribute(msg) {
   on("change", {
-    use checked <- decode.field(["target", "checked"], decode.bool)
+    use checked <- decode.subfield(["target", "checked"], decode.bool)
 
     decode.success(msg(checked))
   })
