@@ -5,7 +5,6 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/process.{type ProcessMonitor, type Selector, type Subject}
 import gleam/function
-import gleam/io
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{Some}
@@ -116,7 +115,7 @@ fn loop(
   message: Message(msg),
   state: State(model, msg),
 ) -> Next(Message(msg), State(model, msg)) {
-  case echo message {
+  case message {
     ClientDispatchedMessage(message:) -> {
       let next = handle_client_message(state, message)
       let Diff(patch:, events:) = diff(state.events, state.vdom, next.vdom)
