@@ -450,6 +450,7 @@ var handleEvent = (event2) => {
   const target = event2.currentTarget;
   const handler = target[meta].handlers.get(event2.type);
   if (event2.type === "submit") {
+    event2.detail ??= {};
     event2.detail.formData = [...new FormData(event2.target).entries()];
   }
   handler(event2);
