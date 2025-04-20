@@ -174,8 +174,8 @@ Hooks.MouseMove = {
 }
 ```
 
-**In Lustre**, event handlers are more like function callbacks attached directly to elements. Lustre provides functions
-for common events in the `event` module:
+**In Lustre**, event handlers are more like function callbacks attached directly
+to elements. Lustre provides functions for common events in the `event` module:
 
 ```gleam
 html.button([event.on_click(Decr)], [html.text("-")])
@@ -217,7 +217,8 @@ def handle_event("save", %{"user" => user_params}, socket) do
 end
 ```
 
-**In Lustre**, you handle form inputs by attaching event handlers to each input field:
+**In Lustre**, you handle form inputs by attaching event handlers to each input
+field:
 
 ```gleam
 html.form([event.on_submit(fn(_) { Save })], [
@@ -274,7 +275,8 @@ pub fn counter_component() -> Component(CounterModel, CounterMsg, CounterEvent, 
 
 ### Fetch data
 
-**In LiveView**, you typically fetch data in the `mount` callback and handle async operations with `handle_info`:
+**In LiveView**, you typically fetch data in the `mount` callback and handle async
+operations with `handle_info`:
 
 ```elixir
 def mount(_params, _session, socket) do
@@ -282,7 +284,7 @@ def mount(_params, _session, socket) do
     # Start async operation like Phoenix PubSub subscription or HTTP request
     send(self(), :fetch_data)
   end
-  
+
   {:ok, assign(socket, :loading, true)}
 end
 
@@ -322,11 +324,14 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
 ## Server components vs LiveView
 
-LiveView and Lustre both support server-side rendering with interactivity, but with different approaches:
+LiveView and Lustre both support server-side rendering with interactivity, but
+with different approaches:
 
-1. **LiveView** maintains a stateful connection for each client, with updates over WebSockets.
+1. **LiveView** maintains a stateful connection for each client, with updates
+over WebSockets.
 
-2. **Lustre Server Components** also use WebSockets, but with a more focused approach where the same component code can run client-side or server-side.
+2. **Lustre Server Components** also use WebSockets, but with a more focused
+approach where the same component code can run client-side or server-side.
 
 ```gleam
 // Server component setup
@@ -336,15 +341,20 @@ lustre.start_server_component(component, req, Nil)
 
 ## Differences to be aware of
 
-1. **Template syntax** - LiveView uses HEEx templates while Lustre uses function calls to render HTML.
+1. **Template syntax** - LiveView uses HEEx templates while Lustre uses function
+   calls to render HTML.
 
-2. **State management** - LiveView uses a socket with assigns while Lustre uses a central Model-View-Update pattern.
+2. **State management** - LiveView uses a socket with assigns while Lustre uses
+   a central Model-View-Update pattern.
 
-3. **Pub/Sub** - LiveView has built-in PubSub for real-time updates, while Lustre would need to integrate with a separate system.
+3. **Pub/Sub** - LiveView has built-in PubSub for real-time updates, while Lustre
+   would need to integrate with a separate system.
 
-4. **Routing** - LiveView is integrated with Phoenix routing, while Lustre requires manual routing setup.
+4. **Routing** - LiveView is integrated with Phoenix routing, while Lustre requires
+   manual routing setup.
 
-5. **Static vs dynamic typing** - Gleam's static typing catches errors at compile time that would be runtime errors in Elixir.
+5. **Static vs dynamic typing** - Gleam's static typing catches errors at compile
+  time that would be runtime errors in Elixir.
 
 ## Where to go next
 

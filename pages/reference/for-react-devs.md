@@ -94,7 +94,7 @@ import { useState } from 'react';
 
 function Counter() {
   const [count, setCount] = useState(0);
-  
+
   return (
     <div>
       <button onClick={() => setCount(count - 1)}>-</button>
@@ -105,7 +105,9 @@ function Counter() {
 }
 ```
 
-**In Lustre**, state is managed using the Model-View-Update (MVU) pattern, where all application state is in a single model, and updates happen through a central update function:
+**In Lustre**, state is managed using the Model-View-Update (MVU) pattern, where
+all application state is in a single model, and updates happen through a central
+update function:
 
 ```gleam
 type Model =
@@ -143,15 +145,16 @@ fn view(model: Model) -> Element(Msg) {
 ```jsx
 <button onClick={() => setCount(count + 1)}>+</button>
 
-<input 
-  value={name} 
-  onChange={(e) => setName(e.target.value)} 
+<input
+  value={name}
+  onChange={(e) => setName(e.target.value)}
 />
 
 <div onMouseMove={(e) => handleMouseMove(e.clientX, e.clientY)}></div>
 ```
 
-**In Lustre**, you use the `event` module functions to attach event handlers that dispatch messages to your update function:
+**In Lustre**, you use the `event` module functions to attach event handlers that
+dispatch messages to your update function:
 
 ```gleam
 html.button([event.on_click(Incr)], [html.text("+")])
@@ -199,7 +202,8 @@ fn view(_model: Model) -> Element(Msg) {
 }
 ```
 
-Lustre also supports stateful components with their own MVU cycle, similar to how you'd use `useReducer` in React but with better encapsulation:
+Lustre also supports stateful components with their own MVU cycle, similar to how
+you'd use `useReducer` in React but with better encapsulation:
 
 ```gleam
 pub fn counter_component() -> Component(CounterModel, CounterMsg, CounterEvent, props) {
@@ -209,7 +213,8 @@ pub fn counter_component() -> Component(CounterModel, CounterMsg, CounterEvent, 
 
 ### Work with lists
 
-**In React**, you map over arrays to render lists of elements, typically using a key for optimization:
+**In React**, you map over arrays to render lists of elements, typically using a
+key for optimization:
 
 ```jsx
 <ul>
@@ -222,7 +227,7 @@ pub fn counter_component() -> Component(CounterModel, CounterMsg, CounterEvent, 
 **In Lustre**, you use `list.map` to achieve the same result:
 
 ```gleam
-html.ul([], 
+html.ul([],
   list.map(items, fn(item) {
     html.li([], [html.text(item.text)])
   })
@@ -232,7 +237,7 @@ html.ul([],
 For optimized rendering with keys (similar to React's key prop), use `keyed.ul`:
 
 ```gleam
-keyed.ul([], 
+keyed.ul([],
   list.map(items, fn(item) {
     #(item.id, html.li([], [html.text(item.text)]))
   })
@@ -241,7 +246,8 @@ keyed.ul([],
 
 ### Fetch data
 
-**In React**, you typically use hooks like `useEffect` combined with state hooks for data fetching:
+**In React**, you typically use hooks like `useEffect` combined with state hooks
+for data fetching:
 
 ```jsx
 import { useState, useEffect } from 'react';

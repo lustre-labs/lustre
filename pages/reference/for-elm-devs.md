@@ -41,11 +41,10 @@ pub fn main() {
 
 ### Render some HTML
 
-**In Elm**, you call functions in the `elm/html` package to render HTML
-elements. The `Html` module contains functions for most standard
-HTML tags; these functions take parameters including a list of attributes from
-`Html.Attributes` or events from `Html.Events`, as well as a list of child
-elements:
+**In Elm**, you call functions in the `elm/html` package to render HTML elements.
+The `Html` module contains functions for most standard HTML tags; these functions
+take parameters including a list of attributes from `Html.Attributes` or events
+from `Html.Events`, as well as a list of child elements:
 
 ```elm
 Html.button
@@ -55,9 +54,9 @@ Html.button
   [ Html.text "Click me" ]
 ```
 
-**In Lustre**, HTML is rendered similarly by calling functions. Functions in `lustre/element/html`
-represent HTML tags, and most accept a list of `lustre/attribute` or `lustre/event` values, as well
-as a list of child elements:
+**In Lustre**, HTML is rendered similarly by calling functions. Functions in
+`lustre/element/html` represent HTML tags, and most accept a list of `lustre/attribute`
+or `lustre/event` values, as well as a list of child elements:
 
 ```gleam
 html.button([attribute.class("primary"), event.on_click(ButtonClicked)], [
@@ -300,15 +299,18 @@ fn view(model: Model) -> Element(Msg) {
 
 ## Differences to be aware of
 
-1. **Effect handling** - While both Elm and Lustre use a similar approach, Lustre's effect system provides more flexibility with `before_paint` and `after_paint` effects.
+1. **Effect handling** - While both Elm and Lustre use a similar approach, Lustre's
+   effect system provides more flexibility with `before_paint` and `after_paint`
+   effects.
 
-2. **Components** - Lustre has first-class support for stateful components, which Elm doesn't provide.
+2. **Components** - Lustre has first-class support for stateful components, which
+   Elm doesn't provide.
 
-3. **Syntax** - Gleam's syntax is more similar to Rust or OCaml than Elm's Haskell-inspired syntax.
+3. **Syntax** - Gleam's syntax is more similar to Rust or OCaml than Elm's
+   Haskell-inspired syntax.
 
-4. **Type system** - Gleam has row polymorphism and allows for more flexible types in some cases, but doesn't have type aliases with constructors like Elm.
-
-5. **JavaScript interop** - Lustre provides easier JavaScript interop through Gleam's FFI system compared to Elm's more restricted ports.
+5. **JavaScript interop** - Lustre provides easier JavaScript interop through
+   Gleam's FFI system compared to Elm's more restricted ports.
 
 ## Where to go next
 
