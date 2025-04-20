@@ -622,13 +622,24 @@ pub fn ismap(is_map: Bool) -> Attribute(msg) {
 /// Specifies the width of the element in pixels.
 ///
 pub fn width(value: Int) -> Attribute(msg) {
-  property("width", json.int(value))
+  case is_browser() {
+    True -> property("width", json.int(value))
+    False -> attribute("width", int.to_string(value))
+  }
 }
 
 /// Specifies the height of the element in pixels.
 ///
 pub fn height(value: Int) -> Attribute(msg) {
-  property("height", json.int(value))
+  case is_browser() {
+    True -> property("width", json.int(value))
+    False -> attribute("width", int.to_string(value))
+  }
+}
+
+@external(javascript, "./runtime/client/runtime.ffi.mjs", "is_browser")
+fn is_browser() -> Bool {
+  False
 }
 
 /// Provides a hint about how the image should be decoded. Valid values are

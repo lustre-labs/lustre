@@ -9,6 +9,12 @@ Changelogs can change! If you spot something is wrong or missing, please conside
 [opening an issue](https://github.com/lustre-labs/lustre/issues/new) or a pull
 request to fix it.
 
+## [Unreleased]
+
+### Changed
+
+- [lustre/attribute] The `width` and `height` attributes now conditionally use either the `attribute` or `property` based on the environment.
+
 ## [5.0.2] - 2025-04-20
 
 ### Changed
