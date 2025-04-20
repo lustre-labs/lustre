@@ -9,6 +9,12 @@ Changelogs can change! If you spot something is wrong or missing, please conside
 [opening an issue](https://github.com/lustre-labs/lustre/issues/new) or a pull
 request to fix it.
 
+## [5.0.2] - 2025-04-20
+
+### Changed
+
+- [lustre/runtime] Fixed a bug where stale app state was used to compute patches, leading to empty diffs.
+
 ## [5.0.1] - 2025-04-19
 
 ### Changed
