@@ -90,6 +90,29 @@ pub fn client_send_multiple_events_test() {
   process.receive_forever(client) |> should.equal(transport.reconcile(patch))
 }
 
+// EFFECT MESSAGE TESTS --------------------------------------------------------
+
+@target(erlang)
+pub fn effect_send_event_test() {
+  use <- lustre_test.test_filter("effect_send_event_test")
+  use client, runtime <- with_erlang_runtime
+
+  // Discard the `Mount` message
+  let _ = process.receive_forever(client)
+
+  runtime.EffectDispatchedMessage(Incr)
+  |> lustre.send(to: runtime)
+
+  let patch =
+    patch.new(0, 0, [], [
+      patch.new(0, 0, [], [
+        patch.new(1, 0, [], [patch.new(0, 0, [patch.replace_text("1")], [])]),
+      ]),
+    ])
+
+  process.receive_forever(client) |> should.equal(transport.reconcile(patch))
+}
+
 // SERVER MESSAGE TESTS --------------------------------------------------------
 
 @target(erlang)
