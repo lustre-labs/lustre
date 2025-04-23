@@ -6,7 +6,7 @@
 //// This is often fine but it can be cause problems in cases where we'd like
 //// Lustre to reuse existing DOM nodes more efficiently. Consider the example
 //// in the [quickstart guide](../../guide/01-quickstart.html): each time the
-//// conuter is incremented, we insert a new image at the _start_ of the list.
+//// counter is incremented, we insert a new image at the _start_ of the list.
 ////
 //// Let's see how the virtual DOM handles this:
 ////
