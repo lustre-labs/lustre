@@ -14,6 +14,7 @@ request to fix it.
 ### Changed
 
 - [lustre/attribute] The `width` and `height` attributes now conditionally use either the `attribute` or `property` based on the environment.
+- [lustre/element] Fixed a bug in `element.map` where the mapper functions were composed in reversed order.
 
 ## [5.0.2] - 2025-04-20
 

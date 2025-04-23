@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic
+import gleam/list
 import gleam/pair
 import gleam/string
 import gleeunit/should
@@ -177,7 +178,7 @@ pub fn multiple_mapped_event_test() {
         html.button([event.on_click("hello!")], [html.text("Click me!")]),
         string.uppercase,
       ),
-      string.append(_, "!"),
+      list.repeat(_, 2),
     )
 
   let events = events.from_node(vdom)
@@ -186,7 +187,7 @@ pub fn multiple_mapped_event_test() {
 
   events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
   |> pair.second
-  |> should.equal(Ok("HELLO!!"))
+  |> should.equal(Ok(["HELLO!", "HELLO!"]))
 }
 
 // DIFF TESTS ------------------------------------------------------------------

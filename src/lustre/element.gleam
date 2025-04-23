@@ -241,7 +241,7 @@ pub fn unsafe_raw_html(
 /// Think of it like `list.map` or `result.map` but for HTML events!
 ///
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
-  let mapper = coerce(events.compose_mapper(element.mapper, coerce(f)))
+  let mapper = coerce(events.compose_mapper(coerce(f), element.mapper))
 
   case element {
     Fragment(children:, keyed_children:, ..) ->
