@@ -15,6 +15,7 @@ request to fix it.
 
 - [lustre/attribute] The `width` and `height` attributes now conditionally use either the `attribute` or `property` based on the environment.
 - [lustre/element] Fixed a bug in `element.map` where the mapper functions were composed in reversed order.
+- [lustre/element/html] Fixed a bug where `html.textarea` would not always update when the `content` changes.
 
 ## [5.0.2] - 2025-04-20
 
