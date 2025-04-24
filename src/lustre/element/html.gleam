@@ -1,5 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/json
 import lustre/attribute.{type Attribute}
 import lustre/element.{type Element, element, namespaced}
 import lustre/internals/constants
@@ -846,7 +847,11 @@ pub fn select(
 
 ///
 pub fn textarea(attrs: List(Attribute(msg)), content: String) -> Element(msg) {
-  element.element("textarea", attrs, [element.text(content)])
+  element.element(
+    "textarea",
+    [attribute.property("value", json.string(content)), ..attrs],
+    [element.text(content)],
+  )
 }
 
 // HTML ELEMENTS: INTERACTIVE ELEMENTS -----------------------------------------
