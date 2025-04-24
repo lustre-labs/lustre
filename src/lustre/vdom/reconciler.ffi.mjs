@@ -595,6 +595,8 @@ const ATTRIBUTE_HOOKS = {
   checked: syncedBooleanAttribute("checked"),
   selected: syncedBooleanAttribute("selected"),
   value: syncedAttribute("value"),
+  width: syncedAttribute('width'),
+  height: syncedAttribute('height'),
 
   autofocus: {
     added(node) {
