@@ -156,9 +156,13 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 }
 
 /// Schedule a side effect that is guaranteed to run after your `view` function
-/// is called but **before** the browser has painted the screen. This effect is
-/// useful when you need to read from the DOM or perform other operations that
-/// might affect the layout of your application.
+/// is called and the DOM has been updated, but **before** the browser has
+/// painted the screen. This effect is useful when you need to read from the DOM
+/// or perform other operations that might affect the layout of your application.
+///
+/// In addition to the `dispatch` function, your callback will also be provided
+/// with root element of your app or component. This is especially useful inside
+/// of components, giving you a reference to the [Shadow Root](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot).
 ///
 /// Messages dispatched immediately in this effect will trigger a second re-render
 /// of your application before the browser paints the screen. This let's you read
@@ -185,6 +189,10 @@ pub fn before_paint(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
 
 /// Schedule a side effect that is guaranteed to run after the browser has painted
 /// the screen.
+///
+/// In addition to the `dispatch` function, your callback will also be provided
+/// with root element of your app or component. This is especially useful inside
+/// of components, giving you a reference to the [Shadow Root](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot).
 ///
 /// > **Note**: There is no concept of a "paint" for server components. These
 /// > effects will be ignored in those contexts and never run.
