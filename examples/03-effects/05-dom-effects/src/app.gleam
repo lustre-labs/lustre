@@ -2,6 +2,7 @@
 
 import gleam/dynamic/decode
 import gleam/int
+import gleam/result
 import lustre
 import lustre/attribute
 import lustre/effect.{type Effect}
@@ -49,7 +50,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     UserClickedExpand ->
       case model.state {
         Expanded -> #(Model(state: Collapsing, height: 0), effect.none())
-        _ -> #(Model(..model, state: Expanded), measure_height("#cat .content"))
+        _ -> #(Model(..model, state: Expanded), measure_height())
       }
 
     DomReturnedHeight(height) -> #(Model(..model, height:), effect.none())
@@ -62,19 +63,28 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   }
 }
 
-fn measure_height(of selector: String) -> Effect(Msg) {
-  use dispatch, _ <- effect.before_paint
+fn measure_height() -> Effect(Msg) {
+  // In addition to a `dispatch` function, before_paint and after_paint effects
+  // have access to the root element of your Lustre app.
+  use dispatch, root_element <- effect.before_paint
 
-  case do_measure_height(of: selector) {
-    Ok(height) -> dispatch(DomReturnedHeight(height))
-    // An effect doesn't *have* to dispatch a message. Here we silently drop any
-    // elements that we fail to measure.
+  // We can grab the element we're interested in by navigating the DOM from
+  // the root element, or we could FFI to `root_element.querySelector` too.
+  let img_decoder =
+    decode.at(["firstChild", "firstChild", "firstChild"], decode.dynamic)
+
+  case decode.run(root_element, img_decoder) {
+    Ok(img_element) ->
+      case do_measure_height(img_element) {
+        Ok(height) -> dispatch(DomReturnedHeight(height))
+        Error(_) -> Nil
+      }
     Error(_) -> Nil
   }
 }
 
 @external(javascript, "./app.ffi.mjs", "measure_height")
-fn do_measure_height(of _selector: String) -> Result(Int, Nil) {
+fn do_measure_height(of _element: decode.Dynamic) -> Result(Int, Nil) {
   Error(Nil)
 }
 
