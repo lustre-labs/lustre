@@ -79,8 +79,8 @@
 
 ## Example {#example}
 
-Lustre comes with [over 20 examples](./reference/examples.html)! Here's what it
-looks like:
+Lustre comes with [over 20 examples](https://hexdocs.pm/lustre/reference/examples.html)!
+Here's what it looks like:
 
 ```gleam
 import gleam/int
