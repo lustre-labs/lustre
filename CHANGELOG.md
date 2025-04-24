@@ -35,6 +35,7 @@ request to fix it.
 - [lustre] Added a `send` function for sending messages to an app's runtime.
 - [lustre] Defines new `Runtime` and `RuntimeMessage` types to model communication with running apps.
 - [lustre/attribute] Added many many attributes to `lustre/attribute`.
+- [lustre/attribute] Added `style` as an alternative way to `styles` to set a single CSS property.
 - [lustre/component] Added a `lustre/component` module with attributes and effects to access Custom Element features such as slots, parts, and CSS custom states.
 - [lustre/component] Component's can be notified of browser autofill requests using the `on_form_autofill` configuration option.
 - [lustre/component] Component's can be notified of browser restore requests using the `on_form_restore` configuration option.
@@ -61,6 +62,7 @@ request to fix it.
 - [lustre] `component` no longer takes a `Dict` of attribute change callbacks and now takes a list of configuration options.
 - [lustre] `start` and `start_server_component` now return the new `Runtime` type.
 - [lustre/attribute] `property` now requires a `Json` value instead of any `dynamic.Dynamic` value.
+- [lustre/attribute] `style` has been renamed to `styles`.
 - [lustre/element] `fragment` no longer renders a wrapper div around its children.
 - [lustre/element] `to_string_builder` and `to_document_string_builder` have been renamed to `to_string_tree` and `to_document_string_tree` respectively.
 - [lustre/event] Event handlers written using `on` now use the new `gleam/dynamic/decode` API.
