@@ -586,7 +586,9 @@ const syncedBooleanAttribute = (name) => {
 const syncedAttribute = (name) => {
   return {
     added(node, value) {
-      node[name] = value;
+      try {
+        node[name] = value;
+      } catch (_) {}
     },
   };
 };
@@ -595,6 +597,8 @@ const ATTRIBUTE_HOOKS = {
   checked: syncedBooleanAttribute("checked"),
   selected: syncedBooleanAttribute("selected"),
   value: syncedAttribute("value"),
+  width: syncedAttribute('width'),
+  height: syncedAttribute('height'),
 
   autofocus: {
     added(node) {
