@@ -13,7 +13,7 @@ request to fix it.
 
 ### Changed
 
-- [lustre/attribute] The `width` and `height` attributes are now synced to their respective properties.
+- [lustre/attribute] The `width` and `height` functions now set the respective attributes instead of properties.
 - [lustre/element] Fixed a bug in `element.map` where the mapper functions were composed in reversed order.
 - [lustre/element/html] Fixed a bug where `html.textarea` would not always update when the `content` changes.
 
