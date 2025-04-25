@@ -586,7 +586,9 @@ const syncedBooleanAttribute = (name) => {
 const syncedAttribute = (name) => {
   return {
     added(node, value) {
-      node[name] = value;
+      try {
+        node[name] = value;
+      } catch (_) {}
     },
   };
 };
