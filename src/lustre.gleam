@@ -89,15 +89,15 @@
 //// different kinds of applications. If you're just getting started with Lustre
 //// or frontend development, we recommend reading through them in order:
 ////
-//// - [`01-quickstart`](/guide/01-quickstart.html)
-//// - [`02-state-management`](/guide/02-state-management.html)
-//// - [`03-side-effects`](/guide/03-side-effects.html)
-//// - [`04-spa-deployments`](/guide/04-spa-deployments.html)
-//// - [`05-server-side-rendering`](/guide/05-server-side-rendering.html)
-//// - [`06-full-stack-applications`](/guide/06-full-stack-applications.html)
-//// - [`07-full-stack-deployments`](/guide/07-full-stack-deployments.html)
-//// - [`08-components`](/guide/08-components.html)
-//// - [`09-server-components`](/guide/09-server-components.html)
+//// - [`01-quickstart`](./guide/01-quickstart.html)
+//// - [`02-state-management`](./guide/02-state-management.html)
+//// - [`03-side-effects`](./guide/03-side-effects.html)
+//// - [`04-spa-deployments`](./guide/04-spa-deployments.html)
+//// - [`05-server-side-rendering`](./guide/05-server-side-rendering.html)
+//// - [`06-full-stack-applications`](./guide/06-full-stack-applications.html)
+//// - [`07-full-stack-deployments`](./guide/07-full-stack-deployments.html)
+//// - [`08-components`](./guide/08-components.html)
+//// - [`09-server-components`](./guide/09-server-components.html)
 ////
 //// This list of guides is likely to grow over time, so be sure to check back
 //// every now and then to see what's new!
