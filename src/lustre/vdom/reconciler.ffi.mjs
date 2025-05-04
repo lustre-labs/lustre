@@ -475,6 +475,16 @@ export const initialiseMetadata = (node, key = "") => {
   }
 };
 
+export const isLustreNode = node => {
+  while (node) {
+    if (node[meta]) return true;
+    // we need to also check every parent because we might be inside of an
+    // unsafe_raw_html element, which does not have metadata attached.
+    node = node.parentNode;
+  }
+  return false;
+}
+
 const addKeyedChild = (node, child) => {
   if (child.nodeType === DOCUMENT_FRAGMENT_NODE) {
     for (child = child.firstChild; child; child = child.nextSibling) {
