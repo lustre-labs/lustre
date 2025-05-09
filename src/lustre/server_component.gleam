@@ -202,7 +202,7 @@ pub fn method(value: TransportMethod) -> Attribute(msg) {
 ///   }
 ///
 ///   html.button(
-///     [server_component.include(["target.id"]), event.on_click(handler)],
+///     [server_component.include(["target.id"]), event.on("click", handler)],
 ///     [html.text("Click me!")],
 ///   )
 /// }
