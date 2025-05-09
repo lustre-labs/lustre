@@ -11,11 +11,14 @@ request to fix it.
 
 ## [Unreleased]
 
+## [5.0.3] - 2025-05-09
+
 ### Changed
 
 - [lustre/attribute] The `width` and `height` functions now set the respective attributes instead of properties.
 - [lustre/element] Fixed a bug in `element.map` where the mapper functions were composed in reversed order.
 - [lustre/element/html] Fixed a bug where `html.textarea` would not always update when the `content` changes.
+- [lustre/server_component] Fixed a bug where `server_component.script` contained invalid characters.
 
 ## [5.0.2] - 2025-04-20
 
