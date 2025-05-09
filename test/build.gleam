@@ -69,6 +69,7 @@ fn bundle_minified_server_component() {
 
 fn read_script() {
   simplifile.read(outfile <> ".min.mjs")
+  |> result.map(string.trim)
   |> result.map(string.replace(_, "\n", "\\n"))
   |> result.map(string.replace(_, "\\", "\\\\"))
   |> result.map(string.replace(_, "\"", "\\\""))
