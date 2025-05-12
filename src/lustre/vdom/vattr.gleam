@@ -114,6 +114,11 @@ pub fn merge(
   case attributes {
     [] -> merged
 
+    [Attribute(name: "", ..), ..rest]
+    | [Attribute(kind: _, name: "class", value: ""), ..rest]
+    | [Attribute(kind: _, name: "style", value: ""), ..rest] ->
+      merge(rest, merged)
+
     [
       Attribute(kind:, name: "class", value: class1),
       Attribute(kind: _, name: "class", value: class2),
@@ -239,9 +244,14 @@ pub fn to_string_tree(
   use html, attr <- list.fold(attributes, string_tree.new())
 
   case attr {
+    // We special-case this "virtual" attribute to stringify as a regular `"value"`
+    // attribute. In HTML, the default value of an input is set by this value
+    // attribute, but in Lustre users would use the `attribute.value` function
+    // for inputs that should be controlled by their model.
+    Attribute(name: "virtual:defaultValue", value:, ..) ->
+      string_tree.append(html, " value=\"" <> houdini.escape(value) <> "\"")
+
     Attribute(name: "", ..) -> html
-    Attribute(name: "class", value: "", ..) -> html
-    Attribute(name: "style", value: "", ..) -> html
     Attribute(name:, value: "", ..) -> string_tree.append(html, " " <> name)
     Attribute(name:, value:, ..) ->
       string_tree.append(html, {
