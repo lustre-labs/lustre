@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import birdie
+import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/element/keyed
@@ -200,6 +201,21 @@ pub fn deep_keyed_fragment_children_prefixes_test() {
   |> snapshot(
     "Keyed children are still prefixed if there is a non-prefixed fragment in-between",
   )
+}
+
+// ATTRIBUTE TESTS -------------------------------------------------------------
+
+pub fn default_value_attribute_test() {
+  use <- lustre_test.test_filter("default_value_attribute_test")
+
+  let input =
+    html.input([
+      attribute.type_("text"),
+      attribute.default_value("Hello, world!"),
+    ])
+
+  input
+  |> snapshot("Default value attribute should be rendered as value attribute")
 }
 
 // UTILS -----------------------------------------------------------------------
