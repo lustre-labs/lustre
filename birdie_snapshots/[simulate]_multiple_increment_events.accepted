@@ -1,0 +1,25 @@
+---
+version: 1.2.6
+title: [simulate] Multiple increment events
+file: ./test/tests/simulate_test.gleam
+test_name: simulate_multiple_events_test
+---
+
+Output:
+
+  <div>
+    <button>
+      -
+    </button>
+    <p>
+      2
+    </p>
+    <button data-test-id="incr">
+      +
+    </button>
+  </div>
+
+History:
+
+  event   | [data-test-id="incr"] "click" {}
+  event   | [data-test-id="incr"] "click" {}

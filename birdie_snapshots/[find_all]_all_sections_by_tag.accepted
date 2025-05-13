@@ -1,0 +1,65 @@
+---
+version: 1.2.6
+title: [find_all] All sections by tag
+file: ./test/snapshot/query_find_test.gleam
+test_name: find_all_by_tag_test
+---
+
+Query:
+
+  section
+
+Match:
+
+  <section class="hero content">
+    <h2>
+      The Universal Framework
+    </h2>
+    <p>
+      Static HTML, SPAs, Web Components, and interactive Server Components.
+    </p>
+    <button class="cta">
+      Get Started
+    </button>
+  </section>
+
+  <section class="content">
+    <h2>
+      Features
+    </h2>
+    <ul style="list-style-type:none;">
+      <li>
+        Feature 1
+      </li>
+      <li>
+        Feature 2
+      </li>
+      <li>
+        Feature 3
+      </li>
+    </ul>
+  </section>
+
+  <section class="content">
+    <h2>
+      Testimonials
+    </h2>
+    <div>
+      <blockquote>
+        <p>
+          Lustre is amazing!
+        </p>
+        <cite>
+          John Doe
+        </cite>
+      </blockquote>
+      <blockquote>
+        <p>
+          I love using Lustre!
+        </p>
+        <cite>
+          Jane Smith
+        </cite>
+      </blockquote>
+    </div>
+  </section>

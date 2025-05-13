@@ -1,0 +1,24 @@
+---
+version: 1.2.6
+title: [find] Features list by inline style
+file: ./test/tests/query_find_test.gleam
+test_name: find_element_by_inline_style_test
+---
+
+Query:
+
+  [style*="list-style-type:none"]
+
+Match:
+
+  <ul style="list-style-type:none;">
+    <li>
+      Feature 1
+    </li>
+    <li>
+      Feature 2
+    </li>
+    <li>
+      Feature 3
+    </li>
+  </ul>

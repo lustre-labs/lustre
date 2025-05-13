@@ -1,0 +1,60 @@
+---
+version: 1.2.6
+title: [find_all] All links with href attribute
+file: ./test/tests/query_find_test.gleam
+test_name: find_all_by_attribute_test
+---
+
+Query:
+
+  [href]
+
+Match:
+
+  <a data-active="true" href="/">
+    Home
+  </a>
+
+  <a href="/contact">
+    Contact
+  </a>
+
+  <a href="/forgot-password">
+    Forgot Password?
+  </a>
+
+  <a href="/signup">
+    Sign up
+  </a>
+
+  <a href="/dashboard">
+    Dashboard
+  </a>
+
+  <a href="/faq">
+    FAQ
+  </a>
+
+  <a href="/pricing">
+    Pricing
+  </a>
+
+  <a href="https://hexdocs.pm/lustre">
+    Documentation
+  </a>
+
+  <a href="https://github.com/lustre-labs/lustre">
+    GitHub
+  </a>
+
+  <a href="/terms-of-service">
+    Terms of service
+  </a>
+
+  <a href="/privacy-policy">
+    Privacy policy
+  </a>
+
+  <a href="/impressum">
+    Impressum
+  </a>

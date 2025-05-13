@@ -1,0 +1,44 @@
+---
+version: 1.2.6
+title: [find] Login form by id
+file: ./test/tests/query_find_test.gleam
+test_name: find_element_by_id_test
+---
+
+Query:
+
+  #login-form
+
+Match:
+
+  <form id="login-form">
+    <h2>
+      Login
+    </h2>
+    <label>
+      <p>
+        Email
+      </p>
+      <input name="email" type="email">
+    </label>
+    <label>
+      <p>
+        Password
+      </p>
+      <input name="password" type="password">
+    </label>
+    <div class="form-actions">
+      <button class="primary" type="submit">
+        Sign In
+      </button>
+      <a href="/forgot-password">
+        Forgot Password?
+      </a>
+    </div>
+    <p class="form-footer">
+      Don&#39;t have an account? 
+      <a href="/signup">
+        Sign up
+      </a>
+    </p>
+  </form>

@@ -1,0 +1,18 @@
+---
+version: 1.2.6
+title: [find] Copyright notice by text
+file: ./test/tests/query_find_test.gleam
+test_name: find_element_by_text_content_test
+---
+
+Query:
+
+  :contains("©")
+
+Match:
+
+  <p>
+    © 2025 Lustre Labs BV.
+    <br>
+    All rights reserved.
+  </p>

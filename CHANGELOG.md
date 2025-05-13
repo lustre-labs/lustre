@@ -14,6 +14,8 @@ request to fix it.
 ### Added
 
 - [lustre/attribute] Added a `attribute.default_value` function to set the `defaultValue` property of an input.
+- [lustre/dev/query] Created a module for querying a view for test purposes.
+- [lustre/dev/simulate] Created a module for simulating a running application for test purposes.
 
 ## [5.0.3] - 2025-05-09
 
