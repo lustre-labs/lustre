@@ -347,7 +347,7 @@ fn handle_effect(self: Subject(Message(msg)), effect: Effect(msg)) -> Nil {
     |> send
   }
 
-  let internals = fn() { dynamic.from(Nil) }
+  let internals = fn() { dynamic.nil() }
 
   effect.perform(effect, dispatch, emit, select, internals)
 }

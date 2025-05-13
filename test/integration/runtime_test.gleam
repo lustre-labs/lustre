@@ -50,7 +50,7 @@ pub fn client_send_event_test() {
   // Discard the `Mount` message
   let _ = process.receive_forever(client)
 
-  let click = transport.event_fired(incr, "click", dynamic.from(Nil))
+  let click = transport.event_fired(incr, "click", dynamic.nil())
 
   runtime.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
 
@@ -72,7 +72,7 @@ pub fn client_send_multiple_events_test() {
   // Discard the `Mount` message
   let _ = process.receive_forever(client)
 
-  let click = transport.event_fired(incr, "click", dynamic.from(Nil))
+  let click = transport.event_fired(incr, "click", dynamic.nil())
 
   runtime.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
   runtime.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
@@ -123,7 +123,7 @@ pub fn server_emit_event_test() {
   // Discard the `Mount` message
   let _ = process.receive_forever(client)
 
-  let click = transport.event_fired(reset, "click", dynamic.from(Nil))
+  let click = transport.event_fired(reset, "click", dynamic.nil())
 
   runtime.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
 
