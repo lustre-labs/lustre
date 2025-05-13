@@ -39,7 +39,7 @@ gleam_erlang = { version = ">= 0.34.0 and < 1.0.0" }
 gleam_json = { version = ">= 1.0.0 and < 4.0.0" }
 gleam_otp = { version = ">= 0.16.0 and < 1.0.0" }
 gleam_regexp = { version = ">= 1.1.0 and < 2.0.0" }
-gleam_stdlib = { version = ">= 0.56.0 and < 2.0.0" }
+gleam_stdlib = { version = ">= 0.60.0 and < 2.0.0" }
 gleamy_bench = { version = ">= 0.5.0 and < 1.0.0" }
 gleeunit = { version = "~> 1.0" }
 houdini = { version = ">= 1.0.0 and < 2.0.0" }
