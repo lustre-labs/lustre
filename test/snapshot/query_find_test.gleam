@@ -39,6 +39,15 @@ pub fn find_element_by_class_test() {
   |> birdie.snap("[find] Call to action button by class")
 }
 
+pub fn find_element_by_multiple_classes_test() {
+  let query = query.element(matching: class("content hero"))
+  let assert Ok(element) = query.find(in: page(), matching: query)
+
+  element
+  |> to_single_snapshot(query)
+  |> birdie.snap("[find] Hero section by multiple classes")
+}
+
 pub fn find_element_by_inline_style_test() {
   let query = query.element(matching: style("list-style-type", "none"))
   let assert Ok(element) = query.find(in: page(), matching: query)
@@ -214,7 +223,7 @@ fn page() {
           ]),
         ]),
       ]),
-      html.section([attribute.class("content")], [
+      html.section([attribute.class("hero content")], [
         html.h2([], [html.text("The Universal Framework")]),
         html.p([], [
           html.text(

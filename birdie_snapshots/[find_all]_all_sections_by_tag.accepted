@@ -1,7 +1,7 @@
 ---
 version: 1.2.6
 title: [find_all] All sections by tag
-file: ./test/tests/query_find_test.gleam
+file: ./test/snapshot/query_find_test.gleam
 test_name: find_all_by_tag_test
 ---
 
@@ -11,7 +11,7 @@ Query:
 
 Match:
 
-  <section class="content">
+  <section class="hero content">
     <h2>
       The Universal Framework
     </h2>
