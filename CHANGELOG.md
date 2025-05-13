@@ -11,6 +11,10 @@ request to fix it.
 
 ## [Unreleased]
 
+### Added
+
+- [lustre/attribute] Added a `attribute.default_value` function to set the `defaultValue` property of an input.
+
 ## [5.0.3] - 2025-05-09
 
 ### Changed

@@ -236,7 +236,7 @@ export class Reconciler {
         }
       } else {
         node.removeAttribute(name);
-        ATTRIBUTE_HOOKS[name]?.removed?.(node, name);
+        SYNCED_ATTRIBUTES[name]?.removed?.(node, name);
       }
     });
 
@@ -297,16 +297,22 @@ export class Reconciler {
 
   #createAttribute(node, attribute) {
     const nodeMeta = node[meta];
+
     switch (attribute.kind) {
       case attribute_kind: {
         const name = attribute.name;
         const value = attribute.value ?? "";
 
+        if (name === "virtual:defaultValue") {
+          node.defaultValue = value;
+          return;
+        }
+
         if (value !== node.getAttribute(name)) {
           node.setAttribute(name, value);
         }
 
-        ATTRIBUTE_HOOKS[name]?.added?.(node, value);
+        SYNCED_ATTRIBUTES[name]?.added?.(node, value);
 
         break;
       }
@@ -475,15 +481,16 @@ export const initialiseMetadata = (node, key = "") => {
   }
 };
 
-export const isLustreNode = node => {
+export const isLustreNode = (node) => {
   while (node) {
     if (node[meta]) return true;
     // we need to also check every parent because we might be inside of an
     // unsafe_raw_html element, which does not have metadata attached.
     node = node.parentNode;
   }
+
   return false;
-}
+};
 
 const addKeyedChild = (node, child) => {
   if (child.nodeType === DOCUMENT_FRAGMENT_NODE) {
@@ -601,7 +608,7 @@ const syncedAttribute = (name) => {
   };
 };
 
-const ATTRIBUTE_HOOKS = {
+const SYNCED_ATTRIBUTES = {
   checked: syncedBooleanAttribute("checked"),
   selected: syncedBooleanAttribute("selected"),
   value: syncedAttribute("value"),

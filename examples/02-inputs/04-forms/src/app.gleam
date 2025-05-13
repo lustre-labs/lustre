@@ -114,7 +114,7 @@ fn view_login(form: Form) -> Element(Msg) {
       attribute.class("p-8 w-full border rounded-2xl shadow-lg space-y-4"),
       // The message provided to the built-in `on_submit` handler receives the
       // `FormData` associated with the form as a List of (name, value) tuples.
-      // 
+      //
       // The event handler also calls `preventDefault()` on the form, such that
       // Lustre can handle the submission instead off being sent off to the server.
       event.on_submit(UserSubmittedForm),
@@ -172,9 +172,6 @@ fn view_input(
       // the `name` attribute is used as the first element of the tuple
       // we receive for this input.
       attribute.name(name),
-      // Associating a value with this element does _not_ make the element
-      // controlled without an event listener, allowing us to set a default.
-      attribute.value(form.value(form, name)),
     ]),
     // formal provides us with a customisable error message for every element
     // in case its validation fails, which we can show right below the input.

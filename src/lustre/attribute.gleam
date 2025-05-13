@@ -1141,10 +1141,29 @@ pub fn type_(control_type: String) -> Attribute(msg) {
   attribute("type", control_type)
 }
 
-/// Value of the form control
+/// Specifies the value of an input or form control. Using this attribute will
+/// make sure the value is always in sync with your application's modelled, a
+/// practice known as [_controlled inputs_](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
+///
+/// If you'd like to let the DOM manage the value of an input but still set a
+/// default value for users to see, use the [`default_value`](#default_value)
+/// attribute instead.
 ///
 pub fn value(control_value: String) -> Attribute(msg) {
   attribute("value", control_value)
+}
+
+/// Set the default value of an input or form control. This is the value that will
+/// be shown to users when the input is first rendered and included in the form
+/// submission if the user does not change it.
+///
+/// Just setting a default value and letting the DOM manage the state of an input
+/// is known as using [_uncontrolled inputs](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
+/// Doing this means your application cannot set the value of an input after it
+/// is modified without using an effect.
+///
+pub fn default_value(control_value: String) -> Attribute(msg) {
+  attribute("virtual:defaultValue", control_value)
 }
 
 // META ATTRIBUTES -------------------------------------------------------------
