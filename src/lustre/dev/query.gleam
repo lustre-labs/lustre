@@ -83,9 +83,9 @@ pub fn descendant(of parent: Query, matching selector: Selector) -> Query {
 /// import lustre/dev/query
 ///
 /// pub fn example() {
-///   query.element(matching: query.tag("div"))
-///   |> query.and(query.element(matching: query.class("wibble")))
-///   |> query.and(query.)
+///   query.tag("div")
+///   |> query.and(query.class("wibble"))
+///   |> query.and(query.data("open", "true"))
 /// }
 /// ```
 ///
