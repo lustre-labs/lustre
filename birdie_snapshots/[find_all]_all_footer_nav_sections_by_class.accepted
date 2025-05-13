@@ -1,0 +1,70 @@
+---
+version: 1.2.6
+title: [find_all] All footer nav sections by class
+file: ./test/tests/query_find_test.gleam
+test_name: find_all_by_class_test
+---
+
+Query:
+
+  .vertical-nav
+
+Match:
+
+  <ul class="vertical-nav">
+    <h2>
+      Lustre Pro
+    </h2>
+    <li>
+      <a href="/dashboard">
+        Dashboard
+      </a>
+    </li>
+    <li>
+      <a href="/faq">
+        FAQ
+      </a>
+    </li>
+    <li>
+      <a href="/pricing">
+        Pricing
+      </a>
+    </li>
+  </ul>
+
+  <ul class="vertical-nav">
+    <h2>
+      Lustre
+    </h2>
+    <li>
+      <a href="https://hexdocs.pm/lustre">
+        Documentation
+      </a>
+    </li>
+    <li>
+      <a href="https://github.com/lustre-labs/lustre">
+        GitHub
+      </a>
+    </li>
+  </ul>
+
+  <ul class="vertical-nav">
+    <h2>
+      Legal
+    </h2>
+    <li>
+      <a href="/terms-of-service">
+        Terms of service
+      </a>
+    </li>
+    <li>
+      <a href="/privacy-policy">
+        Privacy policy
+      </a>
+    </li>
+    <li>
+      <a href="/impressum">
+        Impressum
+      </a>
+    </li>
+  </ul>

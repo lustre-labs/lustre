@@ -1,0 +1,16 @@
+---
+version: 1.2.6
+title: [find] Wordmark by tag
+file: ./test/tests/query_find_test.gleam
+test_name: find_element_by_tag_test
+---
+
+Query:
+
+  h1
+
+Match:
+
+  <h1>
+    Lustre Labs
+  </h1>

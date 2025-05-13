@@ -1,0 +1,7 @@
+---
+version: 1.2.6
+title: [to_string] Nested child of tag with id query
+file: ./test/tests/query_to_string_test.gleam
+test_name: child_nested_of_tag_with_class_query_to_string_test
+---
+div > span > .wibble

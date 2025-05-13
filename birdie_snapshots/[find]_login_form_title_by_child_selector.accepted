@@ -1,0 +1,16 @@
+---
+version: 1.2.6
+title: [find] Login form title by child selector
+file: ./test/tests/query_find_test.gleam
+test_name: find_child_by_tag_test
+---
+
+Query:
+
+  form > h2
+
+Match:
+
+  <h2>
+    Login
+  </h2>

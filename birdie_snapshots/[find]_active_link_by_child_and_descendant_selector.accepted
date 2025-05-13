@@ -1,0 +1,16 @@
+---
+version: 1.2.6
+title: [find] Active link by child and descendant selector
+file: ./test/tests/query_find_test.gleam
+test_name: find_child_descendant_by_data_attribute_test
+---
+
+Query:
+
+  header > nav a[data-active="true"]
+
+Match:
+
+  <a data-active="true" href="/">
+    Home
+  </a>
