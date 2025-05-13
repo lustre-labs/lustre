@@ -150,6 +150,11 @@ pub fn start(app: App(args, model, msg), args: args) -> Simulation(model, msg) {
 /// }
 /// ```
 ///
+/// > **Note**: your app's `view` function will probably be rendering quite a lot
+/// > of HTML! To make your snapshots more meaningful, you might want to couple
+/// > this with the [`query`](./query.html) module to only snapshot parts of the
+/// > page that are relevant to the test.
+///
 pub fn message(
   simulation: Simulation(model, msg),
   msg: msg,
@@ -315,8 +320,8 @@ pub fn model(simulation: Simulation(model, msg)) -> model {
 
 /// Introspect the current `view` of a running simulation. Typically you would
 /// use this with a snapshot testing library like [`birdie`](https://hexdocs.pm/birdie/index.html)
-/// or with the [`query`](./query.html) api to make assertions about the state of
-/// the page.
+/// and/or with the [`query`](./query.html) api to make assertions about the state
+/// of the page.
 ///
 pub fn view(simulation: Simulation(model, msg)) -> Element(msg) {
   simulation.html
