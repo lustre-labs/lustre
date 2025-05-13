@@ -200,6 +200,14 @@ pub fn data(name: String, value: String) -> Selector {
   HasAttribute(name: "data-" <> name, value: value)
 }
 
+/// It is a common convention to use the `data-test-id` attribute to mark elements
+/// for easy selection in tests. This function is a shorthand for writing
+/// `query.data("test-id", value)`
+///
+pub fn test_id(value: String) -> Selector {
+  data("test-id", value)
+}
+
 /// Select elements that have the given `aria-*` attribute. For example you can
 /// select the trigger of a dropdown menu with:
 ///
@@ -224,7 +232,24 @@ pub fn aria(name: String, value: String) -> Selector {
 /// ```
 ///
 /// The selector `query.text("Hello, Joe!")` would match the `<p>` element because
-/// the text content of the `<span>` is included in the text content of the `<p>`.
+/// the text content of the inline `<span>` element is included in the paragraph's
+/// text content.
+///
+/// Whitespace must match exactly, so the selector `query.text("Hello, Joe!")`
+/// would not match an element like:
+///
+/// ```gleam
+/// html.p([], [html.text("Hello,     Joe!")])
+/// ```
+///
+/// > **Note**: while this selector makes a best-effort attempt to include the
+/// > text content of inline children, this cannot account for block elements that
+/// > are styled as inline by CSS stylesheets.
+///
+/// > **Note**: often it is better to use more precise selectors such as
+/// > [`id`](#id), [`class`](#class), or [`test_id`](#test_id). You should reach
+/// > for this selector only when you want to assert that an element contains
+/// > some specific text, such as in a hero banner or a copyright notice.
 ///
 pub fn text(content: String) -> Selector {
   Contains(content:)
