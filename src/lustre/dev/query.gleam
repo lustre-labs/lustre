@@ -514,18 +514,27 @@ fn matches(element: Element(msg), selector: Selector) -> Bool {
 
     Element(attributes:, ..), HasClass(name)
     | UnsafeInnerHtml(attributes:, ..), HasClass(name)
-    ->
-      list.any(attributes, fn(attribute) {
-        case attribute {
-          Attribute(name: "class", value:, ..) ->
-            value == name
-            || string.starts_with(value, name <> " ")
-            || string.ends_with(value, " " <> name)
-            || string.contains(value, " " <> name <> " ")
+    -> {
+      use _, class <- list.fold_until(string.split(name, " "), True)
+      let name = string.trim_end(class)
+      let matches =
+        list.any(attributes, fn(attribute) {
+          case attribute {
+            Attribute(name: "class", value:, ..) ->
+              value == name
+              || string.starts_with(value, name <> " ")
+              || string.ends_with(value, " " <> name)
+              || string.contains(value, " " <> name <> " ")
 
-          _ -> False
-        }
-      })
+            _ -> False
+          }
+        })
+
+      case matches {
+        True -> list.Continue(True)
+        False -> list.Stop(False)
+      }
+    }
 
     Element(attributes:, ..), HasStyle(name:, value:)
     | UnsafeInnerHtml(attributes:, ..), HasStyle(name:, value:)
