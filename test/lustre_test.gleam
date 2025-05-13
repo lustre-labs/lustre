@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import argv
-import benchmarks/diff_benchmark
+import benchmark/diff_benchmark
 import gleeunit
 
 // MAIN ------------------------------------------------------------------------
