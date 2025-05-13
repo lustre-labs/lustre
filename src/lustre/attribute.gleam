@@ -1158,7 +1158,7 @@ pub fn value(control_value: String) -> Attribute(msg) {
 /// submission if the user does not change it.
 ///
 /// Just setting a default value and letting the DOM manage the state of an input
-/// is known as using [_uncontrolled inputs]((https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
+/// is known as using [_uncontrolled inputs](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
 /// Doing this means your application cannot set the value of an input after it
 /// is modified without using an effect.
 ///
