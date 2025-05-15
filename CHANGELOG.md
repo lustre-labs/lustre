@@ -16,6 +16,8 @@ request to fix it.
 - [lustre/attribute] Added a `attribute.default_value` function to set the `defaultValue` property of an input.
 - [lustre/dev/query] Created a module for querying a view for test purposes.
 - [lustre/dev/simulate] Created a module for simulating a running application for test purposes.
+- [lustre/event] Added support for `debounce` and `throttle` on the same event, at the same time
+- [lustre/event] Fixed a bug where updating the delay for `debounce` or `throttle` would have no effect
 
 ## [5.0.3] - 2025-05-09
 
