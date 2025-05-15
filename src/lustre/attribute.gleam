@@ -1302,6 +1302,62 @@ pub fn shadowrootserializable(serializable: Bool) -> Attribute(msg) {
   boolean_attribute("shadowrootserializable", serializable)
 }
 
+// TABLE ATTRIBUTES ------------------------------------------------------------
+
+/// A short, abbreviated description of the header cell's content provided as an
+/// alternative label to use for the header cell when referencing the cell in other
+/// contexts. Some user-agents, such as speech readers, may present this description
+/// before the content itself.
+///
+pub fn abbr(value: String) -> Attribute(msg) {
+  attribute("abbr", value)
+}
+
+/// A non-negative integer value indicating how many columns the header cell spans
+/// or extends. The default value is `1`. User agents dismiss values higher than
+/// `1000` as incorrect, defaulting such values to `1`.
+///
+pub fn colspan(value: Int) -> Attribute(msg) {
+  attribute("colspan", int.to_string(value))
+}
+
+/// A list of space-separated strings corresponding to the id attributes of the
+/// `<th>` elements that provide the headers for this header cell.
+///
+pub fn headers(ids: List(String)) -> Attribute(msg) {
+  attribute("headers", string.join(ids, " "))
+}
+
+/// A non-negative integer value indicating how many rows the header cell spans
+/// or extends. The default value is `1`; if its value is set to `0`, the header
+/// cell will extends to the end of the table grouping section, that the `<th>`
+/// belongs to. Values higher than `65534` are clipped at `65534`.
+///
+pub fn rowspan(value: Int) -> Attribute(msg) {
+  attribute("rowspan", {
+    value
+    |> int.max(0)
+    |> int.min(65_534)
+    |> int.to_string()
+  })
+}
+
+/// Specifies the number of consecutive columns a `<colgroup>` element spans. The
+/// value must be a positive integer greater than zero.
+///
+pub fn span(value: Int) -> Attribute(msg) {
+  attribute("span", int.to_string(value))
+}
+
+/// The `scope` attribute specifies whether a header cell is a header for a row,
+/// column, or group of rows or columns. The following values are accepted:
+///
+/// The `scope` attribute is only valid on `<th>` elements.
+///
+pub fn scope(value: String) -> Attribute(msg) {
+  attribute("scope", value)
+}
+
 // ARIA ATTRIBUTES -------------------------------------------------------------
 
 /// Add an `aria-*` attribute to an HTML element. The key will be prefixed by
