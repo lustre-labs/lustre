@@ -14,6 +14,7 @@ request to fix it.
 ### Added
 
 - [lustre/attribute] Added a `attribute.default_value` function to set the `defaultValue` property of an input.
+- [lustre/attribute] Added multple attributes for working with HTML tables: `attribute.abbr, `attribute.colspan, `attribute.headers, `attribute.rowspan, `attribute.span, `attribute.scope`
 - [lustre/dev/query] Created a module for querying a view for test purposes.
 - [lustre/dev/simulate] Created a module for simulating a running application for test purposes.
 - [lustre/event] Added support for `debounce` and `throttle` on the same event, at the same time
