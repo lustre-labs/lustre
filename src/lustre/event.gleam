@@ -1,13 +1,14 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic/decode.{type Decoder}
+import gleam/int
 import gleam/json.{type Json}
 import gleam/pair
 import gleam/result
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
 import lustre/internals/constants
-import lustre/vdom/vattr.{Debounce, Event, Throttle}
+import lustre/vdom/vattr.{Event}
 
 // EFFECTS ---------------------------------------------------------------------
 
@@ -43,7 +44,8 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
     prevent_default: False,
     stop_propagation: False,
     immediate: is_immediate_event(name),
-    limit: vattr.NoLimit(kind: 0),
+    debounce: 0,
+    throttle: 0,
   )
 }
 
@@ -93,8 +95,7 @@ pub fn stop_propagation(event: Attribute(msg)) -> Attribute(msg) {
 ///
 pub fn debounce(event: Attribute(msg), delay: Int) -> Attribute(msg) {
   case event {
-    Event(..) ->
-      Event(..event, limit: Debounce(kind: vattr.debounce_kind, delay:))
+    Event(..) -> Event(..event, debounce: int.max(0, delay))
     _ -> event
   }
 }
@@ -117,8 +118,7 @@ pub fn debounce(event: Attribute(msg), delay: Int) -> Attribute(msg) {
 ///
 pub fn throttle(event: Attribute(msg), delay: Int) -> Attribute(msg) {
   case event {
-    Event(..) ->
-      Event(..event, limit: Throttle(kind: vattr.throttle_kind, delay:))
+    Event(..) -> Event(..event, throttle: int.max(0, delay))
     _ -> event
   }
 }
