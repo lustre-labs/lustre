@@ -135,10 +135,19 @@ export class Reconciler {
         );
       }
 
+      let lastIndex = -1;
+      let lastChild = null;
       iterate(patch.children, (child) => {
-        // TODO: use linked-list style but skip to indices if distance is great enough?
+        const index = child.index|0;
+        
+        const next = lastChild && lastIndex - index === 1
+          ? lastChild.previousSibling
+          : childAt(node, index);
 
-        self.#stack.push({ node: childAt(node, child.index), patch: child });
+        self.#stack.push({ node: next, patch: child });
+
+        lastChild = next;
+        lastIndex = index;
       });
     }
   }
