@@ -25,7 +25,7 @@ pub fn single_event_test() {
 
   let path = "0"
 
-  events.handle(events, path, "click", dynamic.from(Nil))
+  events.handle(events, path, "click", dynamic.nil())
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -42,7 +42,7 @@ pub fn single_nested_event_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(0, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -60,7 +60,7 @@ pub fn single_nested_keyed_event_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
-  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -80,7 +80,7 @@ pub fn single_nested_keyed_event_with_period_test() {
   let events = events.from_node(vdom)
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b.c")
-  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -99,7 +99,7 @@ pub fn fragment_event_test() {
 
   let path = "1"
 
-  events.handle(events, path, "click", dynamic.from(Nil))
+  events.handle(events, path, "click", dynamic.nil())
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -118,7 +118,7 @@ pub fn nested_fragment_event_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(1, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -144,7 +144,7 @@ pub fn nested_fragment_with_multiple_children_event_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(5, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
   |> should.equal(Ok(4))
 }
@@ -164,7 +164,7 @@ pub fn single_mapped_event_test() {
 
   let path = path.root |> path.add(0, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
   |> should.equal(Ok("HELLO!"))
 }
@@ -185,7 +185,7 @@ pub fn multiple_mapped_event_test() {
 
   let path = path.root |> path.add(0, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
   |> should.equal(Ok(["HELLO!", "HELLO!"]))
 }
@@ -202,7 +202,7 @@ pub fn event_added_test() {
 
   let path = path.root |> path.add(0, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -217,7 +217,7 @@ pub fn event_removed_test() {
 
   let path = path.root |> path.add(0, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
   |> should.equal(Error([]))
 }
@@ -236,7 +236,7 @@ pub fn element_added_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
-  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -255,7 +255,7 @@ pub fn element_removed_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
-  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
   |> should.equal(Error([]))
 }
@@ -279,7 +279,7 @@ pub fn element_replaced_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
-  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
   |> should.equal(Ok("hello!"))
 }
@@ -321,7 +321,7 @@ pub fn keyed_element_replaced_test() {
 
   let path =
     path.root |> path.add(0, "") |> path.add(0, "v2") |> path.add(0, "")
-  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
   |> should.equal(Ok("hello from 1"))
 
@@ -332,7 +332,7 @@ pub fn keyed_element_replaced_test() {
     |> path.add(1, "")
     |> path.add(0, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.from(Nil))
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
   |> should.equal(Ok("hello from 2"))
 }
