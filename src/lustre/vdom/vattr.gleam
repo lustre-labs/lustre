@@ -23,23 +23,9 @@ pub type Attribute(msg) {
     prevent_default: Bool,
     stop_propagation: Bool,
     immediate: Bool,
-    limit: Limit,
+    debounce: Int,
+    throttle: Int,
   )
-}
-
-pub type Limit {
-  NoLimit(kind: Int)
-  Debounce(kind: Int, delay: Int)
-  Throttle(kind: Int, delay: Int)
-}
-
-pub fn limit_equals(a, b) {
-  case a, b {
-    NoLimit(..), NoLimit(..) -> True
-    Debounce(delay: d1, ..), Debounce(delay: d2, ..) if d1 == d2 -> True
-    Throttle(delay: d1, ..), Throttle(delay: d2, ..) if d1 == d2 -> True
-    _, _ -> False
-  }
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -65,7 +51,8 @@ pub fn event(
   prevent_default prevent_default: Bool,
   stop_propagation stop_propagation: Bool,
   immediate immediate: Bool,
-  limit limit: Limit,
+  debounce debounce: Int,
+  throttle throttle: Int,
 ) -> Attribute(msg) {
   Event(
     kind: event_kind,
@@ -75,20 +62,9 @@ pub fn event(
     prevent_default:,
     stop_propagation:,
     immediate:,
-    limit:,
+    debounce:,
+    throttle:,
   )
-}
-
-pub const debounce_kind: Int = 1
-
-pub const throttle_kind: Int = 2
-
-pub fn debounce(delay delay: Int) -> Limit {
-  Debounce(kind: debounce_kind, delay:)
-}
-
-pub fn throttle(delay delay: Int) -> Limit {
-  Throttle(kind: throttle_kind, delay:)
 }
 
 //
@@ -163,7 +139,8 @@ pub fn to_json(attribute: Attribute(msg)) -> Json {
       prevent_default:,
       stop_propagation:,
       immediate:,
-      limit:,
+      debounce:,
+      throttle:,
       ..,
     ) ->
       event_to_json(
@@ -173,7 +150,8 @@ pub fn to_json(attribute: Attribute(msg)) -> Json {
         prevent_default,
         stop_propagation,
         immediate,
-        limit,
+        debounce,
+        throttle,
       )
   }
 }
@@ -199,7 +177,8 @@ fn event_to_json(
   prevent_default,
   stop_propagation,
   immediate,
-  limit,
+  debounce,
+  throttle,
 ) {
   json_object_builder.tagged(kind)
   |> json_object_builder.string("name", name)
@@ -207,22 +186,9 @@ fn event_to_json(
   |> json_object_builder.bool("prevent_default", prevent_default)
   |> json_object_builder.bool("stop_propagation", stop_propagation)
   |> json_object_builder.bool("immediate", immediate)
-  |> json_object_builder.object("limit", limit_to_json(limit))
+  |> json_object_builder.int("debounce", debounce)
+  |> json_object_builder.int("throttle", throttle)
   |> json_object_builder.build
-}
-
-fn limit_to_json(limit) {
-  case limit {
-    NoLimit(..) -> []
-
-    Debounce(delay:, ..) ->
-      json_object_builder.tagged(debounce_kind)
-      |> json_object_builder.int("delay", delay)
-
-    Throttle(delay:, ..) ->
-      json_object_builder.tagged(throttle_kind)
-      |> json_object_builder.int("delay", delay)
-  }
 }
 
 // STRING RENDERING ------------------------------------------------------------

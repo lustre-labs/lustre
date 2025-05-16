@@ -730,7 +730,8 @@ fn diff_attributes(
             prev.prevent_default != next.prevent_default
             || prev.stop_propagation != next.stop_propagation
             || prev.immediate != next.immediate
-            || !vattr.limit_equals(prev.limit, next.limit)
+            || prev.debounce != next.debounce
+            || prev.throttle != next.throttle
 
           let added = case has_changes {
             True -> [next, ..added]

@@ -96,7 +96,7 @@ fn view_xy_pad(
       //    original : --a-b-cd--e----------f--------
       //   throttled : -a------ e----------e---------
       //
-      on_mousemove |> event.throttle(250),
+      on_mousemove |> event.throttle(250) |> event.debounce(250),
       attribute.class("flex justify-center items-center"),
       attribute.class("aspect-square bg-slate-100 rounded hover:shadow"),
     ],

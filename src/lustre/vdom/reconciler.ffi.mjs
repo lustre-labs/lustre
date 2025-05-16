@@ -11,8 +11,6 @@ import {
   attribute_kind,
   property_kind,
   event_kind,
-  debounce_kind,
-  throttle_kind,
 } from "./vattr.mjs";
 
 import {
@@ -296,20 +294,31 @@ export class Reconciler {
   }
 
   #createAttribute(node, attribute) {
-    const nodeMeta = node[meta];
+    const { debouncers, handlers, throttles } = node[meta];
 
-    switch (attribute.kind) {
+    const {
+      kind,
+      name,
+      value,
+      prevent_default: prevent,
+      stop_propagation: stop,
+      immediate,
+      include,
+      debounce: debounceDelay,
+      throttle: throttleDelay
+    } = attribute
+    
+
+    switch (kind) {
       case attribute_kind: {
-        const name = attribute.name;
-        const value = attribute.value ?? "";
-
+        const valueOrDefault = value ?? ""
         if (name === "virtual:defaultValue") {
-          node.defaultValue = value;
+          node.defaultValue = valueOrDefault;
           return;
         }
 
-        if (value !== node.getAttribute(name)) {
-          node.setAttribute(name, value);
+        if (valueOrDefault !== node.getAttribute(name)) {
+          node.setAttribute(name, valueOrDefault);
         }
 
         SYNCED_ATTRIBUTES[name]?.added?.(node, value);
@@ -318,43 +327,36 @@ export class Reconciler {
       }
 
       case property_kind:
-        node[attribute.name] = attribute.value;
+        node[name] = value;
         break;
 
       case event_kind: {
-        if (!nodeMeta.handlers.has(attribute.name)) {
-          node.addEventListener(attribute.name, handleEvent, {
+        if (!handlers.has(name)) {
+          node.addEventListener(name, handleEvent, {
             passive: !attribute.prevent_default,
           });
         }
 
-        const prevent = attribute.prevent_default;
-        const stop = attribute.stop_propagation;
-        const immediate = attribute.immediate;
-
-        const include = Array.isArray(attribute.include)
-          ? attribute.include
-          : [];
-
-        if (attribute.limit?.kind === throttle_kind) {
-          const throttle = nodeMeta.throttles.get(attribute.name) ?? {
-            last: 0,
-            delay: attribute.limit.delay,
-          };
-
-          nodeMeta.throttles.set(attribute.name, throttle);
+        if (throttleDelay > 0) {
+          const throttle = throttles.get(name) ?? {};
+          throttle.delay = throttleDelay;
+          
+          throttles.set(name, throttle);
+        } else {
+          throttles.delete(name);
         }
 
-        if (attribute.limit?.kind === debounce_kind) {
-          const debounce = nodeMeta.debouncers.get(attribute.name) ?? {
-            timeout: null,
-            delay: attribute.limit.delay,
-          };
+        if (debounceDelay > 0) {
+          const debounce = debouncers.get(name) ?? {};
+          debounce.delay = debounceDelay;
 
-          nodeMeta.debouncers.set(attribute.name, debounce);
+          debouncers.set(name, debounce);
+        } else {
+          clearTimeout(debouncers.get(name)?.timeout);
+          debouncers.delete(name);
         }
 
-        nodeMeta.handlers.set(attribute.name, (event) => {
+        handlers.set(name, (event) => {
           if (prevent) event.preventDefault();
           if (stop) event.stopPropagation();
 
@@ -384,26 +386,29 @@ export class Reconciler {
           path = path.slice(1);
 
           const data = this.#useServerEvents
-            ? createServerEvent(event, include)
+            ? createServerEvent(event, include ?? [])
             : event;
 
-          if (nodeMeta.throttles.has(type)) {
-            const throttle = nodeMeta.throttles.get(type);
+          const throttle = throttles.get(type);
+          if (throttle) {
             const now = Date.now();
             const last = throttle.last || 0;
 
             if (now > last + throttle.delay) {
               throttle.last = now;
+              throttle.lastEvent = event;
               this.#dispatch(data, path, type, immediate);
             } else {
               event.preventDefault();
             }
-          } else if (nodeMeta.debouncers.has(type)) {
-            const debounce = nodeMeta.debouncers.get(type);
+          }
 
+          const debounce = debouncers.get(type);
+          if (debounce) {
             clearTimeout(debounce.timeout);
 
             debounce.timeout = setTimeout(() => {
+              if (event === throttles.get(type)?.lastEvent) return;
               this.#dispatch(data, path, type, immediate);
             }, debounce.delay);
           } else {
