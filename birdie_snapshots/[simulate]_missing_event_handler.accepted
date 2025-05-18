@@ -1,0 +1,24 @@
+---
+version: 1.2.7
+title: [simulate] Missing event handler
+file: ./test/integration/simulate_test.gleam
+test_name: simulate_missing_event_handler_test
+---
+
+Output:
+
+  <div>
+    <button>
+      -
+    </button>
+    <p>
+      0
+    </p>
+    <button data-test-id="incr">
+      +
+    </button>
+  </div>
+
+History:
+
+  problem | EventHandlerNotFound: No keydown handler for element matching [data-test-id="incr"]
