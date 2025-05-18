@@ -185,35 +185,27 @@ pub fn event(
   data payload: List(#(String, Json)),
 ) -> Simulation(model, msg) {
   result.unwrap_both({
-    use #(_, path) <- result.try(
+    use #(_, path) <- result.try(result.replace_error(
       query.find_path(
         in: simulation.html,
         matching: query,
-        // In Lustre's vdom the path always starts with `0` to represent the root
-        // node, so we need to account for that here.
-        //
-        // TODO: maybe Lustre's internal `path` module should account for that
-        // automatically?
-        //
         from: path.root,
         index: 0,
-      )
-      |> result.replace_error(
-        Simulation(..simulation, history: [
-          Problem(
-            name: "EventTargetNotFound",
-            message: "No element matching " <> query.to_readable_string(query),
-          ),
-          ..simulation.history
-        ]),
       ),
-    )
+      Simulation(..simulation, history: [
+        Problem(
+          name: "EventTargetNotFound",
+          message: "No element matching " <> query.to_readable_string(query),
+        ),
+        ..simulation.history
+      ]),
+    ))
 
     let events = events.from_node(simulation.html)
     let data = json.object(payload)
 
-    use msg <- result.try(
-      events.handle(
+    use msg <- result.try(result.replace_error(
+      pair.second(events.handle(
         events,
         path.to_string(path),
         event,
@@ -221,21 +213,18 @@ pub fn event(
           |> json.to_string
           |> json.parse(decode.dynamic)
           |> result.unwrap(erase(Nil)),
-      )
-      |> pair.second
-      |> result.replace_error(
-        Simulation(..simulation, history: [
-          Problem(
-            name: "EventHandlerNotFound",
-            message: "No "
-              <> event
-              <> " handler for element matching "
-              <> query.to_readable_string(query),
-          ),
-          ..simulation.history
-        ]),
-      ),
-    )
+      )),
+      Simulation(..simulation, history: [
+        Problem(
+          name: "EventHandlerNotFound",
+          message: "No "
+            <> event
+            <> " handler for element matching "
+            <> query.to_readable_string(query),
+        ),
+        ..simulation.history
+      ]),
+    ))
 
     let #(model, _) = simulation.update(simulation.model, msg)
     let html = simulation.view(model)
