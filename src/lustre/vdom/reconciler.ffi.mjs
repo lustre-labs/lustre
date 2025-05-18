@@ -414,7 +414,9 @@ export class Reconciler {
               if (event === throttles.get(type)?.lastEvent) return;
               this.#dispatch(data, path, type, immediate);
             }, debounce.delay);
-          } else {
+          }
+
+          if (!throttle && !debounce) {
             this.#dispatch(data, path, type, immediate);
           }
         });
