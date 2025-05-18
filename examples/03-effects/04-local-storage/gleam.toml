@@ -5,5 +5,5 @@ dev-dependencies = { lustre_dev_tools = ">= 1.6.5 and < 2.0.0" }
 [dependencies]
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
 lustre = { path = "../../../" }
-gleam_json = ">= 2.3.0 and < 3.0.0"
+gleam_json = ">= 2.3.0 and < 4.0.0"
 formal = ">= 2.2.0 and < 3.0.0"
