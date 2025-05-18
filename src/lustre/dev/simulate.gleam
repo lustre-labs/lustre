@@ -192,13 +192,11 @@ pub fn event(
         from: path.root,
         index: 0,
       ),
-      Simulation(..simulation, history: [
-        Problem(
-          name: "EventTargetNotFound",
-          message: "No element matching " <> query.to_readable_string(query),
-        ),
-        ..simulation.history
-      ]),
+      problem(
+        simulation,
+        name: "EventTargetNotFound",
+        message: "No element matching " <> query.to_readable_string(query),
+      ),
     ))
 
     let events = events.from_node(simulation.html)
@@ -214,16 +212,14 @@ pub fn event(
           |> json.parse(decode.dynamic)
           |> result.unwrap(erase(Nil)),
       )),
-      Simulation(..simulation, history: [
-        Problem(
-          name: "EventHandlerNotFound",
-          message: "No "
-            <> event
-            <> " handler for element matching "
-            <> query.to_readable_string(query),
-        ),
-        ..simulation.history
-      ]),
+      problem(
+        simulation,
+        name: "EventHandlerNotFound",
+        message: "No "
+          <> event
+          <> " handler for element matching "
+          <> query.to_readable_string(query),
+      ),
     ))
 
     let #(model, _) = simulation.update(simulation.model, msg)
@@ -308,6 +304,25 @@ pub fn submit(
       ]),
     ),
   ])
+}
+
+/// Log a problem that occured during the simulation. This function is useful for
+/// external packages that want to provide functions to simulate certain effects
+/// that may fail in the real world. For example, a routing package may log a
+/// problem if a link has an invalid `href` attribute that would cause no message
+/// to be dispatched.
+///
+/// > **Note**: logging a problem will not stop the simulation from running, just
+/// > like a real application!
+///
+pub fn problem(
+  simulation: Simulation(model, msg),
+  name name: String,
+  message message: String,
+) -> Simulation(model, msg) {
+  let history = [Problem(name:, message:), ..simulation.history]
+
+  Simulation(..simulation, history:)
 }
 
 // INTROSPECTION ---------------------------------------------------------------
