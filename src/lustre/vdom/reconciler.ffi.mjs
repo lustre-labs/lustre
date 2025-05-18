@@ -339,7 +339,7 @@ export class Reconciler {
         }
 
         node.addEventListener(name, handleEvent, {
-          passive: !attribute.prevent_default && !attribute.throttle,
+          passive: !attribute.prevent_default,
         });
 
         if (throttleDelay > 0) {
@@ -403,8 +403,6 @@ export class Reconciler {
               throttle.last = now;
               throttle.lastEvent = event;
               this.#dispatch(data, path, type, immediate);
-            } else {
-              event.preventDefault();
             }
           }
 
