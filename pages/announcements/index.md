@@ -1,6 +1,6 @@
 # Announcements
 
-- [2025-05-16](./announcements/2025-05-16.html):
+- [2025-05-18](./announcements/2025-05-18.html):
   Lustre v5.1.0 released! This release introduces two new modules to help you
   write tests for your view functions and applications.
 
