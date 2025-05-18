@@ -332,11 +332,15 @@ export class Reconciler {
         break;
 
       case event_kind: {
-        if (!handlers.has(name)) {
-          node.addEventListener(name, handleEvent, {
-            passive: !attribute.prevent_default,
-          });
+        if (handlers.has(name)) {
+          // we re-attach an event listener on every change in case we need
+          // to change the options we pass.
+          node.removeEventListener(name, handleEvent);
         }
+
+        node.addEventListener(name, handleEvent, {
+          passive: !attribute.prevent_default && !attribute.throttle,
+        });
 
         if (throttleDelay > 0) {
           const throttle = throttles.get(name) ?? {};
