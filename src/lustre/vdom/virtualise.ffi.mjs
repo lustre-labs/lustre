@@ -14,12 +14,11 @@ import {
 } from "../internals/constants.ffi.mjs";
 
 export const virtualise = (root) => {
-  const vdom = virtualise_node(root);
+  const vdom = virtualiseNode(null, root);
   // at this point we know the element is empty - but we have to have at least
   // an empty text node child in the root element to be able to mount
   if (vdom === null || vdom.children instanceof Empty) {
-    const empty = empty_text_node();
-    initialiseMetadata(empty);
+    const empty = emptyTextNode(root);
     root.appendChild(empty);
     return none();
   } else if (
@@ -28,22 +27,23 @@ export const virtualise = (root) => {
   ) {
     return vdom.children.head;
   } else {
-    const head = empty_text_node();
-    initialiseMetadata(head);
+    const head = emptyTextNode(root);
     root.insertBefore(head, root.firstChild);
     return fragment(vdom.children);
   }
 }
 
-const empty_text_node = () => {
-  return document.createTextNode("");
+const emptyTextNode = (parent) => {
+  const node = document.createTextNode("");
+  initialiseMetadata(parent, node);
+  return node;
 }
 
-const virtualise_node = (node) => {
+const virtualiseNode = (parent, node) => {
   switch (node.nodeType) {
     case ELEMENT_NODE: {
       const key = node.getAttribute("data-lustre-key");
-      initialiseMetadata(node, key);
+      initialiseMetadata(parent, node, key);
 
       if (key) {
         node.removeAttribute("data-lustre-key");
@@ -53,12 +53,12 @@ const virtualise_node = (node) => {
       const namespace = node.namespaceURI;
       const isHtmlElement = !namespace || namespace === NAMESPACE_HTML;
 
-      if (isHtmlElement && input_elements.includes(tag)) {
-        virtualise_input_events(tag, node);
+      if (isHtmlElement && INPUT_ELEMENTS.includes(tag)) {
+        virtualiseInputEvents(tag, node);
       }
 
-      const attributes = virtualise_attributes(node);
-      const children = virtualise_child_nodes(node);
+      const attributes = virtualiseAttributes(node);
+      const children = virtualiseChildNodes(node);
 
       const vnode =
         isHtmlElement
@@ -69,13 +69,13 @@ const virtualise_node = (node) => {
     }
 
     case TEXT_NODE:
-      initialiseMetadata(node);
+      initialiseMetadata(parent, node);
       return text(node.data);
 
     case DOCUMENT_FRAGMENT_NODE: // shadowRoot
-      initialiseMetadata(node);
+      initialiseMetadata(parent, node);
       return node.childNodes.length > 0
-        ? fragment(virtualise_child_nodes(node))
+        ? fragment(virtualiseChildNodes(node))
         : null;
 
     default:
@@ -83,9 +83,9 @@ const virtualise_node = (node) => {
   }
 }
 
-const input_elements = ["input", "select", "textarea"];
+const INPUT_ELEMENTS = ["input", "select", "textarea"];
 
-const virtualise_input_events = (tag, node) => {
+const virtualiseInputEvents = (tag, node) => {
   const value = node.value;
   const checked = node.checked;
   // For inputs that reflect their default state (eg not checked for checkboxes
@@ -120,12 +120,12 @@ const virtualise_input_events = (tag, node) => {
   });
 }
 
-const virtualise_child_nodes = (node) => {
+const virtualiseChildNodes = (node) => {
   let children = empty_list;
 
   let child = node.lastChild;
   while (child) {
-    const vnode = virtualise_node(child);
+    const vnode = virtualiseNode(node, child);
     const next = child.previousSibling;
     if (vnode) {
       children = new NonEmpty(vnode, children);
@@ -138,13 +138,13 @@ const virtualise_child_nodes = (node) => {
   return children;
 }
 
-const virtualise_attributes = (node) => {
+const virtualiseAttributes = (node) => {
   let index = node.attributes.length;
 
   let attributes = empty_list;
   while (index-- > 0) {
     attributes = new NonEmpty(
-      virtualise_attribute(node.attributes[index]),
+      virtualiseAttribute(node.attributes[index]),
       attributes,
     );
   }
@@ -152,7 +152,7 @@ const virtualise_attributes = (node) => {
   return attributes;
 }
 
-const virtualise_attribute = (attr) => {
+const virtualiseAttribute = (attr) => {
   const name = attr.localName;
   const value = attr.value;
   return attribute(name, value);

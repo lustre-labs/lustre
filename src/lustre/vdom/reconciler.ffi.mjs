@@ -52,7 +52,7 @@ export class Reconciler {
   }
 
   mount(vdom) {
-    appendChild(this.#root, this.#createElement(vdom));
+    appendChild(this.#root, this.#createChild(this.#root, vdom));
   }
 
   #stack = [];
@@ -158,9 +158,7 @@ export class Reconciler {
     const fragment = createDocumentFragment();
 
     iterate(children, (child) => {
-      const el = this.#createElement(child);
-
-      addKeyedChild(node, el);
+      const el = this.#createChild(node, child);
       appendChild(fragment, el);
     });
 
@@ -199,7 +197,7 @@ export class Reconciler {
         parent[meta].keyedChildren.delete(key);
       }
 
-      for (const [_, { timeout }] of child[meta].debouncers) {
+      for (const [_, { timeout }] of child[meta].debouncers ?? []) {
         clearTimeout(timeout);
       }
 
@@ -211,9 +209,8 @@ export class Reconciler {
   #replace(parent, from, count, child) {
     this.#remove(parent, from, count);
 
-    const el = this.#createElement(child);
+    const el = this.#createChild(parent, child);
 
-    addKeyedChild(parent, el);
     insertBefore(parent, el, childAt(parent, from));
   }
 
@@ -254,10 +251,10 @@ export class Reconciler {
 
   // CONSTRUCTORS --------------------------------------------------------------
 
-  #createElement(vnode) {
+  #createChild(parent, vnode) {
     switch (vnode.kind) {
       case element_kind: {
-        const node = createElement(vnode);
+        const node = createChildElement(parent, vnode);
         this.#createAttributes(node, vnode);
 
         this.#insert(node, vnode.children, 0);
@@ -266,29 +263,24 @@ export class Reconciler {
       }
 
       case text_kind: {
-        const node = createTextNode(vnode.content);
-
-        initialiseMetadata(node, vnode.key);
-
-        return node;
+        return createChildText(parent, vnode);
       }
 
       case fragment_kind: {
         const node = createDocumentFragment();
-        const head = createTextNode();
+        const head = createChildText(parent, vnode);
 
-        initialiseMetadata(head, vnode.key);
         appendChild(node, head);
 
         iterate(vnode.children, (child) => {
-          appendChild(node, this.#createElement(child));
+          appendChild(node, this.#createChild(parent, child));
         });
 
         return node;
       }
 
       case unsafe_inner_html_kind: {
-        const node = createElement(vnode);
+        const node = createChildElement(parent, vnode);
         this.#createAttributes(node, vnode);
 
         this.#replaceInnerHtml(node, vnode.inner_html);
@@ -462,13 +454,18 @@ const appendChild = (node, child) => node.appendChild(child);
 const insertBefore = (parent, node, referenceNode) =>
   parent.insertBefore(node, referenceNode ?? null);
 
-const createElement = ({ key, tag, namespace }) => {
+const createChildElement= (parent, { key, tag, namespace }) => {
   const node = document.createElementNS(namespace || NAMESPACE_HTML, tag);
-  initialiseMetadata(node, key);
+  initialiseMetadata(parent, node, key);
   return node;
 };
 
-const createTextNode = (text) => document.createTextNode(text ?? "");
+const createChildText = (parent, { key, content }) => {
+  const node = document.createTextNode(content ?? "");
+  initialiseMetadata(parent, node, key);
+  return node;
+};
+
 const createDocumentFragment = () => document.createDocumentFragment();
 const childAt = (node, at) => node.childNodes[at | 0];
 
@@ -476,7 +473,7 @@ const childAt = (node, at) => node.childNodes[at | 0];
 
 const meta = Symbol("lustre");
 
-export const initialiseMetadata = (node, key = "") => {
+export const initialiseMetadata = (parent, node, key = "") => {
   switch (node.nodeType) {
     case ELEMENT_NODE:
     case DOCUMENT_FRAGMENT_NODE:
@@ -490,8 +487,12 @@ export const initialiseMetadata = (node, key = "") => {
       break;
 
     case TEXT_NODE:
-      node[meta] = { key, debouncers: new Map() };
+      node[meta] = { key };
       break;
+  }
+
+  if (parent && key) {
+    parent[meta].keyedChildren.set(key, new WeakRef(node));
   }
 };
 
@@ -504,22 +505,6 @@ export const isLustreNode = (node) => {
   }
 
   return false;
-};
-
-const addKeyedChild = (node, child) => {
-  if (child.nodeType === DOCUMENT_FRAGMENT_NODE) {
-    for (child = child.firstChild; child; child = child.nextSibling) {
-      addKeyedChild(node, child);
-    }
-
-    return;
-  }
-
-  const key = child[meta].key;
-
-  if (key) {
-    node[meta].keyedChildren.set(key, new WeakRef(child));
-  }
 };
 
 const getKeyedChild = (node, key) => node[meta].keyedChildren.get(key).deref();
