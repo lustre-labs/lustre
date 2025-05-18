@@ -1,0 +1,30 @@
+name: Test Suite
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Run Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Gleam
+        uses: erlef/setup-beam@v1.18.2
+        with:
+          otp-version: "27.0"
+          rebar3-version: "3"
+          gleam-version: "1.10.0"
+
+      - name: Check formatting
+        run: gleam format --check
+
+      - name: Run tests (Erlang target)
+        run: gleam test --target erlang
+
+      - name: Run tests (JavaScript target)
+        run: gleam test --target javascript
