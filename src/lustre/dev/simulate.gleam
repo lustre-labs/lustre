@@ -66,8 +66,7 @@ pub opaque type Simulation(model, msg) {
 pub type Event(msg) {
   Dispatch(message: msg)
   Event(target: Query, name: String, data: Json)
-  EventTargetNotFound(matching: Query)
-  EventHandlerNotFound(target: Query, name: String)
+  Problem(name: String, message: String)
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -185,18 +184,30 @@ pub fn event(
   name event: String,
   data payload: List(#(String, Json)),
 ) -> Simulation(model, msg) {
-  let result = {
-    use #(_, path) <- result.try(query.find_path(
-      in: simulation.html,
-      matching: query,
-      // In Lustre's vdom the path always starts with `0` to represent the root
-      // node, so we need to account for that here.
-      //
-      // TODO: maybe Lustre's internal `path` module should account for that
-      // automatically?
-      //
-      from: path.root |> path.add(0, ""),
-    ))
+  result.unwrap_both({
+    use #(_, path) <- result.try(
+      query.find_path(
+        in: simulation.html,
+        matching: query,
+        // In Lustre's vdom the path always starts with `0` to represent the root
+        // node, so we need to account for that here.
+        //
+        // TODO: maybe Lustre's internal `path` module should account for that
+        // automatically?
+        //
+        from: path.root,
+        index: 0,
+      )
+      |> result.replace_error(
+        Simulation(..simulation, history: [
+          Problem(
+            name: "EventTargetNotFound",
+            message: "No element matching " <> query.to_readable_string(query),
+          ),
+          ..simulation.history
+        ]),
+      ),
+    )
 
     let events = events.from_node(simulation.html)
     let data = json.object(payload)
@@ -212,7 +223,18 @@ pub fn event(
           |> result.unwrap(erase(Nil)),
       )
       |> pair.second
-      |> result.replace_error(Nil),
+      |> result.replace_error(
+        Simulation(..simulation, history: [
+          Problem(
+            name: "EventHandlerNotFound",
+            message: "No "
+              <> event
+              <> " handler for element matching "
+              <> query.to_readable_string(query),
+          ),
+          ..simulation.history
+        ]),
+      ),
     )
 
     let #(model, _) = simulation.update(simulation.model, msg)
@@ -223,17 +245,7 @@ pub fn event(
     ]
 
     Ok(Simulation(..simulation, history:, model:, html:))
-  }
-
-  case result {
-    Ok(simulation) -> simulation
-
-    Error(_) ->
-      Simulation(..simulation, history: [
-        EventTargetNotFound(matching: query),
-        ..simulation.history
-      ])
-  }
+  })
 }
 
 /// A convenience function that simulates a click event on the first element
