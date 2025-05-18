@@ -11,10 +11,12 @@ import lustre/dev/simulate
 import lustre/element
 import lustre/element/html
 import lustre/event
+import lustre_test
 
 //
 
 pub fn simulate_single_event_test() {
+  use <- lustre_test.test_filter("simulate_single_event_test")
   let incr_button = element(data("test-id", "incr"))
 
   simulate.simple(init:, update:, view:)
@@ -25,6 +27,7 @@ pub fn simulate_single_event_test() {
 }
 
 pub fn simulate_multiple_events_test() {
+  use <- lustre_test.test_filter("simulate_multiple_events_test")
   let incr_button = element(data("test-id", "incr"))
 
   simulate.simple(init:, update:, view:)
@@ -36,6 +39,7 @@ pub fn simulate_multiple_events_test() {
 }
 
 pub fn simulate_message_test() {
+  use <- lustre_test.test_filter("simulate_message_test")
   simulate.simple(init:, update:, view:)
   |> simulate.start(0)
   |> simulate.message(ParentResetCount(10))
@@ -44,6 +48,7 @@ pub fn simulate_message_test() {
 }
 
 pub fn simulate_events_and_messages_test() {
+  use <- lustre_test.test_filter("simulate_events_and_messages_test")
   let incr_button = element(data("test-id", "incr"))
 
   simulate.simple(init:, update:, view:)
@@ -53,6 +58,30 @@ pub fn simulate_events_and_messages_test() {
   |> simulate.event(on: incr_button, name: "click", data: [])
   |> to_snapshot
   |> birdie.snap("[simulate] Events and messages")
+}
+
+// PROBLEMS -------------------------------------------------------------------
+
+pub fn simulate_missing_element_test() {
+  use <- lustre_test.test_filter("simulate_missing_element_test")
+  let submit_button = element(data("test-id", "submit"))
+
+  simulate.simple(init:, update:, view:)
+  |> simulate.start(0)
+  |> simulate.event(on: submit_button, name: "click", data: [])
+  |> to_snapshot
+  |> birdie.snap("[simulate] Missing element")
+}
+
+pub fn simulate_missing_event_handler_test() {
+  use <- lustre_test.test_filter("simulate_missing_event_handler_test")
+  let incr_button = element(data("test-id", "incr"))
+
+  simulate.simple(init:, update:, view:)
+  |> simulate.start(0)
+  |> simulate.event(on: incr_button, name: "keydown", data: [])
+  |> to_snapshot
+  |> birdie.snap("[simulate] Missing event handler")
 }
 
 // UTILS -----------------------------------------------------------------------
@@ -68,6 +97,7 @@ fn to_snapshot(app) {
     |> list.map(fn(event) {
       case event {
         simulate.Dispatch(message:) -> "message | " <> string.inspect(message)
+
         simulate.Event(target:, name:, data:) ->
           "event   | "
           <> query.to_readable_string(target)
@@ -75,18 +105,9 @@ fn to_snapshot(app) {
           <> name
           <> "\" "
           <> json.to_string(data)
-        simulate.EventTargetNotFound(matching:) ->
-          "event   | "
-          <> query.to_readable_string(matching)
-          <> " "
-          <> "not found"
-        simulate.EventHandlerNotFound(target:, name:) ->
-          "event   | "
-          <> query.to_readable_string(target)
-          <> " \""
-          <> name
-          <> "\" "
-          <> "no handler"
+
+        simulate.Problem(name:, message:) ->
+          "problem | " <> name <> ": " <> message
       }
     })
     |> string.join("\n  ")

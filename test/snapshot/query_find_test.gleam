@@ -9,10 +9,12 @@ import lustre/dev/query.{
 }
 import lustre/element
 import lustre/element/html
+import lustre_test
 
 // SINGLE ELEMENTS -------------------------------------------------------------
 
 pub fn find_element_by_id_test() {
+  use <- lustre_test.test_filter("find_element_by_id_test")
   let query = query.element(matching: query.id("login-form"))
   let assert Ok(element) = query.find(in: page(), matching: query)
 
@@ -22,6 +24,7 @@ pub fn find_element_by_id_test() {
 }
 
 pub fn find_element_by_tag_test() {
+  use <- lustre_test.test_filter("find_element_by_tag_test")
   let query = query.element(matching: tag("h1"))
   let assert Ok(element) = query.find(in: page(), matching: query)
 
@@ -31,6 +34,7 @@ pub fn find_element_by_tag_test() {
 }
 
 pub fn find_element_by_class_test() {
+  use <- lustre_test.test_filter("find_element_by_class_test")
   let query = query.element(matching: class("cta"))
   let assert Ok(element) = query.find(in: page(), matching: query)
 
@@ -40,6 +44,7 @@ pub fn find_element_by_class_test() {
 }
 
 pub fn find_element_by_multiple_classes_test() {
+  use <- lustre_test.test_filter("find_element_by_multiple_classes_test")
   let query = query.element(matching: class("content hero"))
   let assert Ok(element) = query.find(in: page(), matching: query)
 
@@ -49,6 +54,7 @@ pub fn find_element_by_multiple_classes_test() {
 }
 
 pub fn find_element_by_inline_style_test() {
+  use <- lustre_test.test_filter("find_element_by_inline_style_test")
   let query = query.element(matching: style("list-style-type", "none"))
   let assert Ok(element) = query.find(in: page(), matching: query)
 
@@ -58,6 +64,7 @@ pub fn find_element_by_inline_style_test() {
 }
 
 pub fn find_element_by_text_content_test() {
+  use <- lustre_test.test_filter("find_element_by_text_content_test")
   let query = query.element(matching: text("©"))
   let assert Ok(element) = query.find(in: page(), matching: query)
 
@@ -67,6 +74,7 @@ pub fn find_element_by_text_content_test() {
 }
 
 pub fn find_child_by_tag_test() {
+  use <- lustre_test.test_filter("find_child_by_tag_test")
   let query = query.element(matching: tag("form")) |> child(matching: tag("h2"))
   let assert Ok(element) = query.find(in: page(), matching: query)
 
@@ -76,6 +84,7 @@ pub fn find_child_by_tag_test() {
 }
 
 pub fn find_child_descendant_by_data_attribute_test() {
+  use <- lustre_test.test_filter("find_child_descendant_by_data_attribute_test")
   let query =
     query.element(matching: tag("header"))
     |> child(matching: tag("nav"))
@@ -88,6 +97,7 @@ pub fn find_child_descendant_by_data_attribute_test() {
 }
 
 pub fn find_descendant_by_attribute_test() {
+  use <- lustre_test.test_filter("find_descendant_by_attribute_test")
   let query =
     query.element(matching: tag("form"))
     |> descendant(matching: tag("button") |> and(attribute("type", "submit")))
@@ -101,6 +111,7 @@ pub fn find_descendant_by_attribute_test() {
 // MULTIPLE ELEMENTS -----------------------------------------------------------
 
 pub fn find_all_by_tag_test() {
+  use <- lustre_test.test_filter("find_all_by_tag_test")
   let query = query.element(matching: tag("section"))
   let assert [_, ..] as elements = find_all(in: page(), matching: query)
 
@@ -110,6 +121,7 @@ pub fn find_all_by_tag_test() {
 }
 
 pub fn find_all_by_attribute_test() {
+  use <- lustre_test.test_filter("find_all_by_attribute_test")
   let query = query.element(matching: attribute("href", ""))
   let assert [_, ..] as elements = find_all(in: page(), matching: query)
 
@@ -119,6 +131,7 @@ pub fn find_all_by_attribute_test() {
 }
 
 pub fn find_all_by_class_test() {
+  use <- lustre_test.test_filter("find_all_by_class_test")
   let query = query.element(matching: class("vertical-nav"))
   let assert [_, ..] as elements = find_all(in: page(), matching: query)
 
