@@ -9,6 +9,14 @@ Changelogs can change! If you spot something is wrong or missing, please conside
 [opening an issue](https://github.com/lustre-labs/lustre/issues/new) or a pull
 request to fix it.
 
+## Unchanged
+
+### Changed
+
+- [lustre/event] Fixed a bug where setting `prevent_default` on an existing event listener would not remove the passive flag.
+- [lustre/event] Fixed a bug where `throttle` would only work when used in combination with `debounce`.
+- [lustre/event] Fixed a bug where `throttle` would incorrectly call `.preventDefault` on all discarded events.
+
 ## [v5.1.0] - 2025-05-18
 
 ### Added
