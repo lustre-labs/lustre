@@ -125,7 +125,7 @@ export class ServerComponent extends HTMLElement {
           this.#shadowRoot.firstChild.remove()
         }
 
-        initialiseMetadata(this.#shadowRoot);
+        initialiseMetadata(null, this.#shadowRoot);
 
         this.#reconciler = new Reconciler(
           this.#shadowRoot,

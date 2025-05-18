@@ -454,7 +454,7 @@ const appendChild = (node, child) => node.appendChild(child);
 const insertBefore = (parent, node, referenceNode) =>
   parent.insertBefore(node, referenceNode ?? null);
 
-const createChildElement= (parent, { key, tag, namespace }) => {
+const createChildElement = (parent, { key, tag, namespace }) => {
   const node = document.createElementNS(namespace || NAMESPACE_HTML, tag);
   initialiseMetadata(parent, node, key);
   return node;
