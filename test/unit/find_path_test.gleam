@@ -53,6 +53,8 @@ pub fn find_path_in_single_nested_event_test() {
   |> should.equal(Ok("hello!"))
 }
 
+// KEYS ------------------------------------------------------------------------
+
 pub fn find_path_in_single_nested_keyed_event_test() {
   use <- lustre_test.test_filter("find_path_in_single_nested_keyed_event_test")
 
@@ -103,7 +105,7 @@ pub fn find_path_in_single_nested_keyed_event_with_period_test() {
   |> should.equal(Ok("hello!"))
 }
 
-//
+// FRAGMENTS -------------------------------------------------------------------
 
 pub fn find_path_in_fragment_event_test() {
   use <- lustre_test.test_filter("find_path_in_fragment_event_test")
@@ -175,14 +177,17 @@ pub fn find_path_in_nested_fragment_with_multiple_children_event_test() {
   |> should.equal(Ok(4))
 }
 
+// CHILD QUERIES ---------------------------------------------------------------
+
 pub fn find_path_by_child_query_test() {
   use <- lustre_test.test_filter("find_path_by_child_query_test")
+
   let vdom =
     html.div([], [
-      html.button(
-        [event.on_click("hello!"), attribute.data("test-id", "target")],
-        [html.text("Click me!")],
-      ),
+      html.button([event.on_click(1)], [html.text("Button 1!")]),
+      html.button([event.on_click(2), attribute.data("test-id", "target")], [
+        html.text("Button 2!"),
+      ]),
     ])
 
   let events = events.from_node(vdom)
@@ -193,5 +198,81 @@ pub fn find_path_by_child_query_test() {
 
   events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok("hello!"))
+  |> should.equal(Ok(2))
+}
+
+pub fn find_path_by_child_query_in_fragment_test() {
+  use <- lustre_test.test_filter("find_path_by_child_query_in_fragment_test")
+
+  let vdom =
+    html.div([], [
+      html.button([event.on_click(1)], [html.text("Button 1!")]),
+      element.fragment([
+        html.button([event.on_click(2), attribute.data("test-id", "target")], [
+          html.text("Button 2!"),
+        ]),
+      ]),
+    ])
+
+  let events = events.from_node(vdom)
+  let query =
+    query.element(matching: query.tag("div"))
+    |> query.child(matching: query.test_id("target"))
+  let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
+
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
+  |> pair.second
+  |> should.equal(Ok(2))
+}
+
+pub fn find_path_by_descendant_query_test() {
+  use <- lustre_test.test_filter("find_path_by_descendant_query_test")
+
+  let vdom =
+    html.div([], [
+      html.div([], [
+        html.button([event.on_click(1)], [html.text("Button 1!")]),
+        html.button([event.on_click(2), attribute.data("test-id", "target")], [
+          html.text("Button 2!"),
+        ]),
+      ]),
+    ])
+
+  let events = events.from_node(vdom)
+  let query =
+    query.element(matching: query.tag("div"))
+    |> query.descendant(matching: query.test_id("target"))
+  let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
+
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
+  |> pair.second
+  |> should.equal(Ok(2))
+}
+
+pub fn find_path_by_descendant_query_in_fragment_test() {
+  use <- lustre_test.test_filter(
+    "find_path_by_descendant_query_in_fragment_test",
+  )
+
+  let vdom =
+    html.div([], [
+      html.div([], [
+        html.button([event.on_click(1)], [html.text("Button 1!")]),
+        element.fragment([
+          html.button([event.on_click(2), attribute.data("test-id", "target")], [
+            html.text("Button 2!"),
+          ]),
+        ]),
+      ]),
+    ])
+
+  let events = events.from_node(vdom)
+  let query =
+    query.element(matching: query.tag("div"))
+    |> query.descendant(matching: query.test_id("target"))
+  let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
+
+  events.handle(events, path.to_string(path), "click", dynamic.nil())
+  |> pair.second
+  |> should.equal(Ok(2))
 }
