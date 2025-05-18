@@ -9,16 +9,20 @@ Changelogs can change! If you spot something is wrong or missing, please conside
 [opening an issue](https://github.com/lustre-labs/lustre/issues/new) or a pull
 request to fix it.
 
-## [Unreleased]
+## [v5.1.0] - 2025-05-18
 
 ### Added
 
 - [lustre/attribute] Added a `attribute.default_value` function to set the `defaultValue` property of an input.
-- [lustre/attribute] Added multple attributes for working with HTML tables: `attribute.abbr, `attribute.colspan, `attribute.headers, `attribute.rowspan, `attribute.span, `attribute.scope`
+- [lustre/attribute] Added multple attributes for working with HTML tables: `attribute.abbr`, `attribute.colspan, `attribute.headers, `attribute.rowspan, `attribute.span, `attribute.scope`.
 - [lustre/dev/query] Created a module for querying a view for test purposes.
 - [lustre/dev/simulate] Created a module for simulating a running application for test purposes.
-- [lustre/event] Added support for `debounce` and `throttle` on the same event, at the same time
-- [lustre/event] Fixed a bug where updating the delay for `debounce` or `throttle` would have no effect
+- [lustre/event] Added support for `debounce` and `throttle` on the same event, at the same time.
+
+### Changed
+
+- [lustre/event] Fixed a bug where updating the delay for `debounce` or `throttle` would have no effect.
+- [lustre/runtime] Fixed a bug where keyed elements where no fully virtualised.
 
 ## [5.0.3] - 2025-05-09
 
