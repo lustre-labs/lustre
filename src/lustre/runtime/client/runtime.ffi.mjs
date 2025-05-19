@@ -11,7 +11,7 @@ import { document } from "../../internals/constants.ffi.mjs";
 
 //
 
-export const is_browser = () => !!document;
+export const is_browser = () => !!document();
 
 export const is_registered = (name) => is_browser() && customElements.get(name);
 
@@ -245,7 +245,7 @@ const copiedStyleSheets = new WeakMap();
 
 export async function adoptStylesheets(shadowRoot) {
   const pendingParentStylesheets = [];
-  for (const node of document.querySelectorAll("link[rel=stylesheet], style")) {
+  for (const node of document().querySelectorAll("link[rel=stylesheet], style")) {
     if (node.sheet) continue;
 
     pendingParentStylesheets.push(
@@ -268,7 +268,7 @@ export async function adoptStylesheets(shadowRoot) {
 
   const pending = [];
 
-  for (const sheet of document.styleSheets) {
+  for (const sheet of document().styleSheets) {
     try {
       shadowRoot.adoptedStyleSheets.push(sheet);
     } catch {

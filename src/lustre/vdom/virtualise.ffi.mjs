@@ -34,7 +34,7 @@ export const virtualise = (root) => {
 }
 
 const emptyTextNode = (parent) => {
-  const node = document.createTextNode("");
+  const node = document().createTextNode("");
   initialiseMetadata(parent, node);
   return node;
 }
@@ -114,7 +114,7 @@ const virtualiseInputEvents = (tag, node) => {
     // User apps may be using semi-controlled inputs where they listen to blur
     // events to save the value rather than using the input event. To account for
     // those, we dispatch a blur event if the input is not currently focused.
-    if (document.activeElement !== node) {
+    if (document().activeElement !== node) {
       node.dispatchEvent(new Event("blur", { bubbles: true }));
     }
   });
