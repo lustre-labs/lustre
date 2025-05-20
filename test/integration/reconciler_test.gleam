@@ -1,5 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
-// 
+//
+@target(javascript)
+import gleam/list
 @target(javascript)
 import gleeunit/should
 @target(javascript)
@@ -16,6 +18,8 @@ import lustre/vdom/diff
 import lustre/vdom/events
 @target(javascript)
 import lustre/vdom/patch.{type Patch}
+@target(javascript)
+import lustre/vdom/vnode
 @target(javascript)
 import lustre_test
 
@@ -657,7 +661,64 @@ fn test_diff(prev: Element(msg), next: Element(msg)) {
   mount(reconciler, prev)
   push(reconciler, diff.diff(events.new(), prev, next).patch)
 
-  should.equal(get_html(), element.to_string(next))
+  let vdom = get_vdom()
+  case nodes_equal(vdom, next) {
+    True -> Nil
+    False -> should.equal(vdom, next)
+  }
+}
+
+@target(javascript)
+fn nodes_equal(left: Element(msg), right: Element(msg)) {
+  case left, right {
+    vnode.Fragment(..), vnode.Fragment(..) ->
+      children_equal(left.children, right.children)
+
+    // if a fragment has a single child and the other side is a node, we can
+    // compare against that child instead.
+    vnode.Fragment(children: [left], ..), _ -> nodes_equal(left, right)
+    _, vnode.Fragment(children: [right], ..) -> nodes_equal(left, right)
+
+    // don't check the key on text nodes (or fragments) - we can't virtualise it
+    vnode.Text(..), vnode.Text(..) -> left.content == right.content
+
+    vnode.Element(..), vnode.Element(..) ->
+      left.key == right.key
+      && left.tag == right.tag
+      && left.namespace == right.namespace
+      && left.attributes == right.attributes
+      && children_equal(left.children, right.children)
+
+    vnode.UnsafeInnerHtml(..), vnode.UnsafeInnerHtml(..) ->
+      left.key == right.key
+      && left.tag == right.tag
+      && left.namespace == right.namespace
+      && left.attributes == right.attributes
+      && left.inner_html == right.inner_html
+    _, _ -> False
+  }
+}
+
+@target(javascript)
+fn children_equal(left: List(Element(msg)), right: List(Element(msg))) -> Bool {
+  case left, right {
+    // base cases
+    [], [] -> True
+    [_, ..], [] | [], [_, ..] -> False
+
+    // unwrap fragments
+    [vnode.Fragment(children:, ..), ..left], _ ->
+      children_equal(list.append(children, left), right)
+    _, [vnode.Fragment(children:, ..), ..right] ->
+      children_equal(left, list.append(children, right))
+
+    // compare non-fragment children
+    [first_left, ..left], [first_right, ..right] ->
+      case nodes_equal(first_left, first_right) {
+        True -> children_equal(left, right)
+        False -> False
+      }
+  }
 }
 
 // FFI -------------------------------------------------------------------------
@@ -680,3 +741,7 @@ fn push(reconciler: Reconciler, patch: Patch(msg)) -> Nil
 @target(javascript)
 @external(javascript, "./reconciler_test.ffi.mjs", "get_html")
 fn get_html() -> String
+
+@target(javascript)
+@external(javascript, "./reconciler_test.ffi.mjs", "get_vdom")
+fn get_vdom() -> Element(msg)

@@ -70,7 +70,7 @@ const virtualiseNode = (parent, node) => {
 
     case TEXT_NODE:
       initialiseMetadata(parent, node);
-      return text(node.data);
+      return node.data ? text(node.data) : null;
 
     case DOCUMENT_FRAGMENT_NODE: // shadowRoot
       initialiseMetadata(parent, node);
