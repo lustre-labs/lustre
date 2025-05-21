@@ -7,3 +7,5 @@ erl_crash.dump
 examples/*/*/.github
 examples/*/*/manifest.toml
 examples/*/*/priv/static
+
+node_modules/

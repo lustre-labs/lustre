@@ -44,11 +44,16 @@ export class Reconciler {
   #dispatch = () => {};
 
   #useServerEvents = false;
+  #exposeKeys = false;
 
-  constructor(root, dispatch, { useServerEvents = false } = {}) {
+  constructor(root, dispatch, {
+    useServerEvents = false,
+    exposeKeys = false
+  } = {}) {
     this.#root = root;
     this.#dispatch = dispatch;
     this.#useServerEvents = useServerEvents;
+    this.#exposeKeys = exposeKeys;
   }
 
   mount(vdom) {
@@ -290,7 +295,11 @@ export class Reconciler {
     }
   }
 
-  #createAttributes(node, { attributes }) {
+  #createAttributes(node, { key, attributes }) {
+    if (this.#exposeKeys && key) {
+      node.setAttribute('data-lustre-key', key)
+    }
+    
     iterate(attributes, (attribute) => this.#createAttribute(node, attribute));
   }
 
@@ -459,18 +468,18 @@ const insertBefore = (parent, node, referenceNode) =>
   parent.insertBefore(node, referenceNode ?? null);
 
 const createChildElement = (parent, { key, tag, namespace }) => {
-  const node = document.createElementNS(namespace || NAMESPACE_HTML, tag);
+  const node = document().createElementNS(namespace || NAMESPACE_HTML, tag);
   initialiseMetadata(parent, node, key);
   return node;
 };
 
 const createChildText = (parent, { key, content }) => {
-  const node = document.createTextNode(content ?? "");
+  const node = document().createTextNode(content ?? "");
   initialiseMetadata(parent, node, key);
   return node;
 };
 
-const createDocumentFragment = () => document.createDocumentFragment();
+const createDocumentFragment = () => document().createDocumentFragment();
 const childAt = (node, at) => node.childNodes[at | 0];
 
 // METADATA --------------------------------------------------------------------
