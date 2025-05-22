@@ -19,7 +19,7 @@ export class Spa {
     const root =
       selector instanceof HTMLElement
         ? selector
-        : document.querySelector(selector);
+        : document().querySelector(selector);
 
     if (!root) return new Error(new ElementNotFound(selector));
 
