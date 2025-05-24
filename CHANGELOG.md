@@ -29,6 +29,7 @@ request to fix it.
 
 ### Changed
 
+- [lustre] Change `gleam_stdlib` constraint to `>= 0.60.0 and < 2.0.0`.
 - [lustre/event] Fixed a bug where updating the delay for `debounce` or `throttle` would have no effect.
 - [lustre/runtime] Fixed a bug where keyed elements where no fully virtualised.
 
