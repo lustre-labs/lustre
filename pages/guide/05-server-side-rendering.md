@@ -22,7 +22,7 @@ modules to render HTML with Lustre. Importantly, we _don't_ need anything from t
 main `lustre` module: we're not building an application with a runtime!
 
 ```gleam
-import gleam/bytes_builder
+import gleam/bytes_tree
 import gleam/erlang/process
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
@@ -36,7 +36,7 @@ requests to `/greet/:name` with a greeting message:
 
 ```gleam
 pub fn main() {
-  let empty_body = mist.Bytes(bytes_builder.new())
+  let empty_body = mist.Bytes(bytes_tree.new())
   let not_found = response.set_body(response.new(404), empty_body)
 
   let assert Ok(_) =
