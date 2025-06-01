@@ -70,7 +70,7 @@ fn greet(name: String) -> Response(ResponseData) {
   response.set_body(res,
     html
     |> element.to_document_string
-    |> bytes_builder.from_string
+    |> bytes_tree.from_string
     |> mist.Bytes
   )
 }
@@ -126,7 +126,7 @@ Let's imagine our HTTP server responds with the following HTML:
 
 ```gleam
 import app/counter
-import gleam/bytes_builder
+import gleam/bytes_tree
 import gleam/http/response.{type Response}
 import gleam/json
 import lustre/attribute
@@ -157,7 +157,7 @@ fn app() -> Response(ResponseData) {
   response.set_body(res,
     html
     |> element.to_document_string
-    |> bytes_builder.from_string
+    |> bytes_tree.from_string
     |> mist.Bytes
   )
 }
