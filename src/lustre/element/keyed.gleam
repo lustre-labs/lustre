@@ -185,24 +185,36 @@ pub fn dl(
 fn extract_keyed_children(
   children: List(#(String, Element(msg))),
 ) -> #(MutableMap(String, Element(msg)), List(Element(msg)), Int) {
-  let init = #(mutable_map.new(), constants.empty_list, 0)
-  let #(keyed_children, children, children_count) = {
-    use #(keyed_children, children, children_count), #(key, element) <- list.fold(
-      children,
-      init,
-    )
+  do_extract_keyed_children(
+    children,
+    mutable_map.new(),
+    constants.empty_list,
+    0,
+  )
+}
 
-    let keyed_element = vnode.to_keyed(key, element)
+fn do_extract_keyed_children(
+  key_children_pairs: List(#(String, Element(msg))),
+  keyed_children: MutableMap(String, Element(msg)),
+  children: List(Element(msg)),
+  children_count: Int,
+) -> #(MutableMap(String, Element(msg)), List(Element(msg)), Int) {
+  case key_children_pairs {
+    [] -> #(keyed_children, list.reverse(children), children_count)
 
-    // Children with empty keys are not inserted into the lookup, but they are
-    // still returned in the children list.
-    let keyed_children = case key {
-      "" -> keyed_children
-      _ -> mutable_map.insert(keyed_children, key, keyed_element)
+    [#(key, element), ..rest] -> {
+      let keyed_element = vnode.to_keyed(key, element)
+
+      // Children with empty keys are not inserted into the lookup, but they are
+      // still returned in the children list.
+      let keyed_children = case key {
+        "" -> keyed_children
+        _ -> mutable_map.insert(keyed_children, key, keyed_element)
+      }
+      let children = [keyed_element, ..children]
+      let children_count = children_count + vnode.advance(keyed_element)
+
+      do_extract_keyed_children(rest, keyed_children, children, children_count)
     }
-
-    #(keyed_children, [keyed_element, ..children], children_count + 1)
   }
-
-  #(keyed_children, list.reverse(children), children_count)
 }
