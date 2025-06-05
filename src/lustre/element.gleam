@@ -197,12 +197,10 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
 
 fn count_fragment_children(children: List(Element(msg)), count: Int) -> Int {
   case children {
+    [child, ..rest] ->
+      count_fragment_children(rest, count + vnode.advance(child))
+
     [] -> count
-
-    [Fragment(children_count:, ..), ..rest] ->
-      count_fragment_children(rest, count + children_count)
-
-    [_, ..rest] -> count_fragment_children(rest, count + 1)
   }
 }
 

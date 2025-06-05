@@ -16,6 +16,7 @@ request to fix it.
 - [lustre/event] Fixed a bug where setting `prevent_default` on an existing event listener would not remove the passive flag.
 - [lustre/event] Fixed a bug where `throttle` would only work when used in combination with `debounce`.
 - [lustre/event] Fixed a bug where `throttle` would incorrectly call `.preventDefault` on all discarded events.
+- [lustre/element] Fixed a bug where nested fragments would sometimes not be properly replaced
 
 ## [v5.1.0] - 2025-05-18
 
