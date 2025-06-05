@@ -249,9 +249,9 @@ pub fn reconciler_push_nested_fragment_child_replaced_test() {
 }
 
 @target(javascript)
-pub fn reconciler_push_nested_fragment_children_removed_test() {
+pub fn reconciler_push_fragment_children_removed_test() {
   use <- lustre_test.test_filter(
-    "reconciler_push_nested_fragment_children_removed_test",
+    "reconciler_push_fragment_children_removed_test",
   )
 
   let prev =
@@ -261,6 +261,31 @@ pub fn reconciler_push_nested_fragment_children_removed_test() {
     ])
 
   let next = html.div([], [element.fragment([html.h1([], [])]), html.p([], [])])
+
+  test_diff(prev, next)
+}
+
+@target(javascript)
+pub fn reconciler_push_nested_fragment_children_removed_test() {
+  use <- lustre_test.test_filter(
+    "reconciler_push_nested_fragment_children_removed_test",
+  )
+
+  let prev =
+    html.div([], [
+      element.fragment([
+        element.fragment([html.h1([], []), html.p([], [])]),
+        html.p([attribute.class("a")], []),
+        html.p([attribute.class("b")], []),
+      ]),
+      html.p([], []),
+    ])
+
+  let next =
+    html.div([], [
+      element.fragment([html.h1([], []), html.p([attribute.class("a")], [])]),
+      html.div([], []),
+    ])
 
   test_diff(prev, next)
 }

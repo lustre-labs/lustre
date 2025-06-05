@@ -59,7 +59,7 @@ pub fn text_to_element_replacement_test() {
   |> should.equal(diff)
 }
 
-// // NODE DIFFS ------------------------------------------------------------------
+// NODE DIFFS ------------------------------------------------------------------
 
 pub fn nested_attribute_changes_test() {
   use <- lustre_test.test_filter("nested_attribute_changes_test")
@@ -268,8 +268,8 @@ pub fn nested_fragment_child_replaced_test() {
   |> should.equal(diff)
 }
 
-pub fn nested_fragment_children_removed_test() {
-  use <- lustre_test.test_filter("nested_fragment_children_removed_test")
+pub fn fragment_children_removed_test() {
+  use <- lustre_test.test_filter("fragment_children_removed_test")
 
   let prev =
     html.div([], [
@@ -281,6 +281,43 @@ pub fn nested_fragment_children_removed_test() {
 
   let diff =
     patch.new(0, 0, [], [patch.new(0, 0, [patch.remove(from: 2, count: 2)], [])])
+
+  diff.diff(events.new(), prev, next).patch
+  |> should.equal(diff)
+}
+
+pub fn nested_fragment_children_removed_test() {
+  use <- lustre_test.test_filter("nested_fragment_children_removed_test")
+
+  let prev =
+    html.div([], [
+      element.fragment([
+        element.fragment([html.h1([], []), html.p([], [])]),
+        html.p([], []),
+        html.p([], []),
+      ]),
+      html.p([], []),
+    ])
+
+  let next =
+    html.div([], [
+      element.fragment([html.h1([], []), html.p([], [])]),
+      html.div([], []),
+    ])
+
+  let diff =
+    patch.new(0, 0, [], [
+      patch.new(
+        0,
+        0,
+        [
+          patch.replace(from: 6, count: 1, with: html.div([], [])),
+          patch.replace(from: 1, count: 3, with: html.h1([], [])),
+          patch.remove(from: 3, count: 1),
+        ],
+        [],
+      ),
+    ])
 
   diff.diff(events.new(), prev, next).patch
   |> should.equal(diff)
