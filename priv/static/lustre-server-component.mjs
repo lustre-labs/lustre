@@ -32,7 +32,7 @@ var trim_start_regex = /* @__PURE__ */ new RegExp(
 var trim_end_regex = /* @__PURE__ */ new RegExp(`[${unicode_whitespaces}]*$`);
 
 // build/dev/javascript/lustre/lustre/internals/constants.ffi.mjs
-var document = globalThis?.document;
+var document = () => globalThis?.document;
 var NAMESPACE_HTML = "http://www.w3.org/1999/xhtml";
 var ELEMENT_NODE = 1;
 var TEXT_NODE = 3;
@@ -58,7 +58,7 @@ var separator_key = "	";
 var copiedStyleSheets = /* @__PURE__ */ new WeakMap();
 async function adoptStylesheets(shadowRoot) {
   const pendingParentStylesheets = [];
-  for (const node of document.querySelectorAll("link[rel=stylesheet], style")) {
+  for (const node of document().querySelectorAll("link[rel=stylesheet], style")) {
     if (node.sheet)
       continue;
     pendingParentStylesheets.push(
@@ -74,7 +74,7 @@ async function adoptStylesheets(shadowRoot) {
   }
   shadowRoot.adoptedStyleSheets = shadowRoot.host.getRootNode().adoptedStyleSheets;
   const pending = [];
-  for (const sheet of document.styleSheets) {
+  for (const sheet of document().styleSheets) {
     try {
       shadowRoot.adoptedStyleSheets.push(sheet);
     } catch {
@@ -115,10 +115,15 @@ var Reconciler = class {
   #dispatch = () => {
   };
   #useServerEvents = false;
-  constructor(root2, dispatch, { useServerEvents = false } = {}) {
+  #exposeKeys = false;
+  constructor(root2, dispatch, {
+    useServerEvents = false,
+    exposeKeys = false
+  } = {}) {
     this.#root = root2;
     this.#dispatch = dispatch;
     this.#useServerEvents = useServerEvents;
+    this.#exposeKeys = exposeKeys;
   }
   mount(vdom) {
     appendChild(this.#root, this.#createChild(this.#root, vdom));
@@ -301,7 +306,10 @@ var Reconciler = class {
       }
     }
   }
-  #createAttributes(node, { attributes }) {
+  #createAttributes(node, { key, attributes }) {
+    if (this.#exposeKeys && key) {
+      node.setAttribute("data-lustre-key", key);
+    }
     iterate(attributes, (attribute3) => this.#createAttribute(node, attribute3));
   }
   #createAttribute(node, attribute3) {
@@ -422,16 +430,16 @@ var iterate = (list4, callback) => {
 var appendChild = (node, child) => node.appendChild(child);
 var insertBefore = (parent, node, referenceNode) => parent.insertBefore(node, referenceNode ?? null);
 var createChildElement = (parent, { key, tag, namespace }) => {
-  const node = document.createElementNS(namespace || NAMESPACE_HTML, tag);
+  const node = document().createElementNS(namespace || NAMESPACE_HTML, tag);
   initialiseMetadata(parent, node, key);
   return node;
 };
 var createChildText = (parent, { key, content }) => {
-  const node = document.createTextNode(content ?? "");
+  const node = document().createTextNode(content ?? "");
   initialiseMetadata(parent, node, key);
   return node;
 };
-var createDocumentFragment = () => document.createDocumentFragment();
+var createDocumentFragment = () => document().createDocumentFragment();
 var childAt = (node, at) => node.childNodes[at | 0];
 var meta = Symbol("lustre");
 var initialiseMetadata = (parent, node, key = "") => {
