@@ -53,7 +53,7 @@ export class Runtime {
       case ClientDispatchedMessage:
         switch (message.message.constructor) {
           case AttributeChanged: {
-            const { name, value } = message.messgae;
+            const { name, value } = message.message;
             let effects = [];
 
             const decoder = this.#on_attribute_change.get(name);

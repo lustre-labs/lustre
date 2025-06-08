@@ -76,7 +76,7 @@ pub type Event(msg) {
 /// your app's `init` function.
 ///
 /// DOM events and messages dispatched by effects can be simulated using the
-/// [`event`](#event) and [`messgae`](#message) functions.
+/// [`event`](#event) and [`message`](#message) functions.
 ///
 pub fn simple(
   init init: fn(args) -> model,
@@ -95,7 +95,7 @@ pub fn simple(
 /// your app's `init` function.
 ///
 /// DOM events and messages dispatched by effects can be simulated using the
-/// [`event`](#event) and [`messgae`](#message) functions.
+/// [`event`](#event) and [`message`](#message) functions.
 ///
 /// > **Note**: simulated apps do not run any effects! You can simulate the result
 /// > of an effect by using the [`message`](#message) function, but to test side
