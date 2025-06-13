@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import {
+  advance,
   element_kind,
   text_kind,
   fragment_kind,
@@ -24,7 +25,7 @@ import {
   update_kind,
 } from "./patch.mjs";
 
-import { separator_index, separator_key } from "./path.mjs";
+import { separator_element } from "./path.mjs";
 
 import {
   document,
@@ -57,7 +58,7 @@ export class Reconciler {
   }
 
   mount(vdom) {
-    appendChild(this.#root, this.#createChild(this.#root, vdom));
+    appendChild(this.#root, this.#createChild(this.#root, 0, vdom));
   }
 
   #stack = [];
@@ -162,9 +163,11 @@ export class Reconciler {
   #insert(node, children, before) {
     const fragment = createDocumentFragment();
 
+    let childIndex = before|0;
     iterate(children, (child) => {
-      const el = this.#createChild(node, child);
+      const el = this.#createChild(node, childIndex, child);
       appendChild(fragment, el);
+      childIndex += advance(child);
     });
 
     insertBefore(node, fragment, childAt(node, before));
@@ -214,7 +217,7 @@ export class Reconciler {
   #replace(parent, from, count, child) {
     this.#remove(parent, from, count);
 
-    const el = this.#createChild(parent, child);
+    const el = this.#createChild(parent, from, child);
 
     insertBefore(parent, el, childAt(parent, from));
   }
@@ -256,36 +259,38 @@ export class Reconciler {
 
   // CONSTRUCTORS --------------------------------------------------------------
 
-  #createChild(parent, vnode) {
+  #createChild(parent, index, vnode) {
     switch (vnode.kind) {
       case element_kind: {
-        const node = createChildElement(parent, vnode);
+        const node = createChildElement(parent, index, vnode);
         this.#createAttributes(node, vnode);
 
-        this.#insert(node, vnode.children, 0);
+        this.#insert(node, vnode.children);
 
         return node;
       }
 
       case text_kind: {
-        return createChildText(parent, vnode);
+        return createChildText(parent, index, vnode);
       }
 
       case fragment_kind: {
         const node = createDocumentFragment();
-        const head = createChildText(parent, vnode);
+        const head = createChildText(parent, index, vnode);
 
         appendChild(node, head);
 
+        let childIndex = index + 1;
         iterate(vnode.children, (child) => {
-          appendChild(node, this.#createChild(parent, child));
+          appendChild(node, this.#createChild(parent, childIndex, child));
+          childIndex += advance(child);
         });
 
         return node;
       }
 
       case unsafe_inner_html_kind: {
-        const node = createChildElement(parent, vnode);
+        const node = createChildElement(parent, index, vnode);
         this.#createAttributes(node, vnode);
 
         this.#replaceInnerHtml(node, vnode.inner_html);
@@ -375,29 +380,7 @@ export class Reconciler {
           if (stop) event.stopPropagation();
 
           const type = event.type;
-          let path = "";
-          let pathNode = event.currentTarget;
-
-          while (pathNode !== this.#root) {
-            const key = pathNode[meta].key;
-            const parent = pathNode.parentNode;
-            if (key) {
-              path = `${separator_key}${key}${path}`;
-            } else {
-              const siblings = parent.childNodes;
-              let index = [].indexOf.call(siblings, pathNode);
-              if (parent === this.#root) {
-                index -= this.offset;
-              }
-
-              path = `${separator_index}${index}${path}`;
-            }
-
-            pathNode = parent;
-          }
-
-          // remove the leading separator
-          path = path.slice(1);
+          const path = event.currentTarget[meta].path;
 
           const data = this.#useServerEvents
             ? createServerEvent(event, include ?? [])
@@ -467,15 +450,15 @@ const appendChild = (node, child) => node.appendChild(child);
 const insertBefore = (parent, node, referenceNode) =>
   parent.insertBefore(node, referenceNode ?? null);
 
-const createChildElement = (parent, { key, tag, namespace }) => {
+const createChildElement = (parent, index, { key, tag, namespace }) => {
   const node = document().createElementNS(namespace || NAMESPACE_HTML, tag);
-  initialiseMetadata(parent, node, key);
+  initialiseMetadata(parent, node, index, key);
   return node;
 };
 
-const createChildText = (parent, { key, content }) => {
+const createChildText = (parent, index, { key, content }) => {
   const node = document().createTextNode(content ?? "");
-  initialiseMetadata(parent, node, key);
+  initialiseMetadata(parent, node, index, key);
   return node;
 };
 
@@ -486,12 +469,15 @@ const childAt = (node, at) => node.childNodes[at | 0];
 
 const meta = Symbol("lustre");
 
-export const initialiseMetadata = (parent, node, key = "") => {
+export const initialiseMetadata = (parent, node, index = 0, key = "") => {
+  const segment = `${key || index}`
+  
   switch (node.nodeType) {
     case ELEMENT_NODE:
     case DOCUMENT_FRAGMENT_NODE:
       node[meta] = {
         key,
+        path: segment,
         keyedChildren: new Map(),
         handlers: new Map(),
         throttles: new Map(),
@@ -506,6 +492,10 @@ export const initialiseMetadata = (parent, node, key = "") => {
 
   if (parent && key) {
     parent[meta].keyedChildren.set(key, new WeakRef(node));
+  }
+
+  if (parent && parent[meta].path) {
+     node[meta].path = `${parent[meta].path}${separator_element}${segment}`; 
   }
 };
 

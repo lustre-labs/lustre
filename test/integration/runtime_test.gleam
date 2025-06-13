@@ -176,10 +176,10 @@ fn update(model, msg) {
 }
 
 @target(erlang)
-const incr = "0" <> path.separator_index <> "2"
+const incr = "0" <> path.separator_element <> "2"
 
 @target(erlang)
-const reset = "0" <> path.separator_index <> "3"
+const reset = "0" <> path.separator_element <> "3"
 
 @target(erlang)
 fn view(model) {
