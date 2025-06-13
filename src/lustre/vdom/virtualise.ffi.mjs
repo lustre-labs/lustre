@@ -14,7 +14,9 @@ import {
 } from "../internals/constants.ffi.mjs";
 
 export const virtualise = (root) => {
-  const vdom = virtualiseNode(null, root);
+  // we pass an empty string here as the index to make sure that the root node
+  // does not have a path, ever.
+  const vdom = virtualiseNode(null, root, '');
   // at this point we know the element is empty - but we have to have at least
   // an empty text node child in the root element to be able to mount
   if (vdom === null || vdom.children instanceof Empty) {
@@ -39,11 +41,11 @@ const emptyTextNode = (parent) => {
   return node;
 }
 
-const virtualiseNode = (parent, node) => {
+const virtualiseNode = (parent, node, index) => {
   switch (node.nodeType) {
     case ELEMENT_NODE: {
       const key = node.getAttribute("data-lustre-key");
-      initialiseMetadata(parent, node, key);
+      initialiseMetadata(parent, node, index, key);
 
       if (key) {
         node.removeAttribute("data-lustre-key");
@@ -69,11 +71,11 @@ const virtualiseNode = (parent, node) => {
     }
 
     case TEXT_NODE:
-      initialiseMetadata(parent, node);
+      initialiseMetadata(parent, node, index);
       return node.data ? text(node.data) : null;
 
     case DOCUMENT_FRAGMENT_NODE: // shadowRoot
-      initialiseMetadata(parent, node);
+      initialiseMetadata(parent, node, index);
       return node.childNodes.length > 0
         ? fragment(virtualiseChildNodes(node))
         : null;
@@ -121,20 +123,34 @@ const virtualiseInputEvents = (tag, node) => {
 }
 
 const virtualiseChildNodes = (node) => {
-  let children = empty_list;
+  let children = null;
 
-  let child = node.lastChild;
+  let index = 0;
+  let child = node.firstChild;
+  let ptr = null;
+
   while (child) {
-    const vnode = virtualiseNode(node, child);
-    const next = child.previousSibling;
+    const vnode = virtualiseNode(node, child, index);
+    const next = child.nextSibling;
     if (vnode) {
-      children = new NonEmpty(vnode, children);
+      const list_node = new NonEmpty(vnode, null);
+      if (ptr) {
+        ptr = ptr.tail = list_node;
+      } else {
+        ptr = children = list_node;
+      }
+
+      index += 1;
     } else {
       node.removeChild(child);
     }
+    
     child = next;
   }
 
+  if (!ptr) return empty_list;
+  
+  ptr.tail = empty_list;
   return children;
 }
 

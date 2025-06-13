@@ -11,6 +11,11 @@ request to fix it.
 
 ## Unreleased
 
+### Changed
+
+- [lustre/event] Fix a bug where events can not send the correct message if the
+  browser or external Javascript moved the element.
+
 ## [v5.1.1] - 2025-06-06
 
 ### Changed

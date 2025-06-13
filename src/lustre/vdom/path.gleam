@@ -11,15 +11,11 @@ pub const root: Path = Root
 
 ///
 ///
-pub const separator_index: String = "\n"
+pub const separator_element: String = "\t"
 
 ///
 ///
-pub const separator_key: String = "\t"
-
-///
-///
-pub const separator_event: String = "\f"
+pub const separator_event: String = "\n"
 
 // TYPES -----------------------------------------------------------------------
 
@@ -86,9 +82,9 @@ fn do_to_string(path, acc) {
         [_sep, ..segments] -> string.concat(segments)
       }
 
-    Key(key:, parent:) -> do_to_string(parent, [separator_key, key, ..acc])
+    Key(key:, parent:) -> do_to_string(parent, [separator_element, key, ..acc])
 
     Index(index:, parent:) ->
-      do_to_string(parent, [separator_index, int.to_string(index), ..acc])
+      do_to_string(parent, [separator_element, int.to_string(index), ..acc])
   }
 }
