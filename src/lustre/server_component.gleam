@@ -241,7 +241,11 @@ pub fn subject(runtime: Runtime(msg)) -> Subject(RuntimeMessage(msg)) {
 /// > **Note**: this function is not available on the JavaScript target.
 ///
 pub fn pid(runtime: Runtime(msg)) -> Pid {
-  runtime |> subject |> process.subject_owner
+  // This is ok to assert *for now* because Lustre does not support named processes
+  // for server components.
+  let assert Ok(pid) = process.subject_owner(subject(runtime))
+
+  pid
 }
 
 @target(erlang)

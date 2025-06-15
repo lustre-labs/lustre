@@ -18,10 +18,10 @@ request to fix it.
 
 ### Changed
 
-- [lustre/event] Fix a bug where events can not send the correct message if the
-  browser or external Javascript moved the element.
-- [lustre/runtime] Fixed a bug where changing the object passed down as a property
-  would not correctly update the property on the DOM element.
+- [lustre] Lustre now requires `gleam_erlang` version `>= 1.0.0 and < 2.0.0`.
+- [lustre] Lustre now requires `gleam_otp` version `>= 1.0.0 and < 2.0.0`.
+- [lustre] Fix a bug where events can not send the correct message if the browser or external Javascript moved the element.
+- [lustre] Fixed a bug where changing the object passed down as a property would not correctly update the property on the DOM element.
 
 ## [v5.1.1] - 2025-06-06
 

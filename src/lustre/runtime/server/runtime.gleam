@@ -3,12 +3,10 @@
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
-import gleam/erlang/process.{type ProcessMonitor, type Selector, type Subject}
-import gleam/function
+import gleam/erlang/process.{type Monitor, type Selector, type Subject}
 import gleam/json.{type Json}
 import gleam/list
-import gleam/option.{Some}
-import gleam/otp/actor.{type Next, type StartError, Spec}
+import gleam/otp/actor.{type Next, type StartError}
 import gleam/result
 import gleam/set.{type Set}
 import lustre/effect.{type Effect}
@@ -37,7 +35,7 @@ pub type State(model, msg) {
     vdom: Element(msg),
     events: Events(msg),
     //
-    subscribers: Dict(Subject(ClientMessage(msg)), ProcessMonitor),
+    subscribers: Dict(Subject(ClientMessage(msg)), Monitor),
     callbacks: Set(fn(ClientMessage(msg)) -> Nil),
   )
 }
@@ -58,38 +56,49 @@ pub fn start(
   view: fn(model) -> Element(msg),
   config: Config(msg),
 ) -> Result(Subject(Message(msg)), StartError) {
-  actor.start_spec({
-    use <- Spec(init: _, init_timeout: 1000, loop:)
-    let self = process.new_subject()
-    let base_selector =
-      process.new_selector()
-      |> process.selecting(self, function.identity)
+  let result =
+    actor.new_with_initialiser(1000, fn(self) {
+      let vdom = view(init.0)
+      let events = events.from_node(vdom)
+      let base_selector =
+        process.new_selector()
+        |> process.select(self)
+        |> process.select_monitors(fn(down) {
+          MonitorReportedDown(down.monitor)
+        })
 
-    let vdom = view(init.0)
-    let events = events.from_node(vdom)
+      let state =
+        State(
+          self:,
+          selector: base_selector,
+          base_selector:,
+          //
+          model: init.0,
+          update:,
+          view:,
+          config:,
+          //
+          vdom:,
+          events:,
+          //
+          subscribers: dict.new(),
+          callbacks: set.new(),
+        )
 
-    let state =
-      State(
-        self:,
-        selector: base_selector,
-        base_selector:,
-        //
-        model: init.0,
-        update:,
-        view:,
-        config:,
-        //
-        vdom:,
-        events:,
-        //
-        subscribers: dict.new(),
-        callbacks: set.new(),
-      )
+      handle_effect(self, init.1)
 
-    handle_effect(self, init.1)
+      actor.initialised(state)
+      |> actor.selecting(base_selector)
+      |> actor.returning(self)
+      |> Ok
+    })
+    |> actor.on_message(loop)
+    |> actor.start
 
-    actor.Ready(state, base_selector)
-  })
+  case result {
+    Ok(started) -> Ok(started.data)
+    Error(error) -> Error(error)
+  }
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -105,6 +114,8 @@ pub type Message(msg) {
   EffectDispatchedMessage(message: msg)
   EffectEmitEvent(name: String, data: Json)
   //
+  MonitorReportedDown(monitor: Monitor)
+  //
   SelfDispatchedMessages(messages: List(msg), effect: Effect(msg))
   //
   SystemRequestedShutdown
@@ -112,9 +123,9 @@ pub type Message(msg) {
 
 @external(javascript, "../client/runtime.ffi.mjs", "throw_server_component_error")
 fn loop(
-  message: Message(msg),
   state: State(model, msg),
-) -> Next(Message(msg), State(model, msg)) {
+  message: Message(msg),
+) -> Next(State(model, msg), Message(msg)) {
   case message {
     ClientDispatchedMessage(message:) -> {
       let next = handle_client_message(state, message)
@@ -129,59 +140,34 @@ fn loop(
       case dict.has_key(state.subscribers, client) {
         True -> actor.continue(state)
         False -> {
-          let monitor = process.monitor_process(process.subject_owner(client))
-          let subscribers = dict.insert(state.subscribers, client, monitor)
-          let selector = {
-            use selector, client, monitor <- dict.fold(
-              subscribers,
-              state.base_selector,
-            )
+          case process.subject_owner(client) {
+            Error(_) -> actor.continue(state)
+            Ok(pid) -> {
+              let monitor = process.monitor(pid)
+              let subscribers = dict.insert(state.subscribers, client, monitor)
 
-            process.selecting_process_down(selector, monitor, fn(_) {
-              ClientDeregisteredSubject(client:)
-            })
+              process.send(
+                client,
+                transport.mount(
+                  state.config.open_shadow_root,
+                  state.config.adopt_styles,
+                  dict.keys(state.config.attributes),
+                  dict.keys(state.config.properties),
+                  state.vdom,
+                ),
+              )
+
+              actor.continue(State(..state, subscribers:))
+            }
           }
-
-          process.send(
-            client,
-            transport.mount(
-              state.config.open_shadow_root,
-              state.config.adopt_styles,
-              dict.keys(state.config.attributes),
-              dict.keys(state.config.properties),
-              state.vdom,
-            ),
-          )
-
-          actor.Continue(
-            State(..state, subscribers:, selector:),
-            Some(selector),
-          )
         }
       }
 
-    ClientDeregisteredSubject(client:) ->
-      case dict.get(state.subscribers, client) {
-        Error(_) -> actor.continue(state)
-        Ok(monitor) -> {
-          let _ = process.demonitor_process(monitor)
-          let subscribers = dict.delete(state.subscribers, client)
-          let selector = {
-            use selector, client, monitor <- dict.fold(
-              subscribers,
-              state.base_selector,
-            )
-            let unsubscribe = fn(_) { ClientDeregisteredSubject(client:) }
+    ClientDeregisteredSubject(client:) -> {
+      let subscribers = dict.delete(state.subscribers, client)
 
-            process.selecting_process_down(selector, monitor, unsubscribe)
-          }
-
-          actor.Continue(
-            State(..state, subscribers:, selector:),
-            Some(selector),
-          )
-        }
-      }
+      actor.continue(State(..state, subscribers:))
+    }
 
     ClientRegisteredCallback(callback:) ->
       case set.contains(state.callbacks, callback) {
@@ -215,7 +201,8 @@ fn loop(
       let base_selector = process.merge_selector(state.base_selector, selector)
       let selector = process.merge_selector(state.selector, selector)
 
-      actor.Continue(State(..state, base_selector:, selector:), Some(selector))
+      actor.continue(State(..state, base_selector:, selector:))
+      |> actor.with_selector(selector)
     }
 
     EffectDispatchedMessage(message:) -> {
@@ -235,6 +222,13 @@ fn loop(
       actor.continue(state)
     }
 
+    MonitorReportedDown(monitor:) -> {
+      let subscribers =
+        dict.filter(state.subscribers, fn(_, m) { m != monitor })
+
+      actor.continue(State(..state, subscribers:))
+    }
+
     SelfDispatchedMessages(messages: [], effect:) -> {
       let vdom = state.view(state.model)
       let Diff(patch:, events:) = diff(state.events, state.vdom, vdom)
@@ -250,7 +244,7 @@ fn loop(
       let effect = effect.batch([effect, more_effects])
       let state = State(..state, model:)
 
-      loop(SelfDispatchedMessages(messages, effect), state)
+      loop(state, SelfDispatchedMessages(messages, effect))
     }
 
     SystemRequestedShutdown -> {
@@ -258,7 +252,7 @@ fn loop(
         process.demonitor_process(monitor)
       })
 
-      actor.Stop(process.Normal)
+      actor.stop()
     }
   }
 }
@@ -354,7 +348,7 @@ fn handle_effect(self: Subject(Message(msg)), effect: Effect(msg)) -> Nil {
 
 @external(javascript, "../client/runtime.ffi.mjs", "throw_server_component_error")
 fn broadcast(
-  clients: Dict(Subject(ClientMessage(msg)), ProcessMonitor),
+  clients: Dict(Subject(ClientMessage(msg)), Monitor),
   callbacks: Set(fn(ClientMessage(msg)) -> Nil),
   message: ClientMessage(msg),
 ) -> Nil {
