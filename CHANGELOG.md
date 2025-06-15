@@ -11,6 +11,11 @@ request to fix it.
 
 ## Unreleased
 
+### Added
+
+- [lustre/dev/query] Added a `matches` function to check if an element matches a given selector.
+- [lustre/dev/query] Added a `has` function to check if an element or its descendants match a given selector.
+
 ### Changed
 
 - [lustre/event] Fix a bug where events can not send the correct message if the

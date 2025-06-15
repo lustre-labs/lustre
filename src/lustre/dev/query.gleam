@@ -529,7 +529,22 @@ fn find_all_descendants_in_list(
   }
 }
 
-fn matches(element: Element(msg), selector: Selector) -> Bool {
+/// Check if an element or any of its descendants match the given
+/// [`Selector`](#Selector).
+///
+pub fn has(in element: Element(msg), matching selector: Selector) -> Bool {
+  case find(in: element, matching: FindElement(matching: selector)) {
+    Ok(_) -> True
+    Error(_) -> False
+  }
+}
+
+/// Check if the given target element matches the given [`Selector`](#Selector).
+///
+pub fn matches(
+  target element: Element(msg),
+  selector selector: Selector,
+) -> Bool {
   case element, selector {
     _, All(of: selectors) -> list.all(selectors, matches(element, _))
 
