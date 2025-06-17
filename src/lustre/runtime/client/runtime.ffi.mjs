@@ -41,11 +41,16 @@ export class Runtime {
     this.#update = update;
 
     this.#reconciler = new Reconciler(this.root, (event, path, name) => {
-      const [events, msg] = Events.handle(this.#events, path, name, event);
+      const [events, result] = Events.handle(this.#events, path, name, event);
       this.#events = events;
 
-      if (msg.isOk()) {
-        this.dispatch(msg[0], false);
+      if (result.isOk()) {
+        const handler = result[0];
+
+        if (handler.stop_propagation) event.stopPropagation();
+        if (handler.prevent_default) event.preventDefault();
+
+        this.dispatch(handler.message, false);
       }
     });
 
@@ -243,7 +248,9 @@ const copiedStyleSheets = new WeakMap();
 
 export async function adoptStylesheets(shadowRoot) {
   const pendingParentStylesheets = [];
-  for (const node of document().querySelectorAll("link[rel=stylesheet], style")) {
+  for (const node of document().querySelectorAll(
+    "link[rel=stylesheet], style",
+  )) {
     if (node.sheet) continue;
 
     pendingParentStylesheets.push(

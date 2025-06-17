@@ -62,10 +62,7 @@ export class Runtime {
             const result = decode(value, decoder);
             if (result.constructor !== Ok) break;
 
-            const [model, more_effects] = this.#update(
-              this.#model,
-              result[0],
-            );
+            const [model, more_effects] = this.#update(this.#model, result[0]);
 
             this.#model = model;
             effects.push(more_effects);
@@ -77,12 +74,17 @@ export class Runtime {
 
           case EventFired: {
             const { path, name, event } = message.message;
-            const [events, result] = Events.handle(this.#events, path, name, event);
+            const [events, result] = Events.handle(
+              this.#events,
+              path,
+              name,
+              event,
+            );
 
             this.#events = events;
 
             if (result.constructor === Ok) {
-              this.dispatch(result[0]);
+              this.dispatch(result[0].message);
             }
 
             return;
