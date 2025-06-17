@@ -18,7 +18,7 @@ pub type Attribute(msg) {
   Event(
     kind: Int,
     name: String,
-    handler: Decoder(msg),
+    handler: Decoder(Handler(msg)),
     include: List(String),
     prevent_default: Bool,
     stop_propagation: Bool,
@@ -26,6 +26,10 @@ pub type Attribute(msg) {
     debounce: Int,
     throttle: Int,
   )
+}
+
+pub type Handler(msg) {
+  Handler(prevent_default: Bool, stop_propagation: Bool, message: msg)
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -46,7 +50,7 @@ pub const event_kind: Int = 2
 
 pub fn event(
   name name: String,
-  handler handler: Decoder(msg),
+  handler handler: Decoder(Handler(msg)),
   include include: List(String),
   prevent_default prevent_default: Bool,
   stop_propagation stop_propagation: Bool,

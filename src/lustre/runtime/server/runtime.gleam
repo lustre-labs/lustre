@@ -294,8 +294,8 @@ fn handle_client_message(
     transport.EventFired(path:, name:, event:, ..) ->
       case events.handle(state.events, path, name, event) {
         #(events, Error(_)) -> State(..state, events:)
-        #(events, Ok(message)) -> {
-          let #(model, effect) = state.update(state.model, message)
+        #(events, Ok(handler)) -> {
+          let #(model, effect) = state.update(state.model, handler.message)
           let vdom = state.view(model)
 
           handle_effect(state.self, effect)

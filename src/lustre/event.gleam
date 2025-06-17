@@ -8,7 +8,13 @@ import gleam/result
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
 import lustre/internals/constants
-import lustre/vdom/vattr.{Event}
+import lustre/vdom/vattr.{Event, Handler as VHandler}
+
+// TYPES -----------------------------------------------------------------------
+
+pub type Handler(msg) {
+  Handler(prevent_default: Bool, stop_propagation: Bool, message: msg)
+}
 
 // EFFECTS ---------------------------------------------------------------------
 
@@ -39,7 +45,30 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
 pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
   vattr.event(
     name:,
-    handler:,
+    handler: decode.map(handler, fn(msg) {
+      VHandler(prevent_default: False, stop_propagation: False, message: msg)
+    }),
+    include: constants.empty_list,
+    prevent_default: False,
+    stop_propagation: False,
+    immediate: is_immediate_event(name),
+    debounce: 0,
+    throttle: 0,
+  )
+}
+
+///
+///
+pub fn custom(name: String, handler: Decoder(Handler(msg))) -> Attribute(msg) {
+  vattr.event(
+    name:,
+    handler: decode.map(handler, fn(result) {
+      VHandler(
+        prevent_default: result.prevent_default,
+        stop_propagation: result.stop_propagation,
+        message: result.message,
+      )
+    }),
     include: constants.empty_list,
     prevent_default: False,
     stop_propagation: False,

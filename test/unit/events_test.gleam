@@ -12,6 +12,7 @@ import lustre/event
 import lustre/vdom/diff
 import lustre/vdom/events
 import lustre/vdom/path
+import lustre/vdom/vattr.{Handler}
 import lustre_test
 
 //
@@ -27,7 +28,13 @@ pub fn single_event_test() {
 
   events.handle(events, path, "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok("hello!"))
+  |> should.equal(
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "hello!",
+    )),
+  )
 }
 
 pub fn single_nested_event_test() {
@@ -44,7 +51,13 @@ pub fn single_nested_event_test() {
 
   events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok("hello!"))
+  |> should.equal(
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "hello!",
+    )),
+  )
 }
 
 pub fn single_nested_keyed_event_test() {
@@ -62,7 +75,13 @@ pub fn single_nested_keyed_event_test() {
 
   events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok("hello!"))
+  |> should.equal(
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "hello!",
+    )),
+  )
 }
 
 pub fn single_nested_keyed_event_with_period_test() {
@@ -82,7 +101,13 @@ pub fn single_nested_keyed_event_with_period_test() {
   let path = path.root |> path.add(0, "") |> path.add(1, "b.c")
   events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok("hello!"))
+  |> should.equal(
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "hello!",
+    )),
+  )
 }
 
 //
@@ -101,7 +126,13 @@ pub fn fragment_event_test() {
 
   events.handle(events, path, "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok("hello!"))
+  |> should.equal(
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "hello!",
+    )),
+  )
 }
 
 pub fn nested_fragment_event_test() {
@@ -120,7 +151,13 @@ pub fn nested_fragment_event_test() {
 
   events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok("hello!"))
+  |> should.equal(
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "hello!",
+    )),
+  )
 }
 
 pub fn nested_fragment_with_multiple_children_event_test() {
@@ -146,7 +183,9 @@ pub fn nested_fragment_with_multiple_children_event_test() {
 
   events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok(4))
+  |> should.equal(
+    Ok(Handler(prevent_default: False, stop_propagation: False, message: 4)),
+  )
 }
 
 //
@@ -166,7 +205,13 @@ pub fn single_mapped_event_test() {
 
   events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok("HELLO!"))
+  |> should.equal(
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "HELLO!",
+    )),
+  )
 }
 
 pub fn multiple_mapped_event_test() {
@@ -187,7 +232,13 @@ pub fn multiple_mapped_event_test() {
 
   events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok(["HELLO!", "HELLO!"]))
+  |> should.equal(
+    Ok(
+      Handler(prevent_default: False, stop_propagation: False, message: [
+        "HELLO!", "HELLO!",
+      ]),
+    ),
+  )
 }
 
 // DIFF TESTS ------------------------------------------------------------------
@@ -204,7 +255,13 @@ pub fn event_added_test() {
 
   events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok("hello!"))
+  |> should.equal(
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "hello!",
+    )),
+  )
 }
 
 pub fn event_removed_test() {
@@ -238,7 +295,13 @@ pub fn element_added_test() {
 
   events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok("hello!"))
+  |> should.equal(
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "hello!",
+    )),
+  )
 }
 
 pub fn element_removed_test() {
@@ -281,7 +344,13 @@ pub fn element_replaced_test() {
 
   events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok("hello!"))
+  |> should.equal(
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "hello!",
+    )),
+  )
 }
 
 pub fn keyed_element_replaced_test() {
@@ -323,7 +392,13 @@ pub fn keyed_element_replaced_test() {
     path.root |> path.add(0, "") |> path.add(0, "v2") |> path.add(0, "")
   events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok("hello from 1"))
+  |> should.equal(
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "hello from 1",
+    )),
+  )
 
   let path =
     path.root
@@ -334,5 +409,11 @@ pub fn keyed_element_replaced_test() {
 
   events.handle(events, path.to_string(path), "click", dynamic.nil())
   |> pair.second
-  |> should.equal(Ok("hello from 2"))
+  |> should.equal(
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "hello from 2",
+    )),
+  )
 }
