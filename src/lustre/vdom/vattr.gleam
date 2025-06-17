@@ -20,8 +20,8 @@ pub type Attribute(msg) {
     name: String,
     handler: Decoder(Handler(msg)),
     include: List(String),
-    prevent_default: Bool,
-    stop_propagation: Bool,
+    prevent_default: EventBehaviour,
+    stop_propagation: EventBehaviour,
     immediate: Bool,
     debounce: Int,
     throttle: Int,
@@ -30,6 +30,12 @@ pub type Attribute(msg) {
 
 pub type Handler(msg) {
   Handler(prevent_default: Bool, stop_propagation: Bool, message: msg)
+}
+
+pub type EventBehaviour {
+  Never(kind: Int)
+  Possible(kind: Int)
+  Always(kind: Int)
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -52,8 +58,8 @@ pub fn event(
   name name: String,
   handler handler: Decoder(Handler(msg)),
   include include: List(String),
-  prevent_default prevent_default: Bool,
-  stop_propagation stop_propagation: Bool,
+  prevent_default prevent_default: EventBehaviour,
+  stop_propagation stop_propagation: EventBehaviour,
   immediate immediate: Bool,
   debounce debounce: Int,
   throttle throttle: Int,
@@ -70,6 +76,18 @@ pub fn event(
     throttle:,
   )
 }
+
+pub const never_kind: Int = 0
+
+pub const never: EventBehaviour = Never(kind: never_kind)
+
+pub const possible_kind: Int = 1
+
+pub const possible: EventBehaviour = Possible(kind: possible_kind)
+
+pub const always_kind: Int = 2
+
+pub const always: EventBehaviour = Always(kind: always_kind)
 
 //
 
@@ -175,24 +193,44 @@ fn property_to_json(kind, name, value) {
 }
 
 fn event_to_json(
-  kind,
-  name,
-  include,
-  prevent_default,
-  stop_propagation,
-  immediate,
-  debounce,
-  throttle,
+  kind: Int,
+  name: String,
+  include: List(String),
+  prevent_default: EventBehaviour,
+  stop_propagation: EventBehaviour,
+  immediate: Bool,
+  debounce: Int,
+  throttle: Int,
 ) {
   json_object_builder.tagged(kind)
   |> json_object_builder.string("name", name)
   |> json_object_builder.list("include", include, json.string)
-  |> json_object_builder.bool("prevent_default", prevent_default)
-  |> json_object_builder.bool("stop_propagation", stop_propagation)
+  |> json_object_builder.object("prevent_default", {
+    event_behaviour_to_json_builder(prevent_default)
+  })
+  |> json_object_builder.object("stop_propagation", {
+    event_behaviour_to_json_builder(stop_propagation)
+  })
   |> json_object_builder.bool("immediate", immediate)
   |> json_object_builder.int("debounce", debounce)
   |> json_object_builder.int("throttle", throttle)
   |> json_object_builder.build
+}
+
+fn event_behaviour_to_json_builder(
+  behaviour: EventBehaviour,
+) -> json_object_builder.Builder {
+  case behaviour {
+    Never(kind:) -> json_object_builder.tagged(kind)
+    // If we are serialising an event behaviour, that must mean we're working with
+    // server components. In that case it is impossible to conditionally trigger
+    // an event behaviour so we can safely encode this as `never`.
+    //
+    // Doing so has benefits because the client runtime can recognise this event
+    // handler as passive.
+    Possible(..) -> json_object_builder.tagged(never_kind)
+    Always(kind:) -> json_object_builder.tagged(kind)
+  }
 }
 
 // STRING RENDERING ------------------------------------------------------------

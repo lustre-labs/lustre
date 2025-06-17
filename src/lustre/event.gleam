@@ -49,17 +49,29 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
       VHandler(prevent_default: False, stop_propagation: False, message: msg)
     }),
     include: constants.empty_list,
-    prevent_default: False,
-    stop_propagation: False,
+    prevent_default: vattr.never,
+    stop_propagation: vattr.never,
     immediate: is_immediate_event(name),
     debounce: 0,
     throttle: 0,
   )
 }
 
+/// Listens for the given event and then runs the given decoder on the event
+/// object. This decoder is capable of _conditionally_ stopping propagation or
+/// preventing the default behaviour of the event by returning a `Handler` record
+/// with the appropriate flags set. This makes it possible to write event handlers
+/// for more-advanced scenarios such as handling specific key presses.
 ///
+/// > **Note**: it is not possible to conditionally stop propagation or prevent
+/// > the default behaviour of an event when using _server components_. Your event
+/// > handler runs on the server, far away from the browser!
 ///
-pub fn custom(name: String, handler: Decoder(Handler(msg))) -> Attribute(msg) {
+/// > **Note**: if you are developing a server component, it is important to also
+/// > use [`server_component.include`](./server_component.html#include) to state
+/// > which properties of the event you need to be sent to the server.
+///
+pub fn advanced(name: String, handler: Decoder(Handler(msg))) -> Attribute(msg) {
   vattr.event(
     name:,
     handler: decode.map(handler, fn(result) {
@@ -70,8 +82,8 @@ pub fn custom(name: String, handler: Decoder(Handler(msg))) -> Attribute(msg) {
       )
     }),
     include: constants.empty_list,
-    prevent_default: False,
-    stop_propagation: False,
+    prevent_default: vattr.possible,
+    stop_propagation: vattr.possible,
     immediate: is_immediate_event(name),
     debounce: 0,
     throttle: 0,
@@ -89,9 +101,12 @@ fn is_immediate_event(name: String) -> Bool {
 /// Indicate that the event should have its default behaviour cancelled. This is
 /// equivalent to calling `event.preventDefault()` in JavaScript.
 ///
+/// > **Note**: this will override the conditional behaviour of an event handler
+/// > created with [`advanced`](#advanced).
+///
 pub fn prevent_default(event: Attribute(msg)) -> Attribute(msg) {
   case event {
-    Event(..) -> Event(..event, prevent_default: True)
+    Event(..) -> Event(..event, prevent_default: vattr.always)
     _ -> event
   }
 }
@@ -99,9 +114,12 @@ pub fn prevent_default(event: Attribute(msg)) -> Attribute(msg) {
 /// Indicate that the event should not propagate to parent elements. This is
 /// equivalent to calling `event.stopPropagation()` in JavaScript.
 ///
+/// > **Note**: this will override the conditional behaviour of an event handler
+/// > created with [`advanced`](#advanced).
+///
 pub fn stop_propagation(event: Attribute(msg)) -> Attribute(msg) {
   case event {
-    Event(..) -> Event(..event, stop_propagation: True)
+    Event(..) -> Event(..event, stop_propagation: vattr.always)
     _ -> event
   }
 }

@@ -12,6 +12,8 @@ import {
   attribute_kind,
   property_kind,
   event_kind,
+  never_kind,
+  always_kind,
 } from "./vattr.mjs";
 
 import {
@@ -47,10 +49,11 @@ export class Reconciler {
   #useServerEvents = false;
   #exposeKeys = false;
 
-  constructor(root, dispatch, {
-    useServerEvents = false,
-    exposeKeys = false
-  } = {}) {
+  constructor(
+    root,
+    dispatch,
+    { useServerEvents = false, exposeKeys = false } = {},
+  ) {
     this.#root = root;
     this.#dispatch = dispatch;
     this.#useServerEvents = useServerEvents;
@@ -144,11 +147,12 @@ export class Reconciler {
       let lastIndex = -1;
       let lastChild = null;
       iterate(patch.children, (child) => {
-        const index = child.index|0;
-        
-        const next = lastChild && lastIndex - index === 1
-          ? lastChild.previousSibling
-          : childAt(node, index);
+        const index = child.index | 0;
+
+        const next =
+          lastChild && lastIndex - index === 1
+            ? lastChild.previousSibling
+            : childAt(node, index);
 
         self.#stack.push({ node: next, patch: child });
 
@@ -163,7 +167,7 @@ export class Reconciler {
   #insert(node, children, before) {
     const fragment = createDocumentFragment();
 
-    let childIndex = before|0;
+    let childIndex = before | 0;
     iterate(children, (child) => {
       const el = this.#createChild(node, childIndex, child);
       appendChild(fragment, el);
@@ -302,9 +306,9 @@ export class Reconciler {
 
   #createAttributes(node, { key, attributes }) {
     if (this.#exposeKeys && key) {
-      node.setAttribute('data-lustre-key', key)
+      node.setAttribute("data-lustre-key", key);
     }
-    
+
     iterate(attributes, (attribute) => this.#createAttribute(node, attribute));
   }
 
@@ -320,13 +324,12 @@ export class Reconciler {
       immediate,
       include,
       debounce: debounceDelay,
-      throttle: throttleDelay
-    } = attribute
-    
+      throttle: throttleDelay,
+    } = attribute;
 
     switch (kind) {
       case attribute_kind: {
-        const valueOrDefault = value ?? ""
+        const valueOrDefault = value ?? "";
         if (name === "virtual:defaultValue") {
           node.defaultValue = valueOrDefault;
           return;
@@ -353,13 +356,13 @@ export class Reconciler {
         }
 
         node.addEventListener(name, handleEvent, {
-          passive: !attribute.prevent_default,
+          passive: prevent.kind === never_kind,
         });
 
         if (throttleDelay > 0) {
           const throttle = throttles.get(name) ?? {};
+
           throttle.delay = throttleDelay;
-          
           throttles.set(name, throttle);
         } else {
           throttles.delete(name);
@@ -367,8 +370,8 @@ export class Reconciler {
 
         if (debounceDelay > 0) {
           const debounce = debouncers.get(name) ?? {};
-          debounce.delay = debounceDelay;
 
+          debounce.delay = debounceDelay;
           debouncers.set(name, debounce);
         } else {
           clearTimeout(debouncers.get(name)?.timeout);
@@ -376,8 +379,8 @@ export class Reconciler {
         }
 
         handlers.set(name, (event) => {
-          if (prevent) event.preventDefault();
-          if (stop) event.stopPropagation();
+          if (prevent.kind === always_kind) event.preventDefault();
+          if (stop.kind === always_kind) event.stopPropagation();
 
           const type = event.type;
           const path = event.currentTarget[meta].path;
@@ -470,8 +473,8 @@ const childAt = (node, at) => node.childNodes[at | 0];
 const meta = Symbol("lustre");
 
 export const initialiseMetadata = (parent, node, index = 0, key = "") => {
-  const segment = `${key || index}`
-  
+  const segment = `${key || index}`;
+
   switch (node.nodeType) {
     case ELEMENT_NODE:
     case DOCUMENT_FRAGMENT_NODE:
@@ -495,7 +498,7 @@ export const initialiseMetadata = (parent, node, index = 0, key = "") => {
   }
 
   if (parent && parent[meta].path) {
-     node[meta].path = `${parent[meta].path}${separator_element}${segment}`; 
+    node[meta].path = `${parent[meta].path}${separator_element}${segment}`;
   }
 };
 
