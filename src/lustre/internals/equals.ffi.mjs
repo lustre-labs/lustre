@@ -1,6 +1,3 @@
-const { hasOwn, keys } = Object;
-const { isArray } = Array;
-
 export const isReferenceEqual = (a, b) => a === b;
 
 // This isEqual implementation has to support JSON literals, i.e. values that
@@ -31,7 +28,7 @@ export const isEqual = (a, b) => {
     return false;
   }
 
-  if (isArray(a)) {
+  if (Array.isArray(a)) {
     return areArraysEqual(a, b);
   }
 
@@ -55,16 +52,16 @@ const areArraysEqual = (a, b) => {
 }
 
 const areObjectsEqual = (a, b) => {
-  const properties = keys(a);
+  const properties = Object.keys(a);
   let index = properties.length;
 
-  if (keys(b).length !== index) {
+  if (Object.keys(b).length !== index) {
     return false;
   }
 
   while (index--) {
     const property = properties[index];
-    if (!hasOwn(b, property)) {
+    if (!Object.hasOwn(b, property)) {
       return false;
     }
     if (!isEqual(a[property], b[property])) {

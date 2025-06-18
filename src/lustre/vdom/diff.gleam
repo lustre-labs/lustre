@@ -705,8 +705,8 @@ fn diff_attributes(
           let has_changes = case next.name {
             "scrollLeft" | "scrollRight" -> True
             "value" | "checked" | "selected" ->
-              controlled || !equals(prev.value, next.value)
-            _ -> !equals(prev.value, next.value)
+              controlled || !property_value_equal(prev.value, next.value)
+            _ -> !property_value_equal(prev.value, next.value)
           }
 
           let added = case has_changes {
@@ -869,6 +869,6 @@ fn diff_attributes(
 }
 
 @external(javascript, "../internals/equals.ffi.mjs", "isEqual")
-fn equals(a: json.Json, b: json.Json) -> Bool {
+fn property_value_equal(a: json.Json, b: json.Json) -> Bool {
   a == b
 }
