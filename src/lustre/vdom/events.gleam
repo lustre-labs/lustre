@@ -288,7 +288,7 @@ pub fn has_dispatched_events(events: Events(msg), path: Path) {
 @external(javascript, "../../../gleam_stdlib/gleam/function.mjs", "identity")
 fn coerce(a: a) -> b
 
-@external(javascript, "../runtime/client/runtime.ffi.mjs", "is_reference_equal")
+@external(javascript, "../internals/equals.ffi.mjs", "isReferenceEqual")
 fn is_reference_equal(a: a, b: a) -> Bool {
   a == b
 }

@@ -1,5 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/json
 import gleeunit/should
 import lustre/attribute.{attribute}
 import lustre/element
@@ -118,6 +119,35 @@ pub fn node_attribute_removed_test() {
   let diff =
     patch.new(0, 0, [], [
       patch.new(0, 0, [patch.update([], [attribute.class("wibble")])], []),
+    ])
+
+  diff.diff(events.new(), prev, next).patch
+  |> should.equal(diff)
+}
+
+pub fn node_property_changed_test() {
+  use <- lustre_test.test_filter("node_property_changed_test")
+
+  let prev =
+    html.div(
+      [
+        attribute.property(
+          "data",
+          json.object([#("a", json.int(1)), #("b", json.int(2))]),
+        ),
+      ],
+      [],
+    )
+  let next = html.div([attribute.property("data", json.object([]))], [])
+
+  let diff =
+    patch.new(0, 0, [], [
+      patch.new(
+        0,
+        0,
+        [patch.update([attribute.property("data", json.object([]))], [])],
+        [],
+      ),
     ])
 
   diff.diff(events.new(), prev, next).patch
