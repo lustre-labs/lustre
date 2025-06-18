@@ -15,6 +15,8 @@ request to fix it.
 
 - [lustre/event] Fix a bug where events can not send the correct message if the
   browser or external Javascript moved the element.
+- [lustre/runtime] Fixed a bug where changing the object passed down as a property
+  would not correctly update the property on the DOM element.
 
 ## [v5.1.1] - 2025-06-06
 
