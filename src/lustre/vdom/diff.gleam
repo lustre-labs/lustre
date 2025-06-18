@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/function
+import gleam/json
 import gleam/list
 import gleam/order.{Eq, Gt, Lt}
 import gleam/set.{type Set}
@@ -704,8 +705,8 @@ fn diff_attributes(
           let has_changes = case next.name {
             "scrollLeft" | "scrollRight" -> True
             "value" | "checked" | "selected" ->
-              controlled || prev.value != next.value
-            _ -> prev.value != next.value
+              controlled || !equals(prev.value, next.value)
+            _ -> !equals(prev.value, next.value)
           }
 
           let added = case has_changes {
@@ -865,4 +866,9 @@ fn diff_attributes(
         }
       }
   }
+}
+
+@external(javascript, "../internals/equals.ffi.mjs", "isEqual")
+fn equals(a: json.Json, b: json.Json) -> Bool {
+  a == b
 }

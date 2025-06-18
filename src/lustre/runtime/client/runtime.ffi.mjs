@@ -15,8 +15,6 @@ export const is_browser = () => !!document();
 
 export const is_registered = (name) => is_browser() && customElements.get(name);
 
-export const is_reference_equal = (a, b) => a === b;
-
 export const throw_server_component_error = () => {
   throw new globalThis.Error(
     [
