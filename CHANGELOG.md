@@ -15,6 +15,8 @@ request to fix it.
 
 - [lustre/dev/query] Added a `matches` function to check if an element matches a given selector.
 - [lustre/dev/query] Added a `has` function to check if an element or its descendants match a given selector.
+- [lustre/event] Added an `advanced` function to create event listeners that can conditionally prevent default actions and stop propagation.
+- [lustre/event] Added a `handler` function to create event handlers to be used with `advanced`.
 
 ### Changed
 
