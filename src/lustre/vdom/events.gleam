@@ -7,14 +7,14 @@ import gleam/list
 import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/path.{type Path}
-import lustre/vdom/vattr.{type Attribute, Event}
+import lustre/vdom/vattr.{type Attribute, type Handler, Event, Handler}
 import lustre/vdom/vnode.{type Element, Element, Fragment, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
 
 pub opaque type Events(msg) {
   Events(
-    handlers: MutableMap(String, Decoder(msg)),
+    handlers: MutableMap(String, Decoder(Handler(msg))),
     dispatched_paths: List(String),
     next_dispatched_paths: List(String),
   )
@@ -67,23 +67,25 @@ pub fn add_event(
   mapper: Mapper,
   path: Path,
   name: String,
-  handler: Decoder(msg),
+  handler: Decoder(Handler(msg)),
 ) -> Events(msg) {
   let handlers = do_add_event(events.handlers, mapper, path, name, handler)
   Events(..events, handlers:)
 }
 
 fn do_add_event(
-  handlers: MutableMap(String, Decoder(msg)),
+  handlers: MutableMap(String, Decoder(Handler(msg))),
   mapper: fn(Dynamic) -> Dynamic,
   path: Path,
   name: String,
-  handler: Decoder(msg),
-) -> MutableMap(String, Decoder(msg)) {
+  handler: Decoder(Handler(msg)),
+) -> MutableMap(String, Decoder(Handler(msg))) {
   mutable_map.insert(
     handlers,
     path.event(path, name),
-    decode.map(handler, coerce(mapper)),
+    decode.map(handler, fn(handler) {
+      Handler(..handler, message: coerce(mapper)(handler.message))
+    }),
   )
 }
 
@@ -97,10 +99,10 @@ pub fn remove_event(
 }
 
 fn do_remove_event(
-  handlers: MutableMap(String, msg),
+  handlers: MutableMap(String, Decoder(Handler(msg))),
   path: Path,
   name: String,
-) -> MutableMap(String, msg) {
+) -> MutableMap(String, Decoder(Handler(msg))) {
   mutable_map.delete(handlers, path.event(path, name))
 }
 
@@ -116,12 +118,12 @@ pub fn add_child(
 }
 
 fn do_add_child(
-  handlers: MutableMap(String, Decoder(msg)),
+  handlers: MutableMap(String, Decoder(Handler(msg))),
   mapper: Mapper,
   parent: Path,
   child_index: Int,
   child: Element(msg),
-) -> MutableMap(String, Decoder(msg)) {
+) -> MutableMap(String, Decoder(Handler(msg))) {
   case child {
     Element(attributes:, children:, ..) -> {
       let path = path.add(parent, child_index, child.key)
@@ -151,11 +153,11 @@ fn do_add_child(
 }
 
 fn add_attributes(
-  handlers: MutableMap(String, Decoder(msg)),
+  handlers: MutableMap(String, Decoder(Handler(msg))),
   mapper: fn(Dynamic) -> Dynamic,
   path: Path,
   attributes: List(Attribute(msg)),
-) -> MutableMap(String, Decoder(msg)) {
+) -> MutableMap(String, Decoder(Handler(msg))) {
   use events, attribute <- list.fold(attributes, handlers)
   case attribute {
     Event(name:, handler:, ..) ->
@@ -179,12 +181,12 @@ pub fn add_children(
 }
 
 fn do_add_children(
-  handlers: MutableMap(String, Decoder(msg)),
+  handlers: MutableMap(String, Decoder(Handler(msg))),
   mapper: Mapper,
   path: Path,
   child_index: Int,
   children: List(Element(msg)),
-) -> MutableMap(String, Decoder(msg)) {
+) -> MutableMap(String, Decoder(Handler(msg))) {
   case children {
     [] -> handlers
 
@@ -206,11 +208,11 @@ pub fn remove_child(
 }
 
 fn do_remove_child(
-  handlers: MutableMap(String, Decoder(msg)),
+  handlers: MutableMap(String, Decoder(Handler(msg))),
   parent: Path,
   child_index: Int,
   child: Element(msg),
-) -> MutableMap(String, Decoder(msg)) {
+) -> MutableMap(String, Decoder(Handler(msg))) {
   case child {
     Element(attributes:, children:, ..) -> {
       let path = path.add(parent, child_index, child.key)
@@ -234,10 +236,10 @@ fn do_remove_child(
 }
 
 fn remove_attributes(
-  handlers: MutableMap(String, Decoder(msg)),
+  handlers: MutableMap(String, Decoder(Handler(msg))),
   path: Path,
   attributes: List(Attribute(msg)),
-) -> MutableMap(String, Decoder(msg)) {
+) -> MutableMap(String, Decoder(Handler(msg))) {
   use events, attribute <- list.fold(attributes, handlers)
   case attribute {
     Event(name:, ..) -> do_remove_event(events, path, name)
@@ -246,11 +248,11 @@ fn remove_attributes(
 }
 
 fn do_remove_children(
-  handlers: MutableMap(String, Decoder(msg)),
+  handlers: MutableMap(String, Decoder(Handler(msg))),
   path: Path,
   child_index: Int,
   children: List(Element(msg)),
-) -> MutableMap(String, Decoder(msg)) {
+) -> MutableMap(String, Decoder(Handler(msg))) {
   case children {
     [] -> handlers
 
@@ -270,7 +272,7 @@ pub fn handle(
   path: String,
   name: String,
   event: Dynamic,
-) -> #(Events(msg), Result(msg, List(DecodeError))) {
+) -> #(Events(msg), Result(Handler(msg), List(DecodeError))) {
   let next_dispatched_paths = [path, ..events.next_dispatched_paths]
   let events = Events(..events, next_dispatched_paths:)
 

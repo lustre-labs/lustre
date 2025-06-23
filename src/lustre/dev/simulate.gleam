@@ -202,7 +202,7 @@ pub fn event(
     let events = events.from_node(simulation.html)
     let data = json.object(payload)
 
-    use msg <- result.try(result.replace_error(
+    use handler <- result.try(result.replace_error(
       pair.second(events.handle(
         events,
         path.to_string(path),
@@ -222,7 +222,7 @@ pub fn event(
       ),
     ))
 
-    let #(model, _) = simulation.update(simulation.model, msg)
+    let #(model, _) = simulation.update(simulation.model, handler.message)
     let html = simulation.view(model)
     let history = [
       Event(target: query, name: event, data:),
