@@ -1,3 +1,13 @@
+// build/dev/javascript/prelude.mjs
+var CustomType = class {
+  withFields(fields) {
+    let properties = Object.keys(this).map(
+      (label) => label in fields ? fields[label] : this[label]
+    );
+    return new this.constructor(...properties);
+  }
+};
+
 // build/dev/javascript/gleam_stdlib/dict.mjs
 var SHIFT = 5;
 var BUCKET_SIZE = Math.pow(2, SHIFT);
@@ -43,60 +53,36 @@ var SUPPORTS_MOVE_BEFORE = !!globalThis.HTMLElement?.prototype?.moveBefore;
 var attribute_kind = 0;
 var property_kind = 1;
 var event_kind = 2;
+var never_kind = 0;
+var always_kind = 2;
 
 // build/dev/javascript/lustre/lustre/vdom/vnode.mjs
+var Fragment = class extends CustomType {
+  constructor(kind, key, mapper, children, keyed_children, children_count) {
+    super();
+    this.kind = kind;
+    this.key = key;
+    this.mapper = mapper;
+    this.children = children;
+    this.keyed_children = keyed_children;
+    this.children_count = children_count;
+  }
+};
+function advance(node) {
+  if (node instanceof Fragment) {
+    let children_count = node.children_count;
+    return 1 + children_count;
+  } else {
+    return 1;
+  }
+}
 var fragment_kind = 0;
 var element_kind = 1;
 var text_kind = 2;
 var unsafe_inner_html_kind = 3;
 
 // build/dev/javascript/lustre/lustre/vdom/path.mjs
-var separator_index = "\n";
-var separator_key = "	";
-
-// build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs
-var copiedStyleSheets = /* @__PURE__ */ new WeakMap();
-async function adoptStylesheets(shadowRoot) {
-  const pendingParentStylesheets = [];
-  for (const node of document().querySelectorAll("link[rel=stylesheet], style")) {
-    if (node.sheet)
-      continue;
-    pendingParentStylesheets.push(
-      new Promise((resolve, reject) => {
-        node.addEventListener("load", resolve);
-        node.addEventListener("error", reject);
-      })
-    );
-  }
-  await Promise.allSettled(pendingParentStylesheets);
-  if (!shadowRoot.host.isConnected) {
-    return [];
-  }
-  shadowRoot.adoptedStyleSheets = shadowRoot.host.getRootNode().adoptedStyleSheets;
-  const pending = [];
-  for (const sheet of document().styleSheets) {
-    try {
-      shadowRoot.adoptedStyleSheets.push(sheet);
-    } catch {
-      try {
-        let copiedSheet = copiedStyleSheets.get(sheet);
-        if (!copiedSheet) {
-          copiedSheet = new CSSStyleSheet();
-          for (const rule of sheet.cssRules) {
-            copiedSheet.insertRule(rule.cssText, copiedSheet.cssRules.length);
-          }
-          copiedStyleSheets.set(sheet, copiedSheet);
-        }
-        shadowRoot.adoptedStyleSheets.push(copiedSheet);
-      } catch {
-        const node = sheet.ownerNode.cloneNode();
-        shadowRoot.prepend(node);
-        pending.push(node);
-      }
-    }
-  }
-  return pending;
-}
+var separator_element = "	";
 
 // build/dev/javascript/lustre/lustre/vdom/patch.mjs
 var replace_text_kind = 0;
@@ -116,17 +102,14 @@ var Reconciler = class {
   };
   #useServerEvents = false;
   #exposeKeys = false;
-  constructor(root2, dispatch, {
-    useServerEvents = false,
-    exposeKeys = false
-  } = {}) {
+  constructor(root2, dispatch, { useServerEvents = false, exposeKeys = false } = {}) {
     this.#root = root2;
     this.#dispatch = dispatch;
     this.#useServerEvents = useServerEvents;
     this.#exposeKeys = exposeKeys;
   }
   mount(vdom) {
-    appendChild(this.#root, this.#createChild(this.#root, vdom));
+    appendChild(this.#root, this.#createChild(this.#root, 0, vdom));
   }
   #stack = [];
   push(patch) {
@@ -205,9 +188,11 @@ var Reconciler = class {
   // CHANGES -------------------------------------------------------------------
   #insert(node, children, before) {
     const fragment3 = createDocumentFragment();
+    let childIndex = before | 0;
     iterate(children, (child) => {
-      const el = this.#createChild(node, child);
+      const el = this.#createChild(node, childIndex, child);
       appendChild(fragment3, el);
+      childIndex += advance(child);
     });
     insertBefore(node, fragment3, childAt(node, before));
   }
@@ -246,7 +231,7 @@ var Reconciler = class {
   }
   #replace(parent, from, count, child) {
     this.#remove(parent, from, count);
-    const el = this.#createChild(parent, child);
+    const el = this.#createChild(parent, from, child);
     insertBefore(parent, el, childAt(parent, from));
   }
   #replaceText(node, content) {
@@ -278,28 +263,30 @@ var Reconciler = class {
     });
   }
   // CONSTRUCTORS --------------------------------------------------------------
-  #createChild(parent, vnode) {
+  #createChild(parent, index2, vnode) {
     switch (vnode.kind) {
       case element_kind: {
-        const node = createChildElement(parent, vnode);
+        const node = createChildElement(parent, index2, vnode);
         this.#createAttributes(node, vnode);
-        this.#insert(node, vnode.children, 0);
+        this.#insert(node, vnode.children);
         return node;
       }
       case text_kind: {
-        return createChildText(parent, vnode);
+        return createChildText(parent, index2, vnode);
       }
       case fragment_kind: {
         const node = createDocumentFragment();
-        const head = createChildText(parent, vnode);
+        const head = createChildText(parent, index2, vnode);
         appendChild(node, head);
+        let childIndex = index2 + 1;
         iterate(vnode.children, (child) => {
-          appendChild(node, this.#createChild(parent, child));
+          appendChild(node, this.#createChild(parent, childIndex, child));
+          childIndex += advance(child);
         });
         return node;
       }
       case unsafe_inner_html_kind: {
-        const node = createChildElement(parent, vnode);
+        const node = createChildElement(parent, index2, vnode);
         this.#createAttributes(node, vnode);
         this.#replaceInnerHtml(node, vnode.inner_html);
         return node;
@@ -346,7 +333,7 @@ var Reconciler = class {
           node.removeEventListener(name, handleEvent);
         }
         node.addEventListener(name, handleEvent, {
-          passive: !attribute3.prevent_default
+          passive: prevent.kind === never_kind
         });
         if (throttleDelay > 0) {
           const throttle = throttles.get(name) ?? {};
@@ -364,29 +351,12 @@ var Reconciler = class {
           debouncers.delete(name);
         }
         handlers.set(name, (event2) => {
-          if (prevent)
+          if (prevent.kind === always_kind)
             event2.preventDefault();
-          if (stop)
+          if (stop.kind === always_kind)
             event2.stopPropagation();
           const type = event2.type;
-          let path = "";
-          let pathNode = event2.currentTarget;
-          while (pathNode !== this.#root) {
-            const key = pathNode[meta].key;
-            const parent = pathNode.parentNode;
-            if (key) {
-              path = `${separator_key}${key}${path}`;
-            } else {
-              const siblings = parent.childNodes;
-              let index2 = [].indexOf.call(siblings, pathNode);
-              if (parent === this.#root) {
-                index2 -= this.offset;
-              }
-              path = `${separator_index}${index2}${path}`;
-            }
-            pathNode = parent;
-          }
-          path = path.slice(1);
+          const path = event2.currentTarget[meta].path;
           const data = this.#useServerEvents ? createServerEvent(event2, include ?? []) : event2;
           const throttle = throttles.get(type);
           if (throttle) {
@@ -429,25 +399,27 @@ var iterate = (list4, callback) => {
 };
 var appendChild = (node, child) => node.appendChild(child);
 var insertBefore = (parent, node, referenceNode) => parent.insertBefore(node, referenceNode ?? null);
-var createChildElement = (parent, { key, tag, namespace }) => {
+var createChildElement = (parent, index2, { key, tag, namespace }) => {
   const node = document().createElementNS(namespace || NAMESPACE_HTML, tag);
-  initialiseMetadata(parent, node, key);
+  initialiseMetadata(parent, node, index2, key);
   return node;
 };
-var createChildText = (parent, { key, content }) => {
+var createChildText = (parent, index2, { key, content }) => {
   const node = document().createTextNode(content ?? "");
-  initialiseMetadata(parent, node, key);
+  initialiseMetadata(parent, node, index2, key);
   return node;
 };
 var createDocumentFragment = () => document().createDocumentFragment();
 var childAt = (node, at) => node.childNodes[at | 0];
 var meta = Symbol("lustre");
-var initialiseMetadata = (parent, node, key = "") => {
+var initialiseMetadata = (parent, node, index2 = 0, key = "") => {
+  const segment = `${key || index2}`;
   switch (node.nodeType) {
     case ELEMENT_NODE:
     case DOCUMENT_FRAGMENT_NODE:
       node[meta] = {
         key,
+        path: segment,
         keyedChildren: /* @__PURE__ */ new Map(),
         handlers: /* @__PURE__ */ new Map(),
         throttles: /* @__PURE__ */ new Map(),
@@ -460,6 +432,9 @@ var initialiseMetadata = (parent, node, key = "") => {
   }
   if (parent && key) {
     parent[meta].keyedChildren.set(key, new WeakRef(node));
+  }
+  if (parent && parent[meta].path) {
+    node[meta].path = `${parent[meta].path}${separator_element}${segment}`;
   }
 };
 var getKeyedChild = (node, key) => node[meta].keyedChildren.get(key).deref();
@@ -529,6 +504,52 @@ var SYNCED_ATTRIBUTES = {
     }
   }
 };
+
+// build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs
+var copiedStyleSheets = /* @__PURE__ */ new WeakMap();
+async function adoptStylesheets(shadowRoot) {
+  const pendingParentStylesheets = [];
+  for (const node of document().querySelectorAll(
+    "link[rel=stylesheet], style"
+  )) {
+    if (node.sheet)
+      continue;
+    pendingParentStylesheets.push(
+      new Promise((resolve, reject) => {
+        node.addEventListener("load", resolve);
+        node.addEventListener("error", reject);
+      })
+    );
+  }
+  await Promise.allSettled(pendingParentStylesheets);
+  if (!shadowRoot.host.isConnected) {
+    return [];
+  }
+  shadowRoot.adoptedStyleSheets = shadowRoot.host.getRootNode().adoptedStyleSheets;
+  const pending = [];
+  for (const sheet of document().styleSheets) {
+    try {
+      shadowRoot.adoptedStyleSheets.push(sheet);
+    } catch {
+      try {
+        let copiedSheet = copiedStyleSheets.get(sheet);
+        if (!copiedSheet) {
+          copiedSheet = new CSSStyleSheet();
+          for (const rule of sheet.cssRules) {
+            copiedSheet.insertRule(rule.cssText, copiedSheet.cssRules.length);
+          }
+          copiedStyleSheets.set(sheet, copiedSheet);
+        }
+        shadowRoot.adoptedStyleSheets.push(copiedSheet);
+      } catch {
+        const node = sheet.ownerNode.cloneNode();
+        shadowRoot.prepend(node);
+        pending.push(node);
+      }
+    }
+  }
+  return pending;
+}
 
 // build/dev/javascript/lustre/lustre/runtime/transport.mjs
 var mount_kind = 0;
