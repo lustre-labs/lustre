@@ -8,13 +8,17 @@ import gleam/result
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
 import lustre/internals/constants
-import lustre/vdom/vattr.{Event, Handler as VHandler}
+import lustre/vdom/vattr.{Event, Handler}
 
 // TYPES -----------------------------------------------------------------------
 
-pub type Handler(msg) {
-  Handler(prevent_default: Bool, stop_propagation: Bool, message: msg)
-}
+/// A custom event handler that can be used to conditionally stop propagation
+/// or prevent the default behaviour of an event. You can construct these handlers
+/// with the [`handler`](#handler) function and use them with the [`advanced`](#advanced)
+/// event listener.
+///
+pub type Handler(msg) =
+  vattr.Handler(msg)
 
 // EFFECTS ---------------------------------------------------------------------
 
@@ -46,7 +50,7 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
   vattr.event(
     name:,
     handler: decode.map(handler, fn(msg) {
-      VHandler(prevent_default: False, stop_propagation: False, message: msg)
+      Handler(prevent_default: False, stop_propagation: False, message: msg)
     }),
     include: constants.empty_list,
     prevent_default: vattr.never,
@@ -74,13 +78,7 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
 pub fn advanced(name: String, handler: Decoder(Handler(msg))) -> Attribute(msg) {
   vattr.event(
     name:,
-    handler: decode.map(handler, fn(result) {
-      VHandler(
-        prevent_default: result.prevent_default,
-        stop_propagation: result.stop_propagation,
-        message: result.message,
-      )
-    }),
+    handler:,
     include: constants.empty_list,
     prevent_default: vattr.possible,
     stop_propagation: vattr.possible,
@@ -88,6 +86,17 @@ pub fn advanced(name: String, handler: Decoder(Handler(msg))) -> Attribute(msg) 
     debounce: 0,
     throttle: 0,
   )
+}
+
+/// Construct a [`Handler`](#Handler) that can be used with [`advanced`](#advanced)
+/// to conditionally stop propagation or prevent the default behaviour of an event.
+///
+pub fn handler(
+  dispatch message: msg,
+  prevent_default prevent_default: Bool,
+  stop_propagation stop_propagation: Bool,
+) -> Handler(msg) {
+  Handler(prevent_default:, stop_propagation:, message:)
 }
 
 fn is_immediate_event(name: String) -> Bool {
