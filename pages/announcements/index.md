@@ -1,5 +1,9 @@
 # Announcements
 
+- [2025-06-23](./announcements/2025-06-23.html):
+  Lustre v5.2.0 released with more-advanced event handling, updates to `gleam_erlang`
+  and `gleam_otp` v1, and support for Tailwind v4 in [`lustre_dev_tools`](https://hexdocs.pm/lustre_dev_tools/)!
+
 - [2025-05-18](./announcements/2025-05-18.html):
   Lustre v5.1.0 released! This release introduces two new modules to help you
   write tests for your view functions and applications.
