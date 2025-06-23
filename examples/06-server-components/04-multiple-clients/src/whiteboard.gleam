@@ -3,8 +3,6 @@
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode
 import gleam/int
-import gleam/result
-import gleam/set.{type Set}
 import lustre.{type App}
 import lustre/attribute.{attribute}
 import lustre/element.{type Element}
@@ -38,15 +36,11 @@ fn to_string(color: Color) -> String {
 }
 
 pub type Model {
-  Model(
-    drawn_points: Set(#(Int, Int)),
-    colors: Dict(Int, Dict(Int, Color)),
-    selected_color: Color,
-  )
+  Model(drawn_points: Dict(#(Int, Int), Color), selected_color: Color)
 }
 
 fn init(_) -> Model {
-  Model(drawn_points: set.new(), colors: dict.new(), selected_color: Red)
+  Model(drawn_points: dict.new(), selected_color: Red)
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -60,15 +54,11 @@ pub opaque type Msg {
 fn update(model: Model, msg: Msg) -> Model {
   case msg {
     UserDrewCircle(x:, y:, color:) -> {
-      let new_set = set.insert(model.drawn_points, #(x, y))
-      let new_colors =
-        model.colors
-        |> dict.get(x)
-        |> result.unwrap(dict.new())
-        |> dict.insert(y, color)
-        |> dict.insert(model.colors, x, _)
+      let new_points =
+        model.drawn_points
+        |> dict.insert(#(x, y), color)
 
-      Model(..model, drawn_points: new_set, colors: new_colors)
+      Model(..model, drawn_points: new_points)
     }
 
     UserChangedColor(color:) -> {
@@ -180,20 +170,13 @@ fn view(model: Model) -> Element(Msg) {
       html.button([event.on_click(UserClearedScreen)], [html.text("Clear")]),
     ]),
     html.svg([on_mouse_move], {
-      use points, #(x, y) <- set.fold(model.drawn_points, [])
-      let color =
-        model.colors
-        |> dict.get(x)
-        |> result.unwrap(dict.new())
-        |> dict.get(y)
-        |> result.unwrap(Red)
-        |> to_string()
+      use points, #(x, y), color <- dict.fold(model.drawn_points, [])
       let point =
         svg.circle([
           attribute("cx", int.to_string(x)),
           attribute("cy", int.to_string(y)),
           attribute("r", "5"),
-          attribute("fill", color),
+          attribute("fill", to_string(color)),
         ])
 
       [point, ..points]
