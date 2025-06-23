@@ -11,6 +11,8 @@ request to fix it.
 
 ## Unreleased
 
+## [v5.2.0] - 2025-06-23
+
 ### Added
 
 - [lustre/dev/query] Added a `matches` function to check if an element matches a given selector.
