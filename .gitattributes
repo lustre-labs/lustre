@@ -1,1 +1,1 @@
-test/happy-dom.ffi.mjs linguist-vendored diff=generated
+test/integration/happy-dom.ffi.mjs linguist-vendored diff=generated
