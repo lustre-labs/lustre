@@ -644,6 +644,7 @@ var ServerComponent = class extends HTMLElement {
         this.#shadowRoot ??= this.attachShadow({
           mode: data.open_shadow_root ? "open" : "closed"
         });
+        initialiseMetadata(null, this.#shadowRoot, "");
         while (this.#shadowRoot.firstChild) {
           this.#shadowRoot.firstChild.remove();
         }
