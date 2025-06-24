@@ -52,10 +52,13 @@ fn view(model: Model) -> Element(Msg) {
   let count = int.to_string(model)
   let styles = [#("display", "flex"), #("justify-content", "space-between")]
 
-  html.div([attribute.styles(styles)], [
-    view_button(label: "-", on_click: UserClickedDecrement),
-    html.p([], [html.text("Count: "), html.text(count)]),
-    view_button(label: "+", on_click: UserClickedIncrement),
+  element.fragment([
+    html.h1([], [html.text("Hi")]),
+    html.div([attribute.styles(styles)], [
+      view_button(label: "-", on_click: UserClickedDecrement),
+      html.p([], [html.text("Count: "), html.text(count)]),
+      view_button(label: "+", on_click: UserClickedIncrement),
+    ]),
   ])
 }
 

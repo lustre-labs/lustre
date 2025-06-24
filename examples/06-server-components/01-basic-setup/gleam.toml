@@ -2,10 +2,10 @@ name = "app"
 version = "1.0.0"
 
 [dependencies]
-gleam_erlang = ">= 0.34.0 and < 1.0.0"
+gleam_erlang = ">= 1.0.0 and < 2.0.0"
 gleam_http = ">= 3.7.2 and < 5.0.0"
 gleam_json = ">= 2.3.0 and < 4.0.0"
-gleam_otp = ">= 0.16.1 and < 1.0.0"
-gleam_stdlib = ">= 0.44.0 and < 2.0.0"
+gleam_otp = ">= 1.0.0 and < 2.0.0"
+gleam_stdlib = ">= 0.60.0 and < 2.0.0"
 lustre = { path = "../../../" }
-mist = ">= 4.0.6 and < 5.0.0"
+mist = ">= 5.0.0 and < 6.0.0"
