@@ -430,10 +430,10 @@ var initialiseMetadata = (parent, node, index2 = 0, key = "") => {
       node[meta] = { key };
       break;
   }
-  if (parent && key) {
+  if (parent && parent[meta] && key) {
     parent[meta].keyedChildren.set(key, new WeakRef(node));
   }
-  if (parent && parent[meta].path) {
+  if (parent && parent[meta] && parent[meta].path) {
     node[meta].path = `${parent[meta].path}${separator_element}${segment}`;
   }
 };
@@ -609,14 +609,8 @@ var ServerComponent = class extends HTMLElement {
     });
   }
   connectedCallback() {
-    this.#method = this.getAttribute("method") || "ws";
     for (const attribute3 of this.attributes) {
       this.#changedAttributesQueue.push([attribute3.name, attribute3.value]);
-    }
-    const route = this.getAttribute("route");
-    if (route) {
-      this.#route = new URL(route, location.href);
-      this.#connect();
     }
   }
   attributeChangedCallback(name, prev, next) {
@@ -653,7 +647,6 @@ var ServerComponent = class extends HTMLElement {
         while (this.#shadowRoot.firstChild) {
           this.#shadowRoot.firstChild.remove();
         }
-        initialiseMetadata(null, this.#shadowRoot);
         this.#reconciler = new Reconciler(
           this.#shadowRoot,
           (event2, path, name) => {
