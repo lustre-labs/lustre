@@ -1,8 +1,8 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/dict.{type Dict}
 import gleam/dynamic/decode
 import gleam/int
-import gleam/set.{type Set}
 import lustre.{type App}
 import lustre/attribute.{attribute}
 import lustre/element.{type Element}
@@ -19,22 +19,56 @@ pub fn component() -> App(_, Model, Msg) {
 
 // MODEL -----------------------------------------------------------------------
 
-pub type Model =
-  Set(#(Int, Int))
+pub type Color {
+  Blue
+  Red
+  Green
+  Yellow
+}
+
+fn to_string(color: Color) -> String {
+  case color {
+    Red -> "red"
+    Blue -> "blue"
+    Green -> "green"
+    Yellow -> "yellow"
+  }
+}
+
+pub type Model {
+  Model(drawn_points: Dict(#(Int, Int), Color), selected_color: Color)
+}
 
 fn init(_) -> Model {
-  set.new()
+  Model(drawn_points: dict.new(), selected_color: Red)
 }
 
 // UPDATE ----------------------------------------------------------------------
 
 pub opaque type Msg {
-  UserDrewCircle(x: Int, y: Int)
+  UserDrewCircle(x: Int, y: Int, color: Color)
+  UserChangedColor(color: Color)
+  UserClearedScreen
 }
 
 fn update(model: Model, msg: Msg) -> Model {
   case msg {
-    UserDrewCircle(x:, y:) -> set.insert(model, #(x, y))
+    UserDrewCircle(x:, y:, color:) -> {
+      let new_points =
+        model.drawn_points
+        |> dict.insert(#(x, y), color)
+
+      Model(..model, drawn_points: new_points)
+    }
+
+    UserChangedColor(color:) -> {
+      Model(..model, selected_color: color)
+    }
+
+    UserClearedScreen -> {
+      let default_model = init(1)
+      Model(..default_model, selected_color: model.selected_color)
+    }
   }
 }
 
@@ -48,12 +82,17 @@ fn view(model: Model) -> Element(Msg) {
       use client_y <- decode.field("clientY", decode.int)
 
       case button {
-        1 -> decode.success(UserDrewCircle(x: client_x, y: client_y))
-        _ -> decode.failure(UserDrewCircle(x: 0, y: 0), "Msg")
+        1 ->
+          decode.success(UserDrewCircle(
+            x: client_x,
+            y: client_y,
+            color: model.selected_color,
+          ))
+        _ -> decode.failure(UserDrewCircle(x: 0, y: 0, color: Red), "Msg")
       }
     })
     |> server_component.include(["buttons", "clientX", "clientY"])
-    |> event.throttle(10)
+    |> event.throttle(5)
 
   element.fragment([
     html.style([], {
@@ -97,37 +136,47 @@ fn view(model: Model) -> Element(Msg) {
     }),
     html.div([attribute.id("controls")], [
       html.button(
-        [attribute.class("colour"), attribute.style("background-color", "red")],
+        [
+          attribute.class("colour"),
+          attribute.style("background-color", "red"),
+          event.on_click(UserChangedColor(Red)),
+        ],
         [],
       ),
       html.button(
         [
           attribute.class("colour selected"),
           attribute.style("background-color", "green"),
+          event.on_click(UserChangedColor(Green)),
         ],
         [],
       ),
       html.button(
-        [attribute.class("colour"), attribute.style("background-color", "blue")],
+        [
+          attribute.class("colour"),
+          attribute.style("background-color", "blue"),
+          event.on_click(UserChangedColor(Blue)),
+        ],
         [],
       ),
       html.button(
         [
           attribute.class("colour"),
           attribute.style("background-color", "yellow"),
+          event.on_click(UserChangedColor(Yellow)),
         ],
         [],
       ),
-      html.button([], [html.text("Clear")]),
+      html.button([event.on_click(UserClearedScreen)], [html.text("Clear")]),
     ]),
     html.svg([on_mouse_move], {
-      use points, #(x, y) <- set.fold(model, [])
+      use points, #(x, y), color <- dict.fold(model.drawn_points, [])
       let point =
         svg.circle([
           attribute("cx", int.to_string(x)),
           attribute("cy", int.to_string(y)),
           attribute("r", "5"),
-          attribute("fill", "red"),
+          attribute("fill", to_string(color)),
         ])
 
       [point, ..points]
