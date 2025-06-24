@@ -11,6 +11,13 @@ request to fix it.
 
 ## Unreleased
 
+### Changed
+
+- [lustre/server_component] Fixed a bug where WebSocket connections were initialised twice when the component was mounted.
+- [lustre/server_component] Fixed a bug where the event paths sent by the client erroneously included the shadowRoot itself.
+
+## [v5.2.0] - 2025-06-23
+
 ### Added
 
 - [lustre/dev/query] Added a `matches` function to check if an element matches a given selector.

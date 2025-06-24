@@ -1,17 +1,20 @@
-import { register, unregister } from '../happy-dom.ffi.mjs'
-import { initialiseMetadata, Reconciler } from '../lustre/vdom/reconciler.ffi.mjs';
-import { virtualise } from '../lustre/vdom/virtualise.ffi.mjs';
+import { register, unregister } from "./happy-dom.ffi.mjs";
+import {
+  initialiseMetadata,
+  Reconciler,
+} from "../lustre/vdom/reconciler.ffi.mjs";
+import { virtualise } from "../lustre/vdom/virtualise.ffi.mjs";
 
 export function use(callback) {
   return runInBrowserContext(() => {
     const reconciler = new Reconciler(document.body, () => {}, {
-      exposeKeys: true
-    })
+      exposeKeys: true,
+    });
 
     initialiseMetadata(null, document.body);
 
     callback(reconciler);
-  })
+  });
 }
 
 export function mount(reconciler, vdom) {
@@ -34,8 +37,8 @@ async function runInBrowserContext(callback) {
   register({
     width: 1920,
     height: 1080,
-    url: "https://localhost:1234"
-  })
+    url: "https://localhost:1234",
+  });
 
   try {
     return await callback();

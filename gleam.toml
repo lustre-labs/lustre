@@ -1,6 +1,5 @@
 name = "lustre"
-version = "5.1.1"
-gleam = ">= 1.6.0"
+version = "5.2.1"
 
 description = "A Gleam web framework for building HTML templates, single page applications, and real-time server components."
 repository = { type = "github", user = "lustre-labs", repo = "lustre" }
@@ -17,6 +16,7 @@ pages = [
     { title = "Announcements", path = "announcements.html", source = "./pages/announcements/index.md" },
     { title = "", path = "announcements/2025-04-19.html", source = "./pages/announcements/2025-04-19.md" },
     { title = "", path = "announcements/2025-05-18.html", source = "./pages/announcements/2025-05-18.md" },
+    { title = "", path = "announcements/2025-06-23.html", source = "./pages/announcements/2025-06-23.md" },
 
     { title = "Changelog", path = "changelog.html", source = "./CHANGELOG.md" },
     { title = "Examples", path = "reference/examples.html", source = "./pages/reference/examples.md" },

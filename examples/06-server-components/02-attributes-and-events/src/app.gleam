@@ -2,14 +2,12 @@
 
 import counter
 import gleam/bytes_tree
-import gleam/erlang
+import gleam/erlang/application
 import gleam/erlang/process.{type Selector, type Subject}
-import gleam/function
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/json
 import gleam/option.{type Option, None, Some}
-import gleam/otp/actor
 import lustre
 import lustre/attribute
 import lustre/element
@@ -32,7 +30,7 @@ pub fn main() {
     |> mist.new
     |> mist.bind("localhost")
     |> mist.port(1234)
-    |> mist.start_http
+    |> mist.start
 
   process.sleep_forever()
 }
@@ -99,7 +97,7 @@ fn serve_html() -> Response(ResponseData) {
 // JAVASCRIPT ------------------------------------------------------------------
 
 fn serve_runtime() -> Response(ResponseData) {
-  let assert Ok(lustre_priv) = erlang.priv_directory("lustre")
+  let assert Ok(lustre_priv) = application.priv_directory("lustre")
   let file_path = lustre_priv <> "/static/lustre-server-component.mjs"
 
   case mist.send_file(file_path, offset: 0, limit: None) {
@@ -145,7 +143,7 @@ fn init_counter_socket(_) -> CounterSocketInit {
   let self = process.new_subject()
   let selector =
     process.new_selector()
-    |> process.selecting(self, function.identity)
+    |> process.select(self)
 
   server_component.register_subject(self)
   |> lustre.send(to: component)
@@ -155,9 +153,9 @@ fn init_counter_socket(_) -> CounterSocketInit {
 
 fn loop_counter_socket(
   state: CounterSocket,
-  connection: mist.WebsocketConnection,
   message: mist.WebsocketMessage(CounterSocketMessage),
-) {
+  connection: mist.WebsocketConnection,
+) -> mist.Next(CounterSocket, CounterSocketMessage) {
   case message {
     mist.Text(json) -> {
       case json.parse(json, server_component.runtime_message_decoder()) {
@@ -165,25 +163,25 @@ fn loop_counter_socket(
         Error(_) -> Nil
       }
 
-      actor.continue(state)
+      mist.continue(state)
     }
 
     mist.Binary(_) -> {
-      actor.continue(state)
+      mist.continue(state)
     }
 
     mist.Custom(client_message) -> {
       let json = server_component.client_message_to_json(client_message)
       let assert Ok(_) = mist.send_text_frame(connection, json.to_string(json))
 
-      actor.continue(state)
+      mist.continue(state)
     }
 
     mist.Closed | mist.Shutdown -> {
       server_component.deregister_subject(state.self)
       |> lustre.send(to: state.component)
 
-      actor.Stop(process.Normal)
+      mist.stop()
     }
   }
 }
