@@ -4,7 +4,7 @@
 // used as the entry module when running esbuild so we *cant* use imports relative
 // to src/.
 
-import { initialiseMetadata, Reconciler } from "../../../../build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs";
+import { Reconciler } from "../../../../build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs";
 import { adoptStylesheets } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs";
 import {
   mount_kind,
@@ -73,16 +73,8 @@ export class ServerComponent extends HTMLElement {
   }
 
   connectedCallback() {
-    this.#method = this.getAttribute("method") || "ws";
-
     for (const attribute of this.attributes) {
       this.#changedAttributesQueue.push([attribute.name, attribute.value]);
-    }
-
-    const route = this.getAttribute("route")
-    if (route) {
-      this.#route = new URL(route, location.href);
-      this.#connect();
     }
   }
 
@@ -122,10 +114,8 @@ export class ServerComponent extends HTMLElement {
         });
 
         while (this.#shadowRoot.firstChild) {
-          this.#shadowRoot.firstChild.remove()
+          this.#shadowRoot.firstChild.remove();
         }
-
-        initialiseMetadata(null, this.#shadowRoot);
 
         this.#reconciler = new Reconciler(
           this.#shadowRoot,
@@ -316,7 +306,10 @@ class WebsocketTransport {
   }
 
   send(data) {
-    if (this.#waitingForResponse || this.#socket.readyState !== WebSocket.OPEN) {
+    if (
+      this.#waitingForResponse ||
+      this.#socket.readyState !== WebSocket.OPEN
+    ) {
       this.#queue.push(data);
       return;
     } else {

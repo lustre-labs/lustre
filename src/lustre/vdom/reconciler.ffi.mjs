@@ -493,11 +493,11 @@ export const initialiseMetadata = (parent, node, index = 0, key = "") => {
       break;
   }
 
-  if (parent && key) {
+  if (parent && parent[meta] && key) {
     parent[meta].keyedChildren.set(key, new WeakRef(node));
   }
 
-  if (parent && parent[meta].path) {
+  if (parent && parent[meta] && parent[meta].path) {
     node[meta].path = `${parent[meta].path}${separator_element}${segment}`;
   }
 };
