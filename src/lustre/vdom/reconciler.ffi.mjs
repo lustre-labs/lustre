@@ -594,6 +594,7 @@ const createServerEvent = (event, include = []) => {
 
 // ATTRIBUTE SPECIAL CASES -----------------------------------------------------
 
+/* @__NO_SIDE_EFFECTS__ */
 const syncedBooleanAttribute = (name) => {
   return {
     added(node) {
@@ -605,6 +606,7 @@ const syncedBooleanAttribute = (name) => {
   };
 };
 
+/* @__NO_SIDE_EFFECTS__ */
 const syncedAttribute = (name) => {
   return {
     added(node, value) {
