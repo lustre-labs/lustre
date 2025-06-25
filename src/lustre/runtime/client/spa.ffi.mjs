@@ -13,19 +13,6 @@ import { document } from "../../internals/constants.ffi.mjs";
 //
 
 export class Spa {
-  static start({ init, update, view }, selector, flags) {
-    if (!is_browser()) return new Error(new NotABrowser());
-
-    const root =
-      selector instanceof HTMLElement
-        ? selector
-        : document().querySelector(selector);
-
-    if (!root) return new Error(new ElementNotFound(selector));
-
-    return new Ok(new Spa(root, init(flags), update, view));
-  }
-
   #runtime;
 
   constructor(root, [init, effects], update, view) {
@@ -59,4 +46,15 @@ export class Spa {
   }
 }
 
-export const start = Spa.start;
+export const start = ({ init, update, view }, selector, flags) => {
+  if (!is_browser()) return new Error(new NotABrowser());
+
+  const root =
+    selector instanceof HTMLElement
+      ? selector
+      : document().querySelector(selector);
+
+  if (!root) return new Error(new ElementNotFound(selector));
+
+  return new Ok(new Spa(root, init(flags), update, view));
+}
