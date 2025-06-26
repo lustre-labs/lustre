@@ -59,7 +59,7 @@ html.form(
       attribute.type_("text"),
       attribute.name("username"),
       // Optional default value
-      attribute.value(default_value),
+      attribute.default_value(default_value),
       // But no on_input handler!
     ])
   ]
