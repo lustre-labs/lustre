@@ -66,7 +66,7 @@ fn serve_html() -> Response(ResponseData) {
       html.body(
         [attribute.styles([#("max-width", "32rem"), #("margin", "3rem auto")])],
         // If you're using Lustre to render your HTML like we are here, or if
-        // you're also running Lustre in the browser, youcan render the
+        // you're also running Lustre in the browser, you can render the
         // `<lustre-server-component />` element using `server_component.element`.
         //
         // The server_component module also includes attributes that are relevant
