@@ -502,16 +502,7 @@ export const initialiseMetadata = (parent, node, index = 0, key = "") => {
   }
 };
 
-export const isLustreNode = (node) => {
-  while (node) {
-    if (node[meta]) return true;
-    // we need to also check every parent because we might be inside of an
-    // unsafe_raw_html element, which does not have metadata attached.
-    node = node.parentNode;
-  }
-
-  return false;
-};
+export const isLustreNode = (node) => !!node[meta];
 
 const getKeyedChild = (node, key) => node[meta].keyedChildren.get(key).deref();
 
