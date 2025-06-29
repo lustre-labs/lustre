@@ -13,6 +13,12 @@ request to fix it.
 
 ### Changed
 
+- [lustre] Fixed a bug where the internal `isLustreNode` function would incorrectly identify nodes as Lustre nodes when they were not in some cases.
+
+## [v5.2.1] - 2025-06-23
+
+### Changed
+
 - [lustre/server_component] Fixed a bug where WebSocket connections were initialised twice when the component was mounted.
 - [lustre/server_component] Fixed a bug where the event paths sent by the client erroneously included the shadowRoot itself.
 
