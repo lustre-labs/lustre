@@ -522,7 +522,7 @@ pub fn main() {
   let initial_items =
     document.query_selector("#model")
     |> result.map(plinth_element.inner_text)
-    |> result.then(fn(json) {
+    |> result.try(fn(json) {
       json.parse(json, groceries.grocery_list_decoder())
       |> result.replace_error(Nil)
     })
