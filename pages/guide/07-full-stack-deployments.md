@@ -41,7 +41,7 @@ Create a `Dockerfile` in your project root directory. This file describes how to
 build and run your application in a container.
 
 ```Dockerfile
-ARG GLEAM_VERSION=v1.10.0
+ARG GLEAM_VERSION=v1.11.1
 
 # Build stage - compile the application
 FROM ghcr.io/gleam-lang/gleam:${GLEAM_VERSION}-erlang-alpine AS builder
