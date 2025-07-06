@@ -335,7 +335,7 @@ pub fn main() {
     |> wisp_mist.handler(secret_key_base)
     |> mist.new
     |> mist.port(3000)
-    |> mist.start_http
+    |> mist.start
 
   process.sleep_forever()
 }
