@@ -25,6 +25,14 @@ If your full-stack application is structured differently, you may need to adjust
 the [`Dockerfile`](#dockerfile) referenced below, but the other sections in this
 guide should still be applicable.
 
+You will also need to add the [`envoy`](https://hexdocs.pm/envoy/) to your
+server for fetching environment variables:
+
+```sh
+cd server
+gleam add envoy
+```
+
 ## Setting up your project for deployment
 
 ### Dockerfile
@@ -89,7 +97,7 @@ variable instead of a hardcoded value:
 ```gleam
 // In your server's main function
 fn get_port() -> Int {
-  case system.get_env("PORT") {
+  case envoy.get("PORT") {
     Ok(port) -> {
       case int.parse(port) {
         Ok(port_number) -> port_number
