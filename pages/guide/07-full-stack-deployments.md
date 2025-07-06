@@ -80,7 +80,7 @@ RUN echo -e '#!/bin/sh\nexec ./entrypoint.sh "$@"' > ./start.sh \
 ENV PORT=8080
 
 # Expose the port the server will run on
-EXPOSE 8080
+EXPOSE $PORT
 
 # Run the server
 CMD ["./start.sh", "run"]
