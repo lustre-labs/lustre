@@ -73,7 +73,7 @@ COPY --from=builder /build/server/build/erlang-shipment /app
 
 # Set up the entrypoint
 WORKDIR /app
-RUN echo '#!/bin/sh\nexec ./entrypoint.sh "$@"' > /app/start.sh \
+RUN echo -e '#!/bin/sh\nexec ./entrypoint.sh "$@"' > /app/start.sh \
   && chmod +x /app/start.sh
 
 # Set environment variables
