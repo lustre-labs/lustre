@@ -77,6 +77,7 @@ RUN echo -e '#!/bin/sh\nexec ./entrypoint.sh "$@"' > ./start.sh \
   && chmod +x ./start.sh
 
 # Set environment variables
+ENV HOST=0.0.0.0
 ENV PORT=8080
 
 # Expose the port the server will run on
@@ -91,26 +92,47 @@ requirements and update the port if your server uses a different one.
 
 ### Server Configuration
 
-Ensure your server listens on the port specified by the `PORT` environment
-variable instead of a hardcoded value:
+In production, the server will need to bind to host `0.0.0.0`, which was
+assigned to the `HOST` environment variable in the Dockerfile.
+
+Let's create a function to access that value:
 
 ```gleam
-// In your server's main function
+// In server.gleam
+fn get_host() -> String {
+  case envoy.get("HOST") {
+    Ok(host) -> host
+    Error(_) -> "localhost" // Default if HOST is not set
+  }
+}
+```
+
+Similarly, let's add a function to access the `PORT` environment variable:
+
+```gleam
+// In server.gleam
 fn get_port() -> Int {
   case envoy.get("PORT") {
     Ok(port) -> {
       case int.parse(port) {
         Ok(port_number) -> port_number
-        Error(_) -> 8080  // Default if parsing fails
+        Error(_) -> 8080  // Default if PORT cannot be parsed as an int
       }
     }
-    Error(_) -> 8080  // Default if PORT env var is not set
+    Error(_) -> 3000  // Default if PORT is not set (e.g. during `gleam run`)
   }
 }
+```
 
-// Then use this function when starting your server
+Now lets ensure your server binds to the specified host and listens on the
+specified port instead of using default and/or hardcoded values:
+
+```gleam
+let host = get_host()
 let port = get_port()
+
 mist.new(handler)
+|> mist.bind(host)
 |> mist.port(port)
 |> mist.start_http
 ```
