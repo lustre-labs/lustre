@@ -73,8 +73,8 @@ COPY --from=builder /build/server/build/erlang-shipment /app
 
 # Set up the entrypoint
 WORKDIR /app
-RUN echo -e '#!/bin/sh\nexec ./entrypoint.sh "$@"' > /app/start.sh \
-  && chmod +x /app/start.sh
+RUN echo -e '#!/bin/sh\nexec ./entrypoint.sh "$@"' > ./start.sh \
+  && chmod +x ./start.sh
 
 # Set environment variables
 ENV PORT=8080
@@ -83,7 +83,7 @@ ENV PORT=8080
 EXPOSE 8080
 
 # Run the server
-CMD ["/app/start.sh", "run"]
+CMD ["./start.sh", "run"]
 ```
 
 > **Note**: Make sure to set the `GLEAM_VERSION` to match your project's
