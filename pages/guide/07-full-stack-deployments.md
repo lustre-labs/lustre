@@ -2,12 +2,12 @@
 
 If you have built a full-stack Lustre application, you can use Docker and a
 platform provider such as [Fly.io](https://fly.io/) to deploy your application.
-In this guide, you will learn how to manually deploy a Lustre full-stack application
-to Fly.io using the `flyctl` CLI. You will also learn how to leverage GitHub
-Actions for continuous deployments.
+In this guide, you will learn how to manually deploy a Lustre full-stack
+application to Fly.io using the `flyctl` CLI. You will also learn how to
+leverage GitHub Actions for continuous deployments.
 
-If you are planning on deploying a Lustre SPA without a backend, you should refer
-to the [Lustre SPA deployment guide](./04-spa-deployments.html) instead.
+If you are planning on deploying a Lustre SPA without a backend, you should
+refer to the [Lustre SPA deployment guide](./04-spa-deployments.html) instead.
 
 ## Prerequisites
 
@@ -25,14 +25,23 @@ If your full-stack application is structured differently, you may need to adjust
 the [`Dockerfile`](#dockerfile) referenced below, but the other sections in this
 guide should still be applicable.
 
+You will also need to add the [`envoy`](https://hexdocs.pm/envoy/) to your
+server for fetching environment variables:
+
+```sh
+cd server
+gleam add envoy
+```
+
 ## Setting up your project for deployment
 
 ### Dockerfile
 
-Create a `Dockerfile` in your project root directory. This file describes how to build and run your application in a container.
+Create a `Dockerfile` in your project root directory. This file describes how to
+build and run your application in a container.
 
 ```Dockerfile
-ARG GLEAM_VERSION=v1.10.0
+ARG GLEAM_VERSION=v1.11.1
 
 # Build stage - compile the application
 FROM ghcr.io/gleam-lang/gleam:${GLEAM_VERSION}-erlang-alpine AS builder
@@ -64,53 +73,80 @@ COPY --from=builder /build/server/build/erlang-shipment /app
 
 # Set up the entrypoint
 WORKDIR /app
-RUN echo '#!/bin/sh\nexec ./entrypoint.sh "$@"' > /app/start.sh \
-  && chmod +x /app/start.sh
+RUN echo -e '#!/bin/sh\nexec ./entrypoint.sh "$@"' > ./start.sh \
+  && chmod +x ./start.sh
 
 # Set environment variables
+ENV HOST=0.0.0.0
 ENV PORT=8080
 
 # Expose the port the server will run on
-EXPOSE 8080
+EXPOSE $PORT
 
 # Run the server
-CMD ["/app/start.sh", "run"]
+CMD ["./start.sh", "run"]
 ```
 
-> **Note**: Make sure to set the `GLEAM_VERSION` to match your project's requirements and update the port if your server uses a different one.
+> **Note**: Make sure to set the `GLEAM_VERSION` to match your project's
+requirements and update the port if your server uses a different one.
 
 ### Server Configuration
 
-Ensure your server listens on the port specified by the `PORT` environment variable instead of a hardcoded value:
+In production, the server will need to bind to host `0.0.0.0`, which was
+assigned to the `HOST` environment variable in the Dockerfile.
+
+Let's create a function to access that value:
 
 ```gleam
-// In your server's main function
+// In server.gleam
+fn get_host() -> String {
+  case envoy.get("HOST") {
+    Ok(host) -> host
+    Error(_) -> "localhost" // Default if HOST is not set
+  }
+}
+```
+
+Similarly, let's add a function to access the `PORT` environment variable:
+
+```gleam
+// In server.gleam
 fn get_port() -> Int {
-  case system.get_env("PORT") {
+  case envoy.get("PORT") {
     Ok(port) -> {
       case int.parse(port) {
         Ok(port_number) -> port_number
-        Error(_) -> 8080  // Default if parsing fails
+        Error(_) -> 8080  // Default if PORT cannot be parsed as an int
       }
     }
-    Error(_) -> 8080  // Default if PORT env var is not set
+    Error(_) -> 3000  // Default if PORT is not set (e.g. during `gleam run`)
   }
 }
+```
 
-// Then use this function when starting your server
+Now lets ensure your server binds to the specified host and listens on the
+specified port instead of using default and/or hardcoded values:
+
+```gleam
+let host = get_host()
 let port = get_port()
+
 mist.new(handler)
+|> mist.bind(host)
 |> mist.port(port)
 |> mist.start_http
 ```
 
 ## Deploying to Fly.io
 
-[Fly.io](https://fly.io/) is a platform that lets you deploy your applications globally. It's well-suited for Gleam/Lustre applications because it supports Docker deployments and provides a free tier.
+[Fly.io](https://fly.io/) is a platform that lets you deploy your applications
+globally. It's well-suited for Gleam/Lustre applications because it supports
+Docker deployments and provides a free tier.
 
 ### Setting up Fly.io
 
-1. Install the Fly.io CLI tool by following the [installation instructions](https://fly.io/docs/hands-on/install-flyctl/)
+1. Install the Fly.io CLI tool by following the
+[installation instructions](https://fly.io/docs/hands-on/install-flyctl/)
 
 2. Sign up and log in:
    ```sh
@@ -134,11 +170,13 @@ When prompted:
 - Skip adding a Redis database unless your app needs one
 - Confirm the generated configuration
 
-This will create a `fly.toml` file in your project directory with the basic configuration for your application.
+This will create a `fly.toml` file in your project directory with the basic
+configuration for your application.
 
 ### Configuring fly.toml
 
-The generated `fly.toml` file might need some adjustments. Here's an example of what it might look like:
+The generated `fly.toml` file might need some adjustments. Here's an example of
+what it might look like:
 
 ```toml
 app = "your-app-name"
@@ -149,7 +187,7 @@ app = "your-app-name"
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = true
+  auto_stop_machines = "stop"
   auto_start_machines = true
   min_machines_running = 0
   processes = ["app"]
@@ -163,7 +201,8 @@ app = "your-app-name"
   handlers = ["tls", "http"]
 ```
 
-Make sure the `internal_port` matches the port your application listens on inside the container.
+Make sure the `internal_port` matches the port your application listens on
+inside the container.
 
 ### Manual Deployment
 
@@ -179,21 +218,25 @@ This command:
 3. Uploads the image to Fly.io's registry
 4. Deploys the application
 
-When the deployment is complete, you can access your application at `https://your-app-name.fly.dev`.
+When the deployment is complete, you can access your application at
+`https://your-app-name.fly.dev`.
 
 ## Setting Up Continuous Deployment with GitHub Actions
 
-To automatically deploy your application when you push changes to your GitHub repository, you can set up a GitHub Actions workflow.
+To automatically deploy your application when you push changes to your GitHub
+repository, you can set up a GitHub Actions workflow.
 
 ### Creating a Fly API Token
 
-First, you need to create a Fly API token that GitHub Actions can use to deploy your application:
+First, you need to create a Fly API token that GitHub Actions can use to deploy
+your application:
 
 ```sh
 fly tokens create deploy -x 999999h
 ```
 
-This command generates a long-lived API token (999999 hours, basically permanent). Copy the token.
+This command generates a long-lived API token (999999 hours, basically
+permanent). Copy the token.
 
 ### Adding the Token to GitHub Secrets
 
@@ -206,7 +249,8 @@ This command generates a long-lived API token (999999 hours, basically permanent
 
 ### Creating the GitHub Actions Workflow
 
-Create a file at `.github/workflows/deploy.yml` in your repository with the following content:
+Create a file at `.github/workflows/deploy.yml` in your repository with the
+following content:
 
 ```yaml
 name: Deploy to Fly.io
@@ -234,7 +278,8 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 ```
 
-This workflow will automatically deploy your application to Fly.io whenever you push changes to the main branch of your repository.
+This workflow will automatically deploy your application to Fly.io whenever you
+push changes to the main branch of your repository.
 
 ## Monitoring and Logs
 
@@ -272,7 +317,8 @@ fly ips list
 
 ## Additional Deployment Options
 
-While this guide focused on Fly.io, Lustre full-stack applications can be deployed to any platform that supports Docker containers, including:
+While this guide focused on Fly.io, Lustre full-stack applications can be
+deployed to any platform that supports Docker containers, including:
 
 - [Heroku](https://www.heroku.com/)
 - [Railway](https://railway.app/)
@@ -281,4 +327,5 @@ While this guide focused on Fly.io, Lustre full-stack applications can be deploy
 - [Google Cloud Run](https://cloud.google.com/run)
 - [Azure Container Apps](https://azure.microsoft.com/en-us/services/container-apps/)
 
-Each platform has its own deployment process, but the Dockerfile created in this guide should work with minimal modifications.
+Each platform has its own deployment process, but the Dockerfile created in this
+guide should work with minimal modifications.
