@@ -11,6 +11,11 @@ request to fix it.
 
 ## Unreleased
 
+### Added
+
+- [lustre/element/svg] Add the `svg.namespace` constant.
+- [lustre/element/svg] Add missing `svg.filter`, and `svg.view` elements.
+
 ### Changed
 
 - [lustre] Fixed a bug where the internal `isLustreNode` function would incorrectly identify nodes as Lustre nodes when they were not in some cases.
