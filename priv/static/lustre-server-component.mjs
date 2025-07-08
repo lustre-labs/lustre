@@ -468,7 +468,7 @@ var createServerEvent = (event2, include = []) => {
   }
   return data;
 };
-var syncedBooleanAttribute = (name) => {
+var syncedBooleanAttribute = /* @__NO_SIDE_EFFECTS__ */ (name) => {
   return {
     added(node) {
       node[name] = true;
@@ -478,7 +478,7 @@ var syncedBooleanAttribute = (name) => {
     }
   };
 };
-var syncedAttribute = (name) => {
+var syncedAttribute = /* @__NO_SIDE_EFFECTS__ */ (name) => {
   return {
     added(node, value) {
       node[name] = value;
@@ -486,9 +486,9 @@ var syncedAttribute = (name) => {
   };
 };
 var SYNCED_ATTRIBUTES = {
-  checked: syncedBooleanAttribute("checked"),
-  selected: syncedBooleanAttribute("selected"),
-  value: syncedAttribute("value"),
+  checked: /* @__PURE__ */ syncedBooleanAttribute("checked"),
+  selected: /* @__PURE__ */ syncedBooleanAttribute("selected"),
+  value: /* @__PURE__ */ syncedAttribute("value"),
   autofocus: {
     added(node) {
       queueMicrotask(() => node.focus?.());
