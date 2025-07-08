@@ -6,7 +6,11 @@ import lustre/internals/constants
 
 // CONSTANTS -------------------------------------------------------------------
 
-const namespace = "http://www.w3.org/2000/svg"
+/// The SVG namespace URI: `"http://www.w3.org/2000/svg"`. You might use this
+/// with [`element.namespaced`](../element.html#namespaced) to create elements
+/// in the SVG namespace not provided here.
+///
+pub const namespace = "http://www.w3.org/2000/svg"
 
 // The doc comments (and order) for functions in this module are taken from the
 // MDN Element reference:
@@ -155,6 +159,14 @@ pub fn symbol(
   namespaced(namespace, "symbol", attrs, children)
 }
 
+///
+pub fn view(
+  attrs: List(Attribute(msg)),
+  children: List(Element(msg)),
+) -> Element(msg) {
+  namespaced(namespace, "view", attrs, children)
+}
+
 // SVG ELEMENTS: DESCRIPTIVE ELEMENTS ------------------------------------------
 
 ///
@@ -182,6 +194,14 @@ pub fn title(
 }
 
 // SVG ELEMENTS: FILTER EFFECTS ------------------------------------------------
+
+///
+pub fn filter(
+  attrs: List(Attribute(msg)),
+  children: List(Element(msg)),
+) -> Element(msg) {
+  namespaced(namespace, "filter", attrs, children)
+}
 
 ///
 pub fn fe_blend(attrs: List(Attribute(msg))) -> Element(msg) {
