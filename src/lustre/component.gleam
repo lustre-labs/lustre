@@ -132,7 +132,7 @@ pub fn new(options: List(Option(msg))) -> Config(msg) {
   let init =
     Config(
       //
-      open_shadow_root: False,
+      open_shadow_root: True,
       adopt_styles: True,
       //
       attributes: constants.empty_list,
