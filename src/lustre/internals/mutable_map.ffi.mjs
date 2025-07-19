@@ -24,6 +24,10 @@ export function get(map, key) {
   }
 }
 
+export function has_key(map, key) {
+  return map && map.has(key)
+}
+
 export function insert(map, key, value) {
   map ??= new Map();
   map.set(key, value);
@@ -40,3 +44,4 @@ export function remove(map, key) {
 export function size(map) {
   return map?.size ?? 0;
 }
+

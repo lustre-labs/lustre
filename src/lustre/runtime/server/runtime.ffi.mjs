@@ -32,7 +32,7 @@ export class Runtime {
   #vdom;
   #events;
 
-  #callbacks = new Set();
+  #callbacks = /* @__PURE__ */ new Set();
 
   constructor([model, effects], view, update, on_attribute_change) {
     this.#model = model;

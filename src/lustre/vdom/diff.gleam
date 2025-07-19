@@ -4,7 +4,6 @@ import gleam/function
 import gleam/json
 import gleam/list
 import gleam/order.{Eq, Gt, Lt}
-import gleam/set.{type Set}
 import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/events.{type Events}
@@ -34,7 +33,7 @@ pub fn diff(
     new: [new],
     new_keyed: mutable_map.new(),
     //
-    moved: constants.empty_set(),
+    moved: mutable_map.new(),
     moved_offset: 0,
     removed: 0,
     //
@@ -54,7 +53,7 @@ fn do_diff(
   new new: List(Element(msg)),
   new_keyed new_keyed: MutableMap(String, Element(msg)),
   //
-  moved moved: Set(String),
+  moved moved: MutableMap(String, Nil),
   moved_offset moved_offset: Int,
   removed removed: Int,
   //
@@ -77,7 +76,9 @@ fn do_diff(
     // each remaining child has been moved (and so can be ignored) here, or if it
     // needs to be removed.
     [prev, ..old], [] -> {
-      let removed = case prev.key == "" || !set.contains(moved, prev.key) {
+      let removed = case
+        prev.key == "" || !mutable_map.has_key(moved, prev.key)
+      {
         // This node wasn't keyed or it wasn't moved during a keyed diff. Either
         // way, we need to remove it! We call `advance` because if this vdom
         // node is a fragment, we need to account for however many children it
@@ -129,7 +130,7 @@ fn do_diff(
     [prev, ..old_remaining], [next, ..new_remaining] if prev.key != next.key -> {
       let next_did_exist = mutable_map.get(old_keyed, next.key)
       let prev_does_exist = mutable_map.get(new_keyed, prev.key)
-      let prev_has_moved = set.contains(moved, prev.key)
+      let prev_has_moved = mutable_map.has_key(moved, prev.key)
 
       case prev_does_exist, next_did_exist {
         // The previous child was already visited and moved during this diff. That
@@ -197,7 +198,7 @@ fn do_diff(
           let before = node_index - moved_offset
           let move = patch.move(key: next.key, before:, count:)
           let changes = [move, ..changes]
-          let moved = set.insert(moved, next.key)
+          let moved = mutable_map.insert(moved, next.key, Nil)
           let moved_offset = moved_offset + count
 
           do_diff(
@@ -332,7 +333,7 @@ fn do_diff(
           old_keyed: prev.keyed_children,
           new: next.children,
           new_keyed: next.keyed_children,
-          moved: constants.empty_set(),
+          moved: mutable_map.new(),
           moved_offset:,
           removed: 0,
           node_index:,
@@ -408,7 +409,7 @@ fn do_diff(
           old_keyed: prev.keyed_children,
           new: next.children,
           new_keyed: next.keyed_children,
-          moved: constants.empty_set(),
+          moved: mutable_map.new(),
           moved_offset: 0,
           removed: 0,
           node_index: 0,
@@ -728,8 +729,8 @@ fn diff_attributes(
 
         Event(..), Eq, Event(name:, handler:, ..) -> {
           let has_changes =
-            prev.prevent_default != next.prevent_default
-            || prev.stop_propagation != next.stop_propagation
+            prev.prevent_default.kind != next.prevent_default.kind
+            || prev.stop_propagation.kind != next.stop_propagation.kind
             || prev.immediate != next.immediate
             || prev.debounce != next.debounce
             || prev.throttle != next.throttle
