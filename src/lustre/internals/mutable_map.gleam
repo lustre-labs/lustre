@@ -28,6 +28,12 @@ pub fn get(map: MutableMap(key, value), key: key) -> Result(value, Nil)
 
 ///
 ///
+@external(erlang, "gleam@dict", "has_key")
+@external(javascript, "./mutable_map.ffi.mjs", "has_key")
+pub fn has_key(map: MutableMap(key, value), key: key) -> Bool
+
+///
+///
 @external(erlang, "gleam@dict", "insert")
 @external(javascript, "./mutable_map.ffi.mjs", "insert")
 pub fn insert(

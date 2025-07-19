@@ -35,7 +35,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dict.{type Dict}
+import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/list
@@ -61,8 +61,8 @@ pub opaque type Config(msg) {
     open_shadow_root: Bool,
     adopt_styles: Bool,
     //
-    attributes: Dict(String, fn(String) -> Result(msg, Nil)),
-    properties: Dict(String, Decoder(msg)),
+    attributes: List(#(String, fn(String) -> Result(msg, Nil))),
+    properties: List(#(String, Decoder(msg))),
     //
     is_form_associated: Bool,
     on_form_autofill: option.Option(fn(String) -> msg),
@@ -135,8 +135,8 @@ pub fn new(options: List(Option(msg))) -> Config(msg) {
       open_shadow_root: False,
       adopt_styles: True,
       //
-      attributes: constants.empty_dict(),
-      properties: constants.empty_dict(),
+      attributes: constants.empty_list,
+      properties: constants.empty_list,
       //
       is_form_associated: False,
       on_form_autofill: constants.option_none,
@@ -165,7 +165,7 @@ pub fn on_attribute_change(
   decoder: fn(String) -> Result(msg, Nil),
 ) -> Option(msg) {
   use config <- Option
-  let attributes = dict.insert(config.attributes, name, decoder)
+  let attributes = [#(name, decoder), ..config.attributes]
 
   Config(..config, attributes:)
 }
@@ -180,7 +180,7 @@ pub fn on_attribute_change(
 ///
 pub fn on_property_change(name: String, decoder: Decoder(msg)) -> Option(msg) {
   use config <- Option
-  let properties = dict.insert(config.properties, name, decoder)
+  let properties = [#(name, decoder), ..config.properties]
 
   Config(..config, properties:)
 }
@@ -289,9 +289,9 @@ pub fn to_server_component_config(config: Config(msg)) -> runtime.Config(msg) {
   runtime.Config(
     open_shadow_root: config.open_shadow_root,
     adopt_styles: config.adopt_styles,
-    //
-    attributes: config.attributes,
-    properties: config.properties,
+    // we reverse both lists here such that the last added value takes precedence
+    attributes: dict.from_list(list.reverse(config.attributes)),
+    properties: dict.from_list(list.reverse(config.properties)),
   )
 }
 
