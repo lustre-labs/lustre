@@ -26,8 +26,17 @@ export const make_component = ({ init, update, view, config }, name) => {
     return new Error(new ComponentAlreadyRegistered(name));
   }
 
+  const attributes = new Map();
+  const observedAttributes = [];
+  for (let attr = config.attributes; attr.tail; attr = attr.tail) {
+    const [name, decoder] = attr.head;
+    if (attributes.has(name)) continue;
+
+    attributes.set(name, decoder);
+    observedAttributes.push(name);
+  }
+  
   const [model, effects] = init(undefined);
-  const observedAttributes = config.attributes.entries().map(([name]) => name);
 
   const component = class Component extends HTMLElement {
     static get observedAttributes() {
@@ -72,9 +81,9 @@ export const make_component = ({ init, update, view, config }, name) => {
     }
 
     attributeChangedCallback(name, _, value) {
-      const decoded = config.attributes.get(name)(value);
+      const decoded = attributes.get(name)(value);
 
-      if (decoded.constructor === Ok) {
+      if (decoded.isOk()) {
         this.dispatch(decoded[0]);
       }
     }
@@ -138,7 +147,12 @@ export const make_component = ({ init, update, view, config }, name) => {
     }
   };
 
-  config.properties.forEach((decoder, name) => {
+  for (let prop = config.properties; prop.tail; prop = prop.tail) {
+    const [name, decoder] = prop.head;
+    if (Object.hasOwn(component.prototype, name)) {
+      continue;
+    }
+    
     Object.defineProperty(component.prototype, name, {
       get() {
         return this[`_${name}`];
@@ -153,7 +167,7 @@ export const make_component = ({ init, update, view, config }, name) => {
         }
       },
     });
-  });
+  }
 
   customElements.define(name, component);
 
