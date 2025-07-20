@@ -92,6 +92,16 @@ as a `--dev` dependency for two reasons:
 > be installed. If you do not or cannot install this, the development server will
 > still run but it will not watch your files for changes.
 
+The dev tools will bundle your Lustre project into JavaScript and CSS files
+in `/priv/static`. Since those are generated files, they should be ignored in
+your `.gitignore`:
+
+```diff
+  /build
+  erl_crash.dump
++ /priv/static
+```
+
 To start the development server, run:
 
 ```bash
