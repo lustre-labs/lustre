@@ -40,6 +40,30 @@ export class Runtime {
     this.#view = view;
     this.#update = update;
 
+    this.root.addEventListener("context-request", (event) => {
+      // So that we're compatible with other implementations of the proposed
+      // protocol, we don't check the event constructor here because other
+      // implementations will have defined their own event type.
+      if (event.context && event.callback) return;
+      if (!this.#contexts.has(event.context)) return;
+
+      event.stopImmediatePropagation();
+
+      const context = this.#contexts.get(event.context);
+
+      if (event.subscribe) {
+        context.subscribers.push(new WeakRef(event.callback));
+
+        event.callback(context.value, () => {
+          context.subscribers = context.subscribers.filter(
+            (subscriber) => subscriber.deref() !== event.callback,
+          );
+        });
+      } else {
+        event.callback(context.value);
+      }
+    });
+
     this.#reconciler = new Reconciler(this.root, (event, path, name) => {
       const [events, result] = Events.handle(this.#events, path, name, event);
       this.#events = events;
@@ -103,6 +127,24 @@ export class Runtime {
     );
   }
 
+  // Provide a context value for any child nodes that request it using the given
+  // key. If the key already exists, any existing subscribers will be notified
+  // of the change. Otherwise, we store the value and wait for any `context-request`
+  // events to come in.
+  provide(key, value) {
+    if (!this.#contexts.has(key)) {
+      this.#contexts.set(key, { value, subscribers: [] });
+    } else {
+      const context = this.#contexts.get(key);
+
+      context.value = value;
+
+      for (const subscriber of context.subscribers) {
+        subscriber.deref()?.(value);
+      }
+    }
+  }
+
   // PRIVATE API ---------------------------------------------------------------
 
   #model;
@@ -112,6 +154,7 @@ export class Runtime {
   #vdom;
   #events;
   #reconciler;
+  #contexts = new Map();
 
   #shouldQueue = false;
   #queue = [];
@@ -298,4 +341,14 @@ export async function adoptStylesheets(shadowRoot) {
   }
 
   return pending;
+}
+
+export class ContextRequestEvent extends Event {
+  constructor(context, callback, subscribe) {
+    super("context-request", { bubbles: true, composed: true });
+
+    this.context = context;
+    this.callback = callback;
+    this.subscribe = subscribe;
+  }
 }

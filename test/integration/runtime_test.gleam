@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 @target(erlang)
+import gleam/dict
 import gleam/dynamic
 @target(erlang)
 import gleam/erlang/process
@@ -39,7 +40,7 @@ pub fn client_connect_test() {
   use client, _ <- with_erlang_runtime
 
   process.receive_forever(client)
-  |> should.equal(transport.mount(False, True, [], [], view(0)))
+  |> should.equal(transport.mount(True, True, [], [], [], dict.new(), view(0)))
 }
 
 @target(erlang)

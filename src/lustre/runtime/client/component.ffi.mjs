@@ -10,7 +10,11 @@ import {
   NotABrowser,
   is_browser,
 } from "../../../lustre.mjs";
-import { Runtime, adoptStylesheets } from "./runtime.ffi.mjs";
+import {
+  Runtime,
+  ContextRequestEvent,
+  adoptStylesheets,
+} from "./runtime.ffi.mjs";
 import {
   EffectDispatchedMessage,
   EffectEmitEvent,
@@ -35,7 +39,7 @@ export const make_component = ({ init, update, view, config }, name) => {
     attributes.set(name, decoder);
     observedAttributes.push(name);
   }
-  
+
   const [model, effects] = init(undefined);
 
   const component = class Component extends HTMLElement {
@@ -48,6 +52,7 @@ export const make_component = ({ init, update, view, config }, name) => {
     #runtime;
     #adoptedStyleNodes = [];
     #shadowRoot;
+    #contextSubscriptions = new Set();
 
     constructor() {
       super();
@@ -72,6 +77,42 @@ export const make_component = ({ init, update, view, config }, name) => {
         view,
         update,
       );
+    }
+
+    // CUSTOM ELEMENT LIFECYCLE METHODS ----------------------------------------
+
+    connectedCallback() {
+      // Keep track of the requested contexts so we don't request the same one
+      // twice.
+      const requested = new Set();
+
+      for (const ctx = config.contexts; ctx.tail; ctx = ctx.tail) {
+        const [key, decoder] = ctx.head;
+
+        // An empty key is not valid so we skip over any of those.
+        if (!key) continue;
+        // Likewise if we've requested a context for this key already then we
+        // don't want to dispatch a second event, even if the user provided a
+        // different decoder.
+        if (requested.has(key)) continue;
+
+        this.dispatchEvent(
+          new ContextRequestEvent(
+            key,
+            (value, unsubscribe) => {
+              const decoded = decode(value, decoder);
+
+              if (decoded.isOk()) {
+                this.#contextSubscriptions.add(unsubscribe);
+                this.dispatch(decoded[0]);
+              }
+            },
+            true,
+          ),
+        );
+
+        requested.add(key);
+      }
     }
 
     adoptedCallback() {
@@ -110,6 +151,16 @@ export const make_component = ({ init, update, view, config }, name) => {
       }
     }
 
+    disconnectedCallback() {
+      for (const unsubscribe of this.#contextSubscriptions) {
+        unsubscribe();
+      }
+
+      this.#contextSubscriptions.clear();
+    }
+
+    // LUSTRE RUNTIME METHODS --------------------------------------------------
+
     send(message) {
       switch (message.constructor) {
         case EffectDispatchedMessage: {
@@ -136,6 +187,10 @@ export const make_component = ({ init, update, view, config }, name) => {
       this.#runtime.emit(event, data);
     }
 
+    provide(key, value) {
+      this.#runtime.provide(key, value);
+    }
+
     async #adoptStyleSheets() {
       while (this.#adoptedStyleNodes.length) {
         this.#adoptedStyleNodes.pop().remove();
@@ -152,7 +207,7 @@ export const make_component = ({ init, update, view, config }, name) => {
     if (Object.hasOwn(component.prototype, name)) {
       continue;
     }
-    
+
     Object.defineProperty(component.prototype, name, {
       get() {
         return this[`_${name}`];

@@ -101,6 +101,7 @@ type Actions(msg) {
     emit: fn(String, Json) -> Nil,
     select: fn(Selector(msg)) -> Nil,
     root: fn() -> Dynamic,
+    provide: fn(String, Json) -> Nil,
   )
 }
 
@@ -292,6 +293,7 @@ fn do_comap_actions(actions: Actions(b), f: fn(a) -> b) -> Actions(a) {
     emit: actions.emit,
     select: fn(selector) { do_comap_select(actions, selector, f) },
     root: actions.root,
+    provide: actions.provide,
   )
 }
 
@@ -330,8 +332,9 @@ pub fn perform(
   emit: fn(String, Json) -> Nil,
   select: fn(Selector(a)) -> Nil,
   root: fn() -> Dynamic,
+  provide: fn(String, Json) -> Nil,
 ) -> Nil {
-  let actions = Actions(dispatch:, emit:, select:, root:)
+  let actions = Actions(dispatch:, emit:, select:, root:, provide:)
   use run <- list.each(effect.synchronous)
 
   run(actions)

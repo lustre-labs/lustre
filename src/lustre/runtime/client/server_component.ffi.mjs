@@ -8,15 +8,20 @@ import {
   initialiseMetadata,
   Reconciler,
 } from "../../../../build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs";
-import { adoptStylesheets } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs";
+import {
+  ContextRequestEvent,
+  adoptStylesheets,
+} from "../../../../build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs";
 import {
   mount_kind,
   reconcile_kind,
   emit_kind,
+  provide_kind,
   attribute_changed_kind,
   property_changed_kind,
   event_fired_kind,
   batch_kind,
+  context_provided_kind,
 } from "../../../../build/dev/javascript/lustre/lustre/runtime/transport.mjs";
 
 //
@@ -36,6 +41,8 @@ export class ServerComponent extends HTMLElement {
   #remoteObservedProperties = new Set();
   #connected = false;
   #changedAttributesQueue = [];
+  #contexts = new Map();
+  #contextSubscriptions = new Set();
 
   #observer = new MutationObserver((mutations) => {
     const attributes = [];
@@ -142,19 +149,13 @@ export class ServerComponent extends HTMLElement {
           ([name]) => this.#remoteObservedAttributes.has(name),
         );
 
-        if (filteredQueuedAttributes.length) {
-          this.#transport.send({
-            kind: batch_kind,
-            messages: filteredQueuedAttributes.map(([name, value]) => ({
-              kind: attribute_changed_kind,
-              name,
-              value,
-            })),
-          });
-        }
+        const messages = filteredQueuedAttributes.map(([name, value]) => ({
+          kind: attribute_changed_kind,
+          name,
+          value,
+        }));
 
         this.#changedAttributesQueue = [];
-
         this.#remoteObservedProperties = new Set(data.observed_properties);
 
         for (const name of this.#remoteObservedProperties) {
@@ -174,9 +175,59 @@ export class ServerComponent extends HTMLElement {
           });
         }
 
+        for (const [key, value] of Object.entries(data.provided_contexts)) {
+          this.provide(key, value);
+        }
+
+        for (const key of [...new Set(data.requested_contexts)]) {
+          this.dispatchEvent(
+            new ContextRequestEvent(key, (value, unsubscribe) => {
+              this.#transport?.send({
+                kind: context_provided_kind,
+                key,
+                value,
+              });
+
+              this.#contextSubscriptions.add(unsubscribe);
+            }),
+          );
+        }
+
+        if (messages.length) {
+          this.#transport.send({
+            kind: batch_kind,
+            messages,
+          });
+        }
+
         if (data.will_adopt_styles) {
           await this.#adoptStyleSheets();
         }
+
+        // Listen for context requests from child elements
+        this.#shadowRoot.addEventListener("context-request", (event) => {
+          // Verify this is a valid context request event
+          if (!event.context || !event.callback) return;
+          if (!this.#contexts.has(event.context)) return;
+
+          event.stopImmediatePropagation();
+
+          const context = this.#contexts.get(event.context);
+
+          if (event.subscribe) {
+            // For subscriptions, store a weak reference to the callback
+            context.subscribers.push(new WeakRef(event.callback));
+
+            event.callback(context.value, () => {
+              context.subscribers = context.subscribers.filter(
+                (subscriber) => subscriber.deref() !== event.callback,
+              );
+            });
+          } else {
+            // For one-time requests, just call the callback
+            event.callback(context.value);
+          }
+        });
 
         this.#reconciler.mount(data.vdom);
 
@@ -199,10 +250,39 @@ export class ServerComponent extends HTMLElement {
 
         break;
       }
+
+      case provide_kind: {
+        this.provide(data.key, data.value);
+        break;
+      }
     }
   }
 
   //
+
+  disconnectedCallback() {
+    // Clean up any context subscriptions
+    for (const unsubscribe of this.#contextSubscriptions) {
+      unsubscribe();
+    }
+
+    this.#contextSubscriptions.clear();
+  }
+
+  // Context provider method
+  provide(key, value) {
+    if (!this.#contexts.has(key)) {
+      this.#contexts.set(key, { value, subscribers: [] });
+    } else {
+      const context = this.#contexts.get(key);
+      context.value = value;
+
+      // Notify all subscribers of the change
+      for (const subscriber of context.subscribers) {
+        subscriber.deref()?.(value);
+      }
+    }
+  }
 
   #connect() {
     if (!this.#route || !this.#method) return;
@@ -224,12 +304,14 @@ export class ServerComponent extends HTMLElement {
 
     const onClose = () => {
       this.#connected = false;
-      this.dispatchEvent(new CustomEvent("lustre:close"), {
-        detail: {
-          route: this.#route,
-          method: this.#method,
-        },
-      });
+      this.dispatchEvent(
+        new CustomEvent("lustre:close", {
+          detail: {
+            route: this.#route,
+            method: this.#method,
+          },
+        }),
+      );
     };
 
     const options = { onConnect, onMessage, onClose };
