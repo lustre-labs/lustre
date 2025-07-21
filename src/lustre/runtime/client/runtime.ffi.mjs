@@ -44,7 +44,7 @@ export class Runtime {
       // So that we're compatible with other implementations of the proposed
       // protocol, we don't check the event constructor here because other
       // implementations will have defined their own event type.
-      if (event.context && event.callback) return;
+      if (!(event.context && event.callback)) return;
       if (!this.#contexts.has(event.context)) return;
 
       event.stopImmediatePropagation();
@@ -169,6 +169,7 @@ export class Runtime {
     emit: (event, data) => this.emit(event, data),
     select: () => {},
     root: () => this.root,
+    provide: (key, value) => this.provide(key, value),
   };
 
   // A `#tick` is where we process effects and trigger any synchronous updates.

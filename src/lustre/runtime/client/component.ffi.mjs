@@ -86,7 +86,7 @@ export const make_component = ({ init, update, view, config }, name) => {
       // twice.
       const requested = new Set();
 
-      for (const ctx = config.contexts; ctx.tail; ctx = ctx.tail) {
+      for (let ctx = config.contexts; ctx.tail; ctx = ctx.tail) {
         const [key, decoder] = ctx.head;
 
         // An empty key is not valid so we skip over any of those.
