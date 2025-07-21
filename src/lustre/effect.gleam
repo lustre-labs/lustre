@@ -241,6 +241,12 @@ pub fn select(_sel) {
   empty
 }
 
+pub fn provide(key: String, value: Json) -> Effect(msg) {
+  let task = fn(actions: Actions(msg)) { actions.provide(key, value) }
+
+  Effect(..empty, synchronous: [task])
+}
+
 // MANIPULATIONS ---------------------------------------------------------------
 
 /// Batch multiple effects to be performed at the same time.
