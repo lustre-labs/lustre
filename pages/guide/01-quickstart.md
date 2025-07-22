@@ -401,7 +401,7 @@ Before we forget, let's also update our `view` function to actually display the
 cat images we're fetching:
 
 ```gleam
-pub fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Msg) {
   html.div([], [
     html.div([], [
       html.button([event.on_click(UserClickedAddCat)], [
