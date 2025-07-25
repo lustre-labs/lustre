@@ -20,6 +20,7 @@ request to fix it.
 
 - [lustre] Fixed a bug where the internal `isLustreNode` function would incorrectly identify nodes as Lustre nodes when they were not in some cases.
 - [lustre/component] Fixed a bug where a component's Shadow Root was incorrectly closed by default.
+- [lustre/element] Fixed a bug where a top-level fragment would not be hydrated correctly.
 
 ## [v5.2.1] - 2025-06-23
 

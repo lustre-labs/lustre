@@ -39,7 +39,7 @@ pub fn client_connect_test() {
   use client, _ <- with_erlang_runtime
 
   process.receive_forever(client)
-  |> should.equal(transport.mount(False, True, [], [], view(0)))
+  |> should.equal(transport.mount(True, True, [], [], view(0)))
 }
 
 @target(erlang)
