@@ -17,7 +17,7 @@ export const virtualise = (root) => {
   // we pass an empty stringh here as the index to make sure that the root node
   // does not have a path.
   initialiseMetadata(null, root, '', '');
-  
+
   // we need to do different things depending on how many children we have,
   // and if we are a fragment or not.
   let virtualisableRootChildren = 0;
@@ -40,12 +40,14 @@ export const virtualise = (root) => {
   // any other number of virtualisable children > 1, the view function had to
   // return a fragment node.
 
+
+  // offset of 1 to account for the fragment head element we're going to insert.
+  const children = virtualiseChildNodes(root, 1);
+
   const fragmentHead = emptyTextNode(root);
   root.insertBefore(fragmentHead, root.firstChild);
 
-  const children = virtualiseChildNodes(root);
-  // children.tail skips the fragmentHead we just inserted.
-  return fragment(children.tail);
+  return fragment(children);
 }
 
 const emptyTextNode = (parent) => {
@@ -55,10 +57,18 @@ const emptyTextNode = (parent) => {
 }
 
 const canVirtualiseNode = (node) => {
-  return node.nodeType === ELEMENT_NODE || node.nodeType === TEXT_NODE;
+  switch (node.nodeType) {
+    case ELEMENT_NODE: return true;
+    case TEXT_NODE: return !!node.data;
+    default: return false;
+  }
 }
 
 const virtualiseNode = (parent, node, index) => {
+  if (!canVirtualiseNode(node)) {
+    return null;
+  }
+
   switch (node.nodeType) {
     case ELEMENT_NODE: {
       const key = node.getAttribute("data-lustre-key");
@@ -154,12 +164,12 @@ const virtualiseChildNodes = (node, index = 0) => {
     } else {
       node.removeChild(child);
     }
-    
+
     child = next;
   }
 
   if (!ptr) return empty_list;
-  
+
   ptr.tail = empty_list;
   return children;
 }
@@ -173,7 +183,7 @@ const virtualiseAttributes = (node) => {
     if (attr.name === "xmlns") {
       continue;
     }
-    
+
     attributes = new NonEmpty(virtualiseAttribute(attr), attributes);
   }
 
