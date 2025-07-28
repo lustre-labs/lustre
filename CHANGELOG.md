@@ -13,6 +13,7 @@ request to fix it.
 
 ### Added
 
+- [lustre/component] Added a `delegates_focus` config option to control how focus is handled in components.
 - [lustre/element/svg] Add the `svg.namespace` constant.
 - [lustre/element/svg] Add missing `svg.filter`, and `svg.view` elements.
 
