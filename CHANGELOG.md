@@ -19,6 +19,7 @@ request to fix it.
 ### Changed
 
 - [lustre] Fixed a bug where the internal `isLustreNode` function would incorrectly identify nodes as Lustre nodes when they were not in some cases.
+- [lustre/component] Fixed a bug where removing an attribute a component was listening to would cause a runtime error.
 - [lustre/component] Fixed a bug where a component's Shadow Root was incorrectly closed by default.
 
 ## [v5.2.1] - 2025-06-23

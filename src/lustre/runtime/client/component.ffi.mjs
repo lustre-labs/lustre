@@ -62,6 +62,7 @@ export const make_component = ({ init, update, view, config }, name) => {
       if (!this.internals.shadowRoot) {
         this.#shadowRoot = this.attachShadow({
           mode: config.open_shadow_root ? "open" : "closed",
+          delegatesFocus: config.delegates_focus,
         });
       } else {
         this.#shadowRoot = this.internals.shadowRoot;
@@ -122,7 +123,7 @@ export const make_component = ({ init, update, view, config }, name) => {
     }
 
     attributeChangedCallback(name, _, value) {
-      const decoded = attributes.get(name)(value);
+      const decoded = attributes.get(name)(value ?? "");
 
       if (decoded.isOk()) {
         this.dispatch(decoded[0]);
@@ -153,7 +154,7 @@ export const make_component = ({ init, update, view, config }, name) => {
 
     disconnectedCallback() {
       for (const unsubscribe of this.#contextSubscriptions) {
-        unsubscribe();
+        unsubscribe?.();
       }
 
       this.#contextSubscriptions.clear();
