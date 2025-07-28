@@ -353,7 +353,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     )
 
     UserClickedRemoveCat -> #(
-      Model(..model, cats: list.drop(model.cats, 1)),
+      Model(total: model.total - 1, cats: list.drop(model.cats, 1)),
       effect.none()
     )
 
