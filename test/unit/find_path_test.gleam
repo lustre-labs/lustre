@@ -1,8 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic
-import gleam/pair
-import gleeunit/should
 import lustre/attribute
 import lustre/dev/query
 import lustre/element
@@ -29,15 +27,17 @@ pub fn find_path_in_single_event_test() {
   let query = query.element(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn find_path_in_single_nested_event_test() {
@@ -55,15 +55,17 @@ pub fn find_path_in_single_nested_event_test() {
   let query = query.element(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 // KEYS ------------------------------------------------------------------------
@@ -87,15 +89,17 @@ pub fn find_path_in_single_nested_keyed_event_test() {
   let query = query.element(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn find_path_in_single_nested_keyed_event_with_period_test() {
@@ -119,15 +123,17 @@ pub fn find_path_in_single_nested_keyed_event_with_period_test() {
   let query = query.element(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 // FRAGMENTS -------------------------------------------------------------------
@@ -147,15 +153,17 @@ pub fn find_path_in_fragment_event_test() {
   let query = query.element(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn find_path_in_nested_fragment_event_test() {
@@ -175,15 +183,17 @@ pub fn find_path_in_nested_fragment_event_test() {
   let query = query.element(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn find_path_in_nested_fragment_with_multiple_children_event_test() {
@@ -209,11 +219,13 @@ pub fn find_path_in_nested_fragment_with_multiple_children_event_test() {
   let query = query.element(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
-    Ok(Handler(prevent_default: False, stop_propagation: False, message: 4)),
-  )
+  let expected =
+    Ok(Handler(prevent_default: False, stop_propagation: False, message: 4))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 // CHILD QUERIES ---------------------------------------------------------------
@@ -235,11 +247,13 @@ pub fn find_path_by_child_query_test() {
     |> query.child(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
-    Ok(Handler(prevent_default: False, stop_propagation: False, message: 2)),
-  )
+  let expected =
+    Ok(Handler(prevent_default: False, stop_propagation: False, message: 2))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn find_path_by_child_query_in_fragment_test() {
@@ -261,11 +275,13 @@ pub fn find_path_by_child_query_in_fragment_test() {
     |> query.child(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
-    Ok(Handler(prevent_default: False, stop_propagation: False, message: 2)),
-  )
+  let expected =
+    Ok(Handler(prevent_default: False, stop_propagation: False, message: 2))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn find_path_by_descendant_query_test() {
@@ -287,11 +303,13 @@ pub fn find_path_by_descendant_query_test() {
     |> query.descendant(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
-    Ok(Handler(prevent_default: False, stop_propagation: False, message: 2)),
-  )
+  let expected =
+    Ok(Handler(prevent_default: False, stop_propagation: False, message: 2))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn find_path_by_descendant_query_in_fragment_test() {
@@ -317,9 +335,11 @@ pub fn find_path_by_descendant_query_in_fragment_test() {
     |> query.descendant(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
-    Ok(Handler(prevent_default: False, stop_propagation: False, message: 2)),
-  )
+  let expected =
+    Ok(Handler(prevent_default: False, stop_propagation: False, message: 2))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }

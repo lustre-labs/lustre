@@ -2,9 +2,7 @@
 
 import gleam/dynamic
 import gleam/list
-import gleam/pair
 import gleam/string
-import gleeunit/should
 import lustre/element
 import lustre/element/html
 import lustre/element/keyed
@@ -26,15 +24,16 @@ pub fn single_event_test() {
 
   let path = "0"
 
-  events.handle(events, path, "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+    ))
+
+  let #(_, actual) = events.handle(events, path, "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn single_nested_event_test() {
@@ -49,15 +48,17 @@ pub fn single_nested_event_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(0, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn single_nested_keyed_event_test() {
@@ -73,15 +74,17 @@ pub fn single_nested_keyed_event_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn single_nested_keyed_event_with_period_test() {
@@ -99,15 +102,18 @@ pub fn single_nested_keyed_event_with_period_test() {
   let events = events.from_node(vdom)
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b.c")
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 //
@@ -124,15 +130,16 @@ pub fn fragment_event_test() {
 
   let path = "1"
 
-  events.handle(events, path, "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+    ))
+
+  let #(_, actual) = events.handle(events, path, "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn nested_fragment_event_test() {
@@ -149,15 +156,17 @@ pub fn nested_fragment_event_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(1, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn nested_fragment_with_multiple_children_event_test() {
@@ -181,11 +190,12 @@ pub fn nested_fragment_with_multiple_children_event_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(5, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
-    Ok(Handler(prevent_default: False, stop_propagation: False, message: 4)),
-  )
+  let expected =
+    Ok(Handler(prevent_default: False, stop_propagation: False, message: 4))
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 //
@@ -203,15 +213,17 @@ pub fn single_mapped_event_test() {
 
   let path = path.root |> path.add(0, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "HELLO!",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn multiple_mapped_event_test() {
@@ -230,15 +242,17 @@ pub fn multiple_mapped_event_test() {
 
   let path = path.root |> path.add(0, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(
       Handler(prevent_default: False, stop_propagation: False, message: [
         "HELLO!", "HELLO!",
       ]),
-    ),
-  )
+    )
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 // DIFF TESTS ------------------------------------------------------------------
@@ -253,15 +267,17 @@ pub fn event_added_test() {
 
   let path = path.root |> path.add(0, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+  ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn event_removed_test() {
@@ -274,9 +290,11 @@ pub fn event_removed_test() {
 
   let path = path.root |> path.add(0, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(Error([]))
+  let expected = Error([])
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn element_added_test() {
@@ -293,15 +311,17 @@ pub fn element_added_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn element_removed_test() {
@@ -318,9 +338,11 @@ pub fn element_removed_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(Error([]))
+  let expected = Error([])
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn element_replaced_test() {
@@ -342,15 +364,17 @@ pub fn element_replaced_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }
 
 pub fn keyed_element_replaced_test() {
@@ -390,15 +414,18 @@ pub fn keyed_element_replaced_test() {
 
   let path =
     path.root |> path.add(0, "") |> path.add(0, "v2") |> path.add(0, "")
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello from 1",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 
   let path =
     path.root
@@ -407,13 +434,15 @@ pub fn keyed_element_replaced_test() {
     |> path.add(1, "")
     |> path.add(0, "")
 
-  events.handle(events, path.to_string(path), "click", dynamic.nil())
-  |> pair.second
-  |> should.equal(
+  let expected =
     Ok(Handler(
       prevent_default: False,
       stop_propagation: False,
       message: "hello from 2",
-    )),
-  )
+    ))
+
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert expected == actual
 }

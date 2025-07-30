@@ -1,7 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/json
-import gleeunit/should
 import lustre/attribute.{attribute}
 import lustre/element
 import lustre/element/html
@@ -21,8 +20,7 @@ pub fn empty_node_test() {
   let next = html.div([], [])
   let diff = patch.new(0, 0, [], [])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 // TEXT DIFFS ------------------------------------------------------------------
@@ -37,8 +35,7 @@ pub fn text_element_replaced_test() {
       patch.new(0, 0, [patch.replace_text("Hello, Joe!")], []),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn text_to_element_replacement_test() {
@@ -56,8 +53,7 @@ pub fn text_to_element_replacement_test() {
       ),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 // NODE DIFFS ------------------------------------------------------------------
@@ -93,8 +89,7 @@ pub fn nested_attribute_changes_test() {
       ]),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn node_attribute_added_test() {
@@ -107,8 +102,7 @@ pub fn node_attribute_added_test() {
       patch.new(0, 0, [patch.update([attribute.class("wibble")], [])], []),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn node_attribute_removed_test() {
@@ -121,8 +115,7 @@ pub fn node_attribute_removed_test() {
       patch.new(0, 0, [patch.update([], [attribute.class("wibble")])], []),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn node_property_changed_test() {
@@ -150,8 +143,7 @@ pub fn node_property_changed_test() {
       ),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn node_many_attributes_changed_test() {
@@ -170,8 +162,7 @@ pub fn node_many_attributes_changed_test() {
       ),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn node_child_replaced_test() {
@@ -184,8 +175,7 @@ pub fn node_child_replaced_test() {
       patch.new(0, 0, [patch.replace(0, 1, html.h1([], []))], []),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn node_many_children_changed_test() {
@@ -221,8 +211,7 @@ pub fn node_many_children_changed_test() {
       ),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn node_children_removed_test() {
@@ -232,8 +221,7 @@ pub fn node_children_removed_test() {
   let next = html.div([], [html.h1([], [])])
   let diff = patch.new(0, 0, [], [patch.new(0, 1, [], [])])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 // // FRAGMENT DIFFS --------------------------------------------------------------
@@ -268,8 +256,7 @@ pub fn fragment_many_children_changed_test() {
       ],
     )
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn fragment_child_replaced_test() {
@@ -279,8 +266,7 @@ pub fn fragment_child_replaced_test() {
   let next = element.fragment([html.h1([], [])])
   let diff = patch.new(0, 0, [patch.replace(1, 1, html.h1([], []))], [])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn nested_fragment_child_replaced_test() {
@@ -294,8 +280,7 @@ pub fn nested_fragment_child_replaced_test() {
 
   let diff = patch.new(0, 0, [patch.replace(2, 1, html.h1([], []))], [])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn fragment_children_removed_test() {
@@ -312,8 +297,7 @@ pub fn fragment_children_removed_test() {
   let diff =
     patch.new(0, 0, [], [patch.new(0, 0, [patch.remove(from: 2, count: 2)], [])])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn nested_fragment_children_removed_test() {
@@ -349,8 +333,7 @@ pub fn nested_fragment_children_removed_test() {
       ),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn fragment_update_with_different_children_counts_test() {
@@ -381,8 +364,7 @@ pub fn fragment_update_with_different_children_counts_test() {
       ),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn fragment_prepend_and_replace_with_node_test() {
@@ -407,8 +389,7 @@ pub fn fragment_prepend_and_replace_with_node_test() {
       ),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn fragment_update_and_remove_test() {
@@ -429,8 +410,7 @@ pub fn fragment_update_and_remove_test() {
       ]),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn multiple_nested_fragments_test() {
@@ -454,8 +434,7 @@ pub fn multiple_nested_fragments_test() {
   let diff =
     patch.new(0, 0, [], [patch.new(3, 0, [patch.replace_text("changed")], [])])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 // KEYED DIFFS -----------------------------------------------------------------
@@ -471,8 +450,7 @@ pub fn keyed_swap_test() {
 
   let diff = patch.new(0, 0, [], [patch.new(0, 0, [patch.move("b", 0, 1)], [])])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn keyed_reorder_test() {
@@ -494,8 +472,7 @@ pub fn keyed_reorder_test() {
 
   let diff = patch.new(0, 0, [], [patch.new(0, 0, [patch.move("c", 1, 1)], [])])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn keyed_insert_test() {
@@ -529,8 +506,7 @@ pub fn keyed_insert_test() {
       ),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn keyed_list_with_updates_test() {
@@ -556,8 +532,7 @@ pub fn keyed_list_with_updates_test() {
       ]),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn mixed_keyed_and_regular_nodes_test() {
@@ -591,8 +566,7 @@ pub fn mixed_keyed_and_regular_nodes_test() {
       ]),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn complex_attribute_changes_test() {
@@ -637,8 +611,7 @@ pub fn complex_attribute_changes_test() {
       ),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn multiple_class_and_styles_test() {
@@ -684,8 +657,7 @@ pub fn multiple_class_and_styles_test() {
       ),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn empty_to_multiple_children_test() {
@@ -718,8 +690,7 @@ pub fn empty_to_multiple_children_test() {
       ),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn mixed_text_and_element_changes_test() {
@@ -750,8 +721,7 @@ pub fn mixed_text_and_element_changes_test() {
       ]),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 // KEYED DIFFS WITH FRAGMENTS --------------------------------------------------
@@ -785,8 +755,7 @@ pub fn keyed_move_fragment_with_replace_with_different_count_test() {
       ),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 
   // reverse
 
@@ -795,8 +764,7 @@ pub fn keyed_move_fragment_with_replace_with_different_count_test() {
       patch.new(0, 3, [patch.insert([vnode.to_keyed("x", x)], 0)], []),
     ])
 
-  diff.diff(events.new(), next, prev).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), next, prev).patch == diff
 }
 
 pub fn keyed_move_fragment_with_replace_to_simple_node_test() {
@@ -836,8 +804,7 @@ pub fn keyed_move_fragment_with_replace_to_simple_node_test() {
       ),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn keyed_replace_fragment_test() {
@@ -868,8 +835,7 @@ pub fn keyed_replace_fragment_test() {
       ),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn keyed_insert_fragment_test() {
@@ -886,8 +852,7 @@ pub fn keyed_insert_fragment_test() {
       ]),
     ])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 // KEYED FRAGMENTS -------------------------------------------------------------
@@ -903,8 +868,7 @@ pub fn keyed_fragment_swap_test() {
 
   let diff = patch.new(0, 0, [patch.move("b", before: 1, count: 1)], [])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn keyed_fragment_reorder_test() {
@@ -926,8 +890,7 @@ pub fn keyed_fragment_reorder_test() {
 
   let diff = patch.new(0, 0, [patch.move("c", before: 2, count: 1)], [])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn keyed_fragment_insert_test() {
@@ -959,8 +922,7 @@ pub fn keyed_fragment_insert_test() {
       [],
     )
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
 
 pub fn keyed_fragment_remove_test() {
@@ -977,6 +939,5 @@ pub fn keyed_fragment_remove_test() {
 
   let diff = patch.new(0, 0, [patch.remove_key(key: "b", count: 1)], [])
 
-  diff.diff(events.new(), prev, next).patch
-  |> should.equal(diff)
+  assert diff.diff(events.new(), prev, next).patch == diff
 }
