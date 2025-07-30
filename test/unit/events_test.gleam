@@ -272,7 +272,7 @@ pub fn event_added_test() {
       prevent_default: False,
       stop_propagation: False,
       message: "hello!",
-  ))
+    ))
 
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
