@@ -339,7 +339,7 @@ export class Reconciler {
           node.setAttribute(name, valueOrDefault);
         }
 
-        SYNCED_ATTRIBUTES[name]?.added?.(node, value);
+        SYNCED_ATTRIBUTES[name]?.added?.(node, valueOrDefault);
 
         break;
       }
