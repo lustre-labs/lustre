@@ -33,7 +33,7 @@ pub fn single_event_test() {
 
   let #(_, actual) = events.handle(events, path, "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn single_nested_event_test() {
@@ -58,7 +58,7 @@ pub fn single_nested_event_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn single_nested_keyed_event_test() {
@@ -84,7 +84,7 @@ pub fn single_nested_keyed_event_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn single_nested_keyed_event_with_period_test() {
@@ -113,7 +113,7 @@ pub fn single_nested_keyed_event_with_period_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 //
@@ -139,7 +139,7 @@ pub fn fragment_event_test() {
 
   let #(_, actual) = events.handle(events, path, "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn nested_fragment_event_test() {
@@ -166,7 +166,7 @@ pub fn nested_fragment_event_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn nested_fragment_with_multiple_children_event_test() {
@@ -195,7 +195,7 @@ pub fn nested_fragment_with_multiple_children_event_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 //
@@ -223,7 +223,7 @@ pub fn single_mapped_event_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn multiple_mapped_event_test() {
@@ -252,7 +252,7 @@ pub fn multiple_mapped_event_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 // DIFF TESTS ------------------------------------------------------------------
@@ -277,7 +277,7 @@ pub fn event_added_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn event_removed_test() {
@@ -294,7 +294,7 @@ pub fn event_removed_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn element_added_test() {
@@ -321,7 +321,7 @@ pub fn element_added_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn element_removed_test() {
@@ -342,7 +342,7 @@ pub fn element_removed_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn element_replaced_test() {
@@ -374,7 +374,7 @@ pub fn element_replaced_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn keyed_element_replaced_test() {
@@ -425,7 +425,7 @@ pub fn keyed_element_replaced_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 
   let path =
     path.root
@@ -444,5 +444,5 @@ pub fn keyed_element_replaced_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }

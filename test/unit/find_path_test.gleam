@@ -37,7 +37,7 @@ pub fn find_path_in_single_event_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn find_path_in_single_nested_event_test() {
@@ -65,7 +65,7 @@ pub fn find_path_in_single_nested_event_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 // KEYS ------------------------------------------------------------------------
@@ -99,7 +99,7 @@ pub fn find_path_in_single_nested_keyed_event_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn find_path_in_single_nested_keyed_event_with_period_test() {
@@ -133,7 +133,7 @@ pub fn find_path_in_single_nested_keyed_event_with_period_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 // FRAGMENTS -------------------------------------------------------------------
@@ -163,7 +163,7 @@ pub fn find_path_in_fragment_event_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn find_path_in_nested_fragment_event_test() {
@@ -193,7 +193,7 @@ pub fn find_path_in_nested_fragment_event_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn find_path_in_nested_fragment_with_multiple_children_event_test() {
@@ -225,7 +225,7 @@ pub fn find_path_in_nested_fragment_with_multiple_children_event_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 // CHILD QUERIES ---------------------------------------------------------------
@@ -253,7 +253,7 @@ pub fn find_path_by_child_query_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn find_path_by_child_query_in_fragment_test() {
@@ -281,7 +281,7 @@ pub fn find_path_by_child_query_in_fragment_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn find_path_by_descendant_query_test() {
@@ -309,7 +309,7 @@ pub fn find_path_by_descendant_query_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
 
 pub fn find_path_by_descendant_query_in_fragment_test() {
@@ -341,5 +341,5 @@ pub fn find_path_by_descendant_query_in_fragment_test() {
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
-  assert expected == actual
+  assert actual == expected
 }
