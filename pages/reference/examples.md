@@ -114,7 +114,10 @@ examples demonstrate Lustre's _server components_.
   demonstrates how to include events in server components.
 
 - [`04-multiple-clients`](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/04-multiple-clients)
-  shows how to handle multiple clients with server components.
+  shows how to handle multiple connected clients with server components.
+
+- [`5-publish-subscribe`](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/05-publish-subscribe)
+  shows how to handle multiple individual clients using a publish-subscribe to communicate.
 
 ## Getting help
 
