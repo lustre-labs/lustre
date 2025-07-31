@@ -73,8 +73,8 @@ fn subscribe(
 
   let assert Ok(_) = glubsub.subscribe(topic, subject)
 
-  // We need to teach Lustres runtime how to listen for messages on this subject,
-  // by returning Selector that matches our apps `Msg` type.
+  // We need to teach the server component runtime to listen for messages on
+  // this subject by returning a `Selector` that matches our apps `msg` type.
   let selector =
     process.new_selector()
     |> process.select_map(subject, handle_msg)
@@ -87,13 +87,13 @@ fn subscribe(
 /// We have 2 kinds of messages:
 /// 
 /// - Messages that originate from this instance of the server-component
-/// - Messages that we receive and send from the glubsub topic.
+/// - Messages that we receive from and send to the glubsub topic.
 ///
 /// `SharedMsg` contains messages of the latter type.
 pub opaque type SharedMsg {
-  /// Any client wnats to draw something on the whiteboard.
+  // Received or sent when any client wants to draw on the whiteboard.
   ClientDrewCircle(x: Int, y: Int, color: Color)
-  /// Any client wants to clear the screen.
+  /// Received or sent when any client wants to clear the screen.
   ClientClearedScreen
 }
 
@@ -102,11 +102,12 @@ pub opaque type SharedMsg {
 pub opaque type Msg {
   /// We received some SharedMsg from the glubsub topic.
   AppReceivedSharedMsg(msg: SharedMsg)
-  /// The selected color can be different for every single client.
+  /// The user wants to change their selected color;
+  /// This color can be different for every single client.
   UserChangedColor(color: Color)
-  /// We have a way to get notified if some client wants to modify the pixels
-  /// through the shared topic, but we still a way for the user to tell us that
-  /// they want to in the first place!
+  /// We have a way to get notified if any client wants to modify the whiteboard
+  /// through the shared topic, but we still need a way for the user to tell us
+  /// that they want to in the first place!
   UserDrewCircle(x: Int, y: Int, color: Color)
   ///
   UserClearedScreen
@@ -118,9 +119,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       // If any client wants to draw on the screen, we do that update locally
       // to reflect that change.
       //
-      // Note: This means that we duplicate this state in every client and that
-      // it can get out-of-sync if a client is not subscribed for the entire
-      // time! (for example if they join later)
+      // Note: This means that we duplicate this state in every single client!
       let new_points =
         model.drawn_points
         |> dict.insert(#(x, y), color)
@@ -140,9 +139,9 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
     UserDrewCircle(x:, y:, color:) -> {
       // If a user wants to draw, instead of doing that directly we broadcast
-      // that intent as a SharedMsg over our topic.
-      // Later, we will receive that same message ourselves, at which point we
-      // will update the pixels.
+      // that intent as a `SharedMsg` over our topic.
+      // Later, we will receive that same message ourselves again, at which point
+      // we will update our whiteboard.
       #(model, broadcast(model.topic, ClientDrewCircle(x:, y:, color:)))
     }
 

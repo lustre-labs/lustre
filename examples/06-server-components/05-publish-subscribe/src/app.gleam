@@ -22,11 +22,11 @@ pub fn main() {
   // In this example, we'll use the `glubsub` library to add a publish-subscribe
   // mechanism to our whiteboard from the previous example.
   //
-  // Every client will start its own instance of our whiteboard server component,
-  // and it will use glubsub to communicate to other instances.
+  // Every client will start its own instance of the whiteboard server component,
+  // and will use a glubsub topic to communicate with the other instances.
   //
   // Using glubsub, we first have to create a "topic" that we can send messages
-  // and subscribe to. The topic is shared between all instances, so we create
+  // and subscribe to. The topic is shared between all clients, so we create
   // it at the start of our app.
   let assert Ok(topic) = glubsub.new_topic()
 
@@ -125,12 +125,12 @@ fn init_whiteboard_socket(
   _socket: mist.WebsocketConnection,
   topic: glubsub.Topic(whiteboard.SharedMsg),
 ) -> WhiteboardSocketInit {
-  // compared to the "multiple clients" example, we start a new server
-  // component for each client, passing the topic we created to its
+  // Compared to the "multiple clients" example, we start a new server
+  // component instance for each client, passing the topic we created to its
   // `init` function.
   //
-  // This topic is then used in the whitespace component to communicate with
-  // other component instances.
+  // This topic can then used in the whitespace component to communicate with
+  // other component instances. Check out the whitespace component to learn how!
   let whiteboard = whiteboard.component()
   let assert Ok(component) = lustre.start_server_component(whiteboard, topic)
 
