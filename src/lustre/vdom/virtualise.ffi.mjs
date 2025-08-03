@@ -1,7 +1,7 @@
-import { Empty, NonEmpty } from "../../gleam.mjs";
-import { element, namespaced, fragment, text, none } from "../element.mjs";
+import { NonEmpty } from "../../gleam.mjs";
+import { text, none } from "../element.mjs";
+import { element, namespaced, fragment } from '../element/keyed.mjs';
 import { attribute } from "../attribute.mjs";
-import { to_keyed } from "./vnode.mjs";
 import { empty_list } from "../internals/constants.mjs";
 import { initialiseMetadata } from "./reconciler.ffi.mjs";
 
@@ -34,7 +34,7 @@ export const virtualise = (root) => {
   // a single virtualisable child, so we assume the view function returned that element.
   if (virtualisableRootChildren === 1) {
     const children = virtualiseChildNodes(root);
-    return children.head;
+    return children.head[1];
   }
 
   // any other number of virtualisable children > 1, the view function had to
@@ -64,14 +64,13 @@ const canVirtualiseNode = (node) => {
   }
 }
 
-const virtualiseNode = (parent, node, index) => {
+const virtualiseNode = (parent, node, key, index) => {
   if (!canVirtualiseNode(node)) {
     return null;
   }
 
   switch (node.nodeType) {
     case ELEMENT_NODE: {
-      const key = node.getAttribute("data-lustre-key");
       initialiseMetadata(parent, node, index, key);
 
       if (key) {
@@ -94,7 +93,7 @@ const virtualiseNode = (parent, node, index) => {
           ? element(tag, attributes, children)
           : namespaced(namespace, tag, attributes, children);
 
-      return key ? to_keyed(key, vnode) : vnode;
+      return vnode;
     }
 
     case TEXT_NODE:
@@ -150,10 +149,16 @@ const virtualiseChildNodes = (node, index = 0) => {
   let ptr = null;
 
   while (child) {
-    const vnode = virtualiseNode(node, child, index);
+    const key = child.nodeType === ELEMENT_NODE ? child.getAttribute('data-lustre-key') : null;
+    if (key != null) {
+      child.removeAttribute('data-lustre-key');
+    }      
+
+    const vnode = virtualiseNode(node, child, key, index);
+    
     const next = child.nextSibling;
     if (vnode) {
-      const list_node = new NonEmpty(vnode, null);
+      const list_node = new NonEmpty([key ?? '', vnode], null);
       if (ptr) {
         ptr = ptr.tail = list_node;
       } else {
