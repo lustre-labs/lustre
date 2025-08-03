@@ -117,7 +117,7 @@ examples demonstrate Lustre's _server components_.
   shows how to handle multiple clients connected to the same server component runtime.
 
 - [`5-publish-subscribe`](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/05-publish-subscribe)
-  shows how to handle multiple individual clients using a publish-subscribe to communicate.
+  shows how to handle multiple server components using publish-subscribe to communicate.
 
 ## Getting help
 
