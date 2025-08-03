@@ -1,9 +1,9 @@
 // IMPORTS ---------------------------------------------------------------------
 //
 @target(javascript)
-import gleam/list
+import gleam/json
 @target(javascript)
-import gleeunit/should
+import gleam/list
 @target(javascript)
 import lustre/attribute.{attribute}
 @target(javascript)
@@ -62,12 +62,28 @@ pub fn reconciler_mount_tree_test() {
 }
 
 @target(javascript)
+pub fn reconciler_server_component_mount_input_test() {
+  use <- lustre_test.test_filter("reconciler_mount_input_test")
+
+  let html = html.input([attribute.value("")])
+
+  // we cannot use test_mount here since your to_string function produces a
+  // slightly different result that we don't handle (`value=""` vs `value`)
+  use reconciler <- with_reconciler
+
+  mount_json(reconciler, vnode.to_json(html))
+  assert nodes_equal(get_vdom(), html)
+}
+
+@target(javascript)
 fn test_mount(vdom: Element(msg)) {
   use reconciler <- with_reconciler
 
   mount(reconciler, vdom)
+  assert get_html() == element.to_string(vdom)
 
-  should.equal(get_html(), element.to_string(vdom))
+  mount_json(reconciler, vnode.to_json(vdom))
+  assert nodes_equal(get_vdom(), vdom)
 }
 
 // DIFF TESTS ------------------------------------------------------------------
@@ -683,14 +699,15 @@ pub fn reconciler_push_keyed_fragment_remove_test() {
 fn test_diff(prev: Element(msg), next: Element(msg)) {
   use reconciler <- with_reconciler
 
-  mount(reconciler, prev)
-  push(reconciler, diff.diff(events.new(), prev, next).patch)
+  let diff.Diff(patch:, ..) = diff.diff(events.new(), prev, next)
 
-  let vdom = get_vdom()
-  case nodes_equal(vdom, next) {
-    True -> Nil
-    False -> should.equal(vdom, next)
-  }
+  mount(reconciler, prev)
+  push(reconciler, patch)
+  assert nodes_equal(get_vdom(), next)
+
+  mount(reconciler, prev)
+  push_json(reconciler, patch.to_json(patch))
+  assert nodes_equal(get_vdom(), next)
 }
 
 @target(javascript)
@@ -760,8 +777,16 @@ fn with_reconciler(f: fn(Reconciler) -> Nil) -> Nil
 fn mount(reconciler: Reconciler, vdom: Element(msg)) -> Nil
 
 @target(javascript)
+@external(javascript, "./reconciler_test.ffi.mjs", "mount")
+fn mount_json(reconciler: Reconciler, vdom: json.Json) -> Nil
+
+@target(javascript)
 @external(javascript, "./reconciler_test.ffi.mjs", "push")
 fn push(reconciler: Reconciler, patch: Patch(msg)) -> Nil
+
+@target(javascript)
+@external(javascript, "./reconciler_test.ffi.mjs", "push")
+fn push_json(reconciler: Reconciler, patch: json.Json) -> Nil
 
 @target(javascript)
 @external(javascript, "./reconciler_test.ffi.mjs", "get_html")

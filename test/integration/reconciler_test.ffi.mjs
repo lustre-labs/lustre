@@ -18,6 +18,8 @@ export function use(callback) {
 }
 
 export function mount(reconciler, vdom) {
+  // reset the body to allow multiple `mount` tests using a single browser context.
+  document.body.innerHTML = '';
   reconciler.mount(vdom);
 }
 
@@ -26,11 +28,31 @@ export function push(reconciler, patch) {
 }
 
 export function get_html() {
+  synchronise_value_attributes();
   return document.body.innerHTML;
 }
 
 export function get_vdom() {
+  synchronise_value_attributes();
   return virtualise(document.body);
+}
+
+function synchronise_value_attributes() {
+  // make sure the attributes reflect the current state in the DOM, for example
+  // if we only updated the property values.
+  document.querySelectorAll('input, select, option').forEach(el => {
+    el.setAttribute('value', el.value);
+    if (el.checked) {
+      el.setAttribute('checked', '')
+    } else {
+      el.removeAttribute('checked')
+    }
+    if (el.selected) {
+      el.setAttribute('selected', '')
+    } else {
+      el.removeAttribute('selected')
+    }
+  })
 }
 
 async function runInBrowserContext(callback) {
