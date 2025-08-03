@@ -40,8 +40,6 @@ import {
 //
 
 export class Reconciler {
-  offset = 0;
-
   #root = null;
   #dispatch = () => {};
 
@@ -60,33 +58,14 @@ export class Reconciler {
   }
 
   mount(vdom) {
-    appendChild(this.#root, this.#createChild(this.#root, 0, vdom));
+    initialiseMetadata(null, this.#root, '', '');
+    const el = this.#createChild(this.#root, 0, vdom);
+    insertChildElement(this.#root, el, 0);
   }
 
   #stack = [];
 
   push(patch) {
-    const offset = this.offset;
-    if (offset) {
-      iterate(patch.changes, (change) => {
-        switch (change.kind) {
-          case insert_kind:
-          case move_kind:
-            change.before = (change.before | 0) + offset;
-            break;
-
-          case remove_kind:
-          case replace_kind:
-            change.from = (change.from | 0) + offset;
-            break;
-        }
-      });
-
-      iterate(patch.children, (child) => {
-        child.index = (child.index | 0) + offset;
-      });
-    }
-
     this.#stack.push({ node: this.#root, patch });
     this.#reconcile();
   }
@@ -95,159 +74,156 @@ export class Reconciler {
 
   #reconcile() {
     const self = this;
+    const stack = this.#stack;
 
-    while (self.#stack.length) {
-      const { node, patch } = self.#stack.pop();
+    while (stack.length) {
+      const { node, patch } = stack.pop();
 
       iterate(patch.changes, (change) => {
         switch (change.kind) {
-          case insert_kind:
-            self.#insert(node, change.children, change.before);
-            break;
-
-          case move_kind:
-            self.#move(node, change.key, change.before, change.count);
-            break;
-
-          case remove_key_kind:
-            self.#removeKey(node, change.key, change.count);
-            break;
-
-          case remove_kind:
-            self.#remove(node, change.from, change.count);
-            break;
-
-          case replace_kind:
-            self.#replace(node, change.from, change.count, change.with);
+          case update_kind:
+            self.#update(node, change);
             break;
 
           case replace_text_kind:
-            self.#replaceText(node, change.content);
+            self.#replaceText(node, change);
+            break;
+
+          case replace_kind:
+            self.#replace(node, change);
+            break;
+
+          case insert_kind:
+            self.#insert(node, change);
+            break;
+
+          case remove_kind:
+            self.#remove(node, change);
+            break;
+
+          case move_kind:
+            self.#move(node, change);
+            break;
+
+          case remove_key_kind:
+            self.#removeKey(node, change);
             break;
 
           case replace_inner_html_kind:
-            self.#replaceInnerHtml(node, change.inner_html);
+            self.#replaceInnerHtml(node, change);
             break;
 
-          case update_kind:
-            self.#update(node, change.added, change.removed);
-            break;
         }
       });
 
       if (patch.removed) {
-        self.#remove(
-          node,
-          node.childNodes.length - patch.removed,
-          patch.removed,
-        );
+        this.#removeChildren(node, node[meta].children.length - patch.removed, patch.removed);
       }
 
-      let lastIndex = -1;
-      let lastChild = null;
       iterate(patch.children, (child) => {
-        const index = child.index | 0;
-
-        const next =
-          lastChild && lastIndex - index === 1
-            ? lastChild.previousSibling
-            : childAt(node, index);
-
-        self.#stack.push({ node: next, patch: child });
-
-        lastChild = next;
-        lastIndex = index;
+        stack.push({
+          node: childAt(node, child.index),
+          patch: child
+        });
       });
     }
   }
 
   // CHANGES -------------------------------------------------------------------
 
-  #insert(node, children, before) {
-    const fragment = createDocumentFragment();
-
+  #insert(node, { children, before }) {
     let childIndex = before | 0;
     iterate(children, (child) => {
       const el = this.#createChild(node, childIndex, child);
-      appendChild(fragment, el);
+      insertChildElement(node, el, childIndex);
       childIndex += advance(child);
     });
-
-    insertBefore(node, fragment, childAt(node, before));
   }
 
-  #move(node, key, before, count) {
-    let el = getKeyedChild(node, key);
-    const beforeEl = childAt(node, before);
-    for (let i = 0; i < count && el !== null; ++i) {
-      const next = el.nextSibling;
-      if (SUPPORTS_MOVE_BEFORE) {
-        node.moveBefore(el, beforeEl);
-      } else {
-        insertBefore(node, el, beforeEl);
-      }
-      el = next;
+  #replace(parent, { from, count, with: child }) {
+    this.#removeChildren(parent, from|0, count);
+    const el = this.#createChild(parent, from|0, child);
+    insertChildElement(parent, el, from);
+  }
+
+  #move(node, { key, before, count }) {
+    const { children, keyedChildren } = node[meta];
+    const first = keyedChildren.get(key);
+    // TODO: KeyedIndex
+    const index = children.indexOf(first);
+    if (index < 0) {
+      return;
+    }
+
+    const beforeEl = children[before|0];
+
+    // TODO: Speed - maybe a custom-built move loop is faster
+    const toMove = children.splice(index, count);
+
+    // TODO: bring back moveBefore
+    for (
+      let i = 0, beforeIndex = before|0;
+      i < toMove.length;
+      ++i, ++beforeIndex
+    ) {
+      insertBefore(node, toMove[i], beforeEl);
+    }
+
+    children.splice(before|0, 0, ...toMove);
+  }
+
+  #removeKey(node, { key, count }) {
+    const { children, keyedChildren } = node[meta];
+    const child = keyedChildren.get(key);
+    // TODO: KeyedIndex
+    const index = children.indexOf(child);
+
+    if (index >= 0) {
+      this.#removeChildren(node, index, count);
     }
   }
 
-  #removeKey(node, key, count) {
-    this.#removeFromChild(node, getKeyedChild(node, key), count);
+  #remove(node, { from, count }) {
+    this.#removeChildren(node, from|0, count);
   }
 
-  #remove(node, from, count) {
-    this.#removeFromChild(node, childAt(node, from), count);
-  }
+  #removeChildren(parent, index, count) {
+    const parentMeta = parent[meta];
+    const deleted = parentMeta.children.splice(index, count);
 
-  #removeFromChild(parent, child, count) {
-    while (count-- > 0 && child !== null) {
-      const next = child.nextSibling;
-
-      const key = child[meta].key;
+    for (let i = 0; i < deleted.length; ++i) {
+      const child = deleted[i];
+      const { key, debouncers } = child[meta];
 
       if (key) {
-        parent[meta].keyedChildren.delete(key);
+        parentMeta.keyedChildren.delete(key);
       }
 
-      for (const [_, { timeout }] of child[meta].debouncers ?? []) {
-        clearTimeout(timeout);
+      if (debouncers) {
+        for (const { timeout } of debouncers.values()) {
+          clearTimeout(timeout);
+        }
       }
 
       parent.removeChild(child);
-      child = next;
     }
   }
 
-  #replace(parent, from, count, child) {
-    this.#remove(parent, from, count);
+  #update(node, { added, removed }) {
+    const { handlers, throttles, debouncers } = node[meta];
 
-    const el = this.#createChild(parent, from, child);
-
-    insertBefore(parent, el, childAt(parent, from));
-  }
-
-  #replaceText(node, content) {
-    node.data = content ?? "";
-  }
-
-  #replaceInnerHtml(node, inner_html) {
-    node.innerHTML = inner_html ?? "";
-  }
-
-  #update(node, added, removed) {
-    iterate(removed, (attribute) => {
-      const name = attribute.name;
-
-      if (node[meta].handlers.has(name)) {
+    iterate(removed, ({ name }) => {
+      if (handlers.has(name)) {
         node.removeEventListener(name, handleEvent);
-        node[meta].handlers.delete(name);
+        handlers.delete(name);
 
-        if (node[meta].throttles.has(name)) {
-          node[meta].throttles.delete(name);
+        if (throttles.has(name)) {
+          throttles.delete(name);
         }
 
-        if (node[meta].debouncers.has(name)) {
-          clearTimeout(node[meta].debouncers.get(name).timeout);
-          node[meta].debouncers.delete(name);
+        if (debouncers.has(name)) {
+          clearTimeout(debouncers.get(name).timeout);
+          debouncers.delete(name);
         }
       } else {
         node.removeAttribute(name);
@@ -260,15 +236,24 @@ export class Reconciler {
     });
   }
 
+  #replaceText(node, { content }) {
+    node.data = content ?? "";
+  }
+
+  #replaceInnerHtml(node, { inner_html }) {
+    node.innerHTML = inner_html ?? "";
+  }
+
+
   // CONSTRUCTORS --------------------------------------------------------------
 
   #createChild(parent, index, vnode) {
     switch (vnode.kind) {
       case element_kind: {
         const node = createChildElement(parent, index, vnode);
-        this.#createAttributes(node, vnode);
 
-        this.#insert(node, vnode.children);
+        this.#createAttributes(node, vnode);
+        this.#insert(node, vnode);
 
         return node;
       }
@@ -281,12 +266,13 @@ export class Reconciler {
         const node = createDocumentFragment();
         const head = createChildText(parent, index, vnode);
 
-        appendChild(node, head);
+        insertBefore(node, head, null);
 
         let childIndex = index + 1;
-        iterate(vnode.children, (child) => {
-          appendChild(node, this.#createChild(parent, childIndex, child));
-          childIndex += advance(child);
+        iterate(vnode.children, (childVnode) => {
+          const childEl = this.#createChild(parent, childIndex, childVnode);
+          insertBefore(node, childEl, null);
+          childIndex += advance(childVnode);
         });
 
         return node;
@@ -456,6 +442,37 @@ const appendChild = (node, child) => node.appendChild(child);
 const insertBefore = (parent, node, referenceNode) =>
   parent.insertBefore(node, referenceNode ?? null);
 
+// TODO: better names and stuff I hate this code.
+export const insertChildElement = (parent, node, beforeIndex) => {
+  const beforeEl = childAt(parent, beforeIndex);
+  insertMetadataChild(parent, node, beforeIndex);
+  insertBefore(parent, node, beforeEl);
+}
+
+export const insertMetadataChild = (parent, node, beforeIndex) => {
+  const { children, keyedChildren } = parent[meta];
+  // TODO: temporary fragment handling code.
+  // createChild returns a fragment but does not insert the elements into the
+  // "physical" parent (it shouldn't!).
+  if (node.nodeType === DOCUMENT_FRAGMENT_NODE) {
+    for (let child = node.firstChild; child; child = child.nextSibling) {
+      const key =  child[meta].key;
+      if (key) {
+        keyedChildren.set(key, child);
+      }
+    }
+
+    children.splice(beforeIndex|0, 0, ...node.childNodes);
+  } else {
+    const key = node[meta].key;
+    if (key) {
+      keyedChildren.set(key, node);
+    }
+
+    children.splice(beforeIndex|0, 0, node);
+  }
+}
+
 const createChildElement = (parent, index, { key, tag, namespace }) => {
   const node = document().createElementNS(namespace || NAMESPACE_HTML, tag);
   initialiseMetadata(parent, node, index, key);
@@ -469,7 +486,6 @@ const createChildText = (parent, index, { key, content }) => {
 };
 
 const createDocumentFragment = () => document().createDocumentFragment();
-const childAt = (node, at) => node.childNodes[at | 0];
 
 // METADATA --------------------------------------------------------------------
 
@@ -484,7 +500,11 @@ export const initialiseMetadata = (parent, node, index = 0, key = "") => {
       node[meta] = {
         key,
         path: segment,
+
+        parent,
+        children: [],
         keyedChildren: new Map(),
+
         handlers: new Map(),
         throttles: new Map(),
         debouncers: new Map(),
@@ -492,22 +512,29 @@ export const initialiseMetadata = (parent, node, index = 0, key = "") => {
       break;
 
     case TEXT_NODE:
-      node[meta] = { key };
+      node[meta] = {
+        key,
+        parent
+      };
       break;
   }
 
-  if (parent && parent[meta] && key) {
-    parent[meta].keyedChildren.set(key, new WeakRef(node));
-  }
+  // TODO: this is the callers job.
+  // TODO: fix virtualise
+  // if (parent && parent[meta] && key) {
+  //   parent[meta].keyedChildren.set(key, node);
+  // }
 
-  if (parent && parent[meta] && parent[meta].path) {
+  // TODO: remove path.
+  if (parent && parent[meta].path) {
     node[meta].path = `${parent[meta].path}${separator_element}${segment}`;
   }
 };
 
 export const isLustreNode = (node) => !!node[meta];
 
-const getKeyedChild = (node, key) => node[meta].keyedChildren.get(key).deref();
+const keyedChild = (node, key) => node[meta].keyedChildren.get(key);
+const childAt = (node, at) => node[meta].children[at | 0];
 
 // EVENTS ----------------------------------------------------------------------
 

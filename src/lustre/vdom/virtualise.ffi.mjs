@@ -3,7 +3,7 @@ import { text, none } from "../element.mjs";
 import { element, namespaced, fragment } from '../element/keyed.mjs';
 import { attribute } from "../attribute.mjs";
 import { empty_list } from "../internals/constants.mjs";
-import { initialiseMetadata } from "./reconciler.ffi.mjs";
+import { initialiseMetadata, insertMetadataChild } from "./reconciler.ffi.mjs";
 
 import {
   document,
@@ -27,7 +27,9 @@ export const virtualise = (root) => {
 
   // no virtualisable children, we can empty the node and return our default text node.
   if (virtualisableRootChildren === 0) {
-    root.replaceChildren(emptyTextNode(root));
+    const placeholder = emptyTextNode(root);
+    insertMetadataChild(root, placeholder, 0);
+    root.replaceChildren(placeholder);
     return none();
   }
 
@@ -45,7 +47,8 @@ export const virtualise = (root) => {
   const children = virtualiseChildNodes(root, 1);
 
   const fragmentHead = emptyTextNode(root);
-  root.insertBefore(fragmentHead, root.firstChild);
+  insertMetadataChild(root, fragmentHead, 0);
+  root.prepend(fragmentHead);
 
   return fragment(children);
 }
@@ -72,10 +75,6 @@ const virtualiseNode = (parent, node, key, index) => {
   switch (node.nodeType) {
     case ELEMENT_NODE: {
       initialiseMetadata(parent, node, index, key);
-
-      if (key) {
-        node.removeAttribute("data-lustre-key");
-      }
 
       const tag = node.localName;
       const namespace = node.namespaceURI;
@@ -152,10 +151,10 @@ const virtualiseChildNodes = (node, index = 0) => {
     const key = child.nodeType === ELEMENT_NODE ? child.getAttribute('data-lustre-key') : null;
     if (key != null) {
       child.removeAttribute('data-lustre-key');
-    }      
+    }
 
     const vnode = virtualiseNode(node, child, key, index);
-    
+
     const next = child.nextSibling;
     if (vnode) {
       const list_node = new NonEmpty([key ?? '', vnode], null);
@@ -165,6 +164,7 @@ const virtualiseChildNodes = (node, index = 0) => {
         ptr = children = list_node;
       }
 
+      insertMetadataChild(node, child, index);
       index += 1;
     } else {
       node.removeChild(child);

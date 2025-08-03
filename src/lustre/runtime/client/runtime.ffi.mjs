@@ -100,10 +100,6 @@ export class Runtime {
 
   root = null;
 
-  set offset(offset) {
-    this.#reconciler.offset = offset;
-  }
-
   dispatch(msg, immediate = false) {
     this.#shouldFlush ||= immediate;
 

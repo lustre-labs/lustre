@@ -352,7 +352,6 @@ export class ServerComponent extends HTMLElement {
     }
 
     this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
-    this.#reconciler.offset = this.#adoptedStyleNodes.length;
   }
 }
 
