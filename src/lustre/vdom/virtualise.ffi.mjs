@@ -3,7 +3,7 @@ import { text, none } from "../element.mjs";
 import { element, namespaced, fragment } from '../element/keyed.mjs';
 import { attribute } from "../attribute.mjs";
 import { empty_list } from "../internals/constants.mjs";
-import { initialiseMetadata, insertMetadataChild } from "./reconciler.ffi.mjs";
+import { insertMetadataChild } from "./reconciler.ffi.mjs";
 
 import {
   document,
@@ -16,7 +16,7 @@ export const virtualise = (root) => {
   // no matter what, we want to initialise the metadata for our root element.
   // we pass an empty stringh here as the index to make sure that the root node
   // does not have a path.
-  initialiseMetadata(null, root, '', '');
+  insertMetadataChild(null, root, '', '');
 
   // we need to do different things depending on how many children we have,
   // and if we are a fragment or not.
@@ -28,7 +28,6 @@ export const virtualise = (root) => {
   // no virtualisable children, we can empty the node and return our default text node.
   if (virtualisableRootChildren === 0) {
     const placeholder = emptyTextNode(root);
-    insertMetadataChild(root, placeholder, 0);
     root.replaceChildren(placeholder);
     return none();
   }
@@ -47,7 +46,6 @@ export const virtualise = (root) => {
   const children = virtualiseChildNodes(root, 1);
 
   const fragmentHead = emptyTextNode(root);
-  insertMetadataChild(root, fragmentHead, 0);
   root.prepend(fragmentHead);
 
   return fragment(children);
@@ -55,7 +53,7 @@ export const virtualise = (root) => {
 
 const emptyTextNode = (parent) => {
   const node = document().createTextNode("");
-  initialiseMetadata(parent, node);
+  insertMetadataChild(parent, node);
   return node;
 }
 
@@ -74,7 +72,7 @@ const virtualiseNode = (parent, node, key, index) => {
 
   switch (node.nodeType) {
     case ELEMENT_NODE: {
-      initialiseMetadata(parent, node, index, key);
+      insertMetadataChild(parent, node, index, key);
 
       const tag = node.localName;
       const namespace = node.namespaceURI;
@@ -96,7 +94,7 @@ const virtualiseNode = (parent, node, key, index) => {
     }
 
     case TEXT_NODE:
-      initialiseMetadata(parent, node, index);
+      insertMetadataChild(parent, node, index);
       return text(node.data);
 
     default:
@@ -164,7 +162,6 @@ const virtualiseChildNodes = (node, index = 0) => {
         ptr = children = list_node;
       }
 
-      insertMetadataChild(node, child, index);
       index += 1;
     } else {
       node.removeChild(child);

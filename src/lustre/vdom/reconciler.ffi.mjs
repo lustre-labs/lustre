@@ -39,6 +39,96 @@ import {
 
 //
 
+// DOM API ---------------------------------------------------------------------
+
+// We do this for 2 reasons:
+// - Improve code size by only spelling out the property names in one place
+// - Avoid megamorphic call sites by avoiding direct DOM accesses in the
+//   reconciler main functions.
+//
+// We could directly store references to the Node.protoype functions too and
+// avoid chasing the prototype chains -
+// However that would break many DOM crimes we want to do, for example for the
+// portal or the transition component
+
+const isArray = Array.isArray;
+const setTimeout = globalThis.setTimeout;
+const clearTimeout = globalThis.clearTimeout;
+const createElementNS = (ns, name) => document().createElementNS(ns, name);
+const createTextNode = (data) => document().createTextNode(data);
+const insertBefore = (parent, node, reference) => parent.insertBefore(node, reference);
+const moveBefore = (parent, node, reference) => parent.moveBefore(node, reference);
+const removeChild  = (parent, child) => parent.removeChild(child);
+const getAttribute = (node, name) => node.getAttribute(name);
+const setAttribute = (node, name, value) => node.setAttribute(name, value);
+const removeAttribute = (node, name) => node.removeAttribute(name);
+const addEventListener = (node, name, handler, options) => node.addEventListener(name, handler, options);
+const removeEventListener = (node, name, handler) => node.removeEventListener(name, handler);
+const setInnerHtml = (node, innerHtml) => (node.innerHTML = innerHtml);
+const setData = (node, data) => (node.data = data);
+
+// METADATA / STATEFUL TREE ----------------------------------------------------
+
+// We store some additional data for every node that we create.
+// We store that "metadata" using a symbol on each DOM node.
+
+const meta = Symbol('lustre');
+
+// A node is a Lustre node if it has this metadata.
+export const isLustreNode = (node) => !!node[meta];
+
+//
+export const insertMetadataChild = (parent, node, index = 0, key = "") => {
+  const segment = `${key || index}`;
+
+  switch (node.nodeType) {
+    case ELEMENT_NODE:
+    case DOCUMENT_FRAGMENT_NODE:
+      node[meta] = {
+        // store the key of the element to be able to reconstruct the path
+        // once an event gets dispatched.
+        key,
+        path: segment,
+
+        // navigating the DOM tree using our own navigations to improve stability
+        // and support fragments.
+        parent,
+        children: [],
+        keyedChildren: new Map(),
+
+        // data for the event handlers and attached throttlers and debounccers.
+        handlers: new Map(),
+        throttles: new Map(),
+        debouncers: new Map(),
+      };
+      break;
+
+    case TEXT_NODE:
+      node[meta] = {
+        key,
+        parent
+      };
+      break;
+  }
+
+  if (!parent) {
+    return;
+  }
+
+  const parentMeta = parent[meta];
+  if (parentMeta.path) {
+    node[meta].path = `${parentMeta.path}${separator_element}${segment}`;
+  }
+
+  if (key) {
+    parentMeta.keyedChildren.set(key, node);
+  }
+
+  parentMeta.children.splice(index, 0, node);
+};
+
+// RECONCILER ------------------------------------------------------------------
+
 export class Reconciler {
   #root = null;
   #dispatch = () => {};
@@ -58,9 +148,8 @@ export class Reconciler {
   }
 
   mount(vdom) {
-    initialiseMetadata(null, this.#root, '', '');
-    const el = this.#createChild(this.#root, 0, vdom);
-    insertChildElement(this.#root, el, 0);
+    insertMetadataChild(null, this.#root, '', '');
+    this.#createAndInsertChild(this.#root, 0, vdom);
   }
 
   #stack = [];
@@ -120,30 +209,24 @@ export class Reconciler {
         this.#removeChildren(node, node[meta].children.length - patch.removed, patch.removed);
       }
 
-      iterate(patch.children, (child) => {
-        stack.push({
-          node: childAt(node, child.index),
-          patch: child
-        });
-      });
+      iterate(patch.children, (child) =>
+        stack.push({ node: childAt(node, child.index), patch: child }));
     }
   }
 
   // CHANGES -------------------------------------------------------------------
 
-  #insert(node, { children, before }) {
+  #insert(parent, { children, before }) {
     let childIndex = before | 0;
     iterate(children, (child) => {
-      const el = this.#createChild(node, childIndex, child);
-      insertChildElement(node, el, childIndex);
+      this.#createAndInsertChild(parent, childIndex, child);
       childIndex += advance(child);
     });
   }
 
   #replace(parent, { from, count, with: child }) {
     this.#removeChildren(parent, from|0, count);
-    const el = this.#createChild(parent, from|0, child);
-    insertChildElement(parent, el, from);
+    this.#createAndInsertChild(parent, from|0, child);
   }
 
   #move(node, { key, before, count }) {
@@ -205,7 +288,7 @@ export class Reconciler {
         }
       }
 
-      parent.removeChild(child);
+      removeChild(parent, child);
     }
   }
 
@@ -214,7 +297,7 @@ export class Reconciler {
 
     iterate(removed, ({ name }) => {
       if (handlers.has(name)) {
-        node.removeEventListener(name, handleEvent);
+        removeEventListener(node, name, handleEvent);
         handlers.delete(name);
 
         if (throttles.has(name)) {
@@ -226,75 +309,69 @@ export class Reconciler {
           debouncers.delete(name);
         }
       } else {
-        node.removeAttribute(name);
+        removeAttribute(node, name);
         SYNCED_ATTRIBUTES[name]?.removed?.(node, name);
       }
     });
 
-    iterate(added, (attribute) => {
-      this.#createAttribute(node, attribute);
-    });
+    iterate(added, (attribute) => this.#createAttribute(node, attribute));
   }
 
   #replaceText(node, { content }) {
-    node.data = content ?? "";
+    setData(node, content ?? '');
   }
 
   #replaceInnerHtml(node, { inner_html }) {
-    node.innerHTML = inner_html ?? "";
+    setInnerHtml(node, inner_html ?? '');
   }
 
 
   // CONSTRUCTORS --------------------------------------------------------------
 
-  #createChild(parent, index, vnode) {
+  #createAndInsertChild(parent, index, vnode) {
+    const beforeEl = childAt(parent, index);
+
     switch (vnode.kind) {
       case element_kind: {
-        const node = createChildElement(parent, index, vnode);
-
-        this.#createAttributes(node, vnode);
+        const node = this.#createElement(parent, index, vnode);
         this.#insert(node, vnode);
-
-        return node;
-      }
+        insertBefore(parent, node, beforeEl);
+      }; break;
 
       case text_kind: {
-        return createChildText(parent, index, vnode);
-      }
+        this.#createTextNode(parent, index, vnode);
+      }; break;
 
       case fragment_kind: {
-        const node = createDocumentFragment();
-        const head = createChildText(parent, index, vnode);
-
-        insertBefore(node, head, null);
-
-        let childIndex = index + 1;
-        iterate(vnode.children, (childVnode) => {
-          const childEl = this.#createChild(parent, childIndex, childVnode);
-          insertBefore(node, childEl, null);
-          childIndex += advance(childVnode);
-        });
-
-        return node;
-      }
+        this.#createTextNode(parent, index, vnode);
+        this.#insert(parent, { children: vnode.children, before: index + 1 });
+      }; break;
 
       case unsafe_inner_html_kind: {
-        const node = createChildElement(parent, index, vnode);
-        this.#createAttributes(node, vnode);
-
-        this.#replaceInnerHtml(node, vnode.inner_html);
-
-        return node;
-      }
+        const node = this.#createElement(parent, index, vnode);
+        this.#replaceInnerHtml(node, vnode);
+        insertBefore(parent, node, beforeEl);
+      }; break;
     }
   }
 
-  #createAttributes(node, { key, attributes }) {
-    if (this.#exposeKeys && key) {
-      node.setAttribute("data-lustre-key", key);
-    }
+  #createElement(parent, index, { key, tag, namespace, attributes }) {
+    const node = createElementNS(namespace || NAMESPACE_HTML, tag);
+    insertMetadataChild(parent, node, index, key);
 
+    if (this.#exposeKeys && key) {
+      setAttribute(node, "data-lustre-key", key);
+    }
     iterate(attributes, (attribute) => this.#createAttribute(node, attribute));
+
+    return node;
+  }
+
+  #createTextNode(parent, index, { key, content }) {
+    const beforeEl = childAt(parent, index);
+    const node = createTextNode(content ?? '');
+    insertMetadataChild(parent, node, index, key);
+    insertBefore(parent, node, beforeEl);
   }
 
   #createAttribute(node, attribute) {
@@ -305,9 +382,6 @@ export class Reconciler {
       name,
       value,
       prevent_default: prevent,
-      stop_propagation: stop,
-      immediate,
-      include,
       debounce: debounceDelay,
       throttle: throttleDelay,
     } = attribute;
@@ -320,8 +394,8 @@ export class Reconciler {
           return;
         }
 
-        if (valueOrDefault !== node.getAttribute(name)) {
-          node.setAttribute(name, valueOrDefault);
+        if (valueOrDefault !== getAttribute(node, name)) {
+          setAttribute(node, name, valueOrDefault);
         }
 
         SYNCED_ATTRIBUTES[name]?.added?.(node, valueOrDefault);
@@ -337,12 +411,11 @@ export class Reconciler {
         if (handlers.has(name)) {
           // we re-attach an event listener on every change in case we need
           // to change the options we pass.
-          node.removeEventListener(name, handleEvent);
+          removeEventListener(node, name, handleEvent);
         }
 
-        node.addEventListener(name, handleEvent, {
-          passive: prevent.kind === never_kind,
-        });
+        const passive = prevent.kind === never_kind;
+        addEventListener(node, name, handleEvent, { passive });
 
         if (throttleDelay > 0) {
           const throttle = throttles.get(name) ?? {};
@@ -363,46 +436,60 @@ export class Reconciler {
           debouncers.delete(name);
         }
 
-        handlers.set(name, (event) => {
-          if (prevent.kind === always_kind) event.preventDefault();
-          if (stop.kind === always_kind) event.stopPropagation();
-
-          const type = event.type;
-          const path = event.currentTarget[meta].path;
-
-          const data = this.#useServerEvents
-            ? createServerEvent(event, include ?? [])
-            : event;
-
-          const throttle = throttles.get(type);
-          if (throttle) {
-            const now = Date.now();
-            const last = throttle.last || 0;
-
-            if (now > last + throttle.delay) {
-              throttle.last = now;
-              throttle.lastEvent = event;
-              this.#dispatch(data, path, type, immediate);
-            }
-          }
-
-          const debounce = debouncers.get(type);
-          if (debounce) {
-            clearTimeout(debounce.timeout);
-
-            debounce.timeout = setTimeout(() => {
-              if (event === throttles.get(type)?.lastEvent) return;
-              this.#dispatch(data, path, type, immediate);
-            }, debounce.delay);
-          }
-
-          if (!throttle && !debounce) {
-            this.#dispatch(data, path, type, immediate);
-          }
-        });
+        handlers.set(name, (event) => this.#handleEvent(attribute, event));
 
         break;
       }
+    }
+  }
+
+  #handleEvent(attribute, event) {
+    const { currentTarget, type } = event;
+    const { path, debouncers, throttles } = currentTarget[meta];
+
+    const {
+      prevent_default: prevent,
+      stop_propagation: stop,
+      include,
+      immediate
+    } = attribute;
+
+    if (prevent.kind === always_kind) event.preventDefault();
+    if (stop.kind === always_kind) event.stopPropagation();
+
+    if (type === 'submit') {
+      event.detail ??= {};
+      event.detail.formData = [...new FormData(event.target).entries()];
+    }
+
+    const data = this.#useServerEvents
+      ? createServerEvent(event, include ?? [])
+      : event;
+
+    const throttle = throttles.get(type);
+    if (throttle) {
+      const now = Date.now();
+      const last = throttle.last || 0;
+
+      if (now > last + throttle.delay) {
+        throttle.last = now;
+        throttle.lastEvent = event;
+        this.#dispatch(data, path, type, immediate);
+      }
+    }
+
+    const debounce = debouncers.get(type);
+    if (debounce) {
+      clearTimeout(debounce.timeout);
+
+      debounce.timeout = setTimeout(() => {
+        if (event === throttles.get(type)?.lastEvent) return;
+        this.#dispatch(data, path, type, immediate);
+      }, debounce.delay);
+    }
+
+    if (!throttle && !debounce) {
+      this.#dispatch(data, path, type, immediate);
     }
   }
 }
@@ -423,118 +510,26 @@ export class Reconciler {
  *
  */
 const iterate = (list, callback) => {
-  if (Array.isArray(list)) {
+  if (isArray(list)) {
     for (let i = 0; i < list.length; i++) {
       callback(list[i]);
     }
   } else if (list) {
-    for (list; list.tail; list = list.tail) {
+    for (list; list.head; list = list.tail) {
       callback(list.head);
     }
   }
 };
 
-const advance = (vnode) => {
-  return 1 + (vnode.children_count|0);
-}
-
-const appendChild = (node, child) => node.appendChild(child);
-const insertBefore = (parent, node, referenceNode) =>
-  parent.insertBefore(node, referenceNode ?? null);
-
-// TODO: better names and stuff I hate this code.
-export const insertChildElement = (parent, node, beforeIndex) => {
-  const beforeEl = childAt(parent, beforeIndex);
-  insertMetadataChild(parent, node, beforeIndex);
-  insertBefore(parent, node, beforeEl);
-}
-
-export const insertMetadataChild = (parent, node, beforeIndex) => {
-  const { children, keyedChildren } = parent[meta];
-  // TODO: temporary fragment handling code.
-  // createChild returns a fragment but does not insert the elements into the
-  // "physical" parent (it shouldn't!).
-  if (node.nodeType === DOCUMENT_FRAGMENT_NODE) {
-    for (let child = node.firstChild; child; child = child.nextSibling) {
-      const key =  child[meta].key;
-      if (key) {
-        keyedChildren.set(key, child);
-      }
-    }
-
-    children.splice(beforeIndex|0, 0, ...node.childNodes);
-  } else {
-    const key = node[meta].key;
-    if (key) {
-      keyedChildren.set(key, node);
-    }
-
-    children.splice(beforeIndex|0, 0, node);
-  }
-}
-
-const createChildElement = (parent, index, { key, tag, namespace }) => {
-  const node = document().createElementNS(namespace || NAMESPACE_HTML, tag);
-  initialiseMetadata(parent, node, index, key);
-  return node;
-};
-
-const createChildText = (parent, index, { key, content }) => {
-  const node = document().createTextNode(content ?? "");
-  initialiseMetadata(parent, node, index, key);
-  return node;
-};
-
-const createDocumentFragment = () => document().createDocumentFragment();
 
 // METADATA --------------------------------------------------------------------
 
-const meta = Symbol("lustre");
-
-export const initialiseMetadata = (parent, node, index = 0, key = "") => {
-  const segment = `${key || index}`;
-
-  switch (node.nodeType) {
-    case ELEMENT_NODE:
-    case DOCUMENT_FRAGMENT_NODE:
-      node[meta] = {
-        key,
-        path: segment,
-
-        parent,
-        children: [],
-        keyedChildren: new Map(),
-
-        handlers: new Map(),
-        throttles: new Map(),
-        debouncers: new Map(),
-      };
-      break;
-
-    case TEXT_NODE:
-      node[meta] = {
-        key,
-        parent
-      };
-      break;
-  }
-
-  // TODO: this is the callers job.
-  // TODO: fix virtualise
-  // if (parent && parent[meta] && key) {
-  //   parent[meta].keyedChildren.set(key, node);
-  // }
-
-  // TODO: remove path.
-  if (parent && parent[meta].path) {
-    node[meta].path = `${parent[meta].path}${separator_element}${segment}`;
-  }
-};
-
-export const isLustreNode = (node) => !!node[meta];
-
 const keyedChild = (node, key) => node[meta].keyedChildren.get(key);
 const childAt = (node, at) => node[meta].children[at | 0];
+
+const advance = (vnode) => {
+  return 1 + (vnode.children_count|0);
+}
 
 // EVENTS ----------------------------------------------------------------------
 
@@ -548,14 +543,8 @@ const childAt = (node, at) => node[meta].children[at | 0];
  *
  */
 const handleEvent = (event) => {
-  const target = event.currentTarget;
-  const handler = target[meta].handlers.get(event.type);
-
-  if (event.type === "submit") {
-    event.detail ??= {};
-    event.detail.formData = [...new FormData(event.target).entries()];
-  }
-
+  const { currentTarget, type } = event;
+  const handler = currentTarget[meta].handlers.get(type);
   handler(event);
 };
 

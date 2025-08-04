@@ -1,8 +1,5 @@
 import { register, unregister } from "./happy-dom.ffi.mjs";
-import {
-  initialiseMetadata,
-  Reconciler,
-} from "../lustre/vdom/reconciler.ffi.mjs";
+import { Reconciler } from "../lustre/vdom/reconciler.ffi.mjs";
 import { virtualise } from "../lustre/vdom/virtualise.ffi.mjs";
 
 export function use(callback) {
@@ -10,8 +7,6 @@ export function use(callback) {
     const reconciler = new Reconciler(document.body, () => {}, {
       exposeKeys: true,
     });
-
-    initialiseMetadata(null, document.body);
 
     callback(reconciler);
   });
