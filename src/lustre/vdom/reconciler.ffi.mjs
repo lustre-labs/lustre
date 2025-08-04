@@ -1,7 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import {
-  advance,
   element_kind,
   text_kind,
   fragment_kind,
@@ -448,6 +447,10 @@ const iterate = (list, callback) => {
     }
   }
 };
+
+const advance = (vnode) => {
+  return 1 + (vnode.children_count|0);
+}
 
 const appendChild = (node, child) => node.appendChild(child);
 const insertBefore = (parent, node, referenceNode) =>
