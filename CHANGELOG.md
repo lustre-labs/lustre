@@ -13,7 +13,9 @@ request to fix it.
 
 ### Added
 
+- [lustre/effect] Added a `provide` effect for providing context values to components.
 - [lustre/component] Added a `delegates_focus` config option to control how focus is handled in components.
+- [lustre/component] Added a `on_context_change` config option to listen for changes in a parent's provided context.
 - [lustre/element/svg] Add the `svg.namespace` constant.
 - [lustre/element/svg] Add missing `svg.filter`, and `svg.view` elements.
 
