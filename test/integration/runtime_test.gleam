@@ -38,7 +38,7 @@ pub fn client_connect_test() {
   use client, _ <- with_erlang_runtime
 
   assert process.receive_forever(client)
-    == transport.mount(transport.mount(True, True, [], [], [], dict.new(), view(0)))
+    == transport.mount(True, True, [], [], [], dict.new(), view(0))
 }
 
 @target(erlang)
