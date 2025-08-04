@@ -24,6 +24,10 @@ request to fix it.
 - [lustre] Fixed a bug where the internal `isLustreNode` function would incorrectly identify nodes as Lustre nodes when they were not in some cases.
 - [lustre/component] Fixed a bug where removing an attribute a component was listening to would cause a runtime error.
 - [lustre/component] Fixed a bug where a component's Shadow Root was incorrectly closed by default.
+- [lustre/element] Fixed a bug where a top-level fragment would not be hydrated correctly.
+- [lustre/element/keyed] Fixed a bug where keyed elements were not virtualised correctly.
+- [lustre/server_component] Fixed a bug where empty `value` attributes would result in a value of `undefined`
+- [lustre/server_component] Fixed a bug where events inside fragments would not work.
 
 ## [v5.2.1] - 2025-06-23
 

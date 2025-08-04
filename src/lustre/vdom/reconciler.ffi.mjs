@@ -1,7 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import {
-  advance,
   element_kind,
   text_kind,
   fragment_kind,
@@ -339,7 +338,7 @@ export class Reconciler {
           node.setAttribute(name, valueOrDefault);
         }
 
-        SYNCED_ATTRIBUTES[name]?.added?.(node, value);
+        SYNCED_ATTRIBUTES[name]?.added?.(node, valueOrDefault);
 
         break;
       }
@@ -448,6 +447,10 @@ const iterate = (list, callback) => {
     }
   }
 };
+
+const advance = (vnode) => {
+  return 1 + (vnode.children_count|0);
+}
 
 const appendChild = (node, child) => node.appendChild(child);
 const insertBefore = (parent, node, referenceNode) =>

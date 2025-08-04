@@ -1,7 +1,7 @@
-import { Empty, NonEmpty } from "../../gleam.mjs";
-import { element, namespaced, fragment, text, none } from "../element.mjs";
+import { NonEmpty } from "../../gleam.mjs";
+import { text, none } from "../element.mjs";
+import { element, namespaced, fragment } from '../element/keyed.mjs';
 import { attribute } from "../attribute.mjs";
-import { to_keyed } from "./vnode.mjs";
 import { empty_list } from "../internals/constants.mjs";
 import { initialiseMetadata } from "./reconciler.ffi.mjs";
 
@@ -9,30 +9,45 @@ import {
   document,
   ELEMENT_NODE,
   TEXT_NODE,
-  DOCUMENT_FRAGMENT_NODE,
   NAMESPACE_HTML
 } from "../internals/constants.ffi.mjs";
 
 export const virtualise = (root) => {
-  // we pass an empty string here as the index to make sure that the root node
-  // does not have a path, ever.
-  const vdom = virtualiseNode(null, root, '');
-  // at this point we know the element is empty - but we have to have at least
-  // an empty text node child in the root element to be able to mount
-  if (vdom === null || vdom.children instanceof Empty) {
-    const empty = emptyTextNode(root);
-    root.appendChild(empty);
-    return none();
-  } else if (
-    vdom.children instanceof NonEmpty &&
-    vdom.children.tail instanceof Empty
-  ) {
-    return vdom.children.head;
-  } else {
-    const head = emptyTextNode(root);
-    root.insertBefore(head, root.firstChild);
-    return fragment(vdom.children);
+  // no matter what, we want to initialise the metadata for our root element.
+  // we pass an empty stringh here as the index to make sure that the root node
+  // does not have a path.
+  initialiseMetadata(null, root, '', '');
+
+  // we need to do different things depending on how many children we have,
+  // and if we are a fragment or not.
+  let virtualisableRootChildren = 0;
+  for (let child = root.firstChild; child; child = child.nextSibling) {
+    if(canVirtualiseNode(child)) virtualisableRootChildren += 1;
   }
+
+  // no virtualisable children, we can empty the node and return our default text node.
+  if (virtualisableRootChildren === 0) {
+    root.replaceChildren(emptyTextNode(root));
+    return none();
+  }
+
+  // a single virtualisable child, so we assume the view function returned that element.
+  if (virtualisableRootChildren === 1) {
+    const children = virtualiseChildNodes(root);
+    return children.head[1];
+  }
+
+  // any other number of virtualisable children > 1, the view function had to
+  // return a fragment node.
+
+
+  // offset of 1 to account for the fragment head element we're going to insert.
+  const children = virtualiseChildNodes(root, 1);
+
+  const fragmentHead = emptyTextNode(root);
+  root.insertBefore(fragmentHead, root.firstChild);
+
+  return fragment(children);
 }
 
 const emptyTextNode = (parent) => {
@@ -41,10 +56,21 @@ const emptyTextNode = (parent) => {
   return node;
 }
 
-const virtualiseNode = (parent, node, index) => {
+const canVirtualiseNode = (node) => {
+  switch (node.nodeType) {
+    case ELEMENT_NODE: return true;
+    case TEXT_NODE: return !!node.data;
+    default: return false;
+  }
+}
+
+const virtualiseNode = (parent, node, key, index) => {
+  if (!canVirtualiseNode(node)) {
+    return null;
+  }
+
   switch (node.nodeType) {
     case ELEMENT_NODE: {
-      const key = node.getAttribute("data-lustre-key");
       initialiseMetadata(parent, node, index, key);
 
       if (key) {
@@ -67,18 +93,12 @@ const virtualiseNode = (parent, node, index) => {
           ? element(tag, attributes, children)
           : namespaced(namespace, tag, attributes, children);
 
-      return key ? to_keyed(key, vnode) : vnode;
+      return vnode;
     }
 
     case TEXT_NODE:
       initialiseMetadata(parent, node, index);
-      return node.data ? text(node.data) : null;
-
-    case DOCUMENT_FRAGMENT_NODE: // shadowRoot
-      initialiseMetadata(parent, node, index);
-      return node.childNodes.length > 0
-        ? fragment(virtualiseChildNodes(node))
-        : null;
+      return text(node.data);
 
     default:
       return null;
@@ -122,18 +142,23 @@ const virtualiseInputEvents = (tag, node) => {
   });
 }
 
-const virtualiseChildNodes = (node) => {
+const virtualiseChildNodes = (node, index = 0) => {
   let children = null;
 
-  let index = 0;
   let child = node.firstChild;
   let ptr = null;
 
   while (child) {
-    const vnode = virtualiseNode(node, child, index);
+    const key = child.nodeType === ELEMENT_NODE ? child.getAttribute('data-lustre-key') : null;
+    if (key != null) {
+      child.removeAttribute('data-lustre-key');
+    }      
+
+    const vnode = virtualiseNode(node, child, key, index);
+    
     const next = child.nextSibling;
     if (vnode) {
-      const list_node = new NonEmpty(vnode, null);
+      const list_node = new NonEmpty([key ?? '', vnode], null);
       if (ptr) {
         ptr = ptr.tail = list_node;
       } else {
@@ -144,12 +169,12 @@ const virtualiseChildNodes = (node) => {
     } else {
       node.removeChild(child);
     }
-    
+
     child = next;
   }
 
   if (!ptr) return empty_list;
-  
+
   ptr.tail = empty_list;
   return children;
 }
@@ -159,10 +184,12 @@ const virtualiseAttributes = (node) => {
 
   let attributes = empty_list;
   while (index-- > 0) {
-    attributes = new NonEmpty(
-      virtualiseAttribute(node.attributes[index]),
-      attributes,
-    );
+    const attr = node.attributes[index];
+    if (attr.name === "xmlns") {
+      continue;
+    }
+
+    attributes = new NonEmpty(virtualiseAttribute(attr), attributes);
   }
 
   return attributes;

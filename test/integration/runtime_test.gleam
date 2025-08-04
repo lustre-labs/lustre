@@ -10,8 +10,6 @@ import gleam/int
 @target(erlang)
 import gleam/json
 @target(erlang)
-import gleeunit/should
-@target(erlang)
 import lustre
 @target(erlang)
 import lustre/effect
@@ -39,8 +37,8 @@ pub fn client_connect_test() {
   use <- lustre_test.test_filter("client_connect_test")
   use client, _ <- with_erlang_runtime
 
-  process.receive_forever(client)
-  |> should.equal(transport.mount(True, True, [], [], [], dict.new(), view(0)))
+  assert process.receive_forever(client)
+    == transport.mount(transport.mount(True, True, [], [], [], dict.new(), view(0)))
 }
 
 @target(erlang)
@@ -62,7 +60,7 @@ pub fn client_send_event_test() {
       ]),
     ])
 
-  process.receive_forever(client) |> should.equal(transport.reconcile(patch))
+  assert process.receive_forever(client) == transport.reconcile(patch)
 }
 
 @target(erlang)
@@ -88,7 +86,7 @@ pub fn client_send_multiple_events_test() {
       ]),
     ])
 
-  process.receive_forever(client) |> should.equal(transport.reconcile(patch))
+  assert process.receive_forever(client) == transport.reconcile(patch)
 }
 
 // EFFECT MESSAGE TESTS --------------------------------------------------------
@@ -111,7 +109,7 @@ pub fn effect_send_event_test() {
       ]),
     ])
 
-  process.receive_forever(client) |> should.equal(transport.reconcile(patch))
+  assert process.receive_forever(client) == transport.reconcile(patch)
 }
 
 // SERVER MESSAGE TESTS --------------------------------------------------------
@@ -133,7 +131,7 @@ pub fn server_emit_event_test() {
 
   let emit = transport.emit("reset", json.null())
 
-  process.receive_forever(client) |> should.equal(emit)
+  assert process.receive_forever(client) == emit
 }
 
 // UTILS -----------------------------------------------------------------------
