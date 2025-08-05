@@ -52,7 +52,7 @@ export const make_component = ({ init, update, view, config }, name) => {
     #runtime;
     #adoptedStyleNodes = [];
     #shadowRoot;
-    #contextSubscriptions = new Set();
+    #contextSubscriptions = new Map();
 
     constructor() {
       super();
@@ -101,10 +101,18 @@ export const make_component = ({ init, update, view, config }, name) => {
           new ContextRequestEvent(
             key,
             (value, unsubscribe) => {
+              const previousUnsubscribe = this.#contextSubscriptions.get(key);
+
+              // Call the old unsubscribe callback if it has changed. This probably
+              // means we have a new provider.
+              if (previousUnsubscribe !== unsubscribe) {
+                previousUnsubscribe?.();
+              }
+
               const decoded = decode(value, decoder);
+              this.#contextSubscriptions.set(key, unsubscribe);
 
               if (decoded.isOk()) {
-                this.#contextSubscriptions.add(unsubscribe);
                 this.dispatch(decoded[0]);
               }
             },
@@ -153,7 +161,7 @@ export const make_component = ({ init, update, view, config }, name) => {
     }
 
     disconnectedCallback() {
-      for (const unsubscribe of this.#contextSubscriptions) {
+      for (const [_, unsubscribe] of this.#contextSubscriptions) {
         unsubscribe?.();
       }
 
