@@ -34,6 +34,7 @@ pub type State(model, msg) {
     //
     vdom: Element(msg),
     events: Events(msg),
+    providers: Dict(String, Json),
     //
     subscribers: Dict(Subject(ClientMessage(msg)), Monitor),
     callbacks: Set(fn(ClientMessage(msg)) -> Nil),
@@ -46,6 +47,7 @@ pub type Config(msg) {
     adopt_styles: Bool,
     attributes: Dict(String, fn(String) -> Result(msg, Nil)),
     properties: Dict(String, Decoder(msg)),
+    contexts: Dict(String, Decoder(msg)),
   )
 }
 
@@ -80,6 +82,7 @@ pub fn start(
           //
           vdom:,
           events:,
+          providers: dict.new(),
           //
           subscribers: dict.new(),
           callbacks: set.new(),
@@ -113,6 +116,7 @@ pub type Message(msg) {
   EffectAddedSelector(selector: Selector(Message(msg)))
   EffectDispatchedMessage(message: msg)
   EffectEmitEvent(name: String, data: Json)
+  EffectProvidedValue(key: String, value: Json)
   //
   MonitorReportedDown(monitor: Monitor)
   //
@@ -153,6 +157,8 @@ fn loop(
                   state.config.adopt_styles,
                   dict.keys(state.config.attributes),
                   dict.keys(state.config.properties),
+                  dict.keys(state.config.contexts),
+                  state.providers,
                   state.vdom,
                 ),
               )
@@ -180,6 +186,8 @@ fn loop(
             state.config.adopt_styles,
             dict.keys(state.config.attributes),
             dict.keys(state.config.properties),
+            dict.keys(state.config.contexts),
+            state.providers,
             state.vdom,
           ))
 
@@ -220,6 +228,18 @@ fn loop(
       broadcast(state.subscribers, state.callbacks, transport.emit(name, data))
 
       actor.continue(state)
+    }
+
+    EffectProvidedValue(key:, value:) -> {
+      let providers = dict.insert(state.providers, key, value)
+
+      broadcast(
+        state.subscribers,
+        state.callbacks,
+        transport.provide(key, value),
+      )
+
+      actor.continue(State(..state, providers:))
     }
 
     MonitorReportedDown(monitor:) -> {
@@ -303,6 +323,25 @@ fn handle_client_message(
           State(..state, model:, vdom:, events:)
         }
       }
+
+    transport.ContextProvided(key:, value:, ..) -> {
+      case dict.get(state.config.contexts, key) {
+        Error(_) -> state
+        Ok(decoder) -> {
+          case decode.run(value, decoder) {
+            Error(_) -> state
+            Ok(context) -> {
+              let #(model, effect) = state.update(state.model, context)
+              let vdom = state.view(model)
+
+              handle_effect(state.self, effect)
+
+              State(..state, model:, vdom:)
+            }
+          }
+        }
+      }
+    }
   }
 }
 
@@ -333,6 +372,7 @@ fn handle_effect(self: Subject(Message(msg)), effect: Effect(msg)) -> Nil {
   let send = process.send(self, _)
   let dispatch = fn(message) { send(EffectDispatchedMessage(message:)) }
   let emit = fn(name, data) { send(EffectEmitEvent(name:, data:)) }
+  let provide = fn(key, value) { send(EffectProvidedValue(key:, value:)) }
 
   let select = fn(selector) {
     selector
@@ -343,7 +383,7 @@ fn handle_effect(self: Subject(Message(msg)), effect: Effect(msg)) -> Nil {
 
   let internals = fn() { dynamic.nil() }
 
-  effect.perform(effect, dispatch, emit, select, internals)
+  effect.perform(effect, dispatch, emit, select, internals, provide)
 }
 
 @external(javascript, "../client/runtime.ffi.mjs", "throw_server_component_error")

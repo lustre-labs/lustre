@@ -13,12 +13,16 @@ request to fix it.
 
 ### Added
 
+- [lustre/effect] Added a `provide` effect for providing context values to components.
+- [lustre/component] Added a `delegates_focus` config option to control how focus is handled in components.
+- [lustre/component] Added a `on_context_change` config option to listen for changes in a parent's provided context.
 - [lustre/element/svg] Add the `svg.namespace` constant.
 - [lustre/element/svg] Add missing `svg.filter`, and `svg.view` elements.
 
 ### Changed
 
 - [lustre] Fixed a bug where the internal `isLustreNode` function would incorrectly identify nodes as Lustre nodes when they were not in some cases.
+- [lustre/component] Fixed a bug where removing an attribute a component was listening to would cause a runtime error.
 - [lustre/component] Fixed a bug where a component's Shadow Root was incorrectly closed by default.
 - [lustre/element] Fixed a bug where a top-level fragment would not be hydrated correctly.
 - [lustre/element/keyed] Fixed a bug where keyed elements were not virtualised correctly.

@@ -60,9 +60,11 @@ pub opaque type Config(msg) {
     //
     open_shadow_root: Bool,
     adopt_styles: Bool,
+    delegates_focus: Bool,
     //
     attributes: List(#(String, fn(String) -> Result(msg, Nil))),
     properties: List(#(String, Decoder(msg))),
+    contexts: List(#(String, Decoder(msg))),
     //
     is_form_associated: Bool,
     on_form_autofill: option.Option(fn(String) -> msg),
@@ -134,9 +136,11 @@ pub fn new(options: List(Option(msg))) -> Config(msg) {
       //
       open_shadow_root: True,
       adopt_styles: True,
+      delegates_focus: False,
       //
       attributes: constants.empty_list,
       properties: constants.empty_list,
+      contexts: constants.empty_list,
       //
       is_form_associated: False,
       on_form_autofill: constants.option_none,
@@ -183,6 +187,22 @@ pub fn on_property_change(name: String, decoder: Decoder(msg)) -> Option(msg) {
   let properties = [#(name, decoder), ..config.properties]
 
   Config(..config, properties:)
+}
+
+/// Register a decoder to run whenever a parent component or application
+/// [provides](./effect.html#provide) a new context value for the given `key`.
+/// Contexts are a powerful feature that allow parents to inject data into
+/// child components without knowledge of the DOM structurre, making them great
+/// for advanced use-cases like design systems and flexible component hierarchies.
+///
+/// Contexts can be any JavaScript object. For server components, contexts will
+/// be any _JSON-serialisable_ value.
+///
+pub fn on_context_change(key: String, decoder: Decoder(msg)) -> Option(msg) {
+  use config <- Option
+  let contexts = [#(key, decoder), ..config.contexts]
+
+  Config(..config, contexts:)
 }
 
 /// Mark a component as "form-associated". This lets your component participate
@@ -272,6 +292,28 @@ pub fn adopt_styles(adopt: Bool) -> Option(msg) {
   Config(..config, adopt_styles: adopt)
 }
 
+/// Indicates whether or not this component should delegate focus to its children.
+/// When set to `True`, a number of focus-related features are enabled:
+///
+/// - Clicking on any non-interactive part of the component will automatically
+///   focus the first focusable child element.
+///
+/// - The component can receive focus through the `.focus()` method or the
+///   `autofocus` attribute, and it will automatically focus the first
+///   focusable child element.
+///
+/// - The component receives the `:focus` CSS pseudo-class when any of its
+///   focusable children have focus.
+///
+/// By default this option is **disabled**. You may want to enable this option
+/// when creating complex interactive widgets.
+///
+pub fn delegates_focus(delegates: Bool) -> Option(msg) {
+  use config <- Option
+
+  Config(..config, delegates_focus: delegates)
+}
+
 // CONVERSIONS -----------------------------------------------------------------
 
 /// 🚨 This is an **internal** function and should not be consumed by user code.
@@ -292,6 +334,7 @@ pub fn to_server_component_config(config: Config(msg)) -> runtime.Config(msg) {
     // we reverse both lists here such that the last added value takes precedence
     attributes: dict.from_list(list.reverse(config.attributes)),
     properties: dict.from_list(list.reverse(config.properties)),
+    contexts: dict.from_list(list.reverse(config.contexts)),
   )
 }
 
