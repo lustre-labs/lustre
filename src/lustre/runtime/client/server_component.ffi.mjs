@@ -215,16 +215,16 @@ export class ServerComponent extends HTMLElement {
           const context = this.#contexts.get(event.context);
 
           if (event.subscribe) {
-            // For subscriptions, store a weak reference to the callback
-            context.subscribers.push(new WeakRef(event.callback));
-
-            event.callback(context.value, () => {
+            const callbackRef = new WeakRef(event.callback);
+            const unsubscribe = () => {
               context.subscribers = context.subscribers.filter(
-                (subscriber) => subscriber.deref() !== event.callback,
+                (subscriber) => subscriber !== callbackRef,
               );
-            });
+            };
+
+            context.subscribers.push([callbackRef, unsubscribe]);
+            event.callback(context.value, unsubscribe);
           } else {
-            // For one-time requests, just call the callback
             event.callback(context.value);
           }
         });
@@ -275,11 +275,23 @@ export class ServerComponent extends HTMLElement {
       this.#contexts.set(key, { value, subscribers: [] });
     } else {
       const context = this.#contexts.get(key);
+
       context.value = value;
 
-      // Notify all subscribers of the change
-      for (const subscriber of context.subscribers) {
-        subscriber.deref()?.(value);
+      for (let i = context.subscribers.length - 1; i >= 0; i--) {
+        const [subscriberRef, unsubscribe] = context.subscribers[i];
+        const subscriber = subscriberRef.deref();
+
+        // If the subscriber has been garbage collected, we remove it from the
+        // list of subscribers.
+        if (!subscriber) {
+          context.subscribers.splice(i, 1);
+          continue;
+        }
+
+        // Otherwise, we call the subscriber with the new value and the
+        // unsubscribe function.
+        subscriber(value, unsubscribe);
       }
     }
   }
