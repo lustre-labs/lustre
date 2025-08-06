@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import formal/form.{type Form}
+import gleam/list
 import lustre
 import lustre/attribute
 import lustre/element.{type Element}
@@ -26,12 +27,12 @@ type Model {
   //
   // Here, we do not need to store the input values in the model, only keeping
   // the username once the user is logged in!
-  Login(Form)
+  Login(Form(LoginData))
   LoggedIn(username: String)
 }
 
 fn init(_) -> Model {
-  Login(form.new())
+  Login(login_form())
 }
 
 // In addition to our model, we will have a LoginData custom type which we will
@@ -40,49 +41,52 @@ type LoginData {
   LoginData(username: String, password: String)
 }
 
-fn decode_login_data(values: List(#(String, String))) -> Result(LoginData, Form) {
-  // we use the `formal` package to validate and turn the raw list of tuples
-  // we receive from the browser into a Gleam custom type.
-  form.decoding({
-    use username <- form.parameter
-    use password <- form.parameter
-    LoginData(username:, password:)
+fn login_form() -> Form(LoginData) {
+  // We create an empty form that can later be used to parse, check and decode 
+  // user supplied data.
+  //
+  // If the form is to be used with languages other than English then the
+  // `form.language` function can be used to supply an alternative error
+  // translator.
+  form.new({
+    use username <- form.field(
+      "username",
+      form.parse_string |> form.check_not_empty,
+    )
+
+    let check_password = fn(password) {
+      case password == "strawberry" {
+        True -> Ok(password)
+        False -> Error("Password must be 'strawberry'")
+      }
+    }
+
+    use password <- form.field(
+      "password",
+      form.parse_string |> form.check(check_password),
+    )
+
+    form.success(LoginData(username:, password:))
   })
-  |> form.with_values(values)
-  |> form.field("username", form.string |> form.and(form.must_not_be_empty))
-  |> form.field(
-    "password",
-    form.string
-      |> form.and(form.must_equal(
-        "strawberry",
-        because: "Password must be 'strawberry'",
-      )),
-  )
-  |> form.finish
 }
 
 // UPDATE ----------------------------------------------------------------------
 
 type Msg {
   // Instead of receiving messages while the user edits the values, we only
-  // receive a single message with all the data once the form is submitted.
-  UserSubmittedForm(List(#(String, String)))
+  // receive a single message with all the data once the form is submitted and processed.
+  UserSubmittedForm(Result(LoginData, Form(LoginData)))
 }
 
 fn update(_model: Model, msg: Msg) -> Model {
   case msg {
-    UserSubmittedForm(data) -> {
-      // Lustre sends us the form data as a list of tuples, which we can then
-      // process, decode, or send off to our backend.
-      //
-      // Here, we use our previously defined function using `formal` to turn
-      // the form values we got into Gleam data.
-      case decode_login_data(data) {
-        // Validation succeeded - we are logged in!
-        Ok(LoginData(username:, password: _)) -> LoggedIn(username:)
-        // Validation failed - store the form in the model to show the errors.
-        Error(form) -> Login(form)
-      }
+    UserSubmittedForm(Ok(LoginData(username:, ..))) -> {
+      // Validation succeeded - we are logged in!
+      LoggedIn(username:)
+    }
+    UserSubmittedForm(Error(form)) -> {
+      // Validation failed - store the form in the model to show the errors.
+      Login(form)
     }
   }
 }
@@ -108,7 +112,15 @@ fn view(model: Model) -> Element(Msg) {
   )
 }
 
-fn view_login(form: Form) -> Element(Msg) {
+fn view_login(form: Form(LoginData)) -> Element(Msg) {
+  // Lustre sends us the form data as a list of tuples, which we can then
+  // process, decode, or send off to our backend.
+  //
+  // Here, we use `formal` to turn the form values we got into Gleam data.
+  let submitted = fn(values) {
+    form |> form.add_values(values) |> form.run |> UserSubmittedForm
+  }
+
   html.form(
     [
       attribute.class("p-8 w-full border rounded-2xl shadow-lg space-y-4"),
@@ -117,7 +129,7 @@ fn view_login(form: Form) -> Element(Msg) {
       //
       // The event handler also calls `preventDefault()` on the form, such that
       // Lustre can handle the submission instead off being sent off to the server.
-      event.on_submit(UserSubmittedForm),
+      event.on_submit(submitted),
     ],
     [
       html.h1([attribute.class("text-2xl font-medium text-purple-600")], [
@@ -146,12 +158,12 @@ fn view_login(form: Form) -> Element(Msg) {
 }
 
 fn view_input(
-  form: Form,
+  form: Form(LoginData),
   is type_: String,
   name name: String,
   label label: String,
 ) -> Element(msg) {
-  let state = form.field_state(form, name)
+  let errors = form.field_error_messages(form, name)
 
   html.div([], [
     html.label(
@@ -163,9 +175,10 @@ fn view_input(
       attribute.class(
         "block mt-1 w-full px-3 py-1 border rounded-lg focus:shadow",
       ),
-      case state {
-        Ok(_) -> attribute.class("focus:outline focus:outline-purple-600")
-        Error(_) -> attribute.class("outline outline-red-500")
+      attribute.value(form.field_value(form, name)),
+      case errors {
+        [] -> attribute.class("focus:outline focus:outline-purple-600")
+        _ -> attribute.class("outline outline-red-500")
       },
       // we use the `id` in the associated `for` attribute on the label.
       attribute.id(name),
@@ -173,14 +186,12 @@ fn view_input(
       // we receive for this input.
       attribute.name(name),
     ]),
-    // formal provides us with a customisable error message for every element
+    // formal provides us with customisable error messages for every element
     // in case its validation fails, which we can show right below the input.
-    case state {
-      Ok(_) -> element.none()
-      Error(error_message) ->
-        html.p([attribute.class("mt-0.5 text-xs text-red-500")], [
-          html.text(error_message),
-        ])
-    },
+    ..list.map(errors, fn(error_message) {
+      html.p([attribute.class("mt-0.5 text-xs text-red-500")], [
+        html.text(error_message),
+      ])
+    })
   ])
 }
