@@ -55,23 +55,16 @@ pub type Change(msg) {
 
   // Keyed children changes:
   //
-  /// Move a keyed child so that it is before the child at the given index. The
-  /// `count` field is used to indicate how many children to move in the case of
-  /// fragments.
-  ///
+  /// Move a keyed child so that it is before the child at the given index.
   Move(kind: Int, key: String, before: Int)
-  /// Remove a keyed child with the given key. The `count` field is used to
-  /// indicate how many children to remove in the case of fragments.
-  ///
-  RemoveKey(kind: Int, key: String)
 
   // Indexed children changes:
   //
-  /// Replace a node at the given index with a new vnode. The `count` field is
-  /// used in cases where we're actually replacing a fragment: we need to know
-  /// how many siblings to remove in the process.
-  ///
+  /// Replace a node at the given index with a new vnode.
   Replace(kind: Int, index: Int, with: Element(msg))
+  /// Remove a child at the given index.
+  Remove(kind: Int, index: Int)
+  /// Insert one or multiple children before the child with the given index.
   Insert(kind: Int, children: List(Element(msg)), before: Int)
 }
 
@@ -113,10 +106,10 @@ pub fn move(key key: String, before before: Int) -> Change(msg) {
   Move(kind: move_kind, key:, before:)
 }
 
-pub const remove_key_kind: Int = 4
+pub const remove_kind: Int = 4
 
-pub fn remove_key(key key: String) -> Change(msg) {
-  RemoveKey(kind: remove_key_kind, key:)
+pub fn remove(index index: Int) -> Change(msg) {
+  Remove(kind: remove_kind, index:)
 }
 
 pub const replace_kind: Int = 5
@@ -170,7 +163,7 @@ fn change_to_json(change: Change(msg)) -> Json {
       replace_inner_html_to_json(kind, inner_html)
     Update(kind, added, removed) -> update_to_json(kind, added, removed)
     Move(kind, key, before) -> move_to_json(kind, key, before)
-    RemoveKey(kind, key) -> remove_key_to_json(kind, key)
+    Remove(kind, index) -> remove_to_json(kind, index)
     Replace(kind, index, with) -> replace_to_json(kind, index, with)
     Insert(kind, children, before) -> insert_to_json(kind, children, before)
   }
@@ -196,29 +189,28 @@ fn update_to_json(kind, added, removed) {
 }
 
 fn move_to_json(kind, key, before) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("key", json.string(key)),
-    #("before", json.int(before)),
-  ])
+  json_object_builder.tagged(kind)
+  |> json_object_builder.string("key", key)
+  |> json_object_builder.int("before", before)
+  |> json_object_builder.build
 }
 
-fn remove_key_to_json(kind, key) {
-  json.object([#("kind", json.int(kind)), #("key", json.string(key))])
+fn remove_to_json(kind, index) {
+  json_object_builder.tagged(kind)
+  |> json_object_builder.int("index", index)
+  |> json_object_builder.build
 }
 
 fn replace_to_json(kind, index, with) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("index", json.int(index)),
-    #("with", vnode.to_json(with)),
-  ])
+  json_object_builder.tagged(kind)
+  |> json_object_builder.int("index", index)
+  |> json_object_builder.json("with", vnode.to_json(with))
+  |> json_object_builder.build
 }
 
 fn insert_to_json(kind, children, before) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("children", json.array(children, vnode.to_json)),
-    #("before", json.int(before)),
-  ])
+  json_object_builder.tagged(kind)
+  |> json_object_builder.int("before", before)
+  |> json_object_builder.list("children", children, vnode.to_json)
+  |> json_object_builder.build
 }
