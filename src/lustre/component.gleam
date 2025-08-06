@@ -424,6 +424,39 @@ pub fn part(name: String) -> Attribute(msg) {
   attribute("part", name)
 }
 
+/// A convenience function that makes it possible to toggle different parts on or
+/// off in a single call. This is useful for example when you have a menu item
+/// that may be active and you want to conditionally assign the `"active"` part:
+///
+/// ```gleam
+/// import lustre/component
+/// import lustre/element/html
+///
+/// fn view(item) {
+///   html.li(
+///     [
+///       component.parts([
+///         #("item", True)
+///         #("active", item.is_active)
+///       ]),
+///     ],
+///     [html.text(item.label)],
+///   ])
+/// }
+/// ```
+///
+pub fn parts(names: List(#(String, Bool))) -> Attribute(msg) {
+  part(do_parts(names, ""))
+}
+
+fn do_parts(names: List(#(String, Bool)), part: String) -> String {
+  case names {
+    [] -> part
+    [#(name, True), ..rest] -> part <> name <> " " <> do_parts(rest, part)
+    [#(_, False), ..rest] -> do_parts(rest, part)
+  }
+}
+
 /// While the [`part`](#part) attribute can be used to expose parts of a component
 /// to its parent, these parts will not automatically become available to the
 /// _document_ when components are nested inside each other.

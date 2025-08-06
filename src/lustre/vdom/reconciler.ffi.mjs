@@ -679,7 +679,9 @@ const SYNCED_ATTRIBUTES = {
 
   autofocus: {
     added(node) {
-      queueMicrotask(() => node.focus?.());
+      queueMicrotask(() => {
+        node.focus?.();
+      });
     },
   },
 
