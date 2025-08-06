@@ -135,10 +135,9 @@ fn do_add_child(
     }
 
     Fragment(children:, ..) -> {
+      let path = path.add(parent, child_index, child.key)
       let composed_mapper = compose_mapper(mapper, child.mapper)
-      // skip the fragment text node
-      let child_index = child_index + 1
-      do_add_children(handlers, composed_mapper, parent, child_index, children)
+      do_add_children(handlers, composed_mapper, path, 0, children)
     }
 
     UnsafeInnerHtml(attributes:, ..) -> {
@@ -193,7 +192,7 @@ fn do_add_children(
     [child, ..rest] ->
       handlers
       |> do_add_child(mapper, path, child_index, child)
-      |> do_add_children(mapper, path, child_index + vnode.advance(child), rest)
+      |> do_add_children(mapper, path, child_index + 1, rest)
   }
 }
 
@@ -223,7 +222,8 @@ fn do_remove_child(
     }
 
     Fragment(children:, ..) -> {
-      do_remove_children(handlers, parent, child_index + 1, children)
+      let path = path.add(parent, child_index, child.key)
+      do_remove_children(handlers, path, 0, children)
     }
 
     UnsafeInnerHtml(attributes:, ..) -> {
@@ -259,7 +259,7 @@ fn do_remove_children(
     [child, ..rest] ->
       handlers
       |> do_remove_child(path, child_index, child)
-      |> do_remove_children(path, child_index + vnode.advance(child), rest)
+      |> do_remove_children(path, child_index + 1, rest)
   }
 }
 

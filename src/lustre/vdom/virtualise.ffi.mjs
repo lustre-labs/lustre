@@ -4,6 +4,7 @@ import { element, namespaced, fragment } from '../element/keyed.mjs';
 import { attribute } from "../attribute.mjs";
 import { empty_list } from "../internals/constants.mjs";
 import { insertMetadataChild } from "./reconciler.ffi.mjs";
+import { element_kind, fragment_kind, text_kind } from "./vnode.mjs";
 
 import {
   document,
@@ -16,44 +17,50 @@ export const virtualise = (root) => {
   // no matter what, we want to initialise the metadata for our root element.
   // we pass an empty stringh here as the index to make sure that the root node
   // does not have a path.
-  insertMetadataChild(null, root, '', '');
+  insertMetadataChild(null, root, fragment_kind);
+  return none();
+  // TODO: bring back virtualise
+  // TODO: bring back virtualise
+  // TODO: bring back virtualise
+  // TODO: bring back virtualise
+  // TODO: bring back virtualise
 
   // we need to do different things depending on how many children we have,
   // and if we are a fragment or not.
-  let virtualisableRootChildren = 0;
-  for (let child = root.firstChild; child; child = child.nextSibling) {
-    if(canVirtualiseNode(child)) virtualisableRootChildren += 1;
-  }
+  // let virtualisableRootChildren = 0;
+  // for (let child = root.firstChild; child; child = child.nextSibling) {
+  //   if(canVirtualiseNode(child)) virtualisableRootChildren += 1;
+  // }
 
-  // no virtualisable children, we can empty the node and return our default text node.
-  if (virtualisableRootChildren === 0) {
-    const placeholder = emptyTextNode(root);
-    root.replaceChildren(placeholder);
-    return none();
-  }
+  // // no virtualisable children, we can empty the node and return our default text node.
+  // if (virtualisableRootChildren === 0) {
+  //   const placeholder = emptyTextNode(root, text_kind);
+  //   root.replaceChildren(placeholder);
+  //   return none();
+  // }
 
-  // a single virtualisable child, so we assume the view function returned that element.
-  if (virtualisableRootChildren === 1) {
-    const children = virtualiseChildNodes(root);
-    return children.head[1];
-  }
+  // // a single virtualisable child, so we assume the view function returned that element.
+  // if (virtualisableRootChildren === 1) {
+  //   const children = virtualiseChildNodes(root);
+  //   return children.head[1];
+  // }
 
-  // any other number of virtualisable children > 1, the view function had to
-  // return a fragment node.
+  // // any other number of virtualisable children > 1, the view function had to
+  // // return a fragment node.
 
 
-  // offset of 1 to account for the fragment head element we're going to insert.
-  const children = virtualiseChildNodes(root, 1);
+  // // offset of 1 to account for the fragment head element we're going to insert.
+  // const children = virtualiseChildNodes(root, 1);
 
-  const fragmentHead = emptyTextNode(root);
-  root.prepend(fragmentHead);
+  // const fragmentHead = emptyTextNode(root, fragment_kind);
+  // root.prepend(fragmentHead);
 
-  return fragment(children);
+  // return fragment(children);
 }
 
-const emptyTextNode = (parent) => {
+const emptyTextNode = (parent, kind) => {
   const node = document().createTextNode("");
-  insertMetadataChild(parent, node);
+  insertMetadataChild(parent[meta], node, kind);
   return node;
 }
 
