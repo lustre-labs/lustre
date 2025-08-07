@@ -240,8 +240,6 @@ export class Reconciler {
     const { children } = node;
     const childCount = children.length;
 
-    console.log({ node });
-
     if (index < childCount) {
       return children[index].node;
     }
