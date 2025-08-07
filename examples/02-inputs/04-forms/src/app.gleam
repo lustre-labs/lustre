@@ -32,7 +32,7 @@ type Model {
 }
 
 fn init(_) -> Model {
-  Login(login_form())
+  Login(new_login_form())
 }
 
 // In addition to our model, we will have a LoginData custom type which we will
@@ -41,7 +41,7 @@ type LoginData {
   LoginData(username: String, password: String)
 }
 
-fn login_form() -> Form(LoginData) {
+fn new_login_form() -> Form(LoginData) {
   // We create an empty form that can later be used to parse, check and decode 
   // user supplied data.
   //
@@ -117,7 +117,7 @@ fn view_login(form: Form(LoginData)) -> Element(Msg) {
   // process, decode, or send off to our backend.
   //
   // Here, we use `formal` to turn the form values we got into Gleam data.
-  let submitted = fn(values) {
+  let handle_submit = fn(values) {
     form |> form.add_values(values) |> form.run |> UserSubmittedForm
   }
 
@@ -129,7 +129,7 @@ fn view_login(form: Form(LoginData)) -> Element(Msg) {
       //
       // The event handler also calls `preventDefault()` on the form, such that
       // Lustre can handle the submission instead off being sent off to the server.
-      event.on_submit(submitted),
+      event.on_submit(handle_submit),
     ],
     [
       html.h1([attribute.class("text-2xl font-medium text-purple-600")], [
@@ -175,7 +175,6 @@ fn view_input(
       attribute.class(
         "block mt-1 w-full px-3 py-1 border rounded-lg focus:shadow",
       ),
-      attribute.value(form.field_value(form, name)),
       case errors {
         [] -> attribute.class("focus:outline focus:outline-purple-600")
         _ -> attribute.class("outline outline-red-500")
