@@ -18,6 +18,7 @@ request to fix it.
 - [lustre/component] Added a `on_context_change` config option to listen for changes in a parent's provided context.
 - [lustre/element/svg] Add the `svg.namespace` constant.
 - [lustre/element/svg] Add missing `svg.filter`, and `svg.view` elements.
+- [lustre/runtime] Lustre is now more resilient against other scripts or browser plugins modifying the DOM.
 
 ### Changed
 
