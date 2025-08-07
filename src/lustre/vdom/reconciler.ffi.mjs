@@ -107,6 +107,8 @@ export const insertMetadataChild = (kind, parent, node, index, key) => {
 
   node[meta] = child;
   parent?.children.splice(index, 0, child);
+
+  return child;
 };
 
 const getPath = (node) => {

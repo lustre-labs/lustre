@@ -17,51 +17,40 @@ export const virtualise = (root) => {
   // no matter what, we want to initialise the metadata for our root element.
   // we pass an empty stringh here as the index to make sure that the root node
   // does not have a path.
-  insertMetadataChild(element_kind, null, root, 0, null);
-  return none();
-  // TODO: bring back virtualise
-  // TODO: bring back virtualise
-  // TODO: bring back virtualise
-  // TODO: bring back virtualise
-  // TODO: bring back virtualise
+  const rootMeta = insertMetadataChild(element_kind, null, root, 0, null);
 
   // we need to do different things depending on how many children we have,
   // and if we are a fragment or not.
-  // let virtualisableRootChildren = 0;
-  // for (let child = root.firstChild; child; child = child.nextSibling) {
-  //   if(canVirtualiseNode(child)) virtualisableRootChildren += 1;
-  // }
+  let virtualisableRootChildren = 0;
+  for (let child = root.firstChild; child; child = child.nextSibling) {
+    if(canVirtualiseNode(child)) virtualisableRootChildren += 1;
+  }
 
-  // // no virtualisable children, we can empty the node and return our default text node.
-  // if (virtualisableRootChildren === 0) {
-  //   const placeholder = emptyTextNode(root, text_kind);
-  //   root.replaceChildren(placeholder);
-  //   return none();
-  // }
+  // no virtualisable children, we can empty the node and return our default text node.
+  if (virtualisableRootChildren === 0) {
+    const placeholder = document().createTextNode('');
+    insertMetadataChild(text_kind, rootMeta, placeholder, 0, null);
+    root.replaceChildren(placeholder);
+    return none();
+  }
 
-  // // a single virtualisable child, so we assume the view function returned that element.
-  // if (virtualisableRootChildren === 1) {
-  //   const children = virtualiseChildNodes(root);
-  //   return children.head[1];
-  // }
+  // a single virtualisable child, so we assume the view function returned that element.
+  if (virtualisableRootChildren === 1) {
+    const children = virtualiseChildNodes(rootMeta, root);
+    return children.head[1];
+  }
 
-  // // any other number of virtualisable children > 1, the view function had to
-  // // return a fragment node.
+  // any other number of virtualisable children > 1, the view function had to
+  // return a fragment node.
 
+  const fragmentHead = document().createTextNode('');
+  const fragmentMeta = insertMetadataChild(fragment_kind, rootMeta, fragmentHead, 0, null);
 
-  // // offset of 1 to account for the fragment head element we're going to insert.
-  // const children = virtualiseChildNodes(root, 1);
+  const children = virtualiseChildNodes(fragmentMeta, root);
 
-  // const fragmentHead = emptyTextNode(root, fragment_kind);
-  // root.prepend(fragmentHead);
+  root.insertBefore(fragmentHead, root.firstChild);
 
-  // return fragment(children);
-}
-
-const emptyTextNode = (parent, kind) => {
-  const node = document().createTextNode("");
-  insertMetadataChild(parent[meta], node, kind);
-  return node;
+  return fragment(children);
 }
 
 const canVirtualiseNode = (node) => {
@@ -72,14 +61,14 @@ const canVirtualiseNode = (node) => {
   }
 }
 
-const virtualiseNode = (parent, node, key, index) => {
+const virtualiseNode = (meta, node, key, index) => {
   if (!canVirtualiseNode(node)) {
     return null;
   }
 
   switch (node.nodeType) {
     case ELEMENT_NODE: {
-      insertMetadataChild(parent, node, index, key);
+      const childMeta = insertMetadataChild(element_kind, meta, node, index, key);
 
       const tag = node.localName;
       const namespace = node.namespaceURI;
@@ -90,7 +79,7 @@ const virtualiseNode = (parent, node, key, index) => {
       }
 
       const attributes = virtualiseAttributes(node);
-      const children = virtualiseChildNodes(node);
+      const children = virtualiseChildNodes(childMeta, node);
 
       const vnode =
         isHtmlElement
@@ -101,7 +90,7 @@ const virtualiseNode = (parent, node, key, index) => {
     }
 
     case TEXT_NODE:
-      insertMetadataChild(parent, node, index);
+      insertMetadataChild(text_kind, meta, node, index, null);
       return text(node.data);
 
     default:
@@ -146,19 +135,22 @@ const virtualiseInputEvents = (tag, node) => {
   });
 }
 
-const virtualiseChildNodes = (node, index = 0) => {
+const virtualiseChildNodes = (meta, node) => {
   let children = null;
-
   let child = node.firstChild;
   let ptr = null;
+  let index = 0;
 
   while (child) {
-    const key = child.nodeType === ELEMENT_NODE ? child.getAttribute('data-lustre-key') : null;
+    const key = child.nodeType === ELEMENT_NODE
+      ? child.getAttribute('data-lustre-key')
+      : null;
+
     if (key != null) {
       child.removeAttribute('data-lustre-key');
     }
 
-    const vnode = virtualiseNode(node, child, key, index);
+    const vnode = virtualiseNode(meta, child, key, index);
 
     const next = child.nextSibling;
     if (vnode) {
