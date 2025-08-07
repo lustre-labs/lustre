@@ -308,9 +308,8 @@ fn find_in_children(
   path: Path,
 ) -> Result(#(Element(msg), Path), Nil) {
   case element {
-    Element(children:, ..) ->
+    Element(children:, ..) | Fragment(children:, ..) ->
       find_in_list(children, query, path |> path.add(index, element.key), 0)
-    Fragment(children:, ..) -> find_in_list(children, query, path, index + 1)
     UnsafeInnerHtml(..) -> Error(Nil)
     Text(..) -> Error(Nil)
   }
@@ -324,9 +323,6 @@ fn find_in_list(
 ) -> Result(#(Element(msg), Path), Nil) {
   case elements {
     [] -> Error(Nil)
-
-    [Fragment(..) as first, ..rest] ->
-      find_in_list(list.append(first.children, rest), query, path, index + 1)
 
     [first, ..rest] -> {
       case find_path(in: first, matching: query, from: path, index:) {
@@ -343,10 +339,8 @@ fn find_direct_child(
   path: Path,
 ) -> Result(#(Element(msg), Path), Nil) {
   case parent {
-    Element(children:, ..) -> find_matching_in_list(children, selector, path, 0)
-
-    Fragment(children:, ..) ->
-      find_matching_in_list(children, selector, path, 1)
+    Element(children:, ..) | Fragment(children:, ..) ->
+      find_matching_in_list(children, selector, path, 0)
 
     UnsafeInnerHtml(..) | Text(..) -> Error(Nil)
   }
@@ -365,8 +359,8 @@ fn find_matching_in_list(
       find_matching_in_list(
         list.append(first.children, rest),
         selector,
-        path,
-        index + 1,
+        path.add(path, index, first.key),
+        0,
       )
 
     [first, ..rest] ->
@@ -386,11 +380,8 @@ fn find_descendant(
     Ok(element) -> Ok(element)
     Error(_) ->
       case parent {
-        Element(children:, ..) ->
+        Element(children:, ..) | Fragment(children:, ..) ->
           find_descendant_in_list(children, selector, path, 0)
-
-        Fragment(children:, ..) ->
-          find_descendant_in_list(children, selector, path, 1)
 
         UnsafeInnerHtml(..) | Text(..) -> Error(Nil)
       }
@@ -452,8 +443,8 @@ fn find_all_in_children(
   query: Query,
 ) -> List(Element(msg)) {
   case element {
-    Element(children:, ..) -> find_all_in_list(children, query)
-    Fragment(children:, ..) -> find_all_in_list(children, query)
+    Element(children:, ..) | Fragment(children:, ..) ->
+      find_all_in_list(children, query)
     UnsafeInnerHtml(..) -> []
     Text(..) -> []
   }
@@ -479,8 +470,8 @@ fn find_all_direct_children(
   selector: Selector,
 ) -> List(Element(msg)) {
   case parent {
-    Element(children:, ..) -> find_all_matching_in_list(children, selector)
-    Fragment(children:, ..) -> find_all_matching_in_list(children, selector)
+    Element(children:, ..) | Fragment(children:, ..) ->
+      find_all_matching_in_list(children, selector)
     UnsafeInnerHtml(..) | Text(..) -> []
   }
 }
@@ -505,8 +496,9 @@ fn find_all_descendants(
 ) -> List(Element(msg)) {
   let direct_matches = find_all_direct_children(parent, selector)
   let descendant_matches = case parent {
-    Element(children:, ..) -> find_all_descendants_in_list(children, selector)
-    Fragment(children:, ..) -> find_all_descendants_in_list(children, selector)
+    Element(children:, ..) | Fragment(children:, ..) ->
+      find_all_descendants_in_list(children, selector)
+
     UnsafeInnerHtml(..) -> []
     Text(..) -> []
   }
