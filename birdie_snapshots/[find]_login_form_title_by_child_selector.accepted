@@ -1,7 +1,7 @@
 ---
-version: 1.2.6
+version: 1.3.1
 title: [find] Login form title by child selector
-file: ./test/tests/query_find_test.gleam
+file: ./test/snapshot/query_find_test.gleam
 test_name: find_child_by_tag_test
 ---
 

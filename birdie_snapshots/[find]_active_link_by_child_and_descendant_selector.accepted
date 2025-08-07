@@ -1,7 +1,7 @@
 ---
-version: 1.2.6
+version: 1.3.1
 title: [find] Active link by child and descendant selector
-file: ./test/tests/query_find_test.gleam
+file: ./test/snapshot/query_find_test.gleam
 test_name: find_child_descendant_by_data_attribute_test
 ---
 

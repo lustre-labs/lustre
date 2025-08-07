@@ -1,7 +1,7 @@
 ---
-version: 1.2.6
+version: 1.3.1
 title: [to_string] Multiple nested descendants query
-file: ./test/tests/query_to_string_test.gleam
+file: ./test/snapshot/query_to_string_test.gleam
 test_name: multiple_nested_descendants_query_to_string_test
 ---
 main #content .card button

@@ -1,7 +1,7 @@
 ---
-version: 1.2.6
+version: 1.3.1
 title: [simulate] Multiple increment events
-file: ./test/tests/simulate_test.gleam
+file: ./test/integration/simulate_test.gleam
 test_name: simulate_multiple_events_test
 ---
 
