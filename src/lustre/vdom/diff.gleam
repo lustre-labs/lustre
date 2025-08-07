@@ -2,7 +2,6 @@
 
 import gleam/function
 import gleam/json
-import gleam/list
 import gleam/order.{Eq, Gt, Lt}
 import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
@@ -80,10 +79,8 @@ fn do_diff(
         prev.key == "" || !mutable_map.has_key(moved, prev.key)
       {
         // This node wasn't keyed or it wasn't moved during a keyed diff. Either
-        // way, we need to remove it! We call `advance` because if this vdom
-        // node is a fragment, we need to account for however many children it
-        // contains.
-        True -> removed + vnode.advance(prev)
+        // way, we need to remove it!
+        True -> removed + 1
         False -> removed
       }
 
@@ -129,105 +126,104 @@ fn do_diff(
     // against, or if we need to insert the incoming vnode.
     [prev, ..old_remaining], [next, ..new_remaining] if prev.key != next.key -> {
       let next_did_exist = mutable_map.get(old_keyed, next.key)
-      let prev_does_exist = mutable_map.get(new_keyed, prev.key)
-      let prev_has_moved = mutable_map.has_key(moved, prev.key)
+      let prev_does_exist = mutable_map.has_key(new_keyed, prev.key)
 
       case prev_does_exist, next_did_exist {
-        // The previous child was already visited and moved during this diff. That
-        // means we'll skip over this diff iteration and instead decrement the
-        // `moved_offset` to account for how many elements the prev node spanned.
-        Ok(_), Ok(_) if prev_has_moved ->
-          do_diff(
-            old: old_remaining,
-            old_keyed:,
-            new:,
-            new_keyed:,
-            moved:,
-            moved_offset: moved_offset - vnode.advance(prev),
-            removed:,
-            node_index:,
-            patch_index:,
-            path:,
-            changes:,
-            children:,
-            events:,
-            mapper:,
-          )
+        True, Ok(match) ->
+          case mutable_map.has_key(moved, prev.key) {
+            // The previous child was already visited and moved during this diff.
+            // That means we'll skip over this diff iteration and instead decrement
+            // the `moved_offset` to account for it.
+            True ->
+              do_diff(
+                old: old_remaining,
+                old_keyed:,
+                new:,
+                new_keyed:,
+                moved:,
+                moved_offset: moved_offset - 1,
+                removed:,
+                node_index:,
+                patch_index:,
+                path:,
+                changes:,
+                children:,
+                events:,
+                mapper:,
+              )
 
-        // The previous child exists in the incoming tree and this is the first
-        // time we're seeing it this diff. We do this by moving the incoming node
-        // further up the tree and attempt the diff again, this time against the
-        // previous matching keyed child.
-        //
-        // After that the `prev` node has a chance to match against the next node
-        // in the diff and so on, minimising moves.
-        //
-        // Since nodes are only ever moved *up* in the tree we have to take this
-        // `prev` node into account until we see it again later in the diff. The
-        // reconciler applies changes in reverse order, so during patching we first
-        // will visit the index the `prev` node was moved *from*. Between that
-        // index and the index the node was moved to we need to offset any other
-        // work to account for this change that will occur later.
-        //
-        // `node_index` is the final index a node would be moved to.
-        // `node_index - moved_offset` is the current (temporary) index of the
-        // node during patching.
-        //
-        // Consider the following example:
-        //
-        // old children: [a b c d]
-        // new children: [c a b d]
-        //
-        // First we perform a diff to generate a `Patch` that contains both changes
-        // to apply to the parent node and a list of _child patches_ to update
-        // children.
-        //
-        //   perform diff -------------------------------------------> changes -----> children
-        //                            old         new       idx offs
-        // ↓ 1. move c before 0-0=0 ↓ [a b c d]   [c b a d] 0   0    ↑ 2. [c b a d] ↑
-        // ↓ 2. update c at idx=0   ↓ [c a b c d] [c b a d] 0   1    ↑              ↑ 6. [C B A D]
-        // ↓ 3. move b before 1-1=0 ↓ [a b c d]   [b a d]   1   1    ↑ 1. [b a c d] ↑
-        // ↓ 4. update b at idx=1   ↓ [b a b c d] [b a d]   1   2    ↑              ↑ 5. [c B A D]
-        // ↓ 5. update a at idx=2   ↓ [a b c d]   [a d]     2   2    ↑              ↑ 4. [c b A D]
-        // ↓ 6. fixup offset for b  ↓ [b c d]     [d]       3   2    ↑              ↑
-        // ↓ 7. fixup offset for c  ↓ [c d]       [d]       3   1    ↑              ↑
-        // ↓ 8. update d at idx=3   ↓ [d]         [d]       3   0    ↑ 0. [a b c d] ↑ 3. [c b a D]
-        //
-        Ok(_), Ok(match) -> {
-          let count = vnode.advance(next)
-          let before = node_index - moved_offset
-          let move = patch.move(key: next.key, before:, count:)
-          let changes = [move, ..changes]
-          let moved = mutable_map.insert(moved, next.key, Nil)
-          let moved_offset = moved_offset + count
+            // The previous child exists in the incoming tree and this is the first
+            // time we're seeing it this diff. We do this by moving the incoming node
+            // further up the tree and attempt the diff again, this time against the
+            // previous matching keyed child.
+            //
+            // After that the `prev` node has a chance to match against the next node
+            // in the diff and so on, minimising moves.
+            //
+            // Since nodes are only ever moved *up* in the tree we have to take this
+            // `prev` node into account until we see it again later in the diff. The
+            // reconciler applies changes in reverse order, so during patching we first
+            // will visit the index the `prev` node was moved *from*. Between that
+            // index and the index the node was moved to we need to offset any other
+            // work to account for this change that will occur later.
+            //
+            // `node_index` is the final index a node would be moved to.
+            // `node_index - moved_offset` is the current (temporary) index of the
+            // node during patching.
+            //
+            // Consider the following example:
+            //
+            // old children: [a b c d]
+            // new children: [c a b d]
+            //
+            // First we perform a diff to generate a `Patch` that contains both changes
+            // to apply to the parent node and a list of _child patches_ to update
+            // children.
+            //
+            //   perform diff -------------------------------------------> changes -----> children
+            //                            old         new       idx offs
+            // ↓ 1. move c before 0-0=0 ↓ [a b c d]   [c b a d] 0   0    ↑ 2. [c b a d] ↑
+            // ↓ 2. update c at idx=0   ↓ [c a b c d] [c b a d] 0   1    ↑              ↑ 6. [C B A D]
+            // ↓ 3. move b before 1-1=0 ↓ [a b c d]   [b a d]   1   1    ↑ 1. [b a c d] ↑
+            // ↓ 4. update b at idx=1   ↓ [b a b c d] [b a d]   1   2    ↑              ↑ 5. [c B A D]
+            // ↓ 5. update a at idx=2   ↓ [a b c d]   [a d]     2   2    ↑              ↑ 4. [c b A D]
+            // ↓ 6. fixup offset for b  ↓ [b c d]     [d]       3   2    ↑              ↑
+            // ↓ 7. fixup offset for c  ↓ [c d]       [d]       3   1    ↑              ↑
+            // ↓ 8. update d at idx=3   ↓ [d]         [d]       3   0    ↑ 0. [a b c d] ↑ 3. [c b a D]
+            //
+            False -> {
+              let before = node_index - moved_offset
+              let changes = [patch.move(key: next.key, before:), ..changes]
+              let moved = mutable_map.insert(moved, next.key, Nil)
+              let moved_offset = moved_offset + 1
 
-          do_diff(
-            old: [match, ..old],
-            old_keyed:,
-            new:,
-            new_keyed:,
-            moved:,
-            moved_offset:,
-            removed:,
-            node_index:,
-            patch_index:,
-            path:,
-            changes:,
-            children:,
-            events:,
-            mapper:,
-          )
-        }
+              do_diff(
+                old: [match, ..old],
+                old_keyed:,
+                new:,
+                new_keyed:,
+                moved:,
+                moved_offset:,
+                removed:,
+                node_index:,
+                patch_index:,
+                path:,
+                changes:,
+                children:,
+                events:,
+                mapper:,
+              )
+            }
+          }
 
         // The previous child no longer exists in the incoming tree, and the new
         // child did exist in the old tree. That means we need to add a `RemoveKey`
         // change and continue diffing the remaining nodes.
-        Error(_), Ok(_) -> {
-          let count = vnode.advance(prev)
-          let moved_offset = moved_offset - count
+        False, Ok(_) -> {
+          let index = node_index - moved_offset
+          let changes = [patch.remove(index), ..changes]
           let events = events.remove_child(events, path, node_index, prev)
-          let remove = patch.remove_key(key: prev.key, count:)
-          let changes = [remove, ..changes]
+          let moved_offset = moved_offset - 1
 
           do_diff(
             old: old_remaining,
@@ -250,9 +246,8 @@ fn do_diff(
         // The previous child still exists in the incoming tree, but the new child
         // is not keyed or did not exist as a keyed child in the previous render.
         // That means we need to add an `Insert` change.
-        Ok(_), Error(_) -> {
+        True, Error(_) -> {
           let before = node_index - moved_offset
-          let count = vnode.advance(next)
           let events = events.add_child(events, mapper, path, node_index, next)
           let insert = patch.insert(children: [next], before:)
           let changes = [insert, ..changes]
@@ -263,9 +258,9 @@ fn do_diff(
             new: new_remaining,
             new_keyed:,
             moved:,
-            moved_offset: moved_offset + count,
+            moved_offset: moved_offset + 1,
             removed:,
-            node_index: node_index + count,
+            node_index: node_index + 1,
             patch_index:,
             path:,
             changes:,
@@ -277,16 +272,9 @@ fn do_diff(
 
         // The previous child no longer exists in the incoming tree *and* the new
         // child is new for this render. That means we can do a straight `Replace`.
-        Error(_), Error(_) -> {
-          let prev_count = vnode.advance(prev)
-          let next_count = vnode.advance(next)
-
+        False, Error(_) -> {
           let change =
-            patch.replace(
-              from: node_index - moved_offset,
-              count: prev_count,
-              with: next,
-            )
+            patch.replace(index: node_index - moved_offset, with: next)
 
           let events =
             events
@@ -299,9 +287,9 @@ fn do_diff(
             new: new_remaining,
             new_keyed:,
             moved:,
-            moved_offset: moved_offset - prev_count + next_count,
+            moved_offset:,
             removed:,
-            node_index: node_index + next_count,
+            node_index: node_index + 1,
             patch_index:,
             path:,
             changes: [change, ..changes],
@@ -317,16 +305,10 @@ fn do_diff(
     // cases these means we can morph the existing DOM node into the new one by
     // producing precise changes.
     [Fragment(..) as prev, ..old], [Fragment(..) as next, ..new] -> {
-      // skip the fragment head
-      let node_index = node_index + 1
-      let prev_count = prev.children_count
-      let next_count = next.children_count
-
       let composed_mapper = events.compose_mapper(mapper, next.mapper)
+      let child_path = path.add(path, node_index, next.key)
 
-      // We diff fragments as if they are "real" nodes with children, but we must
-      // remember to update our offsets and indices to account for the fact these
-      // are just additional children of the parent vnode.
+      // We diff fragments as if they are "real" nodes with children.
       let child =
         do_diff(
           old: prev.children,
@@ -334,25 +316,20 @@ fn do_diff(
           new: next.children,
           new_keyed: next.keyed_children,
           moved: mutable_map.new(),
-          moved_offset:,
+          moved_offset: 0,
           removed: 0,
-          node_index:,
-          patch_index: -1,
-          path:,
+          node_index: 0,
+          patch_index: node_index,
+          path: child_path,
           changes: constants.empty_list,
-          children:,
+          children: constants.empty_list,
           events:,
           mapper: composed_mapper,
         )
 
-      let changes = case child.patch.removed > 0 {
-        True -> {
-          let remove_from = node_index + next_count - moved_offset
-          let patch =
-            patch.remove(from: remove_from, count: child.patch.removed)
-          list.append(child.patch.changes, [patch, ..changes])
-        }
-        False -> list.append(child.patch.changes, changes)
+      let children = case child.patch {
+        Patch(removed: 0, changes: [], children: [], ..) -> children
+        _ -> [child.patch, ..children]
       }
 
       do_diff(
@@ -361,13 +338,13 @@ fn do_diff(
         new:,
         new_keyed:,
         moved:,
-        moved_offset: moved_offset + next_count - prev_count,
+        moved_offset:,
         removed:,
-        node_index: node_index + next_count,
+        node_index: node_index + 1,
         patch_index:,
         path:,
         changes:,
-        children: child.patch.children,
+        children:,
         events: child.events,
         mapper:,
       )
@@ -548,15 +525,7 @@ fn do_diff(
     // diff of these two nodes. In this case, we just replace the old node with
     // the new one.
     [prev, ..old_remaining], [next, ..new_remaining] -> {
-      let prev_count = vnode.advance(prev)
-      let next_count = vnode.advance(next)
-
-      let change =
-        patch.replace(
-          from: node_index - moved_offset,
-          count: prev_count,
-          with: next,
-        )
+      let change = patch.replace(index: node_index - moved_offset, with: next)
 
       let events =
         events
@@ -569,9 +538,9 @@ fn do_diff(
         new: new_remaining,
         new_keyed:,
         moved:,
-        moved_offset: moved_offset - prev_count + next_count,
+        moved_offset:,
         removed:,
-        node_index: node_index + next_count,
+        node_index: node_index + 1,
         patch_index:,
         path:,
         changes: [change, ..changes],

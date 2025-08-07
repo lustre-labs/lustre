@@ -191,17 +191,7 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
     mapper: function.identity,
     children:,
     keyed_children: mutable_map.new(),
-    children_count: count_fragment_children(children, 0),
   )
-}
-
-fn count_fragment_children(children: List(Element(msg)), count: Int) -> Int {
-  case children {
-    [child, ..rest] ->
-      count_fragment_children(rest, count + vnode.advance(child))
-
-    [] -> count
-  }
 }
 
 /// A function for constructing a wrapper element with custom raw HTML as its

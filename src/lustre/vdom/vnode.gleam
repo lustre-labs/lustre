@@ -2,13 +2,11 @@
 
 import gleam/dynamic.{type Dynamic}
 import gleam/function
-import gleam/int
 import gleam/json.{type Json}
 import gleam/list
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import houdini
-import lustre/internals/constants
 import lustre/internals/json_object_builder
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/vattr.{type Attribute}
@@ -22,9 +20,6 @@ pub type Element(msg) {
     mapper: fn(Dynamic) -> Dynamic,
     children: List(Element(msg)),
     keyed_children: MutableMap(String, Element(msg)),
-    // When diffing Fragments, we need to know how many elements this fragment
-    // spans when moving/deleting/updating it.
-    children_count: Int,
   )
 
   Element(
@@ -77,16 +72,8 @@ pub fn fragment(
   mapper mapper: fn(Dynamic) -> Dynamic,
   children children: List(Element(msg)),
   keyed_children keyed_children: MutableMap(String, Element(msg)),
-  children_count children_count: Int,
 ) -> Element(msg) {
-  Fragment(
-    kind: fragment_kind,
-    key:,
-    mapper:,
-    children:,
-    keyed_children:,
-    children_count:,
-  )
+  Fragment(kind: fragment_kind, key:, mapper:, children:, keyed_children:)
 }
 
 pub const element_kind: Int = 1
@@ -171,17 +158,6 @@ pub fn unsafe_inner_html(
   )
 }
 
-// QUERIES ---------------------------------------------------------------------
-
-///
-///
-pub fn advance(node: Element(msg)) {
-  case node {
-    Fragment(children_count:, ..) -> 1 + children_count
-    _ -> 1
-  }
-}
-
 // MANIPULATION ----------------------------------------------------------------
 
 pub fn to_keyed(key: String, node: Element(msg)) -> Element(msg) {
@@ -189,68 +165,7 @@ pub fn to_keyed(key: String, node: Element(msg)) -> Element(msg) {
     Element(..) -> Element(..node, key:)
     Text(..) -> Text(..node, key:)
     UnsafeInnerHtml(..) -> UnsafeInnerHtml(..node, key:)
-    Fragment(children:, ..) -> {
-      let #(children, keyed_children) =
-        set_fragment_key(
-          key,
-          children,
-          0,
-          constants.empty_list,
-          mutable_map.new(),
-        )
-      Fragment(..node, key:, children:, keyed_children:)
-    }
-  }
-}
-
-fn set_fragment_key(key, children, index, new_children, keyed_children) {
-  case children {
-    [] -> #(list.reverse(new_children), keyed_children)
-
-    [Fragment(..) as node, ..children] if node.key == "" -> {
-      // if the child of this fragment is an unkeyed fragment, we do not want to
-      // give it a key itself, but make sure all the children have prefixed keys.
-      let child_key = key <> "::" <> int.to_string(index)
-
-      let #(node_children, node_keyed_children) =
-        set_fragment_key(
-          child_key,
-          node.children,
-          0,
-          constants.empty_list,
-          mutable_map.new(),
-        )
-
-      let new_node =
-        Fragment(
-          ..node,
-          children: node_children,
-          keyed_children: node_keyed_children,
-        )
-
-      let new_children = [new_node, ..new_children]
-      let index = index + 1
-
-      set_fragment_key(key, children, index, new_children, keyed_children)
-    }
-
-    [node, ..children] if node.key != "" -> {
-      let child_key = key <> "::" <> node.key
-      let keyed_node = to_keyed(child_key, node)
-      let new_children = [keyed_node, ..new_children]
-      let keyed_children =
-        mutable_map.insert(keyed_children, child_key, keyed_node)
-      let index = index + 1
-
-      set_fragment_key(key, children, index, new_children, keyed_children)
-    }
-
-    [node, ..children] -> {
-      let new_children = [node, ..new_children]
-      let index = index + 1
-
-      set_fragment_key(key, children, index, new_children, keyed_children)
-    }
+    Fragment(..) -> Fragment(..node, key:)
   }
 }
 
@@ -258,8 +173,8 @@ fn set_fragment_key(key, children, index, new_children, keyed_children) {
 
 pub fn to_json(node: Element(msg)) -> Json {
   case node {
-    Fragment(kind:, key:, children:, children_count:, ..) ->
-      fragment_to_json(kind, key, children, children_count)
+    Fragment(kind:, key:, children:, ..) ->
+      fragment_to_json(kind, key, children)
     Element(kind:, key:, namespace:, tag:, attributes:, children:, ..) ->
       element_to_json(kind, key, namespace, tag, attributes, children)
     Text(kind:, key:, content:, ..) -> text_to_json(kind, key, content)
@@ -275,11 +190,10 @@ pub fn to_json(node: Element(msg)) -> Json {
   }
 }
 
-fn fragment_to_json(kind, key, children, children_count) {
+fn fragment_to_json(kind, key, children) {
   json_object_builder.tagged(kind)
   |> json_object_builder.string("key", key)
   |> json_object_builder.list("children", children, to_json)
-  |> json_object_builder.int("children_count", children_count)
   |> json_object_builder.build
 }
 

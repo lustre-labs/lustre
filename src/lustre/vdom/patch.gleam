@@ -55,30 +55,17 @@ pub type Change(msg) {
 
   // Keyed children changes:
   //
-  /// Move a keyed child so that it is before the child at the given index. The
-  /// `count` field is used to indicate how many children to move in the case of
-  /// fragments.
-  ///
-  Move(kind: Int, key: String, before: Int, count: Int)
-  /// Remove a keyed child with the given key. The `count` field is used to
-  /// indicate how many children to remove in the case of fragments.
-  ///
-  RemoveKey(kind: Int, key: String, count: Int)
+  /// Move a keyed child so that it is before the child at the given index.
+  Move(kind: Int, key: String, before: Int)
 
   // Indexed children changes:
   //
-  /// Replace a node at the given index with a new vnode. The `count` field is
-  /// used in cases where we're actually replacing a fragment: we need to know
-  /// how many siblings to remove in the process.
-  ///
-  Replace(kind: Int, from: Int, count: Int, with: Element(msg))
+  /// Replace a node at the given index with a new vnode.
+  Replace(kind: Int, index: Int, with: Element(msg))
+  /// Remove a child at the given index.
+  Remove(kind: Int, index: Int)
+  /// Insert one or multiple children before the child with the given index.
   Insert(kind: Int, children: List(Element(msg)), before: Int)
-  /// Remove `count` number of children starting at the given index. In most cases
-  /// this is equivlaent to removing *all* children from the given index, but for
-  /// fragments we need to know exactly how many children to remove so we don't
-  /// trample on siblings outside the fragment.
-  ///
-  Remove(kind: Int, from: Int, count: Int)
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -115,28 +102,20 @@ pub fn update(
 
 pub const move_kind: Int = 3
 
-pub fn move(
-  key key: String,
-  before before: Int,
-  count count: Int,
-) -> Change(msg) {
-  Move(kind: move_kind, key:, before:, count:)
+pub fn move(key key: String, before before: Int) -> Change(msg) {
+  Move(kind: move_kind, key:, before:)
 }
 
-pub const remove_key_kind: Int = 4
+pub const remove_kind: Int = 4
 
-pub fn remove_key(key key: String, count count: Int) -> Change(msg) {
-  RemoveKey(kind: remove_key_kind, key:, count:)
+pub fn remove(index index: Int) -> Change(msg) {
+  Remove(kind: remove_kind, index:)
 }
 
 pub const replace_kind: Int = 5
 
-pub fn replace(
-  from from: Int,
-  count count: Int,
-  with with: Element(msg),
-) -> Change(msg) {
-  Replace(kind: replace_kind, from:, count:, with:)
+pub fn replace(index index: Int, with with: Element(msg)) -> Change(msg) {
+  Replace(kind: replace_kind, index:, with:)
 }
 
 pub const insert_kind: Int = 6
@@ -146,12 +125,6 @@ pub fn insert(
   before before: Int,
 ) -> Change(msg) {
   Insert(kind: insert_kind, children:, before:)
-}
-
-pub const remove_kind: Int = 7
-
-pub fn remove(from from: Int, count count: Int) -> Change(msg) {
-  Remove(kind: remove_kind, from:, count:)
 }
 
 // QUERIES ---------------------------------------------------------------------
@@ -189,11 +162,10 @@ fn change_to_json(change: Change(msg)) -> Json {
     ReplaceInnerHtml(kind, inner_html) ->
       replace_inner_html_to_json(kind, inner_html)
     Update(kind, added, removed) -> update_to_json(kind, added, removed)
-    Move(kind, key, before, count) -> move_to_json(kind, key, before, count)
-    RemoveKey(kind, key, count) -> remove_key_to_json(kind, key, count)
-    Replace(kind, from, count, with) -> replace_to_json(kind, from, count, with)
+    Move(kind, key, before) -> move_to_json(kind, key, before)
+    Remove(kind, index) -> remove_to_json(kind, index)
+    Replace(kind, index, with) -> replace_to_json(kind, index, with)
     Insert(kind, children, before) -> insert_to_json(kind, children, before)
-    Remove(kind, from, count) -> remove_to_json(kind, from, count)
   }
 }
 
@@ -216,44 +188,29 @@ fn update_to_json(kind, added, removed) {
   |> json_object_builder.build
 }
 
-fn move_to_json(kind, key, before, count) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("key", json.string(key)),
-    #("before", json.int(before)),
-    #("count", json.int(count)),
-  ])
+fn move_to_json(kind, key, before) {
+  json_object_builder.tagged(kind)
+  |> json_object_builder.string("key", key)
+  |> json_object_builder.int("before", before)
+  |> json_object_builder.build
 }
 
-fn remove_key_to_json(kind, key, count) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("key", json.string(key)),
-    #("count", json.int(count)),
-  ])
+fn remove_to_json(kind, index) {
+  json_object_builder.tagged(kind)
+  |> json_object_builder.int("index", index)
+  |> json_object_builder.build
 }
 
-fn replace_to_json(kind, from, count, with) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("from", json.int(from)),
-    #("count", json.int(count)),
-    #("with", vnode.to_json(with)),
-  ])
+fn replace_to_json(kind, index, with) {
+  json_object_builder.tagged(kind)
+  |> json_object_builder.int("index", index)
+  |> json_object_builder.json("with", vnode.to_json(with))
+  |> json_object_builder.build
 }
 
 fn insert_to_json(kind, children, before) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("children", json.array(children, vnode.to_json)),
-    #("before", json.int(before)),
-  ])
-}
-
-fn remove_to_json(kind, from, count) {
-  json.object([
-    #("kind", json.int(kind)),
-    #("from", json.int(from)),
-    #("count", json.int(count)),
-  ])
+  json_object_builder.tagged(kind)
+  |> json_object_builder.int("before", before)
+  |> json_object_builder.list("children", children, vnode.to_json)
+  |> json_object_builder.build
 }

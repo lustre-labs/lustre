@@ -2,6 +2,7 @@
 
 @target(erlang)
 import gleam/dict
+@target(erlang)
 import gleam/dynamic
 @target(erlang)
 import gleam/erlang/process

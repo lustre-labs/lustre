@@ -256,10 +256,16 @@ pub fn reconciler_push_nested_fragment_child_replaced_test() {
   )
 
   let prev =
-    element.fragment([element.fragment([html.p([], [])]), html.p([], [])])
+    element.fragment([
+      element.fragment([html.p([attribute.class("a")], [])]),
+      html.p([attribute.class("b")], []),
+    ])
 
   let next =
-    element.fragment([element.fragment([html.h1([], [])]), html.p([], [])])
+    element.fragment([
+      element.fragment([html.h1([attribute.class("a")], [])]),
+      html.p([attribute.class("b")], []),
+    ])
 
   test_diff(prev, next)
 }

@@ -76,7 +76,7 @@ pub fn element(
   attributes: List(Attribute(msg)),
   children: List(#(String, Element(msg))),
 ) -> Element(msg) {
-  let #(keyed_children, children, _) = extract_keyed_children(children)
+  let #(keyed_children, children) = extract_keyed_children(children)
 
   vnode.element(
     key: "",
@@ -106,7 +106,7 @@ pub fn namespaced(
   attributes: List(Attribute(msg)),
   children: List(#(String, Element(msg))),
 ) -> Element(msg) {
-  let #(keyed_children, children, _) = extract_keyed_children(children)
+  let #(keyed_children, children) = extract_keyed_children(children)
 
   vnode.element(
     key: "",
@@ -131,16 +131,9 @@ pub fn namespaced(
 /// > use the same key in different lists.
 ///
 pub fn fragment(children: List(#(String, Element(msg)))) -> Element(msg) {
-  let #(keyed_children, children, children_count) =
-    extract_keyed_children(children)
+  let #(keyed_children, children) = extract_keyed_children(children)
 
-  vnode.fragment(
-    key: "",
-    mapper: function.identity,
-    children:,
-    children_count:,
-    keyed_children:,
-  )
+  vnode.fragment(key: "", mapper: function.identity, children:, keyed_children:)
 }
 
 // ELEMENTS --------------------------------------------------------------------
@@ -184,23 +177,17 @@ pub fn dl(
 
 fn extract_keyed_children(
   children: List(#(String, Element(msg))),
-) -> #(MutableMap(String, Element(msg)), List(Element(msg)), Int) {
-  do_extract_keyed_children(
-    children,
-    mutable_map.new(),
-    constants.empty_list,
-    0,
-  )
+) -> #(MutableMap(String, Element(msg)), List(Element(msg))) {
+  do_extract_keyed_children(children, mutable_map.new(), constants.empty_list)
 }
 
 fn do_extract_keyed_children(
   key_children_pairs: List(#(String, Element(msg))),
   keyed_children: MutableMap(String, Element(msg)),
   children: List(Element(msg)),
-  children_count: Int,
-) -> #(MutableMap(String, Element(msg)), List(Element(msg)), Int) {
+) -> #(MutableMap(String, Element(msg)), List(Element(msg))) {
   case key_children_pairs {
-    [] -> #(keyed_children, list.reverse(children), children_count)
+    [] -> #(keyed_children, list.reverse(children))
 
     [#(key, element), ..rest] -> {
       let keyed_element = vnode.to_keyed(key, element)
@@ -212,9 +199,8 @@ fn do_extract_keyed_children(
         _ -> mutable_map.insert(keyed_children, key, keyed_element)
       }
       let children = [keyed_element, ..children]
-      let children_count = children_count + vnode.advance(keyed_element)
 
-      do_extract_keyed_children(rest, keyed_children, children, children_count)
+      do_extract_keyed_children(rest, keyed_children, children)
     }
   }
 }

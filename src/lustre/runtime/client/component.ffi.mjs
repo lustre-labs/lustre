@@ -207,7 +207,6 @@ export const make_component = ({ init, update, view, config }, name) => {
       }
 
       this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
-      this.#runtime.offset = this.#adoptedStyleNodes.length;
     }
   };
 
