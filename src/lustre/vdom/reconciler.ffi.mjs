@@ -52,16 +52,19 @@ const clearTimeout = globalThis.clearTimeout;
 const createElementNS = (ns, name) => document().createElementNS(ns, name);
 const createTextNode = (data) => document().createTextNode(data);
 const createDocumentFragment = () => document().createDocumentFragment();
-const insertBefore = (parent, node, reference) => parent.insertBefore(node, reference);
+const insertBefore = (parent, node, reference) =>
+  parent.insertBefore(node, reference);
 const moveBefore = SUPPORTS_MOVE_BEFORE
   ? (parent, node, reference) => parent.moveBefore(node, reference)
   : insertBefore;
-const removeChild  = (parent, child) => parent.removeChild(child);
+const removeChild = (parent, child) => parent.removeChild(child);
 const getAttribute = (node, name) => node.getAttribute(name);
 const setAttribute = (node, name, value) => node.setAttribute(name, value);
 const removeAttribute = (node, name) => node.removeAttribute(name);
-const addEventListener = (node, name, handler, options) => node.addEventListener(name, handler, options);
-const removeEventListener = (node, name, handler) => node.removeEventListener(name, handler);
+const addEventListener = (node, name, handler, options) =>
+  node.addEventListener(name, handler, options);
+const removeEventListener = (node, name, handler) =>
+  node.removeEventListener(name, handler);
 const setInnerHtml = (node, innerHtml) => (node.innerHTML = innerHtml);
 const setData = (node, data) => (node.data = data);
 
@@ -70,7 +73,7 @@ const setData = (node, data) => (node.data = data);
 // We store some additional data for every node that we create.
 // We store that "metadata" using a symbol on each DOM node.
 
-const meta = Symbol('lustre');
+const meta = Symbol("lustre");
 
 class MetadataNode {
   constructor(kind, parent, node, key) {
@@ -112,9 +115,9 @@ export const insertMetadataChild = (kind, parent, node, index, key) => {
 };
 
 const getPath = (node) => {
-  let path = '';
+  let path = "";
 
-  for(let current = node[meta]; current.parent; current = current.parent) {
+  for (let current = node[meta]; current.parent; current = current.parent) {
     if (current.key) {
       path = `${separator_element}${current.key}${path}`;
     } else {
@@ -125,7 +128,7 @@ const getPath = (node) => {
 
   // remove the leading separator.
   return path.slice(1);
-}
+};
 
 // RECONCILER ------------------------------------------------------------------
 
@@ -176,8 +179,8 @@ export class Reconciler {
         this.#removeChildren(node, childNodes.length - removed, removed);
       }
 
-      iterate(childPatches, childPatch => {
-        const child = childNodes[childPatch.index|0];
+      iterate(childPatches, (childPatch) => {
+        const child = childNodes[childPatch.index | 0];
         this.#stack.push({ node: child, patch: childPatch });
       });
     }
@@ -215,47 +218,51 @@ export class Reconciler {
     }
   }
 
-
   // CHANGES -------------------------------------------------------------------
-
 
   #insert(parent, { children, before }) {
     const fragment = createDocumentFragment();
     const beforeEl = this.#getReference(parent, before);
 
-    this.#insertChildren(fragment, null, parent, before|0, children);
+    this.#insertChildren(fragment, null, parent, before | 0, children);
 
     insertBefore(parent.parentNode, fragment, beforeEl);
   }
 
   #replace(parent, { index, with: child }) {
-    this.#removeChildren(parent, index|0, 1);
+    this.#removeChildren(parent, index | 0, 1);
     const beforeEl = this.#getReference(parent, index);
-    this.#insertChild(parent.parentNode, beforeEl, parent, index|0, child);
+    this.#insertChild(parent.parentNode, beforeEl, parent, index | 0, child);
   }
 
   #getReference(node, index) {
-    index = index|0;
+    index = index | 0;
     const { children } = node;
     const childCount = children.length;
+
+    console.log({ node });
 
     if (index < childCount) {
       return children[index].node;
     }
 
-    let lastChild = children[childCount-1] ?? node;
+    let lastChild = children[childCount - 1];
+
+    if (!lastChild && node.kind !== fragment_kind) return null;
+    if (!lastChild) lastChild = node;
+
     // unwrap the last child as long as we point to a fragment.
     // otherwise, the fragments next sibling would be the first child of the
     // fragment, not the first element after it.
     while (lastChild.kind === fragment_kind && lastChild.children.length) {
-      lastChild = lastChild.children[lastChild.children.length-1];
+      lastChild = lastChild.children[lastChild.children.length - 1];
     }
 
     return lastChild.node.nextSibling;
   }
 
   #move(parent, { key, before }) {
-    before = before|0;
+    before = before | 0;
 
     const { children, parentNode } = parent;
 
@@ -320,7 +327,7 @@ export class Reconciler {
   }
 
   #removeDebouncers(node) {
-    const { debouncers, children } = node
+    const { debouncers, children } = node;
     for (const { timeout } of debouncers.values()) {
       if (timeout) {
         clearTimeout(timeout);
@@ -329,7 +336,7 @@ export class Reconciler {
 
     debouncers.clear();
 
-    iterate(children, child => this.#removeDebouncers(child));
+    iterate(children, (child) => this.#removeDebouncers(child));
   }
 
   #update({ node, handlers, throttles, debouncers }, { added, removed }) {
@@ -348,22 +355,20 @@ export class Reconciler {
   }
 
   #replaceText({ node }, { content }) {
-    setData(node, content ?? '');
+    setData(node, content ?? "");
   }
 
   #replaceInnerHtml({ node }, { inner_html }) {
-    setInnerHtml(node, inner_html ?? '');
+    setInnerHtml(node, inner_html ?? "");
   }
-
 
   // INSERT --------------------------------------------------------------------
 
-
   #insertChildren(domParent, beforeEl, metaParent, index, children) {
     iterate(children, (child) =>
-      this.#insertChild(domParent, beforeEl, metaParent, index++, child));
+      this.#insertChild(domParent, beforeEl, metaParent, index++, child),
+    );
   }
-
 
   #insertChild(domParent, beforeEl, metaParent, index, vnode) {
     switch (vnode.kind) {
@@ -371,24 +376,38 @@ export class Reconciler {
         const node = this.#createElement(metaParent, index, vnode);
         this.#insertChildren(node, null, node[meta], 0, vnode.children);
         insertBefore(domParent, node, beforeEl);
-      }; break;
+
+        break;
+      }
 
       case text_kind: {
         const node = this.#createTextNode(metaParent, index, vnode);
         insertBefore(domParent, node, beforeEl);
-      }; break;
+
+        break;
+      }
 
       case fragment_kind: {
         const head = this.#createTextNode(metaParent, index, vnode);
         insertBefore(domParent, head, beforeEl);
-        this.#insertChildren(domParent, beforeEl, head[meta], 0, vnode.children);
-      }; break;
+        this.#insertChildren(
+          domParent,
+          beforeEl,
+          head[meta],
+          0,
+          vnode.children,
+        );
+
+        break;
+      }
 
       case unsafe_inner_html_kind: {
         const node = this.#createElement(metaParent, index, vnode);
         this.#replaceInnerHtml(node, vnode);
         insertBefore(domParent, node, beforeEl);
-      }; break;
+
+        break;
+      }
     }
   }
 
@@ -405,7 +424,7 @@ export class Reconciler {
   }
 
   #createTextNode(parent, index, { kind, key, content }) {
-    const node = createTextNode(content ?? '');
+    const node = createTextNode(content ?? "");
     insertMetadataChild(kind, parent, node, index, key);
 
     return node;
@@ -465,7 +484,7 @@ export class Reconciler {
   }
 
   #updateDebounceThrottle(map, name, delay) {
-    const debounceOrThrottle = map.get(name)
+    const debounceOrThrottle = map.get(name);
 
     if (delay > 0) {
       if (debounceOrThrottle) {
@@ -474,7 +493,7 @@ export class Reconciler {
         map.set(name, { delay });
       }
     } else if (debounceOrThrottle) {
-      const { timeout } = debounceOrThrottle
+      const { timeout } = debounceOrThrottle;
       if (timeout) {
         clearTimeout(timeout);
       }
@@ -491,13 +510,13 @@ export class Reconciler {
       prevent_default: prevent,
       stop_propagation: stop,
       include,
-      immediate
+      immediate,
     } = attribute;
 
     if (prevent.kind === always_kind) event.preventDefault();
     if (stop.kind === always_kind) event.stopPropagation();
 
-    if (type === 'submit') {
+    if (type === "submit") {
       event.detail ??= {};
       event.detail.formData = [...new FormData(event.target).entries()];
     }
@@ -560,7 +579,6 @@ const iterate = (list, callback) => {
     }
   }
 };
-
 
 // EVENTS ----------------------------------------------------------------------
 
