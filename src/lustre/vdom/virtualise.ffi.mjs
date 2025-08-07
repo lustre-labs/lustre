@@ -17,7 +17,7 @@ export const virtualise = (root) => {
   // no matter what, we want to initialise the metadata for our root element.
   // we pass an empty stringh here as the index to make sure that the root node
   // does not have a path.
-  insertMetadataChild(null, root, fragment_kind);
+  insertMetadataChild(element_kind, null, root, 0, null);
   return none();
   // TODO: bring back virtualise
   // TODO: bring back virtualise

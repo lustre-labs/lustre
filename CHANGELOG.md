@@ -26,6 +26,7 @@ request to fix it.
 - [lustre/component] Fixed a bug where a component's Shadow Root was incorrectly closed by default.
 - [lustre/element] Fixed a bug where a top-level fragment would not be hydrated correctly.
 - [lustre/element/keyed] Fixed a bug where keyed elements were not virtualised correctly.
+- [lustre/event] Fixed a bug where debounced events of child elements would still fire after the node was removed.
 - [lustre/server_component] Fixed a bug where empty `value` attributes would result in a value of `undefined`
 - [lustre/server_component] Fixed a bug where events inside fragments would not work.
 
