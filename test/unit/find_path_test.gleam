@@ -273,6 +273,7 @@ pub fn find_path_by_child_query_in_fragment_test() {
   let query =
     query.element(matching: query.tag("div"))
     |> query.child(matching: query.test_id("target"))
+
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
   let expected =

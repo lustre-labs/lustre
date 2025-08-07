@@ -222,6 +222,7 @@ export class Reconciler {
   #insert(parent, { children, before }) {
     const fragment = createDocumentFragment();
     const beforeEl = this.#getReference(parent, before);
+
     this.#insertChildren(fragment, null, parent, before|0, children);
 
     insertBefore(parent.parentNode, fragment, beforeEl);
@@ -229,23 +230,33 @@ export class Reconciler {
 
   #replace(parent, { index, with: child }) {
     this.#removeChildren(parent, index|0, 1);
-
     const beforeEl = this.#getReference(parent, index);
     this.#insertChild(parent.parentNode, beforeEl, parent, index|0, child);
   }
 
-  #getReference(metaParent, index) {
-    const { children } = metaParent;
+  #getReference(node, index) {
+    index = index|0;
+    const { children } = node;
+    const childCount = children.length;
 
-    const reference =
-      children[index|0]?.node
-        ?? children[children.length-1]?.node?.nextSibling
-        ?? null;
+    if (index < childCount) {
+      return children[index].node;
+    }
 
-    return reference;
+    let lastChild = children[childCount-1] ?? node;
+    // unwrap the last child as long as we point to a fragment.
+    // otherwise, the fragments next sibling would be the first child of the
+    // fragment, not the first element after it.
+    while (lastChild.kind === fragment_kind && lastChild.children.length) {
+      lastChild = lastChild.children[lastChild.children.length-1];
+    }
+
+    return lastChild.node.nextSibling;
   }
 
   #move(parent, { key, before }) {
+    before = before|0;
+
     const { children, parentNode } = parent;
 
     // unlike insert, we always have to have the before element here!
@@ -300,7 +311,7 @@ export class Reconciler {
       const { kind, node, children: nestedChildren } = deleted[i];
 
       removeChild(parentNode, node);
-      this.#removeDebouncers(node);
+      this.#removeDebouncers(deleted[i]);
 
       if (kind === fragment_kind) {
         deleted.push(...nestedChildren);
@@ -350,7 +361,7 @@ export class Reconciler {
 
   #insertChildren(domParent, beforeEl, metaParent, index, children) {
     iterate(children, (child) =>
-      this.#insertChild(domParent, beforeEl, metaParent, ++index, child));
+      this.#insertChild(domParent, beforeEl, metaParent, index++, child));
   }
 
 

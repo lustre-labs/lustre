@@ -128,7 +128,7 @@ pub fn fragment_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = "1"
+  let path = path.root |> path.add(0, "") |> path.add(0, "")
 
   let expected =
     Ok(Handler(
@@ -137,7 +137,8 @@ pub fn fragment_event_test() {
       message: "hello!",
     ))
 
-  let #(_, actual) = events.handle(events, path, "click", dynamic.nil())
+  let #(_, actual) =
+    events.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -154,7 +155,7 @@ pub fn nested_fragment_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = path.root |> path.add(0, "") |> path.add(1, "")
+  let path = path.root |> path.add(0, "") |> path.add(0, "") |> path.add(0, "")
 
   let expected =
     Ok(Handler(
@@ -188,10 +189,11 @@ pub fn nested_fragment_with_multiple_children_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = path.root |> path.add(0, "") |> path.add(5, "")
+  let path = path.root |> path.add(0, "") |> path.add(0, "") |> path.add(2, "")
 
   let expected =
     Ok(Handler(prevent_default: False, stop_propagation: False, message: 4))
+
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
