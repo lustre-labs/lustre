@@ -11,15 +11,16 @@ request to fix it.
 
 ## Unreleased
 
+## [v5.3.0] - 2025-08-08
+
 ### Added
 
-- [lustre/effect] Added a `provide` effect for providing context values to components.
 - [lustre/component] Added a `delegates_focus` config option to control how focus is handled in components.
 - [lustre/component] Added a `on_context_change` config option to listen for changes in a parent's provided context.
 - [lustre/component] Added a `parts` attribute for toggling independent CSS parts in component elements.
+- [lustre/effect] Added a `provide` effect for providing context values to components.
 - [lustre/element/svg] Add the `svg.namespace` constant.
 - [lustre/element/svg] Add missing `svg.filter`, and `svg.view` elements.
-- [lustre/runtime] Lustre is now more resilient against other scripts or browser plugins modifying the DOM.
 
 ### Changed
 
@@ -30,6 +31,7 @@ request to fix it.
 - [lustre/element/keyed] Fixed a bug where keyed elements were not virtualised correctly.
 - [lustre/event] Fixed a bug where debounced events of child elements would still fire after the node was removed.
 - [lustre/event] Fixed a bug where events would not fire correctly after elements where added to or removed from a preceeding fragment.
+- [lustre/runtime] Lustre is now more resilient against other scripts or browser plugins modifying the DOM.
 - [lustre/server_component] Fixed a bug where empty `value` attributes would result in a value of `undefined`
 - [lustre/server_component] Fixed a bug where events inside fragments would not work.
 
