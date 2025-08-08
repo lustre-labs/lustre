@@ -7,7 +7,7 @@ import gleam/list
 import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/path.{type Path}
-import lustre/vdom/vattr.{type Attribute, type Handler, Event, Handler}
+import lustre/vdom/vattr.{type Attribute, type Handler, Event}
 import lustre/vdom/vnode.{type Element, Element, Fragment, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
@@ -64,29 +64,21 @@ pub fn tick(events: Events(msg)) -> Events(msg) {
 
 pub fn add_event(
   events: Events(msg),
-  mapper: Mapper,
   path: Path,
   name: String,
   handler: Decoder(Handler(msg)),
 ) -> Events(msg) {
-  let handlers = do_add_event(events.handlers, mapper, path, name, handler)
+  let handlers = do_add_event(events.handlers, path, name, handler)
   Events(..events, handlers:)
 }
 
 fn do_add_event(
   handlers: MutableMap(String, Decoder(Handler(msg))),
-  mapper: fn(Dynamic) -> Dynamic,
   path: Path,
   name: String,
   handler: Decoder(Handler(msg)),
 ) -> MutableMap(String, Decoder(Handler(msg))) {
-  mutable_map.insert(
-    handlers,
-    path.event(path, name),
-    decode.map(handler, fn(handler) {
-      Handler(..handler, message: coerce(mapper)(handler.message))
-    }),
-  )
+  mutable_map.insert(handlers, path.event(path, name), handler)
 }
 
 pub fn remove_event(
@@ -130,7 +122,7 @@ fn do_add_child(
       let composed_mapper = compose_mapper(mapper, child.mapper)
 
       handlers
-      |> add_attributes(composed_mapper, path, attributes)
+      |> add_attributes(path, attributes)
       |> do_add_children(composed_mapper, path, 0, children)
     }
 
@@ -142,9 +134,8 @@ fn do_add_child(
 
     UnsafeInnerHtml(attributes:, ..) -> {
       let path = path.add(parent, child_index, child.key)
-      let composed_mapper = compose_mapper(mapper, child.mapper)
 
-      add_attributes(handlers, composed_mapper, path, attributes)
+      add_attributes(handlers, path, attributes)
     }
 
     Text(..) -> handlers
@@ -153,20 +144,16 @@ fn do_add_child(
 
 fn add_attributes(
   handlers: MutableMap(String, Decoder(Handler(msg))),
-  mapper: fn(Dynamic) -> Dynamic,
   path: Path,
   attributes: List(Attribute(msg)),
 ) -> MutableMap(String, Decoder(Handler(msg))) {
   use events, attribute <- list.fold(attributes, handlers)
   case attribute {
-    Event(name:, handler:, ..) ->
-      do_add_event(events, mapper, path, name, handler)
+    Event(name:, handler:, ..) -> do_add_event(events, path, name, handler)
     _ -> events
   }
 }
 
-///
-///
 pub fn add_children(
   events: Events(msg),
   mapper: Mapper,
@@ -285,10 +272,6 @@ pub fn handle(
 pub fn has_dispatched_events(events: Events(msg), path: Path) {
   path.matches(path, any: events.dispatched_paths)
 }
-
-@external(erlang, "gleam@function", "identity")
-@external(javascript, "../../../gleam_stdlib/gleam/function.mjs", "identity")
-fn coerce(a: a) -> b
 
 @external(javascript, "../internals/equals.ffi.mjs", "isReferenceEqual")
 fn is_reference_equal(a: a, b: a) -> Bool {

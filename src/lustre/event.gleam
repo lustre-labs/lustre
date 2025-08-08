@@ -50,7 +50,11 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
   vattr.event(
     name:,
     handler: decode.map(handler, fn(msg) {
-      Handler(prevent_default: False, stop_propagation: False, message: msg)
+      Handler(
+        prevent_default: False,
+        stop_propagation: False,
+        message: vattr.Message(msg),
+      )
     }),
     include: constants.empty_list,
     prevent_default: vattr.never,
@@ -91,12 +95,31 @@ pub fn advanced(name: String, handler: Decoder(Handler(msg))) -> Attribute(msg) 
 /// Construct a [`Handler`](#Handler) that can be used with [`advanced`](#advanced)
 /// to conditionally stop propagation or prevent the default behaviour of an event.
 ///
-pub fn handler(
+fn handler(
+  message: vattr.MessageBody(msg),
+  prevent_default: Bool,
+  stop_propagation: Bool,
+) -> Handler(msg) {
+  Handler(prevent_default:, stop_propagation:, message:)
+}
+
+pub fn send(
   dispatch message: msg,
   prevent_default prevent_default: Bool,
   stop_propagation stop_propagation: Bool,
-) -> Handler(msg) {
-  Handler(prevent_default:, stop_propagation:, message:)
+) {
+  vattr.Message(message)
+  |> handler(prevent_default, stop_propagation)
+  |> decode.success
+}
+
+pub fn retain(
+  prevent_default prevent_default: Bool,
+  stop_propagation stop_propagation: Bool,
+) {
+  vattr.Messageless
+  |> handler(prevent_default, stop_propagation)
+  |> decode.success
 }
 
 fn is_immediate_event(name: String) -> Bool {

@@ -13,6 +13,7 @@ import lustre/effect.{type Effect}
 import lustre/runtime/transport.{type ClientMessage, type ServerMessage}
 import lustre/vdom/diff.{Diff, diff}
 import lustre/vdom/events.{type Events}
+import lustre/vdom/vattr
 import lustre/vdom/vnode.{type Element}
 
 // STATE -----------------------------------------------------------------------
@@ -315,12 +316,17 @@ fn handle_client_message(
       case events.handle(state.events, path, name, event) {
         #(events, Error(_)) -> State(..state, events:)
         #(events, Ok(handler)) -> {
-          let #(model, effect) = state.update(state.model, handler.message)
-          let vdom = state.view(model)
+          case handler.message {
+            vattr.Message(message) -> {
+              let #(model, effect) = state.update(state.model, message)
+              let vdom = state.view(model)
 
-          handle_effect(state.self, effect)
+              handle_effect(state.self, effect)
 
-          State(..state, model:, vdom:, events:)
+              State(..state, model:, vdom:, events:)
+            }
+            vattr.Messageless -> State(..state, events:)
+          }
         }
       }
 

@@ -11,6 +11,7 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/vdom/events
 import lustre/vdom/path
+import lustre/vdom/vattr
 
 // TYPES -----------------------------------------------------------------------
 
@@ -222,7 +223,12 @@ pub fn event(
       ),
     ))
 
-    let #(model, _) = simulation.update(simulation.model, handler.message)
+    let model = case handler.message {
+      vattr.Message(message) ->
+        simulation.update(simulation.model, message) |> pair.first
+      vattr.Messageless -> simulation.model
+    }
+
     let html = simulation.view(model)
     let history = [
       Event(target: query, name: event, data:),

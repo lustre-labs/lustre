@@ -2,8 +2,10 @@
 
 import { NonEmpty, Empty } from "../../../gleam.mjs";
 import * as $list from "../../../../gleam_stdlib/gleam/list.mjs";
+import { None } from "../../../../gleam_stdlib/gleam/option.mjs";
 import { empty_list } from "../../internals/constants.mjs";
 import { diff } from "../../vdom/diff.mjs";
+import { Message } from "../../vdom/vattr.mjs";
 import * as Events from "../../vdom/events.mjs";
 import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
 import { virtualise } from "../../vdom/virtualise.ffi.mjs";
@@ -30,8 +32,6 @@ export const throw_server_component_error = () => {
     ].join(""),
   );
 };
-
-//
 
 export class Runtime {
   constructor(root, [model, effects], view, update) {
@@ -76,7 +76,9 @@ export class Runtime {
         if (handler.stop_propagation) event.stopPropagation();
         if (handler.prevent_default) event.preventDefault();
 
-        this.dispatch(handler.message, false);
+        if (handler.message instanceof Message) {
+          this.dispatch(Object.values(handler.message)[0], false);
+        }
       }
     });
 

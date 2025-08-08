@@ -618,7 +618,7 @@ fn diff_attributes(
 
     [], [Event(name:, handler:, ..) as next, ..new] -> {
       let added = [next, ..added]
-      let events = events.add_event(events, mapper, path, name, handler)
+      let events = events.add_event(events, path, name, handler)
       diff_attributes(
         controlled:,
         path:,
@@ -709,7 +709,7 @@ fn diff_attributes(
             False -> added
           }
 
-          let events = events.add_event(events, mapper, path, name, handler)
+          let events = events.add_event(events, path, name, handler)
 
           diff_attributes(
             controlled:,
@@ -743,7 +743,7 @@ fn diff_attributes(
         _, Eq, Event(name:, handler:, ..) -> {
           let added = [next, ..added]
           let removed = [prev, ..removed]
-          let events = events.add_event(events, mapper, path, name, handler)
+          let events = events.add_event(events, path, name, handler)
 
           diff_attributes(
             controlled:,
@@ -775,7 +775,7 @@ fn diff_attributes(
 
         _, Gt, Event(name:, handler:, ..) -> {
           let added = [next, ..added]
-          let events = events.add_event(events, mapper, path, name, handler)
+          let events = events.add_event(events, path, name, handler)
 
           diff_attributes(
             controlled:,

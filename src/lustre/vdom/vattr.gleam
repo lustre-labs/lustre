@@ -28,8 +28,17 @@ pub type Attribute(msg) {
   )
 }
 
+pub type MessageBody(msg) {
+  Message(msg)
+  Messageless
+}
+
 pub type Handler(msg) {
-  Handler(prevent_default: Bool, stop_propagation: Bool, message: msg)
+  Handler(
+    prevent_default: Bool,
+    stop_propagation: Bool,
+    message: MessageBody(msg),
+  )
 }
 
 pub type EventBehaviour {
