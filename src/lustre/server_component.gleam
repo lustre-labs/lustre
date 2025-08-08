@@ -66,6 +66,8 @@
 ////
 //// - [Connecting more than one client](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/04-multiple-clients)
 ////
+//// - [Adding publish-subscribe](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/05-publish-subscribe)
+////
 //// ## Getting help
 ////
 //// If you're having trouble with Lustre or not sure what the right way to do
