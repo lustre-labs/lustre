@@ -1,13 +1,3 @@
-// build/dev/javascript/prelude.mjs
-var CustomType = class {
-  withFields(fields) {
-    let properties = Object.keys(this).map(
-      (label) => label in fields ? fields[label] : this[label]
-    );
-    return new this.constructor(...properties);
-  }
-};
-
 // build/dev/javascript/gleam_stdlib/dict.mjs
 var SHIFT = 5;
 var BUCKET_SIZE = Math.pow(2, SHIFT);
@@ -44,9 +34,6 @@ var trim_end_regex = /* @__PURE__ */ new RegExp(`[${unicode_whitespaces}]*$`);
 // build/dev/javascript/lustre/lustre/internals/constants.ffi.mjs
 var document = () => globalThis?.document;
 var NAMESPACE_HTML = "http://www.w3.org/1999/xhtml";
-var ELEMENT_NODE = 1;
-var TEXT_NODE = 3;
-var DOCUMENT_FRAGMENT_NODE = 11;
 var SUPPORTS_MOVE_BEFORE = !!globalThis.HTMLElement?.prototype?.moveBefore;
 
 // build/dev/javascript/lustre/lustre/vdom/vattr.mjs
@@ -57,25 +44,6 @@ var never_kind = 0;
 var always_kind = 2;
 
 // build/dev/javascript/lustre/lustre/vdom/vnode.mjs
-var Fragment = class extends CustomType {
-  constructor(kind, key, mapper, children, keyed_children, children_count) {
-    super();
-    this.kind = kind;
-    this.key = key;
-    this.mapper = mapper;
-    this.children = children;
-    this.keyed_children = keyed_children;
-    this.children_count = children_count;
-  }
-};
-function advance(node) {
-  if (node instanceof Fragment) {
-    let children_count = node.children_count;
-    return 1 + children_count;
-  } else {
-    return 1;
-  }
-}
 var fragment_kind = 0;
 var element_kind = 1;
 var text_kind = 2;
@@ -89,14 +57,61 @@ var replace_text_kind = 0;
 var replace_inner_html_kind = 1;
 var update_kind = 2;
 var move_kind = 3;
-var remove_key_kind = 4;
+var remove_kind = 4;
 var replace_kind = 5;
 var insert_kind = 6;
-var remove_kind = 7;
 
 // build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs
+var setTimeout = globalThis.setTimeout;
+var clearTimeout = globalThis.clearTimeout;
+var createElementNS = (ns, name) => document().createElementNS(ns, name);
+var createTextNode = (data) => document().createTextNode(data);
+var createDocumentFragment = () => document().createDocumentFragment();
+var insertBefore = (parent, node, reference) => parent.insertBefore(node, reference);
+var moveBefore = SUPPORTS_MOVE_BEFORE ? (parent, node, reference) => parent.moveBefore(node, reference) : insertBefore;
+var removeChild = (parent, child) => parent.removeChild(child);
+var getAttribute = (node, name) => node.getAttribute(name);
+var setAttribute = (node, name, value) => node.setAttribute(name, value);
+var removeAttribute = (node, name) => node.removeAttribute(name);
+var addEventListener = (node, name, handler, options) => node.addEventListener(name, handler, options);
+var removeEventListener = (node, name, handler) => node.removeEventListener(name, handler);
+var setInnerHtml = (node, innerHtml) => node.innerHTML = innerHtml;
+var setData = (node, data) => node.data = data;
+var meta = Symbol("lustre");
+var MetadataNode = class {
+  constructor(kind, parent, node, key) {
+    this.kind = kind;
+    this.key = key;
+    this.parent = parent;
+    this.children = [];
+    this.node = node;
+    this.handlers = /* @__PURE__ */ new Map();
+    this.throttles = /* @__PURE__ */ new Map();
+    this.debouncers = /* @__PURE__ */ new Map();
+  }
+  get parentNode() {
+    return this.kind === fragment_kind ? this.node.parentNode : this.node;
+  }
+};
+var insertMetadataChild = (kind, parent, node, index2, key) => {
+  const child = new MetadataNode(kind, parent, node, key);
+  node[meta] = child;
+  parent?.children.splice(index2, 0, child);
+  return child;
+};
+var getPath = (node) => {
+  let path = "";
+  for (let current = node[meta]; current.parent; current = current.parent) {
+    if (current.key) {
+      path = `${separator_element}${current.key}${path}`;
+    } else {
+      const index2 = current.parent.children.indexOf(current);
+      path = `${separator_element}${index2}${path}`;
+    }
+  }
+  return path.slice(1);
+};
 var Reconciler = class {
-  offset = 0;
   #root = null;
   #dispatch = () => {
   };
@@ -109,195 +124,212 @@ var Reconciler = class {
     this.#exposeKeys = exposeKeys;
   }
   mount(vdom) {
-    appendChild(this.#root, this.#createChild(this.#root, 0, vdom));
+    console.log("mount", vdom);
+    insertMetadataChild(element_kind, null, this.#root, 0, null);
+    this.#insertChild(this.#root, null, this.#root[meta], 0, vdom);
   }
-  #stack = [];
   push(patch) {
-    const offset = this.offset;
-    if (offset) {
-      iterate(patch.changes, (change) => {
-        switch (change.kind) {
-          case insert_kind:
-          case move_kind:
-            change.before = (change.before | 0) + offset;
-            break;
-          case remove_kind:
-          case replace_kind:
-            change.from = (change.from | 0) + offset;
-            break;
-        }
-      });
-      iterate(patch.children, (child) => {
-        child.index = (child.index | 0) + offset;
-      });
-    }
-    this.#stack.push({ node: this.#root, patch });
+    this.#stack.push({ node: this.#root[meta], patch });
     this.#reconcile();
   }
   // PATCHING ------------------------------------------------------------------
+  #stack = [];
   #reconcile() {
-    const self = this;
-    while (self.#stack.length) {
-      const { node, patch } = self.#stack.pop();
-      iterate(patch.changes, (change) => {
-        switch (change.kind) {
-          case insert_kind:
-            self.#insert(node, change.children, change.before);
-            break;
-          case move_kind:
-            self.#move(node, change.key, change.before, change.count);
-            break;
-          case remove_key_kind:
-            self.#removeKey(node, change.key, change.count);
-            break;
-          case remove_kind:
-            self.#remove(node, change.from, change.count);
-            break;
-          case replace_kind:
-            self.#replace(node, change.from, change.count, change.with);
-            break;
-          case replace_text_kind:
-            self.#replaceText(node, change.content);
-            break;
-          case replace_inner_html_kind:
-            self.#replaceInnerHtml(node, change.inner_html);
-            break;
-          case update_kind:
-            self.#update(node, change.added, change.removed);
-            break;
-        }
-      });
-      if (patch.removed) {
-        self.#remove(
-          node,
-          node.childNodes.length - patch.removed,
-          patch.removed
-        );
+    const stack = this.#stack;
+    while (stack.length) {
+      const { node, patch } = stack.pop();
+      const { children: childNodes } = node;
+      const { changes, removed, children: childPatches } = patch;
+      iterate(changes, (change) => this.#patch(node, change));
+      if (removed) {
+        this.#removeChildren(node, childNodes.length - removed, removed);
       }
-      let lastIndex = -1;
-      let lastChild = null;
-      iterate(patch.children, (child) => {
-        const index2 = child.index | 0;
-        const next = lastChild && lastIndex - index2 === 1 ? lastChild.previousSibling : childAt(node, index2);
-        self.#stack.push({ node: next, patch: child });
-        lastChild = next;
-        lastIndex = index2;
+      iterate(childPatches, (childPatch) => {
+        const child = childNodes[childPatch.index | 0];
+        this.#stack.push({ node: child, patch: childPatch });
       });
+    }
+  }
+  #patch(node, change) {
+    switch (change.kind) {
+      case replace_text_kind:
+        this.#replaceText(node, change);
+        break;
+      case replace_inner_html_kind:
+        this.#replaceInnerHtml(node, change);
+        break;
+      case update_kind:
+        this.#update(node, change);
+        break;
+      case move_kind:
+        this.#move(node, change);
+        break;
+      case remove_kind:
+        this.#remove(node, change);
+        break;
+      case replace_kind:
+        this.#replace(node, change);
+        break;
+      case insert_kind:
+        this.#insert(node, change);
+        break;
     }
   }
   // CHANGES -------------------------------------------------------------------
-  #insert(node, children, before) {
+  #insert(parent, { children, before }) {
     const fragment3 = createDocumentFragment();
-    let childIndex = before | 0;
-    iterate(children, (child) => {
-      const el = this.#createChild(node, childIndex, child);
-      appendChild(fragment3, el);
-      childIndex += advance(child);
-    });
-    insertBefore(node, fragment3, childAt(node, before));
+    const beforeEl = this.#getReference(parent, before);
+    this.#insertChildren(fragment3, null, parent, before | 0, children);
+    insertBefore(parent.parentNode, fragment3, beforeEl);
   }
-  #move(node, key, before, count) {
-    let el = getKeyedChild(node, key);
-    const beforeEl = childAt(node, before);
-    for (let i = 0; i < count && el !== null; ++i) {
-      const next = el.nextSibling;
-      if (SUPPORTS_MOVE_BEFORE) {
-        node.moveBefore(el, beforeEl);
-      } else {
-        insertBefore(node, el, beforeEl);
+  #replace(parent, { index: index2, with: child }) {
+    this.#removeChildren(parent, index2 | 0, 1);
+    const beforeEl = this.#getReference(parent, index2);
+    this.#insertChild(parent.parentNode, beforeEl, parent, index2 | 0, child);
+  }
+  #getReference(node, index2) {
+    index2 = index2 | 0;
+    const { children } = node;
+    const childCount = children.length;
+    if (index2 < childCount) {
+      return children[index2].node;
+    }
+    let lastChild = children[childCount - 1];
+    if (!lastChild && node.kind !== fragment_kind)
+      return null;
+    if (!lastChild)
+      lastChild = node;
+    while (lastChild.kind === fragment_kind && lastChild.children.length) {
+      lastChild = lastChild.children[lastChild.children.length - 1];
+    }
+    return lastChild.node.nextSibling;
+  }
+  #move(parent, { key, before }) {
+    before = before | 0;
+    const { children, parentNode } = parent;
+    const beforeEl = children[before].node;
+    let prev = children[before];
+    for (let i = before + 1; i < children.length; ++i) {
+      const next = children[i];
+      children[i] = prev;
+      prev = next;
+      if (next.key === key) {
+        children[before] = next;
+        break;
       }
-      el = next;
+    }
+    const { kind, node, children: prevChildren } = prev;
+    moveBefore(parentNode, node, beforeEl);
+    if (kind === fragment_kind) {
+      this.#moveChildren(parentNode, prevChildren, beforeEl);
     }
   }
-  #removeKey(node, key, count) {
-    this.#removeFromChild(node, getKeyedChild(node, key), count);
-  }
-  #remove(node, from, count) {
-    this.#removeFromChild(node, childAt(node, from), count);
-  }
-  #removeFromChild(parent, child, count) {
-    while (count-- > 0 && child !== null) {
-      const next = child.nextSibling;
-      const key = child[meta].key;
-      if (key) {
-        parent[meta].keyedChildren.delete(key);
+  #moveChildren(domParent, children, beforeEl) {
+    for (let i = 0; i < children.length; ++i) {
+      const { kind, node, children: nestedChildren } = children[i];
+      moveBefore(domParent, node, beforeEl);
+      if (kind === fragment_kind) {
+        this.#moveChildren(domParent, nestedChildren, beforeEl);
       }
-      for (const [_, { timeout }] of child[meta].debouncers ?? []) {
+    }
+  }
+  #remove(parent, { index: index2 }) {
+    this.#removeChildren(parent, index2, 1);
+  }
+  #removeChildren(parent, index2, count) {
+    const { children, parentNode } = parent;
+    const deleted = children.splice(index2, count);
+    for (let i = 0; i < deleted.length; ++i) {
+      const { kind, node, children: nestedChildren } = deleted[i];
+      removeChild(parentNode, node);
+      this.#removeDebouncers(deleted[i]);
+      if (kind === fragment_kind) {
+        deleted.push(...nestedChildren);
+      }
+    }
+  }
+  #removeDebouncers(node) {
+    const { debouncers, children } = node;
+    for (const { timeout } of debouncers.values()) {
+      if (timeout) {
         clearTimeout(timeout);
       }
-      parent.removeChild(child);
-      child = next;
     }
+    debouncers.clear();
+    iterate(children, (child) => this.#removeDebouncers(child));
   }
-  #replace(parent, from, count, child) {
-    this.#remove(parent, from, count);
-    const el = this.#createChild(parent, from, child);
-    insertBefore(parent, el, childAt(parent, from));
-  }
-  #replaceText(node, content) {
-    node.data = content ?? "";
-  }
-  #replaceInnerHtml(node, inner_html) {
-    node.innerHTML = inner_html ?? "";
-  }
-  #update(node, added, removed) {
-    iterate(removed, (attribute3) => {
-      const name = attribute3.name;
-      if (node[meta].handlers.has(name)) {
-        node.removeEventListener(name, handleEvent);
-        node[meta].handlers.delete(name);
-        if (node[meta].throttles.has(name)) {
-          node[meta].throttles.delete(name);
-        }
-        if (node[meta].debouncers.has(name)) {
-          clearTimeout(node[meta].debouncers.get(name).timeout);
-          node[meta].debouncers.delete(name);
-        }
+  #update({ node, handlers, throttles, debouncers }, { added, removed }) {
+    iterate(removed, ({ name }) => {
+      if (handlers.delete(name)) {
+        removeEventListener(node, name, handleEvent);
+        this.#updateDebounceThrottle(throttles, name, 0);
+        this.#updateDebounceThrottle(debouncers, name, 0);
       } else {
-        node.removeAttribute(name);
+        removeAttribute(node, name);
         SYNCED_ATTRIBUTES[name]?.removed?.(node, name);
       }
     });
-    iterate(added, (attribute3) => {
-      this.#createAttribute(node, attribute3);
-    });
+    iterate(added, (attribute3) => this.#createAttribute(node, attribute3));
   }
-  // CONSTRUCTORS --------------------------------------------------------------
-  #createChild(parent, index2, vnode) {
+  #replaceText({ node }, { content }) {
+    setData(node, content ?? "");
+  }
+  #replaceInnerHtml({ node }, { inner_html }) {
+    setInnerHtml(node, inner_html ?? "");
+  }
+  // INSERT --------------------------------------------------------------------
+  #insertChildren(domParent, beforeEl, metaParent, index2, children) {
+    iterate(
+      children,
+      (child) => this.#insertChild(domParent, beforeEl, metaParent, index2++, child)
+    );
+  }
+  #insertChild(domParent, beforeEl, metaParent, index2, vnode) {
     switch (vnode.kind) {
       case element_kind: {
-        const node = createChildElement(parent, index2, vnode);
-        this.#createAttributes(node, vnode);
-        this.#insert(node, vnode.children);
-        return node;
+        const node = this.#createElement(metaParent, index2, vnode);
+        this.#insertChildren(node, null, node[meta], 0, vnode.children);
+        insertBefore(domParent, node, beforeEl);
+        break;
       }
       case text_kind: {
-        return createChildText(parent, index2, vnode);
+        const node = this.#createTextNode(metaParent, index2, vnode);
+        insertBefore(domParent, node, beforeEl);
+        break;
       }
       case fragment_kind: {
-        const node = createDocumentFragment();
-        const head = createChildText(parent, index2, vnode);
-        appendChild(node, head);
-        let childIndex = index2 + 1;
-        iterate(vnode.children, (child) => {
-          appendChild(node, this.#createChild(parent, childIndex, child));
-          childIndex += advance(child);
-        });
-        return node;
+        const head = this.#createTextNode(metaParent, index2, vnode);
+        insertBefore(domParent, head, beforeEl);
+        this.#insertChildren(
+          domParent,
+          beforeEl,
+          head[meta],
+          0,
+          vnode.children
+        );
+        break;
       }
       case unsafe_inner_html_kind: {
-        const node = createChildElement(parent, index2, vnode);
-        this.#createAttributes(node, vnode);
-        this.#replaceInnerHtml(node, vnode.inner_html);
-        return node;
+        const node = this.#createElement(metaParent, index2, vnode);
+        this.#replaceInnerHtml({ node }, vnode);
+        insertBefore(domParent, node, beforeEl);
+        break;
       }
     }
   }
-  #createAttributes(node, { key, attributes }) {
+  #createElement(parent, index2, { kind, key, tag, namespace, attributes }) {
+    const node = createElementNS(namespace || NAMESPACE_HTML, tag);
+    insertMetadataChild(kind, parent, node, index2, key);
     if (this.#exposeKeys && key) {
-      node.setAttribute("data-lustre-key", key);
+      setAttribute(node, "data-lustre-key", key);
     }
     iterate(attributes, (attribute3) => this.#createAttribute(node, attribute3));
+    return node;
+  }
+  #createTextNode(parent, index2, { kind, key, content }) {
+    const node = createTextNode(content ?? "");
+    insertMetadataChild(kind, parent, node, index2, key);
+    return node;
   }
   #createAttribute(node, attribute3) {
     const { debouncers, handlers, throttles } = node[meta];
@@ -306,9 +338,6 @@ var Reconciler = class {
       name,
       value,
       prevent_default: prevent,
-      stop_propagation: stop,
-      immediate,
-      include,
       debounce: debounceDelay,
       throttle: throttleDelay
     } = attribute3;
@@ -319,10 +348,10 @@ var Reconciler = class {
           node.defaultValue = valueOrDefault;
           return;
         }
-        if (valueOrDefault !== node.getAttribute(name)) {
-          node.setAttribute(name, valueOrDefault);
+        if (valueOrDefault !== getAttribute(node, name)) {
+          setAttribute(node, name, valueOrDefault);
         }
-        SYNCED_ATTRIBUTES[name]?.added?.(node, value);
+        SYNCED_ATTRIBUTES[name]?.added?.(node, valueOrDefault);
         break;
       }
       case property_kind:
@@ -330,59 +359,73 @@ var Reconciler = class {
         break;
       case event_kind: {
         if (handlers.has(name)) {
-          node.removeEventListener(name, handleEvent);
+          removeEventListener(node, name, handleEvent);
         }
-        node.addEventListener(name, handleEvent, {
-          passive: prevent.kind === never_kind
-        });
-        if (throttleDelay > 0) {
-          const throttle = throttles.get(name) ?? {};
-          throttle.delay = throttleDelay;
-          throttles.set(name, throttle);
-        } else {
-          throttles.delete(name);
-        }
-        if (debounceDelay > 0) {
-          const debounce = debouncers.get(name) ?? {};
-          debounce.delay = debounceDelay;
-          debouncers.set(name, debounce);
-        } else {
-          clearTimeout(debouncers.get(name)?.timeout);
-          debouncers.delete(name);
-        }
-        handlers.set(name, (event2) => {
-          if (prevent.kind === always_kind)
-            event2.preventDefault();
-          if (stop.kind === always_kind)
-            event2.stopPropagation();
-          const type = event2.type;
-          const path = event2.currentTarget[meta].path;
-          const data = this.#useServerEvents ? createServerEvent(event2, include ?? []) : event2;
-          const throttle = throttles.get(type);
-          if (throttle) {
-            const now = Date.now();
-            const last = throttle.last || 0;
-            if (now > last + throttle.delay) {
-              throttle.last = now;
-              throttle.lastEvent = event2;
-              this.#dispatch(data, path, type, immediate);
-            }
-          }
-          const debounce = debouncers.get(type);
-          if (debounce) {
-            clearTimeout(debounce.timeout);
-            debounce.timeout = setTimeout(() => {
-              if (event2 === throttles.get(type)?.lastEvent)
-                return;
-              this.#dispatch(data, path, type, immediate);
-            }, debounce.delay);
-          }
-          if (!throttle && !debounce) {
-            this.#dispatch(data, path, type, immediate);
-          }
-        });
+        const passive = prevent.kind === never_kind;
+        addEventListener(node, name, handleEvent, { passive });
+        this.#updateDebounceThrottle(throttles, name, throttleDelay);
+        this.#updateDebounceThrottle(debouncers, name, debounceDelay);
+        handlers.set(name, (event2) => this.#handleEvent(attribute3, event2));
         break;
       }
+    }
+  }
+  #updateDebounceThrottle(map3, name, delay) {
+    const debounceOrThrottle = map3.get(name);
+    if (delay > 0) {
+      if (debounceOrThrottle) {
+        debounceOrThrottle.delay = delay;
+      } else {
+        map3.set(name, { delay });
+      }
+    } else if (debounceOrThrottle) {
+      const { timeout } = debounceOrThrottle;
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+      map3.delete(name);
+    }
+  }
+  #handleEvent(attribute3, event2) {
+    const { currentTarget, type } = event2;
+    const { debouncers, throttles } = currentTarget[meta];
+    const path = getPath(currentTarget);
+    const {
+      prevent_default: prevent,
+      stop_propagation: stop,
+      include,
+      immediate
+    } = attribute3;
+    if (prevent.kind === always_kind)
+      event2.preventDefault();
+    if (stop.kind === always_kind)
+      event2.stopPropagation();
+    if (type === "submit") {
+      event2.detail ??= {};
+      event2.detail.formData = [...new FormData(event2.target).entries()];
+    }
+    const data = this.#useServerEvents ? createServerEvent(event2, include ?? []) : event2;
+    const throttle = throttles.get(type);
+    if (throttle) {
+      const now = Date.now();
+      const last = throttle.last || 0;
+      if (now > last + throttle.delay) {
+        throttle.last = now;
+        throttle.lastEvent = event2;
+        this.#dispatch(data, path, type, immediate);
+      }
+    }
+    const debounce = debouncers.get(type);
+    if (debounce) {
+      clearTimeout(debounce.timeout);
+      debounce.timeout = setTimeout(() => {
+        if (event2 === throttles.get(type)?.lastEvent)
+          return;
+        this.#dispatch(data, path, type, immediate);
+      }, debounce.delay);
+    }
+    if (!throttle && !debounce) {
+      this.#dispatch(data, path, type, immediate);
     }
   }
 };
@@ -392,59 +435,14 @@ var iterate = (list4, callback) => {
       callback(list4[i]);
     }
   } else if (list4) {
-    for (list4; list4.tail; list4 = list4.tail) {
+    for (list4; list4.head; list4 = list4.tail) {
       callback(list4.head);
     }
   }
 };
-var appendChild = (node, child) => node.appendChild(child);
-var insertBefore = (parent, node, referenceNode) => parent.insertBefore(node, referenceNode ?? null);
-var createChildElement = (parent, index2, { key, tag, namespace }) => {
-  const node = document().createElementNS(namespace || NAMESPACE_HTML, tag);
-  initialiseMetadata(parent, node, index2, key);
-  return node;
-};
-var createChildText = (parent, index2, { key, content }) => {
-  const node = document().createTextNode(content ?? "");
-  initialiseMetadata(parent, node, index2, key);
-  return node;
-};
-var createDocumentFragment = () => document().createDocumentFragment();
-var childAt = (node, at) => node.childNodes[at | 0];
-var meta = Symbol("lustre");
-var initialiseMetadata = (parent, node, index2 = 0, key = "") => {
-  const segment = `${key || index2}`;
-  switch (node.nodeType) {
-    case ELEMENT_NODE:
-    case DOCUMENT_FRAGMENT_NODE:
-      node[meta] = {
-        key,
-        path: segment,
-        keyedChildren: /* @__PURE__ */ new Map(),
-        handlers: /* @__PURE__ */ new Map(),
-        throttles: /* @__PURE__ */ new Map(),
-        debouncers: /* @__PURE__ */ new Map()
-      };
-      break;
-    case TEXT_NODE:
-      node[meta] = { key };
-      break;
-  }
-  if (parent && parent[meta] && key) {
-    parent[meta].keyedChildren.set(key, new WeakRef(node));
-  }
-  if (parent && parent[meta] && parent[meta].path) {
-    node[meta].path = `${parent[meta].path}${separator_element}${segment}`;
-  }
-};
-var getKeyedChild = (node, key) => node[meta].keyedChildren.get(key).deref();
 var handleEvent = (event2) => {
-  const target = event2.currentTarget;
-  const handler = target[meta].handlers.get(event2.type);
-  if (event2.type === "submit") {
-    event2.detail ??= {};
-    event2.detail.formData = [...new FormData(event2.target).entries()];
-  }
+  const { currentTarget, type } = event2;
+  const handler = currentTarget[meta].handlers.get(type);
   handler(event2);
 };
 var createServerEvent = (event2, include = []) => {
@@ -491,7 +489,9 @@ var SYNCED_ATTRIBUTES = {
   value: /* @__PURE__ */ syncedAttribute("value"),
   autofocus: {
     added(node) {
-      queueMicrotask(() => node.focus?.());
+      queueMicrotask(() => {
+        node.focus?.();
+      });
     }
   },
   autoplay: {
@@ -550,15 +550,25 @@ async function adoptStylesheets(shadowRoot) {
   }
   return pending;
 }
+var ContextRequestEvent = class extends Event {
+  constructor(context, callback, subscribe) {
+    super("context-request", { bubbles: true, composed: true });
+    this.context = context;
+    this.callback = callback;
+    this.subscribe = subscribe;
+  }
+};
 
 // build/dev/javascript/lustre/lustre/runtime/transport.mjs
 var mount_kind = 0;
 var reconcile_kind = 1;
 var emit_kind = 2;
+var provide_kind = 3;
 var attribute_changed_kind = 0;
 var event_fired_kind = 1;
 var property_changed_kind = 2;
 var batch_kind = 3;
+var context_provided_kind = 4;
 
 // src/lustre/runtime/client/server_component.ffi.mjs
 var ServerComponent = class extends HTMLElement {
@@ -575,6 +585,8 @@ var ServerComponent = class extends HTMLElement {
   #remoteObservedProperties = /* @__PURE__ */ new Set();
   #connected = false;
   #changedAttributesQueue = [];
+  #contexts = /* @__PURE__ */ new Map();
+  #contextSubscriptions = /* @__PURE__ */ new Set();
   #observer = new MutationObserver((mutations) => {
     const attributes = [];
     for (const mutation of mutations) {
@@ -644,7 +656,6 @@ var ServerComponent = class extends HTMLElement {
         this.#shadowRoot ??= this.attachShadow({
           mode: data.open_shadow_root ? "open" : "closed"
         });
-        initialiseMetadata(null, this.#shadowRoot, "");
         while (this.#shadowRoot.firstChild) {
           this.#shadowRoot.firstChild.remove();
         }
@@ -666,16 +677,11 @@ var ServerComponent = class extends HTMLElement {
         const filteredQueuedAttributes = this.#changedAttributesQueue.filter(
           ([name]) => this.#remoteObservedAttributes.has(name)
         );
-        if (filteredQueuedAttributes.length) {
-          this.#transport.send({
-            kind: batch_kind,
-            messages: filteredQueuedAttributes.map(([name, value]) => ({
-              kind: attribute_changed_kind,
-              name,
-              value
-            }))
-          });
-        }
+        const messages = filteredQueuedAttributes.map(([name, value]) => ({
+          kind: attribute_changed_kind,
+          name,
+          value
+        }));
         this.#changedAttributesQueue = [];
         this.#remoteObservedProperties = new Set(data.observed_properties);
         for (const name of this.#remoteObservedProperties) {
@@ -693,9 +699,50 @@ var ServerComponent = class extends HTMLElement {
             }
           });
         }
+        for (const [key, value] of Object.entries(data.provided_contexts)) {
+          this.provide(key, value);
+        }
+        for (const key of [...new Set(data.requested_contexts)]) {
+          this.dispatchEvent(
+            new ContextRequestEvent(key, (value, unsubscribe) => {
+              this.#transport?.send({
+                kind: context_provided_kind,
+                key,
+                value
+              });
+              this.#contextSubscriptions.add(unsubscribe);
+            })
+          );
+        }
+        if (messages.length) {
+          this.#transport.send({
+            kind: batch_kind,
+            messages
+          });
+        }
         if (data.will_adopt_styles) {
           await this.#adoptStyleSheets();
         }
+        this.#shadowRoot.addEventListener("context-request", (event2) => {
+          if (!event2.context || !event2.callback)
+            return;
+          if (!this.#contexts.has(event2.context))
+            return;
+          event2.stopImmediatePropagation();
+          const context = this.#contexts.get(event2.context);
+          if (event2.subscribe) {
+            const callbackRef = new WeakRef(event2.callback);
+            const unsubscribe = () => {
+              context.subscribers = context.subscribers.filter(
+                (subscriber) => subscriber !== callbackRef
+              );
+            };
+            context.subscribers.push([callbackRef, unsubscribe]);
+            event2.callback(context.value, unsubscribe);
+          } else {
+            event2.callback(context.value);
+          }
+        });
         this.#reconciler.mount(data.vdom);
         this.dispatchEvent(new CustomEvent("lustre:mount"));
         break;
@@ -708,9 +755,37 @@ var ServerComponent = class extends HTMLElement {
         this.dispatchEvent(new CustomEvent(data.name, { detail: data.data }));
         break;
       }
+      case provide_kind: {
+        this.provide(data.key, data.value);
+        break;
+      }
     }
   }
   //
+  disconnectedCallback() {
+    for (const unsubscribe of this.#contextSubscriptions) {
+      unsubscribe();
+    }
+    this.#contextSubscriptions.clear();
+  }
+  // Context provider method
+  provide(key, value) {
+    if (!this.#contexts.has(key)) {
+      this.#contexts.set(key, { value, subscribers: [] });
+    } else {
+      const context = this.#contexts.get(key);
+      context.value = value;
+      for (let i = context.subscribers.length - 1; i >= 0; i--) {
+        const [subscriberRef, unsubscribe] = context.subscribers[i];
+        const subscriber = subscriberRef.deref();
+        if (!subscriber) {
+          context.subscribers.splice(i, 1);
+          continue;
+        }
+        subscriber(value, unsubscribe);
+      }
+    }
+  }
   #connect() {
     if (!this.#route || !this.#method)
       return;
@@ -730,12 +805,14 @@ var ServerComponent = class extends HTMLElement {
     };
     const onClose = () => {
       this.#connected = false;
-      this.dispatchEvent(new CustomEvent("lustre:close"), {
-        detail: {
-          route: this.#route,
-          method: this.#method
-        }
-      });
+      this.dispatchEvent(
+        new CustomEvent("lustre:close", {
+          detail: {
+            route: this.#route,
+            method: this.#method
+          }
+        })
+      );
     };
     const options = { onConnect, onMessage, onClose };
     switch (this.#method) {
@@ -757,7 +834,6 @@ var ServerComponent = class extends HTMLElement {
       this.#shadowRoot.firstChild.remove();
     }
     this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
-    this.#reconciler.offset = this.#adoptedStyleNodes.length;
   }
 };
 var WebsocketTransport = class {
