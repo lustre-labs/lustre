@@ -401,7 +401,7 @@ export class Reconciler {
 
       case unsafe_inner_html_kind: {
         const node = this.#createElement(metaParent, index, vnode);
-        this.#replaceInnerHtml(node, vnode);
+        this.#replaceInnerHtml({ node }, vnode);
         insertBefore(domParent, node, beforeEl);
 
         break;

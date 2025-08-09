@@ -11,6 +11,10 @@ request to fix it.
 
 ## Unreleased
 
+### Changed
+
+- [lustre/runtime] Fixed a bug where using `element.unsafe_raw_html` would not correctly create the DOM node.
+
 ## [v5.3.0] - 2025-08-08
 
 ### Added
