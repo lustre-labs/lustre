@@ -11,6 +11,15 @@ request to fix it.
 
 ## Unreleased
 
+## [v5.3.2] - 2025-08-09
+
+### Changed
+
+- [lustre/runtime] Fixed a bug where the server component runtime was actually an outdated bundle.
+
+
+## [v5.3.1] - 2025-08-09
+
 ### Changed
 
 - [lustre/runtime] Fixed a bug where using `element.unsafe_raw_html` would not correctly create the DOM node.
