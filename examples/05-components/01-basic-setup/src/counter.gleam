@@ -30,7 +30,7 @@ pub fn element() -> Element(msg) {
 // MODEL -----------------------------------------------------------------------
 
 /// The state for our component will never leak outside the component itself.
-/// It's encpasulated the same way internal state for native HTML elements is.
+/// It's encapsulated the same way internal state for native HTML elements is.
 ///
 type Model =
   Int
