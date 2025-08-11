@@ -55,7 +55,7 @@ fn view_xy_pad(
 ) -> Element(msg) {
   let on_mousemove =
     // Custom event handlers can be created using `event.on` and providing a
-    // deoder for the event object. In this case we have a `MouseEvent` which we
+    // decoder for the event object. In this case we have a `MouseEvent` which we
     // decode the x and y coordinates from.
     //
     // For other properties you could decode from this specific event, see the

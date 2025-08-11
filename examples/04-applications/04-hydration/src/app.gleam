@@ -33,7 +33,7 @@ pub fn main() {
   //   by default for all apps and components.
   //
   // - Restore the apps `Model` to the state used to render the page on the
-  //   server. This is necesarry, since otherwise the Lustre client app would
+  //   server. This is necessary, since otherwise the Lustre client app would
   //   immediately override all differences with its values.
   //   Sending some values to the client runtime also means it doesn't have to
   //   fetch them again.
