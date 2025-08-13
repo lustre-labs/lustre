@@ -516,7 +516,9 @@ export class Reconciler {
 
     if (type === "submit") {
       event.detail ??= {};
-      event.detail.formData = [...new FormData(event.target).entries()];
+      event.detail.formData = [
+        ...new FormData(event.target, event.submitter).entries(),
+      ];
     }
 
     const data = this.#useServerEvents
