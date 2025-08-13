@@ -124,7 +124,6 @@ var Reconciler = class {
     this.#exposeKeys = exposeKeys;
   }
   mount(vdom) {
-    console.log("mount", vdom);
     insertMetadataChild(element_kind, null, this.#root, 0, null);
     this.#insertChild(this.#root, null, this.#root[meta], 0, vdom);
   }
@@ -402,7 +401,9 @@ var Reconciler = class {
       event2.stopPropagation();
     if (type === "submit") {
       event2.detail ??= {};
-      event2.detail.formData = [...new FormData(event2.target).entries()];
+      event2.detail.formData = [
+        ...new FormData(event2.target, event2.submitter).entries()
+      ];
     }
     const data = this.#useServerEvents ? createServerEvent(event2, include ?? []) : event2;
     const throttle = throttles.get(type);
