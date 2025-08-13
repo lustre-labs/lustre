@@ -11,12 +11,15 @@ request to fix it.
 
 ## Unreleased
 
+### Changed
+
+- [lustre/runtime] Fixed a bug where form submitter was not included when constructing form data for decoding.
+
 ## [v5.3.2] - 2025-08-09
 
 ### Changed
 
 - [lustre/runtime] Fixed a bug where the server component runtime was actually an outdated bundle.
-
 
 ## [v5.3.1] - 2025-08-09
 
