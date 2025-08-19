@@ -796,8 +796,8 @@ pub fn checked(is_checked: Bool) -> Attribute(msg) {
   boolean_attribute("checked", is_checked)
 }
 
-/// Set the default checked state of a form control. This is the value that will
-/// be shown to users when the input is first rendered and included in the form
+/// Set the default checked state of a form control. This element will appear
+/// checked to users when the input is first rendered and its value will included in the form
 /// submission if the user does not change it.
 ///
 /// Just setting a default value and letting the DOM manage the state of an input
