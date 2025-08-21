@@ -160,7 +160,7 @@ like to install:
 
 > **Note**: the lustre_dev_tools development server watches your filesystem for
 > changes to your gleam code and can automatically reload the browser. For linux
-> users this requires [inotify-tools]() be installed
+> users this requires [inotify-tools](https://github.com/inotify-tools/inotify-tools) be installed
 
 ```sh
 gleam add --dev lustre_dev_tools
