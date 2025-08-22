@@ -14,6 +14,7 @@ request to fix it.
 ### Changed
 
 - [lustre/runtime] Fixed a bug where form submitter was not included when constructing form data for decoding.
+- [lustre/server_component] Fixed numerous bugs in the JavaScript server component runtime.
 
 ## [v5.3.2] - 2025-08-09
 

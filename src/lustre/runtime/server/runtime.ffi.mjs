@@ -1,25 +1,29 @@
-import { diff } from "../../vdom/diff.mjs";
+import * as Diff from "../../vdom/diff.mjs";
 import * as Events from "../../vdom/events.mjs";
 import {
   ClientDispatchedMessage,
   ClientRegisteredCallback,
   ClientDeregisteredCallback,
+  //
   EffectDispatchedMessage,
   EffectEmitEvent,
-  SelfDispatchedMessages,
+  EffectProvidedValue,
+  //
   SystemRequestedShutdown,
 } from "./runtime.mjs";
+import * as Component from "../../component.mjs";
+import * as Effect from "../../effect.mjs";
+import * as Transport from "../transport.mjs";
 import {
-  //
-  Mount,
-  Reconcile,
-  Emit,
-  //
+  Batch,
   AttributeChanged,
+  PropertyChanged,
   EventFired,
+  ContextProvided,
 } from "../transport.mjs";
-import { run as decode } from "../../../../gleam_stdlib/gleam/dynamic/decode.mjs";
-import { Ok } from "../../../gleam.mjs";
+import * as Decode from "../../../../gleam_stdlib/gleam/dynamic/decode.mjs";
+import { Ok, Error, List } from "../../../gleam.mjs";
+import * as Dict from "../../../../gleam_stdlib/gleam/dict.mjs";
 
 //
 
@@ -27,194 +31,245 @@ export class Runtime {
   #model;
   #update;
   #view;
-  #on_attribute_change;
+  #config;
 
   #vdom;
   #events;
+  #providers = Dict.new$();
 
   #callbacks = /* @__PURE__ */ new Set();
 
-  constructor([model, effects], view, update, on_attribute_change) {
+  constructor([model, effects], update, view, config) {
     this.#model = model;
     this.#update = update;
     this.#view = view;
-    this.#on_attribute_change = on_attribute_change;
+    this.#config = config;
 
     this.#vdom = this.#view(this.#model);
     this.#events = Events.from_node(this.#vdom);
 
-    this.#tick(effects.all, false);
+    this.#handle_effect(effects);
   }
 
-  send(message) {
-    if (this.#model === null) return;
+  send(msg) {
+    switch (msg.constructor) {
+      case ClientDispatchedMessage: {
+        const { message } = msg;
+        const next = this.#handle_client_message(message);
+        const diff = Diff.diff(this.#events, this.#vdom, next);
 
-    switch (message.constructor) {
-      case ClientDispatchedMessage:
-        switch (message.message.constructor) {
-          case AttributeChanged: {
-            const { name, value } = message.messgae;
-            let effects = [];
+        this.#vdom = next;
+        this.#events = diff.events;
 
-            const decoder = this.#on_attribute_change.get(name);
-            if (!decoder) break;
-
-            const result = decode(value, decoder);
-            if (result.constructor !== Ok) break;
-
-            const [model, more_effects] = this.#update(this.#model, result[0]);
-
-            this.#model = model;
-            effects.push(more_effects);
-
-            while (effects.length) {
-              this.#tick(effects.shift().all);
-            }
-          }
-
-          case EventFired: {
-            const { path, name, event } = message.message;
-            const [events, result] = Events.handle(
-              this.#events,
-              path,
-              name,
-              event,
-            );
-
-            this.#events = events;
-
-            if (result.constructor === Ok) {
-              this.dispatch(result[0].message);
-            }
-
-            return;
-          }
-        }
+        this.broadcast(Transport.reconcile(diff.patch));
+      }
 
       case ClientRegisteredCallback: {
-        if (this.#callbacks.has(message.callback)) return;
+        const { callback } = msg;
+        this.#callbacks.add(callback);
 
-        const mount = new Mount(this.#vdom);
-
-        this.#callbacks.add(message.callback);
-        message.callback(mount);
-
-        return;
+        callback(
+          Transport.mount(
+            this.#config.open_shadow_root,
+            this.#config.adopt_styles,
+            Dict.keys(this.#config.attributes),
+            Dict.keys(this.#config.properties),
+            Dict.keys(this.#config.contexts),
+            this.#providers,
+            this.#vdom,
+          ),
+        );
       }
 
       case ClientDeregisteredCallback: {
-        this.#callbacks.delete(message.callback);
-
-        return;
+        const { callback } = msg;
+        this.#callbacks.delete(callback);
       }
 
       case EffectDispatchedMessage: {
-        this.dispatch(message.message);
+        const { message } = msg;
+        const [model, effect] = this.#update(this.#model, message);
+        const next = this.#view(model);
+        const diff = Diff.diff(this.#events, this.#vdom, next);
 
-        return;
+        this.#handle_effect(effect);
+
+        this.#model = model;
+        this.#vdom = next;
+        this.#events = diff.events;
+
+        this.broadcast(Transport.reconcile(diff.patch));
       }
 
       case EffectEmitEvent: {
-        const event = new Emit(message.name, message.data);
-
-        for (const callback of this.#callbacks) {
-          callback(event);
-        }
-
-        return;
+        const { name, data } = msg;
+        this.broadcast(Transport.emit(name, data));
       }
 
-      case SelfDispatchedMessages: {
-        let messages = message.messages;
-        let effects = [message.effect];
-
-        for (let list = messages; messages.tail; list = list.tail) {
-          const [model, more_effects] = this.#update(this.#model, list.head);
-
-          this.#model = model;
-          effects.push(more_effects);
-        }
-
-        while (effects.length) {
-          this.#tick(effects.shift().all);
-        }
-
-        return;
+      case EffectProvidedValue: {
+        const { key, value } = msg;
+        this.#providers = Dict.insert(this.#providers, key, value);
+        this.broadcast(Transport.provide(key, value));
       }
 
       case SystemRequestedShutdown: {
         this.#model = null;
         this.#update = null;
         this.#view = null;
-        this.#on_attribute_change = null;
-        this.#events = Events.new$();
+        this.#config = null;
+        this.#vdom = null;
+        this.#events = null;
+        this.#providers = null;
         this.#callbacks.clear();
       }
+
+      default:
+        return undefined;
     }
   }
 
-  dispatch(msg) {
-    const [model, effects] = this.#update(this.#model, msg);
-
-    this.#model = model;
-    this.#tick(effects.all, immediate);
+  broadcast(msg) {
+    for (const callback of this.#callbacks) {
+      callback(msg);
+    }
   }
 
-  #tick(effects) {
-    const queue = [];
-    const effect_params = {
-      root: null,
-      emit: (event, data) => this.#emit(event, data),
-      dispatch: (msg) => queue.push(msg),
-      select: () => {},
-    };
+  #handle_client_message(msg) {
+    switch (msg.constructor) {
+      case Batch: {
+        const { messages } = msg;
+        let model = this.#model;
+        let effect = Effect.none();
 
-    while (true) {
-      for (let list = effects; list.tail; list = list.tail) {
-        list.head(effect_params);
+        for (let list = messages; list.head; list = list.tail) {
+          const result = this.#handle_client_message(list.head);
+
+          if (result instanceof Ok) {
+            model = result[0][0];
+            effect = Effect.batch(List.fromArray([effect, result[0][1]]));
+            break;
+          }
+        }
+
+        this.#handle_effect(effect);
+        this.#model = model;
+
+        return this.#view(this.#model);
       }
 
-      if (!queue.length) {
-        break;
+      case AttributeChanged: {
+        const { name, value } = msg;
+        const result = this.#handle_attribute_change(name, value);
+
+        if (result instanceof Error) {
+          return this.#vdom;
+        } else {
+          const [model, effects] = result[0];
+          this.#handle_effect(effects);
+          this.#model = model;
+
+          return this.#view(this.#model);
+        }
       }
 
-      const msg = queue.shift();
+      case PropertyChanged: {
+        const { name, value } = msg;
+        const result = this.#handle_properties_change(name, value);
 
-      [this.#model, effects] = this.#update(this.#model, msg);
+        if (result instanceof Error) {
+          return this.#vdom;
+        } else {
+          const [model, effects] = result[0];
+          this.#handle_effect(effects);
+          this.#model = model;
+
+          return this.#view(this.#model);
+        }
+      }
+
+      case EventFired: {
+        const { path, name, event } = msg;
+        const [events, result] = Events.handle(this.#events, path, name, event);
+
+        this.#events = events;
+
+        if (result instanceof Error) {
+          return this.#vdom;
+        } else {
+          const [model, effects] = this.#update(this.#model, result[0].message);
+          this.#handle_effect(effects);
+          this.#model = model;
+
+          return this.#view(this.#model);
+        }
+      }
+
+      case ContextProvided: {
+        const { key, value } = msg;
+        let result = Dict.get(this.#config.contexts, key);
+
+        if (result instanceof Error) {
+          return this.#vdom;
+        }
+
+        result = Decode.run(value, result[0]);
+
+        if (result instanceof Error) {
+          return this.#vdom;
+        }
+
+        const [model, effects] = this.#update(this.#model, result[0]);
+        this.#handle_effect(effects);
+        this.#model = model;
+
+        return this.#view(this.#model);
+      }
     }
-
-    this.#render();
   }
 
-  #render() {
-    const next = this.#view(this.#model);
-    const { patch, events } = diff(this.#events, this.#vdom, next);
-    this.#events = events;
-    this.#vdom = next;
+  #handle_attribute_change(name, value) {
+    const result = Dict.get(this.#config.attributes, name);
 
-    const reconcile = new Reconcile(patch);
+    switch (result.constructor) {
+      case Ok:
+        return result[0](value);
 
-    for (const callback of this.#callbacks) {
-      callback(reconcile);
+      case Error:
+        return new Error(undefined);
     }
   }
 
-  #emit(event, data) {
-    const message = new Emit(event, data);
+  #handle_properties_change(name, value) {
+    const result = Dict.get(this.#config.properties, name);
 
-    for (const callback of this.#callbacks) {
-      callback(message);
+    switch (result.constructor) {
+      case Ok:
+        return result[0](value);
+
+      case Error:
+        return new Error(undefined);
     }
+  }
+
+  #handle_effect(effect) {
+    const dispatch = (message) =>
+      this.send(new EffectDispatchedMessage(message));
+    const emit = (name, data) => this.send(new EffectEmitEvent(name, data));
+    const select = () => undefined;
+    const internals = () => undefined;
+    const provide = (key, value) =>
+      this.send(new EffectProvidedValue(key, value));
+
+    globalThis.queueMicrotask(() => {
+      Effect.perform(effect, dispatch, emit, select, internals, provide);
+    });
   }
 }
 
 export const start = (app, flags) => {
-  return new Runtime(
-    app.init(flags),
-    app.update,
-    app.view,
-    app.on_attribute_change,
-  );
+  const config = Component.to_server_component_config(app.config);
+
+  return new Ok(new Runtime(app.init(flags), app.update, app.view, config));
 };
 
 export const send = (runtime, message) => {

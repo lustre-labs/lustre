@@ -120,8 +120,6 @@ pub type Message(msg) {
   //
   MonitorReportedDown(monitor: Monitor)
   //
-  SelfDispatchedMessages(messages: List(msg), effect: Effect(msg))
-  //
   SystemRequestedShutdown
 }
 
@@ -247,24 +245,6 @@ fn loop(
         dict.filter(state.subscribers, fn(_, m) { m != monitor })
 
       actor.continue(State(..state, subscribers:))
-    }
-
-    SelfDispatchedMessages(messages: [], effect:) -> {
-      let vdom = state.view(state.model)
-      let Diff(patch:, events:) = diff(state.events, state.vdom, vdom)
-
-      handle_effect(state.self, effect)
-      broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))
-
-      actor.continue(State(..state, vdom:, events:))
-    }
-
-    SelfDispatchedMessages(messages: [message, ..messages], effect:) -> {
-      let #(model, more_effects) = state.update(state.model, message)
-      let effect = effect.batch([effect, more_effects])
-      let state = State(..state, model:)
-
-      loop(state, SelfDispatchedMessages(messages, effect))
     }
 
     SystemRequestedShutdown -> {
