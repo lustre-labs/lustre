@@ -14,7 +14,7 @@ jobs:
         with:
           otp-version: "27.0"
           rebar3-version: "3"
-          gleam-version: "1.11.1"
+          gleam-version: "1.12.0"
 
       - run: |
           version="v$(cat gleam.toml | grep -m 1 "version" | sed -r "s/version *= *\"([[:digit:].]+)\"/\1/")"
