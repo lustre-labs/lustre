@@ -11,6 +11,8 @@ request to fix it.
 
 ## Unreleased
 
+## [v5.3.4] - 2025-08-23
+
 ### Changed
 
 - [lustre/server_component] Fixed even more bugs in the JavaScript server component runtime.
