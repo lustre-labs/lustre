@@ -62,6 +62,8 @@ export class Runtime {
         this.#events = diff.events;
 
         this.broadcast(Transport.reconcile(diff.patch));
+
+        return undefined;
       }
 
       case ClientRegisteredCallback: {
@@ -79,11 +81,15 @@ export class Runtime {
             this.#vdom,
           ),
         );
+
+        return undefined;
       }
 
       case ClientDeregisteredCallback: {
         const { callback } = msg;
         this.#callbacks.delete(callback);
+
+        return undefined;
       }
 
       case EffectDispatchedMessage: {
@@ -99,17 +105,23 @@ export class Runtime {
         this.#events = diff.events;
 
         this.broadcast(Transport.reconcile(diff.patch));
+
+        return undefined;
       }
 
       case EffectEmitEvent: {
         const { name, data } = msg;
         this.broadcast(Transport.emit(name, data));
+
+        return undefined;
       }
 
       case EffectProvidedValue: {
         const { key, value } = msg;
         this.#providers = Dict.insert(this.#providers, key, value);
         this.broadcast(Transport.provide(key, value));
+
+        return undefined;
       }
 
       case SystemRequestedShutdown: {
@@ -121,6 +133,8 @@ export class Runtime {
         this.#events = null;
         this.#providers = null;
         this.#callbacks.clear();
+
+        return undefined;
       }
 
       default:
