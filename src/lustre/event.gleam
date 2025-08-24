@@ -145,6 +145,18 @@ pub fn stop_propagation(event: Attribute(msg)) -> Attribute(msg) {
 /// This is particularly useful for server components where many events in quick
 /// succession can introduce problems because of network latency.
 ///
+/// The unit of `delay` is millisecond, same as JavaScript's `setTimeout`.
+///
+/// ### Example:
+///
+/// ```gleam
+/// type Msg {
+///     UserInputText(String)
+/// }
+/// 
+/// html.input([event.debounce(event.on_input(fn(v) { UserInputText(v) }), 200)])
+/// ```
+///
 /// > **Note**: debounced events inherently introduce latency. Try to consider
 /// > typical interaction patterns and experiment with different delays to balance
 /// > responsiveness and update frequency.
@@ -167,6 +179,8 @@ pub fn debounce(event: Attribute(msg), delay: Int) -> Attribute(msg) {
 ///
 /// This is particularly useful for server components where many events in quick
 /// succession can introduce problems because of network latency.
+///
+/// The unit of `delay` is millisecond, same as JavaScript's `setTimeout`.
 ///
 /// > **Note**: throttled events inherently reduce precision. Try to consider
 /// > typical interaction patterns and experiment with different delays to balance
