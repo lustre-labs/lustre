@@ -1,0 +1,5 @@
+---
+version: 1.3.1
+title: [html] Default checked attribute should be rendered as checked attribute
+---
+<input type="checkbox" checked>

@@ -162,6 +162,33 @@ pub fn default_value_attribute_test() {
   |> snapshot("Default value attribute should be rendered as value attribute")
 }
 
+pub fn default_checked_attribute_test() {
+  use <- lustre_test.test_filter("default_checked_attribute_test")
+
+  let input =
+    html.input([
+      attribute.type_("checkbox"),
+      attribute.default_checked(True),
+    ])
+
+  input
+  |> snapshot(
+    "Default checked attribute should be rendered as checked attribute",
+  )
+}
+
+pub fn default_selected_attribute_test() {
+  use <- lustre_test.test_filter("default_selected_attribute_test")
+
+  let input =
+    html.select([], [html.option([attribute.default_selected(True)], "")])
+
+  input
+  |> snapshot(
+    "Default selected attribute should be rendered as selected attribute",
+  )
+}
+
 // UTILS -----------------------------------------------------------------------
 
 fn snapshot(el: Element(msg), title: String) -> Nil {
