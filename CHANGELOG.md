@@ -11,6 +11,10 @@ request to fix it.
 
 ## Unreleased
 
+### Changed
+
+- [lustre/event] Correctly document the unit used for `debounce` and `throttle`.
+
 ## [v5.3.4] - 2025-08-23
 
 ### Changed
