@@ -14,6 +14,7 @@ request to fix it.
 ### Changed
 
 - [lustre/event] Correctly document the unit used for `debounce` and `throttle`.
+- [lustre/server_component] Fixed a bug where listening to attribute changes would crash the JavaScript server component runtime.
 
 ## [v5.3.4] - 2025-08-23
 

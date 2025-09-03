@@ -178,7 +178,7 @@ export class Runtime {
         if (result instanceof Error) {
           return this.#vdom;
         } else {
-          const [model, effects] = result[0];
+          const [model, effects] = this.#update(this.#model, result[0]);
           this.#handle_effect(effects);
           this.#model = model;
 
@@ -193,7 +193,7 @@ export class Runtime {
         if (result instanceof Error) {
           return this.#vdom;
         } else {
-          const [model, effects] = result[0];
+          const [model, effects] = this.#update(this.#model, result[0]);
           this.#handle_effect(effects);
           this.#model = model;
 
