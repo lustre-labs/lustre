@@ -159,7 +159,7 @@ fn read(key: String, to_msg: fn(Result(String, Nil)) -> msg) -> Effect(msg) {
   })
 }
 
-@external(javascript, "ffi.mjs", "read")
+@external(javascript, "./ffi.mjs", "read")
 fn do_read(key: String) -> Result(String, Nil) {
   Error(Nil)
 }
@@ -227,7 +227,7 @@ fn write(key: String, value: String) -> Effect(msg) {
   })
 }
 
-@external(javascript, "ffi.mjs", "write")
+@external(javascript, "./ffi.mjs", "write")
 fn do_write(key: String, value: String) -> Nil {
   Nil
 }
