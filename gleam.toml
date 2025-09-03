@@ -1,5 +1,5 @@
 name = "lustre"
-version = "5.3.4"
+version = "5.3.5"
 
 description = "A Gleam web framework for building HTML templates, single page applications, and real-time server components."
 repository = { type = "github", user = "lustre-labs", repo = "lustre" }
