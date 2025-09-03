@@ -52,14 +52,13 @@ export class Runtime {
       const context = this.#contexts.get(event.context);
 
       if (event.subscribe) {
-        const callbackRef = new WeakRef(event.callback);
         const unsubscribe = () => {
           context.subscribers = context.subscribers.filter(
-            (subscriber) => subscriber !== callbackRef,
+            (subscriber) => subscriber !== event.callback,
           );
         };
 
-        context.subscribers.push([callbackRef, unsubscribe]);
+        context.subscribers.push([event.callback, unsubscribe]);
         event.callback(context.value, unsubscribe);
       } else {
         event.callback(context.value);
@@ -138,8 +137,7 @@ export class Runtime {
       context.value = value;
 
       for (let i = context.subscribers.length - 1; i >= 0; i--) {
-        const [subscriberRef, unsubscribe] = context.subscribers[i];
-        const subscriber = subscriberRef.deref();
+        const [subscriber, unsubscribe] = context.subscribers[i];
 
         // If the subscriber has been garbage collected, we remove it from the
         // list of subscribers.
