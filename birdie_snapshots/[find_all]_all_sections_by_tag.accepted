@@ -1,5 +1,5 @@
 ---
-version: 1.2.6
+version: 1.3.1
 title: [find_all] All sections by tag
 file: ./test/snapshot/query_find_test.gleam
 test_name: find_all_by_tag_test
