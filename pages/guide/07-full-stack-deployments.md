@@ -11,12 +11,11 @@ refer to the [Lustre SPA deployment guide](./04-spa-deployments.html) instead.
 
 ## Prerequisites
 
-In this guide, we assume that you have a Lustre full-stack application with the
-following _monorepo_ structure consisting of three separate Gleam projects:
+In this guide, we assume that you followed the [Lustre full-stack applications guide](./06-full-stack-applications.html) and have a Lustre full-stack application with the following _monorepo_ structure consisting of three separate Gleam projects:
 
 ```
 /project-root
-  /common     # Shared code and types used by both client and server
+  /shared     # Shared code and types used by both client and server
   /client     # Client-side code targeting JavaScript
   /server     # Server-side code targeting Erlang
 ```
@@ -41,18 +40,18 @@ Create a `Dockerfile` in your project root directory. This file describes how to
 build and run your application in a container.
 
 ```Dockerfile
-ARG GLEAM_VERSION=v1.11.1
+ARG GLEAM_VERSION=v1.12.0
 
 # Build stage - compile the application
 FROM ghcr.io/gleam-lang/gleam:${GLEAM_VERSION}-erlang-alpine AS builder
 
 # Add project code
-COPY ./common /build/common
+COPY ./shared /build/shared
 COPY ./client /build/client
 COPY ./server /build/server
 
 # Install dependencies for all projects
-RUN cd /build/common && gleam deps download
+RUN cd /build/shared && gleam deps download
 RUN cd /build/client && gleam deps download
 RUN cd /build/server && gleam deps download
 
