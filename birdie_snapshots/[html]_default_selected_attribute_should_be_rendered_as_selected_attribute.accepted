@@ -1,0 +1,9 @@
+---
+version: 1.3.1
+title: [html] Default selected attribute should be rendered as selected attribute
+---
+<select>
+  <option selected>
+
+  </option>
+</select>
