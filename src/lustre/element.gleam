@@ -198,6 +198,8 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
 /// content. Lustre will render the provided HTML verbatim, and will not touch
 /// its children except when replacing the entire inner html on changes.
 ///
+/// For HTML elements you can use an empty string for the namespace.
+///
 /// > **Note:** The provided HTML will not be escaped automatically and may expose
 /// > your applications to XSS attacks! Make sure you absolutely trust the HTML you
 /// > pass to this function. In particular, never use this to display un-sanitised
