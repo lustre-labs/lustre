@@ -48,6 +48,34 @@ pub fn void_elements_test() {
   input |> snapshot("Void elements should render as such")
 }
 
+pub fn element_namespaced_void_test() {
+  use <- lustre_test.test_filter("element_namespaced_void_test")
+
+  let input =
+    html.div([], [
+      element.element("link", [], []),
+      element.namespaced("", "link", [], []),
+      element.namespaced("bitter-end", "link", [], []),
+    ])
+
+  input
+  |> snapshot(
+    "Semi-advanced tag functions should still have the HTML void checking",
+  )
+}
+
+pub fn void_advanced_elements_test() {
+  use <- lustre_test.test_filter("void_advanced_elements_test")
+
+  let input =
+    html.div([], [
+      element.advanced("", "link", [], [element.text("Wibble")], False, False),
+      element.advanced("", "link", [], [], False, True),
+    ])
+
+  input |> snapshot("Advanced elements should be able to be void and non-void")
+}
+
 pub fn keyed_void_elements_test() {
   use <- lustre_test.test_filter("keyed_void_elements_test")
 
@@ -69,6 +97,38 @@ pub fn keyed_void_elements_test() {
     ])
 
   input |> snapshot("Keyed void elements should render as such")
+}
+
+pub fn keyed_element_namespaced_void_test() {
+  use <- lustre_test.test_filter("keyed_element_namespaced_void_test")
+
+  let input =
+    keyed.div([], [
+      #("wee", element.element("link", [], [])),
+      #("oo", element.namespaced("", "link", [], [])),
+      #("goes the ambulance", element.namespaced("rapture", "link", [], [])),
+    ])
+
+  input
+  |> snapshot(
+    "Semi-advanced keyed tag functions should still have the HTML void checking",
+  )
+}
+
+pub fn keyed_void_advanced_elements_test() {
+  use <- lustre_test.test_filter("keyed_void_advanced_elements_test")
+
+  let input =
+    keyed.div([], [
+      #(
+        "non-void",
+        element.advanced("", "link", [], [element.text("Wibble")], False, False),
+      ),
+      #("void", element.advanced("", "link", [], [], False, True)),
+    ])
+
+  input
+  |> snapshot("Keyed advanced elements should be able to be void and non-void")
 }
 
 // FRAGMENT TESTS --------------------------------------------------------------

@@ -1,0 +1,10 @@
+---
+version: 1.4.0
+title: [html] Advanced elements should be able to be void and non-void
+---
+<div>
+  <link>
+    Wibble
+  </link>
+  <link>
+</div>

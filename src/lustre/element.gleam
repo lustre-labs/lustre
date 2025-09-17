@@ -111,7 +111,7 @@ pub fn element(
     children: children,
     keyed_children: mutable_map.new(),
     self_closing: False,
-    void: False,
+    void: vnode.is_void_html_element(tag, ""),
   )
 }
 
@@ -133,7 +133,7 @@ pub fn namespaced(
     children:,
     keyed_children: mutable_map.new(),
     self_closing: False,
-    void: False,
+    void: vnode.is_void_html_element(tag, namespace),
   )
 }
 
