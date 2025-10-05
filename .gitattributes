@@ -1,1 +1,3 @@
+* text=auto
+
 test/integration/happy-dom.ffi.mjs linguist-vendored diff=generated
