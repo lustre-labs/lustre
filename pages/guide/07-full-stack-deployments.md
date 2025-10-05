@@ -11,7 +11,9 @@ refer to the [Lustre SPA deployment guide](./04-spa-deployments.html) instead.
 
 ## Prerequisites
 
-In this guide, we assume that you followed the [Lustre full-stack applications guide](./06-full-stack-applications.html) and have a Lustre full-stack application with the following _monorepo_ structure consisting of three separate Gleam projects:
+In this guide, we assume that you followed the [Lustre full-stack applications guide](./06-full-stack-applications.html)
+and have a Lustre full-stack application with the following _monorepo_ structure
+consisting of three separate Gleam projects:
 
 ```
 /project-root

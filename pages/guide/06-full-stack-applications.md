@@ -554,12 +554,9 @@ gleam run -m lustre/dev build --minify --outdir=../server/priv/static
 ```
 
 Typically, building a Lustre application will place the bundled JavaScript in the
-project's `priv/static` directory. Because we're building a full stack application
-we want our server to serve the JavaScript itself. The `--outdir` flag tells the
+project's `dist` directory. Because we're building a full stack application we
+want our server to serve the JavaScript itself. The `--outdir` flag tells the
 build tool to place the output in our _server's_ priv directory instead.
-
-You will also need to change the `script` tag from `/static/client.mjs` to =
-`/static/client.min.mjs` to load your production bundle.
 
 ## Next steps
 

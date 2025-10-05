@@ -84,20 +84,13 @@ jobs:
       - name: Set up Gleam
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "27.0"
-          gleam-version: "1.10.0"
+          otp-version: "28.0"
+          gleam-version: "1.12.0"
           rebar3-version: "3"
       - name: Install dependencies
         run: gleam deps download
       - name: Build app
-        run: gleam run -m lustre/dev build app --minify
-      - name: Copy output to dist
-        run: |
-          mkdir -p dist
-          cp index.html dist/index.html
-          cp -r priv dist/priv
-      - name: Update path in index.html to use minified app
-        run: sed -i 's|priv/static/app.mjs|priv/static/app.min.mjs|' dist/index.html
+        run: gleam run -m lustre/dev build app --minify --outdir=dist
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
@@ -109,15 +102,10 @@ jobs:
         uses: actions/deploy-pages@v4
 ```
 
-> **Note**: Make sure to update the Gleam and OTP versions to match your project's
-> requirements. Also verify that the app name used in the `sed` command matches
-> the name of your application.
-
 This workflow:
 
 - Installs Gleam and its dependencies.
 - Builds the Lustre application.
-- Copies the built application to a `dist/` directory.
 - Uploads the `dist/` directory as an artifact.
 - Deploys the artifact to GitHub Pages.
 
@@ -193,20 +181,13 @@ jobs:
       - name: Set up Gleam
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "27.0"
-          gleam-version: "1.10.0"
+          otp-version: "28.0"
+          gleam-version: "1.12.0"
           rebar3-version: "3"
       - name: Install dependencies
         run: gleam deps download
       - name: Build app
-        run: gleam run -m lustre/dev build app --minify
-      - name: Copy output to dist
-        run: |
-          mkdir -p dist
-          cp index.html dist/index.html
-          cp -r priv dist/priv
-      - name: Update path in index.html to use minified app
-        run: sed -i 's|priv/static/app.mjs|priv/static/app.min.mjs|' dist/index.html
+        run: gleam run -m lustre/dev build app --minify --outdir=dist
       - name: Deploy with Wrangler
         uses: cloudflare/wrangler-action@v3
         with:
@@ -216,9 +197,7 @@ jobs:
 ```
 
 > **Note**: Make sure to replace `<YOUR_PROJECT_NAME>` with the name of your
-Cloudflare Pages project and also to update the Gleam and OTP versions to match
-your project's requirements. Also verify that the app name used in the `sed`
-command matches the name of your application.
+Cloudflare Pages project.
 
 This workflow:
 

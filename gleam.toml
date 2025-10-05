@@ -18,6 +18,7 @@ pages = [
     { title = "", path = "announcements/2025-05-18.html", source = "./pages/announcements/2025-05-18.md" },
     { title = "", path = "announcements/2025-06-23.html", source = "./pages/announcements/2025-06-23.md" },
     { title = "", path = "announcements/2025-08-08.html", source = "./pages/announcements/2025-08-08.md" },
+    { title = "", path = "announcements/2025-10-05.html", source = "./pages/announcements/2025-10-05.md" },
 
     { title = "Changelog", path = "changelog.html", source = "./CHANGELOG.md" },
     { title = "Examples", path = "reference/examples.html", source = "./pages/reference/examples.md" },

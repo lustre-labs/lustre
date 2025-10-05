@@ -1,5 +1,10 @@
 # Announcements
 
+- [2025-10-05](./announcements/2025-10-05.html):
+  Lustre_dev_tools v2.0.0 released! This new release brings new TOML-based
+  configuration, clearer handling of HTML and static assets, and easier onboarding
+  with no native dependencies.
+
 - [2025-08-08](./announcements/2025-08-08.html):
   Lustre v5.3.0 lands with an exciting new _context_ feature for components, a
   new `<lustre-portal>` element, and a more-resilient VDOM.
