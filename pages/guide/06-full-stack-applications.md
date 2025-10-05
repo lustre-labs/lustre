@@ -405,7 +405,7 @@ fn handle_save_groceries(
         Ok(_) -> wisp.ok()
         Error(_) -> wisp.internal_server_error()
       }
-    Error(_) -> wisp.bad_request()
+    Error(_) -> wisp.bad_request("Request failed")
   }
 }
 
@@ -484,7 +484,7 @@ fn serve_index(db: storail.Collection(List(GroceryItem))) -> Response {
       html.head([], [
         html.title([], "Grocery List"),
         html.script(
-          [attribute.type_("module"), attribute.src("/static/client.mjs")],
+          [attribute.type_("module"), attribute.src("/static/client.js")],
           "",
         ),
       ]),
@@ -497,7 +497,7 @@ fn serve_index(db: storail.Collection(List(GroceryItem))) -> Response {
     ])
 
   html
-  |> element.to_document_string_tree
+  |> element.to_document_string
   |> wisp.html_response(200)
 }
 
