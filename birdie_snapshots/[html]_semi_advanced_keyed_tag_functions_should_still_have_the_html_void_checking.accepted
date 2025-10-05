@@ -1,0 +1,9 @@
+---
+version: 1.4.0
+title: [html] Semi-advanced keyed tag functions should still have the HTML void checking
+---
+<div>
+  <link data-lustre-key="wee">
+  <link data-lustre-key="oo">
+  <link xmlns="rapture" data-lustre-key="goes the ambulance"></link>
+</div>

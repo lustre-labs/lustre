@@ -99,11 +99,11 @@ pub fn element(
     children:,
     keyed_children:,
     self_closing:,
-    void: void || is_void_element(tag, namespace),
+    void:,
   )
 }
 
-fn is_void_element(tag: String, namespace: String) -> Bool {
+pub fn is_void_html_element(tag: String, namespace: String) -> Bool {
   case namespace {
     "" ->
       case tag {
