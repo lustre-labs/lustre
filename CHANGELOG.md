@@ -11,14 +11,17 @@ request to fix it.
 
 ## Unreleased
 
-## [v5.3.4] - 2025-09-03
+### Changed
+
+- [lustre/element] `element.advanced` correctly respects the `self_closing` and `void` options when generating HTML strings.
+
+## [v5.3.5] - 2025-09-03
 
 ### Changed
 
 - [lustre/event] Correctly document the unit used for `debounce` and `throttle`.
 - [lustre/runtime] Fix a bug where holding a `WeakRef` to a context subscription function would cause it to GC unpredictably.
 - [lustre/server_component] Fixed a bug where listening to attribute changes would crash the JavaScript server component runtime.
-- [lustre/element] Change `element.advanced` to not override the voidness of the element based on a builtin list of HTML elements. This functionality is maintained for `element.element` and `element.namespaced`.
 
 ## [v5.3.4] - 2025-08-23
 
