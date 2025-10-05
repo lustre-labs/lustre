@@ -4,7 +4,8 @@ import gleam/dict.{type Dict}
 import gleam/dynamic/decode
 import gleam/erlang/process
 import gleam/int
-import glubsub
+import gleam/list
+import group_registry.{type GroupRegistry}
 import lustre.{type App}
 import lustre/attribute.{attribute}
 import lustre/effect.{type Effect}
@@ -16,7 +17,7 @@ import lustre/server_component
 
 // MAIN ------------------------------------------------------------------------
 
-pub fn component() -> App(glubsub.Topic(SharedMsg), Model, Msg) {
+pub fn component() -> App(GroupRegistry(SharedMsg), Model, Msg) {
   lustre.application(init, update, view)
 }
 
@@ -42,36 +43,35 @@ pub type Model {
   Model(
     drawn_points: Dict(#(Int, Int), Color),
     selected_color: Color,
-    topic: glubsub.Topic(SharedMsg),
+    registry: GroupRegistry(SharedMsg),
   )
 }
 
-fn init(topic: glubsub.Topic(SharedMsg)) -> #(Model, Effect(Msg)) {
-  let model = Model(drawn_points: dict.new(), selected_color: Red, topic: topic)
+fn init(registry: GroupRegistry(SharedMsg)) -> #(Model, Effect(Msg)) {
+  let model = Model(drawn_points: dict.new(), selected_color: Red, registry:)
 
-  // When the main app starts our server component, it passes us a glubsub topic
+  // When the main app starts our server component, it passes us a process registry
   // that we can use to communicate with other instances of the whiteboard.
   //
-  // On init, we want to subscribe to this topic to make sure we know what's
-  // going on!
-  //
-  // Note: We do not have to unsubscribe! glubsub will monitor our server
-  // component actor and will automatically unsubscribe us once it shuts down.
+  // On init, we want to subscribe to the "whiteboard" topic so we can receive
+  // messages broadcast to the registry.
   //
   // Note: This still does not make a complete whiteboard app! Try drawing with
   // the first client before connecting the second one.
-  #(model, subscribe(topic, AppReceivedSharedMsg))
+  #(model, subscribe(registry, AppReceivedSharedMsg))
 }
 
 fn subscribe(
-  topic: glubsub.Topic(topic),
+  registry: GroupRegistry(topic),
   on_msg handle_msg: fn(topic) -> msg,
 ) -> Effect(msg) {
-  // Using the special `select` effect, we get a fresh new subject that we can
-  // use to subscribe to glubsub.
-  use _dispatch, subject <- server_component.select
+  // Using the special `select` effect lets us return a `Selector` so that we
+  // can receive messages from processes outside of our server component runtime.
+  use _, _ <- server_component.select
 
-  let assert Ok(_) = glubsub.subscribe(topic, subject)
+  // Joining a topic in the registry returns a `Subject` we need to select on
+  // in order to subscribe to messages sent to that topic.
+  let subject = group_registry.join(registry, "whiteboard", process.self())
 
   // We need to teach the server component runtime to listen for messages on
   // this subject by returning a `Selector` that matches our apps `msg` type.
@@ -85,7 +85,7 @@ fn subscribe(
 // UPDATE ----------------------------------------------------------------------
 
 /// We have 2 kinds of messages:
-/// 
+///
 /// - Messages that originate from this instance of the server-component
 /// - Messages that we receive from and send to the glubsub topic.
 ///
@@ -142,19 +142,20 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       // that intent as a `SharedMsg` over our topic.
       // Later, we will receive that same message ourselves again, at which point
       // we will update our whiteboard.
-      #(model, broadcast(model.topic, ClientDrewCircle(x:, y:, color:)))
+      #(model, broadcast(model.registry, ClientDrewCircle(x:, y:, color:)))
     }
 
     UserClearedScreen -> {
-      #(model, broadcast(model.topic, ClientClearedScreen))
+      #(model, broadcast(model.registry, ClientClearedScreen))
     }
   }
 }
 
-fn broadcast(channel: glubsub.Topic(msg), msg: msg) -> Effect(any) {
-  use _dispatch <- effect.from
-  let assert Ok(_) = glubsub.broadcast(channel, msg)
-  Nil
+fn broadcast(registry: GroupRegistry(msg), msg: msg) -> Effect(any) {
+  use _ <- effect.from
+  use member <- list.each(group_registry.members(registry, "whiteboard"))
+
+  process.send(member, msg)
 }
 
 // VIEW ------------------------------------------------------------------------

@@ -9,4 +9,4 @@ gleam_otp = ">= 1.0.0 and < 2.0.0"
 gleam_stdlib = ">= 0.60.0 and < 2.0.0"
 lustre = { path = "../../../" }
 mist = ">= 5.0.0 and < 6.0.0"
-glubsub = ">= 1.2.0 and < 2.0.0"
+group_registry = ">= 1.0.0 and < 2.0.0"

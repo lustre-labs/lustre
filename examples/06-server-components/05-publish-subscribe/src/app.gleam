@@ -7,7 +7,8 @@ import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/json
 import gleam/option.{type Option, None, Some}
-import glubsub
+import gleam/otp/actor
+import group_registry.{type GroupRegistry}
 import lustre
 import lustre/attribute
 import lustre/element
@@ -19,23 +20,23 @@ import whiteboard
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
-  // In this example, we'll use the `glubsub` library to add a publish-subscribe
-  // mechanism to our whiteboard from the previous example.
+  // In this example, we'll use the `group_registry` library to add a "publish-subscribe"
+  // system to the previous whiteboard example. Now, every client will get its own
+  // instance of the server component runtime, and we'll use the registry to share
+  // messages between them.
   //
-  // Every client will start its own instance of the whiteboard server component,
-  // and will use a glubsub topic to communicate with the other instances.
-  //
-  // Using glubsub, we first have to create a "topic" that we can send messages
-  // and subscribe to. The topic is shared between all clients, so we create
+  // Using group_registry, we first have to create the "registry" that we can send
+  // messages and subscribe to. The registry is passed to all clients, so we create
   // it at the start of our app.
-  let assert Ok(topic) = glubsub.new_topic()
+  let name = process.new_name("whiteboard-registry")
+  let assert Ok(actor.Started(data: registry, ..)) = group_registry.start(name)
 
   let assert Ok(_) =
     fn(request: Request(Connection)) -> Response(ResponseData) {
       case request.path_segments(request) {
         [] -> serve_html()
         ["lustre", "runtime.mjs"] -> serve_runtime()
-        ["ws"] -> serve_whiteboard(request, topic)
+        ["ws"] -> serve_whiteboard(request, registry)
         _ -> response.set_body(response.new(404), mist.Bytes(bytes_tree.new()))
       }
     }
@@ -98,11 +99,11 @@ fn serve_runtime() -> Response(ResponseData) {
 
 fn serve_whiteboard(
   request: Request(Connection),
-  topic: glubsub.Topic(whiteboard.SharedMsg),
+  registry: GroupRegistry(whiteboard.SharedMsg),
 ) -> Response(ResponseData) {
   mist.websocket(
     request:,
-    on_init: init_whiteboard_socket(_, topic),
+    on_init: init_whiteboard_socket(_, registry),
     handler: loop_whiteboard_socket,
     on_close: close_whiteboard_socket,
   )
@@ -123,16 +124,16 @@ type WhiteboardSocketInit =
 
 fn init_whiteboard_socket(
   _socket: mist.WebsocketConnection,
-  topic: glubsub.Topic(whiteboard.SharedMsg),
+  registry: GroupRegistry(whiteboard.SharedMsg),
 ) -> WhiteboardSocketInit {
-  // Compared to the "multiple clients" example, we start a new server
-  // component instance for each client, passing the topic we created to its
+  // Compared to the "multiple clients" example, we now start a new server
+  // component instance for each client, passing the registry we created to its
   // `init` function.
   //
-  // This topic can then used in the whitespace component to communicate with
+  // This registry can then used in the whitespace component to communicate with
   // other component instances. Check out the whitespace component to learn how!
   let whiteboard = whiteboard.component()
-  let assert Ok(component) = lustre.start_server_component(whiteboard, topic)
+  let assert Ok(component) = lustre.start_server_component(whiteboard, registry)
 
   let self = process.new_subject()
   let selector = process.new_selector() |> process.select(self)
