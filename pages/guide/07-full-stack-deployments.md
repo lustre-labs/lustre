@@ -59,8 +59,10 @@ RUN cd /build/server && gleam deps download
 
 # Compile the client code and output to server's static directory
 RUN cd /build/client \
+  # Add this line if your project doesn't already have a dev dependency
+  # on `lustre_dev_tools` - otherwise, you can omit it
   && gleam add --dev lustre_dev_tools \
-  && gleam run -m lustre/dev build app --minify --outdir=/build/server/priv/static
+  && gleam run -m lustre/dev build --minify --outdir=../server/priv/static
 
 # Compile the server code
 RUN cd /build/server \
