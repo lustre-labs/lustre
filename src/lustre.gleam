@@ -410,9 +410,10 @@ pub fn send(
   message message: RuntimeMessage(msg),
 ) -> Nil
 
-/// Dispatch a message to a running application's `update` function. This can be
-/// used as a way for the outside world to communicate with a Lustre app without
-/// the app needing to initiate things with an effect.
+/// Build a message for a running application's `update` function.
+/// 
+/// This message can be delivered to the runtime using [`send`](#send), allowing
+/// communication with a Lustre app without having to use an effect.
 ///
 pub fn dispatch(msg: msg) -> RuntimeMessage(msg) {
   runtime.EffectDispatchedMessage(msg)
