@@ -1,5 +1,5 @@
 ---
-version: 1.2.6
+version: 1.3.1
 title: [html] Keyed void elements should render as such
 ---
 <div>
