@@ -151,16 +151,16 @@ fn loop_whiteboard_socket(
       mist.continue(state)
     }
 
-    mist.Closed | mist.Shutdown -> {
-      server_component.deregister_subject(state.self)
-      |> lustre.send(to: state.component)
-
-      mist.stop()
-    }
+    mist.Closed | mist.Shutdown -> mist.stop()
   }
 }
 
 fn close_whiteboard_socket(state: WhiteboardSocket) -> Nil {
+  // When the websocket connection closes we want to notify the server component
+  // runtime that this client should be deregistered. Lustre sets up a process
+  // monitor and so can handle this automatically in cases where the process
+  // crashes or exists abnormally, but it's good practice to explicitly clean up
+  // when we can.
   server_component.deregister_subject(state.self)
   |> lustre.send(to: state.component)
 }

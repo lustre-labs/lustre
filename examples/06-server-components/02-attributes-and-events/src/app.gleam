@@ -177,16 +177,14 @@ fn loop_counter_socket(
       mist.continue(state)
     }
 
-    mist.Closed | mist.Shutdown -> {
-      server_component.deregister_subject(state.self)
-      |> lustre.send(to: state.component)
-
-      mist.stop()
-    }
+    mist.Closed | mist.Shutdown -> mist.stop()
   }
 }
 
 fn close_counter_socket(state: CounterSocket) -> Nil {
-  server_component.deregister_subject(state.self)
+  // When the websocket connection closes, we need to also shut down the server
+  // component runtime. If we forget to do this we'll end up with a memory leak
+  // and a zombie process!
+  lustre.shutdown()
   |> lustre.send(to: state.component)
 }
