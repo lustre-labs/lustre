@@ -158,4 +158,7 @@ fn loop_chat_socket(
 fn close_chat_socket(state: ChatSocket) -> Nil {
   server_component.deregister_subject(state.self)
   |> lustre.send(to: state.component)
+
+  lustre.shutdown()
+  |> lustre.send(to: state.component)
 }

@@ -189,4 +189,7 @@ fn loop_counter_socket(
 fn close_counter_socket(state: CounterSocket) -> Nil {
   server_component.deregister_subject(state.self)
   |> lustre.send(to: state.component)
+
+  lustre.shutdown()
+  |> lustre.send(to: state.component)
 }
