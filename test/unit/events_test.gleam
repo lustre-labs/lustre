@@ -292,7 +292,7 @@ pub fn event_removed_test() {
 
   let path = path.root |> path.add(0, "")
 
-  let expected = Error([])
+  let expected = Error(Nil)
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 
@@ -340,7 +340,7 @@ pub fn element_removed_test() {
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
-  let expected = Error([])
+  let expected = Error(Nil)
   let #(_, actual) =
     events.handle(events, path.to_string(path), "click", dynamic.nil())
 

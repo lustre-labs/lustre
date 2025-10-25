@@ -5,7 +5,10 @@
 // to src/.
 
 import { Reconciler } from "../../../../build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs";
-import { adoptStylesheets, ContextRequestEvent } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs";
+import {
+  adoptStylesheets,
+  ContextRequestEvent,
+} from "../../../../build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs";
 import {
   mount_kind,
   reconcile_kind,
@@ -121,19 +124,24 @@ export class ServerComponent extends HTMLElement {
           this.#shadowRoot.firstChild.remove();
         }
 
+        const decodeEvent = (event, path, name, include) => {
+          const data = this.#createServerEvent(event, include ?? []);
+          return {
+            kind: event_fired_kind,
+            path,
+            name,
+            data,
+          };
+        };
+
+        const dispatch = (event, data, immediate) => {
+          this.#transport?.send(data);
+        };
+
         this.#reconciler = new Reconciler(
           this.#shadowRoot,
-          (event, path, name) => {
-            this.#transport?.send({
-              kind: event_fired_kind,
-              path,
-              name,
-              event,
-            });
-          },
-          {
-            useServerEvents: true,
-          },
+          decodeEvent,
+          dispatch,
         );
 
         this.#remoteObservedAttributes = new Set(data.observed_attributes);
@@ -344,6 +352,60 @@ export class ServerComponent extends HTMLElement {
     }
 
     this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
+  }
+
+  /** Server components send the event data as a JSON object over the network to
+   *  the server component runtime. Out of the box this would effectively do nothing
+   *  because the event object is not serialisable: almost every property is
+   *  non-enumerable.
+   *
+   *  To counter this, users can provide a list of properties they'd like the runtime
+   *  to include in the event data. Each property is a dot-separated string that
+   *  represents the traversal path to the desired property.
+   *
+   */
+  #createServerEvent(event, include = []) {
+    const data = {};
+
+    // It's overwhelmingly likely that if someone is listening for input or change
+    // events that they're interested in the value of the input. Regardless of
+    // whether they remember to include it in the event, we'll include it for them.
+    if (event.type === "input" || event.type === "change") {
+      include.push("target.value");
+    }
+
+    // We have non-standard handling of the submit event in Lustre. We automatically
+    // extract the form fields into a special `formData` property on the event's
+    // `detail` field. This is because we need a way for normal Lustre apps to get
+    // at this data without needing to go through FFI to construct a `new FormData`
+    // themselves – this would be impossible for server components!
+    //
+    // If the user is handling a submit event they almost definitely want to know
+    // about the form's data, so we always include it.
+    if (event.type === "submit") {
+      include.push("detail.formData");
+    }
+
+    for (const property of include) {
+      const path = property.split(".");
+
+      for (let i = 0, input = event, output = data; i < path.length; i++) {
+        // If we're at the end of the path we just do a straight assignment. If the
+        // value at this path is an object it's likely the properties are still
+        // unenumerable, but that's what they asked for!
+        if (i === path.length - 1) {
+          output[path[i]] = input[path[i]];
+          break;
+        }
+
+        // For every step, we make sure to insert an empty object if we haven't
+        // already visited this particular key in the path.
+        output = output[path[i]] ??= {};
+        input = input[path[i]];
+      }
+    }
+
+    return data;
   }
 }
 

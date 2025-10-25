@@ -135,19 +135,15 @@ const getPath = (node) => {
 export class Reconciler {
   #root = null;
 
-  #dispatch = () => {};
+  #decodeEvent;
+  #dispatch;
 
-  #useServerEvents = false;
   #exposeKeys = false;
 
-  constructor(
-    root,
-    dispatch,
-    { useServerEvents = false, exposeKeys = false } = {},
-  ) {
+  constructor(root, decodeEvent, dispatch, { exposeKeys = false } = {}) {
     this.#root = root;
+    this.#decodeEvent = decodeEvent;
     this.#dispatch = dispatch;
-    this.#useServerEvents = useServerEvents;
     this.#exposeKeys = exposeKeys;
   }
 
@@ -521,9 +517,7 @@ export class Reconciler {
       ];
     }
 
-    const data = this.#useServerEvents
-      ? createServerEvent(event, include ?? [])
-      : event;
+    const data = this.#decodeEvent(event, path, type, include);
 
     const throttle = throttles.get(type);
     if (throttle) {
@@ -533,7 +527,7 @@ export class Reconciler {
       if (now > last + throttle.delay) {
         throttle.last = now;
         throttle.lastEvent = event;
-        this.#dispatch(data, path, type, immediate);
+        this.#dispatch(event, data, immediate);
       }
     }
 
@@ -543,12 +537,12 @@ export class Reconciler {
 
       debounce.timeout = setTimeout(() => {
         if (event === throttles.get(type)?.lastEvent) return;
-        this.#dispatch(data, path, type, immediate);
+        this.#dispatch(event, data, immediate);
       }, debounce.delay);
     }
 
     if (!throttle && !debounce) {
-      this.#dispatch(data, path, type, immediate);
+      this.#dispatch(event, data, immediate);
     }
   }
 }
@@ -595,60 +589,6 @@ const handleEvent = (event) => {
   const { currentTarget, type } = event;
   const handler = currentTarget[meta].handlers.get(type);
   handler(event);
-};
-
-/** Server components send the event data as a JSON object over the network to
- *  the server component runtime. Out of the box this would effectively do nothing
- *  because the event object is not serialisable: almost every property is
- *  non-enumerable.
- *
- *  To counter this, users can provide a list of properties they'd like the runtime
- *  to include in the event data. Each property is a dot-separated string that
- *  represents the traversal path to the desired property.
- *
- */
-const createServerEvent = (event, include = []) => {
-  const data = {};
-
-  // It's overwhelmingly likely that if someone is listening for input or change
-  // events that they're interested in the value of the input. Regardless of
-  // whether they remember to include it in the event, we'll include it for them.
-  if (event.type === "input" || event.type === "change") {
-    include.push("target.value");
-  }
-
-  // We have non-standard handling of the submit event in Lustre. We automatically
-  // extract the form fields into a special `formData` property on the event's
-  // `detail` field. This is because we need a way for normal Lustre apps to get
-  // at this data without needing to go through FFI to construct a `new FormData`
-  // themselves – this would be impossible for server components!
-  //
-  // If the user is handling a submit event they almost definitely want to know
-  // about the form's data, so we always include it.
-  if (event.type === "submit") {
-    include.push("detail.formData");
-  }
-
-  for (const property of include) {
-    const path = property.split(".");
-
-    for (let i = 0, input = event, output = data; i < path.length; i++) {
-      // If we're at the end of the path we just do a straight assignment. If the
-      // value at this path is an object it's likely the properties are still
-      // unenumerable, but that's what they asked for!
-      if (i === path.length - 1) {
-        output[path[i]] = input[path[i]];
-        break;
-      }
-
-      // For every step, we make sure to insert an empty object if we haven't
-      // already visited this particular key in the path.
-      output = output[path[i]] ??= {};
-      input = input[path[i]];
-    }
-  }
-
-  return data;
 };
 
 // ATTRIBUTE SPECIAL CASES -----------------------------------------------------
