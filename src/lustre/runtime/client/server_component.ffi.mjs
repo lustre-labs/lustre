@@ -130,7 +130,7 @@ export class ServerComponent extends HTMLElement {
             kind: event_fired_kind,
             path,
             name,
-            data,
+            event: data,
           };
         };
 

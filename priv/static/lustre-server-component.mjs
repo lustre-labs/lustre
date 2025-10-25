@@ -643,7 +643,7 @@ var ServerComponent = class extends HTMLElement {
             kind: event_fired_kind,
             path,
             name,
-            data: data2
+            event: data2
           };
         };
         const dispatch2 = (event2, data2) => {
