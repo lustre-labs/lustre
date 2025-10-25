@@ -134,7 +134,7 @@ export class ServerComponent extends HTMLElement {
           };
         };
 
-        const dispatch = (event, data, immediate) => {
+        const dispatch = (event, data) => {
           this.#transport?.send(data);
         };
 

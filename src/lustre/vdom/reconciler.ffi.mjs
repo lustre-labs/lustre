@@ -504,7 +504,6 @@ export class Reconciler {
       prevent_default: prevent,
       stop_propagation: stop,
       include,
-      immediate,
     } = attribute;
 
     if (prevent.kind === always_kind) event.preventDefault();
@@ -527,7 +526,7 @@ export class Reconciler {
       if (now > last + throttle.delay) {
         throttle.last = now;
         throttle.lastEvent = event;
-        this.#dispatch(event, data, immediate);
+        this.#dispatch(event, data);
       }
     }
 
@@ -537,12 +536,12 @@ export class Reconciler {
 
       debounce.timeout = setTimeout(() => {
         if (event === throttles.get(type)?.lastEvent) return;
-        this.#dispatch(event, data, immediate);
+        this.#dispatch(event, data);
       }, debounce.delay);
     }
 
     if (!throttle && !debounce) {
-      this.#dispatch(event, data, immediate);
+      this.#dispatch(event, data);
     }
   }
 }

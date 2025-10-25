@@ -188,8 +188,8 @@ export const make_component = ({ init, update, view, config }, name) => {
       }
     }
 
-    dispatch(msg, immediate = false) {
-      this.#runtime.dispatch(msg, immediate);
+    dispatch(msg) {
+      this.#runtime.dispatch(msg);
     }
 
     emit(event, data) {

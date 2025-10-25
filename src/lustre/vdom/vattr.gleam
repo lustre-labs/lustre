@@ -22,7 +22,6 @@ pub type Attribute(msg) {
     include: List(String),
     prevent_default: EventBehaviour,
     stop_propagation: EventBehaviour,
-    immediate: Bool,
     debounce: Int,
     throttle: Int,
   )
@@ -60,7 +59,6 @@ pub fn event(
   include include: List(String),
   prevent_default prevent_default: EventBehaviour,
   stop_propagation stop_propagation: EventBehaviour,
-  immediate immediate: Bool,
   debounce debounce: Int,
   throttle throttle: Int,
 ) -> Attribute(msg) {
@@ -71,7 +69,6 @@ pub fn event(
     include:,
     prevent_default:,
     stop_propagation:,
-    immediate:,
     debounce:,
     throttle:,
   )
@@ -160,7 +157,6 @@ pub fn to_json(attribute: Attribute(msg)) -> Json {
       include:,
       prevent_default:,
       stop_propagation:,
-      immediate:,
       debounce:,
       throttle:,
       ..,
@@ -171,7 +167,6 @@ pub fn to_json(attribute: Attribute(msg)) -> Json {
         include,
         prevent_default,
         stop_propagation,
-        immediate,
         debounce,
         throttle,
       )
@@ -198,7 +193,6 @@ fn event_to_json(
   include: List(String),
   prevent_default: EventBehaviour,
   stop_propagation: EventBehaviour,
-  immediate: Bool,
   debounce: Int,
   throttle: Int,
 ) {
@@ -211,7 +205,6 @@ fn event_to_json(
   |> json_object_builder.object("stop_propagation", {
     event_behaviour_to_json_builder(stop_propagation)
   })
-  |> json_object_builder.bool("immediate", immediate)
   |> json_object_builder.int("debounce", debounce)
   |> json_object_builder.int("throttle", throttle)
   |> json_object_builder.build

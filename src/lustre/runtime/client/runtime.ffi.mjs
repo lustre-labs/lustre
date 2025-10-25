@@ -68,7 +68,7 @@ export class Runtime {
     const decodeEvent = (event, path, name) =>
       Events.decode(this.#events, path, name, event);
 
-    const dispatch = (event, data, immediate) => {
+    const dispatch = (event, data) => {
       const [events, result] = Events.dispatch(this.#events, data);
       this.#events = events;
 
@@ -104,9 +104,7 @@ export class Runtime {
 
   root = null;
 
-  dispatch(msg, immediate = false) {
-    this.#shouldFlush ||= immediate;
-
+  dispatch(msg) {
     if (this.#shouldQueue) {
       this.#queue.push(msg);
     } else {
@@ -178,7 +176,7 @@ export class Runtime {
   #shouldFlush = false;
 
   #actions = {
-    dispatch: (msg, immediate) => this.dispatch(msg, immediate),
+    dispatch: (msg) => this.dispatch(msg),
     emit: (event, data) => this.emit(event, data),
     select: () => {},
     root: () => this.root,
