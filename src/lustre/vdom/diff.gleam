@@ -700,7 +700,6 @@ fn diff_attributes(
           let has_changes =
             prev.prevent_default.kind != next.prevent_default.kind
             || prev.stop_propagation.kind != next.stop_propagation.kind
-            || prev.immediate != next.immediate
             || prev.debounce != next.debounce
             || prev.throttle != next.throttle
 

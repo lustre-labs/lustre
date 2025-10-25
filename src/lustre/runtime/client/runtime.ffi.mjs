@@ -65,8 +65,11 @@ export class Runtime {
       }
     });
 
-    this.#reconciler = new Reconciler(this.root, (event, path, name) => {
-      const [events, result] = Events.handle(this.#events, path, name, event);
+    const decodeEvent = (event, path, name) =>
+      Events.decode(this.#events, path, name, event);
+
+    const dispatch = (event, data) => {
+      const [events, result] = Events.dispatch(this.#events, data);
       this.#events = events;
 
       if (result.isOk()) {
@@ -77,7 +80,9 @@ export class Runtime {
 
         this.dispatch(handler.message, false);
       }
-    });
+    };
+
+    this.#reconciler = new Reconciler(this.root, decodeEvent, dispatch);
 
     // We want the first render to be synchronous too
     // The initial vdom is whatever we can virtualise from the root node when we
@@ -99,9 +104,7 @@ export class Runtime {
 
   root = null;
 
-  dispatch(msg, immediate = false) {
-    this.#shouldFlush ||= immediate;
-
+  dispatch(msg) {
     if (this.#shouldQueue) {
       this.#queue.push(msg);
     } else {
@@ -173,7 +176,7 @@ export class Runtime {
   #shouldFlush = false;
 
   #actions = {
-    dispatch: (msg, immediate) => this.dispatch(msg, immediate),
+    dispatch: (msg) => this.dispatch(msg),
     emit: (event, data) => this.emit(event, data),
     select: () => {},
     root: () => this.root,

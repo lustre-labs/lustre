@@ -55,7 +55,6 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
     include: constants.empty_list,
     prevent_default: vattr.never,
     stop_propagation: vattr.never,
-    immediate: is_immediate_event(name),
     debounce: 0,
     throttle: 0,
   )
@@ -82,7 +81,6 @@ pub fn advanced(name: String, handler: Decoder(Handler(msg))) -> Attribute(msg) 
     include: constants.empty_list,
     prevent_default: vattr.possible,
     stop_propagation: vattr.possible,
-    immediate: is_immediate_event(name),
     debounce: 0,
     throttle: 0,
   )
@@ -97,14 +95,6 @@ pub fn handler(
   stop_propagation stop_propagation: Bool,
 ) -> Handler(msg) {
   Handler(prevent_default:, stop_propagation:, message:)
-}
-
-fn is_immediate_event(name: String) -> Bool {
-  case name {
-    "input" | "change" | "focus" | "focusin" | "focusout" | "blur" | "select" ->
-      True
-    _ -> False
-  }
 }
 
 /// Indicate that the event should have its default behaviour cancelled. This is
@@ -153,7 +143,7 @@ pub fn stop_propagation(event: Attribute(msg)) -> Attribute(msg) {
 /// type Msg {
 ///     UserInputText(String)
 /// }
-/// 
+///
 /// html.input([event.debounce(event.on_input(fn(v) { UserInputText(v) }), 200)])
 /// ```
 ///

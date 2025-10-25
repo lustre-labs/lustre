@@ -113,14 +113,13 @@ var getPath = (node) => {
 };
 var Reconciler = class {
   #root = null;
-  #dispatch = () => {
-  };
-  #useServerEvents = false;
+  #decodeEvent;
+  #dispatch;
   #exposeKeys = false;
-  constructor(root2, dispatch, { useServerEvents = false, exposeKeys = false } = {}) {
+  constructor(root2, decodeEvent, dispatch2, { exposeKeys = false } = {}) {
     this.#root = root2;
-    this.#dispatch = dispatch;
-    this.#useServerEvents = useServerEvents;
+    this.#decodeEvent = decodeEvent;
+    this.#dispatch = dispatch2;
     this.#exposeKeys = exposeKeys;
   }
   mount(vdom) {
@@ -392,8 +391,7 @@ var Reconciler = class {
     const {
       prevent_default: prevent,
       stop_propagation: stop,
-      include,
-      immediate
+      include
     } = attribute3;
     if (prevent.kind === always_kind)
       event2.preventDefault();
@@ -405,7 +403,7 @@ var Reconciler = class {
         ...new FormData(event2.target, event2.submitter).entries()
       ];
     }
-    const data = this.#useServerEvents ? createServerEvent(event2, include ?? []) : event2;
+    const data = this.#decodeEvent(event2, path, type, include);
     const throttle = throttles.get(type);
     if (throttle) {
       const now = Date.now();
@@ -413,7 +411,7 @@ var Reconciler = class {
       if (now > last + throttle.delay) {
         throttle.last = now;
         throttle.lastEvent = event2;
-        this.#dispatch(data, path, type, immediate);
+        this.#dispatch(event2, data);
       }
     }
     const debounce = debouncers.get(type);
@@ -422,11 +420,11 @@ var Reconciler = class {
       debounce.timeout = setTimeout(() => {
         if (event2 === throttles.get(type)?.lastEvent)
           return;
-        this.#dispatch(data, path, type, immediate);
+        this.#dispatch(event2, data);
       }, debounce.delay);
     }
     if (!throttle && !debounce) {
-      this.#dispatch(data, path, type, immediate);
+      this.#dispatch(event2, data);
     }
   }
 };
@@ -445,27 +443,6 @@ var handleEvent = (event2) => {
   const { currentTarget, type } = event2;
   const handler = currentTarget[meta].handlers.get(type);
   handler(event2);
-};
-var createServerEvent = (event2, include = []) => {
-  const data = {};
-  if (event2.type === "input" || event2.type === "change") {
-    include.push("target.value");
-  }
-  if (event2.type === "submit") {
-    include.push("detail.formData");
-  }
-  for (const property2 of include) {
-    const path = property2.split(".");
-    for (let i = 0, input = event2, output = data; i < path.length; i++) {
-      if (i === path.length - 1) {
-        output[path[i]] = input[path[i]];
-        break;
-      }
-      output = output[path[i]] ??= {};
-      input = input[path[i]];
-    }
-  }
-  return data;
 };
 var syncedBooleanAttribute = /* @__NO_SIDE_EFFECTS__ */ (name) => {
   return {
@@ -660,19 +637,22 @@ var ServerComponent = class extends HTMLElement {
         while (this.#shadowRoot.firstChild) {
           this.#shadowRoot.firstChild.remove();
         }
+        const decodeEvent = (event2, path, name, include) => {
+          const data2 = this.#createServerEvent(event2, include ?? []);
+          return {
+            kind: event_fired_kind,
+            path,
+            name,
+            event: data2
+          };
+        };
+        const dispatch2 = (event2, data2) => {
+          this.#transport?.send(data2);
+        };
         this.#reconciler = new Reconciler(
           this.#shadowRoot,
-          (event2, path, name) => {
-            this.#transport?.send({
-              kind: event_fired_kind,
-              path,
-              name,
-              event: event2
-            });
-          },
-          {
-            useServerEvents: true
-          }
+          decodeEvent,
+          dispatch2
         );
         this.#remoteObservedAttributes = new Set(data.observed_attributes);
         const filteredQueuedAttributes = this.#changedAttributesQueue.filter(
@@ -835,6 +815,37 @@ var ServerComponent = class extends HTMLElement {
       this.#shadowRoot.firstChild.remove();
     }
     this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
+  }
+  /** Server components send the event data as a JSON object over the network to
+   *  the server component runtime. Out of the box this would effectively do nothing
+   *  because the event object is not serialisable: almost every property is
+   *  non-enumerable.
+   *
+   *  To counter this, users can provide a list of properties they'd like the runtime
+   *  to include in the event data. Each property is a dot-separated string that
+   *  represents the traversal path to the desired property.
+   *
+   */
+  #createServerEvent(event2, include = []) {
+    const data = {};
+    if (event2.type === "input" || event2.type === "change") {
+      include.push("target.value");
+    }
+    if (event2.type === "submit") {
+      include.push("detail.formData");
+    }
+    for (const property2 of include) {
+      const path = property2.split(".");
+      for (let i = 0, input = event2, output = data; i < path.length; i++) {
+        if (i === path.length - 1) {
+          output[path[i]] = input[path[i]];
+          break;
+        }
+        output = output[path[i]] ??= {};
+        input = input[path[i]];
+      }
+    }
+    return data;
   }
 };
 var WebsocketTransport = class {

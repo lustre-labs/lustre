@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Dynamic}
-import gleam/dynamic/decode.{type DecodeError, type Decoder}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/function
 import gleam/list
 import lustre/internals/constants
@@ -265,6 +265,32 @@ fn do_remove_children(
 
 // QUERIES ---------------------------------------------------------------------
 
+pub opaque type DecodedEvent(msg) {
+  DecodedEvent(path: String, handler: Handler(msg))
+  DispatchedEvent(path: String)
+}
+
+pub fn decode(events: Events(msg), path: String, name: String, event: Dynamic) {
+  case mutable_map.get(events.handlers, path <> path.separator_event <> name) {
+    Ok(handler) ->
+      case decode.run(event, handler) {
+        Ok(handler) -> DecodedEvent(handler:, path:)
+        Error(_) -> DispatchedEvent(path:)
+      }
+    Error(_) -> DispatchedEvent(path:)
+  }
+}
+
+pub fn dispatch(events: Events(msg), event: DecodedEvent(msg)) {
+  let next_dispatched_paths = [event.path, ..events.next_dispatched_paths]
+  let events = Events(..events, next_dispatched_paths:)
+
+  case event {
+    DecodedEvent(handler:, path: _) -> #(events, Ok(handler))
+    DispatchedEvent(_) -> #(events, Error(Nil))
+  }
+}
+
 ///
 ///
 pub fn handle(
@@ -272,14 +298,9 @@ pub fn handle(
   path: String,
   name: String,
   event: Dynamic,
-) -> #(Events(msg), Result(Handler(msg), List(DecodeError))) {
-  let next_dispatched_paths = [path, ..events.next_dispatched_paths]
-  let events = Events(..events, next_dispatched_paths:)
-
-  case mutable_map.get(events.handlers, path <> path.separator_event <> name) {
-    Ok(handler) -> #(events, decode.run(event, handler))
-    Error(_) -> #(events, Error([]))
-  }
+) -> #(Events(msg), Result(Handler(msg), Nil)) {
+  decode(events, path, name, event)
+  |> dispatch(events, _)
 }
 
 pub fn has_dispatched_events(events: Events(msg), path: Path) {

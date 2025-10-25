@@ -37,8 +37,8 @@ export class Spa {
     }
   }
 
-  dispatch(msg, immediate) {
-    this.#runtime.dispatch(msg, immediate);
+  dispatch(msg) {
+    this.#runtime.dispatch(msg);
   }
 
   emit(event, data) {
@@ -57,4 +57,4 @@ export const start = ({ init, update, view }, selector, flags) => {
   if (!root) return new Error(new ElementNotFound(selector));
 
   return new Ok(new Spa(root, init(flags), update, view));
-}
+};

@@ -4,7 +4,8 @@ import { virtualise } from "../lustre/vdom/virtualise.ffi.mjs";
 
 export function use(callback) {
   return runInBrowserContext(() => {
-    const reconciler = new Reconciler(document.body, () => {}, {
+    const noop = () => {};
+    const reconciler = new Reconciler(document.body, noop, noop, {
       exposeKeys: true,
     });
 
@@ -14,7 +15,7 @@ export function use(callback) {
 
 export function mount(reconciler, vdom) {
   // reset the body to allow multiple `mount` tests using a single browser context.
-  document.body.innerHTML = '';
+  document.body.innerHTML = "";
   reconciler.mount(vdom);
 }
 
@@ -35,19 +36,19 @@ export function get_vdom() {
 function synchronise_value_attributes() {
   // make sure the attributes reflect the current state in the DOM, for example
   // if we only updated the property values.
-  document.querySelectorAll('input, select, option').forEach(el => {
-    el.setAttribute('value', el.value);
+  document.querySelectorAll("input, select, option").forEach((el) => {
+    el.setAttribute("value", el.value);
     if (el.checked) {
-      el.setAttribute('checked', '')
+      el.setAttribute("checked", "");
     } else {
-      el.removeAttribute('checked')
+      el.removeAttribute("checked");
     }
     if (el.selected) {
-      el.setAttribute('selected', '')
+      el.setAttribute("selected", "");
     } else {
-      el.removeAttribute('selected')
+      el.removeAttribute("selected");
     }
-  })
+  });
 }
 
 async function runInBrowserContext(callback) {
