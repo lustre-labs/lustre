@@ -389,7 +389,7 @@ fn serve_index(db: storail.Collection(List(GroceryItem))) -> Response {
     ])
 
   html
-  |> element.to_document_string_tree
+  |> element.to_document_string
   |> wisp.html_response(200)
 }
 
