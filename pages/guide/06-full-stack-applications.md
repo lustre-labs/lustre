@@ -381,7 +381,7 @@ fn serve_index(db: storail.Collection(List(GroceryItem))) -> Response {
       html.head([], [
         html.title([], "Grocery List"),
         html.script(
-          [attribute.type_("module"), attribute.src("/static/client.mjs")],
+          [attribute.type_("module"), attribute.src("/static/client.js")],
           "",
         ),
       ]),
