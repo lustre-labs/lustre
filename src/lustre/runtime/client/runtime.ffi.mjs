@@ -92,9 +92,9 @@ export class Runtime {
     this.#events = Events.new$();
 
     // // We want the first render to be synchronous and force it immediately.
-    // Tick will render our app, and attach event listeners.
     // Afterwards, events triggered by virtualisation will dispatch, if any.
-    this.#tick(effects, true);
+    this.#handleEffects(effects);
+    this.#render();
   }
 
   // PUBLIC API ----------------------------------------------------------------
@@ -181,8 +181,24 @@ export class Runtime {
 
   // A `#tick` is where we process effects and trigger any synchronous updates.
   // Once a tick has been processed a render will be scheduled if none is already.
-  // p0
   #tick(effects, shouldFlush = false) {
+    this.#handleEffects(effects);
+
+    // queue the next frame if we need to.
+    if (!this.#renderTimer) {
+      if (shouldFlush) {
+        // when rendering synchronously, we still want to delay using a microtask
+        // to batch all attribute/property updates.
+        this.#renderTimer = "sync";
+        queueMicrotask(() => this.#render());
+      } else {
+        this.#renderTimer = requestAnimationFrame(() => this.#render());
+      }
+    }
+  }
+
+  // #handleEffects processes all effects, without scheduling a render.
+  #handleEffects(effects) {
     // By flipping this on before we process the list of synchronous effects, we
     // make it so that any messages dispatched immediately will be queued up and
     // applied before the next render.
@@ -218,16 +234,6 @@ export class Runtime {
 
     // Remember to flip this off so subsequent messages trigger another tick.
     this.#shouldQueue = false;
-
-    // Work out whether we need to schedule a render or if we need to
-    if (shouldFlush) {
-      cancelAnimationFrame(this.#renderTimer);
-      this.#render();
-    } else if (!this.#renderTimer) {
-      this.#renderTimer = requestAnimationFrame(() => {
-        this.#render();
-      });
-    }
   }
 
   #render() {

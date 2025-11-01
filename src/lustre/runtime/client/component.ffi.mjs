@@ -226,7 +226,7 @@ export const make_component = ({ init, update, view, config }, name) => {
         const decoded = decode(value, decoder);
 
         if (decoded.isOk()) {
-        this.dispatch(decoded[0], true);
+          this.dispatch(decoded[0], true);
         }
       },
     });
