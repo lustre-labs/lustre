@@ -442,6 +442,12 @@ export class Reconciler {
         if (name === "virtual:defaultValue") {
           node.defaultValue = valueOrDefault;
           return;
+        } else if (name === "virtual:defaultChecked") {
+          node.defaultChecked = true 
+          return;
+        } else if (name === "virtual:defaultSelected") {
+          node.defaultSelected = true 
+          return;
         }
 
         if (valueOrDefault !== getAttribute(node, name)) {

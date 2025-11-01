@@ -252,6 +252,12 @@ pub fn to_string_tree(
     Attribute(name: "virtual:defaultValue", value:, ..) ->
       string_tree.append(html, " value=\"" <> houdini.escape(value) <> "\"")
 
+    Attribute(name: "virtual:defaultChecked", ..) ->
+      string_tree.append(html, " checked")
+
+    Attribute(name: "virtual:defaultSelected", ..) ->
+      string_tree.append(html, " selected")
+
     Attribute(name: "", ..) -> html
     Attribute(name:, value: "", ..) -> string_tree.append(html, " " <> name)
     Attribute(name:, value:, ..) ->

@@ -796,6 +796,19 @@ pub fn checked(is_checked: Bool) -> Attribute(msg) {
   boolean_attribute("checked", is_checked)
 }
 
+/// Set the default checked state of a form control. This element will appear
+/// checked to users when the input is first rendered and its value will included in the form
+/// submission if the user does not change it.
+///
+/// Just setting a default value and letting the DOM manage the state of an input
+/// is known as using [_uncontrolled inputs](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
+/// Doing this means your application cannot set the value of an input after it
+/// is modified without using an effect.
+///
+pub fn default_checked(is_checked: Bool) -> Attribute(msg) {
+  boolean_attribute("virtual:defaultChecked", is_checked)
+}
+
 /// The color space of the serialised CSS color. It also hints to user agents
 /// about what kind of interface to present to the user for selecting a color.
 /// The following values are accepted:
@@ -1102,6 +1115,20 @@ pub fn required(is_required: Bool) -> Attribute(msg) {
 ///
 pub fn selected(is_selected: Bool) -> Attribute(msg) {
   boolean_attribute("selected", is_selected)
+}
+
+/// An `<option>` with this attribute toggled on will be selected when 
+/// its corresponding select is rendered for the first time. Only one
+/// option can be selected at a time, unless the [`"multiple"`](#multiple)
+/// attribute is set on the select element.
+/// 
+/// Just setting a default value and letting the DOM manage the state of an input
+/// is known as using [_uncontrolled inputs](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
+/// Doing this means your application cannot set the value of an input after it
+/// is modified without using an effect.
+///
+pub fn default_selected(is_selected: Bool) -> Attribute(msg) {
+  boolean_attribute("virtual:defaultSelected", is_selected)
 }
 
 /// Size of the control
