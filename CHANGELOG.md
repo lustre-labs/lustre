@@ -16,6 +16,7 @@ request to fix it.
 - [lustre/element] `element.advanced` correctly respects the `self_closing` and `void` options when generating HTML strings.
 - [lustre/event] Fixed a bug where debounced events inside components decoded using the wrong event data.
 - [lustre/runtime] Fixed a bug where nested compoents would sometimes render one animation frame later.
+- [lustre/runtime] Fixed a bug where providing the same context multiple times would re-render all subscribed components.
 
 ## [v5.3.5] - 2025-09-03
 

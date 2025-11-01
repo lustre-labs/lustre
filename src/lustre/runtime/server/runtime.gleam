@@ -229,13 +229,20 @@ fn loop(
     }
 
     EffectProvidedValue(key:, value:) -> {
-      let providers = dict.insert(state.providers, key, value)
+      let providers = case dict.get(state.providers, key) {
+        // we do not need to broadcast an update if the provided value is the same.
+        Ok(old_value) if old_value == value -> state.providers
 
-      broadcast(
-        state.subscribers,
-        state.callbacks,
-        transport.provide(key, value),
-      )
+        _ -> {
+          broadcast(
+            state.subscribers,
+            state.callbacks,
+            transport.provide(key, value),
+          )
+
+          dict.insert(state.providers, key, value)
+        }
+      }
 
       actor.continue(State(..state, providers:))
     }
