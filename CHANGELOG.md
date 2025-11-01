@@ -15,6 +15,8 @@ request to fix it.
 
 - [lustre/attribute] Added the `as_` attribute for specifying the type of a `<link>` element.
 - [lustre/attribute] Added the `blocking` attribute for controlling whether a `<link>` or `<script>` element is blocking or non-blocking.
+- [lustre/attribute] Added the `default_checked` attribute for specifying the default checked state of checkboxes and radio buttons.
+- [lustre/attribute] Added the `default_selected` attribute for specifying the default selected state of options.
 - [lustre/attribute] Added the `integrity` attribute for specifying Subresource Integrity hashes.
 - [lustre/attribute] Added the `open` attribute for controlling whether details elements are open or closed.
 
