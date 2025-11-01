@@ -8,6 +8,7 @@ import * as Events from "../../vdom/events.mjs";
 import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
 import { virtualise } from "../../vdom/virtualise.ffi.mjs";
 import { document } from "../../internals/constants.ffi.mjs";
+import { isEqual } from "../../internals/equals.ffi.mjs";
 
 //
 
@@ -133,6 +134,12 @@ export class Runtime {
       this.#contexts.set(key, { value, subscribers: [] });
     } else {
       const context = this.#contexts.get(key);
+
+      // if the new context we provide is equal to the current context,
+      // we don't have to notify our subscribers about the change.
+      if (isEqual(context.value, value)) {
+        return;
+      }
 
       context.value = value;
 
