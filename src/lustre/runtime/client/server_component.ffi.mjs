@@ -276,6 +276,8 @@ export class ServerComponent extends HTMLElement {
     } else {
       const context = this.#contexts.get(key);
 
+      // we don't have to compare here, since the server runtime only provides us values
+      // if they are already different.
       context.value = value;
 
       for (let i = context.subscribers.length - 1; i >= 0; i--) {

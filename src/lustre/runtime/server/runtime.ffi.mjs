@@ -1,5 +1,6 @@
 import * as Diff from "../../vdom/diff.mjs";
 import * as Events from "../../vdom/events.mjs";
+import { isEqual } from "../../internals/equals.ffi.mjs";
 import {
   ClientDispatchedMessage,
   ClientRegisteredCallback,
@@ -118,6 +119,12 @@ export class Runtime {
 
       case EffectProvidedValue: {
         const { key, value } = msg;
+        const existing = Dict.get(this.#providers, key);
+        // we do not need to broadcast an update if the provided value is the same.
+        if (existing.isOk() && isEqual(existing[0], value)) {
+          return undefined;
+        }
+
         this.#providers = Dict.insert(this.#providers, key, value);
         this.broadcast(Transport.provide(key, value));
 
