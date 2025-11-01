@@ -91,27 +91,24 @@ export class Runtime {
     // The initial set of events is empty, since we just virtualised.
     this.#events = Events.new$();
 
-    // We want the first render to be synchronous...
-    this.#shouldFlush = true;
-
-    // ... and force it immediately. Tick will render our app, attach event
-    // listeners, and reset `#shouldFlush`.
+    // // We want the first render to be synchronous and force it immediately.
+    // Tick will render our app, and attach event listeners.
     // Afterwards, events triggered by virtualisation will dispatch, if any.
-    this.#tick(effects);
+    this.#tick(effects, true);
   }
 
   // PUBLIC API ----------------------------------------------------------------
 
   root = null;
 
-  dispatch(msg) {
+  dispatch(msg, shouldFlush = false) {
     if (this.#shouldQueue) {
       this.#queue.push(msg);
     } else {
       const [model, effects] = this.#update(this.#model, msg);
 
       this.#model = model;
-      this.#tick(effects);
+      this.#tick(effects, shouldFlush);
     }
   }
 
@@ -173,7 +170,6 @@ export class Runtime {
   #beforePaint = empty_list;
   #afterPaint = empty_list;
   #renderTimer = null;
-  #shouldFlush = false;
 
   #actions = {
     dispatch: (msg) => this.dispatch(msg),
@@ -186,7 +182,7 @@ export class Runtime {
   // A `#tick` is where we process effects and trigger any synchronous updates.
   // Once a tick has been processed a render will be scheduled if none is already.
   // p0
-  #tick(effects) {
+  #tick(effects, shouldFlush = false) {
     // By flipping this on before we process the list of synchronous effects, we
     // make it so that any messages dispatched immediately will be queued up and
     // applied before the next render.
@@ -216,14 +212,15 @@ export class Runtime {
 
       // This is a destructuring assignment pattern that is mutating both
       // `this.#model` and the argument to this function: `effects`!
-      [this.#model, effects] = this.#update(this.#model, this.#queue.shift());
+      const msg = this.#queue.shift();
+      [this.#model, effects] = this.#update(this.#model, msg);
     }
 
     // Remember to flip this off so subsequent messages trigger another tick.
     this.#shouldQueue = false;
 
     // Work out whether we need to schedule a render or if we need to
-    if (this.#shouldFlush) {
+    if (shouldFlush) {
       cancelAnimationFrame(this.#renderTimer);
       this.#render();
     } else if (!this.#renderTimer) {
@@ -234,7 +231,6 @@ export class Runtime {
   }
 
   #render() {
-    this.#shouldFlush = false;
     this.#renderTimer = null;
 
     const next = this.#view(this.#model);
@@ -256,8 +252,7 @@ export class Runtime {
       // `#tick` function to allow the runtime to process any microtasks queued
       // by synchronous effects first such as promise callbacks.
       queueMicrotask(() => {
-        this.#shouldFlush = true;
-        this.#tick(effects);
+        this.#tick(effects, true);
       });
     }
 
@@ -268,8 +263,7 @@ export class Runtime {
       this.#afterPaint = empty_list;
 
       requestAnimationFrame(() => {
-        this.#shouldFlush = true;
-        this.#tick(effects);
+        this.#tick(effects, true);
       });
     }
   }
