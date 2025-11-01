@@ -861,7 +861,7 @@ pub fn checked(is_checked: Bool) -> Attribute(msg) {
 /// submission if the user does not change it.
 ///
 /// Just setting a default value and letting the DOM manage the state of an input
-/// is known as using [_uncontrolled inputs](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
+/// is known as using [_uncontrolled inputs_](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
 /// Doing this means your application cannot set the value of an input after it
 /// is modified without using an effect.
 ///
@@ -1177,13 +1177,13 @@ pub fn selected(is_selected: Bool) -> Attribute(msg) {
   boolean_attribute("selected", is_selected)
 }
 
-/// An `<option>` with this attribute toggled on will be selected when 
+/// An `<option>` with this attribute toggled on will be selected when
 /// its corresponding select is rendered for the first time. Only one
 /// option can be selected at a time, unless the [`"multiple"`](#multiple)
 /// attribute is set on the select element.
-/// 
+///
 /// Just setting a default value and letting the DOM manage the state of an input
-/// is known as using [_uncontrolled inputs](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
+/// is known as using [_uncontrolled inputs_](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
 /// Doing this means your application cannot set the value of an input after it
 /// is modified without using an effect.
 ///
@@ -1245,7 +1245,7 @@ pub fn value(control_value: String) -> Attribute(msg) {
 /// submission if the user does not change it.
 ///
 /// Just setting a default value and letting the DOM manage the state of an input
-/// is known as using [_uncontrolled inputs](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
+/// is known as using [_uncontrolled inputs_](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
 /// Doing this means your application cannot set the value of an input after it
 /// is modified without using an effect.
 ///
