@@ -576,6 +576,58 @@ pub fn referrerpolicy(value: String) -> Attribute(msg) {
   attribute("referrerpolicy", value)
 }
 
+/// Specifies the type of the resource being linked to, which is necessary for
+/// request matching, application of correct content security policy, and setting
+/// of correct Accept request header.
+///
+/// > **Note**: this attribute is required when rel="preload" has been set on the
+/// > `<link>` element, optional when `rel="modulepreload"` has been set, and
+/// > otherwise should not be used.
+///
+/// | Value      | Applies to                       |
+/// |------------|----------------------------------|
+/// | "audio"    | `<audio>`                        |
+/// | "document" | `<iframe>`, `<frame>`            |
+/// | "embed"    | `<embed>`                        |
+/// | "fetch"    | fetch, XHR                       |
+/// | "font"     | CSS @font-face                   |
+/// | "image"    | `<img>`, `<image>`, `<picture>`  |
+/// | "object"   | `<object>`                       |
+/// | "script"   | `<script>`, Worker importScripts |
+/// | "style"    | `<link rel="stylesheet">`        |
+/// | "video"    | `<video>`                        |
+/// | "worker"   | Worker, SharedWorker             |
+///
+pub fn as_(value: String) -> Attribute(msg) {
+  attribute("as", value)
+}
+
+/// This attribute explicitly indicates that certain operations should be blocked
+/// until specific conditions are met. It must only be used when the rel attribute
+/// contains the expect or stylesheet keywords. With `rel="expect"`, it indicates
+/// that operations should be blocked until a specific DOM node has been parsed.
+/// With `rel="stylesheet"`, it indicates that operations should be blocked until
+/// an external stylesheet and its critical subresources have been fetched and
+/// applied to the document.
+///
+pub fn blocking(value: Bool) -> Attribute(msg) {
+  attribute("blocking", case value {
+    True -> "render"
+    False -> ""
+  })
+}
+
+/// Provides a base64-encoded hash of the resource being linked to. This is used
+/// by the browser to verify that a fetched resource has not been tampered with.
+///
+/// > **Note**: this attribute is only meaningful on `<link>` elements with either
+/// > `rel="stylesheet"`, `rel="preload"`, or `rel="modulepreload"`. It may also
+/// > be used on `<script>` elements.
+///
+pub fn integrity(hash: String) -> Attribute(msg) {
+  attribute("integrity", hash)
+}
+
 // IMAGE ATTRIBUTES ------------------------------------------------------------
 
 /// Specifies text that should be displayed when the image cannot be rendered.
@@ -680,8 +732,8 @@ pub fn action(url: String) -> Attribute(msg) {
 /// Specifies how form data should be encoded before sending it to the server.
 /// Valid values include:
 ///
-/// | Value                             | Description                           |
-/// |-----------------------------------|---------------------------------------|
+/// | Value                               | Description                           |
+/// |-------------------------------------|---------------------------------------|
 /// | "application/x-www-form-urlencoded" | Default encoding (spaces as +, etc.)  |
 /// | "multipart/form-data"               | Required for file uploads             |
 /// | "text/plain"                        | Simple encoding with minimal escaping  |
