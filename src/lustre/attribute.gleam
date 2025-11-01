@@ -494,6 +494,14 @@ pub fn writingsuggestions(enabled: Bool) -> Attribute(msg) {
   })
 }
 
+// DETAILS ---------------------------------------------------------------------
+
+/// Indicates whether the details element is open or closed.
+///
+pub fn open(is_open: Bool) -> Attribute(msg) {
+  boolean_attribute("open", is_open)
+}
+
 // ANCHOR AND LINK ATTRIBUTES --------------------------------------------------
 
 /// Specifies the URL of a linked resource. This attribute can be used on various

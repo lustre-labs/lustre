@@ -11,6 +11,10 @@ request to fix it.
 
 ## Unreleased
 
+### Added
+
+- [lustre/attribute] Added the `open` attribute for controlling whether details elements are open or closed.
+
 ### Changed
 
 - [lustre/element] `element.advanced` correctly respects the `self_closing` and `void` options when generating HTML strings.
