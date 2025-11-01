@@ -101,14 +101,14 @@ export class Runtime {
 
   root = null;
 
-  dispatch(msg) {
+  dispatch(msg, shouldFlush = false) {
     if (this.#shouldQueue) {
       this.#queue.push(msg);
     } else {
       const [model, effects] = this.#update(this.#model, msg);
 
       this.#model = model;
-      this.#tick(effects);
+      this.#tick(effects, shouldFlush);
     }
   }
 
@@ -171,12 +171,6 @@ export class Runtime {
   #afterPaint = empty_list;
   #renderTimer = null;
 
-  // when a component render triggers messages and updates inside another component,
-  // we want that component to also render synchronously and not lag 1 frame behind.
-  // For this, we keep track of how many nested components we are currently rendering;
-  // if this count is > 0, we render synchronously. Otherwise, we queue an rAF as usual.
-  static #nestedRenderCalls = 0;
-
   #actions = {
     dispatch: (msg) => this.dispatch(msg),
     emit: (event, data) => this.emit(event, data),
@@ -226,7 +220,7 @@ export class Runtime {
     this.#shouldQueue = false;
 
     // Work out whether we need to schedule a render or if we need to
-    if (shouldFlush || Runtime.#nestedRenderCalls > 0) {
+    if (shouldFlush) {
       cancelAnimationFrame(this.#renderTimer);
       this.#render();
     } else if (!this.#renderTimer) {
@@ -237,19 +231,14 @@ export class Runtime {
   }
 
   #render() {
-    Runtime.#nestedRenderCalls += 1;
     this.#renderTimer = null;
 
-    try {
-      const next = this.#view(this.#model);
-      const { patch, events } = diff(this.#events, this.#vdom, next);
+    const next = this.#view(this.#model);
+    const { patch, events } = diff(this.#events, this.#vdom, next);
 
-      this.#events = events;
-      this.#vdom = next;
-      this.#reconciler.push(patch);
-    } finally {
-      Runtime.#nestedRenderCalls -= 1;
-    }
+    this.#events = events;
+    this.#vdom = next;
+    this.#reconciler.push(patch);
 
     // We have performed a render, the DOM has been updated but the browser has
     // not yet been given the opportunity to paint. We queue a microtask to block

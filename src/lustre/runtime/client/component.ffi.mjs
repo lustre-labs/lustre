@@ -113,7 +113,7 @@ export const make_component = ({ init, update, view, config }, name) => {
               this.#contextSubscriptions.set(key, unsubscribe);
 
               if (decoded.isOk()) {
-                this.dispatch(decoded[0]);
+                this.dispatch(decoded[0], true);
               }
             },
             true,
@@ -134,7 +134,7 @@ export const make_component = ({ init, update, view, config }, name) => {
       const decoded = attributes.get(name)(value ?? "");
 
       if (decoded.isOk()) {
-        this.dispatch(decoded[0]);
+        this.dispatch(decoded[0], true);
       }
     }
 
@@ -188,8 +188,8 @@ export const make_component = ({ init, update, view, config }, name) => {
       }
     }
 
-    dispatch(msg) {
-      this.#runtime.dispatch(msg);
+    dispatch(msg, shouldFlush = false) {
+      this.#runtime.dispatch(msg, shouldFlush);
     }
 
     emit(event, data) {
@@ -225,8 +225,8 @@ export const make_component = ({ init, update, view, config }, name) => {
         this[`_${name}`] = value;
         const decoded = decode(value, decoder);
 
-        if (decoded.constructor === Ok) {
-          this.dispatch(decoded[0]);
+        if (decoded.isOk()) {
+        this.dispatch(decoded[0], true);
         }
       },
     });
