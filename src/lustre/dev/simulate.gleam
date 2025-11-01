@@ -184,7 +184,7 @@ pub fn event(
   name event: String,
   data payload: List(#(String, Json)),
 ) -> Simulation(model, msg) {
-  result.unwrap_both({
+  let result = {
     use #(_, path) <- result.try(result.replace_error(
       query.find_path(
         in: simulation.html,
@@ -230,7 +230,12 @@ pub fn event(
     ]
 
     Ok(Simulation(..simulation, history:, model:, html:))
-  })
+  }
+
+  case result {
+    Ok(simulation) -> simulation
+    Error(problem) -> problem
+  }
 }
 
 /// A convenience function that simulates a click event on the first element
