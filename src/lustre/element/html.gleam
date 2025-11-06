@@ -620,14 +620,6 @@ pub fn svg(
   namespaced("http://www.w3.org/2000/svg", "svg", attrs, children)
 }
 
-///
-pub fn math(
-  attrs: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) {
-  element("math", attrs, children)
-}
-
 // HTML ELEMENTS: SCRIPTING ----------------------------------------------------
 
 ///
