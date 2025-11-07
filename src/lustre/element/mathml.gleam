@@ -178,27 +178,18 @@ pub fn mfrac(
 }
 
 ///
-pub fn mn(
-  attrs: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) {
-  namespaced(namespace, "mn", attrs, children)
+pub fn mn(attrs: List(Attribute(msg)), text: String) -> Element(msg) {
+  namespaced(namespace, "mn", attrs, [element.text(text)])
 }
 
 ///
-pub fn mo(
-  attrs: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) {
-  namespaced(namespace, "mo", attrs, children)
+pub fn mo(attrs: List(Attribute(msg)), text: String) -> Element(msg) {
+  namespaced(namespace, "mo", attrs, [element.text(text)])
 }
 
 ///
-pub fn mi(
-  attrs: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) {
-  namespaced(namespace, "mi", attrs, children)
+pub fn mi(attrs: List(Attribute(msg)), text: String) -> Element(msg) {
+  namespaced(namespace, "mi", attrs, [element.text(text)])
 }
 
 ///
@@ -210,19 +201,13 @@ pub fn mpadded(
 }
 
 ///
-pub fn ms(
-  attrs: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) {
-  namespaced(namespace, "ms", attrs, children)
+pub fn ms(attrs: List(Attribute(msg)), text: String) -> Element(msg) {
+  namespaced(namespace, "ms", attrs, [element.text(text)])
 }
 
 ///
-pub fn mspace(
-  attrs: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) {
-  namespaced(namespace, "mspace", attrs, children)
+pub fn mspace(attrs: List(Attribute(msg))) -> Element(msg) {
+  namespaced(namespace, "mspace", attrs, [])
 }
 
 ///
@@ -242,11 +227,8 @@ pub fn mtd(
 }
 
 ///
-pub fn mtext(
-  attrs: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) {
-  namespaced(namespace, "mtext", attrs, children)
+pub fn mtext(attrs: List(Attribute(msg)), text: String) -> Element(msg) {
+  namespaced(namespace, "mtext", attrs, [element.text(text)])
 }
 
 ///
