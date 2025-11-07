@@ -28,14 +28,6 @@ pub fn maction(
 }
 
 ///
-pub fn math(
-  attrs: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) {
-  namespaced(namespace, "math", attrs, children)
-}
-
-///
 pub fn merror(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
