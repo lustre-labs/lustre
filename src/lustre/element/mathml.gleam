@@ -3,6 +3,20 @@
 import lustre/attribute.{type Attribute}
 import lustre/element.{type Element, namespaced}
 
+// CONSTANTS -------------------------------------------------------------------
+
+/// The MathML namespace URI: `"http://www.w3.org/1998/Math/MathML"`. You might use this
+/// with [`element.namespaced`](../element.html#namespaced) to create elements
+/// in the MathML namespace not provided here.
+///
+pub const namespace = "http://www.w3.org/1998/Math/MathML"
+
+// The doc comments (and order) for functions in this module are taken from the
+// MathML Core W3C technical report:
+//
+//   https://www.w3.org/TR/mathml-core/#mathml-elements-and-attributes
+//
+
 // MATHML ELEMENTS: GROUPING ---------------------------------------------------
 
 ///
@@ -10,7 +24,7 @@ pub fn maction(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "maction", attrs, children)
+  namespaced(namespace, "maction", attrs, children)
 }
 
 ///
@@ -18,7 +32,7 @@ pub fn math(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "math", attrs, children)
+  namespaced(namespace, "math", attrs, children)
 }
 
 ///
@@ -26,7 +40,7 @@ pub fn merror(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "merror", attrs, children)
+  namespaced(namespace, "merror", attrs, children)
 }
 
 ///
@@ -34,7 +48,7 @@ pub fn mphantom(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mphantom", attrs, children)
+  namespaced(namespace, "mphantom", attrs, children)
 }
 
 ///
@@ -42,12 +56,7 @@ pub fn mprescripts(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced(
-    "http://www.w3.org/1998/Math/MathML",
-    "mprescripts",
-    attrs,
-    children,
-  )
+  namespaced(namespace, "mprescripts", attrs, children)
 }
 
 ///
@@ -55,7 +64,7 @@ pub fn mrow(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mrow", attrs, children)
+  namespaced(namespace, "mrow", attrs, children)
 }
 
 ///
@@ -63,7 +72,7 @@ pub fn mstyle(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mstyle", attrs, children)
+  namespaced(namespace, "mstyle", attrs, children)
 }
 
 ///
@@ -71,7 +80,7 @@ pub fn semantics(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "semantics", attrs, children)
+  namespaced(namespace, "semantics", attrs, children)
 }
 
 // MATHML ELEMENTS: SCRIPTED ---------------------------------------------------
@@ -81,12 +90,7 @@ pub fn mmultiscripts(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced(
-    "http://www.w3.org/1998/Math/MathML",
-    "mmultiscripts",
-    attrs,
-    children,
-  )
+  namespaced(namespace, "mmultiscripts", attrs, children)
 }
 
 ///
@@ -94,7 +98,7 @@ pub fn mover(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mover", attrs, children)
+  namespaced(namespace, "mover", attrs, children)
 }
 
 ///
@@ -102,7 +106,7 @@ pub fn msub(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "msub", attrs, children)
+  namespaced(namespace, "msub", attrs, children)
 }
 
 ///
@@ -110,7 +114,7 @@ pub fn msubsup(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "msubsup", attrs, children)
+  namespaced(namespace, "msubsup", attrs, children)
 }
 
 ///
@@ -118,7 +122,7 @@ pub fn msup(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "msup", attrs, children)
+  namespaced(namespace, "msup", attrs, children)
 }
 
 ///
@@ -126,7 +130,7 @@ pub fn munder(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "munder", attrs, children)
+  namespaced(namespace, "munder", attrs, children)
 }
 
 ///
@@ -134,12 +138,7 @@ pub fn munderover(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced(
-    "http://www.w3.org/1998/Math/MathML",
-    "munderover",
-    attrs,
-    children,
-  )
+  namespaced(namespace, "munderover", attrs, children)
 }
 
 // MATHML ELEMENTS: RADICAL ----------------------------------------------------
@@ -149,7 +148,7 @@ pub fn mroot(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mroot", attrs, children)
+  namespaced(namespace, "mroot", attrs, children)
 }
 
 ///
@@ -157,7 +156,7 @@ pub fn msqrt(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "msqrt", attrs, children)
+  namespaced(namespace, "msqrt", attrs, children)
 }
 
 // MATHML ELEMENTS: OTHER ------------------------------------------------------
@@ -167,12 +166,7 @@ pub fn annotation(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced(
-    "http://www.w3.org/1998/Math/MathML",
-    "annotation",
-    attrs,
-    children,
-  )
+  namespaced(namespace, "annotation", attrs, children)
 }
 
 ///
@@ -180,12 +174,7 @@ pub fn annotation_xml(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced(
-    "http://www.w3.org/1998/Math/MathML",
-    "annotation-xml",
-    attrs,
-    children,
-  )
+  namespaced(namespace, "annotation-xml", attrs, children)
 }
 
 ///
@@ -193,7 +182,7 @@ pub fn mfrac(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mfrac", attrs, children)
+  namespaced(namespace, "mfrac", attrs, children)
 }
 
 ///
@@ -201,7 +190,7 @@ pub fn mn(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mn", attrs, children)
+  namespaced(namespace, "mn", attrs, children)
 }
 
 ///
@@ -209,7 +198,7 @@ pub fn mo(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mo", attrs, children)
+  namespaced(namespace, "mo", attrs, children)
 }
 
 ///
@@ -217,7 +206,7 @@ pub fn mi(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mi", attrs, children)
+  namespaced(namespace, "mi", attrs, children)
 }
 
 ///
@@ -225,7 +214,7 @@ pub fn mpadded(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mpadded", attrs, children)
+  namespaced(namespace, "mpadded", attrs, children)
 }
 
 ///
@@ -233,7 +222,7 @@ pub fn ms(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "ms", attrs, children)
+  namespaced(namespace, "ms", attrs, children)
 }
 
 ///
@@ -241,7 +230,7 @@ pub fn mspace(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mspace", attrs, children)
+  namespaced(namespace, "mspace", attrs, children)
 }
 
 ///
@@ -249,7 +238,7 @@ pub fn mtable(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mtable", attrs, children)
+  namespaced(namespace, "mtable", attrs, children)
 }
 
 ///
@@ -257,7 +246,7 @@ pub fn mtd(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mtd", attrs, children)
+  namespaced(namespace, "mtd", attrs, children)
 }
 
 ///
@@ -265,7 +254,7 @@ pub fn mtext(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mtext", attrs, children)
+  namespaced(namespace, "mtext", attrs, children)
 }
 
 ///
@@ -273,5 +262,5 @@ pub fn mtr(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  namespaced("http://www.w3.org/1998/Math/MathML", "mtr", attrs, children)
+  namespaced(namespace, "mtr", attrs, children)
 }
