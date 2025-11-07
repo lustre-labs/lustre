@@ -613,6 +613,14 @@ pub fn source(attrs: List(Attribute(msg))) -> Element(msg) {
 // HTML ELEMENTS: SVG AND MATHML -----------------------------------------------
 
 ///
+pub fn math(
+  attrs: List(Attribute(msg)),
+  children: List(Element(msg)),
+) -> Element(msg) {
+  namespaced("http://www.w3.org/1998/Math/MathML", "math", attrs, children)
+}
+
+///
 pub fn svg(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
