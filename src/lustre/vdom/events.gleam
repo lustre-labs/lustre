@@ -287,7 +287,7 @@ pub fn dispatch(events: Events(msg), event: DecodedEvent(msg)) {
 
   case event {
     DecodedEvent(handler:, path: _) -> #(events, Ok(handler))
-    DispatchedEvent(_) -> #(events, Error(Nil))
+    DispatchedEvent(_) -> #(events, constants.error_nil)
   }
 }
 

@@ -5,6 +5,7 @@ import gleam/order
 import gleam/string
 import lustre/attribute
 import lustre/element.{type Element}
+import lustre/internals/constants
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{Attribute}
 import lustre/vdom/vnode.{Element, Fragment, Text, UnsafeInnerHtml}
@@ -267,7 +268,7 @@ pub fn find(
 ) -> Result(Element(msg), Nil) {
   case find_path(in: root, matching: query, index: 0, from: path.root) {
     Ok(#(element, _)) -> Ok(element)
-    Error(_) -> Error(Nil)
+    Error(_) -> constants.error_nil
   }
 }
 
@@ -290,13 +291,13 @@ pub fn find_path(
     FindChild(of: parent, matching: selector) ->
       case find_path(in: root, matching: parent, index:, from: path) {
         Ok(#(element, path)) -> find_direct_child(element, selector, path)
-        Error(_) -> Error(Nil)
+        Error(_) -> constants.error_nil
       }
 
     FindDescendant(of: parent, matching: selector) ->
       case find_path(in: root, matching: parent, index:, from: path) {
         Ok(#(element, path)) -> find_descendant(element, selector, path)
-        Error(_) -> Error(Nil)
+        Error(_) -> constants.error_nil
       }
   }
 }
@@ -310,8 +311,8 @@ fn find_in_children(
   case element {
     Element(children:, ..) | Fragment(children:, ..) ->
       find_in_list(children, query, path |> path.add(index, element.key), 0)
-    UnsafeInnerHtml(..) -> Error(Nil)
-    Text(..) -> Error(Nil)
+    UnsafeInnerHtml(..) -> constants.error_nil
+    Text(..) -> constants.error_nil
   }
 }
 
@@ -322,7 +323,7 @@ fn find_in_list(
   index: Int,
 ) -> Result(#(Element(msg), Path), Nil) {
   case elements {
-    [] -> Error(Nil)
+    [] -> constants.error_nil
 
     [first, ..rest] -> {
       case find_path(in: first, matching: query, from: path, index:) {
@@ -342,7 +343,7 @@ fn find_direct_child(
     Element(children:, ..) | Fragment(children:, ..) ->
       find_matching_in_list(children, selector, path, 0)
 
-    UnsafeInnerHtml(..) | Text(..) -> Error(Nil)
+    UnsafeInnerHtml(..) | Text(..) -> constants.error_nil
   }
 }
 
@@ -353,7 +354,7 @@ fn find_matching_in_list(
   index: Int,
 ) -> Result(#(Element(msg), Path), Nil) {
   case elements {
-    [] -> Error(Nil)
+    [] -> constants.error_nil
 
     [Fragment(..) as first, ..rest] ->
       find_matching_in_list(
@@ -383,7 +384,7 @@ fn find_descendant(
         Element(children:, ..) | Fragment(children:, ..) ->
           find_descendant_in_list(children, selector, path, 0)
 
-        UnsafeInnerHtml(..) | Text(..) -> Error(Nil)
+        UnsafeInnerHtml(..) | Text(..) -> constants.error_nil
       }
   }
 }
@@ -395,7 +396,7 @@ fn find_descendant_in_list(
   index: Int,
 ) -> Result(#(Element(msg), Path), Nil) {
   case elements {
-    [] -> Error(Nil)
+    [] -> constants.error_nil
     [first, ..rest] -> {
       case matches(first, selector) {
         True -> Ok(#(first, path.add(path, index, first.key)))

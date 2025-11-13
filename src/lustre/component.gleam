@@ -143,9 +143,9 @@ pub fn new(options: List(Option(msg))) -> Config(msg) {
       contexts: constants.empty_list,
       //
       is_form_associated: False,
-      on_form_autofill: constants.option_none,
-      on_form_reset: constants.option_none,
-      on_form_restore: constants.option_none,
+      on_form_autofill: option.None,
+      on_form_reset: option.None,
+      on_form_restore: option.None,
     )
 
   use config, option <- list.fold(options, init)

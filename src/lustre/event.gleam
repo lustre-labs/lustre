@@ -328,7 +328,9 @@ fn formdata_decoder() -> Decoder(List(#(String, String))) {
       // any `File` objects selected for file inputs. Our built-in `on_submit`
       // handler only supports those string values so we decode into a `Result`
       // so we can filter the files out without failing spectacularly.
-      decode.one_of(decode.map(decode.string, Ok), [decode.success(Error(Nil))]),
+      decode.one_of(decode.map(decode.string, Ok), [
+        decode.success(constants.error_nil),
+      ]),
     )
 
     value
