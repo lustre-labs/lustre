@@ -125,11 +125,11 @@ fn do_diff(
     // if there's a node somewhere else in the tree with the same key we can diff
     // against, or if we need to insert the incoming vnode.
     [prev, ..old_remaining], [next, ..new_remaining] if prev.key != next.key -> {
-      let next_did_exist = mutable_map.get(old_keyed, next.key)
+      let next_did_exist = mutable_map.has_key(old_keyed, next.key)
       let prev_does_exist = mutable_map.has_key(new_keyed, prev.key)
 
       case prev_does_exist, next_did_exist {
-        True, Ok(match) ->
+        True, True ->
           case mutable_map.has_key(moved, prev.key) {
             // The previous child was already visited and moved during this diff.
             // That means we'll skip over this diff iteration and instead decrement
@@ -192,6 +192,7 @@ fn do_diff(
             // ↓ 8. update d at idx=3   ↓ [d]         [d]       3   0    ↑ 0. [a b c d] ↑ 3. [c b a D]
             //
             False -> {
+              let match = mutable_map.unsafe_get(old_keyed, next.key)
               let before = node_index - moved_offset
               let changes = [patch.move(key: next.key, before:), ..changes]
               let moved = mutable_map.insert(moved, next.key, Nil)
@@ -219,7 +220,7 @@ fn do_diff(
         // The previous child no longer exists in the incoming tree, and the new
         // child did exist in the old tree. That means we need to add a `RemoveKey`
         // change and continue diffing the remaining nodes.
-        False, Ok(_) -> {
+        False, True -> {
           let index = node_index - moved_offset
           let changes = [patch.remove(index), ..changes]
           let events = events.remove_child(events, path, node_index, prev)
@@ -246,7 +247,7 @@ fn do_diff(
         // The previous child still exists in the incoming tree, but the new child
         // is not keyed or did not exist as a keyed child in the previous render.
         // That means we need to add an `Insert` change.
-        True, Error(_) -> {
+        True, False -> {
           let before = node_index - moved_offset
           let events = events.add_child(events, mapper, path, node_index, next)
           let insert = patch.insert(children: [next], before:)
@@ -272,7 +273,7 @@ fn do_diff(
 
         // The previous child no longer exists in the incoming tree *and* the new
         // child is new for this render. That means we can do a straight `Replace`.
-        False, Error(_) -> {
+        False, False -> {
           let change =
             patch.replace(index: node_index - moved_offset, with: next)
 
