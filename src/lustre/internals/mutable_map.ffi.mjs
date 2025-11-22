@@ -6,8 +6,7 @@ export function empty() {
 }
 
 export function get(map, key) {
-  const value = map?.get(key);
-  return value != null ? Result$Ok(value) : error_nil;
+  return map?.get(key);
 }
 
 export function has_key(map, key) {
