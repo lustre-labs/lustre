@@ -1,4 +1,5 @@
-import { Ok, Error } from "../../gleam.mjs";
+import { Result$Ok } from "../../gleam.mjs";
+import { error_nil } from "./constants.mjs";
 
 export function empty() {
   return null;
