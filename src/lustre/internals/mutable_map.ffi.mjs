@@ -1,4 +1,5 @@
-import { Ok, Error } from "../../gleam.mjs";
+import { Result$Ok } from "../../gleam.mjs";
+import { error_nil } from "./constants.mjs";
 
 export function empty() {
   return null;
@@ -6,16 +7,11 @@ export function empty() {
 
 export function get(map, key) {
   const value = map?.get(key);
-
-  if (value != null) {
-    return new Ok(value);
-  } else {
-    return new Error(undefined);
-  }
+  return value != null ? Result$Ok(value) : error_nil;
 }
 
 export function has_key(map, key) {
-  return map && map.has(key)
+  return map && map.has(key);
 }
 
 export function insert(map, key, value) {
@@ -34,4 +30,3 @@ export function remove(map, key) {
 export function size(map) {
   return map?.size ?? 0;
 }
-
