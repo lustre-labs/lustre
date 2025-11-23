@@ -384,13 +384,7 @@ export class Reconciler {
       case fragment_kind: {
         const head = this.#createTextNode(metaParent, index, vnode);
         insertBefore(domParent, head, beforeEl);
-        this.#insertChildren(
-          domParent,
-          beforeEl,
-          head[meta],
-          0,
-          vnode.children,
-        );
+        this.#insertChildren(domParent, beforeEl, head[meta], 0, vnode.children);
 
         break;
       }
@@ -401,6 +395,10 @@ export class Reconciler {
         insertBefore(domParent, node, beforeEl);
 
         break;
+      }
+
+      case map_kind: {
+        this.#insertChild(domParent, beforeEl, metaParent, index, vnode.element);
       }
     }
   }
@@ -443,10 +441,10 @@ export class Reconciler {
           node.defaultValue = valueOrDefault;
           return;
         } else if (name === "virtual:defaultChecked") {
-          node.defaultChecked = true 
+          node.defaultChecked = true;
           return;
         } else if (name === "virtual:defaultSelected") {
-          node.defaultSelected = true 
+          node.defaultSelected = true;
           return;
         }
 

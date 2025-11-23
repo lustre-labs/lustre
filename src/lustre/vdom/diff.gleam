@@ -9,7 +9,9 @@ import lustre/vdom/events.{type Events}
 import lustre/vdom/patch.{type Change, type Patch, Patch}
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{type Attribute, Attribute, Event, Property}
-import lustre/vdom/vnode.{type Element, Element, Fragment, Text, UnsafeInnerHtml}
+import lustre/vdom/vnode.{
+  type Element, Element, Fragment, Map, Text, UnsafeInnerHtml,
+}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -306,7 +308,6 @@ fn do_diff(
     // cases these means we can morph the existing DOM node into the new one by
     // producing precise changes.
     [Fragment(..) as prev, ..old], [Fragment(..) as next, ..new] -> {
-      let composed_mapper = events.compose_mapper(mapper, next.mapper)
       let child_path = path.add(path, node_index, next.key)
 
       // We diff fragments as if they are "real" nodes with children.
@@ -325,7 +326,7 @@ fn do_diff(
           changes: constants.empty_list,
           children: constants.empty_list,
           events:,
-          mapper: composed_mapper,
+          mapper:,
         )
 
       let children = case child.patch {
@@ -358,7 +359,6 @@ fn do_diff(
     [Element(..) as prev, ..old], [Element(..) as next, ..new]
       if prev.namespace == next.namespace && prev.tag == next.tag
     -> {
-      let composed_mapper = events.compose_mapper(mapper, next.mapper)
       let child_path = path.add(path, node_index, next.key)
 
       let controlled =
@@ -368,7 +368,7 @@ fn do_diff(
         diff_attributes(
           controlled: controlled,
           path: child_path,
-          mapper: composed_mapper,
+          mapper:,
           events:,
           old: prev.attributes,
           new: next.attributes,
@@ -396,7 +396,7 @@ fn do_diff(
           changes: initial_child_changes,
           children: constants.empty_list,
           events:,
-          mapper: composed_mapper,
+          mapper:,
         )
 
       let children = case child.patch {
@@ -474,14 +474,13 @@ fn do_diff(
     }
 
     [UnsafeInnerHtml(..) as prev, ..old], [UnsafeInnerHtml(..) as next, ..new] -> {
-      let composed_mapper = events.compose_mapper(mapper, next.mapper)
       let child_path = path.add(path, node_index, next.key)
 
       let AttributeChange(events:, added: added_attrs, removed: removed_attrs) =
         diff_attributes(
           controlled: False,
           path: child_path,
-          mapper: composed_mapper,
+          mapper:,
           events:,
           old: prev.attributes,
           new: next.attributes,
@@ -517,6 +516,50 @@ fn do_diff(
         path:,
         changes:,
         children:,
+        events:,
+        mapper:,
+      )
+    }
+
+    [Map(..) as prev, ..old], [Map(..) as next, ..new] -> {
+      let composed_mapper = events.compose_mapper(mapper, next.mapper)
+
+      let Diff(patch:, events:) =
+        do_diff(
+          old: [prev.element, ..constants.empty_list],
+          old_keyed: mutable_map.new(),
+          new: [next.element, ..constants.empty_list],
+          new_keyed: mutable_map.new(),
+          moved: mutable_map.new(),
+          moved_offset:,
+          removed:,
+          node_index:,
+          patch_index:,
+          path:,
+          changes: constants.empty_list,
+          children: constants.empty_list,
+          events:,
+          mapper: composed_mapper,
+        )
+
+      let children = case patch {
+        Patch(removed: 0, changes: [], children: [], ..) -> children
+        _ -> [patch, ..children]
+      }
+
+      do_diff(
+        old:,
+        old_keyed:,
+        new:,
+        new_keyed:,
+        moved:,
+        moved_offset:,
+        removed:,
+        node_index: node_index + 1,
+        patch_index:,
+        path:,
+        changes:,
+        children: [patch, ..children],
         events:,
         mapper:,
       )

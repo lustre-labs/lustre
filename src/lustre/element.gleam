@@ -8,13 +8,11 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/function
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute}
 import lustre/internals/mutable_map
-import lustre/vdom/events
-import lustre/vdom/vnode.{Element, Fragment, Text, UnsafeInnerHtml}
+import lustre/vdom/vnode.{Element}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -104,7 +102,6 @@ pub fn element(
 ) -> Element(msg) {
   vnode.element(
     key: "",
-    mapper: function.identity,
     namespace: "",
     tag: tag,
     attributes:,
@@ -126,7 +123,6 @@ pub fn namespaced(
 ) -> Element(msg) {
   vnode.element(
     key: "",
-    mapper: function.identity,
     namespace:,
     tag:,
     attributes:,
@@ -152,7 +148,6 @@ pub fn advanced(
 ) -> Element(msg) {
   vnode.element(
     key: "",
-    mapper: function.identity,
     namespace:,
     tag:,
     attributes:,
@@ -169,7 +164,7 @@ pub fn advanced(
 /// this function is exactly that!
 ///
 pub fn text(content: String) -> Element(msg) {
-  vnode.text(key: "", mapper: function.identity, content:)
+  vnode.text(key: "", content:)
 }
 
 /// A function for rendering nothing. This is mostly useful for conditional
@@ -177,7 +172,7 @@ pub fn text(content: String) -> Element(msg) {
 /// condition is met.
 ///
 pub fn none() -> Element(msg) {
-  vnode.text(key: "", mapper: function.identity, content: "")
+  vnode.text(key: "", content: "")
 }
 
 /// A function for constructing a wrapper element with no tag name. This is
@@ -186,12 +181,7 @@ pub fn none() -> Element(msg) {
 /// where only one `Element` is expected.
 ///
 pub fn fragment(children: List(Element(msg))) -> Element(msg) {
-  vnode.fragment(
-    key: "",
-    mapper: function.identity,
-    children:,
-    keyed_children: mutable_map.new(),
-  )
+  vnode.fragment(key: "", children:, keyed_children: mutable_map.new())
 }
 
 /// A function for constructing a wrapper element with custom raw HTML as its
@@ -211,14 +201,7 @@ pub fn unsafe_raw_html(
   attributes: List(Attribute(msg)),
   inner_html: String,
 ) -> Element(msg) {
-  vnode.unsafe_inner_html(
-    key: "",
-    namespace:,
-    tag:,
-    mapper: function.identity,
-    attributes:,
-    inner_html:,
-  )
+  vnode.unsafe_inner_html(key: "", namespace:, tag:, attributes:, inner_html:)
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
@@ -231,36 +214,8 @@ pub fn unsafe_raw_html(
 /// Think of it like `list.map` or `result.map` but for HTML events!
 ///
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
-  let mapper = coerce(events.compose_mapper(coerce(f), element.mapper))
-
-  case element {
-    Fragment(children:, keyed_children:, ..) ->
-      Fragment(
-        ..element,
-        mapper:,
-        children: coerce(children),
-        keyed_children: coerce(keyed_children),
-      )
-
-    Element(attributes:, children:, keyed_children:, ..) ->
-      Element(
-        ..element,
-        mapper:,
-        attributes: coerce(attributes),
-        children: coerce(children),
-        keyed_children: coerce(keyed_children),
-      )
-
-    UnsafeInnerHtml(attributes:, ..) ->
-      UnsafeInnerHtml(..element, mapper:, attributes: coerce(attributes))
-
-    Text(..) -> coerce(element)
-  }
+  vnode.map(element, f)
 }
-
-@external(erlang, "gleam@function", "identity")
-@external(javascript, "../../gleam_stdlib/gleam/function.mjs", "identity")
-fn coerce(a: a) -> b
 
 // CONVERSIONS -----------------------------------------------------------------
 

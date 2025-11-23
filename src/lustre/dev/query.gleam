@@ -8,7 +8,7 @@ import lustre/element.{type Element}
 import lustre/internals/constants
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{Attribute}
-import lustre/vdom/vnode.{Element, Fragment, Text, UnsafeInnerHtml}
+import lustre/vdom/vnode.{Element, Fragment, Map, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -311,6 +311,7 @@ fn find_in_children(
   case element {
     Element(children:, ..) | Fragment(children:, ..) ->
       find_in_list(children, query, path |> path.add(index, element.key), 0)
+    Map(element:, ..) -> find_in_children(element, query, index, path)
     UnsafeInnerHtml(..) -> constants.error_nil
     Text(..) -> constants.error_nil
   }
@@ -342,6 +343,8 @@ fn find_direct_child(
   case parent {
     Element(children:, ..) | Fragment(children:, ..) ->
       find_matching_in_list(children, selector, path, 0)
+
+    Map(element: parent, ..) -> find_direct_child(parent, selector, path)
 
     UnsafeInnerHtml(..) | Text(..) -> constants.error_nil
   }
@@ -383,6 +386,8 @@ fn find_descendant(
       case parent {
         Element(children:, ..) | Fragment(children:, ..) ->
           find_descendant_in_list(children, selector, path, 0)
+
+        Map(element: parent, ..) -> find_descendant(parent, selector, path)
 
         UnsafeInnerHtml(..) | Text(..) -> constants.error_nil
       }
@@ -446,6 +451,7 @@ fn find_all_in_children(
   case element {
     Element(children:, ..) | Fragment(children:, ..) ->
       find_all_in_list(children, query)
+    Map(element:, ..) -> find_all_in_children(element, query)
     UnsafeInnerHtml(..) -> []
     Text(..) -> []
   }
@@ -473,6 +479,7 @@ fn find_all_direct_children(
   case parent {
     Element(children:, ..) | Fragment(children:, ..) ->
       find_all_matching_in_list(children, selector)
+    Map(element:, ..) -> find_all_direct_children(element, selector)
     UnsafeInnerHtml(..) | Text(..) -> []
   }
 }
@@ -499,6 +506,8 @@ fn find_all_descendants(
   let descendant_matches = case parent {
     Element(children:, ..) | Fragment(children:, ..) ->
       find_all_descendants_in_list(children, selector)
+
+    Map(element: parent, ..) -> find_all_descendants(parent, selector)
 
     UnsafeInnerHtml(..) -> []
     Text(..) -> []
@@ -614,6 +623,8 @@ fn text_content(element: Element(msg), inline: Bool, content: String) -> String 
       list.fold(element.children, content, fn(content, child) {
         text_content(child, True, content)
       })
+
+    Map(element:, ..) -> text_content(element, inline, content)
 
     Element(..) if !inline || element.namespace != "" ->
       list.fold(element.children, content, fn(content, child) {

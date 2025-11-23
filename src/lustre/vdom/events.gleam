@@ -8,7 +8,9 @@ import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{type Attribute, type Handler, Event, Handler}
-import lustre/vdom/vnode.{type Element, Element, Fragment, Text, UnsafeInnerHtml}
+import lustre/vdom/vnode.{
+  type Element, Element, Fragment, Map, Text, UnsafeInnerHtml,
+}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -26,14 +28,7 @@ pub type Mapper =
 // MAPPERS ---------------------------------------------------------------------
 
 pub fn compose_mapper(mapper: Mapper, child_mapper: Mapper) -> Mapper {
-  case
-    is_reference_equal(mapper, function.identity),
-    is_reference_equal(child_mapper, function.identity)
-  {
-    _, True -> mapper
-    True, False -> child_mapper
-    False, False -> fn(msg) { mapper(child_mapper(msg)) }
-  }
+  fn(msg) { mapper(child_mapper(msg)) }
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -127,24 +122,25 @@ fn do_add_child(
   case child {
     Element(attributes:, children:, ..) -> {
       let path = path.add(parent, child_index, child.key)
-      let composed_mapper = compose_mapper(mapper, child.mapper)
 
       handlers
-      |> add_attributes(composed_mapper, path, attributes)
-      |> do_add_children(composed_mapper, path, 0, children)
+      |> add_attributes(mapper, path, attributes)
+      |> do_add_children(mapper, path, 0, children)
     }
 
     Fragment(children:, ..) -> {
       let path = path.add(parent, child_index, child.key)
-      let composed_mapper = compose_mapper(mapper, child.mapper)
-      do_add_children(handlers, composed_mapper, path, 0, children)
+      do_add_children(handlers, mapper, path, 0, children)
     }
 
     UnsafeInnerHtml(attributes:, ..) -> {
       let path = path.add(parent, child_index, child.key)
-      let composed_mapper = compose_mapper(mapper, child.mapper)
+      add_attributes(handlers, mapper, path, attributes)
+    }
 
-      add_attributes(handlers, composed_mapper, path, attributes)
+    Map(element:, ..) -> {
+      let composed_mapper = compose_mapper(mapper, child.mapper)
+      do_add_child(handlers, composed_mapper, parent, child_index, element)
     }
 
     Text(..) -> handlers
@@ -231,6 +227,8 @@ fn do_remove_child(
       remove_attributes(handlers, path, attributes)
     }
 
+    Map(element:, ..) -> do_remove_child(handlers, parent, child_index, element)
+
     Text(..) -> handlers
   }
 }
@@ -313,8 +311,3 @@ pub fn has_dispatched_events(events: Events(msg), path: Path) {
 @external(erlang, "gleam@function", "identity")
 @external(javascript, "../../../gleam_stdlib/gleam/function.mjs", "identity")
 fn coerce(a: a) -> b
-
-@external(javascript, "../internals/equals.ffi.mjs", "isReferenceEqual")
-fn is_reference_equal(a: a, b: a) -> Bool {
-  a == b
-}
