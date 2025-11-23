@@ -12,6 +12,7 @@ import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute}
 import lustre/internals/mutable_map
+import lustre/internals/ref
 import lustre/vdom/vnode.{Element}
 
 // TYPES -----------------------------------------------------------------------
@@ -63,6 +64,15 @@ import lustre/vdom/vnode.{Element}
 ///
 pub type Element(msg) =
   vnode.Element(msg)
+
+/// A Ref is an opaque handle to a value that can no longer be inspected,
+/// except to figure out if the 2 referenced values are definitely equal.
+///
+/// Ref equality is cheaper to compute than term equality, but when 2
+/// references are not equal to each other, it does not imply that the
+/// referenced terms are different.
+pub type Ref =
+  ref.Ref
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -202,6 +212,36 @@ pub fn unsafe_raw_html(
   inner_html: String,
 ) -> Element(msg) {
   vnode.unsafe_inner_html(key: "", namespace:, tag:, attributes:, inner_html:)
+}
+
+// MEMOIZATION -----------------------------------------------------------------
+
+/// A function constructing a "memoized" or "lazy" element. Lustre will use the
+/// values passed as dependencies to skip calling your view function if it can
+/// tell nothing has changed.
+///
+/// This can help Lustre optimise big but mostly static parts of your app.
+/// When it can tell the dependencies haven't changed, almost all of the work
+/// it typically has to do to update your view can be skipped.
+///
+/// > **Note:** This is an optimisation only and does not guarantee when Lustre
+/// > will call your view function! It may decide to call it even if none of
+/// > your dependencies have changed.
+///
+pub fn memo(
+  _dependencies: List(Ref),
+  view: fn() -> Element(msg),
+) -> Element(msg) {
+  view()
+}
+
+/// Create a `Ref` dependency value. Lustre will use a heuristic to tell if a
+/// given value hasn't changed.
+///
+/// On JavaScript, values are compared using same-value-zero semantics.
+/// On Erlang, a heuristic based on term hashes is used.
+pub fn ref(value: a) -> Ref {
+  ref.from(value)
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
