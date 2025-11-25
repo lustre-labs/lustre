@@ -18,7 +18,11 @@ import lustre/vdom/vnode.{
 ///
 ///
 pub type Diff(msg) {
-  Diff(patch: Patch(msg), tree: ConcreteTree(msg), events: Events(msg))
+  Diff(patch: Patch(msg), tree: ConcreteTree(msg))
+}
+
+type PartialDiff(msg) {
+  PartialDiff(patch: Patch(msg), tree: ConcreteTree(msg), events: Events(msg))
 }
 
 // DIFFING ---------------------------------------------------------------------
@@ -30,7 +34,7 @@ pub fn diff(
 ) -> Diff(msg) {
   let tree = events.tick(tree)
 
-  let diff =
+  let PartialDiff(patch:, events:, tree:) =
     do_diff(
       old: [old, ..constants.empty_list],
       old_keyed: mutable_map.new(),
@@ -52,7 +56,7 @@ pub fn diff(
       events: events.root(tree),
     )
 
-  Diff(..diff, tree: events.with_root(diff.tree, diff.events))
+  Diff(patch:, tree: events.with_root(tree, events))
 }
 
 fn do_diff(
@@ -74,10 +78,10 @@ fn do_diff(
   mapper mapper: events.Mapper,
   events events: Events(msg),
   tree tree: ConcreteTree(msg),
-) -> Diff(msg) {
+) -> PartialDiff(msg) {
   case old, new {
     [], [] ->
-      Diff(
+      PartialDiff(
         patch: Patch(index: patch_index, removed:, changes:, children:),
         tree:,
         events:,
@@ -127,7 +131,7 @@ fn do_diff(
         patch.insert(children: new, before: node_index - moved_offset)
       let changes = [insert, ..changes]
 
-      Diff(
+      PartialDiff(
         patch: Patch(index: patch_index, removed:, changes:, children:),
         tree: tree,
         events: events,
@@ -547,7 +551,7 @@ fn do_diff(
     [Map(..) as prev, ..old], [Map(..) as next, ..new] -> {
       let composed_mapper = events.compose_mapper(mapper, next.mapper)
 
-      let Diff(patch:, events:, tree:) =
+      let PartialDiff(patch:, events:, tree:) =
         do_diff(
           old: [prev.element, ..constants.empty_list],
           old_keyed: mutable_map.new(),
