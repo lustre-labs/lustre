@@ -9,17 +9,35 @@ import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{type Attribute, type Handler, Event, Handler}
 import lustre/vdom/vnode.{
-  type Element, Element, Fragment, Map, Text, UnsafeInnerHtml,
+  type Element, type Memos, type View, Element, Fragment, Map, Memo, Text,
+  UnsafeInnerHtml,
 }
 
 // TYPES -----------------------------------------------------------------------
 
-pub opaque type Events(msg) {
-  Events(
-    handlers: MutableMap(String, Decoder(Handler(msg))),
+pub opaque type ConcreteTree(msg) {
+  ConcreteTree(
+    root: Events(msg),
+    // 🚨 Because of the `mapper` shenanigans, the `msg` type parameter is
+    // a lie until we actually handle an event!
+    memos: MutableMap(View(msg), Events(msg)),
+    vdoms: Memos(msg),
+    old_vdoms: Memos(msg),
+    //
     dispatched_paths: List(String),
     next_dispatched_paths: List(String),
   )
+}
+
+pub opaque type Events(msg) {
+  Events(
+    handlers: MutableMap(String, Decoder(Handler(msg))),
+    children: MutableMap(String, Child(msg)),
+  )
+}
+
+type Child(msg) {
+  Child(view: View(msg), mapper: Mapper)
 }
 
 pub type Mapper =
@@ -35,27 +53,51 @@ pub fn compose_mapper(mapper: Mapper, child_mapper: Mapper) -> Mapper {
 
 ///
 ///
-pub fn new() -> Events(msg) {
-  Events(
-    handlers: mutable_map.new(),
+pub fn new() -> ConcreteTree(msg) {
+  ConcreteTree(
+    root: Events(handlers: mutable_map.new(), children: mutable_map.new()),
+    memos: mutable_map.new(),
+    vdoms: mutable_map.new(),
+    old_vdoms: mutable_map.new(),
     dispatched_paths: constants.empty_list,
     next_dispatched_paths: constants.empty_list,
   )
 }
 
-pub fn from_node(root: Element(msg)) -> Events(msg) {
-  add_child(new(), function.identity, path.root, 0, root)
+pub fn from_node(root: Element(msg)) -> ConcreteTree(msg) {
+  let events = Events(handlers: mutable_map.new(), children: mutable_map.new())
+  let events = add_child(events, function.identity, path.root, 0, root)
+  ConcreteTree(..new(), root: events)
 }
 
-pub fn tick(events: Events(msg)) -> Events(msg) {
-  Events(
-    handlers: events.handlers,
+pub fn tick(events: ConcreteTree(msg)) -> ConcreteTree(msg) {
+  ConcreteTree(
+    ..events,
+    vdoms: mutable_map.new(),
+    old_vdoms: events.vdoms,
     dispatched_paths: events.next_dispatched_paths,
     next_dispatched_paths: constants.empty_list,
   )
 }
 
-// MANIPULATIONS ---------------------------------------------------------------
+// MEMO MANIPULATIONS ---------------------------------------------------------
+
+pub fn root(tree: ConcreteTree(msg)) -> Events(msg) {
+  tree.root
+}
+
+pub fn with_root(
+  tree: ConcreteTree(msg),
+  root: Events(msg),
+) -> ConcreteTree(msg) {
+  ConcreteTree(..tree, root:)
+}
+
+pub fn memos(tree: ConcreteTree(msg)) -> Memos(msg) {
+  tree.vdoms
+}
+
+// EVENTS MANIPULATIONS -------------------------------------------------------
 
 pub fn add_event(
   events: Events(msg),
@@ -143,6 +185,9 @@ fn do_add_child(
       do_add_child(handlers, composed_mapper, parent, child_index, element)
     }
 
+    Memo(view:, ..) ->
+      todo as "do_add_child(Memo) should query and store the materialised tree"
+
     Text(..) -> handlers
   }
 }
@@ -229,6 +274,9 @@ fn do_remove_child(
 
     Map(element:, ..) -> do_remove_child(handlers, parent, child_index, element)
 
+    Memo(..) ->
+      todo as "I don't think removing a memo node does anything since it delegates to another tree"
+
     Text(..) -> handlers
   }
 }
@@ -268,23 +316,68 @@ pub opaque type DecodedEvent(msg) {
   DispatchedEvent(path: String)
 }
 
-pub fn decode(events: Events(msg), path: String, name: String, event: Dynamic) {
-  let key = path <> path.separator_event <> name
-  case mutable_map.has_key(events.handlers, key) {
-    True -> {
-      let handler = mutable_map.unsafe_get(events.handlers, key)
+pub fn decode(
+  tree: ConcreteTree(msg),
+  path: String,
+  name: String,
+  event: Dynamic,
+) {
+  let parts = path.split_memo(path <> path.separator_event <> name)
+
+  case get_handler(tree, tree.root, parts, function.identity) {
+    Ok(handler) ->
       case decode.run(event, handler) {
         Ok(handler) -> DecodedEvent(handler:, path:)
         Error(_) -> DispatchedEvent(path:)
       }
-    }
-    False -> DispatchedEvent(path:)
+
+    Error(_) -> DispatchedEvent(path:)
   }
 }
 
-pub fn dispatch(events: Events(msg), event: DecodedEvent(msg)) {
+fn get_handler(
+  tree: ConcreteTree(msg),
+  events: Events(msg),
+  path: List(String),
+  mapper: Mapper,
+) {
+  case path {
+    [] -> constants.error_nil
+
+    [key] ->
+      case mutable_map.has_key(events.handlers, key) {
+        False -> constants.error_nil
+
+        True -> {
+          let handler = mutable_map.unsafe_get(events.handlers, key)
+          Ok(decode.map(handler, coerce(mapper)))
+        }
+      }
+
+    [key, ..path] ->
+      case mutable_map.has_key(events.children, key) {
+        False -> constants.error_nil
+
+        True -> {
+          let child = mutable_map.unsafe_get(events.children, key)
+
+          case mutable_map.has_key(tree.memos, child.view) {
+            False -> constants.error_nil
+
+            True -> {
+              let events = mutable_map.unsafe_get(tree.memos, child.view)
+              let mapper = compose_mapper(mapper, child.mapper)
+              get_handler(tree, events, path, mapper)
+            }
+          }
+        }
+      }
+  }
+}
+
+pub fn dispatch(events: ConcreteTree(msg), event: DecodedEvent(msg)) {
   let next_dispatched_paths = [event.path, ..events.next_dispatched_paths]
-  let events = Events(..events, next_dispatched_paths:)
+  let events = ConcreteTree(..events, next_dispatched_paths:)
 
   case event {
     DecodedEvent(handler:, path: _) -> #(events, Ok(handler))
@@ -295,16 +388,16 @@ pub fn dispatch(events: Events(msg), event: DecodedEvent(msg)) {
 ///
 ///
 pub fn handle(
-  events: Events(msg),
+  events: ConcreteTree(msg),
   path: String,
   name: String,
   event: Dynamic,
-) -> #(Events(msg), Result(Handler(msg), Nil)) {
+) -> #(ConcreteTree(msg), Result(Handler(msg), Nil)) {
   decode(events, path, name, event)
   |> dispatch(events, _)
 }
 
-pub fn has_dispatched_events(events: Events(msg), path: Path) {
+pub fn has_dispatched_events(events: ConcreteTree(msg), path: Path) {
   path.matches(path, any: events.dispatched_paths)
 }
 

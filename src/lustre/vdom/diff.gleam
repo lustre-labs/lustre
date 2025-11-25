@@ -5,7 +5,7 @@ import gleam/json
 import gleam/order.{Eq, Gt, Lt}
 import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
-import lustre/vdom/events.{type Events}
+import lustre/vdom/events.{type ConcreteTree, type Events}
 import lustre/vdom/patch.{type Change, type Patch, Patch}
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{type Attribute, Attribute, Event, Property}
@@ -18,34 +18,41 @@ import lustre/vdom/vnode.{
 ///
 ///
 pub type Diff(msg) {
-  Diff(patch: Patch(msg), events: Events(msg))
+  Diff(patch: Patch(msg), tree: ConcreteTree(msg), events: Events(msg))
 }
 
 // DIFFING ---------------------------------------------------------------------
 
 pub fn diff(
-  events: Events(msg),
+  tree: ConcreteTree(msg),
   old: Element(msg),
   new: Element(msg),
 ) -> Diff(msg) {
-  do_diff(
-    old: [old],
-    old_keyed: mutable_map.new(),
-    new: [new],
-    new_keyed: mutable_map.new(),
-    //
-    moved: mutable_map.new(),
-    moved_offset: 0,
-    removed: 0,
-    //
-    node_index: 0,
-    patch_index: 0,
-    path: path.root,
-    changes: constants.empty_list,
-    children: constants.empty_list,
-    mapper: function.identity,
-    events: events.tick(events),
-  )
+  let tree = events.tick(tree)
+
+  let diff =
+    do_diff(
+      old: [old, ..constants.empty_list],
+      old_keyed: mutable_map.new(),
+      new: [new, ..constants.empty_list],
+      new_keyed: mutable_map.new(),
+      //
+      moved: mutable_map.new(),
+      moved_offset: 0,
+      removed: 0,
+      //
+      node_index: 0,
+      patch_index: 0,
+      changes: constants.empty_list,
+      children: constants.empty_list,
+      //
+      path: path.root,
+      mapper: function.identity,
+      tree: tree,
+      events: events.root(tree),
+    )
+
+  Diff(..diff, tree: events.with_root(diff.tree, diff.events))
 }
 
 fn do_diff(
@@ -60,16 +67,19 @@ fn do_diff(
   //
   node_index node_index: Int,
   patch_index patch_index: Int,
-  path path: Path,
   changes changes: List(Change(msg)),
   children children: List(Patch(msg)),
+  //
+  path path: Path,
   mapper mapper: events.Mapper,
   events events: Events(msg),
+  tree tree: ConcreteTree(msg),
 ) -> Diff(msg) {
   case old, new {
     [], [] ->
       Diff(
         patch: Patch(index: patch_index, removed:, changes:, children:),
+        tree:,
         events:,
       )
 
@@ -98,11 +108,12 @@ fn do_diff(
         removed:,
         node_index:,
         patch_index:,
-        path:,
         changes:,
         children:,
-        events:,
+        path:,
         mapper:,
+        events:,
+        tree:,
       )
     }
 
@@ -118,6 +129,7 @@ fn do_diff(
 
       Diff(
         patch: Patch(index: patch_index, removed:, changes:, children:),
+        tree: tree,
         events: events,
       )
     }
@@ -147,11 +159,12 @@ fn do_diff(
                 removed:,
                 node_index:,
                 patch_index:,
-                path:,
                 changes:,
                 children:,
-                events:,
+                path:,
                 mapper:,
+                events:,
+                tree:,
               )
 
             // The previous child exists in the incoming tree and this is the first
@@ -210,11 +223,12 @@ fn do_diff(
                 removed:,
                 node_index:,
                 patch_index:,
-                path:,
                 changes:,
                 children:,
-                events:,
+                path:,
                 mapper:,
+                events:,
+                tree:,
               )
             }
           }
@@ -238,11 +252,12 @@ fn do_diff(
             removed:,
             node_index:,
             patch_index:,
-            path:,
             changes:,
             children:,
-            events:,
+            path:,
             mapper:,
+            events:,
+            tree:,
           )
         }
 
@@ -265,11 +280,12 @@ fn do_diff(
             removed:,
             node_index: node_index + 1,
             patch_index:,
-            path:,
             changes:,
             children:,
-            events:,
+            path:,
             mapper:,
+            events:,
+            tree:,
           )
         }
 
@@ -294,11 +310,12 @@ fn do_diff(
             removed:,
             node_index: node_index + 1,
             patch_index:,
-            path:,
             changes: [change, ..changes],
             children:,
-            events:,
+            path:,
             mapper:,
+            events:,
+            tree:,
           )
         }
       }
@@ -322,11 +339,12 @@ fn do_diff(
           removed: 0,
           node_index: 0,
           patch_index: node_index,
-          path: child_path,
           changes: constants.empty_list,
           children: constants.empty_list,
-          events:,
+          path: child_path,
           mapper:,
+          events:,
+          tree:,
         )
 
       let children = case child.patch {
@@ -344,11 +362,12 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index:,
-        path:,
         changes:,
         children:,
-        events: child.events,
+        path:,
         mapper:,
+        events: child.events,
+        tree: child.tree,
       )
     }
 
@@ -361,8 +380,7 @@ fn do_diff(
     -> {
       let child_path = path.add(path, node_index, next.key)
 
-      let controlled =
-        is_controlled(events, next.namespace, next.tag, child_path)
+      let controlled = is_controlled(tree, next.namespace, next.tag, child_path)
 
       let AttributeChange(events:, added: added_attrs, removed: removed_attrs) =
         diff_attributes(
@@ -392,11 +410,12 @@ fn do_diff(
           removed: 0,
           node_index: 0,
           patch_index: node_index,
-          path: child_path,
           changes: initial_child_changes,
           children: constants.empty_list,
-          events:,
+          path: child_path,
           mapper:,
+          events:,
+          tree:,
         )
 
       let children = case child.patch {
@@ -414,11 +433,12 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index: patch_index,
-        path:,
         changes:,
         children:,
-        events: child.events,
+        path:,
         mapper:,
+        events: child.events,
+        tree: child.tree,
       )
     }
 
@@ -437,11 +457,12 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index:,
-        path:,
         changes:,
         children:,
-        events:,
+        path:,
         mapper:,
+        events:,
+        tree:,
       )
 
     // Text nodes have a special `ReplaceText` change that allows us to update
@@ -465,11 +486,12 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index:,
-        path:,
         changes:,
         children: [child, ..children],
-        events:,
+        path:,
         mapper:,
+        events:,
+        tree:,
       )
     }
 
@@ -513,18 +535,19 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index: patch_index,
-        path:,
         changes:,
         children:,
-        events:,
+        path:,
         mapper:,
+        events:,
+        tree:,
       )
     }
 
     [Map(..) as prev, ..old], [Map(..) as next, ..new] -> {
       let composed_mapper = events.compose_mapper(mapper, next.mapper)
 
-      let Diff(patch:, events:) =
+      let Diff(patch:, events:, tree:) =
         do_diff(
           old: [prev.element, ..constants.empty_list],
           old_keyed: mutable_map.new(),
@@ -535,11 +558,12 @@ fn do_diff(
           removed:,
           node_index:,
           patch_index:,
-          path:,
           changes: constants.empty_list,
           children: constants.empty_list,
-          events:,
+          path:,
           mapper: composed_mapper,
+          events:,
+          tree:,
         )
 
       let children = case patch {
@@ -557,11 +581,12 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index:,
-        path:,
         changes:,
         children: [patch, ..children],
-        events:,
+        path:,
         mapper:,
+        events:,
+        tree:,
       )
     }
 
@@ -586,11 +611,12 @@ fn do_diff(
         removed:,
         node_index: node_index + 1,
         patch_index:,
-        path:,
         changes: [change, ..changes],
         children:,
-        events:,
+        path:,
         mapper:,
+        events:,
+        tree:,
       )
     }
   }
@@ -599,14 +625,14 @@ fn do_diff(
 // ATTRIBUTE DIFFING -----------------------------------------------------------
 
 fn is_controlled(
-  events: Events(msg),
+  tree: ConcreteTree(msg),
   namespace: String,
   tag: String,
   path: Path,
 ) {
   case tag {
     "input" | "select" | "textarea" if namespace == "" ->
-      events.has_dispatched_events(events, path)
+      events.has_dispatched_events(tree, path)
     _ -> False
   }
 }

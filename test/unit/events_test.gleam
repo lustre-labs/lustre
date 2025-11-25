@@ -265,7 +265,7 @@ pub fn event_added_test() {
   let prev = html.button([], [html.text("Click me!")])
   let next = html.button([event.on_click("hello!")], [html.text("Click me!")])
 
-  let events = diff.diff(events.new(), prev, next).events
+  let tree = diff.diff(events.new(), prev, next).tree
 
   let path = path.root |> path.add(0, "")
 
@@ -277,7 +277,7 @@ pub fn event_added_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    events.handle(tree, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -288,13 +288,13 @@ pub fn event_removed_test() {
   let prev = html.button([event.on_click("hello!")], [html.text("Click me!")])
   let next = html.button([], [html.text("Click me!")])
 
-  let events = diff.diff(events.new(), prev, next).events
+  let tree = diff.diff(events.new(), prev, next).tree
 
   let path = path.root |> path.add(0, "")
 
   let expected = Error(Nil)
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    events.handle(tree, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -309,7 +309,7 @@ pub fn element_added_test() {
       #("b", html.button([event.on_click("hello!")], [html.text("Click me!")])),
     ])
 
-  let events = diff.diff(events.new(), prev, next).events
+  let tree = diff.diff(events.new(), prev, next).tree
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
@@ -321,7 +321,7 @@ pub fn element_added_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    events.handle(tree, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -336,13 +336,13 @@ pub fn element_removed_test() {
     ])
   let next = keyed.div([], [#("a", html.h1([], [html.text("Testing...")]))])
 
-  let events = diff.diff(events.new(), prev, next).events
+  let tree = diff.diff(events.new(), prev, next).tree
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
   let expected = Error(Nil)
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    events.handle(tree, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -362,7 +362,7 @@ pub fn element_replaced_test() {
       #("b", html.button([event.on_click("hello!")], [html.text("Click me!")])),
     ])
 
-  let events = diff.diff(events.new(), prev, next).events
+  let tree = diff.diff(events.new(), prev, next).tree
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
@@ -374,7 +374,7 @@ pub fn element_replaced_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    events.handle(tree, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -412,7 +412,7 @@ pub fn keyed_element_replaced_test() {
       ),
     ])
 
-  let events = diff.diff(events.new(), prev, next).events
+  let tree = diff.diff(events.new(), prev, next).tree
 
   let path =
     path.root |> path.add(0, "") |> path.add(0, "v2") |> path.add(0, "")
@@ -425,7 +425,7 @@ pub fn keyed_element_replaced_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    events.handle(tree, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 
@@ -444,7 +444,7 @@ pub fn keyed_element_replaced_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    events.handle(tree, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }

@@ -19,6 +19,8 @@ import lustre/element/html
 @target(erlang)
 import lustre/event
 @target(erlang)
+import lustre/internals/mutable_map
+@target(erlang)
 import lustre/runtime/server/runtime
 @target(erlang)
 import lustre/runtime/transport
@@ -39,7 +41,16 @@ pub fn client_connect_test() {
   use client, _ <- with_erlang_runtime
 
   assert process.receive_forever(client)
-    == transport.mount(True, True, [], [], [], dict.new(), view(0))
+    == transport.mount(
+      True,
+      True,
+      [],
+      [],
+      [],
+      dict.new(),
+      view(0),
+      mutable_map.new(),
+    )
 }
 
 @target(erlang)
@@ -61,7 +72,8 @@ pub fn client_send_event_test() {
       ]),
     ])
 
-  assert process.receive_forever(client) == transport.reconcile(patch)
+  assert process.receive_forever(client)
+    == transport.reconcile(patch, mutable_map.new())
 }
 
 @target(erlang)
@@ -87,7 +99,8 @@ pub fn client_send_multiple_events_test() {
       ]),
     ])
 
-  assert process.receive_forever(client) == transport.reconcile(patch)
+  assert process.receive_forever(client)
+    == transport.reconcile(patch, mutable_map.new())
 }
 
 // EFFECT MESSAGE TESTS --------------------------------------------------------
@@ -110,7 +123,8 @@ pub fn effect_send_event_test() {
       ]),
     ])
 
-  assert process.receive_forever(client) == transport.reconcile(patch)
+  assert process.receive_forever(client)
+    == transport.reconcile(patch, mutable_map.new())
 }
 
 // SERVER MESSAGE TESTS --------------------------------------------------------

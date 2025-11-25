@@ -8,7 +8,7 @@ import lustre/element.{type Element}
 import lustre/internals/constants
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{Attribute}
-import lustre/vdom/vnode.{Element, Fragment, Map, Text, UnsafeInnerHtml}
+import lustre/vdom/vnode.{Element, Fragment, Map, Memo, Text, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -312,8 +312,8 @@ fn find_in_children(
     Element(children:, ..) | Fragment(children:, ..) ->
       find_in_list(children, query, path |> path.add(index, element.key), 0)
     Map(element:, ..) -> find_in_children(element, query, index, path)
-    UnsafeInnerHtml(..) -> constants.error_nil
-    Text(..) -> constants.error_nil
+    Memo(view:, ..) -> find_in_children(view(), query, index, path)
+    UnsafeInnerHtml(..) | Text(..) -> constants.error_nil
   }
 }
 
@@ -345,6 +345,7 @@ fn find_direct_child(
       find_matching_in_list(children, selector, path, 0)
 
     Map(element: parent, ..) -> find_direct_child(parent, selector, path)
+    Memo(view:, ..) -> find_direct_child(view(), selector, path)
 
     UnsafeInnerHtml(..) | Text(..) -> constants.error_nil
   }
@@ -388,6 +389,7 @@ fn find_descendant(
           find_descendant_in_list(children, selector, path, 0)
 
         Map(element: parent, ..) -> find_descendant(parent, selector, path)
+        Memo(view:, ..) -> find_descendant(view(), selector, path)
 
         UnsafeInnerHtml(..) | Text(..) -> constants.error_nil
       }
@@ -451,9 +453,11 @@ fn find_all_in_children(
   case element {
     Element(children:, ..) | Fragment(children:, ..) ->
       find_all_in_list(children, query)
+
     Map(element:, ..) -> find_all_in_children(element, query)
-    UnsafeInnerHtml(..) -> []
-    Text(..) -> []
+    Memo(view:, ..) -> find_all_in_children(view(), query)
+
+    UnsafeInnerHtml(..) | Text(..) -> []
   }
 }
 
@@ -479,7 +483,10 @@ fn find_all_direct_children(
   case parent {
     Element(children:, ..) | Fragment(children:, ..) ->
       find_all_matching_in_list(children, selector)
+
     Map(element:, ..) -> find_all_direct_children(element, selector)
+    Memo(view:, ..) -> find_all_direct_children(view(), selector)
+
     UnsafeInnerHtml(..) | Text(..) -> []
   }
 }
@@ -508,9 +515,9 @@ fn find_all_descendants(
       find_all_descendants_in_list(children, selector)
 
     Map(element: parent, ..) -> find_all_descendants(parent, selector)
+    Memo(view:, ..) -> find_all_descendants(view(), selector)
 
-    UnsafeInnerHtml(..) -> []
-    Text(..) -> []
+    UnsafeInnerHtml(..) | Text(..) -> []
   }
 
   list.append(direct_matches, descendant_matches)
@@ -625,6 +632,7 @@ fn text_content(element: Element(msg), inline: Bool, content: String) -> String 
       })
 
     Map(element:, ..) -> text_content(element, inline, content)
+    Memo(view:, ..) -> text_content(view(), inline, content)
 
     Element(..) if !inline || element.namespace != "" ->
       list.fold(element.children, content, fn(content, child) {

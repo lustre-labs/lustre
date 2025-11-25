@@ -13,6 +13,8 @@ import lustre/element/html
 @target(javascript)
 import lustre/element/keyed
 @target(javascript)
+import lustre/internals/mutable_map
+@target(javascript)
 import lustre/vdom/diff
 @target(javascript)
 import lustre/vdom/events
@@ -71,7 +73,7 @@ pub fn reconciler_server_component_mount_input_test() {
   // slightly different result that we don't handle (`value=""` vs `value`)
   use reconciler <- with_reconciler
 
-  mount_json(reconciler, vnode.to_json(html))
+  mount_json(reconciler, vnode.to_json(html, mutable_map.new()))
   assert nodes_equal(get_vdom(), html)
 }
 
@@ -82,7 +84,7 @@ fn test_mount(vdom: Element(msg)) {
   mount(reconciler, vdom)
   assert get_html() == element.to_string(vdom)
 
-  mount_json(reconciler, vnode.to_json(vdom))
+  mount_json(reconciler, vnode.to_json(vdom, mutable_map.new()))
   assert nodes_equal(get_vdom(), vdom)
 }
 
@@ -712,7 +714,7 @@ fn test_diff(prev: Element(msg), next: Element(msg)) {
   assert nodes_equal(get_vdom(), next)
 
   mount(reconciler, prev)
-  push_json(reconciler, patch.to_json(patch))
+  push_json(reconciler, patch.to_json(patch, mutable_map.new()))
   assert nodes_equal(get_vdom(), next)
 }
 

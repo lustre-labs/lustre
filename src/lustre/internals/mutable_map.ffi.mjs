@@ -1,6 +1,3 @@
-import { Result$Ok } from "../../gleam.mjs";
-import { error_nil } from "./constants.mjs";
-
 export function empty() {
   return null;
 }
@@ -27,5 +24,5 @@ export function remove(map, key) {
 }
 
 export function size(map) {
-  return map?.size ?? 0;
+  return map ? map.size : 0;
 }

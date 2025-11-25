@@ -15,6 +15,10 @@ pub const separator_element: String = "\t"
 
 ///
 ///
+pub const separator_memo: String = "\r"
+
+///
+///
 pub const separator_event: String = "\n"
 
 // TYPES -----------------------------------------------------------------------
@@ -47,6 +51,10 @@ fn do_matches(path: String, candidates: List(String)) -> Bool {
         False -> do_matches(path, rest)
       }
   }
+}
+
+pub fn split_memo(path: String) -> List(String) {
+  string.split(path, on: separator_memo)
 }
 
 // MANIPULATIONS ---------------------------------------------------------------

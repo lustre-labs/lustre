@@ -8,6 +8,7 @@ import gleam/string_tree.{type StringTree}
 import houdini
 import lustre/internals/json_object_builder
 import lustre/internals/mutable_map.{type MutableMap}
+import lustre/internals/ref.{type Ref}
 import lustre/vdom/vattr.{type Attribute}
 
 // TYPES -----------------------------------------------------------------------
@@ -64,7 +65,15 @@ pub type Element(msg) {
     mapper: fn(Dynamic) -> Dynamic,
     element: Element(msg),
   )
+
+  Memo(kind: Int, key: String, dependencies: List(Ref), view: View(msg))
 }
+
+pub type Memos(msg) =
+  mutable_map.MutableMap(View(msg), Element(msg))
+
+pub type View(msg) =
+  fn() -> Element(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -163,6 +172,16 @@ pub fn map(element: Element(a), mapper: fn(a) -> b) -> Element(b) {
   )
 }
 
+pub const memo_kind: Int = 5
+
+pub fn memo(
+  key key: String,
+  dependencies dependencies: List(Ref),
+  view view: fn() -> Element(msg),
+) -> Element(msg) {
+  Memo(kind: memo_kind, key:, dependencies:, view:)
+}
+
 @external(erlang, "gleam@function", "identity")
 @external(javascript, "../../../gleam_stdlib/gleam/function.mjs", "identity")
 fn coerce(a: a) -> b
@@ -176,17 +195,18 @@ pub fn to_keyed(key: String, node: Element(msg)) -> Element(msg) {
     UnsafeInnerHtml(..) -> UnsafeInnerHtml(..node, key:)
     Fragment(..) -> Fragment(..node, key:)
     Map(..) -> Map(..node, key:)
+    Memo(..) -> Memo(..node, key:)
   }
 }
 
 // ENCODERS --------------------------------------------------------------------
 
-pub fn to_json(node: Element(msg)) -> Json {
+pub fn to_json(node: Element(msg), memos: Memos(msg)) -> Json {
   case node {
     Fragment(kind:, key:, children:, ..) ->
-      fragment_to_json(kind, key, children)
+      fragment_to_json(kind, key, children, memos)
     Element(kind:, key:, namespace:, tag:, attributes:, children:, ..) ->
-      element_to_json(kind, key, namespace, tag, attributes, children)
+      element_to_json(kind, key, namespace, tag, attributes, children, memos)
     Text(kind:, key:, content:) -> text_to_json(kind, key, content)
     UnsafeInnerHtml(kind:, key:, namespace:, tag:, attributes:, inner_html:) ->
       unsafe_inner_html_to_json(
@@ -197,24 +217,25 @@ pub fn to_json(node: Element(msg)) -> Json {
         attributes,
         inner_html,
       )
-    Map(element:, ..) -> to_json(element)
+    Map(element:, ..) -> to_json(element, memos)
+    Memo(kind:, key:, view:, ..) -> memo_to_json(kind, key, view, memos)
   }
 }
 
-fn fragment_to_json(kind, key, children) {
+fn fragment_to_json(kind, key, children, memos) {
   json_object_builder.tagged(kind)
   |> json_object_builder.string("key", key)
-  |> json_object_builder.list("children", children, to_json)
+  |> json_object_builder.list("children", children, to_json(_, memos))
   |> json_object_builder.build
 }
 
-fn element_to_json(kind, key, namespace, tag, attributes, children) {
+fn element_to_json(kind, key, namespace, tag, attributes, children, memos) {
   json_object_builder.tagged(kind)
   |> json_object_builder.string("key", key)
   |> json_object_builder.string("namespace", namespace)
   |> json_object_builder.string("tag", tag)
   |> json_object_builder.list("attributes", attributes, vattr.to_json)
-  |> json_object_builder.list("children", children, to_json)
+  |> json_object_builder.list("children", children, to_json(_, memos))
   |> json_object_builder.build
 }
 
@@ -232,6 +253,18 @@ fn unsafe_inner_html_to_json(kind, key, namespace, tag, attributes, inner_html) 
   |> json_object_builder.string("tag", tag)
   |> json_object_builder.list("attributes", attributes, vattr.to_json)
   |> json_object_builder.string("inner_html", inner_html)
+  |> json_object_builder.build
+}
+
+fn memo_to_json(kind, key, view, memos) {
+  let child = case mutable_map.has_key(memos, view) {
+    True -> mutable_map.unsafe_get(memos, view)
+    False -> view()
+  }
+
+  json_object_builder.tagged(kind)
+  |> json_object_builder.string("key", key)
+  |> json_object_builder.json("child", to_json(child, memos))
   |> json_object_builder.build
 }
 
@@ -294,6 +327,8 @@ pub fn to_string_tree(node: Element(msg)) -> StringTree {
     }
 
     Map(element:, ..) -> to_string_tree(element)
+
+    Memo(view:, ..) -> to_string_tree(view())
   }
 }
 
@@ -391,6 +426,8 @@ fn do_to_snapshot_builder(
     }
 
     Map(element:, ..) -> do_to_snapshot_builder(element, raw_text, indent)
+
+    Memo(view:, ..) -> do_to_snapshot_builder(view(), raw_text, indent)
   }
 }
 

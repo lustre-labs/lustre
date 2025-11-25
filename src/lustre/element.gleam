@@ -228,11 +228,8 @@ pub fn unsafe_raw_html(
 /// > will call your view function! It may decide to call it even if none of
 /// > your dependencies have changed.
 ///
-pub fn memo(
-  _dependencies: List(Ref),
-  view: fn() -> Element(msg),
-) -> Element(msg) {
-  view()
+pub fn memo(dependencies: List(Ref), view: fn() -> Element(msg)) -> Element(msg) {
+  vnode.memo(key: "", dependencies:, view:)
 }
 
 /// Create a `Ref` dependency value. Lustre will use a heuristic to tell if a
