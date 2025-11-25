@@ -10,6 +10,7 @@ import gleam/otp/actor.{type Next, type StartError}
 import gleam/result
 import gleam/set.{type Set}
 import lustre/effect.{type Effect}
+import lustre/internals/constants
 import lustre/runtime/transport.{type ClientMessage, type ServerMessage}
 import lustre/vdom/diff.{Diff, diff}
 import lustre/vdom/events.{type Events}
@@ -338,7 +339,7 @@ fn handle_attribute_change(
   value: String,
 ) -> Result(msg, Nil) {
   case dict.get(attributes, name) {
-    Error(_) -> Error(Nil)
+    Error(_) -> constants.error_nil
     Ok(handler) -> handler(value)
   }
 }
@@ -349,7 +350,7 @@ fn handle_property_change(
   value: Dynamic,
 ) -> Result(msg, Nil) {
   case dict.get(properties, name) {
-    Error(_) -> Error(Nil)
+    Error(_) -> constants.error_nil
     Ok(decoder) -> decode.run(value, decoder) |> result.replace_error(Nil)
   }
 }

@@ -271,13 +271,16 @@ pub opaque type DecodedEvent(msg) {
 }
 
 pub fn decode(events: Events(msg), path: String, name: String, event: Dynamic) {
-  case mutable_map.get(events.handlers, path <> path.separator_event <> name) {
-    Ok(handler) ->
+  let key = path <> path.separator_event <> name
+  case mutable_map.has_key(events.handlers, key) {
+    True -> {
+      let handler = mutable_map.unsafe_get(events.handlers, key)
       case decode.run(event, handler) {
         Ok(handler) -> DecodedEvent(handler:, path:)
         Error(_) -> DispatchedEvent(path:)
       }
-    Error(_) -> DispatchedEvent(path:)
+    }
+    False -> DispatchedEvent(path:)
   }
 }
 
@@ -287,7 +290,7 @@ pub fn dispatch(events: Events(msg), event: DecodedEvent(msg)) {
 
   case event {
     DecodedEvent(handler:, path: _) -> #(events, Ok(handler))
-    DispatchedEvent(_) -> #(events, Error(Nil))
+    DispatchedEvent(_) -> #(events, constants.error_nil)
   }
 }
 
