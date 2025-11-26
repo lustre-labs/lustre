@@ -9,18 +9,16 @@ import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{type Attribute, type Handler, Event, Handler}
 import lustre/vdom/vnode.{
-  type Element, type Memos, type View, Element, Fragment, Map, Memo, Text,
-  UnsafeInnerHtml,
+  type Element, type Memos, Element, Fragment, Map, Memo, Text, UnsafeInnerHtml,
 }
 
 // TYPES -----------------------------------------------------------------------
 
-pub opaque type ConcreteTree(msg) {
+pub type ConcreteTree(msg) {
   ConcreteTree(
-    root: Events(msg),
+    events: Events(msg),
     // 🚨 Because of the `mapper` shenanigans, the `msg` type parameter is
     // a lie until we actually handle an event!
-    memos: MutableMap(View(msg), Events(msg)),
     vdoms: Memos(msg),
     old_vdoms: Memos(msg),
     //
@@ -29,15 +27,20 @@ pub opaque type ConcreteTree(msg) {
   )
 }
 
-pub opaque type Events(msg) {
+pub type Events(msg) {
   Events(
     handlers: MutableMap(String, Decoder(Handler(msg))),
     children: MutableMap(String, Child(msg)),
   )
 }
 
-type Child(msg) {
-  Child(view: View(msg), mapper: Mapper)
+pub type Child(msg) {
+  Child(
+    mapper: Mapper,
+    // 🚨 Because of the `mapper` shenanigans, the `msg` type parameter is
+    // a lie until we actually handle an event!
+    events: Events(msg),
+  )
 }
 
 pub type Mapper =
@@ -55,8 +58,7 @@ pub fn compose_mapper(mapper: Mapper, child_mapper: Mapper) -> Mapper {
 ///
 pub fn new() -> ConcreteTree(msg) {
   ConcreteTree(
-    root: Events(handlers: mutable_map.new(), children: mutable_map.new()),
-    memos: mutable_map.new(),
+    events: new_events(),
     vdoms: mutable_map.new(),
     old_vdoms: mutable_map.new(),
     dispatched_paths: constants.empty_list,
@@ -64,34 +66,28 @@ pub fn new() -> ConcreteTree(msg) {
   )
 }
 
-pub fn from_node(root: Element(msg)) -> ConcreteTree(msg) {
-  let events = Events(handlers: mutable_map.new(), children: mutable_map.new())
-  let events = add_child(events, function.identity, path.root, 0, root)
-  ConcreteTree(..new(), root: events)
+pub fn new_events() -> Events(msg) {
+  Events(handlers: mutable_map.new(), children: mutable_map.new())
 }
 
-pub fn tick(events: ConcreteTree(msg)) -> ConcreteTree(msg) {
+pub fn from_node(root: Element(msg)) -> ConcreteTree(msg) {
+  let tree = new()
+  let #(tree, events) =
+    add_child(tree, tree.events, function.identity, path.root, 0, root)
+  ConcreteTree(..tree, events:)
+}
+
+pub fn tick(tree: ConcreteTree(msg)) -> ConcreteTree(msg) {
   ConcreteTree(
-    ..events,
+    events: tree.events,
     vdoms: mutable_map.new(),
-    old_vdoms: events.vdoms,
-    dispatched_paths: events.next_dispatched_paths,
+    old_vdoms: tree.vdoms,
+    dispatched_paths: tree.next_dispatched_paths,
     next_dispatched_paths: constants.empty_list,
   )
 }
 
 // MEMO MANIPULATIONS ---------------------------------------------------------
-
-pub fn root(tree: ConcreteTree(msg)) -> Events(msg) {
-  tree.root
-}
-
-pub fn with_root(
-  tree: ConcreteTree(msg),
-  root: Events(msg),
-) -> ConcreteTree(msg) {
-  ConcreteTree(..tree, root:)
-}
 
 pub fn memos(tree: ConcreteTree(msg)) -> Memos(msg) {
   tree.vdoms
@@ -144,52 +140,15 @@ fn do_remove_event(
 }
 
 pub fn add_child(
+  tree: ConcreteTree(msg),
   events: Events(msg),
   mapper: Mapper,
   parent: Path,
   index: Int,
   child: Element(msg),
-) -> Events(msg) {
-  let handlers = do_add_child(events.handlers, mapper, parent, index, child)
-  Events(..events, handlers:)
-}
-
-fn do_add_child(
-  handlers: MutableMap(String, Decoder(Handler(msg))),
-  mapper: Mapper,
-  parent: Path,
-  child_index: Int,
-  child: Element(msg),
-) -> MutableMap(String, Decoder(Handler(msg))) {
-  case child {
-    Element(attributes:, children:, ..) -> {
-      let path = path.add(parent, child_index, child.key)
-
-      handlers
-      |> add_attributes(mapper, path, attributes)
-      |> do_add_children(mapper, path, 0, children)
-    }
-
-    Fragment(children:, ..) -> {
-      let path = path.add(parent, child_index, child.key)
-      do_add_children(handlers, mapper, path, 0, children)
-    }
-
-    UnsafeInnerHtml(attributes:, ..) -> {
-      let path = path.add(parent, child_index, child.key)
-      add_attributes(handlers, mapper, path, attributes)
-    }
-
-    Map(element:, ..) -> {
-      let composed_mapper = compose_mapper(mapper, child.mapper)
-      do_add_child(handlers, composed_mapper, parent, child_index, element)
-    }
-
-    Memo(view:, ..) ->
-      todo as "do_add_child(Memo) should query and store the materialised tree"
-
-    Text(..) -> handlers
-  }
+) -> #(ConcreteTree(msg), Events(msg)) {
+  let children = [child, ..constants.empty_list]
+  add_children(tree, events, mapper, parent, index, children)
 }
 
 fn add_attributes(
@@ -206,34 +165,108 @@ fn add_attributes(
   }
 }
 
+type AddedChildren(msg) {
+  AddedChildren(
+    handlers: MutableMap(String, Decoder(Handler(msg))),
+    children: MutableMap(String, Child(msg)),
+    vdoms: Memos(msg),
+  )
+}
+
 ///
 ///
 pub fn add_children(
+  tree: ConcreteTree(msg),
   events: Events(msg),
   mapper: Mapper,
   path: Path,
   child_index: Int,
-  children: List(Element(msg)),
-) -> Events(msg) {
-  let handlers =
-    do_add_children(events.handlers, mapper, path, child_index, children)
-  Events(..events, handlers:)
+  nodes: List(Element(msg)),
+) -> #(ConcreteTree(msg), Events(msg)) {
+  let vdoms = tree.vdoms
+  let Events(handlers:, children:) = events
+  let AddedChildren(handlers:, children:, vdoms:) =
+    do_add_children(handlers, children, vdoms, mapper, path, child_index, nodes)
+  #(ConcreteTree(..tree, vdoms:), Events(handlers:, children:))
 }
 
 fn do_add_children(
   handlers: MutableMap(String, Decoder(Handler(msg))),
+  children: MutableMap(String, Child(msg)),
+  vdoms: Memos(msg),
   mapper: Mapper,
-  path: Path,
+  parent: Path,
   child_index: Int,
-  children: List(Element(msg)),
-) -> MutableMap(String, Decoder(Handler(msg))) {
-  case children {
-    [] -> handlers
+  nodes: List(Element(msg)),
+) -> AddedChildren(msg) {
+  let next = child_index + 1
 
-    [child, ..rest] ->
-      handlers
-      |> do_add_child(mapper, path, child_index, child)
-      |> do_add_children(mapper, path, child_index + 1, rest)
+  case nodes {
+    [] -> AddedChildren(handlers:, children:, vdoms:)
+
+    [Element(key:, attributes:, children: nodes, ..), ..rest] -> {
+      let path = path.add(parent, child_index, key)
+
+      let handlers = add_attributes(handlers, mapper, path, attributes)
+
+      let AddedChildren(handlers:, children:, vdoms:) =
+        do_add_children(handlers, children, vdoms, mapper, path, 0, nodes)
+
+      do_add_children(handlers, children, vdoms, mapper, parent, next, rest)
+    }
+
+    [Fragment(key:, children: nodes, ..), ..rest] -> {
+      let path = path.add(parent, child_index, key)
+
+      let AddedChildren(handlers:, children:, vdoms:) =
+        do_add_children(handlers, children, vdoms, mapper, path, 0, nodes)
+
+      do_add_children(handlers, children, vdoms, mapper, parent, next, rest)
+    }
+
+    [UnsafeInnerHtml(key:, attributes:, ..), ..rest] -> {
+      let path = path.add(parent, child_index, key)
+
+      let handlers = add_attributes(handlers, mapper, path, attributes)
+
+      do_add_children(handlers, children, vdoms, mapper, parent, next, rest)
+    }
+
+    [Map(element:, mapper: child_mapper, ..), ..rest] -> {
+      let mapper = compose_mapper(mapper, child_mapper)
+      let rest = [element, ..rest]
+      let next = child_index
+      do_add_children(handlers, children, vdoms, mapper, parent, next, rest)
+    }
+
+    [Memo(key:, view:, ..), ..rest] -> {
+      let path = path.add(parent, child_index, key)
+
+      let child_node = view()
+      let vdoms = mutable_map.insert(vdoms, view, child_node)
+
+      let added =
+        do_add_children(
+          mutable_map.new(),
+          mutable_map.new(),
+          vdoms,
+          function.identity,
+          path.root,
+          0,
+          [child_node, ..constants.empty_list],
+        )
+
+      let vdoms = added.vdoms
+      let child_events =
+        Events(handlers: added.handlers, children: added.children)
+      let child = Child(mapper:, events: child_events)
+      let children = mutable_map.insert(children, path.child(path), child)
+
+      do_add_children(handlers, children, vdoms, mapper, parent, next, rest)
+    }
+
+    [Text(..), ..rest] ->
+      do_add_children(handlers, children, vdoms, mapper, parent, next, rest)
   }
 }
 
@@ -243,42 +276,10 @@ pub fn remove_child(
   child_index: Int,
   child: Element(msg),
 ) -> Events(msg) {
-  let handlers = do_remove_child(events.handlers, parent, child_index, child)
-  Events(..events, handlers:)
-}
-
-fn do_remove_child(
-  handlers: MutableMap(String, Decoder(Handler(msg))),
-  parent: Path,
-  child_index: Int,
-  child: Element(msg),
-) -> MutableMap(String, Decoder(Handler(msg))) {
-  case child {
-    Element(attributes:, children:, ..) -> {
-      let path = path.add(parent, child_index, child.key)
-
-      handlers
-      |> remove_attributes(path, attributes)
-      |> do_remove_children(path, 0, children)
-    }
-
-    Fragment(children:, ..) -> {
-      let path = path.add(parent, child_index, child.key)
-      do_remove_children(handlers, path, 0, children)
-    }
-
-    UnsafeInnerHtml(attributes:, ..) -> {
-      let path = path.add(parent, child_index, child.key)
-      remove_attributes(handlers, path, attributes)
-    }
-
-    Map(element:, ..) -> do_remove_child(handlers, parent, child_index, element)
-
-    Memo(..) ->
-      todo as "I don't think removing a memo node does anything since it delegates to another tree"
-
-    Text(..) -> handlers
-  }
+  do_remove_children(events.handlers, events.children, parent, child_index, [
+    child,
+    ..constants.empty_list
+  ])
 }
 
 fn remove_attributes(
@@ -295,18 +296,73 @@ fn remove_attributes(
 
 fn do_remove_children(
   handlers: MutableMap(String, Decoder(Handler(msg))),
-  path: Path,
+  children: MutableMap(String, Child(msg)),
+  parent: Path,
   child_index: Int,
-  children: List(Element(msg)),
-) -> MutableMap(String, Decoder(Handler(msg))) {
-  case children {
-    [] -> handlers
+  nodes: List(Element(msg)),
+) -> Events(msg) {
+  let next_index = child_index + 1
 
-    [child, ..rest] ->
-      handlers
-      |> do_remove_child(path, child_index, child)
-      |> do_remove_children(path, child_index + 1, rest)
+  case nodes {
+    [] -> Events(handlers:, children:)
+
+    [Element(key:, attributes:, children: nodes, ..), ..rest] -> {
+      let path = path.add(parent, child_index, key)
+
+      let handlers = remove_attributes(handlers, path, attributes)
+      let Events(handlers:, children:) =
+        do_remove_children(handlers, children, path, 0, nodes)
+
+      do_remove_children(handlers, children, parent, next_index, rest)
+    }
+
+    [Fragment(key:, children: nodes, ..), ..rest] -> {
+      let path = path.add(parent, child_index, key)
+
+      let Events(handlers:, children:) =
+        do_remove_children(handlers, children, path, 0, nodes)
+
+      do_remove_children(handlers, children, parent, next_index, rest)
+    }
+
+    [UnsafeInnerHtml(key:, attributes:, ..), ..rest] -> {
+      let path = path.add(parent, child_index, key)
+
+      let handlers = remove_attributes(handlers, path, attributes)
+
+      do_remove_children(handlers, children, parent, next_index, rest)
+    }
+
+    [Map(element:, ..), ..rest] -> {
+      let nodes = [element, ..rest]
+      // since we push a node here, we want to use child_index instead of next_index!
+      do_remove_children(handlers, children, parent, child_index, nodes)
+    }
+
+    [Memo(key:, ..), ..rest] -> {
+      let path = path.add(parent, child_index, key)
+
+      let children = mutable_map.delete(children, path.child(path))
+
+      do_remove_children(handlers, children, parent, next_index, rest)
+    }
+
+    [Text(..), ..rest] ->
+      do_remove_children(handlers, children, parent, next_index, rest)
   }
+}
+
+pub fn replace_child(
+  tree: ConcreteTree(msg),
+  events: Events(msg),
+  mapper: Mapper,
+  parent: Path,
+  child_index: Int,
+  prev: Element(msg),
+  next: Element(msg),
+) -> #(ConcreteTree(msg), Events(msg)) {
+  let events = remove_child(events, parent, child_index, prev)
+  add_child(tree, events, mapper, parent, child_index, next)
 }
 
 // QUERIES ---------------------------------------------------------------------
@@ -324,7 +380,7 @@ pub fn decode(
 ) {
   let parts = path.split_memo(path <> path.separator_event <> name)
 
-  case get_handler(tree, tree.root, parts, function.identity) {
+  case get_handler(tree.events, parts, function.identity) {
     Ok(handler) ->
       case decode.run(event, handler) {
         Ok(handler) -> DecodedEvent(handler:, path:)
@@ -335,12 +391,7 @@ pub fn decode(
   }
 }
 
-fn get_handler(
-  tree: ConcreteTree(msg),
-  events: Events(msg),
-  path: List(String),
-  mapper: Mapper,
-) {
+fn get_handler(events: Events(msg), path: List(String), mapper: Mapper) {
   case path {
     [] -> constants.error_nil
 
@@ -360,16 +411,8 @@ fn get_handler(
 
         True -> {
           let child = mutable_map.unsafe_get(events.children, key)
-
-          case mutable_map.has_key(tree.memos, child.view) {
-            False -> constants.error_nil
-
-            True -> {
-              let events = mutable_map.unsafe_get(tree.memos, child.view)
-              let mapper = compose_mapper(mapper, child.mapper)
-              get_handler(tree, events, path, mapper)
-            }
-          }
+          let mapper = compose_mapper(mapper, child.mapper)
+          get_handler(child.events, path, mapper)
         }
       }
   }

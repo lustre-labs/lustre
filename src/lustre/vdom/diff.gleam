@@ -5,12 +5,13 @@ import gleam/json
 import gleam/order.{Eq, Gt, Lt}
 import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
+import lustre/internals/ref
 import lustre/vdom/events.{type ConcreteTree, type Events}
 import lustre/vdom/patch.{type Change, type Patch, Patch}
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{type Attribute, Attribute, Event, Property}
 import lustre/vdom/vnode.{
-  type Element, Element, Fragment, Map, Text, UnsafeInnerHtml,
+  type Element, Element, Fragment, Map, Memo, Text, UnsafeInnerHtml,
 }
 
 // TYPES -----------------------------------------------------------------------
@@ -34,7 +35,7 @@ pub fn diff(
 ) -> Diff(msg) {
   let tree = events.tick(tree)
 
-  let PartialDiff(patch:, events:, tree:) =
+  let PartialDiff(patch:, tree:, events:) =
     do_diff(
       old: [old, ..constants.empty_list],
       old_keyed: mutable_map.new(),
@@ -52,11 +53,11 @@ pub fn diff(
       //
       path: path.root,
       mapper: function.identity,
-      tree: tree,
-      events: events.root(tree),
+      tree:,
+      events: tree.events,
     )
 
-  Diff(patch:, tree: events.with_root(tree, events))
+  Diff(patch:, tree: events.ConcreteTree(..tree, events:))
 }
 
 fn do_diff(
@@ -76,16 +77,14 @@ fn do_diff(
   //
   path path: Path,
   mapper mapper: events.Mapper,
-  events events: Events(msg),
   tree tree: ConcreteTree(msg),
+  events events: Events(msg),
 ) -> PartialDiff(msg) {
   case old, new {
-    [], [] ->
-      PartialDiff(
-        patch: Patch(index: patch_index, removed:, changes:, children:),
-        tree:,
-        events:,
-      )
+    [], [] -> {
+      let patch = Patch(index: patch_index, removed:, changes:, children:)
+      PartialDiff(patch:, tree:, events:)
+    }
 
     // We've run out of new children to diff. We now need to check whether the
     // each remaining child has been moved (and so can be ignored) here, or if it
@@ -116,8 +115,8 @@ fn do_diff(
         children:,
         path:,
         mapper:,
-        events:,
         tree:,
+        events:,
       )
     }
 
@@ -126,16 +125,15 @@ fn do_diff(
     // walk the list and extract their event handlers (and their children's
     // event handlers...)
     [], [_, ..] -> {
-      let events = events.add_children(events, mapper, path, node_index, new)
+      let #(tree, events) =
+        events.add_children(tree, events, mapper, path, node_index, new)
+
       let insert =
         patch.insert(children: new, before: node_index - moved_offset)
       let changes = [insert, ..changes]
+      let patch = Patch(index: patch_index, removed:, changes:, children:)
 
-      PartialDiff(
-        patch: Patch(index: patch_index, removed:, changes:, children:),
-        tree: tree,
-        events: events,
-      )
+      PartialDiff(patch:, tree:, events:)
     }
 
     // We might be able to diff these two nodes, but at least one of them has a
@@ -167,8 +165,8 @@ fn do_diff(
                 children:,
                 path:,
                 mapper:,
-                events:,
                 tree:,
+                events:,
               )
 
             // The previous child exists in the incoming tree and this is the first
@@ -215,7 +213,6 @@ fn do_diff(
               let before = node_index - moved_offset
               let changes = [patch.move(key: next.key, before:), ..changes]
               let moved = mutable_map.insert(moved, next.key, Nil)
-              let moved_offset = moved_offset + 1
 
               do_diff(
                 old: [match, ..old],
@@ -223,7 +220,7 @@ fn do_diff(
                 new:,
                 new_keyed:,
                 moved:,
-                moved_offset:,
+                moved_offset: moved_offset + 1,
                 removed:,
                 node_index:,
                 patch_index:,
@@ -231,8 +228,8 @@ fn do_diff(
                 children:,
                 path:,
                 mapper:,
-                events:,
                 tree:,
+                events:,
               )
             }
           }
@@ -244,7 +241,6 @@ fn do_diff(
           let index = node_index - moved_offset
           let changes = [patch.remove(index), ..changes]
           let events = events.remove_child(events, path, node_index, prev)
-          let moved_offset = moved_offset - 1
 
           do_diff(
             old: old_remaining,
@@ -252,7 +248,7 @@ fn do_diff(
             new:,
             new_keyed:,
             moved:,
-            moved_offset:,
+            moved_offset: moved_offset - 1,
             removed:,
             node_index:,
             patch_index:,
@@ -260,8 +256,8 @@ fn do_diff(
             children:,
             path:,
             mapper:,
-            events:,
             tree:,
+            events:,
           )
         }
 
@@ -270,7 +266,8 @@ fn do_diff(
         // That means we need to add an `Insert` change.
         True, False -> {
           let before = node_index - moved_offset
-          let events = events.add_child(events, mapper, path, node_index, next)
+          let #(tree, events) =
+            events.add_child(tree, events, mapper, path, node_index, next)
           let insert = patch.insert(children: [next], before:)
           let changes = [insert, ..changes]
 
@@ -288,8 +285,8 @@ fn do_diff(
             children:,
             path:,
             mapper:,
-            events:,
             tree:,
+            events:,
           )
         }
 
@@ -299,10 +296,16 @@ fn do_diff(
           let change =
             patch.replace(index: node_index - moved_offset, with: next)
 
-          let events =
-            events
-            |> events.remove_child(path, node_index, prev)
-            |> events.add_child(mapper, path, node_index, next)
+          let #(tree, events) =
+            events.replace_child(
+              tree,
+              events,
+              mapper,
+              path,
+              node_index,
+              prev,
+              next,
+            )
 
           do_diff(
             old: old_remaining,
@@ -318,8 +321,8 @@ fn do_diff(
             children:,
             path:,
             mapper:,
-            events:,
             tree:,
+            events:,
           )
         }
       }
@@ -329,10 +332,8 @@ fn do_diff(
     // cases these means we can morph the existing DOM node into the new one by
     // producing precise changes.
     [Fragment(..) as prev, ..old], [Fragment(..) as next, ..new] -> {
-      let child_path = path.add(path, node_index, next.key)
-
       // We diff fragments as if they are "real" nodes with children.
-      let child =
+      let PartialDiff(patch:, tree:, events:) =
         do_diff(
           old: prev.children,
           old_keyed: prev.keyed_children,
@@ -345,15 +346,15 @@ fn do_diff(
           patch_index: node_index,
           changes: constants.empty_list,
           children: constants.empty_list,
-          path: child_path,
+          path: path.add(path, node_index, next.key),
           mapper:,
-          events:,
           tree:,
+          events:,
         )
 
-      let children = case child.patch {
+      let children = case patch {
         Patch(removed: 0, changes: [], children: [], ..) -> children
-        _ -> [child.patch, ..children]
+        _ -> [patch, ..children]
       }
 
       do_diff(
@@ -370,8 +371,8 @@ fn do_diff(
         children:,
         path:,
         mapper:,
-        events: child.events,
-        tree: child.tree,
+        tree:,
+        events:,
       )
     }
 
@@ -403,7 +404,7 @@ fn do_diff(
         _, _ -> [patch.update(added: added_attrs, removed: removed_attrs)]
       }
 
-      let child =
+      let PartialDiff(patch:, tree:, events:) =
         do_diff(
           old: prev.children,
           old_keyed: prev.keyed_children,
@@ -418,13 +419,13 @@ fn do_diff(
           children: constants.empty_list,
           path: child_path,
           mapper:,
-          events:,
           tree:,
+          events:,
         )
 
-      let children = case child.patch {
+      let children = case patch {
         Patch(removed: 0, changes: [], children: [], ..) -> children
-        _ -> [child.patch, ..children]
+        _ -> [patch, ..children]
       }
 
       do_diff(
@@ -436,13 +437,13 @@ fn do_diff(
         moved_offset:,
         removed:,
         node_index: node_index + 1,
-        patch_index: patch_index,
+        patch_index:,
         changes:,
         children:,
         path:,
         mapper:,
-        events: child.events,
-        tree: child.tree,
+        tree:,
+        events:,
       )
     }
 
@@ -465,8 +466,8 @@ fn do_diff(
         children:,
         path:,
         mapper:,
-        events:,
         tree:,
+        events:,
       )
 
     // Text nodes have a special `ReplaceText` change that allows us to update
@@ -494,8 +495,8 @@ fn do_diff(
         children: [child, ..children],
         path:,
         mapper:,
-        events:,
         tree:,
+        events:,
       )
     }
 
@@ -538,20 +539,20 @@ fn do_diff(
         moved_offset:,
         removed:,
         node_index: node_index + 1,
-        patch_index: patch_index,
+        patch_index:,
         changes:,
         children:,
         path:,
         mapper:,
-        events:,
         tree:,
+        events:,
       )
     }
 
     [Map(..) as prev, ..old], [Map(..) as next, ..new] -> {
       let composed_mapper = events.compose_mapper(mapper, next.mapper)
 
-      let PartialDiff(patch:, events:, tree:) =
+      let PartialDiff(patch:, tree:, events:) =
         do_diff(
           old: [prev.element, ..constants.empty_list],
           old_keyed: mutable_map.new(),
@@ -562,18 +563,13 @@ fn do_diff(
           removed:,
           node_index:,
           patch_index:,
-          changes: constants.empty_list,
-          children: constants.empty_list,
+          changes:,
+          children:,
           path:,
           mapper: composed_mapper,
-          events:,
           tree:,
+          events:,
         )
-
-      let children = case patch {
-        Patch(removed: 0, changes: [], children: [], ..) -> children
-        _ -> [patch, ..children]
-      }
 
       do_diff(
         old:,
@@ -582,16 +578,172 @@ fn do_diff(
         new_keyed:,
         moved:,
         moved_offset:,
-        removed:,
         node_index: node_index + 1,
-        patch_index:,
-        changes:,
-        children: [patch, ..children],
+        removed: patch.removed,
+        patch_index: patch.index,
+        changes: patch.changes,
+        children: patch.children,
         path:,
         mapper:,
-        events:,
         tree:,
+        events:,
       )
+    }
+
+    [Memo(..) as prev, ..old], [Memo(..) as next, ..new] -> {
+      let child_path = path.add(path, node_index, next.key)
+      let child_path_key = path.child(child_path)
+
+      let prev_node = mutable_map.unsafe_get(tree.old_vdoms, prev.view)
+
+      case ref.equal_lists(prev.dependencies, next.dependencies) {
+        True -> {
+          // TODO: move to events.gleam
+          // Transition the vdom
+          let tree =
+            events.ConcreteTree(
+              ..tree,
+              vdoms: mutable_map.insert(tree.vdoms, next.view, prev_node),
+            )
+
+          // TODO: move to events.gleam
+          // Transition the events
+          // let #(tree, events) = case
+          //   mutable_map.has_key(events.children, child_path_key)
+          // {
+          //   True -> {
+          //     let child =
+          //       mutable_map.unsafe_get(events.children, child_path_key)
+          //     let child = events.Child(mapper:, events: child.events)
+          //     let children =
+          //       mutable_map.insert(events.children, child_path_key, child)
+          //     #(tree, events.Events(..events, children:))
+          //   }
+
+          //   False -> {
+          //     events.add_child(tree, events, mapper, path, node_index, next)
+          //   }
+          // }
+          //
+          let child_events =
+            mutable_map.unsafe_get(events.children, child_path_key).events
+          let child = events.Child(mapper:, events: child_events)
+
+          let events =
+            events.Events(
+              ..events,
+              children: mutable_map.insert(
+                events.children,
+                child_path_key,
+                child,
+              ),
+            )
+
+          do_diff(
+            old:,
+            old_keyed:,
+            new:,
+            new_keyed:,
+            moved:,
+            moved_offset:,
+            removed:,
+            node_index: node_index + 1,
+            patch_index:,
+            changes:,
+            children:,
+            path:,
+            mapper:,
+            tree:,
+            events:,
+          )
+        }
+
+        False -> {
+          // TODO: move to events.gleam
+          // let prev_node = case mutable_map.has_key(tree.old_vdoms, prev.view) {
+          //   True -> mutable_map.unsafe_get(tree.old_vdoms, prev.view)
+          //   False -> prev.view()
+          // }
+
+          // TODO: move to events.gleam
+          // let #(next_node, tree) = case
+          //   mutable_map.has_key(tree.vdoms, next.view)
+          // {
+          //   True -> #(mutable_map.unsafe_get(tree.vdoms, next.view), tree)
+          //   False -> {
+          //     let node = next.view()
+          //     let vdoms = mutable_map.insert(tree.vdoms, next.view, node)
+          //     #(node, events.ConcreteTree(..tree, vdoms:))
+          //   }
+          // }
+
+          let next_node = next.view()
+          let tree =
+            events.ConcreteTree(
+              ..tree,
+              vdoms: mutable_map.insert(tree.vdoms, next.view, next_node),
+            )
+
+          // TODO: move to events.gleam
+          // let child_events = case
+          //   mutable_map.has_key(events.children, child_path_key)
+          // {
+          //   True ->
+          //     mutable_map.unsafe_get(events.children, child_path_key).events
+          //   False -> events.new_events()
+          // }
+          let child_events =
+            mutable_map.unsafe_get(events.children, child_path_key).events
+
+          let PartialDiff(patch:, tree:, events: child_events) =
+            do_diff(
+              old: [prev_node, ..constants.empty_list],
+              old_keyed: mutable_map.new(),
+              new: [next_node, ..constants.empty_list],
+              new_keyed: mutable_map.new(),
+              moved: mutable_map.new(),
+              moved_offset: 0,
+              removed: 0,
+              node_index: 0,
+              patch_index: node_index,
+              changes: constants.empty_list,
+              children: constants.empty_list,
+              path: path.root,
+              mapper: function.identity,
+              tree:,
+              events: child_events,
+            )
+
+          // TODO: move to events.gleam
+          let events =
+            events.Events(
+              ..events,
+              children: mutable_map.insert(
+                events.children,
+                child_path_key,
+                events.Child(mapper:, events: child_events),
+              ),
+            )
+
+          do_diff(
+            old:,
+            old_keyed:,
+            new:,
+            new_keyed:,
+            moved:,
+            moved_offset:,
+            removed:,
+            node_index: node_index + 1,
+            patch_index:,
+            changes:,
+            children: [patch, ..children],
+            path:,
+            mapper:,
+            tree:,
+            events:,
+          )
+        }
+      }
     }
 
     // If we land here we've exhausted any other possibility for a more focused
@@ -600,10 +752,8 @@ fn do_diff(
     [prev, ..old_remaining], [next, ..new_remaining] -> {
       let change = patch.replace(index: node_index - moved_offset, with: next)
 
-      let events =
-        events
-        |> events.remove_child(path, node_index, prev)
-        |> events.add_child(mapper, path, node_index, next)
+      let #(tree, events) =
+        events.replace_child(tree, events, mapper, path, node_index, prev, next)
 
       do_diff(
         old: old_remaining,
@@ -619,8 +769,8 @@ fn do_diff(
         children:,
         path:,
         mapper:,
-        events:,
         tree:,
+        events:,
       )
     }
   }
@@ -660,24 +810,21 @@ fn diff_attributes(
   removed removed: List(Attribute(msg)),
 ) -> AttributeChange(msg) {
   case old, new {
-    [], [] -> AttributeChange(events:, added:, removed:)
+    [], [] -> AttributeChange(added:, removed:, events:)
 
     [Event(name:, ..) as prev, ..old], [] -> {
-      let removed = [prev, ..removed]
-      let events = events.remove_event(events, path, name)
       diff_attributes(
         controlled:,
         path:,
         mapper:,
-        events:,
+        events: events.remove_event(events, path, name),
         old:,
         new:,
         added:,
-        removed:,
+        removed: [prev, ..removed],
       )
     }
     [prev, ..old], [] -> {
-      let removed = [prev, ..removed]
       diff_attributes(
         controlled:,
         path:,
@@ -686,27 +833,24 @@ fn diff_attributes(
         old:,
         new:,
         added:,
-        removed:,
+        removed: [prev, ..removed],
       )
     }
 
     [], [Event(name:, handler:, ..) as next, ..new] -> {
-      let added = [next, ..added]
-      let events = events.add_event(events, mapper, path, name, handler)
       diff_attributes(
         controlled:,
         path:,
         mapper:,
-        events:,
+        events: events.add_event(events, mapper, path, name, handler),
         old:,
         new:,
-        added:,
+        added: [next, ..added],
         removed:,
       )
     }
 
     [], [next, ..new] -> {
-      let added = [next, ..added]
       diff_attributes(
         controlled:,
         path:,
@@ -714,7 +858,7 @@ fn diff_attributes(
         events:,
         old:,
         new:,
-        added:,
+        added: [next, ..added],
         removed:,
       )
     }
@@ -782,13 +926,11 @@ fn diff_attributes(
             False -> added
           }
 
-          let events = events.add_event(events, mapper, path, name, handler)
-
           diff_attributes(
             controlled:,
             path:,
             mapper:,
-            events:,
+            events: events.add_event(events, mapper, path, name, handler),
             old: remaining_old,
             new: remaining_new,
             added:,
@@ -797,43 +939,32 @@ fn diff_attributes(
         }
 
         Event(name:, ..), Eq, _ -> {
-          let added = [next, ..added]
-          let removed = [prev, ..removed]
-          let events = events.remove_event(events, path, name)
-
           diff_attributes(
             controlled:,
             path:,
             mapper:,
-            events:,
+            events: events.remove_event(events, path, name),
             old: remaining_old,
             new: remaining_new,
-            added:,
-            removed:,
+            added: [next, ..added],
+            removed: [prev, ..removed],
           )
         }
 
         _, Eq, Event(name:, handler:, ..) -> {
-          let added = [next, ..added]
-          let removed = [prev, ..removed]
-          let events = events.add_event(events, mapper, path, name, handler)
-
           diff_attributes(
             controlled:,
             path:,
             mapper:,
-            events:,
+            events: events.add_event(events, mapper, path, name, handler),
             old: remaining_old,
             new: remaining_new,
-            added:,
-            removed:,
+            added: [next, ..added],
+            removed: [prev, ..removed],
           )
         }
 
         _, Eq, _ -> {
-          let added = [next, ..added]
-          let removed = [prev, ..removed]
-
           diff_attributes(
             controlled:,
             path:,
@@ -841,30 +972,25 @@ fn diff_attributes(
             events:,
             old: remaining_old,
             new: remaining_new,
-            added:,
-            removed:,
+            added: [next, ..added],
+            removed: [prev, ..removed],
           )
         }
 
         _, Gt, Event(name:, handler:, ..) -> {
-          let added = [next, ..added]
-          let events = events.add_event(events, mapper, path, name, handler)
-
           diff_attributes(
             controlled:,
             path:,
             mapper:,
-            events:,
+            events: events.add_event(events, mapper, path, name, handler),
             old:,
             new: remaining_new,
-            added:,
+            added: [next, ..added],
             removed:,
           )
         }
 
         _, Gt, _ -> {
-          let added = [next, ..added]
-
           diff_attributes(
             controlled:,
             path:,
@@ -872,30 +998,25 @@ fn diff_attributes(
             events:,
             old:,
             new: remaining_new,
-            added:,
+            added: [next, ..added],
             removed:,
           )
         }
 
         Event(name:, ..), Lt, _ -> {
-          let removed = [prev, ..removed]
-          let events = events.remove_event(events, path, name)
-
           diff_attributes(
             controlled:,
             path:,
             mapper:,
-            events:,
+            events: events.remove_event(events, path, name),
             old: remaining_old,
             new:,
             added:,
-            removed:,
+            removed: [prev, ..removed],
           )
         }
 
         _, Lt, _ -> {
-          let removed = [prev, ..removed]
-
           diff_attributes(
             controlled:,
             path:,
@@ -904,7 +1025,7 @@ fn diff_attributes(
             old: remaining_old,
             new:,
             added:,
-            removed:,
+            removed: [prev, ..removed],
           )
         }
       }

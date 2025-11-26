@@ -247,11 +247,13 @@ export class Runtime {
     this.#renderTimer = null;
 
     const next = this.#view(this.#model);
-    const { patch, events } = diff(this.#events, this.#vdom, next);
+    // TODO: rename
+    const { patch, tree: events } = diff(this.#events, this.#vdom, next);
 
     this.#events = events;
     this.#vdom = next;
-    this.#reconciler.push(patch);
+    // TODO: remove direct access to .vdoms
+    this.#reconciler.push(patch, events.vdoms);
 
     // We have performed a render, the DOM has been updated but the browser has
     // not yet been given the opportunity to paint. We queue a microtask to block
@@ -310,9 +312,7 @@ const copiedStyleSheets = new WeakMap();
 
 export async function adoptStylesheets(shadowRoot) {
   const pendingParentStylesheets = [];
-  for (const node of document().querySelectorAll(
-    "link[rel=stylesheet], style",
-  )) {
+  for (const node of document().querySelectorAll("link[rel=stylesheet], style")) {
     if (node.sheet) continue;
 
     pendingParentStylesheets.push(

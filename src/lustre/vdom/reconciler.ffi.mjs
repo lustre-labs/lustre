@@ -5,6 +5,8 @@ import {
   text_kind,
   fragment_kind,
   unsafe_inner_html_kind,
+  map_kind,
+  memo_kind,
 } from "./vnode.mjs";
 
 import {
@@ -25,7 +27,7 @@ import {
   update_kind,
 } from "./patch.mjs";
 
-import { separator_element } from "./path.mjs";
+import { separator_element, separator_memo } from "./path.mjs";
 
 import {
   document,
@@ -96,8 +98,12 @@ class MetadataNode {
     this.debouncers = new Map();
   }
 
+  get isVirtual() {
+    return this.kind === fragment_kind || this.kind === memo_kind;
+  }
+
   get parentNode() {
-    return this.kind === fragment_kind ? this.node.parentNode : this.node;
+    return this.isVirtual ? this.node.parentNode : this.node;
   }
 }
 
@@ -118,11 +124,16 @@ const getPath = (node) => {
   let path = "";
 
   for (let current = node[meta]; current.parent; current = current.parent) {
+    const separator =
+      current.parent && current.parent.kind === memo_kind
+        ? separator_memo
+        : separator_element;
+
     if (current.key) {
-      path = `${separator_element}${current.key}${path}`;
+      path = `${separator}${current.key}${path}`;
     } else {
       const index = current.parent.children.indexOf(current);
-      path = `${separator_element}${index}${path}`;
+      path = `${separator}${index}${path}`;
     }
   }
 
@@ -152,13 +163,15 @@ export class Reconciler {
     this.#insertChild(this.#root, null, this.#root[meta], 0, vdom);
   }
 
-  push(patch) {
+  push(patch, memos = null) {
+    this.#memos = memos;
     this.#stack.push({ node: this.#root[meta], patch: patch });
     this.#reconcile();
   }
 
   // PATCHING ------------------------------------------------------------------
 
+  #memos;
   #stack = [];
 
   #reconcile() {
@@ -242,13 +255,13 @@ export class Reconciler {
 
     let lastChild = children[childCount - 1];
 
-    if (!lastChild && node.kind !== fragment_kind) return null;
+    if (!lastChild && !node.isVirtual) return null;
     if (!lastChild) lastChild = node;
 
     // unwrap the last child as long as we point to a fragment.
     // otherwise, the fragments next sibling would be the first child of the
     // fragment, not the first element after it.
-    while (lastChild.kind === fragment_kind && lastChild.children.length) {
+    while (lastChild.isVirtual && lastChild.children.length) {
       lastChild = lastChild.children[lastChild.children.length - 1];
     }
 
@@ -278,23 +291,24 @@ export class Reconciler {
       }
     }
 
-    const { kind, node, children: prevChildren } = prev;
+    const { node, children: prevChildren } = prev;
     // prev now is the same as `next` inside the loop, and points to the element
     // we found that matches the key! all that's left is to move it before `beforeEl`.
     moveBefore(parentNode, node, beforeEl);
 
     // prev might be a fragment in which case we need do move all its child dom nodes too
-    if (kind === fragment_kind) {
+    if (prev.isVirtual) {
       this.#moveChildren(parentNode, prevChildren, beforeEl);
     }
   }
 
   #moveChildren(domParent, children, beforeEl) {
     for (let i = 0; i < children.length; ++i) {
-      const { kind, node, children: nestedChildren } = children[i];
+      const child = children[i];
+      const { node, children: nestedChildren } = child;
       moveBefore(domParent, node, beforeEl);
 
-      if (kind === fragment_kind) {
+      if (child.isVirtual) {
         this.#moveChildren(domParent, nestedChildren, beforeEl);
       }
     }
@@ -309,13 +323,13 @@ export class Reconciler {
     const deleted = children.splice(index, count);
 
     for (let i = 0; i < deleted.length; ++i) {
-      const { kind, node, children: nestedChildren } = deleted[i];
+      const child = deleted[i];
 
-      removeChild(parentNode, node);
-      this.#removeDebouncers(deleted[i]);
+      removeChild(parentNode, child.node);
+      this.#removeDebouncers(child);
 
-      if (kind === fragment_kind) {
-        deleted.push(...nestedChildren);
+      if (child.isVirtual) {
+        deleted.push(...child.children);
       }
     }
   }
@@ -399,6 +413,20 @@ export class Reconciler {
 
       case map_kind: {
         this.#insertChild(domParent, beforeEl, metaParent, index, vnode.element);
+
+        break;
+      }
+
+      case memo_kind: {
+        const head = this.#createTextNode(metaParent, index, vnode);
+        insertBefore(domParent, head, beforeEl);
+
+        // we get a materialised node here when running as a server component, but a reference node otherwise.
+        const child =
+          vnode.element ?? this.#memos?.get(vnode.view) ?? vnode.view();
+        this.#insertChild(domParent, beforeEl, head[meta], 0, child);
+
+        break;
       }
     }
   }

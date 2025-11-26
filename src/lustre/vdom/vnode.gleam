@@ -194,8 +194,10 @@ pub fn to_keyed(key: String, node: Element(msg)) -> Element(msg) {
     Text(..) -> Text(..node, key:)
     UnsafeInnerHtml(..) -> UnsafeInnerHtml(..node, key:)
     Fragment(..) -> Fragment(..node, key:)
-    Map(..) -> Map(..node, key:)
     Memo(..) -> Memo(..node, key:)
+    // because we skip Map nodes when encoding and reconciling, we have
+    // to set the key on the map (for the diff) as well as the inner node!
+    Map(element:, ..) -> Map(..node, key:, element: to_keyed(key, element))
   }
 }
 
@@ -264,7 +266,7 @@ fn memo_to_json(kind, key, view, memos) {
 
   json_object_builder.tagged(kind)
   |> json_object_builder.string("key", key)
-  |> json_object_builder.json("child", to_json(child, memos))
+  |> json_object_builder.json("element", to_json(child, memos))
   |> json_object_builder.build
 }
 
