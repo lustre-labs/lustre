@@ -6,6 +6,10 @@ export function get(map, key) {
   return map?.get(key);
 }
 
+export function get_or_compute(map, key, compute) {
+  return map?.get(key) ?? compute();
+}
+
 export function has_key(map, key) {
   return map && map.has(key);
 }

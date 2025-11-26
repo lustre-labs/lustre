@@ -30,6 +30,21 @@ pub fn unsafe_get(map: MutableMap(key, value), key: key) -> value {
 @external(erlang, "maps", "get")
 fn do_get(key: key, map: MutableMap(key, value)) -> value
 
+@external(javascript, "./mutable_map.ffi.mjs", "get_or_compute")
+pub fn get_or_compute(
+  map: MutableMap(key, value),
+  key: key,
+  compute: fn() -> value,
+) -> value {
+  case do_find(map, key) {
+    Ok(value) -> value
+    _ -> compute()
+  }
+}
+
+@external(erlang, "gleam@dict", "get")
+fn do_find(map: MutableMap(key, value), key: key) -> Result(value, Nil)
+
 ///
 ///
 @external(javascript, "./mutable_map.ffi.mjs", "has_key")

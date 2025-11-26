@@ -528,11 +528,10 @@ fn do_diff(
       let child_key = path.child(child_path)
 
       // TODO: move to events.gleam
-      // TODO: get_or
-      let child_events = case mutable_map.has_key(events.children, child_key) {
-        True -> mutable_map.unsafe_get(events.children, child_key).events
-        False -> events.new_events()
-      }
+      let events.Child(events: child_events, ..) =
+        mutable_map.get_or_compute(events.children, child_key, fn() {
+          events.Child(prev.mapper, events.new_events())
+        })
 
       let PartialDiff(patch:, tree:, events: child_events) =
         do_diff(
@@ -587,11 +586,8 @@ fn do_diff(
       case ref.equal_lists(prev.dependencies, next.dependencies) {
         True -> {
           // TODO: move to events.gleam
-          // TODO: get_or
-          let node = case mutable_map.has_key(tree.old_vdoms, prev.view) {
-            True -> mutable_map.unsafe_get(tree.old_vdoms, prev.view)
-            False -> next.view()
-          }
+          let node =
+            mutable_map.get_or_compute(tree.old_vdoms, prev.view, next.view)
 
           let vdoms = mutable_map.insert(tree.vdoms, next.view, node)
           let tree = events.ConcreteTree(..tree, vdoms: vdoms)
@@ -615,11 +611,9 @@ fn do_diff(
         }
 
         False -> {
-          // TODO: get_or
-          let prev_node = case mutable_map.has_key(tree.old_vdoms, prev.view) {
-            True -> mutable_map.unsafe_get(tree.old_vdoms, prev.view)
-            False -> prev.view()
-          }
+          // TODO: move to events.gleam
+          let prev_node =
+            mutable_map.get_or_compute(tree.old_vdoms, prev.view, prev.view)
 
           let next_node = next.view()
           let tree =
