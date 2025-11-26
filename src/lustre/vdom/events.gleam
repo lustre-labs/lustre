@@ -288,58 +288,63 @@ fn do_remove_children(
   children: MutableMap(String, Child(msg)),
   vdoms: Memos(msg),
   parent: Path,
-  child_index: Int,
+  index: Int,
   nodes: List(Element(msg)),
 ) -> Events(msg) {
-  let next_index = child_index + 1
+  let next = index + 1
 
   case nodes {
     [] -> Events(handlers:, children:)
 
     [Element(key:, attributes:, children: nodes, ..), ..rest] -> {
-      let path = path.add(parent, child_index, key)
+      let path = path.add(parent, index, key)
 
       let handlers = remove_attributes(handlers, path, attributes)
       let Events(handlers:, children:) =
         do_remove_children(handlers, children, vdoms, path, 0, nodes)
 
-      do_remove_children(handlers, children, vdoms, parent, next_index, rest)
+      do_remove_children(handlers, children, vdoms, parent, next, rest)
     }
 
     [Fragment(key:, children: nodes, ..), ..rest] -> {
-      let path = path.add(parent, child_index, key)
+      let path = path.add(parent, index, key)
 
       let Events(handlers:, children:) =
         do_remove_children(handlers, children, vdoms, path, 0, nodes)
 
-      do_remove_children(handlers, children, vdoms, parent, next_index, rest)
+      do_remove_children(handlers, children, vdoms, parent, next, rest)
     }
 
     [UnsafeInnerHtml(key:, attributes:, ..), ..rest] -> {
-      let path = path.add(parent, child_index, key)
+      let path = path.add(parent, index, key)
 
       let handlers = remove_attributes(handlers, path, attributes)
 
-      do_remove_children(handlers, children, vdoms, parent, next_index, rest)
+      do_remove_children(handlers, children, vdoms, parent, next, rest)
     }
 
     [Map(key:, ..), ..rest] -> {
-      let path = path.add(parent, child_index, key)
+      let path = path.add(parent, index, key)
 
       let children = mutable_map.delete(children, path.child(path))
 
-      do_remove_children(handlers, children, vdoms, parent, next_index, rest)
+      do_remove_children(handlers, children, vdoms, parent, next, rest)
     }
 
-    [Memo(view:, ..), ..rest] -> {
-      let child = mutable_map.unsafe_get(vdoms, view)
-      let nodes = [child, ..rest]
-      // since we push a node here, we want to use child_index instead of next_index!
-      do_remove_children(handlers, children, vdoms, parent, child_index, nodes)
-    }
+    [Memo(view:, ..), ..rest] ->
+      case mutable_map.has_key(vdoms, view) {
+        True -> {
+          let child = mutable_map.unsafe_get(vdoms, view)
+          let nodes = [child, ..rest]
+          // since we push a node here, we want to use index instead of next!
+          do_remove_children(handlers, children, vdoms, parent, index, nodes)
+        }
+        False ->
+          do_remove_children(handlers, children, vdoms, parent, next, rest)
+      }
 
     [Text(..), ..rest] ->
-      do_remove_children(handlers, children, vdoms, parent, next_index, rest)
+      do_remove_children(handlers, children, vdoms, parent, next, rest)
   }
 }
 

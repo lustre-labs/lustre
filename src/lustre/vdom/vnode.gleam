@@ -270,6 +270,7 @@ fn unsafe_inner_html_to_json(kind, key, namespace, tag, attributes, inner_html) 
 }
 
 fn memo_to_json(view, memos) {
+  // TODO: get_or
   let child = case mutable_map.has_key(memos, view) {
     True -> mutable_map.unsafe_get(memos, view)
     False -> view()

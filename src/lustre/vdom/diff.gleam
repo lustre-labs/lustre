@@ -524,12 +524,15 @@ fn do_diff(
     }
 
     [Map(..) as prev, ..old], [Map(..) as next, ..new] -> {
-      // TODO: move to events.gleam
       let child_path = path.add(path, node_index, next.key)
       let child_key = path.child(child_path)
 
-      // TODO: fallback
-      let child = mutable_map.unsafe_get(events.children, child_key)
+      // TODO: move to events.gleam
+      // TODO: get_or
+      let child_events = case mutable_map.has_key(events.children, child_key) {
+        True -> mutable_map.unsafe_get(events.children, child_key).events
+        False -> events.new_events()
+      }
 
       let PartialDiff(patch:, tree:, events: child_events) =
         do_diff(
@@ -546,7 +549,7 @@ fn do_diff(
           children: constants.empty_list,
           path: path.subtree(child_path),
           tree:,
-          events: child.events,
+          events: child_events,
         )
 
       // TODO: move to events.gleam
@@ -581,18 +584,17 @@ fn do_diff(
     }
 
     [Memo(..) as prev, ..old], [Memo(..) as next, ..new] -> {
-      // TODO: fallback
-      let prev_node = mutable_map.unsafe_get(tree.old_vdoms, prev.view)
-
       case ref.equal_lists(prev.dependencies, next.dependencies) {
         True -> {
           // TODO: move to events.gleam
-          // Transition the vdom
-          let tree =
-            events.ConcreteTree(
-              ..tree,
-              vdoms: mutable_map.insert(tree.vdoms, next.view, prev_node),
-            )
+          // TODO: get_or
+          let node = case mutable_map.has_key(tree.old_vdoms, prev.view) {
+            True -> mutable_map.unsafe_get(tree.old_vdoms, prev.view)
+            False -> next.view()
+          }
+
+          let vdoms = mutable_map.insert(tree.vdoms, next.view, node)
+          let tree = events.ConcreteTree(..tree, vdoms: vdoms)
 
           do_diff(
             old:,
@@ -613,6 +615,12 @@ fn do_diff(
         }
 
         False -> {
+          // TODO: get_or
+          let prev_node = case mutable_map.has_key(tree.old_vdoms, prev.view) {
+            True -> mutable_map.unsafe_get(tree.old_vdoms, prev.view)
+            False -> prev.view()
+          }
+
           let next_node = next.view()
           let tree =
             events.ConcreteTree(
