@@ -63,6 +63,7 @@ pub type Element(msg) {
     kind: Int,
     key: String,
     mapper: fn(Dynamic) -> Dynamic,
+    // TODO: rename to `child`
     element: Element(msg),
   )
 
@@ -194,9 +195,10 @@ pub fn to_keyed(key: String, node: Element(msg)) -> Element(msg) {
     Text(..) -> Text(..node, key:)
     UnsafeInnerHtml(..) -> UnsafeInnerHtml(..node, key:)
     Fragment(..) -> Fragment(..node, key:)
-    Memo(..) -> Memo(..node, key:)
-    // because we skip Map nodes when encoding and reconciling, we have
-    // to set the key on the map (for the diff) as well as the inner node!
+    // because we skip Memo nodes when encoding and reconciling, we have
+    // to set the key on the memo (for the diff) as well as the inner node!
+    Memo(view:, ..) -> Memo(..node, key:, view: fn() { to_keyed(key, view()) })
+    // we don't skip Map nodes but I feel safer doing it anyways :-)
     Map(element:, ..) -> Map(..node, key:, element: to_keyed(key, element))
   }
 }
@@ -219,8 +221,8 @@ pub fn to_json(node: Element(msg), memos: Memos(msg)) -> Json {
         attributes,
         inner_html,
       )
-    Map(element:, ..) -> to_json(element, memos)
-    Memo(kind:, key:, view:, ..) -> memo_to_json(kind, key, view, memos)
+    Map(kind:, key:, element:, ..) -> map_to_json(kind, key, element, memos)
+    Memo(view:, ..) -> memo_to_json(view, memos)
   }
 }
 
@@ -258,15 +260,19 @@ fn unsafe_inner_html_to_json(kind, key, namespace, tag, attributes, inner_html) 
   |> json_object_builder.build
 }
 
-fn memo_to_json(kind, key, view, memos) {
+fn memo_to_json(view, memos) {
   let child = case mutable_map.has_key(memos, view) {
     True -> mutable_map.unsafe_get(memos, view)
     False -> view()
   }
 
+  to_json(child, memos)
+}
+
+fn map_to_json(kind, key, element, memos) {
   json_object_builder.tagged(kind)
   |> json_object_builder.string("key", key)
-  |> json_object_builder.json("element", to_json(child, memos))
+  |> json_object_builder.json("element", to_json(element, memos))
   |> json_object_builder.build
 }
 

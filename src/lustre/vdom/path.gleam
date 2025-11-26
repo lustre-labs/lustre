@@ -16,7 +16,7 @@ pub const separator_element: String = "\t"
 
 ///
 ///
-pub const separator_memo: String = "\r"
+pub const separator_subtree: String = "\r"
 
 ///
 ///
@@ -54,8 +54,8 @@ fn do_matches(path: String, candidates: List(String)) -> Bool {
   }
 }
 
-pub fn split_memo(path: String) -> List(String) {
-  string.split(path, on: separator_memo)
+pub fn split_subtree_path(path: String) -> List(String) {
+  string.split(path, on: separator_subtree)
 }
 
 // MANIPULATIONS ---------------------------------------------------------------

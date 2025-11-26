@@ -27,7 +27,7 @@ import {
   update_kind,
 } from "./patch.mjs";
 
-import { separator_element, separator_memo } from "./path.mjs";
+import { separator_element, separator_subtree } from "./path.mjs";
 
 import {
   document,
@@ -99,7 +99,7 @@ class MetadataNode {
   }
 
   get isVirtual() {
-    return this.kind === fragment_kind || this.kind === memo_kind;
+    return this.kind === fragment_kind || this.kind === map_kind;
   }
 
   get parentNode() {
@@ -125,8 +125,8 @@ const getPath = (node) => {
 
   for (let current = node[meta]; current.parent; current = current.parent) {
     const separator =
-      current.parent && current.parent.kind === memo_kind
-        ? separator_memo
+      current.parent && current.parent.kind === map_kind
+        ? separator_subtree
         : separator_element;
 
     if (current.key) {
@@ -412,19 +412,18 @@ export class Reconciler {
       }
 
       case map_kind: {
-        this.#insertChild(domParent, beforeEl, metaParent, index, vnode.element);
+        const head = this.#createTextNode(metaParent, index, vnode);
+        insertBefore(domParent, head, beforeEl);
+        // TODO: rename to child
+        this.#insertChild(domParent, beforeEl, head[meta], 0, vnode.element);
 
         break;
       }
 
       case memo_kind: {
-        const head = this.#createTextNode(metaParent, index, vnode);
-        insertBefore(domParent, head, beforeEl);
-
-        // we get a materialised node here when running as a server component, but a reference node otherwise.
-        const child =
-          vnode.element ?? this.#memos?.get(vnode.view) ?? vnode.view();
-        this.#insertChild(domParent, beforeEl, head[meta], 0, child);
+        // NOTE: we do not get memo nodes when running as a server component!
+        const child = this.#memos?.get(vnode.view) ?? vnode.view();
+        this.#insertChild(domParent, beforeEl, metaParent, index, child);
 
         break;
       }
