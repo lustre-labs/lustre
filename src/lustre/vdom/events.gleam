@@ -217,7 +217,7 @@ fn do_add_children(
       do_add_children(handlers, children, vdoms, parent, next, rest)
     }
 
-    [Map(key:, element:, mapper:, ..), ..rest] -> {
+    [Map(key:, child:, mapper:, ..), ..rest] -> {
       let path = path.add(parent, child_index, key)
 
       let added =
@@ -227,7 +227,7 @@ fn do_add_children(
           vdoms,
           path.subtree(path),
           0,
-          [element, ..constants.empty_list],
+          [child, ..constants.empty_list],
         )
 
       let vdoms = added.vdoms

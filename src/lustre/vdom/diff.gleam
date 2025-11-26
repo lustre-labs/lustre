@@ -533,9 +533,9 @@ fn do_diff(
 
       let PartialDiff(patch:, tree:, events: child_events) =
         do_diff(
-          old: [prev.element, ..constants.empty_list],
+          old: [prev.child, ..constants.empty_list],
           old_keyed: mutable_map.new(),
-          new: [next.element, ..constants.empty_list],
+          new: [next.child, ..constants.empty_list],
           new_keyed: mutable_map.new(),
           moved: mutable_map.new(),
           moved_offset: 0,

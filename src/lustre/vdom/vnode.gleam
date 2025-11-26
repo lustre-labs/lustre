@@ -63,8 +63,7 @@ pub type Element(msg) {
     kind: Int,
     key: String,
     mapper: fn(Dynamic) -> Dynamic,
-    // TODO: rename to `child`
-    element: Element(msg),
+    child: Element(msg),
   )
 
   Memo(kind: Int, key: String, dependencies: List(Ref), view: View(msg))
@@ -170,7 +169,7 @@ pub fn map(element: Element(a), mapper: fn(a) -> b) -> Element(b) {
       Map(
         kind: map_kind,
         key: element.key,
-        element: coerce(element.element),
+        child: coerce(element.child),
         mapper: fn(handler) { coerce(mapper)(child_mapper(handler)) },
       )
     _ ->
@@ -178,7 +177,7 @@ pub fn map(element: Element(a), mapper: fn(a) -> b) -> Element(b) {
         kind: map_kind,
         key: element.key,
         mapper: coerce(mapper),
-        element: coerce(element),
+        child: coerce(element),
       )
   }
 }
@@ -209,7 +208,7 @@ pub fn to_keyed(key: String, node: Element(msg)) -> Element(msg) {
     // to set the key on the memo (for the diff) as well as the inner node!
     Memo(view:, ..) -> Memo(..node, key:, view: fn() { to_keyed(key, view()) })
     // we don't skip Map nodes but I feel safer doing it anyways :-)
-    Map(element:, ..) -> Map(..node, key:, element: to_keyed(key, element))
+    Map(child:, ..) -> Map(..node, key:, child: to_keyed(key, child))
   }
 }
 
@@ -231,7 +230,7 @@ pub fn to_json(node: Element(msg), memos: Memos(msg)) -> Json {
         attributes,
         inner_html,
       )
-    Map(kind:, key:, element:, ..) -> map_to_json(kind, key, element, memos)
+    Map(kind:, key:, child:, ..) -> map_to_json(kind, key, child, memos)
     Memo(view:, ..) -> memo_to_json(view, memos)
   }
 }
@@ -279,10 +278,10 @@ fn memo_to_json(view, memos) {
   to_json(child, memos)
 }
 
-fn map_to_json(kind, key, element, memos) {
+fn map_to_json(kind, key, child, memos) {
   json_object_builder.tagged(kind)
   |> json_object_builder.string("key", key)
-  |> json_object_builder.json("element", to_json(element, memos))
+  |> json_object_builder.json("child", to_json(child, memos))
   |> json_object_builder.build
 }
 
@@ -344,7 +343,7 @@ pub fn to_string_tree(node: Element(msg)) -> StringTree {
       |> string_tree.append("</" <> tag <> ">")
     }
 
-    Map(element:, ..) -> to_string_tree(element)
+    Map(child:, ..) -> to_string_tree(child)
 
     Memo(view:, ..) -> to_string_tree(view())
   }
@@ -443,7 +442,7 @@ fn do_to_snapshot_builder(
       |> string_tree.append("</" <> tag <> ">")
     }
 
-    Map(element:, ..) -> do_to_snapshot_builder(element, raw_text, indent)
+    Map(child:, ..) -> do_to_snapshot_builder(child, raw_text, indent)
 
     Memo(view:, ..) -> do_to_snapshot_builder(view(), raw_text, indent)
   }

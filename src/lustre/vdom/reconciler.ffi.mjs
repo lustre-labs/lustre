@@ -414,8 +414,7 @@ export class Reconciler {
       case map_kind: {
         const head = this.#createTextNode(metaParent, index, vnode);
         insertBefore(domParent, head, beforeEl);
-        // TODO: rename to child
-        this.#insertChild(domParent, beforeEl, head[meta], 0, vnode.element);
+        this.#insertChild(domParent, beforeEl, head[meta], 0, vnode.child);
 
         break;
       }
