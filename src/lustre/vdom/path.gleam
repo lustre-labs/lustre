@@ -30,6 +30,7 @@ pub opaque type Path {
   Root
   Key(key: String, parent: Path)
   Index(index: Int, parent: Path)
+  Subtree(parent: Path)
 }
 
 // QUERIES ---------------------------------------------------------------------
@@ -69,39 +70,55 @@ pub fn add(parent: Path, index: Int, key: String) -> Path {
   }
 }
 
+pub fn subtree(path: Path) -> Path {
+  Subtree(parent: path)
+}
+
 // CONVERSIONS -----------------------------------------------------------------
 
 /// Convert a path to a resolved string with an event name appended to it.
 /// This returns a partial path, up to the closest Memo barrier.
 ///
 pub fn event(path: Path, event: String) -> String {
-  do_to_string(path, [separator_event, event, ..constants.empty_list])
+  do_to_string(False, path, [separator_event, event, ..constants.empty_list])
 }
 
 /// Convert a path to a child tree to a resolved string.
 ///
 pub fn child(path: Path) -> String {
-  do_to_string(path, constants.empty_list)
+  do_to_string(False, path, constants.empty_list)
 }
 
 /// Convert a path to a full resolved string, including all memo barriers.
 ///
 pub fn to_string(path: Path) -> String {
-  do_to_string(path, constants.empty_list)
+  do_to_string(True, path, constants.empty_list)
 }
 
-fn do_to_string(path, acc) {
+fn do_to_string(full, path, acc) {
   case path {
-    Root ->
-      case acc {
-        [] -> ""
-        [_sep, ..segments] -> string.concat(segments)
-      }
+    Root -> finish_to_string(acc)
 
-    Key(key:, parent:) -> do_to_string(parent, [separator_element, key, ..acc])
+    Key(key:, parent:) ->
+      do_to_string(full, parent, [separator_element, key, ..acc])
 
     Index(index:, parent:) -> {
-      do_to_string(parent, [separator_element, int.to_string(index), ..acc])
+      let acc = [separator_element, int.to_string(index), ..acc]
+      do_to_string(full, parent, acc)
     }
+
+    Subtree(_) if !full -> finish_to_string(acc)
+    Subtree(parent:) ->
+      case acc {
+        [] -> do_to_string(full, parent, acc)
+        [_sep, ..acc] -> do_to_string(full, parent, [separator_subtree, ..acc])
+      }
+  }
+}
+
+fn finish_to_string(acc) {
+  case acc {
+    [] -> ""
+    [_sep, ..segments] -> string.concat(segments)
   }
 }

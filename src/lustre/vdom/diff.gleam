@@ -544,7 +544,7 @@ fn do_diff(
           patch_index: node_index,
           changes: constants.empty_list,
           children: constants.empty_list,
-          path: path.root,
+          path: path.subtree(child_path),
           tree:,
           events: child.events,
         )

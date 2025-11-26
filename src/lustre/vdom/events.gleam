@@ -7,7 +7,7 @@ import gleam/list
 import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/path.{type Path}
-import lustre/vdom/vattr.{type Attribute, type Handler, Event}
+import lustre/vdom/vattr.{type Attribute, type Handler, Event, Handler}
 import lustre/vdom/vnode.{
   type Element, type Memos, Element, Fragment, Map, Memo, Text, UnsafeInnerHtml,
 }
@@ -225,7 +225,7 @@ fn do_add_children(
           mutable_map.new(),
           mutable_map.new(),
           vdoms,
-          path.root,
+          path.subtree(path),
           0,
           [element, ..constants.empty_list],
         )
@@ -391,7 +391,11 @@ fn get_handler(events: Events(msg), path: List(String), mapper: Mapper) {
 
         True -> {
           let handler = mutable_map.unsafe_get(events.handlers, key)
-          Ok(decode.map(handler, coerce(mapper)))
+          Ok(
+            decode.map(handler, fn(handler) {
+              Handler(..handler, message: coerce(mapper)(handler.message))
+            }),
+          )
         }
       }
 
@@ -431,7 +435,6 @@ pub fn handle(
 }
 
 pub fn has_dispatched_events(events: ConcreteTree(msg), path: Path) {
-  // TODO: how does this work with subtree paths?
   path.matches(path, any: events.dispatched_paths)
 }
 

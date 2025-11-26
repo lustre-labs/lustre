@@ -165,12 +165,22 @@ pub fn unsafe_inner_html(
 pub const map_kind: Int = 4
 
 pub fn map(element: Element(a), mapper: fn(a) -> b) -> Element(b) {
-  Map(
-    kind: map_kind,
-    key: element.key,
-    mapper: coerce(mapper),
-    element: coerce(element),
-  )
+  case element {
+    Map(mapper: child_mapper, ..) ->
+      Map(
+        kind: map_kind,
+        key: element.key,
+        element: coerce(element.element),
+        mapper: fn(handler) { coerce(mapper)(child_mapper(handler)) },
+      )
+    _ ->
+      Map(
+        kind: map_kind,
+        key: element.key,
+        mapper: coerce(mapper),
+        element: coerce(element),
+      )
+  }
 }
 
 pub const memo_kind: Int = 5

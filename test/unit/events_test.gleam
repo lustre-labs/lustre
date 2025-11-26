@@ -213,7 +213,7 @@ pub fn single_mapped_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = path.root |> path.add(0, "")
+  let path = path.root |> path.add(0, "") |> path.subtree |> path.add(0, "")
 
   let expected =
     Ok(Handler(
@@ -242,7 +242,8 @@ pub fn multiple_mapped_event_test() {
 
   let events = events.from_node(vdom)
 
-  let path = path.root |> path.add(0, "")
+  // multiple maps should only produce a single subtree.
+  let path = path.root |> path.add(0, "") |> path.subtree |> path.add(0, "")
 
   let expected =
     Ok(
