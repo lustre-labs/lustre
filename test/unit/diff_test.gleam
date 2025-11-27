@@ -1,13 +1,19 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import booklet
+import gleam/dynamic
 import gleam/json
+import gleam/string
 import lustre/attribute.{attribute}
 import lustre/element
 import lustre/element/html
 import lustre/element/keyed
+import lustre/event
 import lustre/vdom/cache
 import lustre/vdom/diff
 import lustre/vdom/patch
+import lustre/vdom/path
+import lustre/vdom/vattr.{Handler}
 import lustre/vdom/vnode
 import lustre_test
 
@@ -964,4 +970,267 @@ pub fn keyed_fragment_remove_test() {
   let diff = patch.new(0, 0, [], [patch.new(0, 0, [patch.remove(1)], [])])
 
   assert diff.diff(cache.new(), prev, next).patch == diff
+}
+
+// MEMO TESTS ------------------------------------------------------------------
+
+pub fn memo_not_recomputed_test() {
+  use <- lustre_test.test_filter("memo_not_recomputed_test")
+
+  let counter = booklet.new(0)
+  let dep = element.ref(1)
+
+  let view = fn() {
+    booklet.update(counter, fn(n) { n + 1 })
+    html.div([], [html.text("Hello")])
+  }
+
+  let vdom1 = element.memo([dep], view)
+  let vdom2 = element.memo([dep], view)
+
+  let cache = cache.new()
+  let patch = diff.diff(cache, vdom1, vdom2).patch
+
+  assert booklet.get(counter) == 1
+  assert patch == patch.Patch(0, 0, [], [])
+}
+
+pub fn memo_recomputed_when_dependency_changes_test() {
+  use <- lustre_test.test_filter("memo_recomputed_when_dependency_changes_test")
+
+  let counter = booklet.new(0)
+
+  let view = fn() {
+    booklet.update(counter, fn(n) { n + 1 })
+    html.div([], [html.text("Hello")])
+  }
+
+  let dep1 = element.ref(1)
+  let dep2 = element.ref(2)
+
+  let vdom1 = element.memo([dep1], view)
+  let vdom2 = element.memo([dep2], view)
+
+  let cache = cache.new()
+  diff.diff(cache, vdom1, vdom2)
+
+  assert booklet.get(counter) == 2
+}
+
+pub fn memo_with_multiple_dependencies_test() {
+  use <- lustre_test.test_filter("memo_with_multiple_dependencies_test")
+
+  let counter = booklet.new(0)
+
+  let view = fn() {
+    booklet.update(counter, fn(n) { n + 1 })
+    html.div([], [html.text("Hello")])
+  }
+
+  let dep1 = element.ref(1)
+  let dep2 = element.ref("a")
+
+  let vdom1 = element.memo([dep1, dep2], view)
+  let vdom2 = element.memo([dep1, dep2], view)
+
+  let cache = cache.new()
+  let patch = diff.diff(cache, vdom1, vdom2).patch
+
+  assert booklet.get(counter) == 1
+  assert patch == patch.Patch(0, 0, [], [])
+}
+
+pub fn memo_recomputed_when_one_dependency_changes_test() {
+  use <- lustre_test.test_filter(
+    "memo_recomputed_when_one_dependency_changes_test",
+  )
+
+  let counter = booklet.new(0)
+
+  let view = fn() {
+    booklet.update(counter, fn(n) { n + 1 })
+    html.div([], [html.text("Hello")])
+  }
+
+  let dep1 = element.ref(1)
+  let dep2a = element.ref("a")
+  let dep2b = element.ref("b")
+
+  let vdom1 = element.memo([dep1, dep2a], view)
+  let vdom2 = element.memo([dep1, dep2b], view)
+
+  let cache = cache.new()
+  let patch = diff.diff(cache, vdom1, vdom2).patch
+
+  assert booklet.get(counter) == 2
+  assert patch == patch.Patch(0, 0, [], [])
+}
+
+pub fn memo_with_map_event_test() {
+  use <- lustre_test.test_filter("memo_with_map_event_test")
+
+  let counter = booklet.new(0)
+  let dep = element.ref(1)
+
+  let view = fn() {
+    booklet.update(counter, fn(n) { n + 1 })
+    html.button([event.on_click("hello!")], [html.text("Click me!")])
+  }
+
+  let vdom = element.map(element.memo([dep], view), string.uppercase)
+
+  let events = cache.from_node(vdom)
+
+  let path = path.root |> path.add(0, "") |> path.subtree |> path.add(0, "")
+
+  let expected =
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "HELLO!",
+    ))
+
+  let #(_, actual) =
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
+
+  assert actual == expected
+  assert booklet.get(counter) == 1
+}
+
+pub fn memo_with_map_event_not_recomputed_test() {
+  use <- lustre_test.test_filter("memo_with_map_event_not_recomputed_test")
+
+  let counter = booklet.new(0)
+  let dep = element.ref(1)
+
+  let view = fn() {
+    booklet.update(counter, fn(n) { n + 1 })
+    html.button([event.on_click("hello!")], [html.text("Click me!")])
+  }
+
+  let vdom = element.map(element.memo([dep], view), string.uppercase)
+
+  let initial_cache = cache.from_node(vdom)
+  let diff = diff.diff(initial_cache, vdom, vdom)
+
+  let path = path.root |> path.add(0, "") |> path.subtree |> path.add(0, "")
+
+  let expected =
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "HELLO!",
+    ))
+
+  let #(_, actual) =
+    cache.handle(diff.cache, path.to_string(path), "click", dynamic.nil())
+
+  assert actual == expected
+  assert booklet.get(counter) == 1
+}
+
+pub fn memo_with_map_event_recomputed_test() {
+  use <- lustre_test.test_filter("memo_with_map_event_recomputed_test")
+
+  let counter = booklet.new(0)
+
+  let view = fn() {
+    booklet.update(counter, fn(n) { n + 1 })
+    html.button([event.on_click("hello!")], [html.text("Click me!")])
+  }
+
+  let dep1 = element.ref(1)
+  let dep2 = element.ref(2)
+
+  let vdom1 = element.map(element.memo([dep1], view), string.uppercase)
+  let vdom2 = element.map(element.memo([dep2], view), string.uppercase)
+
+  let cache = cache.from_node(vdom1)
+  let cache = diff.diff(cache, vdom1, vdom2).cache
+
+  let path = path.root |> path.add(0, "") |> path.subtree |> path.add(0, "")
+
+  let expected =
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "HELLO!",
+    ))
+
+  let #(_, actual) =
+    cache.handle(cache, path.to_string(path), "click", dynamic.nil())
+
+  assert actual == expected
+  assert booklet.get(counter) == 2
+}
+
+pub fn nested_memo_test() {
+  use <- lustre_test.test_filter("nested_memo_test")
+
+  let counter1 = booklet.new(0)
+  let counter2 = booklet.new(0)
+
+  let dep1 = element.ref(1)
+  let dep2 = element.ref("a")
+
+  let inner_view = fn() {
+    booklet.update(counter1, fn(n) { n + 1 })
+    html.text("Inner")
+  }
+
+  let outer_view = fn() {
+    booklet.update(counter2, fn(n) { n + 1 })
+    html.div([], [element.memo([dep2], inner_view)])
+  }
+
+  let vdom1 = element.memo([dep1], outer_view)
+
+  let initial_cache = cache.from_node(vdom1)
+  assert booklet.get(counter2) == 1
+  assert booklet.get(counter1) == 1
+
+  let vdom2 = element.memo([dep1], outer_view)
+  let diff2 = diff.diff(initial_cache, vdom1, vdom2)
+
+  // Outer memo reused, so counters unchanged
+  assert booklet.get(counter2) == 1
+  assert booklet.get(counter1) == 1
+
+  assert diff2.patch == patch.Patch(0, 0, [], [])
+}
+
+pub fn nested_memo_outer_changes_test() {
+  use <- lustre_test.test_filter("nested_memo_outer_changes_test")
+
+  let counter1 = booklet.new(0)
+  let counter2 = booklet.new(0)
+
+  let dep1a = element.ref(1)
+  let dep1b = element.ref(2)
+  let dep2 = element.ref("a")
+
+  let inner_view = fn() {
+    booklet.update(counter1, fn(n) { n + 1 })
+    html.text("Inner")
+  }
+
+  let outer_view = fn() {
+    booklet.update(counter2, fn(n) { n + 1 })
+    html.div([], [element.memo([dep2], inner_view)])
+  }
+
+  let vdom1 = element.memo([dep1a], outer_view)
+
+  // First diff establishes outer memo
+  let initial_cache = cache.from_node(vdom1)
+  assert booklet.get(counter2) == 1
+  assert booklet.get(counter1) == 1
+
+  let vdom2 = element.memo([dep1b], outer_view)
+  let diff2 = diff.diff(initial_cache, vdom1, vdom2)
+
+  assert booklet.get(counter2) == 2
+  assert booklet.get(counter1) == 1
+
+  assert diff2.patch == patch.Patch(0, 0, [], [])
 }

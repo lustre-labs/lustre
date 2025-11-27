@@ -704,6 +704,142 @@ pub fn reconciler_push_keyed_fragment_remove_test() {
 }
 
 @target(javascript)
+pub fn reconciler_push_memo_with_fragment_test() {
+  use <- lustre_test.test_filter("reconciler_push_memo_with_fragment_test")
+
+  let dep1 = element.ref(1)
+  let dep2 = element.ref(2)
+
+  let prev =
+    html.div([], [
+      element.memo([dep1], fn() {
+        element.fragment([html.text("a"), html.text("b")])
+      }),
+    ])
+
+  let next =
+    html.div([], [
+      element.memo([dep2], fn() {
+        element.fragment([html.text("c"), html.text("d")])
+      }),
+    ])
+
+  test_diff(prev, next)
+}
+
+@target(javascript)
+pub fn reconciler_push_memo_with_nested_fragment_test() {
+  use <- lustre_test.test_filter(
+    "reconciler_push_memo_with_nested_fragment_test",
+  )
+
+  let dep1 = element.ref(1)
+  let dep2 = element.ref(2)
+
+  let prev =
+    html.div([], [
+      element.memo([dep1], fn() {
+        element.fragment([
+          element.fragment([html.text("a"), html.text("b")]),
+          html.text("c"),
+        ])
+      }),
+    ])
+
+  let next =
+    html.div([], [
+      element.memo([dep2], fn() {
+        element.fragment([
+          element.fragment([html.text("x"), html.text("y")]),
+          html.text("z"),
+        ])
+      }),
+    ])
+
+  test_diff(prev, next)
+}
+
+@target(javascript)
+pub fn reconciler_push_map_with_fragment_test() {
+  use <- lustre_test.test_filter("reconciler_push_map_with_fragment_test")
+
+  let prev =
+    html.div([], [
+      element.map(element.fragment([html.text("a"), html.text("b")]), fn(msg) {
+        msg
+      }),
+    ])
+
+  let next =
+    html.div([], [
+      element.map(element.fragment([html.text("c"), html.text("d")]), fn(msg) {
+        msg
+      }),
+    ])
+
+  test_diff(prev, next)
+}
+
+@target(javascript)
+pub fn reconciler_push_map_with_nested_fragment_test() {
+  use <- lustre_test.test_filter(
+    "reconciler_push_map_with_nested_fragment_test",
+  )
+
+  let prev =
+    html.div([], [
+      element.map(
+        element.fragment([
+          element.fragment([html.text("a"), html.text("b")]),
+          html.text("c"),
+        ]),
+        fn(msg) { msg },
+      ),
+    ])
+
+  let next =
+    html.div([], [
+      element.map(
+        element.fragment([
+          element.fragment([html.text("x"), html.text("y")]),
+          html.text("z"),
+        ]),
+        fn(msg) { msg },
+      ),
+    ])
+
+  test_diff(prev, next)
+}
+
+@target(javascript)
+pub fn reconciler_push_memo_map_with_fragment_test() {
+  use <- lustre_test.test_filter("reconciler_push_memo_map_with_fragment_test")
+
+  let dep1 = element.ref(1)
+  let dep2 = element.ref(2)
+
+  let prev =
+    html.div([], [
+      element.memo([dep1], fn() {
+        element.map(element.fragment([html.text("a"), html.text("b")]), fn(msg) {
+          msg
+        })
+      }),
+    ])
+
+  let next =
+    html.div([], [
+      element.memo([dep2], fn() {
+        element.map(element.fragment([html.text("c"), html.text("d")]), fn(msg) {
+          msg
+        })
+      }),
+    ])
+
+  test_diff(prev, next)
+}
+
+@target(javascript)
 fn test_diff(prev: Element(msg), next: Element(msg)) {
   use reconciler <- with_reconciler
 
@@ -728,6 +864,10 @@ fn nodes_equal(left: Element(msg), right: Element(msg)) {
     // compare against that child instead.
     vnode.Fragment(children: [left], ..), _ -> nodes_equal(left, right)
     _, vnode.Fragment(children: [right], ..) -> nodes_equal(left, right)
+
+    _, vnode.Map(child:, ..) -> nodes_equal(left, child)
+
+    _, vnode.Memo(view:, ..) -> nodes_equal(left, view())
 
     // don't check the key on text nodes (or fragments) - we can't virtualise it
     vnode.Text(..), vnode.Text(..) -> left.content == right.content
@@ -761,6 +901,12 @@ fn children_equal(left: List(Element(msg)), right: List(Element(msg))) -> Bool {
       children_equal(list.append(children, left), right)
     _, [vnode.Fragment(children:, ..), ..right] ->
       children_equal(left, list.append(children, right))
+
+    _, [vnode.Map(child:, ..), ..right] ->
+      children_equal(left, list.append([child], right))
+
+    _, [vnode.Memo(view:, ..), ..right] ->
+      children_equal(left, list.append([view()], right))
 
     // compare non-fragment children
     [first_left, ..left], [first_right, ..right] ->

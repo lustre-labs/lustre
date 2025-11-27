@@ -224,6 +224,9 @@ pub fn unsafe_raw_html(
 /// When it can tell the dependencies haven't changed, almost all of the work
 /// it typically has to do to update your view can be skipped.
 ///
+/// > **Note:**: Memoization has overhead! For simple views, diffing is often
+/// > after without memoization.
+///
 /// > **Note:** This is an optimisation only and does not guarantee when Lustre
 /// > will call your view function! It may decide to call it even if none of
 /// > your dependencies have changed.
@@ -232,11 +235,12 @@ pub fn memo(dependencies: List(Ref), view: fn() -> Element(msg)) -> Element(msg)
   vnode.memo(key: "", dependencies:, view:)
 }
 
-/// Create a `Ref` dependency value. Lustre will use a heuristic to tell if a
-/// given value hasn't changed.
+/// Create a `Ref` dependency value for memoization.
 ///
-/// On JavaScript, values are compared using same-value-zero semantics.
-/// On Erlang, a heuristic based on term hashes is used.
+/// Lustre uses reference equality to compare dependencies. On JavaScript, values
+/// are compared using same-value-zero semantics. On Erlang, a heuristic based on
+/// term hashes is used.
+///
 pub fn ref(value: a) -> Ref {
   ref.from(value)
 }
