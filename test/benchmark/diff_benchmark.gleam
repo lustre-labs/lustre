@@ -6,8 +6,8 @@ import gleamy/bench
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/element/keyed
+import lustre/vdom/cache
 import lustre/vdom/diff
-import lustre/vdom/events
 
 const duration = bench.Duration(5000)
 
@@ -103,7 +103,7 @@ pub fn benchmark_10_000_rows() {
 //
 
 fn run_diff(input: #(Element(msg), Element(msg))) {
-  diff.diff(events.new(), input.0, input.1)
+  diff.diff(cache.new(), input.0, input.1)
 }
 
 fn table_diff(rows: Int, shuffle: Bool, keyed: Bool) {

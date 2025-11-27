@@ -1,5 +1,5 @@
 import * as Diff from "../../vdom/diff.mjs";
-import * as Events from "../../vdom/events.mjs";
+import * as Cache from "../../vdom/cache.mjs";
 import { isEqual } from "../../internals/equals.ffi.mjs";
 import {
   ClientDispatchedMessage,
@@ -35,7 +35,7 @@ export class Runtime {
   #config;
 
   #vdom;
-  #events;
+  #cache;
   #providers = Dict.new$();
 
   #callbacks = /* @__PURE__ */ new Set();
@@ -47,7 +47,7 @@ export class Runtime {
     this.#config = config;
 
     this.#vdom = this.#view(this.#model);
-    this.#events = Events.from_node(this.#vdom);
+    this.#cache = Cache.from_node(this.#vdom);
 
     this.#handle_effect(effects);
   }
@@ -57,12 +57,12 @@ export class Runtime {
       case ClientDispatchedMessage: {
         const { message } = msg;
         const next = this.#handle_client_message(message);
-        const diff = Diff.diff(this.#events, this.#vdom, next);
+        const diff = Diff.diff(this.#cache, this.#vdom, next);
 
         this.#vdom = next;
-        this.#events = diff.events;
+        this.#cache = diff.cache;
 
-        this.broadcast(Transport.reconcile(diff.patch));
+        this.broadcast(Transport.reconcile(diff.patch, Cache.memos(diff.cache)));
 
         return undefined;
       }
@@ -80,6 +80,7 @@ export class Runtime {
             Dict.keys(this.#config.contexts),
             this.#providers,
             this.#vdom,
+            Cache.memos(this.#cache),
           ),
         );
 
@@ -97,15 +98,15 @@ export class Runtime {
         const { message } = msg;
         const [model, effect] = this.#update(this.#model, message);
         const next = this.#view(model);
-        const diff = Diff.diff(this.#events, this.#vdom, next);
+        const diff = Diff.diff(this.#cache, this.#vdom, next);
 
         this.#handle_effect(effect);
 
         this.#model = model;
         this.#vdom = next;
-        this.#events = diff.events;
+        this.#cache = diff.cache;
 
-        this.broadcast(Transport.reconcile(diff.patch));
+        this.broadcast(Transport.reconcile(diff.patch, Cache.memos(diff.cache)));
 
         return undefined;
       }
@@ -137,7 +138,7 @@ export class Runtime {
         this.#view = null;
         this.#config = null;
         this.#vdom = null;
-        this.#events = null;
+        this.#cache = null;
         this.#providers = null;
         this.#callbacks.clear();
 
@@ -210,9 +211,9 @@ export class Runtime {
 
       case EventFired: {
         const { path, name, event } = msg;
-        const [events, result] = Events.handle(this.#events, path, name, event);
+        const [cache, result] = Cache.handle(this.#cache, path, name, event);
 
-        this.#events = events;
+        this.#cache = cache;
 
         if (result instanceof Error) {
           return this.#vdom;
@@ -273,8 +274,7 @@ export class Runtime {
   }
 
   #handle_effect(effect) {
-    const dispatch = (message) =>
-      this.send(new EffectDispatchedMessage(message));
+    const dispatch = (message) => this.send(new EffectDispatchedMessage(message));
     const emit = (name, data) => this.send(new EffectEmitEvent(name, data));
     const select = () => undefined;
     const internals = () => undefined;

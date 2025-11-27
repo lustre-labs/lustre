@@ -4,7 +4,7 @@ import { NonEmpty, Empty } from "../../../gleam.mjs";
 import * as $list from "../../../../gleam_stdlib/gleam/list.mjs";
 import { empty_list } from "../../internals/constants.mjs";
 import { diff } from "../../vdom/diff.mjs";
-import * as Events from "../../vdom/events.mjs";
+import * as Cache from "../../vdom/cache.mjs";
 import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
 import { virtualise } from "../../vdom/virtualise.ffi.mjs";
 import { document } from "../../internals/constants.ffi.mjs";
@@ -67,11 +67,11 @@ export class Runtime {
     });
 
     const decodeEvent = (event, path, name) =>
-      Events.decode(this.#events, path, name, event);
+      Cache.decode(this.#cache, path, name, event);
 
     const dispatch = (event, data) => {
-      const [events, result] = Events.dispatch(this.#events, data);
-      this.#events = events;
+      const [cache, result] = Cache.dispatch(this.#cache, data);
+      this.#cache = cache;
 
       if (result.isOk()) {
         const handler = result[0];
@@ -90,7 +90,7 @@ export class Runtime {
     // mount on to it.
     this.#vdom = virtualise(this.root);
     // The initial set of events is empty, since we just virtualised.
-    this.#events = Events.new$();
+    this.#cache = Cache.new$();
 
     // // We want the first render to be synchronous and force it immediately.
     // Afterwards, events triggered by virtualisation will dispatch, if any.
@@ -167,7 +167,7 @@ export class Runtime {
   #update;
 
   #vdom;
-  #events;
+  #cache;
   #reconciler;
   #contexts = new Map();
 
@@ -247,11 +247,11 @@ export class Runtime {
     this.#renderTimer = null;
 
     const next = this.#view(this.#model);
-    const { patch, events } = diff(this.#events, this.#vdom, next);
+    const { patch, cache } = diff(this.#cache, this.#vdom, next);
 
-    this.#events = events;
+    this.#cache = cache;
     this.#vdom = next;
-    this.#reconciler.push(patch);
+    this.#reconciler.push(patch, Cache.memos(cache));
 
     // We have performed a render, the DOM has been updated but the browser has
     // not yet been given the opportunity to paint. We queue a microtask to block
@@ -310,9 +310,7 @@ const copiedStyleSheets = new WeakMap();
 
 export async function adoptStylesheets(shadowRoot) {
   const pendingParentStylesheets = [];
-  for (const node of document().querySelectorAll(
-    "link[rel=stylesheet], style",
-  )) {
+  for (const node of document().querySelectorAll("link[rel=stylesheet], style")) {
     if (node.sheet) continue;
 
     pendingParentStylesheets.push(

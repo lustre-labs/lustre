@@ -8,13 +8,12 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/function
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute}
 import lustre/internals/mutable_map
-import lustre/vdom/events
-import lustre/vdom/vnode.{Element, Fragment, Text, UnsafeInnerHtml}
+import lustre/internals/ref
+import lustre/vdom/vnode.{Element}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -66,6 +65,15 @@ import lustre/vdom/vnode.{Element, Fragment, Text, UnsafeInnerHtml}
 pub type Element(msg) =
   vnode.Element(msg)
 
+/// A Ref is an opaque handle to a value that can no longer be inspected,
+/// except to figure out if the 2 referenced values are definitely equal.
+///
+/// Ref equality is cheaper to compute than term equality, but when 2
+/// references are not equal to each other, it does not imply that the
+/// referenced terms are different.
+pub type Ref =
+  ref.Ref
+
 // CONSTRUCTORS ----------------------------------------------------------------
 
 /// A general function for constructing any kind of element. In most cases you
@@ -104,7 +112,6 @@ pub fn element(
 ) -> Element(msg) {
   vnode.element(
     key: "",
-    mapper: function.identity,
     namespace: "",
     tag: tag,
     attributes:,
@@ -126,7 +133,6 @@ pub fn namespaced(
 ) -> Element(msg) {
   vnode.element(
     key: "",
-    mapper: function.identity,
     namespace:,
     tag:,
     attributes:,
@@ -152,7 +158,6 @@ pub fn advanced(
 ) -> Element(msg) {
   vnode.element(
     key: "",
-    mapper: function.identity,
     namespace:,
     tag:,
     attributes:,
@@ -169,7 +174,7 @@ pub fn advanced(
 /// this function is exactly that!
 ///
 pub fn text(content: String) -> Element(msg) {
-  vnode.text(key: "", mapper: function.identity, content:)
+  vnode.text(key: "", content:)
 }
 
 /// A function for rendering nothing. This is mostly useful for conditional
@@ -177,7 +182,7 @@ pub fn text(content: String) -> Element(msg) {
 /// condition is met.
 ///
 pub fn none() -> Element(msg) {
-  vnode.text(key: "", mapper: function.identity, content: "")
+  vnode.text(key: "", content: "")
 }
 
 /// A function for constructing a wrapper element with no tag name. This is
@@ -186,12 +191,7 @@ pub fn none() -> Element(msg) {
 /// where only one `Element` is expected.
 ///
 pub fn fragment(children: List(Element(msg))) -> Element(msg) {
-  vnode.fragment(
-    key: "",
-    mapper: function.identity,
-    children:,
-    keyed_children: mutable_map.new(),
-  )
+  vnode.fragment(key: "", children:, keyed_children: mutable_map.new())
 }
 
 /// A function for constructing a wrapper element with custom raw HTML as its
@@ -211,14 +211,38 @@ pub fn unsafe_raw_html(
   attributes: List(Attribute(msg)),
   inner_html: String,
 ) -> Element(msg) {
-  vnode.unsafe_inner_html(
-    key: "",
-    namespace:,
-    tag:,
-    mapper: function.identity,
-    attributes:,
-    inner_html:,
-  )
+  vnode.unsafe_inner_html(key: "", namespace:, tag:, attributes:, inner_html:)
+}
+
+// MEMOIZATION -----------------------------------------------------------------
+
+/// A function constructing a "memoized" or "lazy" element. Lustre will use the
+/// values passed as dependencies to skip calling your view function if it can
+/// tell nothing has changed.
+///
+/// This can help Lustre optimise big but mostly static parts of your app.
+/// When it can tell the dependencies haven't changed, almost all of the work
+/// it typically has to do to update your view can be skipped.
+///
+/// > **Note:**: Memoization has overhead! For simple views, diffing is often
+/// > after without memoization.
+///
+/// > **Note:** This is an optimisation only and does not guarantee when Lustre
+/// > will call your view function! It may decide to call it even if none of
+/// > your dependencies have changed.
+///
+pub fn memo(dependencies: List(Ref), view: fn() -> Element(msg)) -> Element(msg) {
+  vnode.memo(key: "", dependencies:, view:)
+}
+
+/// Create a `Ref` dependency value for memoization.
+///
+/// Lustre uses reference equality to compare dependencies. On JavaScript, values
+/// are compared using same-value-zero semantics. On Erlang, a heuristic based on
+/// term hashes is used.
+///
+pub fn ref(value: a) -> Ref {
+  ref.from(value)
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
@@ -231,36 +255,8 @@ pub fn unsafe_raw_html(
 /// Think of it like `list.map` or `result.map` but for HTML events!
 ///
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
-  let mapper = coerce(events.compose_mapper(coerce(f), element.mapper))
-
-  case element {
-    Fragment(children:, keyed_children:, ..) ->
-      Fragment(
-        ..element,
-        mapper:,
-        children: coerce(children),
-        keyed_children: coerce(keyed_children),
-      )
-
-    Element(attributes:, children:, keyed_children:, ..) ->
-      Element(
-        ..element,
-        mapper:,
-        attributes: coerce(attributes),
-        children: coerce(children),
-        keyed_children: coerce(keyed_children),
-      )
-
-    UnsafeInnerHtml(attributes:, ..) ->
-      UnsafeInnerHtml(..element, mapper:, attributes: coerce(attributes))
-
-    Text(..) -> coerce(element)
-  }
+  vnode.map(element, f)
 }
-
-@external(erlang, "gleam@function", "identity")
-@external(javascript, "../../gleam_stdlib/gleam/function.mjs", "identity")
-fn coerce(a: a) -> b
 
 // CONVERSIONS -----------------------------------------------------------------
 

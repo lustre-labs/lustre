@@ -9,7 +9,7 @@ import gleam/result
 import lustre/dev/query.{type Query}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
-import lustre/vdom/events
+import lustre/vdom/cache
 import lustre/vdom/path
 
 // TYPES -----------------------------------------------------------------------
@@ -199,11 +199,11 @@ pub fn event(
       ),
     ))
 
-    let events = events.from_node(simulation.html)
+    let events = cache.from_node(simulation.html)
     let data = json.object(payload)
 
     use handler <- result.try(result.replace_error(
-      pair.second(events.handle(
+      pair.second(cache.handle(
         events,
         path.to_string(path),
         event,
