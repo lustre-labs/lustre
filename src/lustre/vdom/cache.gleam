@@ -27,6 +27,19 @@ pub opaque type Cache(msg) {
   )
 }
 
+/// Event handlers form a tree.
+///
+/// Whenever we encounter a `Map` node, the transformation on the final
+/// message type changes. Instead of transforming the handlers directly,
+/// we generate isolated event subtrees. This keeps subtrees stable even
+/// when a parent `Map` node updates.
+///
+/// This is necessary for Memo to function, since Memo does not update the old
+/// events when its dependencies don't change.
+///
+/// 🚨 This means that the `msg` type in `handlers` is a lie until we actually
+/// handle an evnet!
+///
 pub opaque type Events(msg) {
   Events(
     handlers: MutableMap(String, Decoder(Handler(msg))),
@@ -96,10 +109,14 @@ pub fn update_events(cache: Cache(msg), events: Events(msg)) -> Cache(msg) {
 
 // MEMO MANIPULATIONS ---------------------------------------------------------
 
+/// Get a dictionary of all materialised Memo views.
+///
 pub fn memos(cache: Cache(msg)) -> Memos(msg) {
   cache.vdoms
 }
 
+///
+///
 pub fn get_old_memo(
   cache: Cache(msg),
   old old: View(msg),
@@ -108,12 +125,14 @@ pub fn get_old_memo(
   mutable_map.get_or_compute(cache.old_vdoms, old, new)
 }
 
+/// Reuses the cached element when dependencies are unchanged.
 pub fn keep_memo(cache: Cache(msg), old old: View(msg), new new: View(msg)) {
   let node = mutable_map.get_or_compute(cache.old_vdoms, old, new)
   let vdoms = mutable_map.insert(cache.vdoms, new, node)
   Cache(..cache, vdoms:)
 }
 
+/// Caches a newly computed element when dependencies changed.
 pub fn add_memo(
   cache: Cache(msg),
   new new: View(msg),
@@ -123,6 +142,7 @@ pub fn add_memo(
   Cache(..cache, vdoms:)
 }
 
+/// Gets the isolated event subtree for a Map node.
 pub fn get_subtree(
   events: Events(msg),
   path: String,
@@ -136,6 +156,7 @@ pub fn get_subtree(
   child.events
 }
 
+/// Updates the Map node's isolated event subtree after diffing its child.
 pub fn update_subtree(
   parent: Events(msg),
   path: String,

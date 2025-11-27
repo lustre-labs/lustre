@@ -124,6 +124,9 @@ const getPath = (node) => {
   let path = "";
 
   for (let current = node[meta]; current.parent; current = current.parent) {
+    // Map nodes use a different separator to mark isolated event subtrees.
+    // This allows the cache to split paths and look up handlers in the correct
+    // subtree, keeping event handlers stable when parent Map nodes update.
     const separator =
       current.parent && current.parent.kind === map_kind
         ? separator_subtree
@@ -412,6 +415,8 @@ export class Reconciler {
       }
 
       case map_kind: {
+        // Map nodes are virtual like fragments; this allows us to track
+        // subtree boundaries in the real DOM and construct event paths accordingly.
         const head = this.#createTextNode(metaParent, index, vnode);
         insertBefore(domParent, head, beforeEl);
         this.#insertChild(domParent, beforeEl, head[meta], 0, vnode.child);

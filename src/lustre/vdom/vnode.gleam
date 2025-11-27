@@ -270,11 +270,15 @@ fn unsafe_inner_html_to_json(kind, key, namespace, tag, attributes, inner_html) 
 }
 
 fn memo_to_json(view, memos) {
+  // Memo nodes are transparent during encoding - we encode their cached child.
   let child = mutable_map.get_or_compute(memos, view, view)
   to_json(child, memos)
 }
 
+// Map nodes are encoded with their child.
 fn map_to_json(kind, key, child, memos) {
+  // They mark the boundary of an isolated event subtree, so we need to tell the runtime
+  // about them to make sure it can construct the correct event paths!
   json_object_builder.tagged(kind)
   |> json_object_builder.string("key", key)
   |> json_object_builder.json("child", to_json(child, memos))

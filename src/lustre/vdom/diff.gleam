@@ -528,6 +528,7 @@ fn do_diff(
       let child_path = path.add(path, node_index, next.key)
       let child_key = path.child(child_path)
 
+      // Diff the child element as a "single-element fragment" using a new events subtree.
       let PartialDiff(patch:, cache:, events: child_events) =
         do_diff(
           old: [prev.child, ..constants.empty_list],
@@ -575,6 +576,8 @@ fn do_diff(
     [Memo(..) as prev, ..old], [Memo(..) as next, ..new] -> {
       case ref.equal_lists(prev.dependencies, next.dependencies) {
         True -> {
+          // Dependencies unchanged, we only have to copy the cached vdom for this
+          // memo node over.
           let cache = cache.keep_memo(cache, prev.view, next.view)
 
           do_diff(
@@ -596,40 +599,24 @@ fn do_diff(
         }
 
         False -> {
+          // Dependencies changed; We need to diff the previous (cached) node
+          // and the new view function.
           let prev_node = cache.get_old_memo(cache, prev.view, prev.view)
 
           let next_node = next.view()
           let cache = cache.add_memo(cache, new: next.view, node: next_node)
 
-          let PartialDiff(patch:, events:, cache:) =
-            do_diff(
-              old: [prev_node, ..constants.empty_list],
-              old_keyed: mutable_map.new(),
-              new: [next_node, ..constants.empty_list],
-              new_keyed: mutable_map.new(),
-              moved: mutable_map.new(),
-              moved_offset:,
-              removed:,
-              node_index:,
-              patch_index:,
-              changes:,
-              children:,
-              path:,
-              cache:,
-              events:,
-            )
-
-          let Patch(index: patch_index, removed:, changes:, children:) = patch
-
+          // We extracted both "real" nodes, so we can continue diffing using those.
+          // Memo is fully transparent and disappears in the DOM.
           do_diff(
-            old:,
+            old: [prev_node, ..old],
             old_keyed:,
-            new:,
+            new: [next_node, ..new],
             new_keyed:,
             moved:,
             moved_offset:,
             removed:,
-            node_index: node_index + 1,
+            node_index:,
             patch_index:,
             changes:,
             children:,
