@@ -52,10 +52,10 @@ pub fn diff(
       //
       path: path.root,
       tree:,
-      events: tree.events,
+      events: events.events(tree),
     )
 
-  Diff(patch:, tree: events.ConcreteTree(..tree, events:))
+  Diff(patch:, tree: events.update_events(tree, events))
 }
 
 fn do_diff(
@@ -527,12 +527,6 @@ fn do_diff(
       let child_path = path.add(path, node_index, next.key)
       let child_key = path.child(child_path)
 
-      // TODO: move to events.gleam
-      let events.Child(events: child_events, ..) =
-        mutable_map.get_or_compute(events.children, child_key, fn() {
-          events.Child(prev.mapper, events.new_events())
-        })
-
       let PartialDiff(patch:, tree:, events: child_events) =
         do_diff(
           old: [prev.child, ..constants.empty_list],
@@ -548,16 +542,11 @@ fn do_diff(
           children: constants.empty_list,
           path: path.subtree(child_path),
           tree:,
-          events: child_events,
+          events: events.get_subtree(events, child_key, old_mapper: prev.mapper),
         )
 
-      // TODO: move to events.gleam
-      let new_child = events.Child(mapper: next.mapper, events: child_events)
       let events =
-        events.Events(
-          ..events,
-          children: mutable_map.insert(events.children, child_key, new_child),
-        )
+        events.update_subtree(events, child_key, next.mapper, child_events)
 
       let children = case patch {
         Patch(removed: 0, changes: [], children: [], ..) -> children
@@ -585,12 +574,7 @@ fn do_diff(
     [Memo(..) as prev, ..old], [Memo(..) as next, ..new] -> {
       case ref.equal_lists(prev.dependencies, next.dependencies) {
         True -> {
-          // TODO: move to events.gleam
-          let node =
-            mutable_map.get_or_compute(tree.old_vdoms, prev.view, next.view)
-
-          let vdoms = mutable_map.insert(tree.vdoms, next.view, node)
-          let tree = events.ConcreteTree(..tree, vdoms: vdoms)
+          let tree = events.keep_memo(tree, prev.view, next.view)
 
           do_diff(
             old:,
@@ -611,16 +595,10 @@ fn do_diff(
         }
 
         False -> {
-          // TODO: move to events.gleam
-          let prev_node =
-            mutable_map.get_or_compute(tree.old_vdoms, prev.view, prev.view)
+          let prev_node = events.get_old_memo(tree, prev.view, prev.view)
 
           let next_node = next.view()
-          let tree =
-            events.ConcreteTree(
-              ..tree,
-              vdoms: mutable_map.insert(tree.vdoms, next.view, next_node),
-            )
+          let tree = events.add_memo(tree, new: next.view, node: next_node)
 
           let PartialDiff(patch:, events:, tree:) =
             do_diff(

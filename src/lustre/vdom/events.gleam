@@ -9,12 +9,13 @@ import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{type Attribute, type Handler, Event, Handler}
 import lustre/vdom/vnode.{
-  type Element, type Memos, Element, Fragment, Map, Memo, Text, UnsafeInnerHtml,
+  type Element, type Memos, type View, Element, Fragment, Map, Memo, Text,
+  UnsafeInnerHtml,
 }
 
 // TYPES -----------------------------------------------------------------------
 
-pub type ConcreteTree(msg) {
+pub opaque type ConcreteTree(msg) {
   ConcreteTree(
     events: Events(msg),
     //
@@ -26,14 +27,14 @@ pub type ConcreteTree(msg) {
   )
 }
 
-pub type Events(msg) {
+pub opaque type Events(msg) {
   Events(
     handlers: MutableMap(String, Decoder(Handler(msg))),
     children: MutableMap(String, Child(msg)),
   )
 }
 
-pub type Child(msg) {
+type Child(msg) {
   Child(
     mapper: Mapper,
     // 🚨 Because of the `mapper` shenanigans, the `msg` type parameter is
@@ -85,10 +86,72 @@ pub fn tick(tree: ConcreteTree(msg)) -> ConcreteTree(msg) {
   )
 }
 
+pub fn events(tree: ConcreteTree(msg)) -> Events(msg) {
+  tree.events
+}
+
+pub fn update_events(
+  tree: ConcreteTree(msg),
+  events: Events(msg),
+) -> ConcreteTree(msg) {
+  ConcreteTree(..tree, events:)
+}
+
 // MEMO MANIPULATIONS ---------------------------------------------------------
 
 pub fn memos(tree: ConcreteTree(msg)) -> Memos(msg) {
   tree.vdoms
+}
+
+pub fn get_old_memo(
+  tree: ConcreteTree(msg),
+  old old: View(msg),
+  new new: View(msg),
+) -> Element(msg) {
+  mutable_map.get_or_compute(tree.old_vdoms, old, new)
+}
+
+pub fn keep_memo(
+  tree: ConcreteTree(msg),
+  old old: View(msg),
+  new new: View(msg),
+) {
+  let node = mutable_map.get_or_compute(tree.old_vdoms, old, new)
+  let vdoms = mutable_map.insert(tree.vdoms, new, node)
+  ConcreteTree(..tree, vdoms:)
+}
+
+pub fn add_memo(
+  tree: ConcreteTree(msg),
+  new new: View(msg),
+  node node: Element(msg),
+) -> ConcreteTree(msg) {
+  let vdoms = mutable_map.insert(tree.vdoms, new, node)
+  ConcreteTree(..tree, vdoms:)
+}
+
+pub fn get_subtree(
+  events: Events(msg),
+  path: String,
+  old_mapper old_mapper: Mapper,
+) -> Events(msg) {
+  let child =
+    mutable_map.get_or_compute(events.children, path, fn() {
+      Child(old_mapper, new_events())
+    })
+
+  child.events
+}
+
+pub fn update_subtree(
+  parent: Events(msg),
+  path: String,
+  mapper mapper: Mapper,
+  events events: Events(msg),
+) -> Events(msg) {
+  let new_child = Child(mapper:, events:)
+  let children = mutable_map.insert(parent.children, path, new_child)
+  Events(..parent, children:)
 }
 
 // EVENTS MANIPULATIONS -------------------------------------------------------

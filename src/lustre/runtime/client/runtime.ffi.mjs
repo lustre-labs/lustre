@@ -247,13 +247,11 @@ export class Runtime {
     this.#renderTimer = null;
 
     const next = this.#view(this.#model);
-    // TODO: rename
-    const { patch, tree: events } = diff(this.#events, this.#vdom, next);
+    const { patch, tree } = diff(this.#events, this.#vdom, next);
 
-    this.#events = events;
+    this.#events = tree;
     this.#vdom = next;
-    // TODO: remove direct access to .vdoms
-    this.#reconciler.push(patch, events.vdoms);
+    this.#reconciler.push(patch, Events.memos(tree));
 
     // We have performed a render, the DOM has been updated but the browser has
     // not yet been given the opportunity to paint. We queue a microtask to block
