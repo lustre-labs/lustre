@@ -15,9 +15,9 @@ import lustre/element/keyed
 @target(javascript)
 import lustre/internals/mutable_map
 @target(javascript)
-import lustre/vdom/diff
+import lustre/vdom/cache
 @target(javascript)
-import lustre/vdom/events
+import lustre/vdom/diff
 @target(javascript)
 import lustre/vdom/patch.{type Patch}
 @target(javascript)
@@ -707,7 +707,7 @@ pub fn reconciler_push_keyed_fragment_remove_test() {
 fn test_diff(prev: Element(msg), next: Element(msg)) {
   use reconciler <- with_reconciler
 
-  let diff.Diff(patch:, ..) = diff.diff(events.new(), prev, next)
+  let diff.Diff(patch:, ..) = diff.diff(cache.new(), prev, next)
 
   mount(reconciler, prev)
   push(reconciler, patch)

@@ -12,8 +12,8 @@ import gleam/set.{type Set}
 import lustre/effect.{type Effect}
 import lustre/internals/constants
 import lustre/runtime/transport.{type ClientMessage, type ServerMessage}
+import lustre/vdom/cache.{type Cache}
 import lustre/vdom/diff.{diff}
-import lustre/vdom/events.{type ConcreteTree}
 import lustre/vdom/vnode.{type Element}
 
 // STATE -----------------------------------------------------------------------
@@ -34,7 +34,7 @@ pub type State(model, msg) {
     config: Config(msg),
     //
     vdom: Element(msg),
-    tree: ConcreteTree(msg),
+    cache: Cache(msg),
     providers: Dict(String, Json),
     //
     subscribers: Dict(Subject(ClientMessage(msg)), Monitor),
@@ -62,7 +62,7 @@ pub fn start(
   let result =
     actor.new_with_initialiser(1000, fn(self) {
       let vdom = view(init.0)
-      let tree = events.from_node(vdom)
+      let cache = cache.from_node(vdom)
       let base_selector =
         process.new_selector()
         |> process.select(self)
@@ -82,7 +82,7 @@ pub fn start(
           config:,
           //
           vdom:,
-          tree:,
+          cache:,
           providers: dict.new(),
           //
           subscribers: dict.new(),
@@ -132,12 +132,12 @@ fn loop(
   case message {
     ClientDispatchedMessage(message:) -> {
       let next = handle_client_message(state, message)
-      let diff = diff(state.tree, state.vdom, next.vdom)
+      let diff = diff(state.cache, state.vdom, next.vdom)
 
-      let msg = transport.reconcile(diff.patch, events.memos(diff.tree))
+      let msg = transport.reconcile(diff.patch, cache.memos(diff.cache))
       broadcast(state.subscribers, state.callbacks, msg)
 
-      actor.continue(State(..next, tree: diff.tree))
+      actor.continue(State(..next, cache: diff.cache))
     }
 
     ClientRegisteredSubject(client:) ->
@@ -160,7 +160,7 @@ fn loop(
                   requested_contexts: dict.keys(state.config.contexts),
                   provided_contexts: state.providers,
                   vdom: state.vdom,
-                  memos: events.memos(state.tree),
+                  memos: cache.memos(state.cache),
                 ),
               )
 
@@ -190,7 +190,7 @@ fn loop(
             requested_contexts: dict.keys(state.config.contexts),
             provided_contexts: state.providers,
             vdom: state.vdom,
-            memos: events.memos(state.tree),
+            memos: cache.memos(state.cache),
           ))
 
           actor.continue(State(..state, callbacks:))
@@ -218,14 +218,14 @@ fn loop(
     EffectDispatchedMessage(message:) -> {
       let #(model, effect) = state.update(state.model, message)
       let vdom = state.view(model)
-      let diff = diff(state.tree, state.vdom, vdom)
+      let diff = diff(state.cache, state.vdom, vdom)
 
       handle_effect(state.self, effect)
 
-      let msg = transport.reconcile(diff.patch, events.memos(diff.tree))
+      let msg = transport.reconcile(diff.patch, cache.memos(diff.cache))
       broadcast(state.subscribers, state.callbacks, msg)
 
-      actor.continue(State(..state, model:, vdom:, tree: diff.tree))
+      actor.continue(State(..state, model:, vdom:, cache: diff.cache))
     }
 
     EffectEmitEvent(name:, data:) -> {
@@ -305,15 +305,15 @@ fn handle_client_message(
       }
 
     transport.EventFired(path:, name:, event:, ..) ->
-      case events.handle(state.tree, path, name, event) {
-        #(tree, Error(_)) -> State(..state, tree:)
-        #(tree, Ok(handler)) -> {
+      case cache.handle(state.cache, path, name, event) {
+        #(cache, Error(_)) -> State(..state, cache:)
+        #(cache, Ok(handler)) -> {
           let #(model, effect) = state.update(state.model, handler.message)
           let vdom = state.view(model)
 
           handle_effect(state.self, effect)
 
-          State(..state, model:, vdom:, tree:)
+          State(..state, model:, vdom:, cache:)
         }
       }
 

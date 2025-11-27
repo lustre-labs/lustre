@@ -15,8 +15,8 @@ import lustre/vdom/vnode.{
 
 // TYPES -----------------------------------------------------------------------
 
-pub opaque type ConcreteTree(msg) {
-  ConcreteTree(
+pub opaque type Cache(msg) {
+  Cache(
     events: Events(msg),
     //
     vdoms: Memos(msg),
@@ -56,8 +56,8 @@ pub fn compose_mapper(mapper: Mapper, child_mapper: Mapper) -> Mapper {
 
 ///
 ///
-pub fn new() -> ConcreteTree(msg) {
-  ConcreteTree(
+pub fn new() -> Cache(msg) {
+  Cache(
     events: new_events(),
     vdoms: mutable_map.new(),
     old_vdoms: mutable_map.new(),
@@ -70,64 +70,57 @@ pub fn new_events() -> Events(msg) {
   Events(handlers: mutable_map.new(), children: mutable_map.new())
 }
 
-pub fn from_node(root: Element(msg)) -> ConcreteTree(msg) {
-  let tree = new()
-  let #(tree, events) = add_child(tree, tree.events, path.root, 0, root)
-  ConcreteTree(..tree, events:)
+pub fn from_node(root: Element(msg)) -> Cache(msg) {
+  let cache = new()
+  let #(cache, events) = add_child(cache, cache.events, path.root, 0, root)
+  Cache(..cache, events:)
 }
 
-pub fn tick(tree: ConcreteTree(msg)) -> ConcreteTree(msg) {
-  ConcreteTree(
-    events: tree.events,
+pub fn tick(cache: Cache(msg)) -> Cache(msg) {
+  Cache(
+    events: cache.events,
     vdoms: mutable_map.new(),
-    old_vdoms: tree.vdoms,
-    dispatched_paths: tree.next_dispatched_paths,
+    old_vdoms: cache.vdoms,
+    dispatched_paths: cache.next_dispatched_paths,
     next_dispatched_paths: constants.empty_list,
   )
 }
 
-pub fn events(tree: ConcreteTree(msg)) -> Events(msg) {
-  tree.events
+pub fn events(cache: Cache(msg)) -> Events(msg) {
+  cache.events
 }
 
-pub fn update_events(
-  tree: ConcreteTree(msg),
-  events: Events(msg),
-) -> ConcreteTree(msg) {
-  ConcreteTree(..tree, events:)
+pub fn update_events(cache: Cache(msg), events: Events(msg)) -> Cache(msg) {
+  Cache(..cache, events:)
 }
 
 // MEMO MANIPULATIONS ---------------------------------------------------------
 
-pub fn memos(tree: ConcreteTree(msg)) -> Memos(msg) {
-  tree.vdoms
+pub fn memos(cache: Cache(msg)) -> Memos(msg) {
+  cache.vdoms
 }
 
 pub fn get_old_memo(
-  tree: ConcreteTree(msg),
+  cache: Cache(msg),
   old old: View(msg),
   new new: View(msg),
 ) -> Element(msg) {
-  mutable_map.get_or_compute(tree.old_vdoms, old, new)
+  mutable_map.get_or_compute(cache.old_vdoms, old, new)
 }
 
-pub fn keep_memo(
-  tree: ConcreteTree(msg),
-  old old: View(msg),
-  new new: View(msg),
-) {
-  let node = mutable_map.get_or_compute(tree.old_vdoms, old, new)
-  let vdoms = mutable_map.insert(tree.vdoms, new, node)
-  ConcreteTree(..tree, vdoms:)
+pub fn keep_memo(cache: Cache(msg), old old: View(msg), new new: View(msg)) {
+  let node = mutable_map.get_or_compute(cache.old_vdoms, old, new)
+  let vdoms = mutable_map.insert(cache.vdoms, new, node)
+  Cache(..cache, vdoms:)
 }
 
 pub fn add_memo(
-  tree: ConcreteTree(msg),
+  cache: Cache(msg),
   new new: View(msg),
   node node: Element(msg),
-) -> ConcreteTree(msg) {
-  let vdoms = mutable_map.insert(tree.vdoms, new, node)
-  ConcreteTree(..tree, vdoms:)
+) -> Cache(msg) {
+  let vdoms = mutable_map.insert(cache.vdoms, new, node)
+  Cache(..cache, vdoms:)
 }
 
 pub fn get_subtree(
@@ -193,14 +186,14 @@ fn do_remove_event(
 }
 
 pub fn add_child(
-  tree: ConcreteTree(msg),
+  cache: Cache(msg),
   events: Events(msg),
   parent: Path,
   index: Int,
   child: Element(msg),
-) -> #(ConcreteTree(msg), Events(msg)) {
+) -> #(Cache(msg), Events(msg)) {
   let children = [child, ..constants.empty_list]
-  add_children(tree, events, parent, index, children)
+  add_children(cache, events, parent, index, children)
 }
 
 fn add_attributes(
@@ -226,17 +219,17 @@ type AddedChildren(msg) {
 ///
 ///
 pub fn add_children(
-  tree: ConcreteTree(msg),
+  cache: Cache(msg),
   events: Events(msg),
   path: Path,
   child_index: Int,
   nodes: List(Element(msg)),
-) -> #(ConcreteTree(msg), Events(msg)) {
-  let vdoms = tree.vdoms
+) -> #(Cache(msg), Events(msg)) {
+  let vdoms = cache.vdoms
   let Events(handlers:, children:) = events
   let AddedChildren(handlers:, children:, vdoms:) =
     do_add_children(handlers, children, vdoms, path, child_index, nodes)
-  #(ConcreteTree(..tree, vdoms:), Events(handlers:, children:))
+  #(Cache(..cache, vdoms:), Events(handlers:, children:))
 }
 
 fn do_add_children(
@@ -318,7 +311,7 @@ fn do_add_children(
 }
 
 pub fn remove_child(
-  tree: ConcreteTree(msg),
+  cache: Cache(msg),
   events: Events(msg),
   parent: Path,
   child_index: Int,
@@ -327,7 +320,7 @@ pub fn remove_child(
   do_remove_children(
     events.handlers,
     events.children,
-    tree.old_vdoms,
+    cache.old_vdoms,
     parent,
     child_index,
     [child, ..constants.empty_list],
@@ -412,15 +405,15 @@ fn do_remove_children(
 }
 
 pub fn replace_child(
-  tree: ConcreteTree(msg),
+  cache: Cache(msg),
   events: Events(msg),
   parent: Path,
   child_index: Int,
   prev: Element(msg),
   next: Element(msg),
-) -> #(ConcreteTree(msg), Events(msg)) {
-  let events = remove_child(tree, events, parent, child_index, prev)
-  add_child(tree, events, parent, child_index, next)
+) -> #(Cache(msg), Events(msg)) {
+  let events = remove_child(cache, events, parent, child_index, prev)
+  add_child(cache, events, parent, child_index, next)
 }
 
 // QUERIES ---------------------------------------------------------------------
@@ -430,15 +423,10 @@ pub opaque type DecodedEvent(msg) {
   DispatchedEvent(path: String)
 }
 
-pub fn decode(
-  tree: ConcreteTree(msg),
-  path: String,
-  name: String,
-  event: Dynamic,
-) {
+pub fn decode(cache: Cache(msg), path: String, name: String, event: Dynamic) {
   let parts = path.split_subtree_path(path <> path.separator_event <> name)
 
-  case get_handler(tree.events, parts, function.identity) {
+  case get_handler(cache.events, parts, function.identity) {
     Ok(handler) ->
       case decode.run(event, handler) {
         Ok(handler) -> DecodedEvent(handler:, path:)
@@ -480,30 +468,30 @@ fn get_handler(events: Events(msg), path: List(String), mapper: Mapper) {
   }
 }
 
-pub fn dispatch(events: ConcreteTree(msg), event: DecodedEvent(msg)) {
-  let next_dispatched_paths = [event.path, ..events.next_dispatched_paths]
-  let events = ConcreteTree(..events, next_dispatched_paths:)
+pub fn dispatch(cache: Cache(msg), event: DecodedEvent(msg)) {
+  let next_dispatched_paths = [event.path, ..cache.next_dispatched_paths]
+  let cache = Cache(..cache, next_dispatched_paths:)
 
   case event {
-    DecodedEvent(handler:, path: _) -> #(events, Ok(handler))
-    DispatchedEvent(_) -> #(events, constants.error_nil)
+    DecodedEvent(handler:, path: _) -> #(cache, Ok(handler))
+    DispatchedEvent(_) -> #(cache, constants.error_nil)
   }
 }
 
 ///
 ///
 pub fn handle(
-  events: ConcreteTree(msg),
+  cache: Cache(msg),
   path: String,
   name: String,
   event: Dynamic,
-) -> #(ConcreteTree(msg), Result(Handler(msg), Nil)) {
-  decode(events, path, name, event)
-  |> dispatch(events, _)
+) -> #(Cache(msg), Result(Handler(msg), Nil)) {
+  decode(cache, path, name, event)
+  |> dispatch(cache, _)
 }
 
-pub fn has_dispatched_events(events: ConcreteTree(msg), path: Path) {
-  path.matches(path, any: events.dispatched_paths)
+pub fn has_dispatched_events(cache: Cache(msg), path: Path) {
+  path.matches(path, any: cache.dispatched_paths)
 }
 
 @external(erlang, "gleam@function", "identity")

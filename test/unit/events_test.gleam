@@ -7,8 +7,8 @@ import lustre/element
 import lustre/element/html
 import lustre/element/keyed
 import lustre/event
+import lustre/vdom/cache
 import lustre/vdom/diff
-import lustre/vdom/events
 import lustre/vdom/path
 import lustre/vdom/vattr.{Handler}
 import lustre_test
@@ -20,7 +20,7 @@ pub fn single_event_test() {
 
   let vdom = html.button([event.on_click("hello!")], [html.text("Click me!")])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
 
   let path = "0"
 
@@ -31,7 +31,7 @@ pub fn single_event_test() {
       message: "hello!",
     ))
 
-  let #(_, actual) = events.handle(events, path, "click", dynamic.nil())
+  let #(_, actual) = cache.handle(events, path, "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -44,7 +44,7 @@ pub fn single_nested_event_test() {
       html.button([event.on_click("hello!")], [html.text("Click me!")]),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
 
   let path = path.root |> path.add(0, "") |> path.add(0, "")
 
@@ -56,7 +56,7 @@ pub fn single_nested_event_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -70,7 +70,7 @@ pub fn single_nested_keyed_event_test() {
       #("b", html.button([event.on_click("hello!")], [html.text("Click me!")])),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
@@ -82,7 +82,7 @@ pub fn single_nested_keyed_event_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -99,7 +99,7 @@ pub fn single_nested_keyed_event_with_period_test() {
       ),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b.c")
 
@@ -111,7 +111,7 @@ pub fn single_nested_keyed_event_with_period_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -126,7 +126,7 @@ pub fn fragment_event_test() {
       html.button([event.on_click("hello!")], [html.text("Click me!")]),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
 
   let path = path.root |> path.add(0, "") |> path.add(0, "")
 
@@ -138,7 +138,7 @@ pub fn fragment_event_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -153,7 +153,7 @@ pub fn nested_fragment_event_test() {
       ]),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
 
   let path = path.root |> path.add(0, "") |> path.add(0, "") |> path.add(0, "")
 
@@ -165,7 +165,7 @@ pub fn nested_fragment_event_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -187,7 +187,7 @@ pub fn nested_fragment_with_multiple_children_event_test() {
       ]),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
 
   let path = path.root |> path.add(0, "") |> path.add(0, "") |> path.add(2, "")
 
@@ -195,7 +195,7 @@ pub fn nested_fragment_with_multiple_children_event_test() {
     Ok(Handler(prevent_default: False, stop_propagation: False, message: 4))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -211,7 +211,7 @@ pub fn single_mapped_event_test() {
       string.uppercase,
     )
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
 
   let path = path.root |> path.add(0, "") |> path.subtree |> path.add(0, "")
 
@@ -223,7 +223,7 @@ pub fn single_mapped_event_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -240,7 +240,7 @@ pub fn multiple_mapped_event_test() {
       list.repeat(_, 2),
     )
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
 
   // multiple maps should only produce a single subtree.
   let path = path.root |> path.add(0, "") |> path.subtree |> path.add(0, "")
@@ -253,7 +253,7 @@ pub fn multiple_mapped_event_test() {
     )
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -266,7 +266,7 @@ pub fn event_added_test() {
   let prev = html.button([], [html.text("Click me!")])
   let next = html.button([event.on_click("hello!")], [html.text("Click me!")])
 
-  let tree = diff.diff(events.new(), prev, next).tree
+  let cache = diff.diff(cache.new(), prev, next).cache
 
   let path = path.root |> path.add(0, "")
 
@@ -278,7 +278,7 @@ pub fn event_added_test() {
     ))
 
   let #(_, actual) =
-    events.handle(tree, path.to_string(path), "click", dynamic.nil())
+    cache.handle(cache, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -289,13 +289,13 @@ pub fn event_removed_test() {
   let prev = html.button([event.on_click("hello!")], [html.text("Click me!")])
   let next = html.button([], [html.text("Click me!")])
 
-  let tree = diff.diff(events.new(), prev, next).tree
+  let cache = diff.diff(cache.new(), prev, next).cache
 
   let path = path.root |> path.add(0, "")
 
   let expected = Error(Nil)
   let #(_, actual) =
-    events.handle(tree, path.to_string(path), "click", dynamic.nil())
+    cache.handle(cache, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -310,7 +310,7 @@ pub fn element_added_test() {
       #("b", html.button([event.on_click("hello!")], [html.text("Click me!")])),
     ])
 
-  let tree = diff.diff(events.new(), prev, next).tree
+  let cache = diff.diff(cache.new(), prev, next).cache
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
@@ -322,7 +322,7 @@ pub fn element_added_test() {
     ))
 
   let #(_, actual) =
-    events.handle(tree, path.to_string(path), "click", dynamic.nil())
+    cache.handle(cache, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -337,13 +337,13 @@ pub fn element_removed_test() {
     ])
   let next = keyed.div([], [#("a", html.h1([], [html.text("Testing...")]))])
 
-  let tree = diff.diff(events.new(), prev, next).tree
+  let cache = diff.diff(cache.new(), prev, next).cache
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
   let expected = Error(Nil)
   let #(_, actual) =
-    events.handle(tree, path.to_string(path), "click", dynamic.nil())
+    cache.handle(cache, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -363,7 +363,7 @@ pub fn element_replaced_test() {
       #("b", html.button([event.on_click("hello!")], [html.text("Click me!")])),
     ])
 
-  let tree = diff.diff(events.new(), prev, next).tree
+  let cache = diff.diff(cache.new(), prev, next).cache
 
   let path = path.root |> path.add(0, "") |> path.add(1, "b")
 
@@ -375,7 +375,7 @@ pub fn element_replaced_test() {
     ))
 
   let #(_, actual) =
-    events.handle(tree, path.to_string(path), "click", dynamic.nil())
+    cache.handle(cache, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -413,7 +413,7 @@ pub fn keyed_element_replaced_test() {
       ),
     ])
 
-  let tree = diff.diff(events.new(), prev, next).tree
+  let cache = diff.diff(cache.new(), prev, next).cache
 
   let path =
     path.root |> path.add(0, "") |> path.add(0, "v2") |> path.add(0, "")
@@ -426,7 +426,7 @@ pub fn keyed_element_replaced_test() {
     ))
 
   let #(_, actual) =
-    events.handle(tree, path.to_string(path), "click", dynamic.nil())
+    cache.handle(cache, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 
@@ -445,7 +445,7 @@ pub fn keyed_element_replaced_test() {
     ))
 
   let #(_, actual) =
-    events.handle(tree, path.to_string(path), "click", dynamic.nil())
+    cache.handle(cache, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
