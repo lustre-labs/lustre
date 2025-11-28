@@ -1,4 +1,4 @@
-# 04 SPA deployments
+# SPA deployments
 
 If you have built a Lustre application that doesn't have a backend you need to
 deploy, you can use a number of static hosting services to get your SPA online.
@@ -90,7 +90,7 @@ jobs:
       - name: Install dependencies
         run: gleam deps download
       - name: Build app
-        run: gleam run -m lustre/dev build app --minify --outdir=dist
+        run: gleam run -m lustre/dev build --minify --outdir=dist
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
