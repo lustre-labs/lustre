@@ -1,7 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Dynamic}
-import gleam/function
 import gleam/json.{type Json}
 import gleam/list
 import gleam/string
@@ -9,6 +8,7 @@ import gleam/string_tree.{type StringTree}
 import houdini
 import lustre/internals/json_object_builder
 import lustre/internals/mutable_map.{type MutableMap}
+import lustre/internals/ref.{type Ref}
 import lustre/vdom/vattr.{type Attribute}
 
 // TYPES -----------------------------------------------------------------------
@@ -17,7 +17,6 @@ pub type Element(msg) {
   Fragment(
     kind: Int,
     key: String,
-    mapper: fn(Dynamic) -> Dynamic,
     children: List(Element(msg)),
     keyed_children: MutableMap(String, Element(msg)),
   )
@@ -25,7 +24,6 @@ pub type Element(msg) {
   Element(
     kind: Int,
     key: String,
-    mapper: fn(Dynamic) -> Dynamic,
     namespace: String,
     tag: String,
     // To efficiently compare attributes during the diff, attribute are always
@@ -49,19 +47,33 @@ pub type Element(msg) {
     void: Bool,
   )
 
-  Text(kind: Int, key: String, mapper: fn(Dynamic) -> Dynamic, content: String)
+  Text(kind: Int, key: String, content: String)
 
   UnsafeInnerHtml(
     kind: Int,
     key: String,
-    mapper: fn(Dynamic) -> Dynamic,
     namespace: String,
     tag: String,
     //
     attributes: List(Attribute(msg)),
     inner_html: String,
   )
+
+  Map(
+    kind: Int,
+    key: String,
+    mapper: fn(Dynamic) -> Dynamic,
+    child: Element(msg),
+  )
+
+  Memo(kind: Int, key: String, dependencies: List(Ref), view: View(msg))
 }
+
+pub type Memos(msg) =
+  mutable_map.MutableMap(View(msg), Element(msg))
+
+pub type View(msg) =
+  fn() -> Element(msg)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -69,18 +81,16 @@ pub const fragment_kind: Int = 0
 
 pub fn fragment(
   key key: String,
-  mapper mapper: fn(Dynamic) -> Dynamic,
   children children: List(Element(msg)),
   keyed_children keyed_children: MutableMap(String, Element(msg)),
 ) -> Element(msg) {
-  Fragment(kind: fragment_kind, key:, mapper:, children:, keyed_children:)
+  Fragment(kind: fragment_kind, key:, children:, keyed_children:)
 }
 
 pub const element_kind: Int = 1
 
 pub fn element(
   key key: String,
-  mapper mapper: fn(Dynamic) -> Dynamic,
   namespace namespace: String,
   tag tag: String,
   attributes attributes: List(Attribute(msg)),
@@ -92,7 +102,6 @@ pub fn element(
   Element(
     kind: element_kind,
     key:,
-    mapper:,
     namespace:,
     tag:,
     attributes: vattr.prepare(attributes),
@@ -129,19 +138,14 @@ pub fn is_void_html_element(tag: String, namespace: String) -> Bool {
 
 pub const text_kind: Int = 2
 
-pub fn text(
-  key key: String,
-  mapper mapper: fn(Dynamic) -> Dynamic,
-  content content: String,
-) -> Element(msg) {
-  Text(kind: text_kind, key: key, mapper: mapper, content: content)
+pub fn text(key key: String, content content: String) -> Element(msg) {
+  Text(kind: text_kind, key: key, content: content)
 }
 
 pub const unsafe_inner_html_kind: Int = 3
 
 pub fn unsafe_inner_html(
   key key: String,
-  mapper mapper: fn(Dynamic) -> Dynamic,
   namespace namespace: String,
   tag tag: String,
   attributes attributes: List(Attribute(msg)),
@@ -150,13 +154,47 @@ pub fn unsafe_inner_html(
   UnsafeInnerHtml(
     kind: unsafe_inner_html_kind,
     key:,
-    mapper:,
     namespace:,
     tag:,
     attributes: vattr.prepare(attributes),
     inner_html:,
   )
 }
+
+pub const map_kind: Int = 4
+
+pub fn map(element: Element(a), mapper: fn(a) -> b) -> Element(b) {
+  case element {
+    Map(mapper: child_mapper, ..) ->
+      Map(
+        kind: map_kind,
+        key: element.key,
+        child: coerce(element.child),
+        mapper: fn(handler) { coerce(mapper)(child_mapper(handler)) },
+      )
+    _ ->
+      Map(
+        kind: map_kind,
+        key: element.key,
+        mapper: coerce(mapper),
+        child: coerce(element),
+      )
+  }
+}
+
+pub const memo_kind: Int = 5
+
+pub fn memo(
+  key key: String,
+  dependencies dependencies: List(Ref),
+  view view: fn() -> Element(msg),
+) -> Element(msg) {
+  Memo(kind: memo_kind, key:, dependencies:, view:)
+}
+
+@external(erlang, "gleam@function", "identity")
+@external(javascript, "../../../gleam_stdlib/gleam/function.mjs", "identity")
+fn coerce(a: a) -> b
 
 // MANIPULATION ----------------------------------------------------------------
 
@@ -166,19 +204,24 @@ pub fn to_keyed(key: String, node: Element(msg)) -> Element(msg) {
     Text(..) -> Text(..node, key:)
     UnsafeInnerHtml(..) -> UnsafeInnerHtml(..node, key:)
     Fragment(..) -> Fragment(..node, key:)
+    // because we skip Memo nodes when encoding and reconciling, we have
+    // to set the key on the memo (for the diff) as well as the inner node!
+    Memo(view:, ..) -> Memo(..node, key:, view: fn() { to_keyed(key, view()) })
+    // we don't skip Map nodes but I feel safer doing it anyways :-)
+    Map(child:, ..) -> Map(..node, key:, child: to_keyed(key, child))
   }
 }
 
 // ENCODERS --------------------------------------------------------------------
 
-pub fn to_json(node: Element(msg)) -> Json {
+pub fn to_json(node: Element(msg), memos: Memos(msg)) -> Json {
   case node {
     Fragment(kind:, key:, children:, ..) ->
-      fragment_to_json(kind, key, children)
+      fragment_to_json(kind, key, children, memos)
     Element(kind:, key:, namespace:, tag:, attributes:, children:, ..) ->
-      element_to_json(kind, key, namespace, tag, attributes, children)
-    Text(kind:, key:, content:, ..) -> text_to_json(kind, key, content)
-    UnsafeInnerHtml(kind:, key:, namespace:, tag:, attributes:, inner_html:, ..) ->
+      element_to_json(kind, key, namespace, tag, attributes, children, memos)
+    Text(kind:, key:, content:) -> text_to_json(kind, key, content)
+    UnsafeInnerHtml(kind:, key:, namespace:, tag:, attributes:, inner_html:) ->
       unsafe_inner_html_to_json(
         kind,
         key,
@@ -187,23 +230,25 @@ pub fn to_json(node: Element(msg)) -> Json {
         attributes,
         inner_html,
       )
+    Map(kind:, key:, child:, ..) -> map_to_json(kind, key, child, memos)
+    Memo(view:, ..) -> memo_to_json(view, memos)
   }
 }
 
-fn fragment_to_json(kind, key, children) {
+fn fragment_to_json(kind, key, children, memos) {
   json_object_builder.tagged(kind)
   |> json_object_builder.string("key", key)
-  |> json_object_builder.list("children", children, to_json)
+  |> json_object_builder.list("children", children, to_json(_, memos))
   |> json_object_builder.build
 }
 
-fn element_to_json(kind, key, namespace, tag, attributes, children) {
+fn element_to_json(kind, key, namespace, tag, attributes, children, memos) {
   json_object_builder.tagged(kind)
   |> json_object_builder.string("key", key)
   |> json_object_builder.string("namespace", namespace)
   |> json_object_builder.string("tag", tag)
   |> json_object_builder.list("attributes", attributes, vattr.to_json)
-  |> json_object_builder.list("children", children, to_json)
+  |> json_object_builder.list("children", children, to_json(_, memos))
   |> json_object_builder.build
 }
 
@@ -221,6 +266,22 @@ fn unsafe_inner_html_to_json(kind, key, namespace, tag, attributes, inner_html) 
   |> json_object_builder.string("tag", tag)
   |> json_object_builder.list("attributes", attributes, vattr.to_json)
   |> json_object_builder.string("inner_html", inner_html)
+  |> json_object_builder.build
+}
+
+fn memo_to_json(view, memos) {
+  // Memo nodes are transparent during encoding - we encode their cached child.
+  let child = mutable_map.get_or_compute(memos, view, view)
+  to_json(child, memos)
+}
+
+// Map nodes are encoded with their child.
+fn map_to_json(kind, key, child, memos) {
+  // They mark the boundary of an isolated event subtree, so we need to tell the runtime
+  // about them to make sure it can construct the correct event paths!
+  json_object_builder.tagged(kind)
+  |> json_object_builder.string("key", key)
+  |> json_object_builder.json("child", to_json(child, memos))
   |> json_object_builder.build
 }
 
@@ -281,6 +342,10 @@ pub fn to_string_tree(node: Element(msg)) -> StringTree {
       |> string_tree.append(inner_html)
       |> string_tree.append("</" <> tag <> ">")
     }
+
+    Map(child:, ..) -> to_string_tree(child)
+
+    Memo(view:, ..) -> to_string_tree(view())
   }
 }
 
@@ -376,6 +441,10 @@ fn do_to_snapshot_builder(
       |> string_tree.append(inner_html)
       |> string_tree.append("</" <> tag <> ">")
     }
+
+    Map(child:, ..) -> do_to_snapshot_builder(child, raw_text, indent)
+
+    Memo(view:, ..) -> do_to_snapshot_builder(view(), raw_text, indent)
   }
 }
 
@@ -389,15 +458,7 @@ fn children_to_snapshot_builder(
     [Text(content: a, ..), Text(content: b, ..), ..rest] ->
       children_to_snapshot_builder(
         html,
-        [
-          Text(
-            kind: text_kind,
-            key: "",
-            mapper: function.identity,
-            content: a <> b,
-          ),
-          ..rest
-        ],
+        [Text(kind: text_kind, key: "", content: a <> b), ..rest],
         raw_text,
         indent,
       )

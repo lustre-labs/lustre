@@ -13,9 +13,11 @@ import lustre/element/html
 @target(javascript)
 import lustre/element/keyed
 @target(javascript)
-import lustre/vdom/diff
+import lustre/internals/mutable_map
 @target(javascript)
-import lustre/vdom/events
+import lustre/vdom/cache
+@target(javascript)
+import lustre/vdom/diff
 @target(javascript)
 import lustre/vdom/patch.{type Patch}
 @target(javascript)
@@ -71,7 +73,7 @@ pub fn reconciler_server_component_mount_input_test() {
   // slightly different result that we don't handle (`value=""` vs `value`)
   use reconciler <- with_reconciler
 
-  mount_json(reconciler, vnode.to_json(html))
+  mount_json(reconciler, vnode.to_json(html, mutable_map.new()))
   assert nodes_equal(get_vdom(), html)
 }
 
@@ -82,7 +84,7 @@ fn test_mount(vdom: Element(msg)) {
   mount(reconciler, vdom)
   assert get_html() == element.to_string(vdom)
 
-  mount_json(reconciler, vnode.to_json(vdom))
+  mount_json(reconciler, vnode.to_json(vdom, mutable_map.new()))
   assert nodes_equal(get_vdom(), vdom)
 }
 
@@ -702,17 +704,153 @@ pub fn reconciler_push_keyed_fragment_remove_test() {
 }
 
 @target(javascript)
+pub fn reconciler_push_memo_with_fragment_test() {
+  use <- lustre_test.test_filter("reconciler_push_memo_with_fragment_test")
+
+  let dep1 = element.ref(1)
+  let dep2 = element.ref(2)
+
+  let prev =
+    html.div([], [
+      element.memo([dep1], fn() {
+        element.fragment([html.text("a"), html.text("b")])
+      }),
+    ])
+
+  let next =
+    html.div([], [
+      element.memo([dep2], fn() {
+        element.fragment([html.text("c"), html.text("d")])
+      }),
+    ])
+
+  test_diff(prev, next)
+}
+
+@target(javascript)
+pub fn reconciler_push_memo_with_nested_fragment_test() {
+  use <- lustre_test.test_filter(
+    "reconciler_push_memo_with_nested_fragment_test",
+  )
+
+  let dep1 = element.ref(1)
+  let dep2 = element.ref(2)
+
+  let prev =
+    html.div([], [
+      element.memo([dep1], fn() {
+        element.fragment([
+          element.fragment([html.text("a"), html.text("b")]),
+          html.text("c"),
+        ])
+      }),
+    ])
+
+  let next =
+    html.div([], [
+      element.memo([dep2], fn() {
+        element.fragment([
+          element.fragment([html.text("x"), html.text("y")]),
+          html.text("z"),
+        ])
+      }),
+    ])
+
+  test_diff(prev, next)
+}
+
+@target(javascript)
+pub fn reconciler_push_map_with_fragment_test() {
+  use <- lustre_test.test_filter("reconciler_push_map_with_fragment_test")
+
+  let prev =
+    html.div([], [
+      element.map(element.fragment([html.text("a"), html.text("b")]), fn(msg) {
+        msg
+      }),
+    ])
+
+  let next =
+    html.div([], [
+      element.map(element.fragment([html.text("c"), html.text("d")]), fn(msg) {
+        msg
+      }),
+    ])
+
+  test_diff(prev, next)
+}
+
+@target(javascript)
+pub fn reconciler_push_map_with_nested_fragment_test() {
+  use <- lustre_test.test_filter(
+    "reconciler_push_map_with_nested_fragment_test",
+  )
+
+  let prev =
+    html.div([], [
+      element.map(
+        element.fragment([
+          element.fragment([html.text("a"), html.text("b")]),
+          html.text("c"),
+        ]),
+        fn(msg) { msg },
+      ),
+    ])
+
+  let next =
+    html.div([], [
+      element.map(
+        element.fragment([
+          element.fragment([html.text("x"), html.text("y")]),
+          html.text("z"),
+        ]),
+        fn(msg) { msg },
+      ),
+    ])
+
+  test_diff(prev, next)
+}
+
+@target(javascript)
+pub fn reconciler_push_memo_map_with_fragment_test() {
+  use <- lustre_test.test_filter("reconciler_push_memo_map_with_fragment_test")
+
+  let dep1 = element.ref(1)
+  let dep2 = element.ref(2)
+
+  let prev =
+    html.div([], [
+      element.memo([dep1], fn() {
+        element.map(element.fragment([html.text("a"), html.text("b")]), fn(msg) {
+          msg
+        })
+      }),
+    ])
+
+  let next =
+    html.div([], [
+      element.memo([dep2], fn() {
+        element.map(element.fragment([html.text("c"), html.text("d")]), fn(msg) {
+          msg
+        })
+      }),
+    ])
+
+  test_diff(prev, next)
+}
+
+@target(javascript)
 fn test_diff(prev: Element(msg), next: Element(msg)) {
   use reconciler <- with_reconciler
 
-  let diff.Diff(patch:, ..) = diff.diff(events.new(), prev, next)
+  let diff.Diff(patch:, ..) = diff.diff(cache.new(), prev, next)
 
   mount(reconciler, prev)
   push(reconciler, patch)
   assert nodes_equal(get_vdom(), next)
 
   mount(reconciler, prev)
-  push_json(reconciler, patch.to_json(patch))
+  push_json(reconciler, patch.to_json(patch, mutable_map.new()))
   assert nodes_equal(get_vdom(), next)
 }
 
@@ -726,6 +864,10 @@ fn nodes_equal(left: Element(msg), right: Element(msg)) {
     // compare against that child instead.
     vnode.Fragment(children: [left], ..), _ -> nodes_equal(left, right)
     _, vnode.Fragment(children: [right], ..) -> nodes_equal(left, right)
+
+    _, vnode.Map(child:, ..) -> nodes_equal(left, child)
+
+    _, vnode.Memo(view:, ..) -> nodes_equal(left, view())
 
     // don't check the key on text nodes (or fragments) - we can't virtualise it
     vnode.Text(..), vnode.Text(..) -> left.content == right.content
@@ -759,6 +901,12 @@ fn children_equal(left: List(Element(msg)), right: List(Element(msg))) -> Bool {
       children_equal(list.append(children, left), right)
     _, [vnode.Fragment(children:, ..), ..right] ->
       children_equal(left, list.append(children, right))
+
+    _, [vnode.Map(child:, ..), ..right] ->
+      children_equal(left, list.append([child], right))
+
+    _, [vnode.Memo(view:, ..), ..right] ->
+      children_equal(left, list.append([view()], right))
 
     // compare non-fragment children
     [first_left, ..left], [first_right, ..right] ->

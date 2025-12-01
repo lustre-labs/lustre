@@ -2,6 +2,7 @@
 
 import gleam/int
 import gleam/string
+import lustre/internals/constants
 
 // CONSTANTS -------------------------------------------------------------------
 
@@ -15,6 +16,10 @@ pub const separator_element: String = "\t"
 
 ///
 ///
+pub const separator_subtree: String = "\r"
+
+///
+///
 pub const separator_event: String = "\n"
 
 // TYPES -----------------------------------------------------------------------
@@ -25,6 +30,7 @@ pub opaque type Path {
   Root
   Key(key: String, parent: Path)
   Index(index: Int, parent: Path)
+  Subtree(parent: Path)
 }
 
 // QUERIES ---------------------------------------------------------------------
@@ -49,6 +55,10 @@ fn do_matches(path: String, candidates: List(String)) -> Bool {
   }
 }
 
+pub fn split_subtree_path(path: String) -> List(String) {
+  string.split(path, on: separator_subtree)
+}
+
 // MANIPULATIONS ---------------------------------------------------------------
 
 ///
@@ -60,31 +70,55 @@ pub fn add(parent: Path, index: Int, key: String) -> Path {
   }
 }
 
+pub fn subtree(path: Path) -> Path {
+  Subtree(parent: path)
+}
+
 // CONVERSIONS -----------------------------------------------------------------
 
 /// Convert a path to a resolved string with an event name appended to it.
+/// This returns a partial path, up to the closest Memo barrier.
 ///
 pub fn event(path: Path, event: String) -> String {
-  do_to_string(path, [separator_event, event])
+  do_to_string(False, path, [separator_event, event, ..constants.empty_list])
 }
 
+/// Convert a path to a child tree to a resolved string.
 ///
+pub fn child(path: Path) -> String {
+  do_to_string(False, path, constants.empty_list)
+}
+
+/// Convert a path to a full resolved string, including all memo barriers.
 ///
 pub fn to_string(path: Path) -> String {
-  do_to_string(path, [])
+  do_to_string(True, path, constants.empty_list)
 }
 
-fn do_to_string(path, acc) {
+fn do_to_string(full, path, acc) {
   case path {
-    Root ->
+    Root -> finish_to_string(acc)
+
+    Key(key:, parent:) ->
+      do_to_string(full, parent, [separator_element, key, ..acc])
+
+    Index(index:, parent:) -> {
+      let acc = [separator_element, int.to_string(index), ..acc]
+      do_to_string(full, parent, acc)
+    }
+
+    Subtree(_) if !full -> finish_to_string(acc)
+    Subtree(parent:) ->
       case acc {
-        [] -> ""
-        [_sep, ..segments] -> string.concat(segments)
+        [] -> do_to_string(full, parent, acc)
+        [_sep, ..acc] -> do_to_string(full, parent, [separator_subtree, ..acc])
       }
+  }
+}
 
-    Key(key:, parent:) -> do_to_string(parent, [separator_element, key, ..acc])
-
-    Index(index:, parent:) ->
-      do_to_string(parent, [separator_element, int.to_string(index), ..acc])
+fn finish_to_string(acc) {
+  case acc {
+    [] -> ""
+    [_sep, ..segments] -> string.concat(segments)
   }
 }

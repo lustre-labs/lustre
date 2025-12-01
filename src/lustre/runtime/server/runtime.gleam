@@ -10,9 +10,10 @@ import gleam/otp/actor.{type Next, type StartError}
 import gleam/result
 import gleam/set.{type Set}
 import lustre/effect.{type Effect}
+import lustre/internals/constants
 import lustre/runtime/transport.{type ClientMessage, type ServerMessage}
-import lustre/vdom/diff.{Diff, diff}
-import lustre/vdom/events.{type Events}
+import lustre/vdom/cache.{type Cache}
+import lustre/vdom/diff.{diff}
 import lustre/vdom/vnode.{type Element}
 
 // STATE -----------------------------------------------------------------------
@@ -33,7 +34,7 @@ pub type State(model, msg) {
     config: Config(msg),
     //
     vdom: Element(msg),
-    events: Events(msg),
+    cache: Cache(msg),
     providers: Dict(String, Json),
     //
     subscribers: Dict(Subject(ClientMessage(msg)), Monitor),
@@ -61,7 +62,7 @@ pub fn start(
   let result =
     actor.new_with_initialiser(1000, fn(self) {
       let vdom = view(init.0)
-      let events = events.from_node(vdom)
+      let cache = cache.from_node(vdom)
       let base_selector =
         process.new_selector()
         |> process.select(self)
@@ -81,7 +82,7 @@ pub fn start(
           config:,
           //
           vdom:,
-          events:,
+          cache:,
           providers: dict.new(),
           //
           subscribers: dict.new(),
@@ -131,11 +132,12 @@ fn loop(
   case message {
     ClientDispatchedMessage(message:) -> {
       let next = handle_client_message(state, message)
-      let Diff(patch:, events:) = diff(state.events, state.vdom, next.vdom)
+      let diff = diff(state.cache, state.vdom, next.vdom)
 
-      broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))
+      let msg = transport.reconcile(diff.patch, cache.memos(diff.cache))
+      broadcast(state.subscribers, state.callbacks, msg)
 
-      actor.continue(State(..next, events:))
+      actor.continue(State(..next, cache: diff.cache))
     }
 
     ClientRegisteredSubject(client:) ->
@@ -151,13 +153,14 @@ fn loop(
               process.send(
                 client,
                 transport.mount(
-                  state.config.open_shadow_root,
-                  state.config.adopt_styles,
-                  dict.keys(state.config.attributes),
-                  dict.keys(state.config.properties),
-                  dict.keys(state.config.contexts),
-                  state.providers,
-                  state.vdom,
+                  open_shadow_root: state.config.open_shadow_root,
+                  will_adopt_styles: state.config.adopt_styles,
+                  observed_attributes: dict.keys(state.config.attributes),
+                  observed_properties: dict.keys(state.config.properties),
+                  requested_contexts: dict.keys(state.config.contexts),
+                  provided_contexts: state.providers,
+                  vdom: state.vdom,
+                  memos: cache.memos(state.cache),
                 ),
               )
 
@@ -180,13 +183,14 @@ fn loop(
           let callbacks = set.insert(state.callbacks, callback)
 
           callback(transport.mount(
-            state.config.open_shadow_root,
-            state.config.adopt_styles,
-            dict.keys(state.config.attributes),
-            dict.keys(state.config.properties),
-            dict.keys(state.config.contexts),
-            state.providers,
-            state.vdom,
+            open_shadow_root: state.config.open_shadow_root,
+            will_adopt_styles: state.config.adopt_styles,
+            observed_attributes: dict.keys(state.config.attributes),
+            observed_properties: dict.keys(state.config.properties),
+            requested_contexts: dict.keys(state.config.contexts),
+            provided_contexts: state.providers,
+            vdom: state.vdom,
+            memos: cache.memos(state.cache),
           ))
 
           actor.continue(State(..state, callbacks:))
@@ -214,12 +218,14 @@ fn loop(
     EffectDispatchedMessage(message:) -> {
       let #(model, effect) = state.update(state.model, message)
       let vdom = state.view(model)
-      let Diff(patch:, events:) = diff(state.events, state.vdom, vdom)
+      let diff = diff(state.cache, state.vdom, vdom)
 
       handle_effect(state.self, effect)
-      broadcast(state.subscribers, state.callbacks, transport.reconcile(patch))
 
-      actor.continue(State(..state, model:, vdom:, events:))
+      let msg = transport.reconcile(diff.patch, cache.memos(diff.cache))
+      broadcast(state.subscribers, state.callbacks, msg)
+
+      actor.continue(State(..state, model:, vdom:, cache: diff.cache))
     }
 
     EffectEmitEvent(name:, data:) -> {
@@ -299,15 +305,15 @@ fn handle_client_message(
       }
 
     transport.EventFired(path:, name:, event:, ..) ->
-      case events.handle(state.events, path, name, event) {
-        #(events, Error(_)) -> State(..state, events:)
-        #(events, Ok(handler)) -> {
+      case cache.handle(state.cache, path, name, event) {
+        #(cache, Error(_)) -> State(..state, cache:)
+        #(cache, Ok(handler)) -> {
           let #(model, effect) = state.update(state.model, handler.message)
           let vdom = state.view(model)
 
           handle_effect(state.self, effect)
 
-          State(..state, model:, vdom:, events:)
+          State(..state, model:, vdom:, cache:)
         }
       }
 
@@ -338,7 +344,7 @@ fn handle_attribute_change(
   value: String,
 ) -> Result(msg, Nil) {
   case dict.get(attributes, name) {
-    Error(_) -> Error(Nil)
+    Error(_) -> constants.error_nil
     Ok(handler) -> handler(value)
   }
 }
@@ -349,7 +355,7 @@ fn handle_property_change(
   value: Dynamic,
 ) -> Result(msg, Nil) {
   case dict.get(properties, name) {
-    Error(_) -> Error(Nil)
+    Error(_) -> constants.error_nil
     Ok(decoder) -> decode.run(value, decoder) |> result.replace_error(Nil)
   }
 }

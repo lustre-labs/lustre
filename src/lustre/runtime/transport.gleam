@@ -6,7 +6,7 @@ import gleam/dynamic/decode.{type Decoder}
 import gleam/function
 import gleam/json.{type Json}
 import lustre/vdom/patch.{type Patch}
-import lustre/vdom/vnode.{type Element}
+import lustre/vdom/vnode.{type Element, type Memos}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -20,8 +20,9 @@ pub type ClientMessage(msg) {
     requested_contexts: List(String),
     provided_contexts: Dict(String, Json),
     vdom: Element(msg),
+    memos: Memos(msg),
   )
-  Reconcile(kind: Int, patch: Patch(msg))
+  Reconcile(kind: Int, patch: Patch(msg), memos: Memos(msg))
   Emit(kind: Int, name: String, data: Json)
   Provide(kind: Int, key: String, value: Json)
 }
@@ -39,13 +40,14 @@ pub type ServerMessage {
 pub const mount_kind: Int = 0
 
 pub fn mount(
-  open_shadow_root: Bool,
-  will_adopt_styles: Bool,
-  observed_attributes: List(String),
-  observed_properties: List(String),
-  requested_contexts: List(String),
-  provided_contexts: Dict(String, Json),
-  vdom: Element(msg),
+  open_shadow_root open_shadow_root: Bool,
+  will_adopt_styles will_adopt_styles: Bool,
+  observed_attributes observed_attributes: List(String),
+  observed_properties observed_properties: List(String),
+  requested_contexts requested_contexts: List(String),
+  provided_contexts provided_contexts: Dict(String, Json),
+  vdom vdom: Element(msg),
+  memos memos: Memos(msg),
 ) -> ClientMessage(msg) {
   Mount(
     kind: mount_kind,
@@ -55,14 +57,18 @@ pub fn mount(
     observed_properties:,
     requested_contexts:,
     provided_contexts:,
+    memos:,
     vdom:,
   )
 }
 
 pub const reconcile_kind: Int = 1
 
-pub fn reconcile(patch patch: Patch(msg)) -> ClientMessage(msg) {
-  Reconcile(kind: reconcile_kind, patch:)
+pub fn reconcile(
+  patch patch: Patch(msg),
+  memos memos: Memos(msg),
+) -> ClientMessage(msg) {
+  Reconcile(kind: reconcile_kind, patch:, memos:)
 }
 
 pub const emit_kind: Int = 2
@@ -130,6 +136,7 @@ pub fn client_message_to_json(message: ClientMessage(msg)) -> Json {
       requested_contexts:,
       provided_contexts:,
       vdom:,
+      memos:,
     ) ->
       mount_to_json(
         kind,
@@ -140,8 +147,9 @@ pub fn client_message_to_json(message: ClientMessage(msg)) -> Json {
         requested_contexts,
         provided_contexts,
         vdom,
+        memos,
       )
-    Reconcile(kind:, patch:) -> reconcile_to_json(kind, patch)
+    Reconcile(kind:, patch:, memos:) -> reconcile_to_json(kind, patch, memos)
     Emit(kind:, name:, data:) -> emit_to_json(kind, name, data)
     Provide(kind:, key:, value:) -> provide_to_json(kind, key, value)
   }
@@ -156,6 +164,7 @@ fn mount_to_json(
   requested_contexts: List(String),
   provided_contexts: Dict(String, Json),
   vdom: Element(msg),
+  memos: Memos(msg),
 ) -> Json {
   json.object([
     #("kind", json.int(kind)),
@@ -168,12 +177,15 @@ fn mount_to_json(
       "provided_contexts",
       json.dict(provided_contexts, function.identity, function.identity),
     ),
-    #("vdom", vnode.to_json(vdom)),
+    #("vdom", vnode.to_json(vdom, memos)),
   ])
 }
 
-fn reconcile_to_json(kind: Int, patch: Patch(msg)) -> Json {
-  json.object([#("kind", json.int(kind)), #("patch", patch.to_json(patch))])
+fn reconcile_to_json(kind: Int, patch: Patch(msg), memos: Memos(msg)) -> Json {
+  json.object([
+    #("kind", json.int(kind)),
+    #("patch", patch.to_json(patch, memos)),
+  ])
 }
 
 fn emit_to_json(kind: Int, name: String, data: Json) -> Json {
