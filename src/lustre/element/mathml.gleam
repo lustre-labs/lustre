@@ -20,14 +20,6 @@ pub const namespace = "http://www.w3.org/1998/Math/MathML"
 // MATHML ELEMENTS: GROUPING ---------------------------------------------------
 
 ///
-pub fn maction(
-  attrs: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) {
-  namespaced(namespace, "maction", attrs, children)
-}
-
-///
 pub fn merror(
   attrs: List(Attribute(msg)),
   children: List(Element(msg)),
