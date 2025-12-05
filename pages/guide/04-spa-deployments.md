@@ -14,7 +14,7 @@ instead.
 In this guide we assume that you can build your Lustre SPA with `lustre_dev_tools`:
 
 ```
-gleam run -m lustre/dev build app --minify
+gleam run -m lustre/dev build --minify
 ```
 
 and that this results in an application in your `priv/static` directory in your
@@ -90,7 +90,7 @@ jobs:
       - name: Install dependencies
         run: gleam deps download
       - name: Build app
-        run: gleam run -m lustre/dev build app --minify --outdir=dist
+        run: gleam run -m lustre/dev build --minify --outdir=dist
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
@@ -187,7 +187,7 @@ jobs:
       - name: Install dependencies
         run: gleam deps download
       - name: Build app
-        run: gleam run -m lustre/dev build app --minify --outdir=dist
+        run: gleam run -m lustre/dev build --minify --outdir=dist
       - name: Deploy with Wrangler
         uses: cloudflare/wrangler-action@v3
         with:
