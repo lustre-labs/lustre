@@ -18,6 +18,8 @@ import whiteboard
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
+  // The component is created and reused for each connection 
+  // instead of creating for each new connection like in previous examples
   let whiteboard = whiteboard.component()
   let assert Ok(component) = lustre.start_server_component(whiteboard, Nil)
 
