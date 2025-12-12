@@ -2,41 +2,60 @@
 
 import gleam/bytes_tree
 import gleam/erlang/application
-import gleam/erlang/process.{type Selector, type Subject}
+import gleam/erlang/process
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
-import gleam/json
-import gleam/option.{type Option, None, Some}
+import gleam/int
+import gleam/option
 import gleam/otp/actor
-import group_registry.{type GroupRegistry}
-import lustre
+import group_registry
 import lustre/attribute
 import lustre/element
 import lustre/element/html.{html}
 import lustre/server_component
 import mist.{type Connection, type ResponseData}
+import server/component_contract
+import server/pubsub
+import server/websocket_handler.{WebSocketConfig}
 import whiteboard
 
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
-  // In this example, we'll use the `group_registry` library to add a "publish-subscribe"
-  // system to the previous whiteboard example. Now, every client will get its own
-  // instance of the server component runtime, and we'll use the registry to share
-  // messages between them.
-  //
-  // Using group_registry, we first have to create the "registry" that we can send
-  // messages and subscribe to. The registry is passed to all clients, so we create
-  // it at the start of our app.
+  // Create the shared registry for pub/sub communication between clients.
+  // This is passed to all whiteboard component instances via the Resources system.
   let name = process.new_name("whiteboard-registry")
   let assert Ok(actor.Started(data: registry, ..)) = group_registry.start(name)
 
+  // Create the whiteboard contract using the pub/sub middleware.
+  // The middleware handles subscription and broadcasting automatically.
+  let whiteboard_contract =
+    whiteboard.component()
+    |> pubsub.to_contract_with(fn(resources) {
+      // Extract the registry from resources - we know it's there because we put it there
+      component_contract.get_resources_unsafe(resources)
+    })
+
+  // Configure the websocket handler with the registry as a resource
+  // and a simple connection ID generator.
+  let connection_counter = new_counter()
+  let ws_config =
+    WebSocketConfig(
+      resources: component_contract.resources(registry),
+      generate_id: fn() {
+        "conn-" <> int.to_string(increment(connection_counter))
+      },
+    )
+
+  // Create the generic websocket handler
+  let ws_handler = websocket_handler.handler(whiteboard_contract, ws_config)
+
   let assert Ok(_) =
     fn(request: Request(Connection)) -> Response(ResponseData) {
-      case request.path_segments(request) {
+      case echo request.path_segments(request) {
         [] -> serve_html()
         ["lustre", "runtime.mjs"] -> serve_runtime()
-        ["ws"] -> serve_whiteboard(request, registry)
+        ["ws"] -> ws_handler(request)
         _ -> response.set_body(response.new(404), mist.Bytes(bytes_tree.new()))
       }
     }
@@ -48,10 +67,37 @@ pub fn main() {
   process.sleep_forever()
 }
 
+// CONNECTION ID COUNTER -------------------------------------------------------
+
+/// Simple counter actor for generating unique connection IDs.
+type CounterMsg {
+  Increment(reply: process.Subject(Int))
+}
+
+fn new_counter() -> process.Subject(CounterMsg) {
+  let assert Ok(actor.Started(data: subject, ..)) =
+    actor.new(0)
+    |> actor.on_message(fn(count, msg) {
+      case msg {
+        Increment(reply) -> {
+          process.send(reply, count + 1)
+          actor.continue(count + 1)
+        }
+      }
+    })
+    |> actor.start
+
+  subject
+}
+
+fn increment(counter: process.Subject(CounterMsg)) -> Int {
+  process.call(counter, waiting: 1000, sending: Increment)
+}
+
 // HTML ------------------------------------------------------------------------
 
 fn serve_html() -> Response(ResponseData) {
-  let html =
+  let page =
     html([attribute.lang("en")], [
       html.head([], [
         html.meta([attribute.charset("utf-8")]),
@@ -66,6 +112,7 @@ fn serve_html() -> Response(ResponseData) {
         ),
       ]),
       html.body([attribute.style("height", "100dvh")], [
+        html.text("toarst"),
         server_component.element([server_component.route("/ws")], []),
       ]),
     ])
@@ -73,7 +120,7 @@ fn serve_html() -> Response(ResponseData) {
     |> bytes_tree.from_string_tree
 
   response.new(200)
-  |> response.set_body(mist.Bytes(html))
+  |> response.set_body(mist.Bytes(page))
   |> response.set_header("content-type", "text/html")
 }
 
@@ -83,7 +130,7 @@ fn serve_runtime() -> Response(ResponseData) {
   let assert Ok(lustre_priv) = application.priv_directory("lustre")
   let file_path = lustre_priv <> "/static/lustre-server-component.min.mjs"
 
-  case mist.send_file(file_path, offset: 0, limit: None) {
+  case mist.send_file(file_path, offset: 0, limit: option.None) {
     Ok(file) ->
       response.new(200)
       |> response.prepend_header("content-type", "application/javascript")
@@ -93,91 +140,4 @@ fn serve_runtime() -> Response(ResponseData) {
       response.new(404)
       |> response.set_body(mist.Bytes(bytes_tree.new()))
   }
-}
-
-// WEBSOCKET -------------------------------------------------------------------
-
-fn serve_whiteboard(
-  request: Request(Connection),
-  registry: GroupRegistry(whiteboard.SharedMsg),
-) -> Response(ResponseData) {
-  mist.websocket(
-    request:,
-    on_init: init_whiteboard_socket(_, registry),
-    handler: loop_whiteboard_socket,
-    on_close: close_whiteboard_socket,
-  )
-}
-
-type WhiteboardSocket {
-  WhiteboardSocket(
-    component: lustre.Runtime(whiteboard.Msg),
-    self: Subject(server_component.ClientMessage(whiteboard.Msg)),
-  )
-}
-
-type WhiteboardSocketMessage =
-  server_component.ClientMessage(whiteboard.Msg)
-
-type WhiteboardSocketInit =
-  #(WhiteboardSocket, Option(Selector(WhiteboardSocketMessage)))
-
-fn init_whiteboard_socket(
-  _socket: mist.WebsocketConnection,
-  registry: GroupRegistry(whiteboard.SharedMsg),
-) -> WhiteboardSocketInit {
-  // Compared to the "multiple clients" example, we now start a new server
-  // component instance for each client, passing the registry we created to its
-  // `init` function.
-  //
-  // This registry can then used in the whitespace component to communicate with
-  // other component instances. Check out the whitespace component to learn how!
-  let whiteboard = whiteboard.component()
-  let assert Ok(component) = lustre.start_server_component(whiteboard, registry)
-
-  let self = process.new_subject()
-  let selector = process.new_selector() |> process.select(self)
-
-  server_component.register_subject(self)
-  |> lustre.send(to: component)
-
-  #(WhiteboardSocket(component:, self:), Some(selector))
-}
-
-fn loop_whiteboard_socket(
-  state: WhiteboardSocket,
-  message: mist.WebsocketMessage(WhiteboardSocketMessage),
-  connection: mist.WebsocketConnection,
-) -> mist.Next(WhiteboardSocket, WhiteboardSocketMessage) {
-  case message {
-    mist.Text(json) -> {
-      case json.parse(json, server_component.runtime_message_decoder()) {
-        Ok(runtime_message) -> lustre.send(state.component, runtime_message)
-        Error(_) -> Nil
-      }
-
-      mist.continue(state)
-    }
-
-    mist.Binary(_) -> {
-      mist.continue(state)
-    }
-
-    mist.Custom(client_message) -> {
-      let json = server_component.client_message_to_json(client_message)
-      let assert Ok(_) = mist.send_text_frame(connection, json.to_string(json))
-
-      mist.continue(state)
-    }
-
-    mist.Closed | mist.Shutdown -> mist.stop()
-  }
-}
-
-fn close_whiteboard_socket(state: WhiteboardSocket) -> Nil {
-  // When the websocket connection closes, we need to also shut down the server
-  // component runtime. If we forget to do this we'll end up with a memory leak
-  // and a zombie process!
-  lustre.shutdown()
-  |> lustre.send(to: state.component)
 }
