@@ -6,7 +6,7 @@ export function use(callback) {
   return runInBrowserContext(() => {
     const noop = () => {};
     const reconciler = new Reconciler(document.body, noop, noop, {
-      exposeKeys: true,
+      debug: true,
     });
 
     callback(reconciler);

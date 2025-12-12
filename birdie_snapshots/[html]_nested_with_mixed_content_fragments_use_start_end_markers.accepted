@@ -1,0 +1,16 @@
+---
+version: 1.4.1
+title: [html] Nested with mixed content: fragments use start/end markers
+---
+<!-- lustre:fragment:start -->
+start
+<div></div>
+<!-- lustre:fragment:start -->
+inner1
+<span>
+  span
+</span>
+inner2
+<!-- lustre:fragment:end -->end
+<div></div>
+<!-- lustre:fragment:end -->

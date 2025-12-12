@@ -295,47 +295,20 @@ fn escape_key(key: String) -> String {
   |> string.replace(">", "&gt;")
 }
 
-// Count how many actual DOM nodes will be rendered from a list of vdom children.
-// This collapses adjacent text nodes (including empty ones) to match what appears in the DOM.
-fn count_rendered_children(children: List(Element(msg))) -> Int {
-  do_count_rendered_children(children, False, 0)
-}
-
-fn do_count_rendered_children(
-  children: List(Element(msg)),
-  prev_was_text: Bool,
-  acc: Int,
-) -> Int {
-  case children {
-    [] -> acc
-
-    [Text(content: "", ..), ..rest] ->
-      do_count_rendered_children(rest, prev_was_text, acc)
-    [Text(..), ..rest] if prev_was_text ->
-      do_count_rendered_children(rest, prev_was_text, acc)
-    [Text(..), ..rest] -> do_count_rendered_children(rest, True, acc + 1)
-
-    [_, ..rest] -> do_count_rendered_children(rest, False, acc + 1)
-  }
-}
-
-fn fragment_comment(key: String, children: Int) -> StringTree {
+fn fragment_start_comment(key: String) -> StringTree {
   case key {
-    "" ->
-      string_tree.from_string(
-        "<!-- lustre:fragment children=" <> string.inspect(children) <> " -->",
-      )
+    "" -> string_tree.from_string("<!-- lustre:fragment:start -->")
     _ -> {
       let escaped_key = escape_key(key)
       string_tree.from_string(
-        "<!-- lustre:fragment children="
-        <> string.inspect(children)
-        <> " key=\""
-        <> escaped_key
-        <> "\" -->",
+        "<!-- lustre:fragment:start key=\"" <> escaped_key <> "\" -->",
       )
     }
   }
+}
+
+fn fragment_end_comment() -> StringTree {
+  string_tree.from_string("<!-- lustre:fragment:end -->")
 }
 
 fn map_comment(key: String) -> StringTree {
@@ -374,9 +347,11 @@ pub fn to_string_tree(node: Element(msg)) -> StringTree {
     Text(content:, ..) -> string_tree.from_string(houdini.escape(content))
 
     Fragment(key:, children:, ..) -> {
-      let comment = fragment_comment(key, count_rendered_children(children))
-      comment
+      let start = fragment_start_comment(key)
+      let end = fragment_end_comment()
+      start
       |> children_to_string_tree(children)
+      |> string_tree.append_tree(end)
     }
 
     Element(key:, namespace:, tag:, attributes:, self_closing:, ..)
@@ -469,11 +444,14 @@ fn do_to_snapshot_builder(
     Fragment(children: [], ..) -> string_tree.new()
 
     Fragment(key:, children:, ..) -> {
-      let comment = fragment_comment(key, count_rendered_children(children))
-      comment
+      let start = fragment_start_comment(key)
+      let end = fragment_end_comment()
+      start
       |> string_tree.prepend(spaces)
       |> string_tree.append("\n")
       |> children_to_snapshot_builder(children, raw_text, indent)
+      |> string_tree.append(spaces)
+      |> string_tree.append_tree(end)
     }
 
     Element(key:, namespace:, tag:, attributes:, self_closing:, ..)

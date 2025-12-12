@@ -2,6 +2,6 @@
 version: 1.4.1
 title: [html] Fragment with multiple text nodes should render concatenated text
 ---
-<!-- lustre:fragment children=1 -->
+<!-- lustre:fragment:start -->
 Hello, world!
-
+<!-- lustre:fragment:end -->

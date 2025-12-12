@@ -53,6 +53,7 @@ const setTimeout = globalThis.setTimeout;
 const clearTimeout = globalThis.clearTimeout;
 const createElementNS = (ns, name) => document().createElementNS(ns, name);
 const createTextNode = (data) => document().createTextNode(data);
+const createComment = (data) => document().createComment(data);
 const createDocumentFragment = () => document().createDocumentFragment();
 const insertBefore = (parent, node, reference) =>
   parent.insertBefore(node, reference);
@@ -152,13 +153,14 @@ export class Reconciler {
   #decodeEvent;
   #dispatch;
 
-  #exposeKeys = false;
+  #debug = false;
 
-  constructor(root, decodeEvent, dispatch, { exposeKeys = false } = {}) {
+  constructor(root, decodeEvent, dispatch, { debug = false } = {}) {
     this.#root = root;
     this.#decodeEvent = decodeEvent;
     this.#dispatch = dispatch;
-    this.#exposeKeys = exposeKeys;
+    // this.#debug = debug;
+    this.#debug = true;
   }
 
   mount(vdom) {
@@ -399,9 +401,15 @@ export class Reconciler {
       }
 
       case fragment_kind: {
-        const head = this.#createTextNode(metaParent, index, vnode);
+        const head = this.#debug
+          ? this.#createFragmentStartComment(metaParent, index, vnode)
+          : this.#createTextNode(metaParent, index, vnode);
         insertBefore(domParent, head, beforeEl);
         this.#insertChildren(domParent, beforeEl, head[meta], 0, vnode.children);
+
+        if (this.#debug) {
+          this.#createFragmentEndComment(domParent, beforeEl);
+        }
 
         break;
       }
@@ -417,7 +425,9 @@ export class Reconciler {
       case map_kind: {
         // Map nodes are virtual like fragments; this allows us to track
         // subtree boundaries in the real DOM and construct event paths accordingly.
-        const head = this.#createTextNode(metaParent, index, vnode);
+        const head = this.#debug
+          ? this.#createMapComment(metaParent, index, vnode)
+          : this.#createTextNode(metaParent, index, vnode);
         insertBefore(domParent, head, beforeEl);
         this.#insertChild(domParent, beforeEl, head[meta], 0, vnode.child);
 
@@ -426,6 +436,7 @@ export class Reconciler {
 
       case memo_kind: {
         // NOTE: we do not get memo nodes when running as a server component!
+        // Memo nodes are always transparent - they don't create DOM nodes even in debug mode.
         const child = this.#memos?.get(vnode.view) ?? vnode.view();
         this.#insertChild(domParent, beforeEl, metaParent, index, child);
 
@@ -438,7 +449,7 @@ export class Reconciler {
     const node = createElementNS(namespace || NAMESPACE_HTML, tag);
     insertMetadataChild(kind, parent, node, index, key);
 
-    if (this.#exposeKeys && key) {
+    if (this.#debug && key) {
       setAttribute(node, "data-lustre-key", key);
     }
     iterate(attributes, (attribute) => this.#createAttribute(node, attribute));
@@ -449,6 +460,29 @@ export class Reconciler {
   #createTextNode(parent, index, { kind, key, content }) {
     const node = createTextNode(content ?? "");
     insertMetadataChild(kind, parent, node, index, key);
+
+    return node;
+  }
+
+  #createFragmentStartComment(parent, index, { key }) {
+    const comment = fragmentStartComment(key);
+    const node = createComment(comment);
+    insertMetadataChild(fragment_kind, parent, node, index, key);
+
+    return node;
+  }
+
+  #createFragmentEndComment(domParent, beforeEl) {
+    const node = createComment(fragmentEndComment());
+    insertBefore(domParent, node, beforeEl);
+
+    return node;
+  }
+
+  #createMapComment(parent, index, { key }) {
+    const comment = mapComment(key);
+    const node = createComment(comment);
+    insertMetadataChild(map_kind, parent, node, index, key);
 
     return node;
   }
@@ -582,6 +616,33 @@ export class Reconciler {
 }
 
 // UTILS -----------------------------------------------------------------------
+
+/** Escape special characters in keys for use in HTML comments. */
+const escapeKey = (key) =>
+  key
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+/** Generate start comment text for fragment nodes. */
+const fragmentStartComment = (key) => {
+  if (!key) {
+    return " lustre:fragment:start ";
+  }
+  return ` lustre:fragment:start key="${escapeKey(key)}" `;
+};
+
+/** Generate end comment text for fragment nodes. */
+const fragmentEndComment = () => " lustre:fragment:end ";
+
+/** Generate comment text for map nodes. */
+const mapComment = (key) => {
+  if (!key) {
+    return " lustre:map ";
+  }
+  return ` lustre:map key="${escapeKey(key)}" `;
+};
 
 /** Our reconciler is written in such a way that it can work without modification
  *  both in typical client-side Lustre apps like SPAs and client components, but

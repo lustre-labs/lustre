@@ -1,9 +1,0 @@
----
-version: 1.4.1
-title: [html] Fragment with adjacent text nodes should show correct count (3: ABC, div, DE)
----
-<!-- lustre:fragment children=3 -->
-ABC
-<div></div>
-DE
-

@@ -183,9 +183,7 @@ pub fn fragment_adjacent_text_nodes_test() {
     ])
 
   input
-  |> snapshot(
-    "Fragment with adjacent text nodes should show correct count (3: ABC, div, DE)",
-  )
+  |> snapshot("Fragment with adjacent text nodes uses start/end markers")
 }
 
 pub fn fragment_nested_simple_test() {
@@ -202,9 +200,7 @@ pub fn fragment_nested_simple_test() {
     ])
 
   input
-  |> snapshot(
-    "Nested fragment should have 3 children (div, fragment comment, div)",
-  )
+  |> snapshot("Nested fragment with start/end markers for each fragment")
 }
 
 pub fn fragment_nested_with_text_test() {
@@ -218,9 +214,7 @@ pub fn fragment_nested_with_text_test() {
     ])
 
   input
-  |> snapshot(
-    "Nested fragment with text: outer has 3 children (A, fragment, D)",
-  )
+  |> snapshot("Nested fragment with text: each fragment has start/end markers")
 }
 
 pub fn fragment_deeply_nested_test() {
@@ -241,7 +235,7 @@ pub fn fragment_deeply_nested_test() {
     ])
 
   input
-  |> snapshot("Deeply nested: each fragment emits comment and counts children")
+  |> snapshot("Deeply nested: each fragment has start/end markers")
 }
 
 pub fn fragment_nested_mixed_content_test() {
@@ -261,9 +255,7 @@ pub fn fragment_nested_mixed_content_test() {
     ])
 
   input
-  |> snapshot(
-    "Nested with mixed content: outer has 5 children (text, div, fragment, text, div)",
-  )
+  |> snapshot("Nested with mixed content: fragments use start/end markers")
 }
 
 pub fn fragment_multiple_elements_test() {
