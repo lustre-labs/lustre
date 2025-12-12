@@ -1,0 +1,8 @@
+---
+version: 1.4.1
+title: [html] Map node should produce comment
+---
+<!-- lustre:map -->
+<div>
+  Hello
+</div>

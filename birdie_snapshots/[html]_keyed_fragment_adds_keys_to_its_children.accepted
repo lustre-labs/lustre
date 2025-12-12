@@ -1,7 +1,8 @@
 ---
-version: 1.3.1
+version: 1.4.1
 title: [html] Keyed fragment adds keys to its children
 ---
+<!-- lustre:fragment children=3 -->
 <div data-lustre-key="a">
   a
 </div>
@@ -11,3 +12,4 @@ title: [html] Keyed fragment adds keys to its children
 <div data-lustre-key="c">
   c
 </div>
+

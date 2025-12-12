@@ -1,0 +1,26 @@
+---
+version: 1.4.1
+title: [html] Deeply nested: each fragment emits comment and counts children
+---
+<!-- lustre:fragment children=3 -->
+<div>
+  1
+</div>
+<!-- lustre:fragment children=3 -->
+<div>
+  2
+</div>
+<!-- lustre:fragment children=2 -->
+<div>
+  3
+</div>
+<div>
+  4
+</div>
+<div>
+  5
+</div>
+<div>
+  6
+</div>
+

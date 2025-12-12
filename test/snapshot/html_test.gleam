@@ -5,6 +5,7 @@ import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/element/keyed
+import lustre/vdom/vnode
 import lustre_test
 
 // ELEMENT TESTS ---------------------------------------------------------------
@@ -168,6 +169,103 @@ pub fn fragment_multiple_text_test() {
   )
 }
 
+pub fn fragment_adjacent_text_nodes_test() {
+  use <- lustre_test.test_filter("fragment_adjacent_text_nodes_test")
+
+  let input =
+    element.fragment([
+      html.text("A"),
+      html.text("B"),
+      html.text("C"),
+      html.div([], []),
+      html.text("D"),
+      html.text("E"),
+    ])
+
+  input
+  |> snapshot(
+    "Fragment with adjacent text nodes should show correct count (3: ABC, div, DE)",
+  )
+}
+
+pub fn fragment_nested_simple_test() {
+  use <- lustre_test.test_filter("fragment_nested_simple_test")
+
+  let input =
+    element.fragment([
+      html.div([], [html.text("outer 1")]),
+      element.fragment([
+        html.div([], [html.text("inner 1")]),
+        html.div([], [html.text("inner 2")]),
+      ]),
+      html.div([], [html.text("outer 2")]),
+    ])
+
+  input
+  |> snapshot(
+    "Nested fragment should have 3 children (div, fragment comment, div)",
+  )
+}
+
+pub fn fragment_nested_with_text_test() {
+  use <- lustre_test.test_filter("fragment_nested_with_text_test")
+
+  let input =
+    element.fragment([
+      html.text("A"),
+      element.fragment([html.text("B"), html.text("C")]),
+      html.text("D"),
+    ])
+
+  input
+  |> snapshot(
+    "Nested fragment with text: outer has 3 children (A, fragment, D)",
+  )
+}
+
+pub fn fragment_deeply_nested_test() {
+  use <- lustre_test.test_filter("fragment_deeply_nested_test")
+
+  let input =
+    element.fragment([
+      html.div([], [html.text("1")]),
+      element.fragment([
+        html.div([], [html.text("2")]),
+        element.fragment([
+          html.div([], [html.text("3")]),
+          html.div([], [html.text("4")]),
+        ]),
+        html.div([], [html.text("5")]),
+      ]),
+      html.div([], [html.text("6")]),
+    ])
+
+  input
+  |> snapshot("Deeply nested: each fragment emits comment and counts children")
+}
+
+pub fn fragment_nested_mixed_content_test() {
+  use <- lustre_test.test_filter("fragment_nested_mixed_content_test")
+
+  let input =
+    element.fragment([
+      html.text("start"),
+      html.div([], []),
+      element.fragment([
+        html.text("inner1"),
+        html.span([], [html.text("span")]),
+        html.text("inner2"),
+      ]),
+      html.text("end"),
+      html.div([], []),
+    ])
+
+  input
+  |> snapshot(
+    "Nested with mixed content: outer has 5 children (text, div, fragment, text, div)",
+  )
+}
+
 pub fn fragment_multiple_elements_test() {
   use <- lustre_test.test_filter("fragment_multiple_elements_test")
 
@@ -205,6 +303,72 @@ pub fn keyed_fragment_test() {
 
   input
   |> snapshot("Keyed fragment adds keys to its children")
+}
+
+// MAP TESTS -------------------------------------------------------------------
+
+pub fn map_basic_test() {
+  use <- lustre_test.test_filter("map_basic_test")
+
+  let input =
+    html.div([], [html.text("Hello")])
+    |> element.map(fn(_) { Nil })
+
+  input |> snapshot("Map node should produce comment")
+}
+
+pub fn map_with_key_test() {
+  use <- lustre_test.test_filter("map_with_key_test")
+
+  let input =
+    html.div([], [html.text("Hello")])
+    |> element.map(fn(_) { Nil })
+    |> vnode.to_keyed("my-key", _)
+
+  input |> snapshot("Map node with key should include key in comment")
+}
+
+pub fn map_with_special_chars_in_key_test() {
+  use <- lustre_test.test_filter("map_with_special_chars_in_key_test")
+
+  let input =
+    html.div([], [html.text("Hello")])
+    |> element.map(fn(_) { Nil })
+    |> vnode.to_keyed("key-with-<>&\"", _)
+
+  input
+  |> snapshot("Map node with special chars in key should escape them properly")
+}
+
+// MEMO TESTS ------------------------------------------------------------------
+
+pub fn memo_basic_test() {
+  use <- lustre_test.test_filter("memo_basic_test")
+
+  let input = element.memo([], fn() { html.div([], [html.text("Hello")]) })
+
+  input |> snapshot("Memo node should produce comment")
+}
+
+pub fn memo_with_key_test() {
+  use <- lustre_test.test_filter("memo_with_key_test")
+
+  let input =
+    element.memo([], fn() { html.div([], [html.text("Hello")]) })
+    |> vnode.to_keyed("my-key", _)
+
+  input |> snapshot("Memo node with key should include key in comment")
+}
+
+pub fn memo_with_special_chars_in_key_test() {
+  use <- lustre_test.test_filter("memo_with_special_chars_in_key_test")
+
+  let input =
+    element.memo([], fn() { html.div([], [html.text("Hello")]) })
+    |> vnode.to_keyed("key-with-<>&\"", _)
+
+  input
+  |> snapshot("Memo node with special chars in key should escape them properly")
 }
 
 // ATTRIBUTE TESTS -------------------------------------------------------------

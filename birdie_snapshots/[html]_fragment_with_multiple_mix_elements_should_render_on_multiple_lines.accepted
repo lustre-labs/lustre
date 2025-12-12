@@ -1,9 +1,11 @@
 ---
-version: 1.3.1
+version: 1.4.1
 title: [html] Fragment with multiple mix elements should render on multiple lines
 ---
+<!-- lustre:fragment children=3 -->
 Hello, 
 <span>
   world
 </span>
 !
+

@@ -1,0 +1,8 @@
+---
+version: 1.4.1
+title: [html] Memo node should produce comment
+---
+<!-- lustre:memo -->
+<div>
+  Hello
+</div>
