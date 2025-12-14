@@ -1,6 +1,6 @@
 import { Result$isOk, Result$Ok$0 } from "../gleam.mjs";
 import { register, unregister } from "./happy-dom.ffi.mjs";
-import { virtualise as do_virtualise } from "../lustre/vdom/virtualise_cleaned.ffi.mjs";
+import { virtualise as do_virtualise } from "../lustre/vdom/virtualise.ffi.mjs";
 import { Reconciler } from "../lustre/vdom/reconciler.ffi.mjs";
 import { Runtime } from "../lustre/runtime/client/runtime.ffi.mjs";
 import * as effect from "../lustre/effect.mjs";

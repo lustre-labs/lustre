@@ -6,7 +6,7 @@ import { empty_list } from "../../internals/constants.mjs";
 import { diff } from "../../vdom/diff.mjs";
 import * as Cache from "../../vdom/cache.mjs";
 import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
-import { virtualise } from "../../vdom/virtualise_cleaned.ffi.mjs";
+import { virtualise } from "../../vdom/virtualise.ffi.mjs";
 import { document } from "../../internals/constants.ffi.mjs";
 import { isEqual } from "../../internals/equals.ffi.mjs";
 
