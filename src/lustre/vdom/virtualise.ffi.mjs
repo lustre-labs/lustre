@@ -20,13 +20,13 @@ export const virtualise = (root) => {
   const rootMeta = insertMetadataChild(element_kind, null, root, 0, null);
 
   for (let child = root.firstChild; child; child = child.nextSibling) {
-    const { vnode } = virtualiseChild(rootMeta, root, child, 0);
+    const result = virtualiseChild(rootMeta, root, child, 0);
     // lustre view functions always return a single root element inside the root.
     // even if we could virtualise multiple children, we will ignore them and
     // return the first child as the one we'll take over.
     //
     // A top-level key is impossible and always ignored.
-    if (vnode) return vnode;
+    if (result) return result.vnode;
   }
 
   // no virtualisable children, we can empty the node and return our default text node.

@@ -95,7 +95,7 @@ class MetadataNode {
     // a reference back to the "real" DOM node.
     this.node = node;
 
-    // in "debug" mode, fragments also have an "end" marker.
+    // in "debug" mode or after virtualisation, fragments also have an "end" marker.
     // we need to move and modify that end marker with the fragment if it exists.
     this.endNode = null;
 
