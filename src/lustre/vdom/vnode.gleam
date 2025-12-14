@@ -386,9 +386,7 @@ fn do_to_snapshot_builder(
     Text(content:, ..) ->
       string_tree.from_strings([spaces, houdini.escape(content)])
 
-    Element(key:, namespace:, tag:, attributes:, self_closing:, ..)
-      if self_closing
-    -> {
+    Element(key:, namespace:, tag:, attributes:, self_closing: True, ..) -> {
       let html = string_tree.from_string("<" <> tag)
       let attributes = vattr.to_string_tree(key, namespace, attributes)
 
@@ -398,7 +396,7 @@ fn do_to_snapshot_builder(
       |> string_tree.append("/>")
     }
 
-    Element(key:, namespace:, tag:, attributes:, void:, ..) if void -> {
+    Element(key:, namespace:, tag:, attributes:, void: True, ..) -> {
       let html = string_tree.from_string("<" <> tag)
       let attributes = vattr.to_string_tree(key, namespace, attributes)
 
@@ -436,6 +434,7 @@ fn do_to_snapshot_builder(
       let attributes = vattr.to_string_tree(key, namespace, attributes)
 
       html
+      |> string_tree.prepend(spaces)
       |> string_tree.append_tree(attributes)
       |> string_tree.append(">")
       |> string_tree.append(inner_html)
@@ -494,7 +493,7 @@ fn children_to_snapshot_builder(
       child
       |> do_to_snapshot_builder(raw_text, indent)
       |> string_tree.append("\n")
-      |> string_tree.append_tree(html, _)
+      |> string_tree.prepend_tree(html)
       |> children_to_snapshot_builder(rest, raw_text, indent)
 
     [] -> html
