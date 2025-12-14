@@ -3,8 +3,6 @@
 @target(javascript)
 import gleam/json
 @target(javascript)
-import gleam/list
-@target(javascript)
 import lustre/attribute.{attribute}
 @target(javascript)
 import lustre/element.{type Element}
@@ -74,7 +72,7 @@ pub fn reconciler_server_component_mount_input_test() {
   use reconciler <- with_reconciler
 
   mount_json(reconciler, vnode.to_json(html, mutable_map.new()))
-  assert nodes_equal(get_vdom(), html)
+  assert lustre_test.nodes_equal_ignoring_memo(get_vdom(), html)
 }
 
 @target(javascript)
@@ -85,7 +83,7 @@ fn test_mount(vdom: Element(msg)) {
   assert get_html() == element.to_string(vdom)
 
   mount_json(reconciler, vnode.to_json(vdom, mutable_map.new()))
-  assert nodes_equal(get_vdom(), vdom)
+  assert lustre_test.nodes_equal_ignoring_memo(get_vdom(), vdom)
 }
 
 // DIFF TESTS ------------------------------------------------------------------
@@ -847,105 +845,43 @@ fn test_diff(prev: Element(msg), next: Element(msg)) {
 
   mount(reconciler, prev)
   push(reconciler, patch)
-  assert nodes_equal(get_vdom(), next)
+
+  assert lustre_test.nodes_equal_ignoring_memo(get_vdom(), next)
 
   mount(reconciler, prev)
   push_json(reconciler, patch.to_json(patch, mutable_map.new()))
-  assert nodes_equal(get_vdom(), next)
-}
-
-@target(javascript)
-fn nodes_equal(left: Element(msg), right: Element(msg)) {
-  case left, right {
-    vnode.Fragment(..), vnode.Fragment(..) ->
-      children_equal(left.children, right.children)
-
-    // if a fragment has a single child and the other side is a node, we can
-    // compare against that child instead.
-    vnode.Fragment(children: [left], ..), _ -> nodes_equal(left, right)
-    _, vnode.Fragment(children: [right], ..) -> nodes_equal(left, right)
-
-    _, vnode.Map(child:, ..) -> nodes_equal(left, child)
-
-    _, vnode.Memo(view:, ..) -> nodes_equal(left, view())
-
-    // don't check the key on text nodes (or fragments) - we can't virtualise it
-    vnode.Text(..), vnode.Text(..) -> left.content == right.content
-
-    vnode.Element(..), vnode.Element(..) ->
-      left.key == right.key
-      && left.tag == right.tag
-      && left.namespace == right.namespace
-      && left.attributes == right.attributes
-      && children_equal(left.children, right.children)
-
-    vnode.UnsafeInnerHtml(..), vnode.UnsafeInnerHtml(..) ->
-      left.key == right.key
-      && left.tag == right.tag
-      && left.namespace == right.namespace
-      && left.attributes == right.attributes
-      && left.inner_html == right.inner_html
-    _, _ -> False
-  }
-}
-
-@target(javascript)
-fn children_equal(left: List(Element(msg)), right: List(Element(msg))) -> Bool {
-  case left, right {
-    // base cases
-    [], [] -> True
-    [_, ..], [] | [], [_, ..] -> False
-
-    // unwrap fragments
-    [vnode.Fragment(children:, ..), ..left], _ ->
-      children_equal(list.append(children, left), right)
-    _, [vnode.Fragment(children:, ..), ..right] ->
-      children_equal(left, list.append(children, right))
-
-    _, [vnode.Map(child:, ..), ..right] ->
-      children_equal(left, list.append([child], right))
-
-    _, [vnode.Memo(view:, ..), ..right] ->
-      children_equal(left, list.append([view()], right))
-
-    // compare non-fragment children
-    [first_left, ..left], [first_right, ..right] ->
-      case nodes_equal(first_left, first_right) {
-        True -> children_equal(left, right)
-        False -> False
-      }
-  }
+  assert lustre_test.nodes_equal_ignoring_memo(get_vdom(), next)
 }
 
 // FFI -------------------------------------------------------------------------
 
 @target(javascript)
-type Reconciler
+pub type Reconciler
 
 @target(javascript)
-@external(javascript, "./reconciler_test.ffi.mjs", "use")
-fn with_reconciler(f: fn(Reconciler) -> Nil) -> Nil
+@external(javascript, "./client_test.ffi.mjs", "with_reconciler")
+pub fn with_reconciler(f: fn(Reconciler) -> Nil) -> Nil
 
 @target(javascript)
-@external(javascript, "./reconciler_test.ffi.mjs", "mount")
-fn mount(reconciler: Reconciler, vdom: Element(msg)) -> Nil
+@external(javascript, "./client_test.ffi.mjs", "mount")
+pub fn mount(reconciler: Reconciler, vdom: Element(msg)) -> Nil
 
 @target(javascript)
-@external(javascript, "./reconciler_test.ffi.mjs", "mount")
+@external(javascript, "./client_test.ffi.mjs", "mount")
 fn mount_json(reconciler: Reconciler, vdom: json.Json) -> Nil
 
 @target(javascript)
-@external(javascript, "./reconciler_test.ffi.mjs", "push")
+@external(javascript, "./client_test.ffi.mjs", "push")
 fn push(reconciler: Reconciler, patch: Patch(msg)) -> Nil
 
 @target(javascript)
-@external(javascript, "./reconciler_test.ffi.mjs", "push")
+@external(javascript, "./client_test.ffi.mjs", "push")
 fn push_json(reconciler: Reconciler, patch: json.Json) -> Nil
 
 @target(javascript)
-@external(javascript, "./reconciler_test.ffi.mjs", "get_html")
-fn get_html() -> String
+@external(javascript, "./client_test.ffi.mjs", "get_html")
+pub fn get_html() -> String
 
 @target(javascript)
-@external(javascript, "./reconciler_test.ffi.mjs", "get_vdom")
+@external(javascript, "./client_test.ffi.mjs", "get_vdom")
 fn get_vdom() -> Element(msg)

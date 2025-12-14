@@ -2,9 +2,10 @@
 version: 1.4.1
 title: [html] Nested fragment with text: each fragment has start/end markers
 ---
-<!-- lustre:fragment:start -->
-A
-<!-- lustre:fragment:start -->
-BC
-<!-- lustre:fragment:end -->D
-<!-- lustre:fragment:end -->
+<!-- lustre:fragment -->
+  A
+  <!-- lustre:fragment -->
+    BC
+  <!-- /lustre:fragment -->
+  D
+<!-- /lustre:fragment -->

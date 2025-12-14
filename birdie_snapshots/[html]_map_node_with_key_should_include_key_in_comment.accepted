@@ -3,6 +3,6 @@ version: 1.4.1
 title: [html] Map node with key should include key in comment
 ---
 <!-- lustre:map key="my-key" -->
-<div data-lustre-key="my-key">
-  Hello
-</div>
+  <div data-lustre-key="my-key">
+    Hello
+  </div>

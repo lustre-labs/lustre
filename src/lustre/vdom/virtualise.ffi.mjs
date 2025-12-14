@@ -1,16 +1,16 @@
-import { NonEmpty } from "../../gleam.mjs";
-import { text, none } from "../element.mjs";
-import { element, namespaced, fragment } from '../element/keyed.mjs';
+import { toList } from "../../gleam.mjs";
+import { text, none, memo, ref, map } from "../element.mjs";
+import { element, namespaced, fragment } from "../element/keyed.mjs";
 import { attribute } from "../attribute.mjs";
-import { empty_list } from "../internals/constants.mjs";
 import { insertMetadataChild } from "./reconciler.ffi.mjs";
-import { element_kind, fragment_kind, text_kind } from "./vnode.mjs";
+import { element_kind, fragment_kind, text_kind, map_kind } from "./vnode.mjs";
 
 import {
   document,
   ELEMENT_NODE,
   TEXT_NODE,
-  NAMESPACE_HTML
+  COMMENT_NODE,
+  NAMESPACE_HTML,
 } from "../internals/constants.ffi.mjs";
 
 export const virtualise = (root) => {
@@ -19,84 +19,175 @@ export const virtualise = (root) => {
   // does not have a path.
   const rootMeta = insertMetadataChild(element_kind, null, root, 0, null);
 
-  // we need to do different things depending on how many children we have,
-  // and if we are a fragment or not.
-  let virtualisableRootChildren = 0;
   for (let child = root.firstChild; child; child = child.nextSibling) {
-    if(canVirtualiseNode(child)) virtualisableRootChildren += 1;
+    const { vnode } = virtualiseChild(rootMeta, root, child, 0);
+    // lustre view functions always return a single root element inside the root.
+    // even if we could virtualise multiple children, we will ignore them and
+    // return the first child as the one we'll take over.
+    //
+    // A top-level key is impossible and always ignored.
+    if (vnode) return vnode;
   }
 
   // no virtualisable children, we can empty the node and return our default text node.
-  if (virtualisableRootChildren === 0) {
-    const placeholder = document().createTextNode('');
-    insertMetadataChild(text_kind, rootMeta, placeholder, 0, null);
-    root.replaceChildren(placeholder);
-    return none();
-  }
+  const placeholder = document().createTextNode("");
+  insertMetadataChild(text_kind, rootMeta, placeholder, 0, null);
+  root.insertBefore(placeholder, root.firstChild);
+  return none();
+};
 
-  // a single virtualisable child, so we assume the view function returned that element.
-  if (virtualisableRootChildren === 1) {
-    const children = virtualiseChildNodes(rootMeta, root);
-    return children.head[1];
-  }
+const virtualiseChild = (meta, domParent, child, index) => {
+  if (child.nodeType === COMMENT_NODE) {
+    const data = child.data.trim();
 
-  // any other number of virtualisable children > 1, the view function had to
-  // return a fragment node.
-
-  const fragmentHead = document().createTextNode('');
-  const fragmentMeta = insertMetadataChild(fragment_kind, rootMeta, fragmentHead, 0, null);
-
-  const children = virtualiseChildNodes(fragmentMeta, root);
-
-  root.insertBefore(fragmentHead, root.firstChild);
-
-  return fragment(children);
-}
-
-const canVirtualiseNode = (node) => {
-  switch (node.nodeType) {
-    case ELEMENT_NODE: return true;
-    case TEXT_NODE: return !!node.data;
-    default: return false;
-  }
-}
-
-const virtualiseNode = (meta, node, key, index) => {
-  if (!canVirtualiseNode(node)) {
-    return null;
-  }
-
-  switch (node.nodeType) {
-    case ELEMENT_NODE: {
-      const childMeta = insertMetadataChild(element_kind, meta, node, index, key);
-
-      const tag = node.localName;
-      const namespace = node.namespaceURI;
-      const isHtmlElement = !namespace || namespace === NAMESPACE_HTML;
-
-      if (isHtmlElement && INPUT_ELEMENTS.includes(tag)) {
-        virtualiseInputEvents(tag, node);
-      }
-
-      const attributes = virtualiseAttributes(node);
-      const children = virtualiseChildNodes(childMeta, node);
-
-      const vnode =
-        isHtmlElement
-          ? element(tag, attributes, children)
-          : namespaced(namespace, tag, attributes, children);
-
-      return vnode;
+    if (data.startsWith("lustre:fragment")) {
+      return virtualiseFragment(meta, domParent, child, index);
     }
 
-    case TEXT_NODE:
-      insertMetadataChild(text_kind, meta, node, index, null);
-      return text(node.data);
+    if (data.startsWith("lustre:map")) {
+      return virtualiseMap(meta, domParent, child, index);
+    }
 
-    default:
-      return null;
+    if (data.startsWith("lustre:memo")) {
+      return virtualiseMemo(meta, domParent, child, index);
+    }
+
+    return null;
   }
-}
+  if (child.nodeType === ELEMENT_NODE) {
+    return virtualiseElement(meta, child, index);
+  }
+
+  if (child.nodeType === TEXT_NODE) {
+    return virtualiseText(meta, child, index);
+  }
+
+  return null;
+};
+
+const virtualiseElement = (metaParent, node, index) => {
+  const key = node.getAttribute("data-lustre-key") ?? "";
+  if (key) {
+    node.removeAttribute("data-lustre-key");
+  }
+
+  const meta = insertMetadataChild(element_kind, metaParent, node, index, key);
+
+  const tag = node.localName;
+  const namespace = node.namespaceURI;
+  const isHtmlElement = !namespace || namespace === NAMESPACE_HTML;
+
+  if (isHtmlElement && INPUT_ELEMENTS.includes(tag)) {
+    virtualiseInputEvents(tag, node);
+  }
+
+  const attributes = virtualiseAttributes(node);
+  const children = [];
+
+  for (let childNode = node.firstChild; childNode; ) {
+    const child = virtualiseChild(meta, node, childNode, children.length);
+
+    if (child) {
+      children.push([child.key, child.vnode]);
+      childNode = child.next;
+    } else {
+      childNode = childNode.nextSibling;
+    }
+  }
+
+  const vnode = isHtmlElement
+    ? element(tag, attributes, toList(children))
+    : namespaced(namespace, tag, attributes, toList(children));
+
+  return childResult(key, vnode, node.nextSibling);
+};
+
+const virtualiseText = (meta, node, index) => {
+  insertMetadataChild(text_kind, meta, node, index, null);
+  return childResult("", text(node.data), node.nextSibling);
+};
+
+const virtualiseFragment = (metaParent, domParent, node, index) => {
+  const key = parseKey(node.data);
+
+  const meta = insertMetadataChild(fragment_kind, metaParent, node, index, key);
+
+  const children = [];
+
+  node = node.nextSibling;
+  while (
+    node &&
+    (node.nodeType !== COMMENT_NODE || node.data.trim() !== "/lustre:fragment")
+  ) {
+    const child = virtualiseChild(meta, domParent, node, children.length);
+
+    if (child) {
+      children.push([child.key, child.vnode]);
+      node = child.next;
+    } else {
+      node = node.nextSibling;
+    }
+  }
+
+  meta.endNode = node;
+
+  const vnode = fragment(toList(children));
+  return childResult(key, vnode, node?.nextSibling);
+};
+
+const virtualiseMap = (metaParent, domParent, node, index) => {
+  const key = parseKey(node.data);
+
+  const meta = insertMetadataChild(map_kind, metaParent, node, index, key);
+
+  const child = virtualiseNextChild(meta, domParent, node, 0);
+  if (!child) return null;
+
+  const vnode = map(child.vnode, (x) => x);
+  return childResult(key, vnode, child.next);
+};
+
+const virtualiseMemo = (meta, domParent, node, index) => {
+  const key = parseKey(node.data);
+
+  // Memo nodes are transparent - they don't create metadata nodes!
+  // Just virtualise the child directly with the parent metadata
+  const child = virtualiseNextChild(meta, domParent, node, index);
+  if (!child) return null;
+
+  domParent.removeChild(node);
+
+  // We cannot recover the dependencies -
+  // so we add an anonymous object here that for sure compares falsy with
+  // anything the user will pass us.
+  const vnode = memo(toList([ref({})]), () => child.vnode);
+  return childResult(key, vnode, child.next);
+};
+
+const virtualiseNextChild = (meta, domParent, node, index) => {
+  while (true) {
+    node = node.nextSibling;
+    if (!node) return null;
+
+    const child = virtualiseChild(meta, domParent, node, index);
+    if (child) return child;
+  }
+};
+
+const childResult = (key, vnode, next) => {
+  return { key, vnode, next };
+};
+
+const virtualiseAttributes = (node) => {
+  const attributes = [];
+  for (let i = 0; i < node.attributes.length; i++) {
+    const attr = node.attributes[i];
+    if (attr.name !== "xmlns") {
+      attributes.push(attribute(attr.localName, attr.value));
+    }
+  }
+  return toList(attributes);
+};
 
 const INPUT_ELEMENTS = ["input", "select", "textarea"];
 
@@ -133,66 +224,19 @@ const virtualiseInputEvents = (tag, node) => {
       node.dispatchEvent(new Event("blur", { bubbles: true }));
     }
   });
-}
+};
 
-const virtualiseChildNodes = (meta, node) => {
-  let children = null;
-  let child = node.firstChild;
-  let ptr = null;
-  let index = 0;
+const parseKey = (data) => {
+  const keyMatch = data.match(/key="([^"]*)"/);
+  if (!keyMatch) return "";
+  return unescapeKey(keyMatch[1]);
+};
 
-  while (child) {
-    const key = child.nodeType === ELEMENT_NODE
-      ? child.getAttribute('data-lustre-key')
-      : null;
-
-    if (key != null) {
-      child.removeAttribute('data-lustre-key');
-    }
-
-    const vnode = virtualiseNode(meta, child, key, index);
-
-    const next = child.nextSibling;
-    if (vnode) {
-      const list_node = new NonEmpty([key ?? '', vnode], null);
-      if (ptr) {
-        ptr = ptr.tail = list_node;
-      } else {
-        ptr = children = list_node;
-      }
-
-      index += 1;
-    } else {
-      node.removeChild(child);
-    }
-
-    child = next;
-  }
-
-  if (!ptr) return empty_list;
-
-  ptr.tail = empty_list;
-  return children;
-}
-
-const virtualiseAttributes = (node) => {
-  let index = node.attributes.length;
-
-  let attributes = empty_list;
-  while (index-- > 0) {
-    const attr = node.attributes[index];
-    if (attr.name === "xmlns") {
-      continue;
-    }
-
-    attributes = new NonEmpty(virtualiseAttribute(attr), attributes);
-  }
-
-  return attributes;
-}
-
-const virtualiseAttribute = (attr) => {
-  const name = attr.localName;
-  const value = attr.value;
-  return attribute(name, value);
-}
+const unescapeKey = (key) => {
+  return key
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;/g, "'");
+};

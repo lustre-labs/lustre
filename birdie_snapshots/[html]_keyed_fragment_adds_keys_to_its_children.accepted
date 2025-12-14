@@ -2,14 +2,14 @@
 version: 1.4.1
 title: [html] Keyed fragment adds keys to its children
 ---
-<!-- lustre:fragment:start -->
-<div data-lustre-key="a">
-  a
-</div>
-<div data-lustre-key="b">
-  b
-</div>
-<div data-lustre-key="c">
-  c
-</div>
-<!-- lustre:fragment:end -->
+<!-- lustre:fragment -->
+  <div data-lustre-key="a">
+    a
+  </div>
+  <div data-lustre-key="b">
+    b
+  </div>
+  <div data-lustre-key="c">
+    c
+  </div>
+<!-- /lustre:fragment -->

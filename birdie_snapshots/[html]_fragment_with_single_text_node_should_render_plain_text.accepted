@@ -2,6 +2,6 @@
 version: 1.4.1
 title: [html] Fragment with single text node should render plain text
 ---
-<!-- lustre:fragment:start -->
-Hello, world!
-<!-- lustre:fragment:end -->
+<!-- lustre:fragment -->
+  Hello, world!
+<!-- /lustre:fragment -->

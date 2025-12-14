@@ -2,6 +2,6 @@
 version: 1.4.1
 title: [html] Fragment with single element should render that element
 ---
-<!-- lustre:fragment:start -->
-<div></div>
-<!-- lustre:fragment:end -->
+<!-- lustre:fragment -->
+  <div></div>
+<!-- /lustre:fragment -->

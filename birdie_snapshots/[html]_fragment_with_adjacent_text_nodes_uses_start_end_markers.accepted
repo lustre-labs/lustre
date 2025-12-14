@@ -2,8 +2,8 @@
 version: 1.4.1
 title: [html] Fragment with adjacent text nodes uses start/end markers
 ---
-<!-- lustre:fragment:start -->
-ABC
-<div></div>
-DE
-<!-- lustre:fragment:end -->
+<!-- lustre:fragment -->
+  ABC
+  <div></div>
+  DE
+<!-- /lustre:fragment -->

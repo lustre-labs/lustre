@@ -2,7 +2,7 @@
 version: 1.4.1
 title: [html] Fragment with multiple elements should render on multiple lines
 ---
-<!-- lustre:fragment:start -->
-<div></div>
-<div></div>
-<!-- lustre:fragment:end -->
+<!-- lustre:fragment -->
+  <div></div>
+  <div></div>
+<!-- /lustre:fragment -->

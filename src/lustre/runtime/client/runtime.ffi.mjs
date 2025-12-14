@@ -6,7 +6,7 @@ import { empty_list } from "../../internals/constants.mjs";
 import { diff } from "../../vdom/diff.mjs";
 import * as Cache from "../../vdom/cache.mjs";
 import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
-import { virtualise } from "../../vdom/virtualise.ffi.mjs";
+import { virtualise } from "../../vdom/virtualise_cleaned.ffi.mjs";
 import { document } from "../../internals/constants.ffi.mjs";
 import { isEqual } from "../../internals/equals.ffi.mjs";
 
@@ -35,7 +35,7 @@ export const throw_server_component_error = () => {
 //
 
 export class Runtime {
-  constructor(root, [model, effects], view, update) {
+  constructor(root, [model, effects], view, update, options) {
     this.root = root;
     this.#model = model;
     this.#view = view;
@@ -83,7 +83,7 @@ export class Runtime {
       }
     };
 
-    this.#reconciler = new Reconciler(this.root, decodeEvent, dispatch);
+    this.#reconciler = new Reconciler(this.root, decodeEvent, dispatch, options);
 
     // We want the first render to be synchronous too
     // The initial vdom is whatever we can virtualise from the root node when we
@@ -199,7 +199,7 @@ export class Runtime {
         this.#renderTimer = "sync";
         queueMicrotask(() => this.#render());
       } else {
-        this.#renderTimer = requestAnimationFrame(() => this.#render());
+        this.#renderTimer = window.requestAnimationFrame(() => this.#render());
       }
     }
   }
@@ -275,9 +275,7 @@ export class Runtime {
       const effects = makeEffect(this.#afterPaint);
       this.#afterPaint = empty_list;
 
-      requestAnimationFrame(() => {
-        this.#tick(effects, true);
-      });
+      window.requestAnimationFrame(() => this.#tick(effects, true));
     }
   }
 }

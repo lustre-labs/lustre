@@ -1,5 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import { escape } from "../../../houdini/houdini.mjs";
+
 import {
   element_kind,
   text_kind,
@@ -93,6 +95,10 @@ class MetadataNode {
     // a reference back to the "real" DOM node.
     this.node = node;
 
+    // in "debug" mode, fragments also have an "end" marker.
+    // we need to move and modify that end marker with the fragment if it exists.
+    this.endNode = null;
+
     // data for the event handlers and attached throttlers and debouncers.
     this.handlers = new Map();
     this.throttles = new Map();
@@ -159,8 +165,7 @@ export class Reconciler {
     this.#root = root;
     this.#decodeEvent = decodeEvent;
     this.#dispatch = dispatch;
-    // this.#debug = debug;
-    this.#debug = true;
+    this.#debug = debug;
   }
 
   mount(vdom) {
@@ -254,19 +259,17 @@ export class Reconciler {
     const { children } = node;
     const childCount = children.length;
 
-    if (index < childCount) {
-      return children[index].node;
-    }
+    if (index < childCount) return children[index].node;
+    if (node.endNode) return node.endNode;
+    if (!node.isVirtual || !childCount) return null;
 
     let lastChild = children[childCount - 1];
-
-    if (!lastChild && !node.isVirtual) return null;
-    if (!lastChild) lastChild = node;
 
     // unwrap the last child as long as we point to a fragment.
     // otherwise, the fragments next sibling would be the first child of the
     // fragment, not the first element after it.
     while (lastChild.isVirtual && lastChild.children.length) {
+      if (lastChild.endNode) return lastChild.endNode.nextSibling;
       lastChild = lastChild.children[lastChild.children.length - 1];
     }
 
@@ -296,26 +299,28 @@ export class Reconciler {
       }
     }
 
-    const { node, children: prevChildren } = prev;
     // prev now is the same as `next` inside the loop, and points to the element
     // we found that matches the key! all that's left is to move it before `beforeEl`.
-    moveBefore(parentNode, node, beforeEl);
-
-    // prev might be a fragment in which case we need do move all its child dom nodes too
-    if (prev.isVirtual) {
-      this.#moveChildren(parentNode, prevChildren, beforeEl);
-    }
+    this.#moveChild(parentNode, prev, beforeEl);
   }
 
   #moveChildren(domParent, children, beforeEl) {
     for (let i = 0; i < children.length; ++i) {
-      const child = children[i];
-      const { node, children: nestedChildren } = child;
-      moveBefore(domParent, node, beforeEl);
+      this.#moveChild(domParent, children[i], beforeEl);
+    }
+  }
 
-      if (child.isVirtual) {
-        this.#moveChildren(domParent, nestedChildren, beforeEl);
-      }
+  #moveChild(domParent, child, beforeEl) {
+    moveBefore(domParent, child.node, beforeEl);
+
+    // child might be a fragment, in which case we need do move all its child dom nodes too
+    if (child.isVirtual) {
+      this.#moveChildren(domParent, child.children, beforeEl);
+    }
+
+    // if "endNode" is set, that node is also a sibling node that we need to move with the children
+    if (child.endNode) {
+      moveBefore(domParent, child.endNode, beforeEl);
     }
   }
 
@@ -329,12 +334,17 @@ export class Reconciler {
 
     for (let i = 0; i < deleted.length; ++i) {
       const child = deleted[i];
+      const { node, endNode, isVirtual, children: nestedChildren } = child;
 
-      removeChild(parentNode, child.node);
+      removeChild(parentNode, node);
+      if (endNode) {
+        removeChild(parentNode, endNode);
+      }
+
       this.#removeDebouncers(child);
 
-      if (child.isVirtual) {
-        deleted.push(...child.children);
+      if (isVirtual) {
+        deleted.push(...nestedChildren);
       }
     }
   }
@@ -401,14 +411,15 @@ export class Reconciler {
       }
 
       case fragment_kind: {
-        const head = this.#debug
-          ? this.#createFragmentStartComment(metaParent, index, vnode)
-          : this.#createTextNode(metaParent, index, vnode);
+        const marker = "lustre:fragment";
+        const head = this.#createHead(marker, metaParent, index, vnode);
+
         insertBefore(domParent, head, beforeEl);
         this.#insertChildren(domParent, beforeEl, head[meta], 0, vnode.children);
 
         if (this.#debug) {
-          this.#createFragmentEndComment(domParent, beforeEl);
+          head[meta].endNode = createComment(` /${marker} `);
+          insertBefore(domParent, head[meta].endNode, beforeEl);
         }
 
         break;
@@ -425,9 +436,7 @@ export class Reconciler {
       case map_kind: {
         // Map nodes are virtual like fragments; this allows us to track
         // subtree boundaries in the real DOM and construct event paths accordingly.
-        const head = this.#debug
-          ? this.#createMapComment(metaParent, index, vnode)
-          : this.#createTextNode(metaParent, index, vnode);
+        const head = this.#createHead("lustre:map", metaParent, index, vnode);
         insertBefore(domParent, head, beforeEl);
         this.#insertChild(domParent, beforeEl, head[meta], 0, vnode.child);
 
@@ -464,25 +473,11 @@ export class Reconciler {
     return node;
   }
 
-  #createFragmentStartComment(parent, index, { key }) {
-    const comment = fragmentStartComment(key);
-    const node = createComment(comment);
-    insertMetadataChild(fragment_kind, parent, node, index, key);
-
-    return node;
-  }
-
-  #createFragmentEndComment(domParent, beforeEl) {
-    const node = createComment(fragmentEndComment());
-    insertBefore(domParent, node, beforeEl);
-
-    return node;
-  }
-
-  #createMapComment(parent, index, { key }) {
-    const comment = mapComment(key);
-    const node = createComment(comment);
-    insertMetadataChild(map_kind, parent, node, index, key);
+  #createHead(marker, parent, index, { kind, key }) {
+    const node = this.#debug
+      ? createComment(markerComment(marker, key))
+      : createTextNode("");
+    insertMetadataChild(kind, parent, node, index, key);
 
     return node;
   }
@@ -617,31 +612,12 @@ export class Reconciler {
 
 // UTILS -----------------------------------------------------------------------
 
-/** Escape special characters in keys for use in HTML comments. */
-const escapeKey = (key) =>
-  key
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-
-/** Generate start comment text for fragment nodes. */
-const fragmentStartComment = (key) => {
-  if (!key) {
-    return " lustre:fragment:start ";
+const markerComment = (marker, key) => {
+  if (key) {
+    return ` ${marker} key="${escape(key)}" `;
+  } else {
+    return ` ${marker} `;
   }
-  return ` lustre:fragment:start key="${escapeKey(key)}" `;
-};
-
-/** Generate end comment text for fragment nodes. */
-const fragmentEndComment = () => " lustre:fragment:end ";
-
-/** Generate comment text for map nodes. */
-const mapComment = (key) => {
-  if (!key) {
-    return " lustre:map ";
-  }
-  return ` lustre:map key="${escapeKey(key)}" `;
 };
 
 /** Our reconciler is written in such a way that it can work without modification

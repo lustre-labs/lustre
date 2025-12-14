@@ -287,54 +287,6 @@ fn map_to_json(kind, key, child, memos) {
 
 // STRING RENDERING ------------------------------------------------------------
 
-fn escape_key(key: String) -> String {
-  key
-  |> string.replace("&", "&amp;")
-  |> string.replace("\"", "&quot;")
-  |> string.replace("<", "&lt;")
-  |> string.replace(">", "&gt;")
-}
-
-fn fragment_start_comment(key: String) -> StringTree {
-  case key {
-    "" -> string_tree.from_string("<!-- lustre:fragment:start -->")
-    _ -> {
-      let escaped_key = escape_key(key)
-      string_tree.from_string(
-        "<!-- lustre:fragment:start key=\"" <> escaped_key <> "\" -->",
-      )
-    }
-  }
-}
-
-fn fragment_end_comment() -> StringTree {
-  string_tree.from_string("<!-- lustre:fragment:end -->")
-}
-
-fn map_comment(key: String) -> StringTree {
-  case key {
-    "" -> string_tree.from_string("<!-- lustre:map -->")
-    _ -> {
-      let escaped_key = escape_key(key)
-      string_tree.from_string(
-        "<!-- lustre:map key=\"" <> escaped_key <> "\" -->",
-      )
-    }
-  }
-}
-
-fn memo_comment(key: String) -> StringTree {
-  case key {
-    "" -> string_tree.from_string("<!-- lustre:memo -->")
-    _ -> {
-      let escaped_key = escape_key(key)
-      string_tree.from_string(
-        "<!-- lustre:memo key=\"" <> escaped_key <> "\" -->",
-      )
-    }
-  }
-}
-
 pub fn to_string(node: Element(msg)) -> String {
   node
   |> to_string_tree
@@ -345,14 +297,6 @@ pub fn to_string_tree(node: Element(msg)) -> StringTree {
   case node {
     Text(content: "", ..) -> string_tree.new()
     Text(content:, ..) -> string_tree.from_string(houdini.escape(content))
-
-    Fragment(key:, children:, ..) -> {
-      let start = fragment_start_comment(key)
-      let end = fragment_end_comment()
-      start
-      |> children_to_string_tree(children)
-      |> string_tree.append_tree(end)
-    }
 
     Element(key:, namespace:, tag:, attributes:, self_closing:, ..)
       if self_closing
@@ -396,15 +340,19 @@ pub fn to_string_tree(node: Element(msg)) -> StringTree {
       |> string_tree.append("</" <> tag <> ">")
     }
 
+    Fragment(key:, children:, ..) -> {
+      marker_comment("lustre:fragment", key)
+      |> children_to_string_tree(children)
+      |> string_tree.append_tree(marker_comment("/lustre:fragment", ""))
+    }
+
     Map(key:, child:, ..) -> {
-      let comment = map_comment(key)
-      comment
+      marker_comment("lustre:map", key)
       |> string_tree.append_tree(to_string_tree(child))
     }
 
     Memo(key:, view:, ..) -> {
-      let comment = memo_comment(key)
-      comment
+      marker_comment("lustre:memo", key)
       |> string_tree.append_tree(to_string_tree(view()))
     }
   }
@@ -415,10 +363,7 @@ fn children_to_string_tree(
   children: List(Element(msg)),
 ) -> StringTree {
   use html, child <- list.fold(children, html)
-
-  child
-  |> to_string_tree
-  |> string_tree.append_tree(html, _)
+  string_tree.append_tree(html, to_string_tree(child))
 }
 
 pub fn to_snapshot(node: Element(msg)) -> String {
@@ -440,19 +385,6 @@ fn do_to_snapshot_builder(
       string_tree.from_strings([spaces, content])
     Text(content:, ..) ->
       string_tree.from_strings([spaces, houdini.escape(content)])
-
-    Fragment(children: [], ..) -> string_tree.new()
-
-    Fragment(key:, children:, ..) -> {
-      let start = fragment_start_comment(key)
-      let end = fragment_end_comment()
-      start
-      |> string_tree.prepend(spaces)
-      |> string_tree.append("\n")
-      |> children_to_snapshot_builder(children, raw_text, indent)
-      |> string_tree.append(spaces)
-      |> string_tree.append_tree(end)
-    }
 
     Element(key:, namespace:, tag:, attributes:, self_closing:, ..)
       if self_closing
@@ -510,23 +442,34 @@ fn do_to_snapshot_builder(
       |> string_tree.append("</" <> tag <> ">")
     }
 
-    Map(key:, child:, ..) -> {
-      let comment = map_comment(key)
-      comment
+    Fragment(key:, children:, ..) -> {
+      marker_comment("lustre:fragment", key)
       |> string_tree.prepend(spaces)
       |> string_tree.append("\n")
-      |> string_tree.append_tree(do_to_snapshot_builder(child, raw_text, indent))
+      |> children_to_snapshot_builder(children, raw_text, indent + 1)
+      |> string_tree.append(spaces)
+      |> string_tree.append_tree(marker_comment("/lustre:fragment", ""))
+    }
+
+    Map(key:, child:, ..) -> {
+      marker_comment("lustre:map", key)
+      |> string_tree.prepend(spaces)
+      |> string_tree.append("\n")
+      |> string_tree.append_tree(do_to_snapshot_builder(
+        child,
+        raw_text,
+        indent + 1,
+      ))
     }
 
     Memo(key:, view:, ..) -> {
-      let comment = memo_comment(key)
-      comment
+      marker_comment("lustre:memo", key)
       |> string_tree.prepend(spaces)
       |> string_tree.append("\n")
       |> string_tree.append_tree(do_to_snapshot_builder(
         view(),
         raw_text,
-        indent,
+        indent + 1,
       ))
     }
   }
@@ -547,12 +490,6 @@ fn children_to_snapshot_builder(
         indent,
       )
 
-    [Fragment(..) as child, ..rest] ->
-      child
-      |> do_to_snapshot_builder(raw_text, indent)
-      |> string_tree.append_tree(html, _)
-      |> children_to_snapshot_builder(rest, raw_text, indent)
-
     [child, ..rest] ->
       child
       |> do_to_snapshot_builder(raw_text, indent)
@@ -561,5 +498,15 @@ fn children_to_snapshot_builder(
       |> children_to_snapshot_builder(rest, raw_text, indent)
 
     [] -> html
+  }
+}
+
+fn marker_comment(label: String, key: String) {
+  case key {
+    "" -> string_tree.from_string("<!-- " <> label <> " -->")
+    _ ->
+      string_tree.from_string("<!-- " <> label <> " key=\"")
+      |> string_tree.append(houdini.escape(key))
+      |> string_tree.append("\" -->")
   }
 }

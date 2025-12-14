@@ -2,10 +2,10 @@
 version: 1.4.1
 title: [html] Fragment with multiple mix elements should render on multiple lines
 ---
-<!-- lustre:fragment:start -->
-Hello, 
-<span>
-  world
-</span>
-!
-<!-- lustre:fragment:end -->
+<!-- lustre:fragment -->
+  Hello, 
+  <span>
+    world
+  </span>
+  !
+<!-- /lustre:fragment -->
