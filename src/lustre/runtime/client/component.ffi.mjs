@@ -1,44 +1,52 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { Ok, Error } from "../../../gleam.mjs";
+import {
+  Result$Ok,
+  Result$Error,
+  Result$isOk,
+  Result$Ok$0,
+} from "../../../gleam.mjs";
 import { run as decode } from "../../../../gleam_stdlib/gleam/dynamic/decode.mjs";
-import { Some } from "../../../../gleam_stdlib/gleam/option.mjs";
+import {
+  Option$isSome,
+  Option$Some$0,
+} from "../../../../gleam_stdlib/gleam/option.mjs";
 
 import {
-  BadComponentName,
-  ComponentAlreadyRegistered,
-  NotABrowser,
-  is_browser,
+  Error$BadComponentName,
+  Error$ComponentAlreadyRegistered,
+  Error$NotABrowser,
 } from "../../../lustre.mjs";
 import {
   Runtime,
   ContextRequestEvent,
   adoptStylesheets,
+  is_browser,
 } from "./runtime.ffi.mjs";
 import {
-  EffectDispatchedMessage,
-  EffectEmitEvent,
-  SystemRequestedShutdown,
+  Message$isEffectDispatchedMessage,
+  Message$isEffectEmitEvent,
+  Message$isSystemRequestedShutdown,
 } from "../server/runtime.mjs";
+import { iterate } from "../../internals/list.ffi.mjs";
 
 //
 
 export const make_component = ({ init, update, view, config }, name) => {
-  if (!is_browser()) return new Error(new NotABrowser());
-  if (!name.includes("-")) return new Error(new BadComponentName(name));
+  if (!is_browser()) return Result$Error(Error$NotABrowser());
+  if (!name.includes("-")) return Result$Error(Error$BadComponentName(name));
   if (customElements.get(name)) {
-    return new Error(new ComponentAlreadyRegistered(name));
+    return Result$Error(Error$ComponentAlreadyRegistered(name));
   }
 
   const attributes = new Map();
   const observedAttributes = [];
-  for (let attr = config.attributes; attr.tail; attr = attr.tail) {
-    const [name, decoder] = attr.head;
-    if (attributes.has(name)) continue;
+  iterate(config.attributes, ([name, decoder]) => {
+    if (attributes.has(name)) return;
 
     attributes.set(name, decoder);
     observedAttributes.push(name);
-  }
+  });
 
   const [model, effects] = init(undefined);
 
@@ -87,15 +95,13 @@ export const make_component = ({ init, update, view, config }, name) => {
       // twice.
       const requested = new Set();
 
-      for (let ctx = config.contexts; ctx.tail; ctx = ctx.tail) {
-        const [key, decoder] = ctx.head;
-
+      iterate(config.contexts, ([key, decoder]) => {
         // An empty key is not valid so we skip over any of those.
-        if (!key) continue;
+        if (!key) return;
         // Likewise if we've requested a context for this key already then we
         // don't want to dispatch a second event, even if the user provided a
         // different decoder.
-        if (requested.has(key)) continue;
+        if (requested.has(key)) return;
 
         this.dispatchEvent(
           new ContextRequestEvent(
@@ -112,8 +118,8 @@ export const make_component = ({ init, update, view, config }, name) => {
               const decoded = decode(value, decoder);
               this.#contextSubscriptions.set(key, unsubscribe);
 
-              if (decoded.isOk()) {
-                this.dispatch(decoded[0], true);
+              if (Result$isOk(decoded)) {
+                this.dispatch(Result$Ok$0(decoded), true);
               }
             },
             true,
@@ -121,7 +127,7 @@ export const make_component = ({ init, update, view, config }, name) => {
         );
 
         requested.add(key);
-      }
+      });
     }
 
     adoptedCallback() {
@@ -133,28 +139,28 @@ export const make_component = ({ init, update, view, config }, name) => {
     attributeChangedCallback(name, _, value) {
       const decoded = attributes.get(name)(value ?? "");
 
-      if (decoded.isOk()) {
-        this.dispatch(decoded[0], true);
+      if (Result$isOk(decoded)) {
+        this.dispatch(Result$Ok$0(decoded), true);
       }
     }
 
     formResetCallback() {
-      if (config.on_form_reset instanceof Some) {
-        this.dispatch(config.on_form_reset[0]);
+      if (Option$isSome(config.on_form_reset)) {
+        this.dispatch(Option$Some$0(config.on_form_reset));
       }
     }
 
     formStateRestoreCallback(state, reason) {
       switch (reason) {
         case "restore":
-          if (config.on_form_restore instanceof Some) {
-            this.dispatch(config.on_form_restore[0](state));
+          if (Option$isSome(config.on_form_restore)) {
+            this.dispatch(Option$Some$0(config.on_form_restore)(state));
           }
           break;
 
         case "autocomplete":
-          if (config.on_form_populate instanceof Some) {
-            this.dispatch(config.on_form_autofill[0](state));
+          if (Option$isSome(config.on_form_autofill)) {
+            this.dispatch(Option$Some$0(config.on_form_autofill)(state));
           }
           break;
       }
@@ -171,20 +177,12 @@ export const make_component = ({ init, update, view, config }, name) => {
     // LUSTRE RUNTIME METHODS --------------------------------------------------
 
     send(message) {
-      switch (message.constructor) {
-        case EffectDispatchedMessage: {
-          this.dispatch(message.message, false);
-          break;
-        }
-
-        case EffectEmitEvent: {
-          this.emit(message.name, message.data);
-          break;
-        }
-
-        case SystemRequestedShutdown:
-          //TODO
-          break;
+      if (Message$isEffectDispatchedMessage(message)) {
+        this.dispatch(message.message, false);
+      } else if (Message$isEffectEmitEvent(message)) {
+        this.emit(message.name, message.data);
+      } else if (Message$isSystemRequestedShutdown(message)) {
+        // TODO
       }
     }
 
@@ -210,10 +208,9 @@ export const make_component = ({ init, update, view, config }, name) => {
     }
   };
 
-  for (let prop = config.properties; prop.tail; prop = prop.tail) {
-    const [name, decoder] = prop.head;
+  iterate(config.properties, ([name, decoder]) => {
     if (Object.hasOwn(component.prototype, name)) {
-      continue;
+      return;
     }
 
     Object.defineProperty(component.prototype, name, {
@@ -225,16 +222,16 @@ export const make_component = ({ init, update, view, config }, name) => {
         this[`_${name}`] = value;
         const decoded = decode(value, decoder);
 
-        if (decoded.isOk()) {
-          this.dispatch(decoded[0], true);
+        if (Result$isOk(decoded)) {
+          this.dispatch(Result$Ok$0(decoded), true);
         }
       },
     });
-  }
+  });
 
   customElements.define(name, component);
 
-  return new Ok(undefined);
+  return Result$Ok(undefined);
 };
 
 //

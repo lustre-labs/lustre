@@ -1,5 +1,3 @@
-export const isReferenceEqual = (a, b) => a === b;
-
 // This isEqual implementation has to support JSON literals, i.e. values that
 // can be produced by using the gleam/json module.
 // It is a highly specialised version of https://github.com/planttheidea/fast-equals.
@@ -19,7 +17,7 @@ export const isEqual = (a, b) => {
 
   // we do not support NaN, and both values being equal has already
   // been handled above.
-  if (type !== 'object') {
+  if (type !== "object") {
     return false;
   }
 
@@ -49,7 +47,7 @@ const areArraysEqual = (a, b) => {
   }
 
   return true;
-}
+};
 
 const areObjectsEqual = (a, b) => {
   const properties = Object.keys(a);
@@ -70,5 +68,4 @@ const areObjectsEqual = (a, b) => {
   }
 
   return true;
-}
-
+};

@@ -1,12 +1,12 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { Ok, Error } from "../../../gleam.mjs";
-import { ElementNotFound, NotABrowser } from "../../../lustre.mjs";
+import { Result$Ok, Result$Error } from "../../../gleam.mjs";
+import { Error$ElementNotFound, Error$NotABrowser } from "../../../lustre.mjs";
 import { is_browser, Runtime } from "./runtime.ffi.mjs";
 import {
-  EffectDispatchedMessage,
-  EffectEmitEvent,
-  SystemRequestedShutdown,
+  Message$isEffectDispatchedMessage,
+  Message$isEffectEmitEvent,
+  Message$isSystemRequestedShutdown,
 } from "../server/runtime.mjs";
 import { document } from "../../internals/constants.ffi.mjs";
 
@@ -20,20 +20,12 @@ export class Spa {
   }
 
   send(message) {
-    switch (message.constructor) {
-      case EffectDispatchedMessage: {
-        this.dispatch(message.message, false);
-        break;
-      }
-
-      case EffectEmitEvent: {
-        this.emit(message.name, message.data);
-        break;
-      }
-
-      case SystemRequestedShutdown:
-        //TODO
-        break;
+    if (Message$isEffectDispatchedMessage(message)) {
+      this.dispatch(message.message, false);
+    } else if (Message$isEffectEmitEvent(message)) {
+      this.emit(message.name, message.data);
+    } else if (Message$isSystemRequestedShutdown(message)) {
+      // TODO
     }
   }
 
@@ -47,14 +39,14 @@ export class Spa {
 }
 
 export const start = ({ init, update, view }, selector, flags) => {
-  if (!is_browser()) return new Error(new NotABrowser());
+  if (!is_browser()) return Result$Error(Error$NotABrowser());
 
   const root =
     selector instanceof HTMLElement
       ? selector
       : document().querySelector(selector);
 
-  if (!root) return new Error(new ElementNotFound(selector));
+  if (!root) return Result$Error(Error$ElementNotFound(selector));
 
-  return new Ok(new Spa(root, init(flags), update, view));
+  return Result$Ok(new Spa(root, init(flags), update, view));
 };
