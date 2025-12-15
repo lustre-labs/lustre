@@ -1,10 +1,10 @@
-import { toList } from "../../gleam.mjs";
+import { List$NonEmpty } from "../../gleam.mjs";
 import { text, none, memo, ref, map } from "../element.mjs";
 import { element, namespaced, fragment } from "../element/keyed.mjs";
 import { attribute } from "../attribute.mjs";
 import { insertMetadataChild } from "./reconciler.ffi.mjs";
 import { element_kind, fragment_kind, text_kind, map_kind } from "./vnode.mjs";
-
+import { empty_list } from "../internals/constants.mjs";
 import {
   document,
   ELEMENT_NODE,
@@ -240,3 +240,6 @@ const unescapeKey = (key) => {
     .replace(/&amp;/g, "&")
     .replace(/&#39;/g, "'");
 };
+
+const toList = (arr) =>
+  arr.reduceRight((xs, x) => List$NonEmpty(x, xs), empty_list);
