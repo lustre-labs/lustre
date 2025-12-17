@@ -888,6 +888,17 @@ pub fn colorspace(value: String) -> Attribute(msg) {
   attribute("colorspace", value)
 }
 
+/// A positive integer value indicating how many visible columns the text control
+/// will have. The default value is 20.
+pub fn cols(value: Int) -> Attribute(msg) {
+  attribute("cols", {
+    value
+    |> int.max(1)
+    |> int.min(65_534)
+    |> int.to_string()
+  })
+}
+
 /// The name of the field included in a form that indicates the direcionality of
 /// the user's input.
 ///
@@ -1167,6 +1178,17 @@ pub fn readonly(is_readonly: Bool) -> Attribute(msg) {
 ///
 pub fn required(is_required: Bool) -> Attribute(msg) {
   boolean_attribute("required", is_required)
+}
+
+/// A positive integer value indicating how many visible rows the text control
+/// will have. The default value is 2.
+pub fn rows(value: Int) -> Attribute(msg) {
+  attribute("rows", {
+    value
+    |> int.max(1)
+    |> int.min(65_534)
+    |> int.to_string()
+  })
 }
 
 /// Controls whether or not a select's `<option>` is selected or not. Only one
