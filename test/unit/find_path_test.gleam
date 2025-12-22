@@ -7,7 +7,7 @@ import lustre/element
 import lustre/element/html
 import lustre/element/keyed
 import lustre/event
-import lustre/vdom/events
+import lustre/vdom/cache
 import lustre/vdom/path
 import lustre/vdom/vattr.{Handler}
 import lustre_test
@@ -23,7 +23,7 @@ pub fn find_path_in_single_event_test() {
       [html.text("Click me!")],
     )
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
   let query = query.element(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
@@ -35,7 +35,7 @@ pub fn find_path_in_single_event_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -51,7 +51,7 @@ pub fn find_path_in_single_nested_event_test() {
       ),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
   let query = query.element(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
@@ -63,7 +63,7 @@ pub fn find_path_in_single_nested_event_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -85,7 +85,7 @@ pub fn find_path_in_single_nested_keyed_event_test() {
       ),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
   let query = query.element(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
@@ -97,7 +97,7 @@ pub fn find_path_in_single_nested_keyed_event_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -119,7 +119,7 @@ pub fn find_path_in_single_nested_keyed_event_with_period_test() {
       ),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
   let query = query.element(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
@@ -131,7 +131,7 @@ pub fn find_path_in_single_nested_keyed_event_with_period_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -149,7 +149,7 @@ pub fn find_path_in_fragment_event_test() {
       ),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
   let query = query.element(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
@@ -161,7 +161,7 @@ pub fn find_path_in_fragment_event_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -179,7 +179,7 @@ pub fn find_path_in_nested_fragment_event_test() {
       ]),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
   let query = query.element(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
@@ -191,7 +191,7 @@ pub fn find_path_in_nested_fragment_event_test() {
     ))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -215,7 +215,7 @@ pub fn find_path_in_nested_fragment_with_multiple_children_event_test() {
       ]),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
   let query = query.element(matching: query.test_id("target"))
   let assert Ok(#(_, path)) = query.find_path(vdom, query, 0, path.root)
 
@@ -223,7 +223,7 @@ pub fn find_path_in_nested_fragment_with_multiple_children_event_test() {
     Ok(Handler(prevent_default: False, stop_propagation: False, message: 4))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -241,7 +241,7 @@ pub fn find_path_by_child_query_test() {
       ]),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
   let query =
     query.element(matching: query.tag("div"))
     |> query.child(matching: query.test_id("target"))
@@ -251,7 +251,7 @@ pub fn find_path_by_child_query_test() {
     Ok(Handler(prevent_default: False, stop_propagation: False, message: 2))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -269,7 +269,7 @@ pub fn find_path_by_child_query_in_fragment_test() {
       ]),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
   let query =
     query.element(matching: query.tag("div"))
     |> query.child(matching: query.test_id("target"))
@@ -280,7 +280,7 @@ pub fn find_path_by_child_query_in_fragment_test() {
     Ok(Handler(prevent_default: False, stop_propagation: False, message: 2))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -298,7 +298,7 @@ pub fn find_path_by_descendant_query_test() {
       ]),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
   let query =
     query.element(matching: query.tag("div"))
     |> query.descendant(matching: query.test_id("target"))
@@ -308,7 +308,7 @@ pub fn find_path_by_descendant_query_test() {
     Ok(Handler(prevent_default: False, stop_propagation: False, message: 2))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }
@@ -330,7 +330,7 @@ pub fn find_path_by_descendant_query_in_fragment_test() {
       ]),
     ])
 
-  let events = events.from_node(vdom)
+  let events = cache.from_node(vdom)
   let query =
     query.element(matching: query.tag("div"))
     |> query.descendant(matching: query.test_id("target"))
@@ -340,7 +340,7 @@ pub fn find_path_by_descendant_query_in_fragment_test() {
     Ok(Handler(prevent_default: False, stop_propagation: False, message: 2))
 
   let #(_, actual) =
-    events.handle(events, path.to_string(path), "click", dynamic.nil())
+    cache.handle(events, path.to_string(path), "click", dynamic.nil())
 
   assert actual == expected
 }

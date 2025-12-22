@@ -2,17 +2,10 @@
 
 import gleam/json.{type Json}
 import lustre/internals/json_object_builder
-import lustre/vdom/events.{type Events}
 import lustre/vdom/vattr.{type Attribute}
-import lustre/vdom/vnode.{type Element}
+import lustre/vdom/vnode.{type Element, type Memos}
 
 // TYPES -----------------------------------------------------------------------
-
-///
-///
-pub type Diff(msg) {
-  Diff(patch: Patch(msg), events: Events(msg))
-}
 
 /// A patch represents a set of precise changes needed to update the real DOM
 /// to match a diffed VDOM. It is made up of four parts:
@@ -147,16 +140,20 @@ pub fn add_child(parent: Patch(msg), child: Patch(msg)) -> Patch(msg) {
 
 // ENCODING --------------------------------------------------------------------
 
-pub fn to_json(patch: Patch(msg)) -> Json {
+pub fn to_json(patch: Patch(msg), memos: Memos(msg)) -> Json {
   json_object_builder.new()
   |> json_object_builder.int("index", patch.index)
   |> json_object_builder.int("removed", patch.removed)
-  |> json_object_builder.list("changes", patch.changes, change_to_json)
-  |> json_object_builder.list("children", patch.children, to_json)
+  |> json_object_builder.list("changes", patch.changes, fn(change) {
+    change_to_json(change, memos)
+  })
+  |> json_object_builder.list("children", patch.children, fn(child) {
+    to_json(child, memos)
+  })
   |> json_object_builder.build
 }
 
-fn change_to_json(change: Change(msg)) -> Json {
+fn change_to_json(change: Change(msg), memos: Memos(msg)) -> Json {
   case change {
     ReplaceText(kind, content) -> replace_text_to_json(kind, content)
     ReplaceInnerHtml(kind, inner_html) ->
@@ -164,8 +161,9 @@ fn change_to_json(change: Change(msg)) -> Json {
     Update(kind, added, removed) -> update_to_json(kind, added, removed)
     Move(kind, key, before) -> move_to_json(kind, key, before)
     Remove(kind, index) -> remove_to_json(kind, index)
-    Replace(kind, index, with) -> replace_to_json(kind, index, with)
-    Insert(kind, children, before) -> insert_to_json(kind, children, before)
+    Replace(kind, index, with) -> replace_to_json(kind, index, with, memos)
+    Insert(kind, children, before) ->
+      insert_to_json(kind, children, before, memos)
   }
 }
 
@@ -201,16 +199,16 @@ fn remove_to_json(kind, index) {
   |> json_object_builder.build
 }
 
-fn replace_to_json(kind, index, with) {
+fn replace_to_json(kind, index, with, memos) {
   json_object_builder.tagged(kind)
   |> json_object_builder.int("index", index)
-  |> json_object_builder.json("with", vnode.to_json(with))
+  |> json_object_builder.json("with", vnode.to_json(with, memos))
   |> json_object_builder.build
 }
 
-fn insert_to_json(kind, children, before) {
+fn insert_to_json(kind, children, before, memos) {
   json_object_builder.tagged(kind)
   |> json_object_builder.int("before", before)
-  |> json_object_builder.list("children", children, vnode.to_json)
+  |> json_object_builder.list("children", children, vnode.to_json(_, memos))
   |> json_object_builder.build
 }

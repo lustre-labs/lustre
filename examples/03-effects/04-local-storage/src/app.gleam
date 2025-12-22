@@ -3,7 +3,6 @@
 import formal/form
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
-import gleam/function
 import gleam/int
 import gleam/json.{type Json}
 import gleam/list
@@ -188,14 +187,18 @@ fn view_input(
 ) -> Element(msg) {
   let on_submit =
     event.on_submit(fn(fields) {
-      form.decoding(into: function.identity)
-      |> form.with_values(fields)
-      |> form.field("title", form.string |> form.and(form.must_not_be_empty))
-      |> form.finish
+      form.new({
+        use title <- form.field("title", {
+          form.parse_string
+          |> form.check_not_empty
+        })
+        form.success(title)
+      })
+      |> form.set_values(fields)
+      |> form.run
       |> result.replace_error(Nil)
       |> handle_submit
     })
-
   html.form([attribute.id("new-todo"), on_submit], [
     html.label([attribute.for("title"), attribute.class("block text-sm mb-2")], [
       html.text("What do you need to do?"),

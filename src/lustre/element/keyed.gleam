@@ -52,7 +52,6 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/function
 import gleam/list
 import lustre/attribute.{type Attribute}
 import lustre/element.{type Element}
@@ -82,7 +81,6 @@ pub fn element(
     key: "",
     namespace: "",
     tag:,
-    mapper: function.identity,
     attributes:,
     children:,
     keyed_children:,
@@ -110,7 +108,6 @@ pub fn namespaced(
 
   vnode.element(
     key: "",
-    mapper: function.identity,
     namespace:,
     tag:,
     attributes:,
@@ -133,7 +130,7 @@ pub fn namespaced(
 pub fn fragment(children: List(#(String, Element(msg)))) -> Element(msg) {
   let #(keyed_children, children) = extract_keyed_children(children)
 
-  vnode.fragment(key: "", mapper: function.identity, children:, keyed_children:)
+  vnode.fragment(key: "", children:, keyed_children:)
 }
 
 // ELEMENTS --------------------------------------------------------------------

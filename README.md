@@ -125,11 +125,11 @@ fn view(model) {
 
 ## Philosophy {#philosophy}
 
-Lustre is an _opinionated_ framework for building small-to-medium-sized Web
-applications. Modern frontend development is hard and complex. Some of that
-complexity is necessary, but a lot of it is accidental or comes from having far
-too many options. Lustre has the same design philosophy as Gleam: where possible,
-there should be only one way to do things.
+Lustre is an _opinionated_ framework for building frontend Web applications. Modern
+frontend development is hard and complex. Some of that complexity is necessary, but
+a lot of it is accidental or comes from having far too many options. Lustre has the
+same design philosophy as Gleam: where possible, there should be only one way to do
+things!
 
 That means shipping with a single state management system out of the box, modelled
 after Elm and Erlang/OTP. Open any Lustre application and you should feel
