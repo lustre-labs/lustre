@@ -11,6 +11,8 @@ request to fix it.
 
 ## [Unreleased]
 
+- [lustre/element/mathml] Added element functions for constructing MathML elements.
+
 ## [v5.4.0] - 2025-11-01
 
 ### Added
