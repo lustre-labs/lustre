@@ -246,7 +246,7 @@ export const set_form_value = (root, value) => {
   }
 };
 
-export const clear_form_value = (internals) => {
+export const clear_form_value = (root) => {
   if (!is_browser()) return;
   if (root instanceof ShadowRoot) {
     root.host.internals.setFormValue(undefined);

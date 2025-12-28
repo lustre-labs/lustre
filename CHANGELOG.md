@@ -11,7 +11,13 @@ request to fix it.
 
 ## [Unreleased]
 
+### Added
+
 - [lustre/element/mathml] Added element functions for constructing MathML elements.
+
+### Changed
+
+- [lustre/component] Fixed a bug where the `clear_form_value` effect referenced an undefined variable.
 
 ## [v5.4.0] - 2025-11-01
 
