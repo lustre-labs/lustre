@@ -1445,6 +1445,19 @@ pub fn scope(value: String) -> Attribute(msg) {
   attribute("scope", value)
 }
 
+// TIME ATTRIBUTES -------------------------------------------------------------
+
+/// indicates the time and/or date of the time element
+/// It may represent one of the following:
+/// 
+/// - A time on a 24-hour clock.
+/// - A precise date in the Gregorian calendar (with optional time and timezone information).
+/// - A valid time duration.
+///
+pub fn datetime(value: String) -> Attribute(msg) {
+  attribute("datetime", value)
+}
+
 // ARIA ATTRIBUTES -------------------------------------------------------------
 
 /// Add an `aria-*` attribute to an HTML element. The key will be prefixed by
