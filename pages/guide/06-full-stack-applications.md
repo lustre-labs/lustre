@@ -121,7 +121,7 @@ import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
 import rsvp
-import shared/groceries.{type GroceryItem, GroceryItem}
+import groceries.{type GroceryItem, GroceryItem}
 
 pub fn main() {
   let app = lustre.application(init, update, view)
