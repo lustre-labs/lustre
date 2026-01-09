@@ -339,5 +339,5 @@ pub fn to_document_string_tree(el: Element(msg)) -> StringTree {
 /// ```
 ///
 pub fn to_readable_string(el: Element(msg)) -> String {
-  vnode.to_snapshot(el)
+  vnode.to_snapshot(el, False)
 }

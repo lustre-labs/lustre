@@ -408,5 +408,5 @@ pub fn default_selected_attribute_test() {
 // UTILS -----------------------------------------------------------------------
 
 fn snapshot(el: Element(msg), title: String) -> Nil {
-  el |> element.to_readable_string |> birdie.snap("[html] " <> title)
+  el |> vnode.to_snapshot(True) |> birdie.snap("[html] " <> title)
 }

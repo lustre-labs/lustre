@@ -366,15 +366,16 @@ fn children_to_string_tree(
   string_tree.append_tree(html, to_string_tree(child))
 }
 
-pub fn to_snapshot(node: Element(msg)) -> String {
+pub fn to_snapshot(node: Element(msg), debug: Bool) -> String {
   node
-  |> do_to_snapshot_builder(False, 0)
+  |> do_to_snapshot_builder(False, debug, 0)
   |> string_tree.to_string
 }
 
 fn do_to_snapshot_builder(
   node: Element(msg),
   raw_text: Bool,
+  debug: Bool,
   indent: Int,
 ) -> StringTree {
   let spaces = string.repeat("  ", indent)
@@ -424,7 +425,7 @@ fn do_to_snapshot_builder(
       |> string_tree.prepend(spaces)
       |> string_tree.append_tree(attributes)
       |> string_tree.append(">\n")
-      |> children_to_snapshot_builder(children, raw_text, indent + 1)
+      |> children_to_snapshot_builder(children, raw_text, debug, indent + 1)
       |> string_tree.append(spaces)
       |> string_tree.append("</" <> tag <> ">")
     }
@@ -441,36 +442,51 @@ fn do_to_snapshot_builder(
       |> string_tree.append("</" <> tag <> ">")
     }
 
-    Fragment(key:, children:, ..) -> {
+    Fragment(key:, children:, ..) if debug -> {
       marker_comment("lustre:fragment", key)
       |> string_tree.prepend(spaces)
       |> string_tree.append("\n")
-      |> children_to_snapshot_builder(children, raw_text, indent + 1)
+      |> children_to_snapshot_builder(children, raw_text, debug, indent + 1)
       |> string_tree.append(spaces)
       |> string_tree.append_tree(marker_comment("/lustre:fragment", ""))
     }
 
-    Map(key:, child:, ..) -> {
+    Fragment(children:, ..) ->
+      children_to_snapshot_builder(
+        string_tree.new(),
+        children,
+        raw_text,
+        debug,
+        indent,
+      )
+
+    Map(key:, child:, ..) if debug -> {
       marker_comment("lustre:map", key)
       |> string_tree.prepend(spaces)
       |> string_tree.append("\n")
       |> string_tree.append_tree(do_to_snapshot_builder(
         child,
         raw_text,
+        debug,
         indent + 1,
       ))
     }
 
-    Memo(key:, view:, ..) -> {
+    Map(child:, ..) -> do_to_snapshot_builder(child, raw_text, debug, indent)
+
+    Memo(key:, view:, ..) if debug -> {
       marker_comment("lustre:memo", key)
       |> string_tree.prepend(spaces)
       |> string_tree.append("\n")
       |> string_tree.append_tree(do_to_snapshot_builder(
         view(),
         raw_text,
+        debug,
         indent + 1,
       ))
     }
+
+    Memo(view:, ..) -> do_to_snapshot_builder(view(), raw_text, debug, indent)
   }
 }
 
@@ -478,6 +494,7 @@ fn children_to_snapshot_builder(
   html: StringTree,
   children: List(Element(msg)),
   raw_text: Bool,
+  debug: Bool,
   indent: Int,
 ) -> StringTree {
   case children {
@@ -486,15 +503,16 @@ fn children_to_snapshot_builder(
         html,
         [Text(kind: text_kind, key: "", content: a <> b), ..rest],
         raw_text,
+        debug,
         indent,
       )
 
     [child, ..rest] ->
       child
-      |> do_to_snapshot_builder(raw_text, indent)
+      |> do_to_snapshot_builder(raw_text, debug, indent)
       |> string_tree.append("\n")
       |> string_tree.prepend_tree(html)
-      |> children_to_snapshot_builder(rest, raw_text, indent)
+      |> children_to_snapshot_builder(rest, raw_text, debug, indent)
 
     [] -> html
   }
