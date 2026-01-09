@@ -11,24 +11,23 @@ import simplifile
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
-  echo {
-    case simplifile.is_file("build/dev/bin/package/bin/esbuild") {
-      Ok(True) -> Nil
-      _ -> install.fetch()
-    }
-
-    use _ <- try(build_for_javascript(), ShelloutError)
-    use _ <- try(bundle_server_component(), SimplifileError)
-    use _ <- try(bundle_minified_server_component(), SimplifileError)
-
-    use script <- try(read_script(), SimplifileError)
-    use module <- try(read_module(), SimplifileError)
-    use _ <- try(inject_script(script, module), SimplifileError)
-
-    use _ <- try(format_project(), ShelloutError)
-
-    Ok(Nil)
+  case simplifile.is_file("build/dev/bin/package/bin/esbuild") {
+    Ok(True) -> Nil
+    _ -> install.fetch()
   }
+
+  let assert Ok(_) = build_for_javascript()
+  let assert Ok(_) = bundle_server_component()
+  let assert Ok(_) = bundle_minified_server_component()
+
+  let assert Ok(script) = read_script()
+  let assert Ok(module) = read_module()
+
+  let assert Ok(_) = inject_script(script, module)
+
+  let assert Ok(_) = format_project()
+
+  Ok(Nil)
 }
 
 // CONSTANTS -------------------------------------------------------------------
