@@ -13,11 +13,14 @@ request to fix it.
 
 ### Added
 
+- [lustre/element] Added the new `memo` element function for producing "memoised" or lazy elements.
+- [lustre/element] Added a new `Ref` type and the `ref` function for producing dependencies to be used in `memo`.
 - [lustre/element/mathml] Added element functions for constructing MathML elements.
 
 ### Changed
 
 - [lustre/component] Fixed a bug where the `clear_form_value` effect referenced an undefined variable.
+- [lustre/runtime] Add the ability to virtualise server-rendered fragments, map, and memo nodes.
 
 ## [v5.4.0] - 2025-11-01
 
