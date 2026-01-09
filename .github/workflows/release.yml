@@ -32,6 +32,8 @@ jobs:
 
       - run: gleam test --target javascript
 
+      - run: gleam run -m build
+
       - run: gleam publish -y
         env:
           HEXPM_API_KEY: ${{ secrets.HEXPM_API_KEY }}
