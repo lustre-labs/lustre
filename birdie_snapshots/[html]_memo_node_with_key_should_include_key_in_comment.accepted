@@ -1,0 +1,8 @@
+---
+version: 1.4.1
+title: [html] Memo node with key should include key in comment
+---
+<!-- lustre:memo key="my-key" -->
+  <div data-lustre-key="my-key">
+    Hello
+  </div>

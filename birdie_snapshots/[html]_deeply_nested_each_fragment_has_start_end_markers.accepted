@@ -1,0 +1,28 @@
+---
+version: 1.4.1
+title: [html] Deeply nested: each fragment has start/end markers
+---
+<!-- lustre:fragment -->
+  <div>
+    1
+  </div>
+  <!-- lustre:fragment -->
+    <div>
+      2
+    </div>
+    <!-- lustre:fragment -->
+      <div>
+        3
+      </div>
+      <div>
+        4
+      </div>
+    <!-- /lustre:fragment -->
+    <div>
+      5
+    </div>
+  <!-- /lustre:fragment -->
+  <div>
+    6
+  </div>
+<!-- /lustre:fragment -->

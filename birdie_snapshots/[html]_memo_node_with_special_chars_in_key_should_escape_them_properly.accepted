@@ -1,0 +1,8 @@
+---
+version: 1.4.1
+title: [html] Memo node with special chars in key should escape them properly
+---
+<!-- lustre:memo key="key-with-&lt;&gt;&amp;&quot;" -->
+  <div data-lustre-key="key-with-&lt;&gt;&amp;&quot;">
+    Hello
+  </div>

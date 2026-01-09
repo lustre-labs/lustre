@@ -1,0 +1,20 @@
+---
+version: 1.4.1
+title: [html] Nested fragment with start/end markers for each fragment
+---
+<!-- lustre:fragment -->
+  <div>
+    outer 1
+  </div>
+  <!-- lustre:fragment -->
+    <div>
+      inner 1
+    </div>
+    <div>
+      inner 2
+    </div>
+  <!-- /lustre:fragment -->
+  <div>
+    outer 2
+  </div>
+<!-- /lustre:fragment -->

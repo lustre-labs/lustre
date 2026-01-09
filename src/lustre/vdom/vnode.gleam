@@ -298,9 +298,6 @@ pub fn to_string_tree(node: Element(msg)) -> StringTree {
     Text(content: "", ..) -> string_tree.new()
     Text(content:, ..) -> string_tree.from_string(houdini.escape(content))
 
-    Fragment(children:, ..) ->
-      children_to_string_tree(string_tree.new(), children)
-
     Element(key:, namespace:, tag:, attributes:, self_closing:, ..)
       if self_closing
     -> {
@@ -343,9 +340,21 @@ pub fn to_string_tree(node: Element(msg)) -> StringTree {
       |> string_tree.append("</" <> tag <> ">")
     }
 
-    Map(child:, ..) -> to_string_tree(child)
+    Fragment(key:, children:, ..) -> {
+      marker_comment("lustre:fragment", key)
+      |> children_to_string_tree(children)
+      |> string_tree.append_tree(marker_comment("/lustre:fragment", ""))
+    }
 
-    Memo(view:, ..) -> to_string_tree(view())
+    Map(key:, child:, ..) -> {
+      marker_comment("lustre:map", key)
+      |> string_tree.append_tree(to_string_tree(child))
+    }
+
+    Memo(key:, view:, ..) -> {
+      marker_comment("lustre:memo", key)
+      |> string_tree.append_tree(to_string_tree(view()))
+    }
   }
 }
 
@@ -354,10 +363,7 @@ fn children_to_string_tree(
   children: List(Element(msg)),
 ) -> StringTree {
   use html, child <- list.fold(children, html)
-
-  child
-  |> to_string_tree
-  |> string_tree.append_tree(html, _)
+  string_tree.append_tree(html, to_string_tree(child))
 }
 
 pub fn to_snapshot(node: Element(msg)) -> String {
@@ -380,15 +386,7 @@ fn do_to_snapshot_builder(
     Text(content:, ..) ->
       string_tree.from_strings([spaces, houdini.escape(content)])
 
-    Fragment(children: [], ..) -> string_tree.new()
-
-    Fragment(children:, ..) ->
-      string_tree.new()
-      |> children_to_snapshot_builder(children, raw_text, indent)
-
-    Element(key:, namespace:, tag:, attributes:, self_closing:, ..)
-      if self_closing
-    -> {
+    Element(key:, namespace:, tag:, attributes:, self_closing: True, ..) -> {
       let html = string_tree.from_string("<" <> tag)
       let attributes = vattr.to_string_tree(key, namespace, attributes)
 
@@ -398,7 +396,7 @@ fn do_to_snapshot_builder(
       |> string_tree.append("/>")
     }
 
-    Element(key:, namespace:, tag:, attributes:, void:, ..) if void -> {
+    Element(key:, namespace:, tag:, attributes:, void: True, ..) -> {
       let html = string_tree.from_string("<" <> tag)
       let attributes = vattr.to_string_tree(key, namespace, attributes)
 
@@ -436,15 +434,43 @@ fn do_to_snapshot_builder(
       let attributes = vattr.to_string_tree(key, namespace, attributes)
 
       html
+      |> string_tree.prepend(spaces)
       |> string_tree.append_tree(attributes)
       |> string_tree.append(">")
       |> string_tree.append(inner_html)
       |> string_tree.append("</" <> tag <> ">")
     }
 
-    Map(child:, ..) -> do_to_snapshot_builder(child, raw_text, indent)
+    Fragment(key:, children:, ..) -> {
+      marker_comment("lustre:fragment", key)
+      |> string_tree.prepend(spaces)
+      |> string_tree.append("\n")
+      |> children_to_snapshot_builder(children, raw_text, indent + 1)
+      |> string_tree.append(spaces)
+      |> string_tree.append_tree(marker_comment("/lustre:fragment", ""))
+    }
 
-    Memo(view:, ..) -> do_to_snapshot_builder(view(), raw_text, indent)
+    Map(key:, child:, ..) -> {
+      marker_comment("lustre:map", key)
+      |> string_tree.prepend(spaces)
+      |> string_tree.append("\n")
+      |> string_tree.append_tree(do_to_snapshot_builder(
+        child,
+        raw_text,
+        indent + 1,
+      ))
+    }
+
+    Memo(key:, view:, ..) -> {
+      marker_comment("lustre:memo", key)
+      |> string_tree.prepend(spaces)
+      |> string_tree.append("\n")
+      |> string_tree.append_tree(do_to_snapshot_builder(
+        view(),
+        raw_text,
+        indent + 1,
+      ))
+    }
   }
 }
 
@@ -463,19 +489,23 @@ fn children_to_snapshot_builder(
         indent,
       )
 
-    [Fragment(..) as child, ..rest] ->
-      child
-      |> do_to_snapshot_builder(raw_text, indent)
-      |> string_tree.append_tree(html, _)
-      |> children_to_snapshot_builder(rest, raw_text, indent)
-
     [child, ..rest] ->
       child
       |> do_to_snapshot_builder(raw_text, indent)
       |> string_tree.append("\n")
-      |> string_tree.append_tree(html, _)
+      |> string_tree.prepend_tree(html)
       |> children_to_snapshot_builder(rest, raw_text, indent)
 
     [] -> html
+  }
+}
+
+fn marker_comment(label: String, key: String) {
+  case key {
+    "" -> string_tree.from_string("<!-- " <> label <> " -->")
+    _ ->
+      string_tree.from_string("<!-- " <> label <> " key=\"")
+      |> string_tree.append(houdini.escape(key))
+      |> string_tree.append("\" -->")
   }
 }

@@ -1,5 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import { escape } from "../../../houdini/houdini.mjs";
+
 import {
   element_kind,
   text_kind,
@@ -53,6 +55,7 @@ const setTimeout = globalThis.setTimeout;
 const clearTimeout = globalThis.clearTimeout;
 const createElementNS = (ns, name) => document().createElementNS(ns, name);
 const createTextNode = (data) => document().createTextNode(data);
+const createComment = (data) => document().createComment(data);
 const createDocumentFragment = () => document().createDocumentFragment();
 const insertBefore = (parent, node, reference) =>
   parent.insertBefore(node, reference);
@@ -91,6 +94,10 @@ class MetadataNode {
 
     // a reference back to the "real" DOM node.
     this.node = node;
+
+    // in "debug" mode or after virtualisation, fragments also have an "end" marker.
+    // we need to move and modify that end marker with the fragment if it exists.
+    this.endNode = null;
 
     // data for the event handlers and attached throttlers and debouncers.
     this.handlers = new Map();
@@ -152,13 +159,13 @@ export class Reconciler {
   #decodeEvent;
   #dispatch;
 
-  #exposeKeys = false;
+  #debug = false;
 
-  constructor(root, decodeEvent, dispatch, { exposeKeys = false } = {}) {
+  constructor(root, decodeEvent, dispatch, { debug = false } = {}) {
     this.#root = root;
     this.#decodeEvent = decodeEvent;
     this.#dispatch = dispatch;
-    this.#exposeKeys = exposeKeys;
+    this.#debug = debug;
   }
 
   mount(vdom) {
@@ -252,19 +259,17 @@ export class Reconciler {
     const { children } = node;
     const childCount = children.length;
 
-    if (index < childCount) {
-      return children[index].node;
-    }
+    if (index < childCount) return children[index].node;
+    if (node.endNode) return node.endNode;
+    if (!node.isVirtual || !childCount) return null;
 
     let lastChild = children[childCount - 1];
-
-    if (!lastChild && !node.isVirtual) return null;
-    if (!lastChild) lastChild = node;
 
     // unwrap the last child as long as we point to a fragment.
     // otherwise, the fragments next sibling would be the first child of the
     // fragment, not the first element after it.
     while (lastChild.isVirtual && lastChild.children.length) {
+      if (lastChild.endNode) return lastChild.endNode.nextSibling;
       lastChild = lastChild.children[lastChild.children.length - 1];
     }
 
@@ -294,26 +299,28 @@ export class Reconciler {
       }
     }
 
-    const { node, children: prevChildren } = prev;
     // prev now is the same as `next` inside the loop, and points to the element
     // we found that matches the key! all that's left is to move it before `beforeEl`.
-    moveBefore(parentNode, node, beforeEl);
-
-    // prev might be a fragment in which case we need do move all its child dom nodes too
-    if (prev.isVirtual) {
-      this.#moveChildren(parentNode, prevChildren, beforeEl);
-    }
+    this.#moveChild(parentNode, prev, beforeEl);
   }
 
   #moveChildren(domParent, children, beforeEl) {
     for (let i = 0; i < children.length; ++i) {
-      const child = children[i];
-      const { node, children: nestedChildren } = child;
-      moveBefore(domParent, node, beforeEl);
+      this.#moveChild(domParent, children[i], beforeEl);
+    }
+  }
 
-      if (child.isVirtual) {
-        this.#moveChildren(domParent, nestedChildren, beforeEl);
-      }
+  #moveChild(domParent, child, beforeEl) {
+    moveBefore(domParent, child.node, beforeEl);
+
+    // child might be a fragment, in which case we need do move all its child dom nodes too
+    if (child.isVirtual) {
+      this.#moveChildren(domParent, child.children, beforeEl);
+    }
+
+    // if "endNode" is set, that node is also a sibling node that we need to move with the children
+    if (child.endNode) {
+      moveBefore(domParent, child.endNode, beforeEl);
     }
   }
 
@@ -327,12 +334,17 @@ export class Reconciler {
 
     for (let i = 0; i < deleted.length; ++i) {
       const child = deleted[i];
+      const { node, endNode, isVirtual, children: nestedChildren } = child;
 
-      removeChild(parentNode, child.node);
+      removeChild(parentNode, node);
+      if (endNode) {
+        removeChild(parentNode, endNode);
+      }
+
       this.#removeDebouncers(child);
 
-      if (child.isVirtual) {
-        deleted.push(...child.children);
+      if (isVirtual) {
+        deleted.push(...nestedChildren);
       }
     }
   }
@@ -399,9 +411,16 @@ export class Reconciler {
       }
 
       case fragment_kind: {
-        const head = this.#createTextNode(metaParent, index, vnode);
+        const marker = "lustre:fragment";
+        const head = this.#createHead(marker, metaParent, index, vnode);
+
         insertBefore(domParent, head, beforeEl);
         this.#insertChildren(domParent, beforeEl, head[meta], 0, vnode.children);
+
+        if (this.#debug) {
+          head[meta].endNode = createComment(` /${marker} `);
+          insertBefore(domParent, head[meta].endNode, beforeEl);
+        }
 
         break;
       }
@@ -417,7 +436,7 @@ export class Reconciler {
       case map_kind: {
         // Map nodes are virtual like fragments; this allows us to track
         // subtree boundaries in the real DOM and construct event paths accordingly.
-        const head = this.#createTextNode(metaParent, index, vnode);
+        const head = this.#createHead("lustre:map", metaParent, index, vnode);
         insertBefore(domParent, head, beforeEl);
         this.#insertChild(domParent, beforeEl, head[meta], 0, vnode.child);
 
@@ -426,6 +445,7 @@ export class Reconciler {
 
       case memo_kind: {
         // NOTE: we do not get memo nodes when running as a server component!
+        // Memo nodes are always transparent - they don't create DOM nodes even in debug mode.
         const child = this.#memos?.get(vnode.view) ?? vnode.view();
         this.#insertChild(domParent, beforeEl, metaParent, index, child);
 
@@ -438,7 +458,7 @@ export class Reconciler {
     const node = createElementNS(namespace || NAMESPACE_HTML, tag);
     insertMetadataChild(kind, parent, node, index, key);
 
-    if (this.#exposeKeys && key) {
+    if (this.#debug && key) {
       setAttribute(node, "data-lustre-key", key);
     }
     iterate(attributes, (attribute) => this.#createAttribute(node, attribute));
@@ -448,6 +468,15 @@ export class Reconciler {
 
   #createTextNode(parent, index, { kind, key, content }) {
     const node = createTextNode(content ?? "");
+    insertMetadataChild(kind, parent, node, index, key);
+
+    return node;
+  }
+
+  #createHead(marker, parent, index, { kind, key }) {
+    const node = this.#debug
+      ? createComment(markerComment(marker, key))
+      : createTextNode("");
     insertMetadataChild(kind, parent, node, index, key);
 
     return node;
@@ -582,6 +611,14 @@ export class Reconciler {
 }
 
 // UTILS -----------------------------------------------------------------------
+
+const markerComment = (marker, key) => {
+  if (key) {
+    return ` ${marker} key="${escape(key)}" `;
+  } else {
+    return ` ${marker} `;
+  }
+};
 
 /** Our reconciler is written in such a way that it can work without modification
  *  both in typical client-side Lustre apps like SPAs and client components, but

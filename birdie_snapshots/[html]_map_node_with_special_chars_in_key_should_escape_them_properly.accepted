@@ -1,0 +1,8 @@
+---
+version: 1.4.1
+title: [html] Map node with special chars in key should escape them properly
+---
+<!-- lustre:map key="key-with-&lt;&gt;&amp;&quot;" -->
+  <div data-lustre-key="key-with-&lt;&gt;&amp;&quot;">
+    Hello
+  </div>
