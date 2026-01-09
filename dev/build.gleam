@@ -98,22 +98,3 @@ fn inject_script(script, src) {
 fn format_project() {
   shellout.command(run: "gleam", with: ["format"], in: ".", opt: [])
 }
-
-// ERROR HANDLING --------------------------------------------------------------
-
-pub type Error {
-  MissingEsbuild
-  ShelloutError(#(Int, String))
-  SimplifileError(simplifile.FileError)
-}
-
-fn try(
-  result: Result(a, e),
-  to_error: fn(e) -> Error,
-  then: fn(a) -> Result(b, Error),
-) -> Result(b, Error) {
-  case result {
-    Ok(value) -> then(value)
-    Error(error) -> Error(to_error(error))
-  }
-}
