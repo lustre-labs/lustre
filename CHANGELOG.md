@@ -13,6 +13,8 @@ request to fix it.
 
 ### Added
 
+- [lustre/attribute] Added the `datetime` attribute for specifying the value for a `<time>` element.
+- [lustre/attribute] Added the `cols` and `rows` attributes for use with `<textarea>` elements.
 - [lustre/element] Added the new `memo` element function for producing "memoised" or lazy elements.
 - [lustre/element] Added a new `Ref` type and the `ref` function for producing dependencies to be used in `memo`.
 - [lustre/element/mathml] Added element functions for constructing MathML elements.
