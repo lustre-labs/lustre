@@ -1,20 +1,34 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/process.{type Monitor, type Selector, type Subject}
 import gleam/json.{type Json}
-import gleam/list
-import gleam/otp/actor.{type Next, type StartError}
-import gleam/result
 import gleam/set.{type Set}
 import lustre/effect.{type Effect}
-import lustre/internals/constants
 import lustre/runtime/transport.{type ClientMessage, type ServerMessage}
 import lustre/vdom/cache.{type Cache}
-import lustre/vdom/diff.{diff}
 import lustre/vdom/vnode.{type Element}
+
+@target(erlang)
+import gleam/dynamic.{type Dynamic}
+@target(erlang)
+import gleam/function
+@target(erlang)
+import gleam/list
+@target(erlang)
+import gleam/option
+@target(erlang)
+import gleam/otp/actor.{type Next, type StartError}
+@target(erlang)
+import gleam/result
+@target(erlang)
+import lustre/internals/constants
+@target(erlang)
+import lustre/vdom/diff.{diff}
+
+@target(javascript)
+import gleam/otp/actor.{type StartError}
 
 // STATE -----------------------------------------------------------------------
 
@@ -52,57 +66,65 @@ pub type Config(msg) {
   )
 }
 
-@external(javascript, "../client/runtime.ffi.mjs", "throw_server_component_error")
+@target(erlang)
 pub fn start(
+  name: option.Option(process.Name(Message(msg))),
   init: #(model, Effect(msg)),
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
   config: Config(msg),
-) -> Result(Subject(Message(msg)), StartError) {
-  let result =
-    actor.new_with_initialiser(1000, fn(self) {
-      let vdom = view(init.0)
-      let cache = cache.from_node(vdom)
-      let base_selector =
-        process.new_selector()
-        |> process.select(self)
-        |> process.select_monitors(fn(down) {
-          MonitorReportedDown(down.monitor)
-        })
+) -> Result(actor.Started(Subject(Message(msg))), StartError) {
+  actor.new_with_initialiser(1000, fn(self) {
+    let vdom = view(init.0)
+    let cache = cache.from_node(vdom)
+    let base_selector =
+      process.new_selector()
+      |> process.select(self)
+      |> process.select_monitors(fn(down) { MonitorReportedDown(down.monitor) })
 
-      let state =
-        State(
-          self:,
-          selector: base_selector,
-          base_selector:,
-          //
-          model: init.0,
-          update:,
-          view:,
-          config:,
-          //
-          vdom:,
-          cache:,
-          providers: dict.new(),
-          //
-          subscribers: dict.new(),
-          callbacks: set.new(),
-        )
+    let state =
+      State(
+        self:,
+        selector: base_selector,
+        base_selector:,
+        //
+        model: init.0,
+        update:,
+        view:,
+        config:,
+        //
+        vdom:,
+        cache:,
+        providers: dict.new(),
+        //
+        subscribers: dict.new(),
+        callbacks: set.new(),
+      )
 
-      handle_effect(self, init.1)
+    handle_effect(self, init.1)
 
-      actor.initialised(state)
-      |> actor.selecting(base_selector)
-      |> actor.returning(self)
-      |> Ok
-    })
-    |> actor.on_message(loop)
-    |> actor.start
-
-  case result {
-    Ok(started) -> Ok(started.data)
-    Error(error) -> Error(error)
+    actor.initialised(state)
+    |> actor.selecting(base_selector)
+    |> actor.returning(self)
+    |> Ok
+  })
+  |> actor.on_message(loop)
+  |> case name {
+    option.Some(name) -> actor.named(_, name)
+    option.None -> function.identity
   }
+  |> actor.start
+}
+
+@target(javascript)
+pub fn start(
+  _,
+  _,
+  _,
+  _,
+  _,
+) -> Result(actor.Started(Subject(Message(msg))), StartError) {
+  Error(actor.InitFailed("Not Erlang"))
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -124,7 +146,7 @@ pub type Message(msg) {
   SystemRequestedShutdown
 }
 
-@external(javascript, "../client/runtime.ffi.mjs", "throw_server_component_error")
+@target(erlang)
 fn loop(
   state: State(model, msg),
   message: Message(msg),
@@ -135,7 +157,7 @@ fn loop(
       let diff = diff(state.cache, state.vdom, next.vdom)
 
       let msg = transport.reconcile(diff.patch, cache.memos(diff.cache))
-      broadcast(state.subscribers, state.callbacks, msg)
+      let _ = broadcast(state.subscribers, state.callbacks, msg)
 
       actor.continue(State(..next, cache: diff.cache))
     }
@@ -223,13 +245,18 @@ fn loop(
       handle_effect(state.self, effect)
 
       let msg = transport.reconcile(diff.patch, cache.memos(diff.cache))
-      broadcast(state.subscribers, state.callbacks, msg)
+      let _ = broadcast(state.subscribers, state.callbacks, msg)
 
       actor.continue(State(..state, model:, vdom:, cache: diff.cache))
     }
 
     EffectEmitEvent(name:, data:) -> {
-      broadcast(state.subscribers, state.callbacks, transport.emit(name, data))
+      let _ =
+        broadcast(
+          state.subscribers,
+          state.callbacks,
+          transport.emit(name, data),
+        )
 
       actor.continue(state)
     }
@@ -239,12 +266,13 @@ fn loop(
         // we do not need to broadcast an update if the provided value is the same.
         Ok(old_value) if old_value == value -> state.providers
 
-        _ -> {
-          broadcast(
-            state.subscribers,
-            state.callbacks,
-            transport.provide(key, value),
-          )
+        Ok(_) | Error(_) -> {
+          let _ =
+            broadcast(
+              state.subscribers,
+              state.callbacks,
+              transport.provide(key, value),
+            )
 
           dict.insert(state.providers, key, value)
         }
@@ -261,15 +289,17 @@ fn loop(
     }
 
     SystemRequestedShutdown -> {
-      dict.each(state.subscribers, fn(_, monitor) {
-        process.demonitor_process(monitor)
-      })
+      let _ =
+        dict.each(state.subscribers, fn(_, monitor) {
+          process.demonitor_process(monitor)
+        })
 
       actor.stop()
     }
   }
 }
 
+@target(erlang)
 fn handle_client_message(
   state: State(model, msg),
   message: ServerMessage,
@@ -338,6 +368,7 @@ fn handle_client_message(
   }
 }
 
+@target(erlang)
 fn handle_attribute_change(
   attributes: Dict(String, fn(String) -> Result(msg, Nil)),
   name: String,
@@ -349,6 +380,7 @@ fn handle_attribute_change(
   }
 }
 
+@target(erlang)
 fn handle_property_change(
   properties: Dict(String, Decoder(msg)),
   name: String,
@@ -360,7 +392,7 @@ fn handle_property_change(
   }
 }
 
-@external(javascript, "../client/runtime.ffi.mjs", "throw_server_component_error")
+@target(erlang)
 fn handle_effect(self: Subject(Message(msg)), effect: Effect(msg)) -> Nil {
   let send = process.send(self, _)
   let dispatch = fn(message) { send(EffectDispatchedMessage(message:)) }
@@ -379,12 +411,14 @@ fn handle_effect(self: Subject(Message(msg)), effect: Effect(msg)) -> Nil {
   effect.perform(effect, dispatch, emit, select, internals, provide)
 }
 
-@external(javascript, "../client/runtime.ffi.mjs", "throw_server_component_error")
+@target(erlang)
 fn broadcast(
   clients: Dict(Subject(ClientMessage(msg)), Monitor),
   callbacks: Set(fn(ClientMessage(msg)) -> Nil),
   message: ClientMessage(msg),
 ) -> Nil {
-  dict.each(clients, fn(client, _) { process.send(client, message) })
-  set.each(callbacks, fn(callback) { callback(message) })
+  let _ = dict.each(clients, fn(client, _) { process.send(client, message) })
+  let _ = set.each(callbacks, fn(callback) { callback(message) })
+
+  Nil
 }
