@@ -2,7 +2,7 @@
 pub type Ref
 
 ///
-@external(erlang, "erlang", "phash2")
+@external(erlang, "gleam@function", "identity")
 @external(javascript, "../../../gleam_stdlib/gleam/function.mjs", "identity")
 pub fn from(value: a) -> Ref
 
