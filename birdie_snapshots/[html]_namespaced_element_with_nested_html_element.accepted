@@ -1,0 +1,11 @@
+---
+version: 1.5.3
+title: [html] Namespaced element with nested html element
+---
+<svg xmlns="http://www.w3.org/2000/svg">
+  <foreignObject>
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <p></p>
+    </div>
+  </foreignObject>
+</svg>

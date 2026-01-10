@@ -5,6 +5,8 @@ import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/element/keyed
+import lustre/element/mathml
+import lustre/element/svg
 import lustre/vdom/vnode
 import lustre_test
 
@@ -403,6 +405,45 @@ pub fn default_selected_attribute_test() {
   |> snapshot(
     "Default selected attribute should be rendered as selected attribute",
   )
+}
+
+// NAMESPACE TESTS -------------------------------------------------------------
+
+pub fn namespaced_nesting_same_test() {
+  use <- lustre_test.test_filter("namespaced_nesting_same_test")
+
+  let input = html.svg([], [svg.circle([])])
+
+  input |> snapshot("Namespaced element nested in same namespace")
+}
+
+pub fn namespaced_nesting_different_test() {
+  use <- lustre_test.test_filter("namespaced_nesting_different_test")
+
+  let input =
+    html.svg([], [
+      svg.foreign_object([], [
+        html.math([], [
+          mathml.annotation([], []),
+        ]),
+      ]),
+    ])
+
+  input |> snapshot("Namespaced element nested in different namespace")
+}
+
+pub fn namespaced_nesting_default_html_test() {
+  use <- lustre_test.test_filter("namespaced_nesting_default_html_test")
+
+  let input =
+    html.svg([], [
+      svg.foreign_object([], [
+        html.div([], [html.p([], [])]),
+      ]),
+    ])
+
+  input
+  |> snapshot("Namespaced element with nested html element")
 }
 
 // UTILS -----------------------------------------------------------------------

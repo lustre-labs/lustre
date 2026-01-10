@@ -1,0 +1,7 @@
+---
+version: 1.5.3
+title: [html] Namespaced element nested in same namespace
+---
+<svg xmlns="http://www.w3.org/2000/svg">
+  <circle></circle>
+</svg>
