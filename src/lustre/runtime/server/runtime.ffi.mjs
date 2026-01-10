@@ -1,4 +1,10 @@
-import { Result$Ok, Result$Ok$0, Result$isOk } from "../../../gleam.mjs";
+import {
+  Result$Ok,
+  Result$Ok$0,
+  Result$isOk,
+  List$NonEmpty$rest,
+  List$NonEmpty$first,
+} from "../../../gleam.mjs";
 import * as Decode from "../../../../gleam_stdlib/gleam/dynamic/decode.mjs";
 import * as Dict from "../../../../gleam_stdlib/gleam/dict.mjs";
 import * as Diff from "../../vdom/diff.mjs";
