@@ -289,11 +289,14 @@ fn map_to_json(kind, key, child, memos) {
 
 pub fn to_string(node: Element(msg)) -> String {
   node
-  |> to_string_tree
+  |> to_string_tree("")
   |> string_tree.to_string
 }
 
-pub fn to_string_tree(node: Element(msg)) -> StringTree {
+pub fn to_string_tree(
+  node: Element(msg),
+  parent_namespace: String,
+) -> StringTree {
   case node {
     Text(content: "", ..) -> string_tree.new()
     Text(content:, ..) -> string_tree.from_string(houdini.escape(content))
@@ -302,7 +305,8 @@ pub fn to_string_tree(node: Element(msg)) -> StringTree {
       if self_closing
     -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = vattr.to_string_tree(key, namespace, attributes)
+      let attributes =
+        vattr.to_string_tree(key, namespace, parent_namespace, attributes)
 
       html
       |> string_tree.append_tree(attributes)
@@ -311,7 +315,8 @@ pub fn to_string_tree(node: Element(msg)) -> StringTree {
 
     Element(key:, namespace:, tag:, attributes:, void:, ..) if void -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = vattr.to_string_tree(key, namespace, attributes)
+      let attributes =
+        vattr.to_string_tree(key, namespace, parent_namespace, attributes)
 
       html
       |> string_tree.append_tree(attributes)
@@ -320,18 +325,20 @@ pub fn to_string_tree(node: Element(msg)) -> StringTree {
 
     Element(key:, namespace:, tag:, attributes:, children:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = vattr.to_string_tree(key, namespace, attributes)
+      let attributes =
+        vattr.to_string_tree(key, namespace, parent_namespace, attributes)
 
       html
       |> string_tree.append_tree(attributes)
       |> string_tree.append(">")
-      |> children_to_string_tree(children)
+      |> children_to_string_tree(children, namespace)
       |> string_tree.append("</" <> tag <> ">")
     }
 
     UnsafeInnerHtml(key:, namespace:, tag:, attributes:, inner_html:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = vattr.to_string_tree(key, namespace, attributes)
+      let attributes =
+        vattr.to_string_tree(key, namespace, parent_namespace, attributes)
 
       html
       |> string_tree.append_tree(attributes)
@@ -342,18 +349,18 @@ pub fn to_string_tree(node: Element(msg)) -> StringTree {
 
     Fragment(key:, children:, ..) -> {
       marker_comment("lustre:fragment", key)
-      |> children_to_string_tree(children)
+      |> children_to_string_tree(children, parent_namespace)
       |> string_tree.append_tree(marker_comment("/lustre:fragment", ""))
     }
 
     Map(key:, child:, ..) -> {
       marker_comment("lustre:map", key)
-      |> string_tree.append_tree(to_string_tree(child))
+      |> string_tree.append_tree(to_string_tree(child, parent_namespace))
     }
 
     Memo(key:, view:, ..) -> {
       marker_comment("lustre:memo", key)
-      |> string_tree.append_tree(to_string_tree(view()))
+      |> string_tree.append_tree(to_string_tree(view(), parent_namespace))
     }
   }
 }
@@ -361,35 +368,36 @@ pub fn to_string_tree(node: Element(msg)) -> StringTree {
 fn children_to_string_tree(
   html: StringTree,
   children: List(Element(msg)),
+  namespace: String,
 ) -> StringTree {
   use html, child <- list.fold(children, html)
-  string_tree.append_tree(html, to_string_tree(child))
+  string_tree.append_tree(html, to_string_tree(child, namespace))
 }
 
 pub fn to_snapshot(node: Element(msg), debug: Bool) -> String {
-  node
-  |> do_to_snapshot_builder(False, debug, 0)
+  do_to_snapshot_builder(node:, raw: False, debug:, namespace: "", indent: 0)
   |> string_tree.to_string
 }
 
 fn do_to_snapshot_builder(
-  node: Element(msg),
-  raw_text: Bool,
-  debug: Bool,
-  indent: Int,
+  node node: Element(msg),
+  raw raw: Bool,
+  debug debug: Bool,
+  namespace parent_namespace: String,
+  indent indent: Int,
 ) -> StringTree {
   let spaces = string.repeat("  ", indent)
 
   case node {
     Text(content: "", ..) -> string_tree.new()
-    Text(content:, ..) if raw_text ->
-      string_tree.from_strings([spaces, content])
+    Text(content:, ..) if raw -> string_tree.from_strings([spaces, content])
     Text(content:, ..) ->
       string_tree.from_strings([spaces, houdini.escape(content)])
 
     Element(key:, namespace:, tag:, attributes:, self_closing: True, ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = vattr.to_string_tree(key, namespace, attributes)
+      let attributes =
+        vattr.to_string_tree(key, namespace, parent_namespace, attributes)
 
       html
       |> string_tree.prepend(spaces)
@@ -399,7 +407,8 @@ fn do_to_snapshot_builder(
 
     Element(key:, namespace:, tag:, attributes:, void: True, ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = vattr.to_string_tree(key, namespace, attributes)
+      let attributes =
+        vattr.to_string_tree(key, namespace, parent_namespace, attributes)
 
       html
       |> string_tree.prepend(spaces)
@@ -409,7 +418,8 @@ fn do_to_snapshot_builder(
 
     Element(key:, namespace:, tag:, attributes:, children: [], ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = vattr.to_string_tree(key, namespace, attributes)
+      let attributes =
+        vattr.to_string_tree(key, namespace, parent_namespace, attributes)
 
       html
       |> string_tree.prepend(spaces)
@@ -420,19 +430,27 @@ fn do_to_snapshot_builder(
 
     Element(key:, namespace:, tag:, attributes:, children:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = vattr.to_string_tree(key, namespace, attributes)
+      let attributes =
+        vattr.to_string_tree(key, namespace, parent_namespace, attributes)
       html
       |> string_tree.prepend(spaces)
       |> string_tree.append_tree(attributes)
       |> string_tree.append(">\n")
-      |> children_to_snapshot_builder(children, raw_text, debug, indent + 1)
+      |> children_to_snapshot_builder(
+        children:,
+        raw:,
+        debug:,
+        namespace:,
+        indent: indent + 1,
+      )
       |> string_tree.append(spaces)
       |> string_tree.append("</" <> tag <> ">")
     }
 
     UnsafeInnerHtml(key:, namespace:, tag:, attributes:, inner_html:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
-      let attributes = vattr.to_string_tree(key, namespace, attributes)
+      let attributes =
+        vattr.to_string_tree(key, namespace, parent_namespace, attributes)
 
       html
       |> string_tree.prepend(spaces)
@@ -446,18 +464,25 @@ fn do_to_snapshot_builder(
       marker_comment("lustre:fragment", key)
       |> string_tree.prepend(spaces)
       |> string_tree.append("\n")
-      |> children_to_snapshot_builder(children, raw_text, debug, indent + 1)
+      |> children_to_snapshot_builder(
+        children:,
+        raw:,
+        debug:,
+        namespace: parent_namespace,
+        indent: indent + 1,
+      )
       |> string_tree.append(spaces)
       |> string_tree.append_tree(marker_comment("/lustre:fragment", ""))
     }
 
     Fragment(children:, ..) ->
       children_to_snapshot_builder(
-        string_tree.new(),
-        children,
-        raw_text,
-        debug,
-        indent,
+        html: string_tree.new(),
+        children: children,
+        raw: raw,
+        debug: debug,
+        namespace: parent_namespace,
+        indent: indent,
       )
 
     Map(key:, child:, ..) if debug -> {
@@ -465,54 +490,78 @@ fn do_to_snapshot_builder(
       |> string_tree.prepend(spaces)
       |> string_tree.append("\n")
       |> string_tree.append_tree(do_to_snapshot_builder(
-        child,
-        raw_text,
-        debug,
-        indent + 1,
+        node: child,
+        raw:,
+        debug:,
+        namespace: parent_namespace,
+        indent: indent + 1,
       ))
     }
 
-    Map(child:, ..) -> do_to_snapshot_builder(child, raw_text, debug, indent)
+    Map(child:, ..) ->
+      do_to_snapshot_builder(
+        node: child,
+        raw:,
+        debug:,
+        namespace: parent_namespace,
+        indent:,
+      )
 
     Memo(key:, view:, ..) if debug -> {
       marker_comment("lustre:memo", key)
       |> string_tree.prepend(spaces)
       |> string_tree.append("\n")
       |> string_tree.append_tree(do_to_snapshot_builder(
-        view(),
-        raw_text,
-        debug,
-        indent + 1,
+        node: view(),
+        raw:,
+        debug:,
+        namespace: parent_namespace,
+        indent: indent + 1,
       ))
     }
 
-    Memo(view:, ..) -> do_to_snapshot_builder(view(), raw_text, debug, indent)
+    Memo(view:, ..) ->
+      do_to_snapshot_builder(
+        node: view(),
+        raw:,
+        debug:,
+        namespace: parent_namespace,
+        indent:,
+      )
   }
 }
 
 fn children_to_snapshot_builder(
-  html: StringTree,
-  children: List(Element(msg)),
-  raw_text: Bool,
-  debug: Bool,
-  indent: Int,
+  html html: StringTree,
+  children children: List(Element(msg)),
+  raw raw: Bool,
+  debug debug: Bool,
+  namespace namespace: String,
+  indent indent: Int,
 ) -> StringTree {
   case children {
     [Text(content: a, ..), Text(content: b, ..), ..rest] ->
       children_to_snapshot_builder(
-        html,
-        [Text(kind: text_kind, key: "", content: a <> b), ..rest],
-        raw_text,
-        debug,
-        indent,
+        html:,
+        children: [Text(kind: text_kind, key: "", content: a <> b), ..rest],
+        raw:,
+        debug:,
+        namespace:,
+        indent:,
       )
 
     [child, ..rest] ->
       child
-      |> do_to_snapshot_builder(raw_text, debug, indent)
+      |> do_to_snapshot_builder(raw:, debug:, namespace:, indent:)
       |> string_tree.append("\n")
       |> string_tree.prepend_tree(html)
-      |> children_to_snapshot_builder(rest, raw_text, debug, indent)
+      |> children_to_snapshot_builder(
+        children: rest,
+        raw:,
+        debug:,
+        namespace:,
+        indent:,
+      )
 
     [] -> html
   }

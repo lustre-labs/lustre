@@ -294,7 +294,7 @@ pub fn to_document_string(el: Element(msg)) -> String {
 /// use case and we'll see what we can do!
 ///
 pub fn to_string_tree(element: Element(msg)) -> StringTree {
-  vnode.to_string_tree(element)
+  vnode.to_string_tree(element, "")
 }
 
 /// Converts an element to a `StringTree` like [`to_string_builder`](#to_string_builder),
@@ -305,12 +305,15 @@ pub fn to_string_tree(element: Element(msg)) -> StringTree {
 /// a `html` and `body` element.
 ///
 pub fn to_document_string_tree(el: Element(msg)) -> StringTree {
-  vnode.to_string_tree(case el {
-    Element(tag: "html", ..) -> el
-    Element(tag: "head", ..) | Element(tag: "body", ..) ->
-      element("html", [], [el])
-    _ -> element("html", [], [element("body", [], [el])])
-  })
+  vnode.to_string_tree(
+    case el {
+      Element(tag: "html", ..) -> el
+      Element(tag: "head", ..) | Element(tag: "body", ..) ->
+        element("html", [], [el])
+      _ -> element("html", [], [element("body", [], [el])])
+    },
+    "",
+  )
   |> string_tree.prepend("<!doctype html>\n")
 }
 

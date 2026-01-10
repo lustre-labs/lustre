@@ -231,14 +231,22 @@ fn event_behaviour_to_json_builder(
 pub fn to_string_tree(
   key: String,
   namespace: String,
+  parent_namespace: String,
   attributes: List(Attribute(msg)),
 ) -> StringTree {
   let attributes = case key != "" {
     True -> [attribute("data-lustre-key", key), ..attributes]
     False -> attributes
   }
-  let attributes = case namespace != "" {
+
+  let attributes = case namespace != parent_namespace {
+    True if namespace == "" -> [
+      attribute("xmlns", "http://www.w3.org/1999/xhtml"),
+      ..attributes
+    ]
+
     True -> [attribute("xmlns", namespace), ..attributes]
+
     False -> attributes
   }
 
