@@ -15,6 +15,7 @@ internal_modules = ["lustre/internals/*", "lustre/runtime/*", "lustre/vdom/*"]
 [documentation]
 pages = [
     { title = "Announcements", path = "announcements.html", source = "./pages/announcements/index.md" },
+    { title = "", path = "announcements/2026-01-10.html", source = "./pages/announcements/2026-01-10.md" },
     { title = "", path = "announcements/2025-04-19.html", source = "./pages/announcements/2025-04-19.md" },
     { title = "", path = "announcements/2025-05-18.html", source = "./pages/announcements/2025-05-18.md" },
     { title = "", path = "announcements/2025-06-23.html", source = "./pages/announcements/2025-06-23.md" },
