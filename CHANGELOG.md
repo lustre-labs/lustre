@@ -13,6 +13,9 @@ request to fix it.
 
 ### Added
 
+- [lustre] The `name` function can now be used to give a `Name` to server components so they can be communicated with even if restarted by a supervisor.
+- [lustre] The `supervised` function has been added to create a child specification suitable for gleam/otp's static supervisor.
+- [lustre] Added the `factory` function to create gleam/otp factory supervisors capable of dynamically starting many instances of a server component.
 - [lustre/attribute] Added the `datetime` attribute for specifying the value for a `<time>` element.
 - [lustre/attribute] Added the `cols` and `rows` attributes for use with `<textarea>` elements.
 - [lustre/element] Added the new `memo` element function for producing "memoised" or lazy elements.
