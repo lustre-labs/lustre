@@ -1459,12 +1459,18 @@ pub fn scope(value: String) -> Attribute(msg) {
 
 // TIME ATTRIBUTES -------------------------------------------------------------
 
-/// indicates the time and/or date of the time element
-/// It may represent one of the following:
-/// 
-/// - A time on a 24-hour clock.
-/// - A precise date in the Gregorian calendar (with optional time and timezone information).
-/// - A valid time duration.
+/// Indicates the time and/or date of a `<time>` element. Values may be one of
+/// the following formats:
+///
+/// | Description                       | Syntax                                                                                                                                     | Examples                                                                                                                                   |
+/// |-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+/// | Valid month string                | `YYYY-MM`                                                                                                                                  | `2011-11`, `2013-05`                                                                                                                       |
+/// | Valid date string                 | `YYYY-MM-DD`                                                                                                                               | `1887-12-01`                                                                                                                               |
+/// | Valid local date and time string  | `YYYY-MM-DD HH:MM`, `YYYY-MM-DD HH:MM:SS`, `YYYY-MM-DD HH:MM:SS.mmm`, `YYYY-MM-DDTHH:MM`, `YYYY-MM-DDTHH:MM:SS`, `YYYY-MM-DDTHH:MM:SS.mmm` | `2013-12-25 11:12`, `1972-07-25 13:43:07`, `1941-03-15 07:06:23.678`, `2013-12-25T11:12`, `1972-07-25T13:43:07`, `1941-03-15T07:06:23.678` |
+/// | Valid global date and time string | A valid local date and time string followed by a valid time-zone offset string                                                             | `2013-12-25 11:12+0200`, `1972-07-25 13:43:07+04:30`, `1941-03-15 07:06:23.678Z`, `2013-12-25T11:12-08:00`                                 |
+/// | Valid week string                 | `YYYY-WWW`                                                                                                                                 | `2013-W46`                                                                                                                                 |
+///
+/// A comprehensive list of valid formats can be found on [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/time#valid_datetime_values).
 ///
 pub fn datetime(value: String) -> Attribute(msg) {
   attribute("datetime", value)
