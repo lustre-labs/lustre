@@ -1,5 +1,9 @@
 # Announcements
 
+- [2026-01-10](./announcements/2026-01-10.html):
+  The release of Lustre v5.5.0 brings a performance-focused api with `element.memo`
+  and better integration with `gleam/otp`.
+
 - [2025-10-05](./announcements/2025-10-05.html):
   Lustre_dev_tools v2.0.0 released! This new release brings new TOML-based
   configuration, clearer handling of HTML and static assets, and easier onboarding
