@@ -31,6 +31,8 @@ import {
 
 import { separator_element, separator_subtree } from "./path.mjs";
 
+import { iterate } from "../internals/list.ffi.mjs";
+
 import {
   document,
   SUPPORTS_MOVE_BEFORE,
@@ -617,31 +619,6 @@ const markerComment = (marker, key) => {
     return ` ${marker} key="${escape(key)}" `;
   } else {
     return ` ${marker} `;
-  }
-};
-
-/** Our reconciler is written in such a way that it can work without modification
- *  both in typical client-side Lustre apps like SPAs and client components, but
- *  also in the server component runtime.
- *
- *  This is notable because the typical client runtimes are working directly with
- *  Gleam values, but the server component runtime is working with deserialised
- *  JSON.
- *
- *  The most immediate discrepancy is that Gleam uses linked lists but of course
- *  these are serialised as arrays in JSON. This function lets us iterate over
- *  both kinds of collection without dropping into Gleam's slow list iterator.
- *
- */
-const iterate = (list, callback) => {
-  if (Array.isArray(list)) {
-    for (let i = 0; i < list.length; i++) {
-      callback(list[i]);
-    }
-  } else if (list) {
-    for (list; list.head; list = list.tail) {
-      callback(list.head);
-    }
   }
 };
 

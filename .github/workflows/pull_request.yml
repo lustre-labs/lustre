@@ -18,7 +18,7 @@ jobs:
         with:
           otp-version: "27.0"
           rebar3-version: "3"
-          gleam-version: "1.13.0"
+          gleam-version: "1.14.0"
 
       - name: Check formatting
         run: gleam format --check
