@@ -19,7 +19,10 @@ request to fix it.
 
 ### Changed
 
+- [lustre] Internal JavaScript FFI use has been migrated to Gleam's stable FFI API. 
 - [lustre/component] Fixed a bug where the `clear_form_value` effect referenced an undefined variable.
+- [lustre/element] Rendering an element to a string no longer emits `xmlns` attributes on children that match their parent's namespace.
+- [lustre/element] HTML content inside an SVG `<foreignObject>` element will correctly include the XHTML namespace when rendered to a string. 
 - [lustre/runtime] Add the ability to virtualise server-rendered fragments, map, and memo nodes.
 
 ## [v5.4.0] - 2025-11-01
