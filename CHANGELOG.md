@@ -9,7 +9,15 @@ Changelogs can change! If you spot something is wrong or missing, please conside
 [opening an issue](https://github.com/lustre-labs/lustre/issues/new) or a pull
 request to fix it.
 
-## [Unreleased]
+## Unreleased
+
+## [v5.5.1] - 2026-01-10
+
+### Changed
+
+- [lustre] Fixed a missing import in internal JavaScript FFI.
+
+## [v5.5.0] - 2026-01-10
 
 ### Added
 
