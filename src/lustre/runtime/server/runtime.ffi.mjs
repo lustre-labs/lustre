@@ -28,7 +28,7 @@ import {
   ServerMessage$isEventFired,
   ServerMessage$isContextProvided,
 } from "../transport.mjs";
-import { iterate } from "../../internals/list.ffi.mjs";
+import { iterate, toList } from "../../internals/list.ffi.mjs";
 
 //
 
@@ -132,13 +132,26 @@ export class Runtime {
   #handle_client_message(msg) {
     if (ServerMessage$isBatch(msg)) {
       const { messages } = msg;
+      let model = this.#model;
+      let effect = Effect.none();
 
-      let view = this.#vdom;
-      iterate(messages, (message) => {
-        view = this.#handle_client_message(message);
-      });
+      for (
+        let list = messages;
+        List$NonEmpty$rest(list);
+        list = List$NonEmpty$rest(list)
+      ) {
+        const result = this.#handle_client_message(List$NonEmpty$first(list));
+        if (Result$isOk(result)) {
+          model = Result$Ok$0(result)[0];
+          effect = Effect.batch(toList([effect, Result$Ok$0(result)[1]]));
+          break;
+        }
+      }
 
-      return view;
+      this.#handle_effect(effect);
+      this.#model = model;
+
+      return this.#view(model);
     } else if (ServerMessage$isAttributeChanged(msg)) {
       const { name, value } = msg;
       const result = this.#handle_attribute_change(name, value);
@@ -160,7 +173,6 @@ export class Runtime {
       const [cache, result] = Cache.handle(this.#cache, path, name, event);
 
       this.#cache = cache;
-
       if (!Result$isOk(result)) {
         return this.#vdom;
       }
