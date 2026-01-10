@@ -158,8 +158,11 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/bool
+import gleam/erlang/process.{type Name, type Subject}
+import gleam/option
 import gleam/otp/actor
-import gleam/result
+import gleam/otp/factory_supervisor.{type Builder}
+import gleam/otp/supervision.{type ChildSpecification}
 import lustre/component.{type Config, type Option}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -192,6 +195,7 @@ import lustre/runtime/server/runtime
 ///
 pub opaque type App(start_args, model, msg) {
   App(
+    name: option.Option(Name(RuntimeMessage(msg))),
     init: fn(start_args) -> #(model, Effect(msg)),
     update: fn(model, msg) -> #(model, Effect(msg)),
     view: fn(model) -> Element(msg),
@@ -283,7 +287,9 @@ pub fn application(
   update update: fn(model, msg) -> #(model, Effect(msg)),
   view view: fn(model) -> Element(msg),
 ) -> App(start_args, model, msg) {
-  App(init, update, view, component.new(constants.empty_list))
+  App(name: option.None, init:, update:, view:, config: {
+    component.new(constants.empty_list)
+  })
 }
 
 /// A `component` is a type of Lustre application designed to be embedded within
@@ -310,7 +316,27 @@ pub fn component(
   view view: fn(model) -> Element(msg),
   options options: List(Option(msg)),
 ) -> App(start_args, model, msg) {
-  App(init, update, view, component.new(options))
+  App(name: option.None, init:, update:, view:, config: component.new(options))
+}
+
+/// Assign a [`Name`](https://hexdocs.pm/gleam_erlang/gleam/erlang/process.html#Name)
+/// to a Lustre application. This is useful for [_supervised_](#supervised) server
+/// components as it allows other processes to find and communicate with the
+/// runtime even if it is restarted.
+///
+/// > **Note**: names must **never** be created dynamically as too many names
+/// > will exhaust the atom table and cause the VM to crash. Names should be
+/// > created at the start of your program and passed down where needed.
+///
+/// > **Note**: a named application should **never** be used to create a
+/// > [factory supervisor](#factory) as only one process can be registered under
+/// > a given name.
+///
+pub fn named(
+  app: App(start_args, model, msg),
+  name: Name(RuntimeMessage(msg)),
+) -> App(start_args, model, msg) {
+  App(..app, name: option.Some(name))
 }
 
 // RUNTIME ---------------------------------------------------------------------
@@ -347,28 +373,85 @@ fn do_start(
 }
 
 /// Start an application as a server component. This runs in a headless mode and
-/// doesn't render anything to the DOM. Instead, multiple clients can be attached
-/// using the [`add_renderer`](#add_renderer) action.
+/// doesn't render anything to the DOM. Instead, clients must be connected to the
+/// server component through [`register_callback`](./lustre/server_component.html#register_callback)
+/// or [`register_subject`](./lustre/server_component.html#register_subject) to
+/// receive patches and updates.
 ///
-/// If a server component starts successfully, this function will return a callback
-/// that can be used to send actions to the component runtime.
+/// If a server component starts successfully, this function will return a
+/// [`Runtime`](#Runtime) that can be used to send messages to the running application
+/// using the [`send`](#send) function.
 ///
 /// A server component will keep running until the program is terminated or the
 /// [`shutdown`](#shutdown) action is sent to it.
+///
+/// > **Note**: applications targeting Erlang should strongly prefer the
+/// > [`supervised`](#supervised) or [`factory`](#factory) functions to ensure
+/// > proper supervision and fault-tolerance.
+///
+/// On the Erlang target, the runtime's [`Subject`](https://hexdocs.pm/gleam_erlang/gleam/erlang/process.html#Subject)
+/// and [`Pid`](https://hexdocs.pm/gleam_erlang/gleam/erlang/process.html#Pid)
+/// can be recovered using [`server_component.subject`](./lustre/server_component.html#subject)
+/// and [`server_component.pid`](./lustre/server_component.html#pid) respectively.
 ///
 @external(javascript, "./lustre/runtime/server/runtime.ffi.mjs", "start")
 pub fn start_server_component(
   app: App(start_args, model, msg),
   with start_args: start_args,
 ) -> Result(Runtime(msg), Error) {
-  app.init(start_args)
-  |> runtime.start(
+  let result =
+    runtime.start(
+      app.name,
+      app.init(start_args),
+      app.update,
+      app.view,
+      component.to_server_component_config(app.config),
+    )
+
+  case result {
+    Ok(actor.Started(data: subject, ..)) -> Ok(hide_subject(subject))
+    Error(error) -> Error(ActorError(error))
+  }
+}
+
+/// Create a server component child specification suitable for supervision in a
+/// [static supervisor](https://hexdocs.pm/gleam_otp/gleam/otp/static_supervisor.html).
+/// This is the preferred way of starting Lustre server components on the Erlang
+/// target.
+///
+pub fn supervised(
+  app: App(start_arguments, model, msg),
+  start_arguments: start_arguments,
+) -> ChildSpecification(Subject(RuntimeMessage(msg))) {
+  use <- supervision.worker
+
+  runtime.start(
+    app.name,
+    app.init(start_arguments),
     app.update,
     app.view,
     component.to_server_component_config(app.config),
   )
-  |> result.map(coerce)
-  |> result.map_error(ActorError)
+}
+
+/// Create a [factory supervisor](https://hexdocs.pm/gleam_otp/gleam/otp/factory_supervisor.html)
+/// capable of starting many instances of a Lustre server component dynamically.
+/// Along with [`supervised`](#supervised), this is one of the ways to ensure
+/// proper supervision and fault-tolerance for Lustre server components on the
+/// Erlang target.
+///
+pub fn factory(
+  app: App(start_arguments, model, msg),
+) -> Builder(start_arguments, Subject(RuntimeMessage(msg))) {
+  use start_arguments <- factory_supervisor.worker_child
+
+  runtime.start(
+    app.name,
+    app.init(start_arguments),
+    app.update,
+    app.view,
+    component.to_server_component_config(app.config),
+  )
 }
 
 /// Register a Lustre application as a Web Component. This lets you render that
@@ -411,7 +494,7 @@ pub fn send(
 ) -> Nil
 
 /// Build a message for a running application's `update` function.
-/// 
+///
 /// This message can be delivered to the runtime using [`send`](#send), allowing
 /// communication with a Lustre app without having to use an effect.
 ///
@@ -454,4 +537,4 @@ pub fn is_registered(_name: String) -> Bool {
 
 @external(erlang, "gleam@function", "identity")
 @external(javascript, "../gleam_stdlib/gleam/function.mjs", "identity")
-fn coerce(value: a) -> b
+fn hide_subject(subject: Subject(RuntimeMessage(msg))) -> Runtime(msg)
