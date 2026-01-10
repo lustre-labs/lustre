@@ -65,12 +65,11 @@ import lustre/vdom/vnode.{Element}
 pub type Element(msg) =
   vnode.Element(msg)
 
-/// A Ref is an opaque handle to a value that can no longer be inspected,
-/// except to figure out if the 2 referenced values are definitely equal.
+/// `Ref`s are used as dependencies for memoised elements created using the
+/// [`memo`](#memo) function. They wrap arbitrary Gleam values and are used by
+/// Lustre to perform _reference equality_ checks to determine whether a memoised
+/// element needs to be re-rendered or not.
 ///
-/// Ref equality is cheaper to compute than term equality, but when 2
-/// references are not equal to each other, it does not imply that the
-/// referenced terms are different.
 pub type Ref =
   ref.Ref
 
@@ -214,32 +213,48 @@ pub fn unsafe_raw_html(
   vnode.unsafe_inner_html(key: "", namespace:, tag:, attributes:, inner_html:)
 }
 
-// MEMOIZATION -----------------------------------------------------------------
+// MEMOISATION -----------------------------------------------------------------
 
-/// A function constructing a "memoized" or "lazy" element. Lustre will use the
-/// values passed as dependencies to skip calling your view function if it can
-/// tell nothing has changed.
+/// A function for creating "memoised" or "lazy" elements. Lustre will use the
+/// dependencies list to skip calling the provided view function if all of the
+/// dependencies a _reference equal_ to their previous values.
 ///
-/// This can help Lustre optimise big but mostly static parts of your app.
-/// When it can tell the dependencies haven't changed, almost all of the work
-/// it typically has to do to update your view can be skipped.
+/// `memo` can be used to optimise performance-critical parts of your application,
+/// for example in cases where many instances of the same element are rendered but
+/// only one may change at a time, or cases where a part of your view may update
+/// very frequently but other parts remain largely static. When Lustre can tell
+/// that the dependencies haven't changed, almost all the work typically done to
+/// update the DOM can be skipped.
 ///
-/// > **Note:**: Memoization has overhead! For simple views, diffing is often
-/// > after without memoization.
+/// In many cases `memo` will not be necessary, so think twice before considering
+/// its use! Lustre is designed to handle rerenders and large vdom trees efficiently,
+/// so in most cases the naive approach of re-rendering everything will be perfectly
+/// fine.
 ///
-/// > **Note:** This is an optimisation only and does not guarantee when Lustre
-/// > will call your view function! It may decide to call it even if none of
-/// > your dependencies have changed.
+/// > **Note**: reference equality is not the same as Gleam's normal equality.
+/// > Two custom types with the same values are not reference equal unless they
+/// > are the exact same instance in memory! Because of this, it's important to
+/// > avoid list literals or constructing custom types in the dependencies list.
+///
+/// > **Note**: memoisation comes with its own trade-offs and can cause performance
+/// > regressions in two ways. First, every use of `memo` increases your application's
+/// > memory usage slightly, as Lustre needs to keep dependencies around to compare
+/// > them on subsequent renders. Second, if dependencies change regularly, the
+/// > overhead of comparing dependencies and managing memoisation may be more than
+/// > the naive cost of re-rendering the element each time.
 ///
 pub fn memo(dependencies: List(Ref), view: fn() -> Element(msg)) -> Element(msg) {
   vnode.memo(key: "", dependencies:, view:)
 }
 
-/// Create a `Ref` dependency value for memoization.
+/// Create a `Ref` dependency value used for [`memo`](#memo) elements.
 ///
 /// Lustre uses reference equality to compare dependencies. On JavaScript, values
-/// are compared using same-value-zero semantics. On Erlang, a heuristic based on
-/// term hashes is used.
+/// are compared using [same-value-zero](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Equality_comparisons_and_sameness#same-value-zero_equality)
+/// semantics. This means Lustre will treat `+0` and `-0` as equal, and any errant
+/// `NaN` values (which are not typically producible in Gleam code) as equal. On
+/// Erlang, there is no difference between reference equality and value equality,
+/// so all values are compared using normal equality semantics.
 ///
 pub fn ref(value: a) -> Ref {
   ref.from(value)
