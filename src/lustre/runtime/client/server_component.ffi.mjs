@@ -267,6 +267,12 @@ export class ServerComponent extends HTMLElement {
     }
 
     this.#contextSubscriptions.clear();
+
+    // Close the transport connection
+    if (this.#transport) {
+      this.#transport.close();
+      this.#transport = null;
+    }
   }
 
   // Context provider method
