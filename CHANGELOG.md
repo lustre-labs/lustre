@@ -11,6 +11,10 @@ request to fix it.
 
 ## Unreleased
 
+### Changed
+
+- [lustre/server_component] Fixed a bug where active connections in the client were not removed when the element is disconnected from the page.
+
 ## [v5.5.1] - 2026-01-10
 
 ### Changed
