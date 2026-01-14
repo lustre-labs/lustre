@@ -426,18 +426,30 @@ class WebsocketTransport {
   #waitingForResponse = false;
   #queue = [];
 
+  #shouldReconnect = true;
+  #reconnectDelay = 500;
+  #maxReconnectDelay = 10000;
+
   #onConnect;
   #onMessage;
   #onClose;
 
   constructor(url, { onConnect, onMessage, onClose }) {
     this.#url = url;
-    this.#socket = new WebSocket(this.#url);
     this.#onConnect = onConnect;
     this.#onMessage = onMessage;
     this.#onClose = onClose;
 
+    this.#connect();
+  }
+
+  #connect() {
+    this.#socket = new WebSocket(this.#url);
+    this.#shouldReconnect = true;
+    this.#queue = [];
+
     this.#socket.onopen = () => {
+      this.#reconnectDelay = 500;
       this.#onConnect();
     };
 
@@ -460,16 +472,51 @@ class WebsocketTransport {
       }
     };
 
-    this.#socket.onclose = () => {
+    this.#socket.onclose = (event) => {
       this.#onClose();
+
+      if (event.code !== 1000 && this.#shouldReconnect) {
+        this.#attemptReconnect();
+      }
     };
   }
 
+  #attemptReconnect() {
+    const reconnect = () => {
+      if (!this.#shouldReconnect) return;
+
+      this.#connect();
+
+      this.#reconnectDelay = Math.min(
+        this.#reconnectDelay * 2,
+        this.#maxReconnectDelay,
+      );
+    };
+
+    // If the document is hidden, attempt to reconnect as soon as it becomes
+    // visible again. If that fails we'll fall into the normal exponential backoff.
+    if (document.hidden) {
+      const handleVisibilityChange = () => {
+        if (!document.hidden && this.#shouldReconnect) {
+          document.removeEventListener(
+            "visibilitychange",
+            handleVisibilityChange,
+          );
+
+          reconnect();
+        }
+      };
+
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    } else {
+      setTimeout(reconnect, this.#reconnectDelay);
+    }
+  }
+
   send(data) {
-    if (
-      this.#waitingForResponse ||
-      this.#socket.readyState !== WebSocket.OPEN
-    ) {
+    if (!this.#socket || this.#socket.readyState !== WebSocket.OPEN) return;
+
+    if (this.#waitingForResponse) {
       this.#queue.push(data);
       return;
     } else {
@@ -479,7 +526,9 @@ class WebsocketTransport {
   }
 
   close() {
-    this.#socket.close();
+    this.#shouldReconnect = false;
+    this.#socket.close(1000);
+    this.#socket = null;
   }
 }
 
@@ -487,16 +536,27 @@ class SseTransport {
   #url;
   #eventSource;
 
+  #shouldReconnect = true;
+  #reconnectDelay = 500;
+  #maxReconnectDelay = 10000;
+
   #onConnect;
   #onMessage;
   #onClose;
 
   constructor(url, { onConnect, onMessage, onClose }) {
     this.#url = url;
-    this.#eventSource = new EventSource(this.#url);
     this.#onConnect = onConnect;
     this.#onMessage = onMessage;
     this.#onClose = onClose;
+
+    this.#connect();
+  }
+
+  #connect() {
+    this.#eventSource = new EventSource(this.#url);
+    this.#reconnectDelay = 500;
+    this.#shouldReconnect = true;
 
     this.#eventSource.onopen = () => {
       this.#onConnect();
@@ -507,11 +567,53 @@ class SseTransport {
         this.#onMessage(JSON.parse(data));
       } catch {}
     };
+
+    this.#eventSource.onerror = () => {
+      this.#eventSource.close();
+      this.#onClose();
+
+      if (this.#shouldReconnect) {
+        this.#attemptReconnect();
+      }
+    };
+  }
+
+  #attemptReconnect() {
+    const reconnect = () => {
+      if (!this.#shouldReconnect) return;
+
+      this.#connect();
+
+      this.#reconnectDelay = Math.min(
+        this.#reconnectDelay * 2,
+        this.#maxReconnectDelay,
+      );
+    };
+
+    // If the document is hidden, attempt to reconnect as soon as it becomes
+    // visible again. If that fails we'll fall into the normal exponential backoff.
+    if (document.hidden) {
+      const handleVisibilityChange = () => {
+        if (!document.hidden && this.#shouldReconnect) {
+          document.removeEventListener(
+            "visibilitychange",
+            handleVisibilityChange,
+          );
+
+          reconnect();
+        }
+      };
+
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    } else {
+      setTimeout(reconnect, this.#reconnectDelay);
+    }
   }
 
   send(data) {}
 
   close() {
+    this.#shouldReconnect = false;
     this.#eventSource.close();
     this.#onClose();
   }
