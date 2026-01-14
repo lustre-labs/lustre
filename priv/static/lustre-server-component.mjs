@@ -28,6 +28,10 @@ function escape2(string5) {
   return escape(string5);
 }
 
+// build/dev/javascript/prelude.mjs
+var List$NonEmpty$first = (value) => value.head;
+var List$NonEmpty$rest = (value) => value.tail;
+
 // build/dev/javascript/gleam_stdlib/dict.mjs
 var bits = 5;
 var mask = (1 << bits) - 1;
@@ -88,18 +92,31 @@ var insert_kind = 6;
 var separator_element = "	";
 var separator_subtree = "\r";
 
+// build/dev/javascript/lustre/lustre/internals/list.ffi.mjs
+var iterate = (list4, callback) => {
+  if (Array.isArray(list4)) {
+    for (let i = 0; i < list4.length; i++) {
+      callback(list4[i]);
+    }
+  } else if (list4) {
+    for (list4; List$NonEmpty$rest(list4); list4 = List$NonEmpty$rest(list4)) {
+      callback(List$NonEmpty$first(list4));
+    }
+  }
+};
+
 // build/dev/javascript/lustre/lustre/internals/constants.ffi.mjs
-var document = () => globalThis?.document;
+var document2 = () => globalThis?.document;
 var NAMESPACE_HTML = "http://www.w3.org/1999/xhtml";
 var SUPPORTS_MOVE_BEFORE = !!globalThis.HTMLElement?.prototype?.moveBefore;
 
 // build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs
-var setTimeout = globalThis.setTimeout;
+var setTimeout2 = globalThis.setTimeout;
 var clearTimeout = globalThis.clearTimeout;
-var createElementNS = (ns, name) => document().createElementNS(ns, name);
-var createTextNode = (data) => document().createTextNode(data);
-var createComment = (data) => document().createComment(data);
-var createDocumentFragment = () => document().createDocumentFragment();
+var createElementNS = (ns, name) => document2().createElementNS(ns, name);
+var createTextNode = (data) => document2().createTextNode(data);
+var createComment = (data) => document2().createComment(data);
+var createDocumentFragment = () => document2().createDocumentFragment();
 var insertBefore = (parent, node, reference) => parent.insertBefore(node, reference);
 var moveBefore = SUPPORTS_MOVE_BEFORE ? (parent, node, reference) => parent.moveBefore(node, reference) : insertBefore;
 var removeChild = (parent, child2) => parent.removeChild(child2);
@@ -229,16 +246,12 @@ var Reconciler = class {
     index2 = index2 | 0;
     const { children } = node;
     const childCount = children.length;
-    if (index2 < childCount)
-      return children[index2].node;
-    if (node.endNode)
-      return node.endNode;
-    if (!node.isVirtual || !childCount)
-      return null;
+    if (index2 < childCount) return children[index2].node;
+    if (node.endNode) return node.endNode;
+    if (!node.isVirtual || !childCount) return null;
     let lastChild = children[childCount - 1];
     while (lastChild.isVirtual && lastChild.children.length) {
-      if (lastChild.endNode)
-        return lastChild.endNode.nextSibling;
+      if (lastChild.endNode) return lastChild.endNode.nextSibling;
       lastChild = lastChild.children[lastChild.children.length - 1];
     }
     return lastChild.node.nextSibling;
@@ -460,10 +473,8 @@ var Reconciler = class {
       stop_propagation: stop,
       include
     } = attribute3;
-    if (prevent.kind === always_kind)
-      event2.preventDefault();
-    if (stop.kind === always_kind)
-      event2.stopPropagation();
+    if (prevent.kind === always_kind) event2.preventDefault();
+    if (stop.kind === always_kind) event2.stopPropagation();
     if (type === "submit") {
       event2.detail ??= {};
       event2.detail.formData = [
@@ -484,9 +495,8 @@ var Reconciler = class {
     const debounce = debouncers.get(type);
     if (debounce) {
       clearTimeout(debounce.timeout);
-      debounce.timeout = setTimeout(() => {
-        if (event2 === throttles.get(type)?.lastEvent)
-          return;
+      debounce.timeout = setTimeout2(() => {
+        if (event2 === throttles.get(type)?.lastEvent) return;
         this.#dispatch(event2, data);
       }, debounce.delay);
     }
@@ -500,17 +510,6 @@ var markerComment = (marker, key) => {
     return ` ${marker} key="${escape2(key)}" `;
   } else {
     return ` ${marker} `;
-  }
-};
-var iterate = (list4, callback) => {
-  if (Array.isArray(list4)) {
-    for (let i = 0; i < list4.length; i++) {
-      callback(list4[i]);
-    }
-  } else if (list4) {
-    for (list4; list4.head; list4 = list4.tail) {
-      callback(list4.head);
-    }
   }
 };
 var handleEvent = (event2) => {
@@ -561,9 +560,8 @@ var SYNCED_ATTRIBUTES = {
 var copiedStyleSheets = /* @__PURE__ */ new WeakMap();
 async function adoptStylesheets(shadowRoot) {
   const pendingParentStylesheets = [];
-  for (const node of document().querySelectorAll("link[rel=stylesheet], style")) {
-    if (node.sheet)
-      continue;
+  for (const node of document2().querySelectorAll("link[rel=stylesheet], style")) {
+    if (node.sheet) continue;
     pendingParentStylesheets.push(
       new Promise((resolve, reject) => {
         node.addEventListener("load", resolve);
@@ -577,7 +575,7 @@ async function adoptStylesheets(shadowRoot) {
   }
   shadowRoot.adoptedStyleSheets = shadowRoot.host.getRootNode().adoptedStyleSheets;
   const pending = [];
-  for (const sheet of document().styleSheets) {
+  for (const sheet of document2().styleSheets) {
     try {
       shadowRoot.adoptedStyleSheets.push(sheet);
     } catch {
@@ -640,8 +638,7 @@ var ServerComponent = class extends HTMLElement {
   #observer = new MutationObserver((mutations) => {
     const attributes = [];
     for (const mutation of mutations) {
-      if (mutation.type !== "attributes")
-        continue;
+      if (mutation.type !== "attributes") continue;
       const name = mutation.attributeName;
       if (!this.#connected || this.#remoteObservedAttributes.has(name)) {
         attributes.push([name, this.getAttribute(name)]);
@@ -684,15 +681,12 @@ var ServerComponent = class extends HTMLElement {
       }
       case "method": {
         const normalised = next.toLowerCase();
-        if (normalised == this.#method)
-          return;
+        if (normalised == this.#method) return;
         if (["ws", "sse", "polling"].includes(normalised)) {
           this.#method = normalised;
           if (this.#method == "ws") {
-            if (this.#route.protocol == "https:")
-              this.#route.protocol = "wss:";
-            if (this.#route.protocol == "http:")
-              this.#route.protocol = "ws:";
+            if (this.#route.protocol == "https:") this.#route.protocol = "wss:";
+            if (this.#route.protocol == "http:") this.#route.protocol = "ws:";
           }
           this.#connect();
         }
@@ -777,10 +771,8 @@ var ServerComponent = class extends HTMLElement {
           await this.#adoptStyleSheets();
         }
         this.#shadowRoot.addEventListener("context-request", (event2) => {
-          if (!event2.context || !event2.callback)
-            return;
-          if (!this.#contexts.has(event2.context))
-            return;
+          if (!event2.context || !event2.callback) return;
+          if (!this.#contexts.has(event2.context)) return;
           event2.stopImmediatePropagation();
           const context = this.#contexts.get(event2.context);
           if (event2.subscribe) {
@@ -820,6 +812,10 @@ var ServerComponent = class extends HTMLElement {
       unsubscribe();
     }
     this.#contextSubscriptions.clear();
+    if (this.#transport) {
+      this.#transport.close();
+      this.#transport = null;
+    }
   }
   // Context provider method
   provide(key, value) {
@@ -840,10 +836,8 @@ var ServerComponent = class extends HTMLElement {
     }
   }
   #connect() {
-    if (!this.#route || !this.#method)
-      return;
-    if (this.#transport)
-      this.#transport.close();
+    if (!this.#route || !this.#method) return;
+    if (this.#transport) this.#transport.close();
     const onConnect = () => {
       this.#connected = true;
       this.dispatchEvent(new CustomEvent("lustre:connect"), {
@@ -925,16 +919,25 @@ var WebsocketTransport = class {
   #socket;
   #waitingForResponse = false;
   #queue = [];
+  #shouldReconnect = true;
+  #reconnectDelay = 500;
+  #maxReconnectDelay = 1e4;
   #onConnect;
   #onMessage;
   #onClose;
   constructor(url, { onConnect, onMessage, onClose }) {
     this.#url = url;
-    this.#socket = new WebSocket(this.#url);
     this.#onConnect = onConnect;
     this.#onMessage = onMessage;
     this.#onClose = onClose;
+    this.#connect();
+  }
+  #connect() {
+    this.#socket = new WebSocket(this.#url);
+    this.#shouldReconnect = true;
+    this.#queue = [];
     this.#socket.onopen = () => {
+      this.#reconnectDelay = 500;
       this.#onConnect();
     };
     this.#socket.onmessage = ({ data }) => {
@@ -954,12 +957,40 @@ var WebsocketTransport = class {
         this.#queue = [];
       }
     };
-    this.#socket.onclose = () => {
+    this.#socket.onclose = (event2) => {
       this.#onClose();
+      if (event2.code !== 1e3 && this.#shouldReconnect) {
+        this.#attemptReconnect();
+      }
     };
   }
+  #attemptReconnect() {
+    const reconnect = () => {
+      if (!this.#shouldReconnect) return;
+      this.#connect();
+      this.#reconnectDelay = Math.min(
+        this.#reconnectDelay * 2,
+        this.#maxReconnectDelay
+      );
+    };
+    if (document.hidden) {
+      const handleVisibilityChange = () => {
+        if (!document.hidden && this.#shouldReconnect) {
+          document.removeEventListener(
+            "visibilitychange",
+            handleVisibilityChange
+          );
+          reconnect();
+        }
+      };
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    } else {
+      setTimeout(reconnect, this.#reconnectDelay);
+    }
+  }
   send(data) {
-    if (this.#waitingForResponse || this.#socket.readyState !== WebSocket.OPEN) {
+    if (!this.#socket || this.#socket.readyState !== WebSocket.OPEN) return;
+    if (this.#waitingForResponse) {
       this.#queue.push(data);
       return;
     } else {
@@ -968,21 +999,31 @@ var WebsocketTransport = class {
     }
   }
   close() {
-    this.#socket.close();
+    this.#shouldReconnect = false;
+    this.#socket.close(1e3);
+    this.#socket = null;
   }
 };
 var SseTransport = class {
   #url;
   #eventSource;
+  #shouldReconnect = true;
+  #reconnectDelay = 500;
+  #maxReconnectDelay = 1e4;
   #onConnect;
   #onMessage;
   #onClose;
   constructor(url, { onConnect, onMessage, onClose }) {
     this.#url = url;
-    this.#eventSource = new EventSource(this.#url);
     this.#onConnect = onConnect;
     this.#onMessage = onMessage;
     this.#onClose = onClose;
+    this.#connect();
+  }
+  #connect() {
+    this.#eventSource = new EventSource(this.#url);
+    this.#reconnectDelay = 500;
+    this.#shouldReconnect = true;
     this.#eventSource.onopen = () => {
       this.#onConnect();
     };
@@ -992,10 +1033,42 @@ var SseTransport = class {
       } catch {
       }
     };
+    this.#eventSource.onerror = () => {
+      this.#eventSource.close();
+      this.#onClose();
+      if (this.#shouldReconnect) {
+        this.#attemptReconnect();
+      }
+    };
+  }
+  #attemptReconnect() {
+    const reconnect = () => {
+      if (!this.#shouldReconnect) return;
+      this.#connect();
+      this.#reconnectDelay = Math.min(
+        this.#reconnectDelay * 2,
+        this.#maxReconnectDelay
+      );
+    };
+    if (document.hidden) {
+      const handleVisibilityChange = () => {
+        if (!document.hidden && this.#shouldReconnect) {
+          document.removeEventListener(
+            "visibilitychange",
+            handleVisibilityChange
+          );
+          reconnect();
+        }
+      };
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    } else {
+      setTimeout(reconnect, this.#reconnectDelay);
+    }
   }
   send(data) {
   }
   close() {
+    this.#shouldReconnect = false;
     this.#eventSource.close();
     this.#onClose();
   }
