@@ -1,5 +1,5 @@
 name = "lustre"
-version = "5.5.1"
+version = "5.5.2"
 gleam = ">= 1.13.0"
 
 description = "A Gleam web framework for building HTML templates, single page applications, and real-time server components."
