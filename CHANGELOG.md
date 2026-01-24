@@ -11,6 +11,10 @@ request to fix it.
 
 ## Unreleased
 
+# Changed
+
+- [lustre/runtime] Fixed a bug where replacing the only child inside a nested fragment would insert the new child at the end of its parent.
+
 ## [v5.5.2] - 2026-01-14
 
 ### Changed
