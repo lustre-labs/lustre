@@ -69,7 +69,7 @@ pub fn reconciler_server_component_mount_input_test() {
 
   // we cannot use test_mount here since your to_string function produces a
   // slightly different result that we don't handle (`value=""` vs `value`)
-  use reconciler <- with_reconciler
+  use reconciler <- with_reconciler(True)
 
   mount_json(reconciler, vnode.to_json(html, mutable_map.new()))
   assert lustre_test.nodes_equal_ignoring_memo(get_vdom(), html)
@@ -77,7 +77,7 @@ pub fn reconciler_server_component_mount_input_test() {
 
 @target(javascript)
 fn test_mount(vdom: Element(msg)) {
-  use reconciler <- with_reconciler
+  use reconciler <- with_reconciler(True)
 
   mount(reconciler, vdom)
   assert get_html() == element.to_string(vdom)
@@ -810,6 +810,43 @@ pub fn reconciler_push_map_with_nested_fragment_test() {
 }
 
 @target(javascript)
+pub fn recociler_push_nested_fragment_replace_test() {
+  use <- lustre_test.test_filter("recociler_push_nested_fragment_replace_test")
+
+  let prev =
+    html.div([], [
+      keyed.fragment([
+        #("Child row", element.none()),
+      ]),
+      html.div([], [element.text("Other row - should stay BELOW")]),
+    ])
+
+  let next =
+    html.div([], [
+      keyed.fragment([
+        #("Child row", {
+          element.fragment([
+            html.div([], [element.text("Bad logic child")]),
+          ])
+        }),
+      ]),
+      html.div([], [element.text("Other row - should stay BELOW")]),
+    ])
+
+  // We cannot use `test_diff` here since the error only exists with debug=false.
+  use reconciler <- with_reconciler(False)
+
+  let diff.Diff(patch:, ..) = diff.diff(cache.new(), prev, next)
+
+  mount(reconciler, prev)
+  push(reconciler, patch)
+
+  let html = get_html()
+  assert html
+    == "<div><div>Bad logic child</div><div>Other row - should stay BELOW</div></div>"
+}
+
+@target(javascript)
 pub fn reconciler_push_memo_map_with_fragment_test() {
   use <- lustre_test.test_filter("reconciler_push_memo_map_with_fragment_test")
 
@@ -839,7 +876,7 @@ pub fn reconciler_push_memo_map_with_fragment_test() {
 
 @target(javascript)
 fn test_diff(prev: Element(msg), next: Element(msg)) {
-  use reconciler <- with_reconciler
+  use reconciler <- with_reconciler(True)
 
   let diff.Diff(patch:, ..) = diff.diff(cache.new(), prev, next)
 
@@ -860,7 +897,7 @@ pub type Reconciler
 
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "with_reconciler")
-pub fn with_reconciler(f: fn(Reconciler) -> Nil) -> Nil
+pub fn with_reconciler(debug: Bool, f: fn(Reconciler) -> Nil) -> Nil
 
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "mount")
