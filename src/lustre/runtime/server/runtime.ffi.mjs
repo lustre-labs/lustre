@@ -50,7 +50,8 @@ export class Runtime {
 
   #callbacks = /* @__PURE__ */ new Set();
 
-  constructor([model, effects], update, view, config) {
+  constructor(_, init, update, view, config, start_arguments) {
+    const [model, effects] = init(start_arguments);
     this.#model = model;
     this.#update = update;
     this.#view = view;
@@ -242,10 +243,12 @@ export class Runtime {
   }
 }
 
-export const start = (app, flags) => {
+export const start = (app, start_arguments) => {
   const config = Component.to_server_component_config(app.config);
 
-  return Result$Ok(new Runtime(app.init(flags), app.update, app.view, config));
+  return Result$Ok(
+    new Runtime(app.init, app.update, app.view, config, start_arguments),
+  );
 };
 
 export const send = (runtime, message) => {

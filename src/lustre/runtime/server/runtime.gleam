@@ -69,13 +69,15 @@ pub type Config(msg) {
 @target(erlang)
 pub fn start(
   name: option.Option(process.Name(Message(msg))),
-  init: #(model, Effect(msg)),
+  init: fn(start_args) -> #(model, Effect(msg)),
   update: fn(model, msg) -> #(model, Effect(msg)),
   view: fn(model) -> Element(msg),
   config: Config(msg),
+  start_args: start_args,
 ) -> Result(actor.Started(Subject(Message(msg))), StartError) {
   actor.new_with_initialiser(1000, fn(self) {
-    let vdom = view(init.0)
+    let #(model, effect) = init(start_args)
+    let vdom = view(model)
     let cache = cache.from_node(vdom)
     let base_selector =
       process.new_selector()
@@ -88,7 +90,7 @@ pub fn start(
         selector: base_selector,
         base_selector:,
         //
-        model: init.0,
+        model:,
         update:,
         view:,
         config:,
@@ -101,7 +103,7 @@ pub fn start(
         callbacks: set.new(),
       )
 
-    handle_effect(self, init.1)
+    handle_effect(self, effect)
 
     actor.initialised(state)
     |> actor.selecting(base_selector)
@@ -118,6 +120,7 @@ pub fn start(
 
 @target(javascript)
 pub fn start(
+  _,
   _,
   _,
   _,

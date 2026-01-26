@@ -11,9 +11,10 @@ request to fix it.
 
 ## Unreleased
 
-# Changed
+### Changed
 
 - [lustre/runtime] Fixed a bug where replacing the only child inside a nested fragment would insert the new child at the end of its parent.
+- [lustre/server_component] Fixed a bug where a server component's initial model was unnecessarily copied on start.
 
 ## [v5.5.2] - 2026-01-14
 

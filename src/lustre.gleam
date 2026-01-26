@@ -402,10 +402,11 @@ pub fn start_server_component(
   let result =
     runtime.start(
       app.name,
-      app.init(start_args),
+      app.init,
       app.update,
       app.view,
       component.to_server_component_config(app.config),
+      start_args,
     )
 
   case result {
@@ -427,10 +428,11 @@ pub fn supervised(
 
   runtime.start(
     app.name,
-    app.init(start_arguments),
+    app.init,
     app.update,
     app.view,
     component.to_server_component_config(app.config),
+    start_arguments,
   )
 }
 
@@ -447,10 +449,11 @@ pub fn factory(
 
   runtime.start(
     app.name,
-    app.init(start_arguments),
+    app.init,
     app.update,
     app.view,
     component.to_server_component_config(app.config),
+    start_arguments,
   )
 }
 
