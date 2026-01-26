@@ -263,19 +263,17 @@ export class Reconciler {
 
     if (index < childCount) return children[index].node;
     if (node.endNode) return node.endNode;
-    if (!node.isVirtual || !childCount) return null;
-
-    let lastChild = children[childCount - 1];
+    if (!node.isVirtual) return null;
 
     // unwrap the last child as long as we point to a fragment.
     // otherwise, the fragments next sibling would be the first child of the
     // fragment, not the first element after it.
-    while (lastChild.isVirtual && lastChild.children.length) {
-      if (lastChild.endNode) return lastChild.endNode.nextSibling;
-      lastChild = lastChild.children[lastChild.children.length - 1];
+    while (node.isVirtual && node.children.length) {
+      if (node.endNode) return node.endNode.nextSibling;
+      node = node.children[node.children.length - 1];
     }
 
-    return lastChild.node.nextSibling;
+    return node.node.nextSibling;
   }
 
   #move(parent, { key, before }) {
