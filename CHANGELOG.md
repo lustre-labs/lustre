@@ -11,6 +11,10 @@ request to fix it.
 
 ## Unreleased
 
+### Change
+
+- [lustre/server_component] Fixed a bug where a server component's initial model was unnecessarily copied on start.
+
 ## [v5.5.2] - 2026-01-14
 
 ### Changed
