@@ -83,7 +83,7 @@ import lustre/attribute.{type Attribute, attribute}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
-import lustre/runtime/server/runtime
+import lustre/runtime/headless
 import lustre/runtime/transport
 import lustre/vdom/vattr.{Event}
 
@@ -262,7 +262,7 @@ fn coerce(value: a) -> b
 pub fn register_subject(
   client: Subject(ClientMessage(msg)),
 ) -> RuntimeMessage(msg) {
-  runtime.ClientRegisteredSubject(client)
+  headless.ClientRegisteredSubject(client)
 }
 
 /// Deregister a `Subject` to stop receiving messages and updates from Lustre's
@@ -272,7 +272,7 @@ pub fn register_subject(
 pub fn deregister_subject(
   client: Subject(ClientMessage(msg)),
 ) -> RuntimeMessage(msg) {
-  runtime.ClientDeregisteredSubject(client)
+  headless.ClientDeregisteredSubject(client)
 }
 
 /// Register a callback to be called whenever the server component runtime
@@ -286,7 +286,7 @@ pub fn deregister_subject(
 pub fn register_callback(
   callback: fn(ClientMessage(msg)) -> Nil,
 ) -> RuntimeMessage(msg) {
-  runtime.ClientRegisteredCallback(callback)
+  headless.ClientRegisteredCallback(callback)
 }
 
 /// Deregister a callback to be called whenever the server component runtime
@@ -300,7 +300,7 @@ pub fn register_callback(
 pub fn deregister_callback(
   callback: fn(ClientMessage(msg)) -> Nil,
 ) -> RuntimeMessage(msg) {
-  runtime.ClientDeregisteredCallback(callback)
+  headless.ClientDeregisteredCallback(callback)
 }
 
 // EFFECTS ---------------------------------------------------------------------
@@ -352,7 +352,7 @@ pub fn select(
 pub fn runtime_message_decoder() -> Decoder(RuntimeMessage(msg)) {
   decode.map(
     transport.server_message_decoder(),
-    runtime.ClientDispatchedMessage,
+    headless.ClientDispatchedMessage,
   )
 }
 

@@ -220,7 +220,7 @@ pub fn is_headless(platform: Platform(node, target, value, event, msg)) -> Bool 
 /// backend because you'll want to know whether you're currently running on your
 /// server or in the browser: this function tells you that!
 ///
-@external(javascript, "./runtime/client/runtime.ffi.mjs", "is_browser")
+@external(javascript, "./runtime/platform/base.ffi.mjs", "is_browser")
 pub fn is_browser() -> Bool {
   False
 }
@@ -234,37 +234,37 @@ fn do_dom_query_selector(selector: String) -> Result(DomNode, PlatformError) {
   }
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "query_selector")
+@external(javascript, "./platform/dom.ffi.mjs", "query_selector")
 fn do_dom_query_selector_raw(_selector: String) -> Result(DomNode, String) {
   Error("")
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "mount_strict")
+@external(javascript, "./platform/dom.ffi.mjs", "mount_strict")
 fn do_dom_mount_strict(_root: DomNode) -> #(DomNode, Element(msg)) {
   panic as "Cannot mount DOM on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "create_element")
+@external(javascript, "./platform/dom.ffi.mjs", "create_element")
 fn do_dom_create_element(_ns: String, _tag: String) -> DomNode {
   panic as "Cannot create DOM elements on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "create_text_node")
+@external(javascript, "./platform/dom.ffi.mjs", "create_text_node")
 fn do_dom_create_text_node(_content: String) -> DomNode {
   panic as "Cannot create DOM text nodes on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "create_fragment")
+@external(javascript, "./platform/dom.ffi.mjs", "create_fragment")
 fn do_dom_create_fragment() -> DomNode {
   panic as "Cannot create DOM fragments on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "create_comment")
+@external(javascript, "./platform/dom.ffi.mjs", "create_comment")
 fn do_dom_create_comment(_data: String) -> DomNode {
   panic as "Cannot create DOM comments on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "insert_before")
+@external(javascript, "./platform/dom.ffi.mjs", "insert_before")
 fn do_dom_insert_before(
   _parent: DomNode,
   _node: DomNode,
@@ -273,7 +273,7 @@ fn do_dom_insert_before(
   panic as "Cannot manipulate DOM on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "move_before")
+@external(javascript, "./platform/dom.ffi.mjs", "move_before")
 fn do_dom_move_before(
   _parent: DomNode,
   _node: DomNode,
@@ -282,42 +282,42 @@ fn do_dom_move_before(
   panic as "Cannot manipulate DOM on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "remove_child")
+@external(javascript, "./platform/dom.ffi.mjs", "remove_child")
 fn do_dom_remove_child(_parent: DomNode, _child: DomNode) -> Nil {
   panic as "Cannot manipulate DOM on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "get_attribute")
+@external(javascript, "./platform/dom.ffi.mjs", "get_attribute")
 fn do_dom_get_attribute(_node: DomNode, _name: String) -> Result(String, Nil) {
   panic as "Cannot read DOM attributes on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "set_attribute")
+@external(javascript, "./platform/dom.ffi.mjs", "set_attribute")
 fn do_dom_set_attribute(_node: DomNode, _name: String, _value: String) -> Nil {
   panic as "Cannot manipulate DOM on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "remove_attribute")
+@external(javascript, "./platform/dom.ffi.mjs", "remove_attribute")
 fn do_dom_remove_attribute(_node: DomNode, _name: String) -> Nil {
   panic as "Cannot manipulate DOM on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "set_property")
+@external(javascript, "./platform/dom.ffi.mjs", "set_property")
 fn do_dom_set_property(_node: DomNode, _name: String, _value: DomNode) -> Nil {
   panic as "Cannot manipulate DOM on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "set_text")
+@external(javascript, "./platform/dom.ffi.mjs", "set_text")
 fn do_dom_set_text(_node: DomNode, _content: String) -> Nil {
   panic as "Cannot manipulate DOM on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "set_inner_html")
+@external(javascript, "./platform/dom.ffi.mjs", "set_inner_html")
 fn do_dom_set_inner_html(_node: DomNode, _html: String) -> Nil {
   panic as "Cannot manipulate DOM on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "add_event_listener")
+@external(javascript, "./platform/dom.ffi.mjs", "add_event_listener")
 fn do_dom_add_event_listener(
   _node: DomNode,
   _name: String,
@@ -327,7 +327,7 @@ fn do_dom_add_event_listener(
   panic as "Cannot manipulate DOM on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "remove_event_listener")
+@external(javascript, "./platform/dom.ffi.mjs", "remove_event_listener")
 fn do_dom_remove_event_listener(
   _node: DomNode,
   _name: String,
@@ -336,12 +336,12 @@ fn do_dom_remove_event_listener(
   panic as "Cannot manipulate DOM on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "schedule_render")
+@external(javascript, "./platform/dom.ffi.mjs", "schedule_render")
 fn do_dom_schedule_render(_callback: fn() -> Nil) -> fn() -> Nil {
   panic as "Cannot schedule DOM renders on Erlang"
 }
 
-@external(javascript, "./runtime/client/dom.ffi.mjs", "after_render")
+@external(javascript, "./platform/dom.ffi.mjs", "after_render")
 fn do_dom_after_render() -> Nil {
   Nil
 }

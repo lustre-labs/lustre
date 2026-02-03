@@ -5,30 +5,30 @@ import {
   Result$Error,
   Result$isOk,
   Result$Ok$0,
-} from "../../../gleam.mjs";
-import { run as decode } from "../../../../gleam_stdlib/gleam/dynamic/decode.mjs";
+} from "../../gleam.mjs";
+import { run as decode } from "../../../gleam_stdlib/gleam/dynamic/decode.mjs";
 import {
   Option$isSome,
   Option$Some$0,
-} from "../../../../gleam_stdlib/gleam/option.mjs";
+} from "../../../gleam_stdlib/gleam/option.mjs";
 
 import {
   Error$BadComponentName,
   Error$ComponentAlreadyRegistered,
   Error$NotABrowser,
-} from "../../../lustre.mjs";
+} from "../../lustre.mjs";
 import {
   Runtime,
   ContextRequestEvent,
   adoptStylesheets,
   is_browser,
-} from "./runtime.ffi.mjs";
+} from "./platform/base.ffi.mjs";
 import {
   Message$isEffectDispatchedMessage,
   Message$isEffectEmitEvent,
   Message$isSystemRequestedShutdown,
-} from "../server/runtime.mjs";
-import { iterate } from "../../internals/list.ffi.mjs";
+} from "./headless.mjs";
+import { iterate } from "../internals/list.ffi.mjs";
 
 //
 

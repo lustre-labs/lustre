@@ -1,17 +1,17 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { virtualise } from "../../vdom/virtualise.ffi.mjs";
+import { virtualise } from "../vdom/virtualise.ffi.mjs";
 import {
   document,
   NAMESPACE_HTML,
   SUPPORTS_MOVE_BEFORE,
-} from "../../internals/constants.ffi.mjs";
+} from "../internals/constants.ffi.mjs";
 import {
   Result$Ok,
   Result$Error,
   Result$isOk,
   Result$Ok$0,
-} from "../../../gleam.mjs";
+} from "../../gleam.mjs";
 
 // Helpers to convert between Gleam Result and nullable.
 const unwrapResult = (result) =>

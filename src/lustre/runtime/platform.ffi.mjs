@@ -1,15 +1,15 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { Runtime } from "./runtime.ffi.mjs";
+import { Runtime } from "./platform/base.ffi.mjs";
 import {
   Message$isEffectDispatchedMessage,
   Message$isEffectEmitEvent,
   Message$isSystemRequestedShutdown,
-} from "../server/runtime.mjs";
+} from "./headless.mjs";
 
 //
 
-export class Spa {
+export class Platform {
   #runtime;
 
   constructor(root, initialVdom, [init, effects], update, view, platform) {
@@ -36,5 +36,5 @@ export class Spa {
 }
 
 export const start = (root, initialVdom, app, platform, flags) => {
-  return new Spa(root, initialVdom, app.init(flags), app.update, app.view, platform);
+  return new Platform(root, initialVdom, app.init(flags), app.update, app.view, platform);
 };

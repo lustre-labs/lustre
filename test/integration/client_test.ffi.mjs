@@ -1,7 +1,7 @@
 import { register, unregister } from "./happy-dom.ffi.mjs";
 import { virtualise as do_virtualise } from "../lustre/vdom/virtualise.ffi.mjs";
 import { Reconciler } from "../lustre/vdom/reconciler.ffi.mjs";
-import { Runtime } from "../lustre/runtime/client/runtime.ffi.mjs";
+import { Runtime } from "../lustre/runtime/platform/base.ffi.mjs";
 
 async function runInBrowserContext(callback) {
   register({

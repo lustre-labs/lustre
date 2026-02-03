@@ -23,7 +23,7 @@ import lustre/internals/mutable_map
 @target(erlang)
 import lustre/platform
 @target(erlang)
-import lustre/runtime/server/runtime
+import lustre/runtime/headless
 @target(erlang)
 import lustre/runtime/transport
 @target(erlang)
@@ -65,7 +65,7 @@ pub fn client_send_event_test() {
 
   let click = transport.event_fired(incr, "click", dynamic.nil())
 
-  runtime.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
+  headless.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
 
   let patch =
     patch.new(0, 0, [], [
@@ -88,8 +88,8 @@ pub fn client_send_multiple_events_test() {
 
   let click = transport.event_fired(incr, "click", dynamic.nil())
 
-  runtime.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
-  runtime.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
+  headless.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
+  headless.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
 
   // Discard the first `Reconcile` message
   let _ = process.receive_forever(client)
@@ -115,7 +115,7 @@ pub fn effect_send_event_test() {
   // Discard the `Mount` message
   let _ = process.receive_forever(client)
 
-  runtime.EffectDispatchedMessage(Incr)
+  headless.EffectDispatchedMessage(Incr)
   |> lustre.send(to: runtime)
 
   let patch =
@@ -141,7 +141,7 @@ pub fn server_emit_event_test() {
 
   let click = transport.event_fired(reset, "click", dynamic.nil())
 
-  runtime.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
+  headless.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
 
   // Discard the first `Reconcile` message
   let _ = process.receive_forever(client)

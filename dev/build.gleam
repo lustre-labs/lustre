@@ -34,7 +34,7 @@ pub fn main() {
 
 // For whatever reason, esgleam needs the input path to be relative to the location
 // of the esbuild binary
-const runtime = "../../../../src/lustre/runtime/client/server_component.ffi.mjs"
+const runtime = "../../../../src/lustre/runtime/server_component.ffi.mjs"
 
 const outfile = "./priv/static/lustre-server-component"
 

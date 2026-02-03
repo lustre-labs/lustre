@@ -4,12 +4,12 @@ import {
   Result$isOk,
   List$NonEmpty$rest,
   List$NonEmpty$first,
-} from "../../../gleam.mjs";
-import * as Decode from "../../../../gleam_stdlib/gleam/dynamic/decode.mjs";
-import * as Dict from "../../../../gleam_stdlib/gleam/dict.mjs";
-import * as Diff from "../../vdom/diff.mjs";
-import * as Cache from "../../vdom/cache.mjs";
-import { isEqual } from "../../internals/equals.ffi.mjs";
+} from "../../gleam.mjs";
+import * as Decode from "../../../gleam_stdlib/gleam/dynamic/decode.mjs";
+import * as Dict from "../../../gleam_stdlib/gleam/dict.mjs";
+import * as Diff from "../vdom/diff.mjs";
+import * as Cache from "../vdom/cache.mjs";
+import { isEqual } from "../internals/equals.ffi.mjs";
 import {
   Message$isClientDispatchedMessage,
   Message$isClientRegisteredCallback,
@@ -23,18 +23,18 @@ import {
   Message$isEffectProvidedValue,
   //
   Message$isSystemRequestedShutdown,
-} from "./runtime.mjs";
-import * as Component from "../../component.mjs";
-import * as Effect from "../../effect.mjs";
-import * as Transport from "../transport.mjs";
+} from "./headless.mjs";
+import * as Component from "../component.mjs";
+import * as Effect from "../effect.mjs";
+import * as Transport from "./transport.mjs";
 import {
   ServerMessage$isBatch,
   ServerMessage$isAttributeChanged,
   ServerMessage$isPropertyChanged,
   ServerMessage$isEventFired,
   ServerMessage$isContextProvided,
-} from "../transport.mjs";
-import { iterate, toList } from "../../internals/list.ffi.mjs";
+} from "./transport.mjs";
+import { iterate, toList } from "../internals/list.ffi.mjs";
 
 //
 

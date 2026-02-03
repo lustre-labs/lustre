@@ -46,7 +46,7 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/internals/constants
-import lustre/runtime/server/runtime
+import lustre/runtime/headless
 
 // TYPES -----------------------------------------------------------------------
 
@@ -327,8 +327,8 @@ pub fn delegates_focus(delegates: Bool) -> Option(msg) {
 /// options are available in server components anyway.
 ///
 @internal
-pub fn to_server_component_config(config: Config(msg)) -> runtime.Config(msg) {
-  runtime.Config(
+pub fn to_server_component_config(config: Config(msg)) -> headless.Config(msg) {
+  headless.Config(
     open_shadow_root: config.open_shadow_root,
     adopt_styles: config.adopt_styles,
     // we reverse both lists here such that the last added value takes precedence
@@ -543,7 +543,7 @@ pub fn set_form_value(value: String) -> Effect(msg) {
   do_set_form_value(root, value)
 }
 
-@external(javascript, "./runtime/client/component.ffi.mjs", "set_form_value")
+@external(javascript, "./runtime/web_component.ffi.mjs", "set_form_value")
 fn do_set_form_value(_root: Dynamic, _value: String) -> Nil {
   Nil
 }
@@ -557,7 +557,7 @@ pub fn clear_form_value() -> Effect(msg) {
   do_clear_form_value(root)
 }
 
-@external(javascript, "./runtime/client/component.ffi.mjs", "clear_form_value")
+@external(javascript, "./runtime/web_component.ffi.mjs", "clear_form_value")
 fn do_clear_form_value(_root: Dynamic) -> Nil {
   Nil
 }
@@ -587,7 +587,7 @@ pub fn set_pseudo_state(value: String) -> Effect(msg) {
   do_set_pseudo_state(root, value)
 }
 
-@external(javascript, "./runtime/client/component.ffi.mjs", "set_pseudo_state")
+@external(javascript, "./runtime/web_component.ffi.mjs", "set_pseudo_state")
 fn do_set_pseudo_state(_root: Dynamic, _value: String) -> Nil {
   Nil
 }
@@ -599,7 +599,7 @@ pub fn remove_pseudo_state(value: String) -> Effect(msg) {
   do_remove_pseudo_state(root, value)
 }
 
-@external(javascript, "./runtime/client/component.ffi.mjs", "remove_pseudo_state")
+@external(javascript, "./runtime/web_component.ffi.mjs", "remove_pseudo_state")
 fn do_remove_pseudo_state(_root: Dynamic, _value: String) -> Nil {
   Nil
 }
