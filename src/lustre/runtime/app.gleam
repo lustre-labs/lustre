@@ -7,14 +7,14 @@ import gleam/list
 import gleam/option
 import lustre/effect.{type Effect}
 import lustre/internals/constants
-import lustre/runtime/server/runtime
+import lustre/runtime/headless
 import lustre/vdom/vnode.{type Element}
 
 // TYPES -----------------------------------------------------------------------
 
 pub type App(arguments, model, message) {
   App(
-    name: option.Option(Name(runtime.Message(message))),
+    name: option.Option(Name(headless.Message(message))),
     init: fn(arguments) -> #(model, Effect(message)),
     update: fn(model, message) -> #(model, Effect(message)),
     view: fn(model) -> Element(message),
@@ -76,8 +76,8 @@ pub fn configure(options: List(Option(message))) -> Config(message) {
 
 pub fn configure_server_component(
   config: Config(message),
-) -> runtime.Config(message) {
-  runtime.Config(
+) -> headless.Config(message) {
+  headless.Config(
     open_shadow_root: config.open_shadow_root,
     adopt_styles: config.adopt_styles,
     // we reverse both lists here such that the last added value takes precedence

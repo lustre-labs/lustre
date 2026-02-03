@@ -167,7 +167,7 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/runtime/app.{App}
 import lustre/platform
-import lustre/runtime/server/runtime
+import lustre/runtime/headless
 
 // TYPES -----------------------------------------------------------------------
 
@@ -231,7 +231,7 @@ pub type Runtime(message)
 ///   and [`send`](#send) them manually.
 ///
 pub type RuntimeMessage(message) =
-  runtime.Message(message)
+  headless.Message(message)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -349,11 +349,11 @@ pub fn start(
   with arguments: arguments,
 ) -> Result(Runtime(message), Error) {
   case platform.is_headless(platform) {
-    True -> do_start_server_component(app, arguments)
+    True -> do_start_headless(app, arguments)
     False -> {
       case platform.mount(platform) {
         Ok(#(root, initial_vdom)) ->
-          Ok(do_start_client(root, initial_vdom, app, platform, arguments))
+          Ok(do_start_rendered(root, initial_vdom, app, platform, arguments))
         Error(platform.NotABrowser) -> Error(NotABrowser)
         Error(platform.ElementNotFound(sel)) -> Error(ElementNotFound(sel))
         Error(platform.NotMountable) -> Error(NotMountable)
@@ -362,24 +362,24 @@ pub fn start(
   }
 }
 
-@external(javascript, "./lustre/runtime/client/spa.ffi.mjs", "start")
-fn do_start_client(
+@external(javascript, "./lustre/runtime/platform.ffi.mjs", "start")
+fn do_start_rendered(
   _root: node,
   _initial_vdom: element.Element(message),
   _app: App(arguments, model, message),
   _platform: platform.Platform(node, target, value, event, message),
-  _start_args: arguments,
+  _arguments: arguments,
 ) -> Runtime(message) {
-  panic as "Cannot start client runtime on Erlang"
+  todo as "Rendered runtime not yet implemented for Erlang"
 }
 
-@external(javascript, "./lustre/runtime/server/runtime.ffi.mjs", "start")
-fn do_start_server_component(
+@external(javascript, "./lustre/runtime/headless.ffi.mjs", "start")
+fn do_start_headless(
   app: App(arguments, model, message),
   arguments: arguments,
 ) -> Result(Runtime(message), Error) {
   let result =
-    runtime.start(
+    headless.start(
       app.name,
       app.init,
       app.update,
@@ -405,7 +405,7 @@ pub fn supervised(
 ) -> ChildSpecification(Subject(RuntimeMessage(message))) {
   use <- supervision.worker
 
-  runtime.start(
+  headless.start(
     app.name,
     app.init,
     app.update,
@@ -426,7 +426,7 @@ pub fn factory(
 ) -> Builder(arguments, Subject(RuntimeMessage(message))) {
   use arguments <- factory_supervisor.worker_child
 
-  runtime.start(
+  headless.start(
     app.name,
     app.init,
     app.update,
@@ -467,7 +467,7 @@ pub fn register(
   do_register(app, platform.dom_strict, name)
 }
 
-@external(javascript, "./lustre/runtime/client/component.ffi.mjs", "make_component")
+@external(javascript, "./lustre/runtime/web_component.ffi.mjs", "make_component")
 fn do_register(
   _app: App(Nil, model, message),
   _make_platform: fn(platform.DomNode) ->
@@ -490,7 +490,7 @@ fn do_register(
 /// runtime.
 ///
 @external(erlang, "gleam@erlang@process", "send")
-@external(javascript, "./lustre/runtime/client/runtime.ffi.mjs", "send")
+@external(javascript, "./lustre/runtime/platform/base.ffi.mjs", "send")
 pub fn send(
   to runtime: Runtime(message),
   message message: RuntimeMessage(message),
@@ -502,7 +502,7 @@ pub fn send(
 /// communication with a Lustre app without having to use an effect.
 ///
 pub fn dispatch(message: message) -> RuntimeMessage(message) {
-  runtime.EffectDispatchedMessage(message)
+  headless.EffectDispatchedMessage(message)
 }
 
 /// Instruct a running application to shut down. For client SPAs this will stop
@@ -511,7 +511,7 @@ pub fn dispatch(message: message) -> RuntimeMessage(message) {
 /// clients.
 ///
 pub fn shutdown() -> RuntimeMessage(message) {
-  runtime.SystemRequestedShutdown
+  headless.SystemRequestedShutdown
 }
 
 // UTILS -----------------------------------------------------------------------
@@ -520,7 +520,7 @@ pub fn shutdown() -> RuntimeMessage(message) {
 /// Element. This is particularly useful in contexts where _other web components_
 /// may have been registered and you must avoid collisions.
 ///
-@external(javascript, "./lustre/runtime/client/runtime.ffi.mjs", "is_registered")
+@external(javascript, "./lustre/runtime/platform/base.ffi.mjs", "is_registered")
 pub fn is_registered(_name: String) -> Bool {
   False
 }

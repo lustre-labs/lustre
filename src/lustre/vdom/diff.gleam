@@ -913,7 +913,7 @@ fn property_value_equal(a: json.Json, b: json.Json) -> Bool {
   a == b
 }
 
-@external(javascript, "../runtime/client/runtime.ffi.mjs", "is_browser")
+@external(javascript, "../runtime/platform/base.ffi.mjs", "is_browser")
 fn is_browser() -> Bool {
   False
 }
