@@ -1,0 +1,11 @@
+{
+  "name": "random",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "gleam build --target javascript && bun build/dev/javascript/random/random.mjs"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.1.77"
+  }
+}

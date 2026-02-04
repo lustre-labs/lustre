@@ -1,0 +1,11 @@
+{
+  "name": "counter",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "gleam build --target javascript && bun build/dev/javascript/counter/counter.mjs"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.1.77"
+  }
+}

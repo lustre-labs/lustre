@@ -1,0 +1,11 @@
+{
+  "name": "timers",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "gleam build --target javascript && bun build/dev/javascript/timers/timers.mjs"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.1.77"
+  }
+}

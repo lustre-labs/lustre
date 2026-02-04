@@ -1,0 +1,11 @@
+{
+  "name": "fragments",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "gleam build --target javascript && bun build/dev/javascript/fragments/fragments.mjs"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.1.77"
+  }
+}

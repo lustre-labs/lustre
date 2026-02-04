@@ -1,0 +1,11 @@
+{
+  "name": "controlled-inputs",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "gleam build --target javascript && bun build/dev/javascript/controlled_inputs/controlled_inputs.mjs"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.1.77"
+  }
+}

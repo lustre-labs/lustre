@@ -1,0 +1,16 @@
+{
+  "name": "lustre_platform_opentui",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@opentui/core": "^0.1.77",
+    "@opentui/react": "^0.1.77",
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}
