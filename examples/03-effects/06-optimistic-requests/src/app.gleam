@@ -7,6 +7,7 @@ import gleam/int
 import gleam/json
 import gleam/list
 import lustre
+import lustre/platform
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -27,8 +28,9 @@ pub fn main() {
   // In this example we've swapped out the `simple` app constructor for the
   // `application` constructor instead. This lets us return effects from the
   // `init` and `update` functions.
+  let assert Ok(platform) = platform.dom("#app")
   let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
+  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
 
   Nil
 }

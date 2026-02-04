@@ -73,14 +73,14 @@ pub type Config(message) {
 @target(erlang)
 pub fn start(
   name: Option(process.Name(Message(message))),
-  init: fn(start_args) -> #(model, Effect(message)),
+  init: fn(arguments) -> #(model, Effect(message)),
   update: fn(model, message) -> #(model, Effect(message)),
   view: fn(model) -> Element(message),
   config: Config(message),
-  start_args: start_args,
+  arguments: arguments,
 ) -> Result(actor.Started(Subject(Message(message))), StartError) {
   actor.new_with_initialiser(1000, fn(self) {
-    let #(model, effect) = init(start_args)
+    let #(model, effect) = init(arguments)
     let vdom = view(model)
     let cache = cache.from_node(vdom)
     let base_selector =

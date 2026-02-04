@@ -1,11 +1,14 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { Result$isOk, Result$Ok$0, List$isNonEmpty } from "../../../gleam.mjs";
+import {
+  Result$isOk,
+  Result$Ok$0,
+  List$isNonEmpty,
+} from "../../../gleam.mjs";
 import { empty_list } from "../../internals/constants.mjs";
 import { diff } from "../../vdom/diff.mjs";
 import * as Cache from "../../vdom/cache.mjs";
 import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
-import { virtualise } from "../../vdom/virtualise.ffi.mjs";
 import { isEqual } from "../../internals/equals.ffi.mjs";
 import { append, iterate } from "../../internals/list.ffi.mjs";
 import { run as decode } from "../../../../gleam_stdlib/gleam/dynamic/decode.mjs";
@@ -24,7 +27,7 @@ export const throw_server_component_error = () => {
       "the internals and started calling functions you shouldn't be!",
       "\n\n",
       "If you're just looking to start a server component in a JavaScript app,",
-      "you can use `lustre.start_server_component`.",
+      "you can use `lustre.start` with `platform.headless()`.",
       "\n\n",
       "If you're seeing this error and you think it's a bug. Please open an ",
       "issue over on Github: https://github.com/lustre-labs/lustre/issues/new",
@@ -35,11 +38,13 @@ export const throw_server_component_error = () => {
 //
 
 export class Runtime {
-  constructor(root, [model, effects], view, update, options) {
+  constructor(root, initialVdom, [model, effects], view, update, platform, options) {
     this.root = root;
     this.#model = model;
     this.#view = view;
     this.#update = update;
+    this.#platformScheduleRender = platform.schedule_render;
+    this.#platformAfterRender = platform.after_render;
 
     this.root.addEventListener("context-request", (event) => {
       // So that we're compatible with other implementations of the proposed
@@ -83,17 +88,10 @@ export class Runtime {
       }
     };
 
-    this.#reconciler = new Reconciler(
-      this.root,
-      decodeEvent,
-      dispatch,
-      options,
-    );
+    this.#reconciler = new Reconciler(this.root, decodeEvent, dispatch, platform, options);
 
-    // We want the first render to be synchronous too
-    // The initial vdom is whatever we can virtualise from the root node when we
-    // mount on to it.
-    this.#vdom = virtualise(this.root);
+    // The initial vdom is provided by platform.mount() — no virtualise call.
+    this.#vdom = initialVdom;
     // The initial set of events is empty, since we just virtualised.
     this.#cache = Cache.new$();
 
@@ -232,6 +230,10 @@ export class Runtime {
   #afterPaint = empty_list;
   #renderTimer = null;
 
+  #platformScheduleRender;
+  #platformAfterRender;
+  #cancelRender = null;
+
   #actions = {
     dispatch: (message) => this.dispatch(message),
     emit: (event, data) => this.emit(event, data),
@@ -251,7 +253,8 @@ export class Runtime {
       this.#renderTimer = "sync";
       queueMicrotask(() => this.#render());
     } else {
-      this.#renderTimer = window.requestAnimationFrame(() => this.#render());
+      this.#renderTimer = true;
+      this.#cancelRender = this.#platformScheduleRender(() => this.#render());
     }
   }
 
@@ -312,6 +315,7 @@ export class Runtime {
 
   #render() {
     this.#renderTimer = null;
+    this.#cancelRender = null;
 
     const next = this.#view(this.#model);
     const { patch, cache } = diff(this.#cache, this.#vdom, next);
@@ -319,6 +323,8 @@ export class Runtime {
     this.#cache = cache;
     this.#vdom = next;
     this.#reconciler.push(patch, Cache.memos(cache));
+
+    this.#platformAfterRender();
 
     // We have performed a render, the DOM has been updated but the browser has
     // not yet been given the opportunity to paint. We queue a microtask to block
@@ -340,7 +346,7 @@ export class Runtime {
       const effects = makeEffect(this.#afterPaint);
       this.#afterPaint = empty_list;
 
-      window.requestAnimationFrame(() => this.#handleAsyncEffects(effects));
+      this.#platformScheduleRender(() => this.#handleAsyncEffects(effects));
     }
   }
 }

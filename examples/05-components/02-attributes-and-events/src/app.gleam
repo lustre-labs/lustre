@@ -3,6 +3,7 @@
 import counter
 import gleam/int
 import lustre
+import lustre/platform
 import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
@@ -10,10 +11,11 @@ import lustre/element/html
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
+  let assert Ok(platform) = platform.dom("#app")
   let app = lustre.simple(init, update, view)
 
   let assert Ok(_) = counter.register()
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
+  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
 
   Nil
 }

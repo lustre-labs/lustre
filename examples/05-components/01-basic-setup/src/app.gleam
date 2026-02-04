@@ -2,6 +2,7 @@
 
 import counter
 import lustre
+import lustre/platform
 import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
@@ -9,13 +10,14 @@ import lustre/element/html
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
+  let assert Ok(platform) = platform.dom("#app")
   let app = lustre.simple(init, update, view)
 
   // Typically, it's important to register a component *before* your app starts.
   // This means the component's tag name – "my-counter" in this case - is registered
   // with the browser.
   let assert Ok(_) = counter.register()
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
+  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
 
   Nil
 }

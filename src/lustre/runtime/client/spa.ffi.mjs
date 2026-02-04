@@ -1,8 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { Result$Ok, Result$Error } from "../../../gleam.mjs";
-import { Error$ElementNotFound, Error$NotABrowser } from "../../../lustre.mjs";
-import { is_browser, Runtime } from "./runtime.ffi.mjs";
+import { Runtime } from "./runtime.ffi.mjs";
 import {
   Message$isEffectDispatchedMessage,
   Message$isEffectEmitEvent,
@@ -14,8 +12,8 @@ import {
 export class Spa {
   #runtime;
 
-  constructor(root, [init, effects], update, view) {
-    this.#runtime = new Runtime(root, [init, effects], view, update);
+  constructor(root, initialVdom, [init, effects], update, view, platform) {
+    this.#runtime = new Runtime(root, initialVdom, [init, effects], view, update, platform);
   }
 
   send(message) {
@@ -37,15 +35,6 @@ export class Spa {
   }
 }
 
-export const start = ({ init, update, view }, selector, flags) => {
-  if (!is_browser()) return Result$Error(Error$NotABrowser());
-
-  const root =
-    selector instanceof HTMLElement
-      ? selector
-      : globalThis.document.querySelector(selector);
-
-  if (!root) return Result$Error(Error$ElementNotFound(selector));
-
-  return Result$Ok(new Spa(root, init(flags), update, view));
+export const start = (root, initialVdom, app, platform, flags) => {
+  return new Spa(root, initialVdom, app.init(flags), app.update, app.view, platform);
 };

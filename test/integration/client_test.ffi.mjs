@@ -52,10 +52,11 @@ function synchronise_value_attributes() {
   });
 }
 
-export function with_reconciler(debug, callback) {
+export function with_reconciler(debug, get_platform, callback) {
   return runInBrowserContext(() => {
     const noop = () => {};
-    const reconciler = new Reconciler(document.body, noop, noop, { debug });
+    const platform = get_platform();
+    const reconciler = new Reconciler(document.body, noop, noop, platform, { debug });
     callback(reconciler);
   });
 }
@@ -70,10 +71,12 @@ export function push(reconciler, patch) {
   reconciler.push(patch);
 }
 
-export function with_client_runtime(initial_html, app, callback) {
+export function with_client_runtime(initial_html, make_app, get_platform, callback) {
   return runInBrowserContext(async () => {
-    // Set the pre-rendered HTML
     document.body.innerHTML = initial_html;
+
+    const app = make_app();
+    const platform = get_platform();
 
     const [init_model, init_effects] = app.init();
     const runtime = {
@@ -93,11 +96,14 @@ export function with_client_runtime(initial_html, app, callback) {
       return runtime.vdom;
     };
 
+    const initialVdom = do_virtualise(document.body);
     runtime.lustre = new Runtime(
       document.body,
+      initialVdom,
       [init_model, init_effects],
       wrappedView,
       wrappedUpdate,
+      platform,
       { debug: true },
     );
 

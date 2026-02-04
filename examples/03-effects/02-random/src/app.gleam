@@ -5,6 +5,7 @@ import gleam/int
 import gleam/option.{type Option, None, Some}
 import gleam/order.{type Order, Eq, Gt, Lt}
 import lustre
+import lustre/platform
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -20,8 +21,9 @@ pub fn main() {
   // here *before* starting the app so we can pass the result in as flags.
   let initial_target = int.random(10)
 
+  let assert Ok(platform) = platform.dom("#app")
   let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", initial_target)
+  let assert Ok(_) = lustre.start(app, on: platform, with: initial_target)
 
   Nil
 }

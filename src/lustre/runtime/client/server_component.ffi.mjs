@@ -10,6 +10,7 @@ import {
   ContextRequestEvent,
   LustreEvent,
 } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs";
+import { dom_strict } from "../../../../build/dev/javascript/lustre/lustre/platform.mjs";
 import {
   mount_kind,
   reconcile_kind,
@@ -161,10 +162,12 @@ export class ServerComponent extends HTMLElement {
           this.#transport?.send(data);
         };
 
+        const platform = dom_strict(this.#shadowRoot);
         this.#reconciler = new Reconciler(
           this.#shadowRoot,
           decodeEvent,
           dispatch,
+          platform,
         );
 
         this.#remoteObservedAttributes = new Set(data.observed_attributes);

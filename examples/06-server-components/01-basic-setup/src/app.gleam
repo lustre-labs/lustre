@@ -12,6 +12,7 @@ import lustre
 import lustre/attribute
 import lustre/element
 import lustre/element/html.{html}
+import lustre/platform
 import lustre/server_component
 import mist.{type Connection, type ResponseData}
 
@@ -139,7 +140,7 @@ fn init_counter_socket(_) -> CounterSocketInit {
   // Lustre runtime by calling `lustre.start_server_component`. This is the same
   // `Runtime` type we get from `lustre.start` but this function doesn't need a
   // CSS selector for the element to attach to: there's no DOM here!
-  let assert Ok(component) = lustre.start_server_component(counter, Nil)
+  let assert Ok(component) = lustre.start(counter, on: platform.headless(), with: Nil)
 
   // The server component runtime communicates to the websocket process using
   // Gleam's standard process messaging. We construct a new subject that the
