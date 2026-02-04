@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/json
+import gleam/option.{None, Some}
 import gleam/order.{Eq, Gt, Lt}
 import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
@@ -10,7 +11,7 @@ import lustre/vdom/patch.{type Change, type Patch, Patch}
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{type Attribute, Attribute, Event, Property}
 import lustre/vdom/vnode.{
-  type Element, Element, Fragment, Map, Memo, Text, UnsafeInnerHtml,
+  type Element, Element, Fragment, Map, Memo, RawContainer, Text,
 }
 
 // TYPES -----------------------------------------------------------------------
@@ -477,7 +478,7 @@ fn do_diff(
       )
     }
 
-    [UnsafeInnerHtml(..) as prev, ..old], [UnsafeInnerHtml(..) as next, ..new] -> {
+    [RawContainer(..) as prev, ..old], [RawContainer(..) as next, ..new] -> {
       let child_path = path.add(path, node_index, next.key)
 
       let AttributeChange(events:, added: added_attrs, removed: removed_attrs) =
@@ -496,9 +497,14 @@ fn do_diff(
         _, _ -> [patch.update(added: added_attrs, removed: removed_attrs)]
       }
 
-      let child_changes = case prev.inner_html == next.inner_html {
+      let identical_content = case next.compare {
+        Some(cmp) -> cmp(prev.content, next.content)
+        None -> prev.content == next.content
+      }
+
+      let child_changes = case identical_content {
         True -> child_changes
-        False -> [patch.replace_inner_html(next.inner_html), ..child_changes]
+        False -> [patch.replace_raw_content(next.content), ..child_changes]
       }
 
       let children = case child_changes {

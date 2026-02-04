@@ -1,0 +1,7 @@
+---
+version: 1.5.3
+title: [html] Serializer with self-closing elements
+file: ./test/snapshot/html_test.gleam
+test_name: serializer_self_closing_test
+---
+<div><icon/><path/><span></span></div>

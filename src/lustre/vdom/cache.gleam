@@ -9,8 +9,8 @@ import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{type Attribute, type Handler, Event, Handler}
 import lustre/vdom/vnode.{
-  type Element, type Memos, type View, Element, Fragment, Map, Memo, Text,
-  UnsafeInnerHtml,
+  type Element, type Memos, type View, Element, Fragment, Map, Memo,
+  RawContainer, Text,
 }
 
 // TYPES -----------------------------------------------------------------------
@@ -286,7 +286,7 @@ fn do_add_children(
       do_add_children(handlers, children, vdoms, parent, next, rest)
     }
 
-    [UnsafeInnerHtml(key:, attributes:, ..), ..rest] -> {
+    [RawContainer(key:, attributes:, ..), ..rest] -> {
       let path = path.add(parent, child_index, key)
 
       let handlers = add_attributes(handlers, path, attributes)
@@ -392,7 +392,7 @@ fn do_remove_children(
       do_remove_children(handlers, children, vdoms, parent, next, rest)
     }
 
-    [UnsafeInnerHtml(key:, attributes:, ..), ..rest] -> {
+    [RawContainer(key:, attributes:, ..), ..rest] -> {
       let path = path.add(parent, index, key)
 
       let handlers = remove_attributes(handlers, path, attributes)

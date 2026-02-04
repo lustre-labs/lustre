@@ -12,6 +12,7 @@ import {
   Result$isOk,
   Result$Ok$0,
 } from "../../gleam.mjs";
+import { new$ as newPlatform } from "../platform.mjs";
 
 // Helpers to convert between Gleam Result and nullable.
 const unwrapResult = (result) =>
@@ -69,6 +70,11 @@ export const move_before = SUPPORTS_MOVE_BEFORE
 
 export const remove_child = (parent, child) => parent.removeChild(child);
 
+export const next_sibling = (node) => {
+  const sibling = node.nextSibling;
+  return sibling ? Result$Ok(sibling) : Result$Error(undefined);
+};
+
 // ATTRIBUTES ------------------------------------------------------------------
 
 export const get_attribute = (node, name) =>
@@ -89,8 +95,8 @@ export const set_text = (node, content) => {
   node.data = content ?? "";
 };
 
-export const set_inner_html = (node, html) => {
-  node.innerHTML = html ?? "";
+export const set_raw_content = (node, content) => {
+  node.innerHTML = content ?? "";
 };
 
 // EVENTS ----------------------------------------------------------------------
@@ -109,3 +115,32 @@ export const schedule_render = (callback) => {
 };
 
 export const after_render = () => {};
+
+// PLATFORM CONSTRUCTOR --------------------------------------------------------
+
+// Returns a complete Platform record configured for the browser DOM.
+// This is called from dom.gleam's dom_strict function.
+export const dom_strict = (root) => {
+  return newPlatform(
+    root,
+    mount_strict,
+    create_element,
+    create_text_node,
+    create_fragment,
+    create_comment,
+    insert_before,
+    move_before,
+    remove_child,
+    next_sibling,
+    get_attribute,
+    set_attribute,
+    remove_attribute,
+    set_property,
+    set_text,
+    set_raw_content,
+    add_event_listener,
+    remove_event_listener,
+    schedule_render,
+    after_render,
+  );
+};

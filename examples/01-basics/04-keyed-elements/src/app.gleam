@@ -2,17 +2,17 @@
 
 import gleam/list
 import lustre
-import lustre/platform
 import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/element/keyed
 import lustre/event
+import lustre/platform/dom
 
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
-  let assert Ok(platform) = platform.dom("#app")
+  let assert Ok(platform) = dom.platform("#app")
   let app = lustre.simple(init, update, view)
   let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
 

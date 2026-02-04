@@ -5,6 +5,8 @@ import lustre/element/html
 @target(javascript)
 import lustre/element/keyed
 @target(javascript)
+import lustre/platform/dom
+@target(javascript)
 import lustre_test
 
 @target(javascript)
@@ -188,7 +190,7 @@ pub fn virtualise_complex_nested_test() {
 
 @target(javascript)
 fn test_virtualise(vdom: Element(msg)) {
-  use virtualised <- virtualise(element.to_string(vdom))
+  use virtualised <- virtualise(dom.to_string(vdom))
   assert lustre_test.nodes_equal(virtualised, vdom)
 }
 

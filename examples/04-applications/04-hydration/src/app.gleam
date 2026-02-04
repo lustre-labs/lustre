@@ -5,13 +5,13 @@ import gleam/json
 import gleam/list
 import gleam/option
 import lustre
-import lustre/platform
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/element/keyed
 import lustre/event
+import lustre/platform/dom
 import rsvp
 
 // MAIN ------------------------------------------------------------------------
@@ -58,7 +58,7 @@ pub fn main() {
     Error(_) -> option.None
   }
 
-  let assert Ok(platform) = platform.dom("#app")
+  let assert Ok(platform) = dom.platform("#app")
   let app = lustre.application(init, update, view)
 
   // We (optionally) pass the hydrated model as `flags` to our init function.

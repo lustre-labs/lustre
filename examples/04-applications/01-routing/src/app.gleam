@@ -5,11 +5,11 @@ import gleam/int
 import gleam/list
 import gleam/uri.{type Uri}
 import lustre
-import lustre/platform
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
+import lustre/platform/dom
 
 // Modem is a package providing effects and functionality for routing in SPAs.
 // This means instead of links taking you to a new page and reloading everything,
@@ -19,7 +19,7 @@ import modem
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
-  let assert Ok(platform) = platform.dom("#app")
+  let assert Ok(platform) = dom.platform("#app")
   let app = lustre.application(init, update, view)
   let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
 

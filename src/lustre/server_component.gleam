@@ -85,6 +85,7 @@ import lustre/element.{type Element}
 import lustre/element/html
 import lustre/runtime/headless
 import lustre/runtime/transport
+import lustre/serializer.{type Serializer}
 import lustre/vdom/vattr.{Event}
 
 @target(erlang)
@@ -365,6 +366,9 @@ pub fn runtime_message_decoder() -> Decoder(RuntimeMessage(msg)) {
 /// Because your WebSocket server sits between the two parts of the runtime, you
 /// need to encode these actions and send them to the client runtime yourself.
 ///
-pub fn client_message_to_json(message: ClientMessage(msg)) -> Json {
-  transport.client_message_to_json(message)
+pub fn client_message_to_json(
+  message: ClientMessage(msg),
+  serializer: Serializer(msg),
+) -> Json {
+  transport.client_message_to_json(message, serializer)
 }

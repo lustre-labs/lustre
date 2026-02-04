@@ -2,15 +2,15 @@
 
 import gleam/int
 import lustre
-import lustre/platform
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
+import lustre/platform/dom
 
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
-  let assert Ok(platform) = platform.dom("#app")
+  let assert Ok(platform) = dom.platform("#app")
   let app = lustre.simple(init, update, view)
 
   // When starting a Lustre app, you can pass in initial data as "flags" to your

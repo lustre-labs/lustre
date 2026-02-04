@@ -21,6 +21,8 @@ import lustre/event
 @target(javascript)
 import lustre/platform
 @target(javascript)
+import lustre/platform/dom
+@target(javascript)
 import lustre_test
 
 // TYPES -----------------------------------------------------------------------
@@ -40,13 +42,13 @@ type CounterMsg {
 
 @target(javascript)
 fn get_platform() -> platform.Platform(
-  platform.DomNode,
-  platform.DomNode,
-  platform.DomNode,
-  platform.DomEvent,
+  dom.DomNode,
+  dom.DomNode,
+  dom.DomNode,
+  dom.DomEvent,
   msg,
 ) {
-  let assert Ok(p) = platform.dom("body")
+  let assert Ok(p) = dom.platform("body")
   p
 }
 
@@ -65,7 +67,7 @@ pub fn client_runtime_map_with_events_test() {
       ),
     ])
 
-  let html_string = element.to_string(initial)
+  let html_string = dom.to_string(initial)
 
   use runtime <- with_client_runtime(
     html_string,
@@ -100,9 +102,9 @@ pub fn client_runtime_memo_caching_test() {
   }
 
   let initial = view(0)
-  let html_string = element.to_string(initial)
+  let html_string = dom.to_string(initial)
 
-  // called once for element.to_string
+  // called once for dom.to_string
   assert booklet.get(call_count) == 1
 
   use runtime <- with_client_runtime(
@@ -137,7 +139,7 @@ pub fn client_runtime_memo_events_test() {
   }
 
   let initial = view(0)
-  let html_string = element.to_string(initial)
+  let html_string = dom.to_string(initial)
 
   use runtime <- with_client_runtime(
     html_string,
@@ -170,7 +172,7 @@ pub fn client_runtime_single_event_test() {
   }
 
   let initial = view(0)
-  let html_string = element.to_string(initial)
+  let html_string = dom.to_string(initial)
 
   use runtime <- with_client_runtime(
     html_string,
@@ -210,7 +212,7 @@ pub fn client_runtime_multiple_events_test() {
   }
 
   let initial = view(0)
-  let html_string = element.to_string(initial)
+  let html_string = dom.to_string(initial)
 
   use runtime <- with_client_runtime(
     html_string,
@@ -253,7 +255,7 @@ pub fn client_runtime_fragment_rendering_test() {
   }
 
   let initial = view(0)
-  let html_string = element.to_string(initial)
+  let html_string = dom.to_string(initial)
 
   use runtime <- with_client_runtime(
     html_string,
@@ -299,7 +301,7 @@ pub fn client_runtime_controlled_text_input_test() {
   }
 
   let initial = view("")
-  let html_string = element.to_string(initial)
+  let html_string = dom.to_string(initial)
 
   use runtime <- with_client_runtime(
     html_string,
@@ -331,7 +333,7 @@ pub fn client_runtime_controlled_checkbox_test() {
   }
 
   let initial = view(False)
-  let html_string = element.to_string(initial)
+  let html_string = dom.to_string(initial)
 
   use runtime <- with_client_runtime(
     html_string,
@@ -364,7 +366,7 @@ pub fn client_runtime_select_dropdown_test() {
   }
 
   let initial = view("red")
-  let html_string = element.to_string(initial)
+  let html_string = dom.to_string(initial)
 
   use runtime <- with_client_runtime(
     html_string,
@@ -399,9 +401,9 @@ pub fn client_runtime_memo_dependency_change_test() {
   }
 
   let initial = view(0)
-  let html_string = element.to_string(initial)
+  let html_string = dom.to_string(initial)
 
-  // Called once for element.to_string
+  // Called once for dom.to_string
   assert booklet.get(call_count) == 1
 
   use _runtime <- with_client_runtime(
@@ -440,9 +442,9 @@ pub fn client_runtime_memo_stable_dependency_test() {
   }
 
   let initial = view(#(0, ""))
-  let html_string = element.to_string(initial)
+  let html_string = dom.to_string(initial)
 
-  // Called once for element.to_string
+  // Called once for dom.to_string
   assert booklet.get(call_count) == 1
 
   use _runtime <- with_client_runtime(
@@ -486,7 +488,7 @@ pub fn client_runtime_event_bubbling_test() {
   }
 
   let initial = view([])
-  let html_string = element.to_string(initial)
+  let html_string = dom.to_string(initial)
 
   use runtime <- with_client_runtime(
     html_string,
@@ -524,7 +526,7 @@ pub fn client_runtime_nested_fragments_test() {
   }
 
   let initial = view(0)
-  let html_string = element.to_string(initial)
+  let html_string = dom.to_string(initial)
 
   use runtime <- with_client_runtime(
     html_string,
@@ -558,7 +560,7 @@ pub fn client_runtime_keyed_fragments_test() {
   let initial_list = ["First", "Second", "Third"]
 
   let initial = view(initial_list)
-  let html_string = element.to_string(initial)
+  let html_string = dom.to_string(initial)
 
   use runtime <- with_client_runtime(
     html_string,
@@ -614,13 +616,7 @@ pub fn with_client_runtime(
   initial_html: String,
   make_app: fn() -> lustre.App(Nil, model, msg),
   get_platform: fn() ->
-    platform.Platform(
-      platform.DomNode,
-      platform.DomNode,
-      platform.DomNode,
-      platform.DomEvent,
-      msg,
-    ),
+    platform.Platform(dom.DomNode, dom.DomNode, dom.DomNode, dom.DomEvent, msg),
   test_callback: fn(Runtime(msg, model)) -> Nil,
 ) -> Nil
 

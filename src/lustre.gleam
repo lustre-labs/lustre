@@ -166,7 +166,8 @@ import lustre/component.{type Config, type Option}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/internals/constants
-import lustre/platform
+import lustre/platform.{type Platform}
+import lustre/platform/dom
 import lustre/runtime/headless
 
 // TYPES -----------------------------------------------------------------------
@@ -189,7 +190,7 @@ import lustre/runtime/headless
 ///
 /// If you're only interested in using Lustre as a HTML templating engine, you
 /// don't need an `App` at all! You can render an element directly using the
-/// [`element.to_string`](./lustre/element.html#to_string) function.
+/// [`dom.to_string`](./lustre/platform/dom.html#to_string) function.
 ///
 pub opaque type App(start_args, model, msg) {
   App(
@@ -354,7 +355,7 @@ pub fn named(
 ///
 pub fn start(
   app: App(start_args, model, msg),
-  on platform: platform.Platform(node, target, value, event, msg),
+  on platform: Platform(node, target, value, event, msg),
   with start_args: start_args,
 ) -> Result(Runtime(msg), Error) {
   case platform.is_headless(platform) {
@@ -376,10 +377,10 @@ fn do_start_rendered(
   _root: node,
   _initial_vdom: element.Element(msg),
   _app: App(start_args, model, msg),
-  _platform: platform.Platform(node, target, value, event, msg),
+  _platform: Platform(node, target, value, event, msg),
   _start_args: start_args,
 ) -> Runtime(msg) {
-  todo as "Rendered runtime not yet implemented for Erlang"
+  panic as "Rendered runtime not yet implemented for Erlang"
 }
 
 @external(javascript, "./lustre/runtime/headless.ffi.mjs", "start")
@@ -473,20 +474,14 @@ pub fn register(
   app: App(Nil, model, msg),
   named name: String,
 ) -> Result(Nil, Error) {
-  do_register(app, platform.dom_strict, name)
+  do_register(app, dom.platform_strict, name)
 }
 
 @external(javascript, "./lustre/runtime/web_component.ffi.mjs", "make_component")
 fn do_register(
   _app: App(Nil, model, msg),
-  _make_platform: fn(platform.DomNode) ->
-    platform.Platform(
-      platform.DomNode,
-      platform.DomNode,
-      platform.DomNode,
-      platform.DomEvent,
-      msg,
-    ),
+  _make_platform: fn(dom.DomNode) ->
+    Platform(dom.DomNode, dom.DomNode, dom.DomNode, dom.DomEvent, msg),
   _name: String,
 ) -> Result(Nil, Error) {
   Error(NotABrowser)

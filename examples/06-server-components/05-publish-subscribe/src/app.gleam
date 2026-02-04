@@ -11,9 +11,9 @@ import gleam/otp/actor
 import group_registry.{type GroupRegistry}
 import lustre
 import lustre/attribute
-import lustre/element
 import lustre/element/html.{html}
 import lustre/platform
+import lustre/platform/dom
 import lustre/server_component
 import mist.{type Connection, type ResponseData}
 import whiteboard
@@ -70,7 +70,7 @@ fn serve_html() -> Response(ResponseData) {
         server_component.element([server_component.route("/ws")], []),
       ]),
     ])
-    |> element.to_document_string_tree
+    |> dom.to_document_string_tree
     |> bytes_tree.from_string_tree
 
   response.new(200)
@@ -81,7 +81,7 @@ fn serve_html() -> Response(ResponseData) {
 // JAVASCRIPT ------------------------------------------------------------------
 
 fn serve_runtime() -> Response(ResponseData) {
-  let assert Ok(lustre_priv) = application.priv_directory("lustre")
+  let assert Ok(lustre_priv) = application.priv_directory("lustre_platform")
   let file_path = lustre_priv <> "/static/lustre-server-component.min.mjs"
 
   case mist.send_file(file_path, offset: 0, limit: None) {
@@ -134,7 +134,12 @@ fn init_whiteboard_socket(
   // This registry can then used in the whitespace component to communicate with
   // other component instances. Check out the whitespace component to learn how!
   let whiteboard = whiteboard.component()
-  let assert Ok(component) = lustre.start(whiteboard, on: platform.headless(), with: registry)
+  let assert Ok(component) =
+    lustre.start(
+      whiteboard,
+      on: platform.headless(dom.serializer()),
+      with: registry,
+    )
 
   let self = process.new_subject()
   let selector = process.new_selector() |> process.select(self)
@@ -165,7 +170,11 @@ fn loop_whiteboard_socket(
     }
 
     mist.Custom(client_message) -> {
-      let json = server_component.client_message_to_json(client_message)
+      let json =
+        server_component.client_message_to_json(
+          client_message,
+          dom.serializer(),
+        )
       let assert Ok(_) = mist.send_text_frame(connection, json.to_string(json))
 
       mist.continue(state)

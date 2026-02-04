@@ -8,12 +8,11 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/string
-import gleam/string_tree.{type StringTree}
+import gleam/option.{type Option}
 import lustre/attribute.{type Attribute}
 import lustre/internals/mutable_map
 import lustre/internals/ref
-import lustre/vdom/vnode.{Element}
+import lustre/vdom/vnode
 
 // TYPES -----------------------------------------------------------------------
 
@@ -36,16 +35,15 @@ import lustre/vdom/vnode.{Element}
 /// - The [`none`](#none) function to render nothing - useful for conditional
 ///   rendering.
 ///
-/// If you have more complex needs, there are two more-advanced ways to construct
+/// If you have more complex needs, there is one additional way to construct
 /// HTML elements:
 ///
 /// - The [`namespaced`](#namespaced) function to create elements in a specific
 ///   XML namespace. This is useful for SVG or MathML elements, for example.
 ///
-/// - The [`advanced`](#advanced) function to create elements with more control
-///   over how the element is rendered when converted to a string. This is
-///   necessary because some HTML, SVG, and MathML elements are self-closing or
-///   void elements, and Lustre needs to know how to render them correctly!
+/// For controlling how elements are rendered to strings (void elements,
+/// self-closing tags), use a custom [`SerializerConfig`](./platform/dom.html#SerializerConfig)
+/// with [`dom.serialize`](./platform/dom.html#serialize).
 ///
 /// Finally, for other niche use cases there are two additional functions:
 ///
@@ -80,29 +78,11 @@ pub type Ref =
 /// function is particularly handy when constructing custom elements, either
 /// from your own Lustre components or from external JavaScript libraries.
 ///
-/// > **Note**: Because Lustre is primarily used to create HTML, this function
-/// > special-cases the following tags which render as
-/// > [void elements](https://developer.mozilla.org/en-US/docs/Glossary/Void_element):
-/// >
-/// >   - area
-/// >   - base
-/// >   - br
-/// >   - col
-/// >   - embed
-/// >   - hr
-/// >   - img
-/// >   - input
-/// >   - link
-/// >   - meta
-/// >   - param
-/// >   - source
-/// >   - track
-/// >   - wbr
-/// >
-/// > This will only affect the output of `to_string` and `to_string_builder`!
-/// > If you need to render any of these tags with children, *or* you want to
-/// > render some other tag as self-closing or void, use [`advanced`](#advanced)
-/// > to construct the element instead.
+/// When rendering elements to strings with [`to_string`](#to_string), the default
+/// HTML serializer will render standard HTML void elements (like `<br>`, `<img>`,
+/// `<input>`) without closing tags. To customize which elements are treated as
+/// void or self-closing, use [`dom.serialize`](./platform/dom.html#serialize)
+/// with a custom [`SerializerConfig`](./platform/dom.html#SerializerConfig).
 ///
 pub fn element(
   tag: String,
@@ -116,8 +96,6 @@ pub fn element(
     attributes:,
     children: children,
     keyed_children: mutable_map.new(),
-    self_closing: False,
-    void: vnode.is_void_html_element(tag, ""),
   )
 }
 
@@ -137,33 +115,6 @@ pub fn namespaced(
     attributes:,
     children:,
     keyed_children: mutable_map.new(),
-    self_closing: False,
-    void: vnode.is_void_html_element(tag, namespace),
-  )
-}
-
-/// A function for constructing elements with more control over how the element
-/// is rendered when converted to a string. This is necessary because some HTML,
-/// SVG, and MathML elements are self-closing or void elements, and Lustre needs
-/// to know how to render them correctly!
-///
-pub fn advanced(
-  namespace: String,
-  tag: String,
-  attributes: List(Attribute(msg)),
-  children: List(Element(msg)),
-  self_closing: Bool,
-  void: Bool,
-) -> Element(msg) {
-  vnode.element(
-    key: "",
-    namespace:,
-    tag:,
-    attributes:,
-    children:,
-    keyed_children: mutable_map.new(),
-    self_closing:,
-    void:,
   )
 }
 
@@ -193,24 +144,30 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
   vnode.fragment(key: "", children:, keyed_children: mutable_map.new())
 }
 
-/// A function for constructing a wrapper element with custom raw HTML as its
-/// content. Lustre will render the provided HTML verbatim, and will not touch
-/// its children except when replacing the entire inner html on changes.
+/// A function for constructing a wrapper element with platform-specific raw
+/// content. This is the generic version of `unsafe_raw_html` that accepts any
+/// content type, allowing platforms to inject their own node types.
 ///
-/// For HTML elements you can use an empty string for the namespace.
+/// For DOM platforms, use `unsafe_raw_html` with a String instead.
+/// For other platforms (like OpenTUI), this allows inserting raw platform nodes.
 ///
-/// > **Note:** The provided HTML will not be escaped automatically and may expose
-/// > your applications to XSS attacks! Make sure you absolutely trust the HTML you
-/// > pass to this function. In particular, never use this to display un-sanitised
-/// > user HTML!
+/// The platform's `set_raw_content` function receives this content and decides
+/// how to handle it.
 ///
-pub fn unsafe_raw_html(
-  namespace: String,
-  tag: String,
-  attributes: List(Attribute(msg)),
-  inner_html: String,
+/// The optional `compare` parameter allows custom equality checking for the content.
+/// When provided, the diff algorithm uses this comparator instead of `==` to
+/// determine if the content has changed. This is useful for content types like
+/// closures where reference equality isn't appropriate.
+///
+pub fn unsafe_raw_content(
+  key key: String,
+  namespace namespace: String,
+  tag tag: String,
+  attributes attributes: List(Attribute(msg)),
+  content content: a,
+  compare compare: Option(fn(a, a) -> Bool),
 ) -> Element(msg) {
-  vnode.unsafe_inner_html(key: "", namespace:, tag:, attributes:, inner_html:)
+  vnode.raw_container(key:, namespace:, tag:, attributes:, content:, compare:)
 }
 
 // MEMOISATION -----------------------------------------------------------------
@@ -271,91 +228,4 @@ pub fn ref(value: a) -> Ref {
 ///
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
   vnode.map(element, f)
-}
-
-// CONVERSIONS -----------------------------------------------------------------
-
-/// Convert a Lustre `Element` to a string. This is _not_ pretty-printed, so
-/// there are no newlines or indentation. If you need to pretty-print an element,
-/// reach out on the [Gleam Discord](https://discord.gg/Fm8Pwmy) or
-/// [open an issue](https://github.com/lustre-labs/lustre/issues/new) with your
-/// use case and we'll see what we can do!
-///
-pub fn to_string(element: Element(msg)) -> String {
-  vnode.to_string(element)
-}
-
-/// Converts an element to a string like [`to_string`](#to_string), but prepends
-/// a `<!doctype html>` declaration to the string. This is useful for rendering
-/// complete HTML documents.
-///
-/// If the provided element is not an `html` element, it will be wrapped in both
-/// a `html` and `body` element.
-///
-pub fn to_document_string(el: Element(msg)) -> String {
-  vnode.to_string(case el {
-    Element(tag: "html", ..) -> el
-    Element(tag: "head", ..) | Element(tag: "body", ..) ->
-      element("html", [], [el])
-    _ -> element("html", [], [element("body", [], [el])])
-  })
-  |> string.append("<!doctype html>\n", _)
-}
-
-/// Convert a Lustre `Element` to a `StringTree`. This is _not_ pretty-printed,
-/// so there are no newlines or indentation. If you need to pretty-print an element,
-/// reach out on the [Gleam Discord](https://discord.gg/Fm8Pwmy) or
-/// [open an issue](https://github.com/lustre-labs/lustre/issues/new) with your
-/// use case and we'll see what we can do!
-///
-pub fn to_string_tree(element: Element(msg)) -> StringTree {
-  vnode.to_string_tree(element, "")
-}
-
-/// Converts an element to a `StringTree` like [`to_string_builder`](#to_string_builder),
-/// but prepends a `<!doctype html>` declaration. This is useful for rendering
-/// complete HTML documents.
-///
-/// If the provided element is not an `html` element, it will be wrapped in both
-/// a `html` and `body` element.
-///
-pub fn to_document_string_tree(el: Element(msg)) -> StringTree {
-  vnode.to_string_tree(
-    case el {
-      Element(tag: "html", ..) -> el
-      Element(tag: "head", ..) | Element(tag: "body", ..) ->
-        element("html", [], [el])
-      _ -> element("html", [], [element("body", [], [el])])
-    },
-    "",
-  )
-  |> string_tree.prepend("<!doctype html>\n")
-}
-
-/// Converts a Lustre `Element` to a human-readable string by inserting new lines
-/// and indentation where appropriate. This is useful for debugging and testing,
-/// but for production code you should use [`to_string`](#to_string) or
-/// [`to_document_string`](#to_document_string) instead.
-///
-/// 💡 This function works great with the snapshot testing library
-///    [birdie](https://hexdocs.pm/birdie)!
-///
-/// ## Using `to_string`:
-///
-/// ```html
-/// <header><h1>Hello, world!</h1></header>
-/// ```
-///
-/// ## Using `to_readable_string`
-///
-/// ```html
-/// <header>
-///   <h1>
-///     Hello, world!
-///   </h1>
-/// </header>
-/// ```
-///
-pub fn to_readable_string(el: Element(msg)) -> String {
-  vnode.to_snapshot(el, False)
 }

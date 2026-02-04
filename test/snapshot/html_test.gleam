@@ -7,6 +7,7 @@ import lustre/element/html
 import lustre/element/keyed
 import lustre/element/mathml
 import lustre/element/svg
+import lustre/platform/dom
 import lustre/vdom/vnode
 import lustre_test
 
@@ -67,16 +68,43 @@ pub fn element_namespaced_void_test() {
   )
 }
 
-pub fn void_advanced_elements_test() {
-  use <- lustre_test.test_filter("void_advanced_elements_test")
+pub fn serializer_custom_void_test() {
+  use <- lustre_test.test_filter("serializer_custom_void_test")
+
+  // Test that a custom serializer can mark additional elements as void.
+  let serializer =
+    dom.serializer_config()
+    |> dom.with_void("custom-void")
 
   let input =
     html.div([], [
-      element.advanced("", "link", [], [element.text("Wibble")], False, False),
-      element.advanced("", "link", [], [], False, True),
+      element.element("custom-void", [], []),
+      html.span([], [element.text("normal")]),
     ])
 
-  input |> snapshot("Advanced elements should be able to be void and non-void")
+  input
+  |> dom.serialize(serializer, _)
+  |> birdie.snap("[html] Serializer with custom void element")
+}
+
+pub fn serializer_self_closing_test() {
+  use <- lustre_test.test_filter("serializer_self_closing_test")
+
+  // Test that a serializer can render elements as self-closing (XML style).
+  let serializer =
+    dom.empty_serializer_config()
+    |> dom.with_self_closing_tags(["icon", "path"])
+
+  let input =
+    html.div([], [
+      element.element("icon", [], []),
+      element.element("path", [], []),
+      html.span([], []),
+    ])
+
+  input
+  |> dom.serialize(serializer, _)
+  |> birdie.snap("[html] Serializer with self-closing elements")
 }
 
 pub fn keyed_void_elements_test() {
@@ -118,20 +146,23 @@ pub fn keyed_element_namespaced_void_test() {
   )
 }
 
-pub fn keyed_void_advanced_elements_test() {
-  use <- lustre_test.test_filter("keyed_void_advanced_elements_test")
+pub fn serializer_keyed_custom_void_test() {
+  use <- lustre_test.test_filter("serializer_keyed_custom_void_test")
+
+  // Test that a custom serializer works correctly with keyed elements.
+  let serializer =
+    dom.serializer_config()
+    |> dom.with_void("custom-void")
 
   let input =
     keyed.div([], [
-      #(
-        "non-void",
-        element.advanced("", "link", [], [element.text("Wibble")], False, False),
-      ),
-      #("void", element.advanced("", "link", [], [], False, True)),
+      #("void", element.element("custom-void", [], [])),
+      #("normal", html.span([], [element.text("content")])),
     ])
 
   input
-  |> snapshot("Keyed advanced elements should be able to be void and non-void")
+  |> dom.serialize(serializer, _)
+  |> birdie.snap("[html] Serializer with keyed custom void elements")
 }
 
 // FRAGMENT TESTS --------------------------------------------------------------
@@ -449,5 +480,5 @@ pub fn namespaced_nesting_default_html_test() {
 // UTILS -----------------------------------------------------------------------
 
 fn snapshot(el: Element(msg), title: String) -> Nil {
-  el |> vnode.to_snapshot(True) |> birdie.snap("[html] " <> title)
+  el |> dom.to_snapshot(True) |> birdie.snap("[html] " <> title)
 }

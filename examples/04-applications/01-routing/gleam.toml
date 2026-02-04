@@ -4,5 +4,5 @@ dev-dependencies = { lustre_dev_tools = ">= 2.0.0 and < 3.0.0" }
 
 [dependencies]
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
-lustre = { path = "../../../" }
+lustre_platform = { path = "../../../" }
 modem = ">= 2.0.1 and < 3.0.0"

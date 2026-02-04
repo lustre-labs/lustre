@@ -84,8 +84,6 @@ pub fn element(
     attributes:,
     children:,
     keyed_children:,
-    self_closing: False,
-    void: vnode.is_void_html_element(tag, ""),
   )
 }
 
@@ -113,8 +111,6 @@ pub fn namespaced(
     attributes:,
     children:,
     keyed_children:,
-    self_closing: False,
-    void: vnode.is_void_html_element(tag, namespace),
   )
 }
 

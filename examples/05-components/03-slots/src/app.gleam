@@ -2,16 +2,16 @@
 
 import details
 import lustre
-import lustre/platform
 import lustre/attribute
 import lustre/component
 import lustre/element.{type Element}
 import lustre/element/html
+import lustre/platform/dom
 
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
-  let assert Ok(platform) = platform.dom("#app")
+  let assert Ok(platform) = dom.platform("#app")
   let app = lustre.simple(init, update, view)
 
   // Typically, it's important to register a component *before* your app starts.

@@ -8,9 +8,9 @@ import gleam/string
 import lustre/attribute
 import lustre/dev/query.{data, element}
 import lustre/dev/simulate
-import lustre/element
 import lustre/element/html
 import lustre/event
+import lustre/platform/dom
 import lustre_test
 
 //
@@ -89,7 +89,7 @@ pub fn simulate_missing_event_handler_test() {
 fn to_snapshot(app) {
   let element_snapshot =
     simulate.view(app)
-    |> element.to_readable_string
+    |> dom.to_readable_string
     |> string.replace("\n", "\n  ")
 
   let history_snapshot =

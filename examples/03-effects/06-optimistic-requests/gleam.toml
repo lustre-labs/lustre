@@ -4,7 +4,7 @@ dev-dependencies = { lustre_dev_tools = ">= 2.0.0 and < 3.0.0" }
 
 [dependencies]
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
-lustre = { path = "../../../" }
+lustre_platform = { path = "../../../" }
 rsvp = ">= 1.0.1 and < 2.0.0"
 gleam_json = ">= 2.3.0 and < 4.0.0"
 optimist = ">= 1.0.0 and < 2.0.0"

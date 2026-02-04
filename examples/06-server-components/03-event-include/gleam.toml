@@ -7,5 +7,5 @@ gleam_http = ">= 3.7.2 and < 5.0.0"
 gleam_json = ">= 2.3.0 and < 4.0.0"
 gleam_otp = ">= 1.0.0 and < 2.0.0"
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
-lustre = { path = "../../../" }
+lustre_platform = { path = "../../../" }
 mist = ">= 5.0.0 and < 6.0.0"

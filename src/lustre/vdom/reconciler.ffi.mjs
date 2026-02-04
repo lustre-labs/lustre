@@ -4,19 +4,19 @@ import { escape } from "../../../houdini/houdini.mjs";
 
 import {
   element_kind,
-  text_kind,
   fragment_kind,
-  unsafe_inner_html_kind,
   map_kind,
   memo_kind,
+  raw_container_kind,
+  text_kind,
 } from "./vnode.mjs";
 
 import {
+  always_kind,
   attribute_kind,
-  property_kind,
   event_kind,
   never_kind,
-  always_kind,
+  property_kind,
 } from "./vattr.mjs";
 
 import {
@@ -24,7 +24,7 @@ import {
   move_kind,
   remove_kind,
   replace_kind,
-  replace_inner_html_kind,
+  replace_raw_content_kind,
   replace_text_kind,
   update_kind,
 } from "./patch.mjs";
@@ -36,9 +36,9 @@ import { iterate } from "../internals/list.ffi.mjs";
 import { NAMESPACE_HTML } from "../internals/constants.ffi.mjs";
 
 import {
-  Result$Ok,
   Result$Error,
   Result$isOk,
+  Result$Ok,
   Result$Ok$0,
 } from "../../gleam.mjs";
 
@@ -49,8 +49,7 @@ const clearTimeout = globalThis.clearTimeout;
 
 // Helpers to convert between Gleam Result and nullable for insert_before /
 // move_before reference nodes and get_attribute return values.
-const wrapRef = (ref) =>
-  ref != null ? Result$Ok(ref) : Result$Error(undefined);
+const wrapRef = (ref) => ref != null ? Result$Ok(ref) : Result$Error(undefined);
 
 // METADATA / STATEFUL TREE ----------------------------------------------------
 
@@ -113,10 +112,9 @@ const getPath = (node) => {
     // Map nodes use a different separator to mark isolated event subtrees.
     // This allows the cache to split paths and look up handlers in the correct
     // subtree, keeping event handlers stable when parent Map nodes update.
-    const separator =
-      current.parent && current.parent.kind === map_kind
-        ? separator_subtree
-        : separator_element;
+    const separator = current.parent && current.parent.kind === map_kind
+      ? separator_subtree
+      : separator_element;
 
     if (current.key) {
       path = `${separator}${current.key}${path}`;
@@ -192,8 +190,8 @@ export class Reconciler {
         this.#replaceText(node, change);
         break;
 
-      case replace_inner_html_kind:
-        this.#replaceInnerHtml(node, change);
+      case replace_raw_content_kind:
+        this.#replaceRawContent(node, change);
         break;
 
       case update_kind:
@@ -226,7 +224,11 @@ export class Reconciler {
 
     this.#insertChildren(fragment, null, parent, before | 0, children);
 
-    this.#platform.insert_before(parent.parentNode, fragment, wrapRef(beforeEl));
+    this.#platform.insert_before(
+      parent.parentNode,
+      fragment,
+      wrapRef(beforeEl),
+    );
   }
 
   #replace(parent, { index, with: child }) {
@@ -248,11 +250,15 @@ export class Reconciler {
     // otherwise, the fragments next sibling would be the first child of the
     // fragment, not the first element after it.
     while (node.isVirtual && node.children.length) {
-      if (node.endNode) return node.endNode.nextSibling;
+      if (node.endNode) {
+        const sibling = this.#platform.next_sibling(node.endNode);
+        return Result$isOk(sibling) ? Result$Ok$0(sibling) : null;
+      }
       node = node.children[node.children.length - 1];
     }
 
-    return node.node.nextSibling;
+    const sibling = this.#platform.next_sibling(node.node);
+    return Result$isOk(sibling) ? Result$Ok$0(sibling) : null;
   }
 
   #move(parent, { key, before }) {
@@ -360,15 +366,17 @@ export class Reconciler {
     this.#platform.set_text(node, content ?? "");
   }
 
-  #replaceInnerHtml({ node }, { inner_html }) {
-    this.#platform.set_inner_html(node, inner_html ?? "");
+  #replaceRawContent({ node }, { content }) {
+    this.#platform.set_raw_content(node, content ?? "");
   }
 
   // INSERT --------------------------------------------------------------------
 
   #insertChildren(domParent, beforeEl, metaParent, index, children) {
-    iterate(children, (child) =>
-      this.#insertChild(domParent, beforeEl, metaParent, index++, child),
+    iterate(
+      children,
+      (child) =>
+        this.#insertChild(domParent, beforeEl, metaParent, index++, child),
     );
   }
 
@@ -376,8 +384,11 @@ export class Reconciler {
     switch (vnode.kind) {
       case element_kind: {
         const node = this.#createElement(metaParent, index, vnode);
-        this.#insertChildren(node, null, node[meta], 0, vnode.children);
+        // Insert parent into tree BEFORE setting raw content.
+        // Some platforms (like OpenTUI) require the parent node to be in the
+        // layout tree before children can be added to it.
         this.#platform.insert_before(domParent, node, wrapRef(beforeEl));
+        this.#insertChildren(node, null, node[meta], 0, vnode.children);
 
         break;
       }
@@ -394,20 +405,33 @@ export class Reconciler {
         const head = this.#createHead(marker, metaParent, index, vnode);
 
         this.#platform.insert_before(domParent, head, wrapRef(beforeEl));
-        this.#insertChildren(domParent, beforeEl, head[meta], 0, vnode.children);
+        this.#insertChildren(
+          domParent,
+          beforeEl,
+          head[meta],
+          0,
+          vnode.children,
+        );
 
         if (this.#debug) {
           head[meta].endNode = this.#platform.create_comment(` /${marker} `);
-          this.#platform.insert_before(domParent, head[meta].endNode, wrapRef(beforeEl));
+          this.#platform.insert_before(
+            domParent,
+            head[meta].endNode,
+            wrapRef(beforeEl),
+          );
         }
 
         break;
       }
 
-      case unsafe_inner_html_kind: {
+      case raw_container_kind: {
         const node = this.#createElement(metaParent, index, vnode);
-        this.#replaceInnerHtml({ node }, vnode);
+        // Insert parent into tree BEFORE setting raw content.
+        // Some platforms (like OpenTUI) require the parent node to be in the
+        // layout tree before children can be added to it.
         this.#platform.insert_before(domParent, node, wrapRef(beforeEl));
+        this.#replaceRawContent({ node }, vnode);
 
         break;
       }
@@ -434,7 +458,10 @@ export class Reconciler {
   }
 
   #createElement(parent, index, { kind, key, tag, namespace, attributes }) {
-    const node = this.#platform.create_element(namespace || NAMESPACE_HTML, tag);
+    const node = this.#platform.create_element(
+      namespace || NAMESPACE_HTML,
+      tag,
+    );
     insertMetadataChild(kind, parent, node, index, key);
 
     if (this.#debug && key) {
@@ -610,7 +637,6 @@ const markerComment = (marker, key) => {
  *
  *  Doing things this way lets us swap out the underlying handler – which may
  *  happen - without needing to rebind the event listener.
- *
  */
 const handleEvent = (event) => {
   const { currentTarget, type } = event;

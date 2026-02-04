@@ -15,6 +15,10 @@ import lustre/internals/mutable_map
 @target(javascript)
 import lustre/platform
 @target(javascript)
+import lustre/platform/dom
+@target(javascript)
+import lustre/serializer
+@target(javascript)
 import lustre/vdom/cache
 @target(javascript)
 import lustre/vdom/diff
@@ -68,23 +72,33 @@ pub fn reconciler_server_component_mount_input_test() {
   use <- lustre_test.test_filter("reconciler_mount_input_test")
 
   let html = html.input([attribute.value("")])
+  let serializer = dom.serializer()
+  let serializer.Serializer(raw_content: serialize_raw_content, ..) = serializer
 
   // we cannot use test_mount here since your to_string function produces a
   // slightly different result that we don't handle (`value=""` vs `value`)
   use reconciler <- with_reconciler(True)
 
-  mount_json(reconciler, vnode.to_json(html, mutable_map.new()))
+  mount_json(
+    reconciler,
+    vnode.to_json(html, mutable_map.new(), serialize_raw_content),
+  )
   assert lustre_test.nodes_equal_ignoring_memo(get_vdom(), html)
 }
 
 @target(javascript)
 fn test_mount(vdom: Element(msg)) {
   use reconciler <- with_reconciler(True)
+  let serializer = dom.serializer()
+  let serializer.Serializer(raw_content: serialize_raw_content, ..) = serializer
 
   mount(reconciler, vdom)
-  assert get_html() == element.to_string(vdom)
+  assert get_html() == dom.to_string(vdom)
 
-  mount_json(reconciler, vnode.to_json(vdom, mutable_map.new()))
+  mount_json(
+    reconciler,
+    vnode.to_json(vdom, mutable_map.new(), serialize_raw_content),
+  )
   assert lustre_test.nodes_equal_ignoring_memo(get_vdom(), vdom)
 }
 
@@ -849,6 +863,127 @@ pub fn recociler_push_nested_fragment_replace_test() {
 }
 
 @target(javascript)
+pub fn reconciler_push_doubly_nested_fragment_replace_test() {
+  use <- lustre_test.test_filter(
+    "reconciler_push_doubly_nested_fragment_replace_test",
+  )
+
+  // This test reproduces the bug where a keyed.fragment contains element.fragment
+  // children, and one of the inner fragment's children changes from element.none()
+  // to an actual element. This is "doubly nested" fragments.
+  let prev =
+    html.div([], [
+      keyed.fragment([
+        #(
+          "entry1",
+          element.fragment([
+            html.div([], [element.text("Question 1")]),
+            element.none(),
+          ]),
+        ),
+        #(
+          "entry2",
+          element.fragment([
+            html.div([], [element.text("Question 2")]),
+            element.none(),
+          ]),
+        ),
+      ]),
+    ])
+
+  let next =
+    html.div([], [
+      keyed.fragment([
+        #(
+          "entry1",
+          element.fragment([
+            html.div([], [element.text("Question 1")]),
+            html.div([], [element.text("Answer 1")]),
+          ]),
+        ),
+        #(
+          "entry2",
+          element.fragment([
+            html.div([], [element.text("Question 2")]),
+            element.none(),
+          ]),
+        ),
+      ]),
+    ])
+
+  // Test with debug=false since that's where the original nested fragment bug was
+  use reconciler <- with_reconciler(False)
+
+  let diff.Diff(patch:, ..) = diff.diff(cache.new(), prev, next)
+
+  mount(reconciler, prev)
+  push(reconciler, patch)
+
+  let result = get_html()
+  assert result
+    == "<div><div>Question 1</div><div>Answer 1</div><div>Question 2</div></div>"
+}
+
+@target(javascript)
+pub fn reconciler_push_doubly_nested_fragment_replace_debug_test() {
+  use <- lustre_test.test_filter(
+    "reconciler_push_doubly_nested_fragment_replace_debug_test",
+  )
+
+  // Same test but with debug=true to compare behavior
+  let prev =
+    html.div([], [
+      keyed.fragment([
+        #(
+          "entry1",
+          element.fragment([
+            html.div([], [element.text("Question 1")]),
+            element.none(),
+          ]),
+        ),
+        #(
+          "entry2",
+          element.fragment([
+            html.div([], [element.text("Question 2")]),
+            element.none(),
+          ]),
+        ),
+      ]),
+    ])
+
+  let next =
+    html.div([], [
+      keyed.fragment([
+        #(
+          "entry1",
+          element.fragment([
+            html.div([], [element.text("Question 1")]),
+            html.div([], [element.text("Answer 1")]),
+          ]),
+        ),
+        #(
+          "entry2",
+          element.fragment([
+            html.div([], [element.text("Question 2")]),
+            element.none(),
+          ]),
+        ),
+      ]),
+    ])
+
+  // Test with debug=true
+  use reconciler <- with_reconciler(True)
+
+  let diff.Diff(patch:, ..) = diff.diff(cache.new(), prev, next)
+
+  mount(reconciler, prev)
+  push(reconciler, patch)
+
+  // In debug mode, we check the vdom instead of HTML since there are marker comments
+  assert lustre_test.nodes_equal_ignoring_memo(get_vdom(), next)
+}
+
+@target(javascript)
 pub fn reconciler_push_memo_map_with_fragment_test() {
   use <- lustre_test.test_filter("reconciler_push_memo_map_with_fragment_test")
 
@@ -879,6 +1014,8 @@ pub fn reconciler_push_memo_map_with_fragment_test() {
 @target(javascript)
 fn test_diff(prev: Element(msg), next: Element(msg)) {
   use reconciler <- with_reconciler(True)
+  let serializer = dom.serializer()
+  let serializer.Serializer(raw_content: serialize_raw_content, ..) = serializer
 
   let diff.Diff(patch:, ..) = diff.diff(cache.new(), prev, next)
 
@@ -888,7 +1025,10 @@ fn test_diff(prev: Element(msg), next: Element(msg)) {
   assert lustre_test.nodes_equal_ignoring_memo(get_vdom(), next)
 
   mount(reconciler, prev)
-  push_json(reconciler, patch.to_json(patch, mutable_map.new()))
+  push_json(
+    reconciler,
+    patch.to_json(patch, mutable_map.new(), serialize_raw_content),
+  )
   assert lustre_test.nodes_equal_ignoring_memo(get_vdom(), next)
 }
 
@@ -902,25 +1042,19 @@ pub type Reconciler
 pub fn do_with_reconciler(
   debug: Bool,
   get_platform: fn() ->
-    platform.Platform(
-      platform.DomNode,
-      platform.DomNode,
-      platform.DomNode,
-      platform.DomEvent,
-      msg,
-    ),
+    platform.Platform(dom.DomNode, dom.DomNode, dom.DomNode, dom.DomEvent, msg),
   f: fn(Reconciler) -> Nil,
 ) -> Nil
 
 @target(javascript)
 fn get_platform() -> platform.Platform(
-  platform.DomNode,
-  platform.DomNode,
-  platform.DomNode,
-  platform.DomEvent,
+  dom.DomNode,
+  dom.DomNode,
+  dom.DomNode,
+  dom.DomEvent,
   msg,
 ) {
-  let assert Ok(p) = platform.dom("body")
+  let assert Ok(p) = dom.platform("body")
   p
 }
 

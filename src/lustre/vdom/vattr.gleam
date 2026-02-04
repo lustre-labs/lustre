@@ -5,8 +5,6 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/order.{type Order}
 import gleam/string
-import gleam/string_tree.{type StringTree}
-import houdini
 import lustre/internals/constants
 import lustre/internals/json_object_builder
 
@@ -223,55 +221,5 @@ fn event_behaviour_to_json_builder(
     // handler as passive.
     Possible(..) -> json_object_builder.tagged(never_kind)
     Always(kind:) -> json_object_builder.tagged(kind)
-  }
-}
-
-// STRING RENDERING ------------------------------------------------------------
-
-pub fn to_string_tree(
-  key: String,
-  namespace: String,
-  parent_namespace: String,
-  attributes: List(Attribute(msg)),
-) -> StringTree {
-  let attributes = case key != "" {
-    True -> [attribute("data-lustre-key", key), ..attributes]
-    False -> attributes
-  }
-
-  let attributes = case namespace != parent_namespace {
-    True if namespace == "" -> [
-      attribute("xmlns", "http://www.w3.org/1999/xhtml"),
-      ..attributes
-    ]
-
-    True -> [attribute("xmlns", namespace), ..attributes]
-
-    False -> attributes
-  }
-
-  use html, attr <- list.fold(attributes, string_tree.new())
-
-  case attr {
-    // We special-case this "virtual" attribute to stringify as a regular `"value"`
-    // attribute. In HTML, the default value of an input is set by this value
-    // attribute, but in Lustre users would use the `attribute.value` function
-    // for inputs that should be controlled by their model.
-    Attribute(name: "virtual:defaultValue", value:, ..) ->
-      string_tree.append(html, " value=\"" <> houdini.escape(value) <> "\"")
-
-    Attribute(name: "virtual:defaultChecked", ..) ->
-      string_tree.append(html, " checked")
-
-    Attribute(name: "virtual:defaultSelected", ..) ->
-      string_tree.append(html, " selected")
-
-    Attribute(name: "", ..) -> html
-    Attribute(name:, value: "", ..) -> string_tree.append(html, " " <> name)
-    Attribute(name:, value:, ..) ->
-      string_tree.append(html, {
-        " " <> name <> "=\"" <> houdini.escape(value) <> "\""
-      })
-    _ -> html
   }
 }

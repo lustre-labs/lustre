@@ -8,7 +8,7 @@ import lustre/element.{type Element}
 import lustre/internals/constants
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{Attribute}
-import lustre/vdom/vnode.{Element, Fragment, Map, Memo, Text, UnsafeInnerHtml}
+import lustre/vdom/vnode.{Element, Fragment, Map, Memo, RawContainer, Text}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -313,7 +313,7 @@ fn find_in_children(
       find_in_list(children, query, path |> path.add(index, element.key), 0)
     Map(child:, ..) -> find_in_children(child, query, index, path)
     Memo(view:, ..) -> find_in_children(view(), query, index, path)
-    UnsafeInnerHtml(..) | Text(..) -> constants.error_nil
+    RawContainer(..) | Text(..) -> constants.error_nil
   }
 }
 
@@ -347,7 +347,7 @@ fn find_direct_child(
     Map(child:, ..) -> find_direct_child(child, selector, path)
     Memo(view:, ..) -> find_direct_child(view(), selector, path)
 
-    UnsafeInnerHtml(..) | Text(..) -> constants.error_nil
+    RawContainer(..) | Text(..) -> constants.error_nil
   }
 }
 
@@ -391,7 +391,7 @@ fn find_descendant(
         Map(child:, ..) -> find_descendant(child, selector, path)
         Memo(view:, ..) -> find_descendant(view(), selector, path)
 
-        UnsafeInnerHtml(..) | Text(..) -> constants.error_nil
+        RawContainer(..) | Text(..) -> constants.error_nil
       }
   }
 }
@@ -457,7 +457,7 @@ fn find_all_in_children(
     Map(child:, ..) -> find_all_in_children(child, query)
     Memo(view:, ..) -> find_all_in_children(view(), query)
 
-    UnsafeInnerHtml(..) | Text(..) -> []
+    RawContainer(..) | Text(..) -> []
   }
 }
 
@@ -487,7 +487,7 @@ fn find_all_direct_children(
     Map(child:, ..) -> find_all_direct_children(child, selector)
     Memo(view:, ..) -> find_all_direct_children(view(), selector)
 
-    UnsafeInnerHtml(..) | Text(..) -> []
+    RawContainer(..) | Text(..) -> []
   }
 }
 
@@ -517,7 +517,7 @@ fn find_all_descendants(
     Map(child:, ..) -> find_all_descendants(child, selector)
     Memo(view:, ..) -> find_all_descendants(view(), selector)
 
-    UnsafeInnerHtml(..) | Text(..) -> []
+    RawContainer(..) | Text(..) -> []
   }
 
   list.append(direct_matches, descendant_matches)
@@ -558,13 +558,13 @@ pub fn matches(
     _, All(of: selectors) -> list.all(selectors, matches(element, _))
 
     Element(namespace:, tag:, ..), Type(..)
-    | UnsafeInnerHtml(namespace:, tag:, ..), Type(..)
+    | RawContainer(namespace:, tag:, ..), Type(..)
     -> {
       namespace == selector.namespace && tag == selector.tag
     }
 
     Element(attributes:, ..), HasAttribute(name:, value: "")
-    | UnsafeInnerHtml(attributes:, ..), HasAttribute(name:, value: "")
+    | RawContainer(attributes:, ..), HasAttribute(name:, value: "")
     ->
       list.any(attributes, fn(attribute) {
         case attribute {
@@ -574,11 +574,11 @@ pub fn matches(
       })
 
     Element(attributes:, ..), HasAttribute(name:, value:)
-    | UnsafeInnerHtml(attributes:, ..), HasAttribute(name:, value:)
+    | RawContainer(attributes:, ..), HasAttribute(name:, value:)
     -> list.contains(attributes, attribute.attribute(name, value))
 
     Element(attributes:, ..), HasClass(name)
-    | UnsafeInnerHtml(attributes:, ..), HasClass(name)
+    | RawContainer(attributes:, ..), HasClass(name)
     -> {
       use _, class <- list.fold_until(string.split(name, " "), True)
       let name = string.trim_end(class)
@@ -602,7 +602,7 @@ pub fn matches(
     }
 
     Element(attributes:, ..), HasStyle(name:, value:)
-    | UnsafeInnerHtml(attributes:, ..), HasStyle(name:, value:)
+    | RawContainer(attributes:, ..), HasStyle(name:, value:)
     -> {
       let rule = name <> ":" <> value <> ";"
 
@@ -705,7 +705,7 @@ fn text_content(element: Element(msg), inline: Bool, content: String) -> String 
 
     Text(..) -> content <> element.content
 
-    UnsafeInnerHtml(..) -> content
+    RawContainer(..) -> content
   }
 }
 

@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/json
+import gleam/option.{None}
 import lustre/attribute.{type Attribute}
 import lustre/element.{type Element, element, namespaced}
 import lustre/internals/constants
@@ -17,6 +18,37 @@ pub fn html(
 
 pub fn text(content: String) -> Element(msg) {
   element.text(content)
+}
+
+/// Render raw HTML content inside a container element. This is the HTML-specific
+/// version of `element.unsafe_raw_content` that takes an HTML string directly.
+///
+/// **Warning:** The provided HTML is inserted verbatim without escaping. This can
+/// expose your application to XSS attacks if you pass untrusted user input.
+/// Only use this with HTML you control or have properly sanitized.
+///
+/// For an empty namespace (standard HTML), pass an empty string `""`.
+///
+/// ## Example
+///
+/// ```gleam
+/// html.unsafe_raw("div", [attribute.class("container")], "<strong>Bold</strong>")
+/// ```
+///
+pub fn unsafe_raw(
+  namespace namespace: String,
+  tag tag: String,
+  attributes attributes: List(Attribute(msg)),
+  inner_html inner_html: String,
+) -> Element(msg) {
+  element.unsafe_raw_content(
+    key: "",
+    namespace:,
+    tag:,
+    attributes:,
+    content: inner_html,
+    compare: None,
+  )
 }
 
 // HTML ELEMENTS: DOCUMENT METADATA --------------------------------------------
@@ -46,7 +78,7 @@ pub fn meta(attrs: List(Attribute(msg))) -> Element(msg) {
 
 ///
 pub fn style(attrs: List(Attribute(msg)), css: String) -> Element(msg) {
-  element.unsafe_raw_html("", "style", attrs, css)
+  unsafe_raw("", "style", attrs, css)
 }
 
 ///
@@ -645,7 +677,7 @@ pub fn noscript(
 
 ///
 pub fn script(attrs: List(Attribute(msg)), js: String) -> Element(msg) {
-  element.unsafe_raw_html("", "script", attrs, js)
+  unsafe_raw("", "script", attrs, js)
 }
 
 // HTML ELEMENTS: DEMARCATING EDITS ---------------------------------------------

@@ -1,0 +1,7 @@
+---
+version: 1.5.3
+title: [html] Serializer with keyed custom void elements
+file: ./test/snapshot/html_test.gleam
+test_name: serializer_keyed_custom_void_test
+---
+<div><custom-void data-lustre-key="void"><span data-lustre-key="normal">content</span></div>
