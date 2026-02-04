@@ -1,86 +1,48 @@
-<h1 align="center">Lustre</h1>
+<h1 align="center">Lustre Platform</h1>
 
 <div align="center">
-  ✨ <strong>Make your frontend shine</strong> ✨
-</div>
-
-<div align="center">
-  A framework for building Web apps in Gleam!
-</div>
-
-<br />
-
-<div align="center">
-  <a href="https://hex.pm/packages/lustre">
-    <img src="https://img.shields.io/hexpm/v/lustre"
+  <a href="https://hex.pm/packages/lustre_platform">
+    <img src="https://img.shields.io/hexpm/v/lustre_platform"
       alt="Available on Hex" />
   </a>
-  <a href="https://hexdocs.pm/lustre">
+  <a href="https://hexdocs.pm/lustre_platform">
     <img src="https://img.shields.io/badge/hex-docs-ffaff3"
       alt="Documentation" />
   </a>
 </div>
 
-<div align="center">
-  <h3>
-    <!--
-    <a href="https://lustre.build">
-      Website
-    </a>
-    <span> | </span>
-    -->
-    <a href="https://hexdocs.pm/lustre/guide/01-quickstart.html">
-      Quickstart
-    </a>
-    <span> | </span>
-    <a href="https://hexdocs.pm/lustre">
-      Reference
-    </a>
-    <span> | </span>
-    <a href="https://discord.gg/Fm8Pwmy">
-      Discord
-    </a>
-  </h3>
-</div>
-
-<div align="center">
-  <sub>Built with ❤︎ by
-  <a href="https://twitter.com/hayleighdotdev">Hayleigh Thompson</a> and
-  <a href="https://github.com/lustre-labs/lustre/graphs/contributors">
-    contributors
-  </a>
-</div>
-
 ---
 
-## Table of contents
+Lustre platform is a **fork** of [Lustre](https://hexdocs.pm/lustre), an MVU web
+framework in Gleam. This fork adds the ability to define different rendering
+targets ("platforms") for Lustre, thus being able to use Lustre for applications
+outside the web, like TUIs or mobile apps.
 
-- [Features](#features)
-- [Example](#example)
-- [Philosophy](#philosophy)
-- [Installation](#installation)
-- [Where next](#where-next)
-- [Support](#support)
+## Status and Limitations
 
-## Features {#features}
+- The code structure and design are very young
+- Except this to change often, including breaking changes
+- This repo diverges non-trivially from upstream, expect it to lag behind
+- Due to the immature architecture, some features are not available. For example,
+  the Erlang target only supports Headless platforms at the moment, and it's
+  impossible to build more Headless platforms without editing Lustre source,
+  since Element is opaque
+- Server component were _not_ tested
 
-- A **declarative**, functional API for constructing HTML. No templates, no macros,
-  just Gleam.
+## Known Platforms
 
-- An Erlang and Elm-inspired architecture for **managing state**.
+If you built a platform for Lustre Platform, please name your package with a
+`lustre_platform_` prefix, and open a PR to edit this list.
 
-- **Managed side effects** for predictable, testable code.
-
-- Universal components. **Write once, run anywhere**. Elm meets Phoenix LiveView.
-
-- A **batteries-included CLI** that makes scaffolding and building apps a breeze.
-
-- **Server-side rendering** for static HTML templating.
+- [lustre_platform_opentui](https://hexdocs.pm/lustre_platform_opentui)
 
 ## Example {#example}
 
-Lustre comes with [over 20 examples](https://hexdocs.pm/lustre/reference/examples.html)!
-Here's what it looks like:
+If you've used Lustre before, the main difference will be defining a platform
+to start your app with. Platform specific utilieis functions, like printing
+the view to string (for SSR), are also now the job of the platform.
+
+The web app platform is called dom:
 
 ```gleam
 import gleam/int
@@ -88,10 +50,12 @@ import lustre
 import lustre/element.{text}
 import lustre/element/html.{div, button, p}
 import lustre/event.{on_click}
+import lustre/platform/dom
 
 pub fn main() {
+  let assert Ok(platform) = dom.platform("#app")
   let app = lustre.simple(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
+  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
 
   Nil
 }
@@ -122,64 +86,3 @@ fn view(model) {
   ])
 }
 ```
-
-## Philosophy {#philosophy}
-
-Lustre is an _opinionated_ framework for building frontend Web applications. Modern
-frontend development is hard and complex. Some of that complexity is necessary, but
-a lot of it is accidental or comes from having far too many options. Lustre has the
-same design philosophy as Gleam: where possible, there should be only one way to do
-things!
-
-That means shipping with a single state management system out of the box, modelled
-after Elm and Erlang/OTP. Open any Lustre application and you should feel
-right at home.
-
-It also means we encourage simple approaches to constructing views over complex
-ones. Lustre _does_ have a way to create encapsulated stateful components (something
-we sorely missed in Elm) but it shouldn't be the default. Prefer simple functions
-to stateful components.
-
-Where components _are_ necessary, lean into the fact that Lustre components can
-run _anywhere_. Lustre gives you the tools to write components that can run inside
-an existing Lustre application, export them as a standalone Web Component, or run
-them on the server with a minimal runtime for patching the DOM. Lustre calls these
-**universal components** and they're written with Gleam's multiple targets in mind.
-
-## Installation {#installation}
-
-Lustre is published on [Hex](https://hex.pm/packages/lustre)! You can add it to
-your Gleam projects from the command line:
-
-```sh
-gleam add lustre
-```
-
-Lustre also has a companion package containing development tooling that you might
-like to install:
-
-> **Note**: the lustre_dev_tools development server watches your filesystem for
-> changes to your gleam code and can automatically reload the browser. For linux
-> users this requires [inotify-tools](https://github.com/inotify-tools/inotify-tools) be installed
-
-```sh
-gleam add --dev lustre_dev_tools
-```
-
-## Where next {#where-next}
-
-To get up to speed with Lustre, check out the [quickstart guide](https://hexdocs.pm/lustre/guide/01-quickstart.html).
-If you prefer to see some code, the [examples](https://github.com/lustre-labs/lustre/tree/main/examples)
-directory contains a handful of small applications that demonstrate different
-aspects of the framework.
-
-You can also read through the documentation and API reference on
-[HexDocs](https://hexdocs.pm/lustre).
-
-## Support {#support}
-
-Lustre is mostly built by just me, [Hayleigh](https://github.com/hayleigh-dot-dev),
-around two jobs. If you'd like to support my work, you can [sponsor me on GitHub](https://github.com/sponsors/hayleigh-dot-dev).
-
-Contributions are also very welcome! If you've spotted a bug, or would like to
-suggest a feature, please open an issue or a pull request.
