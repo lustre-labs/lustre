@@ -25,7 +25,7 @@ pub fn register() -> Result(Nil, lustre.Error) {
       }),
     ])
 
-  lustre.register(component, "my-details")
+  lustre.register(component, named: "my-details")
 }
 
 pub fn element(

@@ -32,12 +32,14 @@ import { iterate } from "../../internals/list.ffi.mjs";
 
 //
 
-export const make_component = ({ init, update, view, config }, name) => {
+export const make_component = (app, make_platform, name) => {
   if (!is_browser()) return Result$Error(Error$NotABrowser());
   if (!name.includes("-")) return Result$Error(Error$BadComponentName(name));
   if (customElements.get(name)) {
     return Result$Error(Error$ComponentAlreadyRegistered(name));
   }
+
+  const { init, update, view, config } = app;
 
   const attributes = new Map();
   const observedAttributes = [];
@@ -80,11 +82,15 @@ export const make_component = ({ init, update, view, config }, name) => {
         this.#adoptStyleSheets();
       }
 
+      const platform = make_platform(this.#shadowRoot);
+      const [root, initialVdom] = platform.mount(this.#shadowRoot);
       this.#runtime = new Runtime(
-        this.#shadowRoot,
+        root,
+        initialVdom,
         [model, effects],
         view,
         update,
+        platform,
       );
     }
 

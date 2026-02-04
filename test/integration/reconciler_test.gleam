@@ -13,6 +13,8 @@ import lustre/element/keyed
 @target(javascript)
 import lustre/internals/mutable_map
 @target(javascript)
+import lustre/platform
+@target(javascript)
 import lustre/vdom/cache
 @target(javascript)
 import lustre/vdom/diff
@@ -897,7 +899,35 @@ pub type Reconciler
 
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "with_reconciler")
-pub fn with_reconciler(debug: Bool, f: fn(Reconciler) -> Nil) -> Nil
+pub fn do_with_reconciler(
+  debug: Bool,
+  get_platform: fn() ->
+    platform.Platform(
+      platform.DomNode,
+      platform.DomNode,
+      platform.DomNode,
+      platform.DomEvent,
+      msg,
+    ),
+  f: fn(Reconciler) -> Nil,
+) -> Nil
+
+@target(javascript)
+fn get_platform() -> platform.Platform(
+  platform.DomNode,
+  platform.DomNode,
+  platform.DomNode,
+  platform.DomEvent,
+  msg,
+) {
+  let assert Ok(p) = platform.dom("body")
+  p
+}
+
+@target(javascript)
+pub fn with_reconciler(debug: Bool, f: fn(Reconciler) -> Nil) -> Nil {
+  do_with_reconciler(debug, get_platform, f)
+}
 
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "mount")

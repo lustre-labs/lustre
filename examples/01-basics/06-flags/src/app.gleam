@@ -2,6 +2,7 @@
 
 import gleam/int
 import lustre
+import lustre/platform
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
@@ -9,6 +10,7 @@ import lustre/event
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
+  let assert Ok(platform) = platform.dom("#app")
   let app = lustre.simple(init, update, view)
 
   // When starting a Lustre app, you can pass in initial data as "flags" to your
@@ -16,7 +18,7 @@ pub fn main() {
   // are a good opportunity to pass in initial data from side effects such as
   // randomness or HTTP requests that you want to have immediately available.
   let initial_count = int.random(20)
-  let assert Ok(_) = lustre.start(app, "#app", initial_count)
+  let assert Ok(_) = lustre.start(app, on: platform, with: initial_count)
 
   Nil
 }

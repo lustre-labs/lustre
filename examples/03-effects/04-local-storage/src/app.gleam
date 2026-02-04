@@ -8,6 +8,7 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/result
 import lustre
+import lustre/platform
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -18,8 +19,9 @@ import lustre/event
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
+  let assert Ok(platform) = platform.dom("#app")
   let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
+  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
 
   Nil
 }

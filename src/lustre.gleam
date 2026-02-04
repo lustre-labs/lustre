@@ -157,7 +157,6 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/bool
 import gleam/erlang/process.{type Name, type Subject}
 import gleam/option
 import gleam/otp/actor
@@ -167,6 +166,7 @@ import lustre/component.{type Config, type Option}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/internals/constants
+import lustre/platform
 import lustre/runtime/server/runtime
 
 // TYPES -----------------------------------------------------------------------
@@ -174,16 +174,14 @@ import lustre/runtime/server/runtime
 /// Represents a constructed Lustre application that is ready to be started.
 /// Depending on where you want the application to run, you have a few options:
 ///
-/// - Use [`start`](#start) to start a single-page-application in the browser.
+/// - Use [`start`](#start) to start a single-page-application in the browser
+///   or a server component anywhere Gleam runs. Pass the appropriate
+///   [`Platform`](./lustre/platform.html#Platform) to control where the app runs.
 ///
 ///   This is the most common way to start a Lustre application. If you're new to
 ///   Lustre or frontend development in general, make sure you check out the
 ///   [examples](https://github.com/lustre-labs/lustre/tree/main/examples) or the
 ///   [quickstart guide]()
-///
-/// - Use [`start_server_component`](#start_server_component) to start a Lustre
-///   Server Component anywhere Gleam will run: Erlang, Node, Deno, or in the
-///   browser.
 ///
 /// - Use [`register`](#register) to register a component in the browser to be
 ///   used as a Custom Element. This is useful even if you're not using Lustre
@@ -213,6 +211,7 @@ pub type Error {
   ComponentAlreadyRegistered(name: String)
   ElementNotFound(selector: String)
   NotABrowser
+  NotMountable
 }
 
 /// Once you start a Lustre application, you get back a `Runtime` you can later
@@ -341,63 +340,52 @@ pub fn named(
 
 // RUNTIME ---------------------------------------------------------------------
 
-/// Start a constructed application as a client-side single-page application (SPA).
-/// This is the most typical way to start a Lustre application and will *only* work
-/// in the browser
+/// Start a constructed application. The platform determines where and how the
+/// application runs:
 ///
-/// The second argument is a [CSS selector](https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector)
-/// used to locate the DOM element where the application will be mounted on to.
-/// The most common selectors are `"#app"` to target an element with an id of `app`
-/// or `[data-lustre-app]` to target an element with a `data-lustre-app` attribute.
+/// - Use [`platform.dom`](./lustre/platform.html#dom) to start a client-side
+///   single-page application (SPA) in the browser.
 ///
-/// The third argument is the starting data for the application. This is passed
+/// - Use [`platform.headless`](./lustre/platform.html#headless) to start a
+///   server component that sends patches to connected clients.
+///
+/// The `start_args` argument is the starting data for the application, passed
 /// to the application's `init` function.
 ///
 pub fn start(
   app: App(start_args, model, msg),
-  onto selector: String,
+  on platform: platform.Platform(node, target, value, event, msg),
   with start_args: start_args,
 ) -> Result(Runtime(msg), Error) {
-  use <- bool.guard(!is_browser(), Error(NotABrowser))
-
-  do_start(app, selector, start_args)
+  case platform.is_headless(platform) {
+    True -> do_start_server_component(app, start_args)
+    False -> {
+      case platform.mount(platform) {
+        Ok(#(root, initial_vdom)) ->
+          Ok(do_start_client(root, initial_vdom, app, platform, start_args))
+        Error(platform.NotABrowser) -> Error(NotABrowser)
+        Error(platform.ElementNotFound(sel)) -> Error(ElementNotFound(sel))
+        Error(platform.NotMountable) -> Error(NotMountable)
+      }
+    }
+  }
 }
 
 @external(javascript, "./lustre/runtime/client/spa.ffi.mjs", "start")
-fn do_start(
+fn do_start_client(
+  _root: node,
+  _initial_vdom: element.Element(msg),
   _app: App(start_args, model, msg),
-  _selector: String,
+  _platform: platform.Platform(node, target, value, event, msg),
   _start_args: start_args,
-) -> Result(Runtime(msg), Error) {
-  Error(NotABrowser)
+) -> Runtime(msg) {
+  panic as "Cannot start client runtime on Erlang"
 }
 
-/// Start an application as a server component. This runs in a headless mode and
-/// doesn't render anything to the DOM. Instead, clients must be connected to the
-/// server component through [`register_callback`](./lustre/server_component.html#register_callback)
-/// or [`register_subject`](./lustre/server_component.html#register_subject) to
-/// receive patches and updates.
-///
-/// If a server component starts successfully, this function will return a
-/// [`Runtime`](#Runtime) that can be used to send messages to the running application
-/// using the [`send`](#send) function.
-///
-/// A server component will keep running until the program is terminated or the
-/// [`shutdown`](#shutdown) action is sent to it.
-///
-/// > **Note**: applications targeting Erlang should strongly prefer the
-/// > [`supervised`](#supervised) or [`factory`](#factory) functions to ensure
-/// > proper supervision and fault-tolerance.
-///
-/// On the Erlang target, the runtime's [`Subject`](https://hexdocs.pm/gleam_erlang/gleam/erlang/process.html#Subject)
-/// and [`Pid`](https://hexdocs.pm/gleam_erlang/gleam/erlang/process.html#Pid)
-/// can be recovered using [`server_component.subject`](./lustre/server_component.html#subject)
-/// and [`server_component.pid`](./lustre/server_component.html#pid) respectively.
-///
 @external(javascript, "./lustre/runtime/server/runtime.ffi.mjs", "start")
-pub fn start_server_component(
+fn do_start_server_component(
   app: App(start_args, model, msg),
-  with start_args: start_args,
+  start_args: start_args,
 ) -> Result(Runtime(msg), Error) {
   let result =
     runtime.start(
@@ -459,14 +447,17 @@ pub fn factory(
 
 /// Register a Lustre application as a Web Component. This lets you render that
 /// application in another Lustre application's view or use it as a Custom Element
-/// outside of Lustre entirely.The provided application can only have `Nil` start_args
+/// outside of Lustre entirely. The provided application can only have `Nil` start_args
 /// because there is no way to provide an initial value for start_args when using a
 /// Custom Element!
 ///
-/// The second argument is the name of the Custom Element. This is the name you'd
+/// The name argument is the name of the Custom Element. This is the name you'd
 /// use in HTML to render the component. For example, if you register a component
 /// with the name `my-component`, you'd use it in HTML by writing `<my-component>`
 /// or in Lustre by rendering `element("my-component", [], [])`.
+///
+/// Each component instance automatically gets its own DOM platform constructed
+/// from its shadow root, so no platform argument is needed.
 ///
 /// > **Note**: There are [some rules](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define#valid_custom_element_names)
 /// > for what names are valid for a Custom Element. The most important one is that
@@ -475,11 +466,29 @@ pub fn factory(
 ///
 /// > **Note**: This function is only meaningful when running in the browser and will
 /// > produce a `NotABrowser` error if called anywhere else. For server contexts,
-/// > you can render a Lustre server component using [`start_server_component`](#start_server_component)
-/// > or [`start_actor`](#start_actor) instead.
+/// > you can start a server component using [`start`](#start) with
+/// > [`platform.headless`](./lustre/platform.html#headless) instead.
 ///
+pub fn register(
+  app: App(Nil, model, msg),
+  named name: String,
+) -> Result(Nil, Error) {
+  do_register(app, platform.dom_strict, name)
+}
+
 @external(javascript, "./lustre/runtime/client/component.ffi.mjs", "make_component")
-pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error) {
+fn do_register(
+  _app: App(Nil, model, msg),
+  _make_platform: fn(platform.DomNode) ->
+    platform.Platform(
+      platform.DomNode,
+      platform.DomNode,
+      platform.DomNode,
+      platform.DomEvent,
+      msg,
+    ),
+  _name: String,
+) -> Result(Nil, Error) {
   Error(NotABrowser)
 }
 
@@ -515,19 +524,6 @@ pub fn shutdown() -> RuntimeMessage(msg) {
 }
 
 // UTILS -----------------------------------------------------------------------
-
-/// Gleam's conditional compilation makes it possible to have different implementations
-/// of a function for different targets, but it's not possible to know what runtime
-/// you're targeting at compile-time.
-///
-/// This is problematic if you're using server components with a JavaScript
-/// backend because you'll want to know whether you're currently running on your
-/// server or in the browser: this function tells you that!
-///
-@external(javascript, "./lustre/runtime/client/runtime.ffi.mjs", "is_browser")
-pub fn is_browser() -> Bool {
-  False
-}
 
 /// Check if the given component name has already been registered as a Custom
 /// Element. This is particularly useful in contexts where _other web components_

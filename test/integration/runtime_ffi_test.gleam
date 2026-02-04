@@ -11,6 +11,8 @@
 @target(javascript)
 import lustre
 @target(javascript)
+import lustre/platform
+@target(javascript)
 import lustre_test
 
 // RUNTIME FFI SMOKE TESTS -----------------------------------------------------
@@ -19,7 +21,7 @@ import lustre_test
 pub fn runtime_is_browser_test() {
   use <- lustre_test.test_filter("runtime_is_browser_test")
 
-  let _ = lustre.is_browser()
+  let _ = platform.is_browser()
 
   Nil
 }

@@ -16,7 +16,7 @@ pub fn register() -> Result(Nil, lustre.Error) {
   // The `register` function does not create an app directly, instead it registers
   // a Lustre app as a Custom Element with the name `"my-counter"`. The main app
   // can then render this component like any other HTML element.
-  lustre.register(component, "my-counter")
+  lustre.register(component, named: "my-counter")
 }
 
 /// It's good practice to provide an `element` function that encapsulates the

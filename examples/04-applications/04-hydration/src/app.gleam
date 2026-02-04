@@ -5,6 +5,7 @@ import gleam/json
 import gleam/list
 import gleam/option
 import lustre
+import lustre/platform
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -57,12 +58,13 @@ pub fn main() {
     Error(_) -> option.None
   }
 
+  let assert Ok(platform) = platform.dom("#app")
   let app = lustre.application(init, update, view)
 
   // We (optionally) pass the hydrated model as `flags` to our init function.
   // Note that the flags could come from anywhere here, and you may fetch data
   // from more than one source before you're sure you can start your Lustre app!
-  let assert Ok(_) = lustre.start(app, "#app", hydrated_todos)
+  let assert Ok(_) = lustre.start(app, on: platform, with: hydrated_todos)
 
   Nil
 }

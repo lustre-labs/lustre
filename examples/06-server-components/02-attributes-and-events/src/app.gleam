@@ -12,6 +12,7 @@ import lustre
 import lustre/attribute
 import lustre/element
 import lustre/element/html.{html}
+import lustre/platform
 import lustre/server_component
 import mist.{type Connection, type ResponseData}
 
@@ -138,7 +139,7 @@ type CounterSocketInit =
 
 fn init_counter_socket(_) -> CounterSocketInit {
   let counter = counter.component()
-  let assert Ok(component) = lustre.start_server_component(counter, Nil)
+  let assert Ok(component) = lustre.start(counter, on: platform.headless(), with: Nil)
 
   let self = process.new_subject()
   let selector =

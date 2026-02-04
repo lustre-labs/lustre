@@ -33,47 +33,24 @@ import { separator_element, separator_subtree } from "./path.mjs";
 
 import { iterate } from "../internals/list.ffi.mjs";
 
+import { NAMESPACE_HTML } from "../internals/constants.ffi.mjs";
+
 import {
-  document,
-  SUPPORTS_MOVE_BEFORE,
-  NAMESPACE_HTML,
-} from "../internals/constants.ffi.mjs";
+  Result$Ok,
+  Result$Error,
+  Result$isOk,
+  Result$Ok$0,
+} from "../../gleam.mjs";
 
 //
-
-// DOM API ---------------------------------------------------------------------
-
-// We do this for 2 reasons:
-// - Improve code size by only spelling out the property names in one place
-// - Avoid megamorphic call sites by avoiding direct DOM accesses in the
-//   reconciler main functions.
-//
-// We could directly store references to the Node.protoype functions too and
-// avoid chasing the prototype chains -
-// However that would break many DOM crimes we want to do, for example for the
-// portal or the transition component
 
 const setTimeout = globalThis.setTimeout;
 const clearTimeout = globalThis.clearTimeout;
-const createElementNS = (ns, name) => document().createElementNS(ns, name);
-const createTextNode = (data) => document().createTextNode(data);
-const createComment = (data) => document().createComment(data);
-const createDocumentFragment = () => document().createDocumentFragment();
-const insertBefore = (parent, node, reference) =>
-  parent.insertBefore(node, reference);
-const moveBefore = SUPPORTS_MOVE_BEFORE
-  ? (parent, node, reference) => parent.moveBefore(node, reference)
-  : insertBefore;
-const removeChild = (parent, child) => parent.removeChild(child);
-const getAttribute = (node, name) => node.getAttribute(name);
-const setAttribute = (node, name, value) => node.setAttribute(name, value);
-const removeAttribute = (node, name) => node.removeAttribute(name);
-const addEventListener = (node, name, handler, options) =>
-  node.addEventListener(name, handler, options);
-const removeEventListener = (node, name, handler) =>
-  node.removeEventListener(name, handler);
-const setInnerHtml = (node, innerHtml) => (node.innerHTML = innerHtml);
-const setData = (node, data) => (node.data = data);
+
+// Helpers to convert between Gleam Result and nullable for insert_before /
+// move_before reference nodes and get_attribute return values.
+const wrapRef = (ref) =>
+  ref != null ? Result$Ok(ref) : Result$Error(undefined);
 
 // METADATA / STATEFUL TREE ----------------------------------------------------
 
@@ -160,13 +137,15 @@ export class Reconciler {
 
   #decodeEvent;
   #dispatch;
+  #platform;
 
   #debug = false;
 
-  constructor(root, decodeEvent, dispatch, { debug = false } = {}) {
+  constructor(root, decodeEvent, dispatch, platform, { debug = false } = {}) {
     this.#root = root;
     this.#decodeEvent = decodeEvent;
     this.#dispatch = dispatch;
+    this.#platform = platform;
     this.#debug = debug;
   }
 
@@ -242,12 +221,12 @@ export class Reconciler {
   // CHANGES -------------------------------------------------------------------
 
   #insert(parent, { children, before }) {
-    const fragment = createDocumentFragment();
+    const fragment = this.#platform.create_fragment();
     const beforeEl = this.#getReference(parent, before);
 
     this.#insertChildren(fragment, null, parent, before | 0, children);
 
-    insertBefore(parent.parentNode, fragment, beforeEl);
+    this.#platform.insert_before(parent.parentNode, fragment, wrapRef(beforeEl));
   }
 
   #replace(parent, { index, with: child }) {
@@ -311,7 +290,7 @@ export class Reconciler {
   }
 
   #moveChild(domParent, child, beforeEl) {
-    moveBefore(domParent, child.node, beforeEl);
+    this.#platform.move_before(domParent, child.node, wrapRef(beforeEl));
 
     // child might be a fragment, in which case we need do move all its child dom nodes too
     if (child.isVirtual) {
@@ -320,7 +299,7 @@ export class Reconciler {
 
     // if "endNode" is set, that node is also a sibling node that we need to move with the children
     if (child.endNode) {
-      moveBefore(domParent, child.endNode, beforeEl);
+      this.#platform.move_before(domParent, child.endNode, wrapRef(beforeEl));
     }
   }
 
@@ -336,9 +315,9 @@ export class Reconciler {
       const child = deleted[i];
       const { node, endNode, isVirtual, children: nestedChildren } = child;
 
-      removeChild(parentNode, node);
+      this.#platform.remove_child(parentNode, node);
       if (endNode) {
-        removeChild(parentNode, endNode);
+        this.#platform.remove_child(parentNode, endNode);
       }
 
       this.#removeDebouncers(child);
@@ -365,11 +344,11 @@ export class Reconciler {
   #update({ node, handlers, throttles, debouncers }, { added, removed }) {
     iterate(removed, ({ name }) => {
       if (handlers.delete(name)) {
-        removeEventListener(node, name, handleEvent);
+        this.#platform.remove_event_listener(node, name, handleEvent);
         this.#updateDebounceThrottle(throttles, name, 0);
         this.#updateDebounceThrottle(debouncers, name, 0);
       } else {
-        removeAttribute(node, name);
+        this.#platform.remove_attribute(node, name);
         SYNCED_ATTRIBUTES[name]?.removed?.(node, name);
       }
     });
@@ -378,11 +357,11 @@ export class Reconciler {
   }
 
   #replaceText({ node }, { content }) {
-    setData(node, content ?? "");
+    this.#platform.set_text(node, content ?? "");
   }
 
   #replaceInnerHtml({ node }, { inner_html }) {
-    setInnerHtml(node, inner_html ?? "");
+    this.#platform.set_inner_html(node, inner_html ?? "");
   }
 
   // INSERT --------------------------------------------------------------------
@@ -398,14 +377,14 @@ export class Reconciler {
       case element_kind: {
         const node = this.#createElement(metaParent, index, vnode);
         this.#insertChildren(node, null, node[meta], 0, vnode.children);
-        insertBefore(domParent, node, beforeEl);
+        this.#platform.insert_before(domParent, node, wrapRef(beforeEl));
 
         break;
       }
 
       case text_kind: {
         const node = this.#createTextNode(metaParent, index, vnode);
-        insertBefore(domParent, node, beforeEl);
+        this.#platform.insert_before(domParent, node, wrapRef(beforeEl));
 
         break;
       }
@@ -414,12 +393,12 @@ export class Reconciler {
         const marker = "lustre:fragment";
         const head = this.#createHead(marker, metaParent, index, vnode);
 
-        insertBefore(domParent, head, beforeEl);
+        this.#platform.insert_before(domParent, head, wrapRef(beforeEl));
         this.#insertChildren(domParent, beforeEl, head[meta], 0, vnode.children);
 
         if (this.#debug) {
-          head[meta].endNode = createComment(` /${marker} `);
-          insertBefore(domParent, head[meta].endNode, beforeEl);
+          head[meta].endNode = this.#platform.create_comment(` /${marker} `);
+          this.#platform.insert_before(domParent, head[meta].endNode, wrapRef(beforeEl));
         }
 
         break;
@@ -428,7 +407,7 @@ export class Reconciler {
       case unsafe_inner_html_kind: {
         const node = this.#createElement(metaParent, index, vnode);
         this.#replaceInnerHtml({ node }, vnode);
-        insertBefore(domParent, node, beforeEl);
+        this.#platform.insert_before(domParent, node, wrapRef(beforeEl));
 
         break;
       }
@@ -437,7 +416,7 @@ export class Reconciler {
         // Map nodes are virtual like fragments; this allows us to track
         // subtree boundaries in the real DOM and construct event paths accordingly.
         const head = this.#createHead("lustre:map", metaParent, index, vnode);
-        insertBefore(domParent, head, beforeEl);
+        this.#platform.insert_before(domParent, head, wrapRef(beforeEl));
         this.#insertChild(domParent, beforeEl, head[meta], 0, vnode.child);
 
         break;
@@ -455,11 +434,11 @@ export class Reconciler {
   }
 
   #createElement(parent, index, { kind, key, tag, namespace, attributes }) {
-    const node = createElementNS(namespace || NAMESPACE_HTML, tag);
+    const node = this.#platform.create_element(namespace || NAMESPACE_HTML, tag);
     insertMetadataChild(kind, parent, node, index, key);
 
     if (this.#debug && key) {
-      setAttribute(node, "data-lustre-key", key);
+      this.#platform.set_attribute(node, "data-lustre-key", key);
     }
     iterate(attributes, (attribute) => this.#createAttribute(node, attribute));
 
@@ -467,7 +446,7 @@ export class Reconciler {
   }
 
   #createTextNode(parent, index, { kind, key, content }) {
-    const node = createTextNode(content ?? "");
+    const node = this.#platform.create_text_node(content ?? "");
     insertMetadataChild(kind, parent, node, index, key);
 
     return node;
@@ -475,8 +454,8 @@ export class Reconciler {
 
   #createHead(marker, parent, index, { kind, key }) {
     const node = this.#debug
-      ? createComment(markerComment(marker, key))
-      : createTextNode("");
+      ? this.#platform.create_comment(markerComment(marker, key))
+      : this.#platform.create_text_node("");
     insertMetadataChild(kind, parent, node, index, key);
 
     return node;
@@ -498,18 +477,20 @@ export class Reconciler {
       case attribute_kind: {
         const valueOrDefault = value ?? "";
         if (name === "virtual:defaultValue") {
-          node.defaultValue = valueOrDefault;
+          this.#platform.set_property(node, "defaultValue", valueOrDefault);
           return;
         } else if (name === "virtual:defaultChecked") {
-          node.defaultChecked = true;
+          this.#platform.set_property(node, "defaultChecked", true);
           return;
         } else if (name === "virtual:defaultSelected") {
-          node.defaultSelected = true;
+          this.#platform.set_property(node, "defaultSelected", true);
           return;
         }
 
-        if (valueOrDefault !== getAttribute(node, name)) {
-          setAttribute(node, name, valueOrDefault);
+        const current = this.#platform.get_attribute(node, name);
+        const currentValue = Result$isOk(current) ? Result$Ok$0(current) : null;
+        if (valueOrDefault !== currentValue) {
+          this.#platform.set_attribute(node, name, valueOrDefault);
         }
 
         SYNCED_ATTRIBUTES[name]?.added?.(node, valueOrDefault);
@@ -518,18 +499,18 @@ export class Reconciler {
       }
 
       case property_kind:
-        node[name] = value;
+        this.#platform.set_property(node, name, value);
         break;
 
       case event_kind: {
         if (handlers.has(name)) {
           // we re-attach an event listener on every change in case we need
           // to change the options we pass.
-          removeEventListener(node, name, handleEvent);
+          this.#platform.remove_event_listener(node, name, handleEvent);
         }
 
         const passive = prevent.kind === never_kind;
-        addEventListener(node, name, handleEvent, { passive });
+        this.#platform.add_event_listener(node, name, handleEvent, passive);
 
         this.#updateDebounceThrottle(throttles, name, throttleDelay);
         this.#updateDebounceThrottle(debouncers, name, debounceDelay);

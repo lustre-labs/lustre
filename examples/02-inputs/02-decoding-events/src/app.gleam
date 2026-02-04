@@ -3,6 +3,7 @@
 import gleam/dynamic/decode
 import gleam/int
 import lustre
+import lustre/platform
 import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
@@ -11,8 +12,9 @@ import lustre/event
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
+  let assert Ok(platform) = platform.dom("#app")
   let app = lustre.simple(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
+  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
 
   Nil
 }

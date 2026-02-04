@@ -12,6 +12,7 @@ import lustre
 import lustre/attribute
 import lustre/element
 import lustre/element/html.{html}
+import lustre/platform
 import lustre/server_component
 import mist.{type Connection, type ResponseData}
 
@@ -109,7 +110,7 @@ type ChatSocketInit =
 
 fn init_chat_socket(_) -> ChatSocketInit {
   let chat = chat.component()
-  let assert Ok(component) = lustre.start_server_component(chat, Nil)
+  let assert Ok(component) = lustre.start(chat, on: platform.headless(), with: Nil)
 
   let self = process.new_subject()
   let selector = process.new_selector() |> process.select(self)

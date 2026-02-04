@@ -13,6 +13,7 @@ import lustre
 import lustre/attribute
 import lustre/element
 import lustre/element/html.{html}
+import lustre/platform
 import lustre/server_component
 import mist.{type Connection, type ResponseData}
 import whiteboard
@@ -133,7 +134,7 @@ fn init_whiteboard_socket(
   // This registry can then used in the whitespace component to communicate with
   // other component instances. Check out the whitespace component to learn how!
   let whiteboard = whiteboard.component()
-  let assert Ok(component) = lustre.start_server_component(whiteboard, registry)
+  let assert Ok(component) = lustre.start(whiteboard, on: platform.headless(), with: registry)
 
   let self = process.new_subject()
   let selector = process.new_selector() |> process.select(self)

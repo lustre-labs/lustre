@@ -7,6 +7,7 @@ import gleam/time/duration.{type Duration}
 import gleam/time/timestamp.{type Timestamp}
 import gleam_community/maths
 import lustre
+import lustre/platform
 import lustre/attribute.{attribute}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -23,8 +24,9 @@ pub fn main() {
   let now = timestamp.system_time()
   let model = Model(timezone:, time: now)
 
+  let assert Ok(platform) = platform.dom("#app")
   let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", model)
+  let assert Ok(_) = lustre.start(app, on: platform, with: model)
 
   Nil
 }

@@ -21,6 +21,8 @@ import lustre/event
 @target(erlang)
 import lustre/internals/mutable_map
 @target(erlang)
+import lustre/platform
+@target(erlang)
 import lustre/runtime/server/runtime
 @target(erlang)
 import lustre/runtime/transport
@@ -154,7 +156,7 @@ pub fn server_emit_event_test() {
 @target(erlang)
 fn with_erlang_runtime(run_test) {
   let app = lustre.application(init, update, view)
-  let assert Ok(runtime) = lustre.start_server_component(app, 0)
+  let assert Ok(runtime) = lustre.start(app, on: platform.headless(), with: 0)
   let client = process.new_subject()
 
   server_component.register_subject(client) |> lustre.send(to: runtime)

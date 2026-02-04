@@ -19,6 +19,8 @@ import lustre/element/keyed
 @target(javascript)
 import lustre/event
 @target(javascript)
+import lustre/platform
+@target(javascript)
 import lustre_test
 
 // TYPES -----------------------------------------------------------------------
@@ -32,6 +34,20 @@ type CounterMsg {
   Decrement
   Reset
   SetTo(Int)
+}
+
+// HELPERS ---------------------------------------------------------------------
+
+@target(javascript)
+fn get_platform() -> platform.Platform(
+  platform.DomNode,
+  platform.DomNode,
+  platform.DomNode,
+  platform.DomEvent,
+  msg,
+) {
+  let assert Ok(p) = platform.dom("body")
+  p
 }
 
 // TESTS -----------------------------------------------------------------------
@@ -51,12 +67,15 @@ pub fn client_runtime_map_with_events_test() {
 
   let html_string = element.to_string(initial)
 
-  let app =
-    lustre.simple(fn(_) { [] }, fn(model, msg) { [msg, ..model] }, fn(_model) {
-      initial
-    })
-
-  use runtime <- with_client_runtime(html_string, app)
+  use runtime <- with_client_runtime(
+    html_string,
+    fn() {
+      lustre.simple(fn(_) { [] }, fn(model, msg) { [msg, ..model] }, fn(_model) {
+        initial
+      })
+    },
+    get_platform,
+  )
 
   // Click the button
   use <- emit("button", "click")
@@ -86,9 +105,11 @@ pub fn client_runtime_memo_caching_test() {
   // called once for element.to_string
   assert booklet.get(call_count) == 1
 
-  let app = lustre.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view)
-
-  use runtime <- with_client_runtime(html_string, app)
+  use runtime <- with_client_runtime(
+    html_string,
+    fn() { lustre.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view) },
+    get_platform,
+  )
 
   // called again to diff against the initial vdom
   assert booklet.get(call_count) == 2
@@ -118,9 +139,11 @@ pub fn client_runtime_memo_events_test() {
   let initial = view(0)
   let html_string = element.to_string(initial)
 
-  let app = lustre.simple(fn(_) { 0 }, int.add, view)
-
-  use runtime <- with_client_runtime(html_string, app)
+  use runtime <- with_client_runtime(
+    html_string,
+    fn() { lustre.simple(fn(_) { 0 }, int.add, view) },
+    get_platform,
+  )
 
   use <- emit("button", "click")
   assert get_model(runtime) == 1
@@ -149,21 +172,24 @@ pub fn client_runtime_single_event_test() {
   let initial = view(0)
   let html_string = element.to_string(initial)
 
-  let app =
-    lustre.simple(
-      fn(_) { 0 },
-      fn(model, msg) {
-        case msg {
-          Increment -> model + 1
-          Decrement -> model - 1
-          Reset -> 0
-          SetTo(n) -> n
-        }
-      },
-      view,
-    )
-
-  use runtime <- with_client_runtime(html_string, app)
+  use runtime <- with_client_runtime(
+    html_string,
+    fn() {
+      lustre.simple(
+        fn(_) { 0 },
+        fn(model, msg) {
+          case msg {
+            Increment -> model + 1
+            Decrement -> model - 1
+            Reset -> 0
+            SetTo(n) -> n
+          }
+        },
+        view,
+      )
+    },
+    get_platform,
+  )
 
   // Click increment button
   use <- emit("button:nth-child(3)", "click")
@@ -186,21 +212,24 @@ pub fn client_runtime_multiple_events_test() {
   let initial = view(0)
   let html_string = element.to_string(initial)
 
-  let app =
-    lustre.simple(
-      fn(_) { 0 },
-      fn(model, msg) {
-        case msg {
-          Increment -> model + 1
-          Decrement -> model - 1
-          Reset -> 0
-          SetTo(n) -> n
-        }
-      },
-      view,
-    )
-
-  use runtime <- with_client_runtime(html_string, app)
+  use runtime <- with_client_runtime(
+    html_string,
+    fn() {
+      lustre.simple(
+        fn(_) { 0 },
+        fn(model, msg) {
+          case msg {
+            Increment -> model + 1
+            Decrement -> model - 1
+            Reset -> 0
+            SetTo(n) -> n
+          }
+        },
+        view,
+      )
+    },
+    get_platform,
+  )
 
   // Click increment three times
   use <- emit("button:nth-child(3)", "click")
@@ -226,21 +255,24 @@ pub fn client_runtime_fragment_rendering_test() {
   let initial = view(0)
   let html_string = element.to_string(initial)
 
-  let app =
-    lustre.simple(
-      fn(_) { 0 },
-      fn(model, msg) {
-        case msg {
-          Increment -> model + 1
-          Decrement -> model - 1
-          Reset -> 0
-          SetTo(n) -> n
-        }
-      },
-      view,
-    )
-
-  use runtime <- with_client_runtime(html_string, app)
+  use runtime <- with_client_runtime(
+    html_string,
+    fn() {
+      lustre.simple(
+        fn(_) { 0 },
+        fn(model, msg) {
+          case msg {
+            Increment -> model + 1
+            Decrement -> model - 1
+            Reset -> 0
+            SetTo(n) -> n
+          }
+        },
+        view,
+      )
+    },
+    get_platform,
+  )
 
   use <- send(runtime, SetTo(5))
 
@@ -266,12 +298,14 @@ pub fn client_runtime_controlled_text_input_test() {
     ])
   }
 
-  let app = lustre.simple(fn(_) { "" }, fn(_model, msg) { msg }, view)
-
   let initial = view("")
   let html_string = element.to_string(initial)
 
-  use runtime <- with_client_runtime(html_string, app)
+  use runtime <- with_client_runtime(
+    html_string,
+    fn() { lustre.simple(fn(_) { "" }, fn(_model, msg) { msg }, view) },
+    get_platform,
+  )
 
   // Type into input
   use <- emit_with_value("input", "input", "hello")
@@ -296,12 +330,14 @@ pub fn client_runtime_controlled_checkbox_test() {
     ])
   }
 
-  let app = lustre.simple(fn(_) { False }, fn(_model, msg) { msg }, view)
-
   let initial = view(False)
   let html_string = element.to_string(initial)
 
-  use runtime <- with_client_runtime(html_string, app)
+  use runtime <- with_client_runtime(
+    html_string,
+    fn() { lustre.simple(fn(_) { False }, fn(_model, msg) { msg }, view) },
+    get_platform,
+  )
 
   // Click checkbox to check it
   use <- emit_with_value("input[type=checkbox]", "change", "true")
@@ -327,12 +363,14 @@ pub fn client_runtime_select_dropdown_test() {
     ])
   }
 
-  let app = lustre.simple(fn(_) { "red" }, fn(_model, msg) { msg }, view)
-
   let initial = view("red")
   let html_string = element.to_string(initial)
 
-  use runtime <- with_client_runtime(html_string, app)
+  use runtime <- with_client_runtime(
+    html_string,
+    fn() { lustre.simple(fn(_) { "red" }, fn(_model, msg) { msg }, view) },
+    get_platform,
+  )
 
   // Select different option
   use <- emit_with_value("select", "input", "green")
@@ -360,15 +398,17 @@ pub fn client_runtime_memo_dependency_change_test() {
     ])
   }
 
-  let app = lustre.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view)
-
   let initial = view(0)
   let html_string = element.to_string(initial)
 
   // Called once for element.to_string
   assert booklet.get(call_count) == 1
 
-  use _runtime <- with_client_runtime(html_string, app)
+  use _runtime <- with_client_runtime(
+    html_string,
+    fn() { lustre.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view) },
+    get_platform,
+  )
 
   // Called again during initial mount/diff
   assert booklet.get(call_count) == 2
@@ -399,23 +439,26 @@ pub fn client_runtime_memo_stable_dependency_test() {
     ])
   }
 
-  let app =
-    lustre.simple(
-      fn(_) { #(0, "") },
-      fn(model, _msg) {
-        let #(count, text) = model
-        #(count, text <> "x")
-      },
-      view,
-    )
-
   let initial = view(#(0, ""))
   let html_string = element.to_string(initial)
 
   // Called once for element.to_string
   assert booklet.get(call_count) == 1
 
-  use _runtime <- with_client_runtime(html_string, app)
+  use _runtime <- with_client_runtime(
+    html_string,
+    fn() {
+      lustre.simple(
+        fn(_) { #(0, "") },
+        fn(model, _msg) {
+          let #(count, text) = model
+          #(count, text <> "x")
+        },
+        view,
+      )
+    },
+    get_platform,
+  )
 
   // Called again during initial mount/diff
   assert booklet.get(call_count) == 2
@@ -442,12 +485,16 @@ pub fn client_runtime_event_bubbling_test() {
     ])
   }
 
-  let app = lustre.simple(fn(_) { [] }, fn(model, msg) { [msg, ..model] }, view)
-
   let initial = view([])
   let html_string = element.to_string(initial)
 
-  use runtime <- with_client_runtime(html_string, app)
+  use runtime <- with_client_runtime(
+    html_string,
+    fn() {
+      lustre.simple(fn(_) { [] }, fn(model, msg) { [msg, ..model] }, view)
+    },
+    get_platform,
+  )
 
   // Click button - child element's handler should fire
   use <- emit("button", "click")
@@ -476,12 +523,14 @@ pub fn client_runtime_nested_fragments_test() {
     ])
   }
 
-  let app = lustre.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view)
-
   let initial = view(0)
   let html_string = element.to_string(initial)
 
-  use runtime <- with_client_runtime(html_string, app)
+  use runtime <- with_client_runtime(
+    html_string,
+    fn() { lustre.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view) },
+    get_platform,
+  )
 
   // Click button in nested fragment
   use <- emit("button", "click")
@@ -507,12 +556,17 @@ pub fn client_runtime_keyed_fragments_test() {
   }
 
   let initial_list = ["First", "Second", "Third"]
-  let app = lustre.simple(fn(_) { initial_list }, fn(_model, msg) { msg }, view)
 
   let initial = view(initial_list)
   let html_string = element.to_string(initial)
 
-  use runtime <- with_client_runtime(html_string, app)
+  use runtime <- with_client_runtime(
+    html_string,
+    fn() {
+      lustre.simple(fn(_) { initial_list }, fn(_model, msg) { msg }, view)
+    },
+    get_platform,
+  )
 
   // Initial state should show items in order
   let html = get_html()
@@ -558,7 +612,15 @@ pub fn client_runtime_keyed_fragments_test() {
 @external(javascript, "./client_test.ffi.mjs", "with_client_runtime")
 pub fn with_client_runtime(
   initial_html: String,
-  app: lustre.App(Nil, model, msg),
+  make_app: fn() -> lustre.App(Nil, model, msg),
+  get_platform: fn() ->
+    platform.Platform(
+      platform.DomNode,
+      platform.DomNode,
+      platform.DomNode,
+      platform.DomEvent,
+      msg,
+    ),
   test_callback: fn(Runtime(msg, model)) -> Nil,
 ) -> Nil
 

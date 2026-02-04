@@ -38,7 +38,7 @@ pub fn register() -> Result(Nil, lustre.Error) {
       }),
     ])
 
-  lustre.register(component, "my-counter")
+  lustre.register(component, named: "my-counter")
 }
 
 pub fn element(attributes: List(Attribute(msg))) -> Element(msg) {

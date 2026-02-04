@@ -11,6 +11,7 @@ import lustre
 import lustre/attribute
 import lustre/element
 import lustre/element/html.{html}
+import lustre/platform
 import lustre/server_component
 import mist.{type Connection, type ResponseData}
 import whiteboard
@@ -19,7 +20,7 @@ import whiteboard
 
 pub fn main() {
   let whiteboard = whiteboard.component()
-  let assert Ok(component) = lustre.start_server_component(whiteboard, Nil)
+  let assert Ok(component) = lustre.start(whiteboard, on: platform.headless(), with: Nil)
 
   let assert Ok(_) =
     fn(request: Request(Connection)) -> Response(ResponseData) {
