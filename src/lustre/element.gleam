@@ -229,3 +229,62 @@ pub fn ref(value: a) -> Ref {
 pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
   vnode.map(element, f)
 }
+
+// LUSTRE_DEV_TOOLS COMPATIBILITY SHIMS ----------------------------------------
+//
+// WARNING: These functions are DEPRECATED and exist only for backward
+// compatibility with lustre_dev_tools. They will be removed in a future
+// release. Use the functions in `lustre/platform/dom` instead:
+//
+//   - element.to_string        -> dom.to_string
+//   - element.to_document_string -> dom.to_document_string
+//   - element.to_readable_string -> dom.to_readable_string
+//   - element.unsafe_raw_html  -> element.unsafe_raw_content
+//
+
+/// DEPRECATED: Use `lustre/platform/dom.to_string` instead.
+/// This shim exists only for lustre_dev_tools compatibility.
+///
+@deprecated("Use lustre/platform/dom.to_string instead")
+@external(erlang, "lustre@platform@dom", "to_string")
+pub fn to_string(_el: Element(msg)) -> String {
+  panic as "element.to_string is deprecated: use lustre/platform/dom.to_string"
+}
+
+/// DEPRECATED: Use `lustre/platform/dom.to_document_string` instead.
+/// This shim exists only for lustre_dev_tools compatibility.
+///
+@deprecated("Use lustre/platform/dom.to_document_string instead")
+@external(erlang, "lustre@platform@dom", "to_document_string")
+pub fn to_document_string(_el: Element(msg)) -> String {
+  panic as "element.to_document_string is deprecated: use lustre/platform/dom.to_document_string"
+}
+
+/// DEPRECATED: Use `lustre/platform/dom.to_readable_string` instead.
+/// This shim exists only for lustre_dev_tools compatibility.
+///
+@deprecated("Use lustre/platform/dom.to_readable_string instead")
+@external(erlang, "lustre@platform@dom", "to_readable_string")
+pub fn to_readable_string(_el: Element(msg)) -> String {
+  panic as "element.to_readable_string is deprecated: use lustre/platform/dom.to_readable_string"
+}
+
+/// DEPRECATED: Use `element.unsafe_raw_content` instead.
+/// This shim exists only for lustre_dev_tools compatibility.
+///
+@deprecated("Use element.unsafe_raw_content instead")
+pub fn unsafe_raw_html(
+  namespace: String,
+  tag: String,
+  attributes: List(Attribute(msg)),
+  content: String,
+) -> Element(msg) {
+  vnode.raw_container(
+    key: "",
+    namespace:,
+    tag:,
+    attributes:,
+    content:,
+    compare: option.None,
+  )
+}

@@ -520,6 +520,13 @@ pub fn shutdown() -> RuntimeMessage(msg) {
 
 // UTILS -----------------------------------------------------------------------
 
+/// Check if the application is running in the browser.
+///
+@external(javascript, "./lustre/runtime/platform/base.ffi.mjs", "is_browser")
+pub fn is_browser() -> Bool {
+  False
+}
+
 /// Check if the given component name has already been registered as a Custom
 /// Element. This is particularly useful in contexts where _other web components_
 /// may have been registered and you must avoid collisions.
