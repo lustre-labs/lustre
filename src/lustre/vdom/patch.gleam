@@ -4,7 +4,9 @@ import gleam/json.{type Json}
 import lustre/internals/constants
 import lustre/internals/json_object_builder
 import lustre/vdom/vattr.{type Attribute}
-import lustre/vdom/vnode.{type Element, type Memos}
+import lustre/vdom/vnode.{
+  type Element, type Memos, type RawContent, type RawContentSerializer,
+}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -50,7 +52,7 @@ pub type Change(message) {
   // Self upadates:
   //
   ReplaceText(kind: Int, content: String)
-  ReplaceInnerHtml(kind: Int, inner_html: String)
+  ReplaceRawContent(kind: Int, content: RawContent)
   Update(
     kind: Int,
     added: List(Attribute(message)),
@@ -89,10 +91,10 @@ pub fn replace_text(content content: String) -> Change(message) {
   ReplaceText(kind: replace_text_kind, content:)
 }
 
-pub const replace_inner_html_kind: Int = 1
+pub const replace_raw_content_kind: Int = 1
 
-pub fn replace_inner_html(inner_html inner_html: String) -> Change(message) {
-  ReplaceInnerHtml(kind: replace_inner_html_kind, inner_html:)
+pub fn replace_raw_content(content content: RawContent) -> Change(message) {
+  ReplaceRawContent(kind: replace_raw_content_kind, content:)
 }
 
 pub const update_kind: Int = 2
@@ -148,31 +150,40 @@ pub fn add_parent(child: Patch(message), index: Int) -> Patch(message) {
 
 // ENCODING --------------------------------------------------------------------
 
-pub fn to_json(patch: Patch(message), memos: Memos(message)) -> Json {
+pub fn to_json(
+  patch: Patch(message),
+  memos: Memos(message),
+  serialize_raw_content: RawContentSerializer,
+) -> Json {
   json_object_builder.new()
   |> json_object_builder.list("path", patch.path, json.int)
   |> json_object_builder.int("index", patch.index)
   |> json_object_builder.int("removed", patch.removed)
   |> json_object_builder.list("changes", patch.changes, fn(change) {
-    change_to_json(change, memos)
+    change_to_json(change, memos, serialize_raw_content)
   })
   |> json_object_builder.list("children", patch.children, fn(child) {
-    to_json(child, memos)
+    to_json(child, memos, serialize_raw_content)
   })
   |> json_object_builder.build
 }
 
-fn change_to_json(change: Change(message), memos: Memos(message)) -> Json {
+fn change_to_json(
+  change: Change(message),
+  memos: Memos(message),
+  serialize_raw_content: RawContentSerializer,
+) -> Json {
   case change {
     ReplaceText(kind, content) -> replace_text_to_json(kind, content)
-    ReplaceInnerHtml(kind, inner_html) ->
-      replace_inner_html_to_json(kind, inner_html)
+    ReplaceRawContent(kind, content) ->
+      replace_raw_content_to_json(kind, content, serialize_raw_content)
     Update(kind, added, removed) -> update_to_json(kind, added, removed)
     Move(kind, key, before) -> move_to_json(kind, key, before)
     Remove(kind, index) -> remove_to_json(kind, index)
-    Replace(kind, index, with) -> replace_to_json(kind, index, with, memos)
+    Replace(kind, index, with) ->
+      replace_to_json(kind, index, with, memos, serialize_raw_content)
     Insert(kind, children, before) ->
-      insert_to_json(kind, children, before, memos)
+      insert_to_json(kind, children, before, memos, serialize_raw_content)
   }
 }
 
@@ -182,9 +193,9 @@ fn replace_text_to_json(kind, content) {
   |> json_object_builder.build
 }
 
-fn replace_inner_html_to_json(kind, inner_html) {
+fn replace_raw_content_to_json(kind, content, serialize_raw_content) {
   json_object_builder.tagged(kind)
-  |> json_object_builder.string("inner_html", inner_html)
+  |> json_object_builder.string("content", serialize_raw_content(content))
   |> json_object_builder.build
 }
 
@@ -208,16 +219,20 @@ fn remove_to_json(kind, index) {
   |> json_object_builder.build
 }
 
-fn replace_to_json(kind, index, with, memos) {
+fn replace_to_json(kind, index, with, memos, serialize_raw_content) {
   json_object_builder.tagged(kind)
   |> json_object_builder.int("index", index)
-  |> json_object_builder.json("with", vnode.to_json(with, memos))
+  |> json_object_builder.json("with", {
+    vnode.to_json(with, memos, serialize_raw_content)
+  })
   |> json_object_builder.build
 }
 
-fn insert_to_json(kind, children, before, memos) {
+fn insert_to_json(kind, children, before, memos, serialize_raw_content) {
   json_object_builder.tagged(kind)
   |> json_object_builder.int("before", before)
-  |> json_object_builder.list("children", children, vnode.to_json(_, memos))
+  |> json_object_builder.list("children", children, fn(child) {
+    vnode.to_json(child, memos, serialize_raw_content)
+  })
   |> json_object_builder.build
 }

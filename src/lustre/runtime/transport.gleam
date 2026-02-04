@@ -5,8 +5,10 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/function
 import gleam/json.{type Json}
+import lustre/element.{type Element}
+import lustre/serializer
 import lustre/vdom/patch.{type Patch}
-import lustre/vdom/vnode.{type Element, type Memos}
+import lustre/vdom/vnode.{type Memos, type RawContent}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -139,7 +141,11 @@ pub fn context_provided(key: String, value: Dynamic) -> ServerMessage {
 
 // ENCODING --------------------------------------------------------------------
 
-pub fn client_message_to_json(message: ClientMessage(message)) -> Json {
+pub fn client_message_to_json(
+  message: ClientMessage(message),
+  serializer: serializer.Serializer(message),
+) -> Json {
+  let serializer.Serializer(raw_content: serialize_raw_content, ..) = serializer
   case message {
     Mount(
       kind:,
@@ -162,8 +168,10 @@ pub fn client_message_to_json(message: ClientMessage(message)) -> Json {
         provided_contexts,
         vdom,
         memos,
+        serialize_raw_content,
       )
-    Reconcile(kind:, patch:, memos:) -> reconcile_to_json(kind, patch, memos)
+    Reconcile(kind:, patch:, memos:) ->
+      reconcile_to_json(kind, patch, memos, serialize_raw_content)
     Emit(kind:, name:, data:) -> emit_to_json(kind, name, data)
     Provide(kind:, key:, value:) -> provide_to_json(kind, key, value)
     Subscribe(kind:, key:) -> subscribe_to_json(kind, key)
@@ -181,6 +189,7 @@ fn mount_to_json(
   provided_contexts: Dict(String, Json),
   vdom: Element(message),
   memos: Memos(message),
+  serialize_raw_content: fn(RawContent) -> String,
 ) -> Json {
   json.object([
     #("kind", json.int(kind)),
@@ -193,7 +202,7 @@ fn mount_to_json(
       "provided_contexts",
       json.dict(provided_contexts, function.identity, function.identity),
     ),
-    #("vdom", vnode.to_json(vdom, memos)),
+    #("vdom", vnode.to_json(vdom, memos, serialize_raw_content)),
   ])
 }
 
@@ -201,10 +210,11 @@ fn reconcile_to_json(
   kind: Int,
   patch: Patch(message),
   memos: Memos(message),
+  serialize_raw_content: fn(RawContent) -> String,
 ) -> Json {
   json.object([
     #("kind", json.int(kind)),
-    #("patch", patch.to_json(patch, memos)),
+    #("patch", patch.to_json(patch, memos, serialize_raw_content)),
   ])
 }
 

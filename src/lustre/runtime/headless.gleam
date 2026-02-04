@@ -6,9 +6,9 @@ import gleam/erlang/process.{type Monitor, type Selector, type Subject}
 import gleam/json.{type Json}
 import gleam/set.{type Set}
 import lustre/effect.{type Effect}
+import lustre/element.{type Element}
 import lustre/runtime/transport.{type ClientMessage, type ServerMessage}
 import lustre/vdom/cache.{type Cache}
-import lustre/vdom/vnode.{type Element}
 
 @target(erlang)
 import gleam/dynamic.{type Dynamic}

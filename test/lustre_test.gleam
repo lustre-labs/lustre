@@ -85,12 +85,12 @@ fn do_nodes_equal(
       && left.attributes == right.attributes
       && children_equal(left.children, right.children, ignore_memo)
 
-    vnode.UnsafeInnerHtml(..), vnode.UnsafeInnerHtml(..) ->
+    vnode.RawContainer(..), vnode.RawContainer(..) ->
       left.key == right.key
       && left.tag == right.tag
       && left.namespace == right.namespace
       && left.attributes == right.attributes
-      && left.inner_html == right.inner_html
+      && left.content == right.content
     _, _ -> False
   }
 }

@@ -7,13 +7,13 @@ import gleam/int
 import gleam/json
 import gleam/list
 import lustre
-import lustre/platform
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/element/keyed
 import lustre/event
+import lustre/platform/dom
 
 // Optimist is a library that gives us a data structure that abstracts over
 // *optimistic* updates. That means we can update some data immediately with the
@@ -28,7 +28,7 @@ pub fn main() {
   // In this example we've swapped out the `simple` app constructor for the
   // `application` constructor instead. This lets us return effects from the
   // `init` and `update` functions.
-  let assert Ok(platform) = platform.dom("#app")
+  let assert Ok(platform) = dom.platform("#app")
   let app = lustre.application(init, update, view)
   let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
 

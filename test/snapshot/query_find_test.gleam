@@ -9,6 +9,7 @@ import lustre/dev/query.{
 }
 import lustre/element
 import lustre/element/html
+import lustre/platform/dom
 import lustre_test
 
 // SINGLE ELEMENTS -------------------------------------------------------------
@@ -184,7 +185,7 @@ pub fn find_all_by_class_test() {
 fn to_single_snapshot(element, query) {
   let element_snapshot =
     element
-    |> element.to_readable_string
+    |> dom.to_readable_string
     |> string.replace("\n", "\n  ")
 
   let query_snapshot =
@@ -207,7 +208,7 @@ fn to_multiple_snapshot(elements, query) {
   let elements_snapshot =
     list.map(elements, fn(element) {
       element
-      |> element.to_readable_string
+      |> dom.to_readable_string
       |> string.replace("\n", "\n  ")
     })
 

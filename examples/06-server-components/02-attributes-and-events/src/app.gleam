@@ -10,9 +10,9 @@ import gleam/json
 import gleam/option.{type Option, None, Some}
 import lustre
 import lustre/attribute
-import lustre/element
 import lustre/element/html.{html}
 import lustre/platform
+import lustre/platform/dom
 import lustre/server_component
 import mist.{type Connection, type ResponseData}
 
@@ -87,7 +87,7 @@ fn serve_html() -> Response(ResponseData) {
         ],
       ),
     ])
-    |> element.to_document_string_tree
+    |> dom.to_document_string_tree
     |> bytes_tree.from_string_tree
 
   response.new(200)
@@ -98,7 +98,7 @@ fn serve_html() -> Response(ResponseData) {
 // JAVASCRIPT ------------------------------------------------------------------
 
 fn serve_runtime() -> Response(ResponseData) {
-  let assert Ok(lustre_priv) = application.priv_directory("lustre")
+  let assert Ok(lustre_priv) = application.priv_directory("lustre_platform")
   let file_path = lustre_priv <> "/static/lustre-server-component.mjs"
 
   case mist.send_file(file_path, offset: 0, limit: None) {
@@ -139,7 +139,8 @@ type CounterSocketInit =
 
 fn init_counter_socket(_) -> CounterSocketInit {
   let counter = counter.component()
-  let assert Ok(component) = lustre.start(counter, on: platform.headless(), with: Nil)
+  let assert Ok(component) =
+    lustre.start(counter, on: platform.headless(), with: Nil)
 
   let self = process.new_subject()
   let selector =
@@ -172,7 +173,11 @@ fn loop_counter_socket(
     }
 
     mist.Custom(client_message) -> {
-      let json = server_component.client_message_to_json(client_message)
+      let json =
+        server_component.client_message_to_json(
+          client_message,
+          dom.serializer(),
+        )
       let assert Ok(_) = mist.send_text_frame(connection, json.to_string(json))
 
       mist.continue(state)

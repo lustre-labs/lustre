@@ -1,0 +1,7 @@
+---
+version: 1.5.3
+title: [html] Serializer with custom void element
+file: ./test/snapshot/html_test.gleam
+test_name: serializer_custom_void_test
+---
+<div><custom-void><span>normal</span></div>

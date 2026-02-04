@@ -10,9 +10,9 @@ import gleam/json
 import gleam/option.{type Option, None, Some}
 import lustre
 import lustre/attribute
-import lustre/element
 import lustre/element/html.{html}
 import lustre/platform
+import lustre/platform/dom
 import lustre/server_component
 import mist.{type Connection, type ResponseData}
 
@@ -77,7 +77,7 @@ fn serve_html() -> Response(ResponseData) {
         [server_component.element([server_component.route("/ws")], [])],
       ),
     ])
-    |> element.to_document_string_tree
+    |> dom.to_document_string_tree
     |> bytes_tree.from_string_tree
 
   response.new(200)
@@ -95,7 +95,7 @@ fn serve_runtime() -> Response(ResponseData) {
   //
   // Lustre includes both a standard and a minified version of the runtime. The
   // minified bundle clocks in at just 10kB before compression!
-  let assert Ok(lustre_priv) = application.priv_directory("lustre")
+  let assert Ok(lustre_priv) = application.priv_directory("lustre_platform")
   let file_path = lustre_priv <> "/static/lustre-server-component.mjs"
 
   case mist.send_file(file_path, offset: 0, limit: None) {
@@ -140,7 +140,8 @@ fn init_counter_socket(_) -> CounterSocketInit {
   // Lustre runtime by calling `lustre.start_server_component`. This is the same
   // `Runtime` type we get from `lustre.start` but this function doesn't need a
   // CSS selector for the element to attach to: there's no DOM here!
-  let assert Ok(component) = lustre.start(counter, on: platform.headless(), with: Nil)
+  let assert Ok(component) =
+    lustre.start(counter, on: platform.headless(), with: Nil)
 
   // The server component runtime communicates to the websocket process using
   // Gleam's standard process messaging. We construct a new subject that the
@@ -190,7 +191,11 @@ fn loop_counter_socket(
     // network connection, it's our app's responsibility to make sure these messages
     // are encoded and sent to the client.
     mist.Custom(client_message) -> {
-      let json = server_component.client_message_to_json(client_message)
+      let json =
+        server_component.client_message_to_json(
+          client_message,
+          dom.serializer(),
+        )
       let assert Ok(_) = mist.send_text_frame(connection, json.to_string(json))
 
       mist.continue(state)
