@@ -163,10 +163,10 @@ import gleam/option
 import gleam/otp/actor
 import gleam/otp/factory_supervisor.{type Builder}
 import gleam/otp/supervision.{type ChildSpecification}
-import lustre/component.{type Config, type Option}
+import lustre/component.{type Option}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
-import lustre/internals/constants
+import lustre/runtime/app.{App}
 import lustre/runtime/server/runtime
 
 // TYPES -----------------------------------------------------------------------
@@ -193,15 +193,8 @@ import lustre/runtime/server/runtime
 /// don't need an `App` at all! You can render an element directly using the
 /// [`element.to_string`](./lustre/element.html#to_string) function.
 ///
-pub opaque type App(arguments, model, message) {
-  App(
-    name: option.Option(Name(RuntimeMessage(message))),
-    init: fn(arguments) -> #(model, Effect(message)),
-    update: fn(model, message) -> #(model, Effect(message)),
-    view: fn(model) -> Element(message),
-    config: Config(message),
-  )
-}
+pub type App(arguments, model, message) =
+  app.App(arguments, model, message)
 
 /// Starting a Lustre application might fail for a number of reasons. This error
 /// type enumerates all those reasons, even though some of them are only possible
@@ -287,9 +280,7 @@ pub fn application(
   update update: fn(model, message) -> #(model, Effect(message)),
   view view: fn(model) -> Element(message),
 ) -> App(arguments, model, message) {
-  App(name: option.None, init:, update:, view:, config: {
-    component.new(constants.empty_list)
-  })
+  App(name: option.None, init:, update:, view:, config: app.default_config)
 }
 
 /// A `component` is a type of Lustre application designed to be embedded within
@@ -316,7 +307,7 @@ pub fn component(
   view view: fn(model) -> Element(message),
   options options: List(Option(message)),
 ) -> App(arguments, model, message) {
-  App(name: option.None, init:, update:, view:, config: component.new(options))
+  App(name: option.None, init:, update:, view:, config: app.configure(options))
 }
 
 /// Assign a [`Name`](https://hexdocs.pm/gleam_erlang/gleam/erlang/process.html#Name)
@@ -405,7 +396,7 @@ pub fn start_server_component(
       app.init,
       app.update,
       app.view,
-      component.to_server_component_config(app.config),
+      app.configure_server_component(app.config),
       arguments,
     )
 
@@ -431,7 +422,7 @@ pub fn supervised(
     app.init,
     app.update,
     app.view,
-    component.to_server_component_config(app.config),
+    app.configure_server_component(app.config),
     arguments,
   )
 }
@@ -452,7 +443,7 @@ pub fn factory(
     app.init,
     app.update,
     app.view,
-    component.to_server_component_config(app.config),
+    app.configure_server_component(app.config),
     arguments,
   )
 }
@@ -516,8 +507,6 @@ pub fn dispatch(message: message) -> RuntimeMessage(message) {
 pub fn shutdown() -> RuntimeMessage(message) {
   runtime.SystemRequestedShutdown
 }
-
-// CONVERSIONS -----------------------------------------------------------------
 
 // UTILS -----------------------------------------------------------------------
 
