@@ -11,6 +11,10 @@ request to fix it.
 
 ## Unreleased
 
+### Added
+
+- [lustre/component] Added the ability to prerender components when server rendering or producing static HTML.
+
 ### Change
 
 - [lustre/server_component] Fixed a bug where a server component's initial model was unnecessarily copied on start.
