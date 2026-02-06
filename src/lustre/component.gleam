@@ -37,13 +37,15 @@
 
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
+import gleam/list
 import gleam/option.{Some}
 import gleam/string
 import lustre/attribute.{type Attribute, attribute}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
-import lustre/runtime/app.{Config, Option}
+import lustre/runtime/app.{type App, Config, Option}
+import lustre/vdom/vattr.{Attribute, Event, Property}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -535,4 +537,85 @@ pub fn remove_pseudo_state(value: String) -> Effect(message) {
 @external(javascript, "./runtime/client/component.ffi.mjs", "remove_pseudo_state")
 fn do_remove_pseudo_state(_root: Dynamic, _value: String) -> Nil {
   Nil
+}
+
+// CONVERSIONS -----------------------------------------------------------------
+
+/// Prerender a component with a declarative shadow DOM. This is different to
+/// just rendering the component's tag because it also renders the component's
+/// internal `view`. Calling this when server-rendering a component allows components
+/// to benefit from hydration by providing an initial HTML structure similar to
+/// hydratation for client applications.
+///
+/// If the component responds to attribute changes, the attributes passed here
+/// will be applied before the component is rendered.
+///
+/// To support both prerendering and client-side rendering, component authors
+/// can use [`lustre.is_browser`](../lustre.html#is_browser) to detect the
+/// environment and prerender the component where appropriate:
+///
+/// ```gleam
+/// import lustre.{type App}
+/// import lustre/attribute.{type Attribute}
+/// import lustre/component
+/// import lustre/element.{type Element, element}
+///
+/// pub fn element(
+///   attributes: List(Attribute(message)),
+///   children: List(Element(message))
+/// ) -> Element(message) {
+///   case lustre.is_browser() {
+///     True -> element(tag, attributes, children)
+///     False -> component.prerender(component(), tag, attributes, children)
+///   }
+/// }
+///
+/// const tag = "my-component"
+///
+/// fn component() -> App(Nil, Model, Message) {
+///   lustre.component(init:, update:, view:, options:)
+/// }
+/// ```
+///
+pub fn prerender(
+  component: App(Nil, model, message),
+  tag: String,
+  attributes: List(Attribute(message)),
+  children: List(Element(message)),
+) -> Element(message) {
+  let #(model, _) =
+    list.fold(attributes, component.init(Nil), fn(state, attribute) {
+      case attribute {
+        Attribute(name:, value:, ..) ->
+          case list.key_find(component.config.attributes, name) {
+            Ok(handler) ->
+              case handler(value) {
+                Ok(message) -> component.update(state.0, message)
+                Error(_) -> state
+              }
+            Error(_) -> state
+          }
+
+        Property(..) | Event(..) -> state
+      }
+    })
+
+  // This attribute is the part that upgrades a `<template>` element to a
+  // "declarative shadow DOM". Whatever gets rendered inside the template will
+  // be moved into the component's shadow root automatically by the browser.
+  let shadowrootmode =
+    attribute.shadowrootmode(case component.config.open_shadow_root {
+      True -> "open"
+      False -> "closed"
+    })
+
+  let shadowrootdelegatesfocus =
+    attribute.shadowrootdelegatesfocus(component.config.delegates_focus)
+
+  element.element(tag, attributes, [
+    html.template([shadowrootmode, shadowrootdelegatesfocus], [
+      component.view(model),
+    ]),
+    ..children
+  ])
 }
