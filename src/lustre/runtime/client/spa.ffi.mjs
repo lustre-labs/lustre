@@ -44,7 +44,7 @@ export const start = ({ init, update, view }, selector, flags) => {
   const root =
     selector instanceof HTMLElement
       ? selector
-      : document().querySelector(selector);
+      : globalThis.document.querySelector(selector);
 
   if (!root) return Result$Error(Error$ElementNotFound(selector));
 

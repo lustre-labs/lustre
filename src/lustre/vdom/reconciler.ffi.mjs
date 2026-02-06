@@ -34,7 +34,6 @@ import { separator_element, separator_subtree } from "./path.mjs";
 import { iterate } from "../internals/list.ffi.mjs";
 
 import {
-  document,
   SUPPORTS_MOVE_BEFORE,
   NAMESPACE_HTML,
 } from "../internals/constants.ffi.mjs";
@@ -44,34 +43,42 @@ import {
 // DOM API ---------------------------------------------------------------------
 
 // We do this for 2 reasons:
+//
 // - Improve code size by only spelling out the property names in one place
+//
 // - Avoid megamorphic call sites by avoiding direct DOM accesses in the
 //   reconciler main functions.
 //
 // We could directly store references to the Node.protoype functions too and
-// avoid chasing the prototype chains -
-// However that would break many DOM crimes we want to do, for example for the
-// portal or the transition component
+// avoid chasing the prototype chains, however that would break many DOM crimes
+// we want to do: for example for the portal or transition components.
 
 const setTimeout = globalThis.setTimeout;
 const clearTimeout = globalThis.clearTimeout;
-const createElementNS = (ns, name) => document().createElementNS(ns, name);
-const createTextNode = (data) => document().createTextNode(data);
-const createComment = (data) => document().createComment(data);
-const createDocumentFragment = () => document().createDocumentFragment();
+
+const createElementNS = (ns, name) =>
+  globalThis.document.createElementNS(ns, name);
+const createTextNode = (data) => globalThis.document.createTextNode(data);
+const createComment = (data) => globalThis.document.createComment(data);
+const createDocumentFragment = () =>
+  globalThis.document.createDocumentFragment();
+
 const insertBefore = (parent, node, reference) =>
   parent.insertBefore(node, reference);
 const moveBefore = SUPPORTS_MOVE_BEFORE
   ? (parent, node, reference) => parent.moveBefore(node, reference)
   : insertBefore;
 const removeChild = (parent, child) => parent.removeChild(child);
+
 const getAttribute = (node, name) => node.getAttribute(name);
 const setAttribute = (node, name, value) => node.setAttribute(name, value);
 const removeAttribute = (node, name) => node.removeAttribute(name);
+
 const addEventListener = (node, name, handler, options) =>
   node.addEventListener(name, handler, options);
 const removeEventListener = (node, name, handler) =>
   node.removeEventListener(name, handler);
+
 const setInnerHtml = (node, innerHtml) => (node.innerHTML = innerHtml);
 const setData = (node, data) => (node.data = data);
 
@@ -417,7 +424,13 @@ export class Reconciler {
         const head = this.#createHead(marker, metaParent, index, vnode);
 
         insertBefore(domParent, head, beforeEl);
-        this.#insertChildren(domParent, beforeEl, head[meta], 0, vnode.children);
+        this.#insertChildren(
+          domParent,
+          beforeEl,
+          head[meta],
+          0,
+          vnode.children,
+        );
 
         if (this.#debug) {
           head[meta].endNode = createComment(` /${marker} `);
@@ -624,13 +637,13 @@ const markerComment = (marker, key) => {
 
 // EVENTS ----------------------------------------------------------------------
 
-/** Stable references to an element's event handler is necessary if you ever want
+/** Stable references to an element's event handler are necessary if you ever want
  *  to actually remove them. To achieve that we define this shell `handleEvent`
  *  function that just delegates to an actual event handler stored on the node
  *  itself.
  *
  *  Doing things this way lets us swap out the underlying handler – which may
- *  happen - without needing to rebind the event listener.
+ *  happen regularly - without needing to rebind the event listener.
  *
  */
 const handleEvent = (event) => {

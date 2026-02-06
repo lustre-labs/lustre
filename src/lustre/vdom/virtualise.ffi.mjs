@@ -6,7 +6,6 @@ import { insertMetadataChild } from "./reconciler.ffi.mjs";
 import { element_kind, fragment_kind, text_kind, map_kind } from "./vnode.mjs";
 import { empty_list } from "../internals/constants.mjs";
 import {
-  document,
   ELEMENT_NODE,
   TEXT_NODE,
   COMMENT_NODE,
@@ -30,9 +29,10 @@ export const virtualise = (root) => {
   }
 
   // no virtualisable children, we can empty the node and return our default text node.
-  const placeholder = document().createTextNode("");
+  const placeholder = globalThis.document.createTextNode("");
   insertMetadataChild(text_kind, rootMeta, placeholder, 0, null);
   root.insertBefore(placeholder, root.firstChild);
+
   return none();
 };
 
@@ -54,6 +54,7 @@ const virtualiseChild = (meta, domParent, child, index) => {
 
     return null;
   }
+
   if (child.nodeType === ELEMENT_NODE) {
     return virtualiseElement(meta, child, index);
   }
@@ -220,7 +221,7 @@ const virtualiseInputEvents = (tag, node) => {
     // User apps may be using semi-controlled inputs where they listen to blur
     // events to save the value rather than using the input event. To account for
     // those, we dispatch a blur event if the input is not currently focused.
-    if (document().activeElement !== node) {
+    if (globalThis.document.activeElement !== node) {
       node.dispatchEvent(new Event("blur", { bubbles: true }));
     }
   });
