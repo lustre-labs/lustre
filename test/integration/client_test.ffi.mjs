@@ -1,9 +1,7 @@
-import { Result$isOk, Result$Ok$0 } from "../gleam.mjs";
 import { register, unregister } from "./happy-dom.ffi.mjs";
 import { virtualise as do_virtualise } from "../lustre/vdom/virtualise.ffi.mjs";
 import { Reconciler } from "../lustre/vdom/reconciler.ffi.mjs";
 import { Runtime } from "../lustre/runtime/client/runtime.ffi.mjs";
-import * as effect from "../lustre/effect.mjs";
 
 async function runInBrowserContext(callback) {
   register({
@@ -54,13 +52,10 @@ function synchronise_value_attributes() {
   });
 }
 
-export function with_reconciler(callback) {
+export function with_reconciler(debug, callback) {
   return runInBrowserContext(() => {
     const noop = () => {};
-    const reconciler = new Reconciler(document.body, noop, noop, {
-      debug: true,
-    });
-
+    const reconciler = new Reconciler(document.body, noop, noop, { debug });
     callback(reconciler);
   });
 }
