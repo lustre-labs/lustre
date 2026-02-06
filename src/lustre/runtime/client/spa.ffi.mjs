@@ -8,7 +8,6 @@ import {
   Message$isEffectEmitEvent,
   Message$isSystemRequestedShutdown,
 } from "../server/runtime.mjs";
-import { document } from "../../internals/constants.ffi.mjs";
 
 //
 
