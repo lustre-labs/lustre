@@ -1,0 +1,11 @@
+---
+version: 1.5.3
+title: [html] Component prerender should ignore properties
+---
+<my-component>
+  <template shadowrootmode="open">
+    <div>
+      0
+    </div>
+  </template>
+</my-component>

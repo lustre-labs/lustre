@@ -1,0 +1,12 @@
+---
+version: 1.5.3
+title: [html] Component prerender should include children after declarative shadow root template
+---
+<my-component>
+  <template shadowrootmode="open">
+    <slot></slot>
+  </template>
+  <div>
+    Child content
+  </div>
+</my-component>
