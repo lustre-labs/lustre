@@ -1,15 +1,13 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { Result$isOk, Result$Ok$0 } from "../../../gleam.mjs";
-import { empty_list } from "../../internals/constants.mjs";
-import { diff } from "../../vdom/diff.mjs";
 import * as Cache from "../../vdom/cache.mjs";
-import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
-import { virtualise } from "../../vdom/virtualise.ffi.mjs";
+import * as Effect from "../effect.mjs";
+import { diff } from "../../vdom/diff.mjs";
 import { document } from "../../internals/constants.ffi.mjs";
 import { isEqual } from "../../internals/equals.ffi.mjs";
-
-import * as Effect from "../effect.mjs";
+import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
+import { Result$isOk, Result$Ok$0 } from "../../../gleam.mjs";
+import { virtualise } from "../../vdom/virtualise.ffi.mjs";
 
 //
 
@@ -109,6 +107,7 @@ export class Runtime {
   root = null;
 
   dispatch(msg, shouldFlush = false) {
+    if (this.#inert) return;
     if (this.#shouldQueue) {
       this.#queue.push(msg);
     } else {
@@ -120,6 +119,8 @@ export class Runtime {
   }
 
   emit(event, data) {
+    if (this.#inert) return;
+
     const target = this.root.host ?? this.root;
 
     target.dispatchEvent(
@@ -136,6 +137,7 @@ export class Runtime {
   // of the change. Otherwise, we store the value and wait for any `context-request`
   // events to come in.
   provide(key, value) {
+    if (this.#inert) return;
     if (!this.#contexts.has(key)) {
       this.#contexts.set(key, { value, subscribers: [] });
     } else {
@@ -166,8 +168,34 @@ export class Runtime {
     }
   }
 
+  shutdown() {
+    this.#inert = true;
+    this.#reconciler.unmount();
+
+    this.#model = null;
+    this.#view = null;
+    this.#update = null;
+
+    this.#vdom = null;
+    this.#cache = null;
+    this.#reconciler = null;
+
+    this.#shouldQueue = false;
+    this.#queue = [];
+
+    for (const cleanup of this.#effects.values()) {
+      for (const callback of cleanup) {
+        callback();
+      }
+    }
+
+    this.#contexts.clear();
+    this.#effects.clear();
+  }
+
   // PRIVATE API ---------------------------------------------------------------
 
+  #inert = false;
   #model;
   #view;
   #update;
@@ -301,14 +329,6 @@ export const send = (runtime, message) => {
 };
 
 //
-
-function makeEffect(synchronous) {
-  return {
-    synchronous,
-    after_paint: empty_list,
-    before_paint: empty_list,
-  };
-}
 
 const copiedStyleSheets = new WeakMap();
 

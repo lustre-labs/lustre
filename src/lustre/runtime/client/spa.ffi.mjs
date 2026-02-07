@@ -25,7 +25,7 @@ export class Spa {
     } else if (Message$isEffectEmitEvent(message)) {
       this.emit(message.name, message.data);
     } else if (Message$isSystemRequestedShutdown(message)) {
-      // TODO
+      this.#runtime.shutdown();
     }
   }
 

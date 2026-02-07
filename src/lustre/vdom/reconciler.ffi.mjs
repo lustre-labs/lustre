@@ -175,6 +175,11 @@ export class Reconciler {
     this.#insertChild(this.#root, null, this.#root[meta], 0, vdom);
   }
 
+  unmount() {
+    this.#removeChildren(this.#root, 0, this.#root[meta].children.length);
+    this.#root[meta] = null;
+  }
+
   push(patch, memos = null) {
     this.#memos = memos;
     this.#stack.push({ node: this.#root[meta], patch: patch });
@@ -415,7 +420,13 @@ export class Reconciler {
         const head = this.#createHead(marker, metaParent, index, vnode);
 
         insertBefore(domParent, head, beforeEl);
-        this.#insertChildren(domParent, beforeEl, head[meta], 0, vnode.children);
+        this.#insertChildren(
+          domParent,
+          beforeEl,
+          head[meta],
+          0,
+          vnode.children,
+        );
 
         if (this.#debug) {
           head[meta].endNode = createComment(` /${marker} `);

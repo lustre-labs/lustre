@@ -43,6 +43,7 @@ import { toList } from "../../internals/list.ffi.mjs";
 //
 
 export class Runtime {
+  #inert = false;
   #model;
   #update;
   #view;
@@ -91,6 +92,7 @@ export class Runtime {
   }
 
   send(msg) {
+    if (this.#inert) return;
     if (Message$isClientDispatchedMessage(msg)) {
       const { message } = msg;
       const next = this.#handle_client_message(message);
@@ -160,6 +162,7 @@ export class Runtime {
         this.#effects.delete(key);
       }
     } else if (Message$isSystemRequestedShutdown(msg)) {
+      this.#inert = true;
       this.#model = null;
       this.#update = null;
       this.#view = null;
@@ -180,6 +183,7 @@ export class Runtime {
   }
 
   broadcast(msg) {
+    if (this.#inert) return;
     for (const callback of this.#callbacks) {
       callback(msg);
     }

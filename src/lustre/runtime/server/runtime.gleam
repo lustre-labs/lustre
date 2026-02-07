@@ -86,6 +86,7 @@ pub fn start(
       process.new_selector()
       |> process.select(self)
       |> process.select_monitors(fn(down) { MonitorReportedDown(down.monitor) })
+      |> process.select_trapped_exits(fn(_) { SystemRequestedShutdown })
 
     let actions =
       effect.Actions(
@@ -131,6 +132,7 @@ pub fn start(
         effects: dict.new(),
       )
 
+    process.trap_exits(True)
     effect.perform(effect, state.actions)
 
     actor.initialised(state)
@@ -348,6 +350,11 @@ fn loop(
       let _ =
         dict.each(state.subscribers, fn(_, monitor) {
           process.demonitor_process(monitor)
+        })
+
+      let _ =
+        dict.each(state.effects, fn(_, cleanup) {
+          list.each(cleanup, fn(callback) { callback() })
         })
 
       actor.stop()
