@@ -45,7 +45,7 @@
 
 <div align="center">
   <sub>Built with ❤︎ by
-  <a href="https://twitter.com/hayleighdotdev">Hayleigh Thompson</a> and
+  <a href="https://bsky.app/profile/hayleigh.dev">Hayleigh Thompson</a> and
   <a href="https://github.com/lustre-labs/lustre/graphs/contributors">
     contributors
   </a>
