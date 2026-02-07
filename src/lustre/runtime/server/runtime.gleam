@@ -5,7 +5,7 @@ import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/process.{type Monitor, type Selector, type Subject}
 import gleam/json.{type Json}
 import gleam/set.{type Set}
-import lustre/effect.{type Effect}
+import lustre/runtime/effect.{type Actions, type Effect, type Key}
 import lustre/runtime/transport.{type ClientMessage, type ServerMessage}
 import lustre/vdom/cache.{type Cache}
 import lustre/vdom/vnode.{type Element}
@@ -53,6 +53,9 @@ pub type State(model, msg) {
     //
     subscribers: Dict(Subject(ClientMessage(msg)), Monitor),
     callbacks: Set(fn(ClientMessage(msg)) -> Nil),
+    //
+    actions: Actions(msg),
+    effects: Dict(Key, List(fn() -> Nil)),
   )
 }
 
@@ -84,6 +87,28 @@ pub fn start(
       |> process.select(self)
       |> process.select_monitors(fn(down) { MonitorReportedDown(down.monitor) })
 
+    let actions =
+      effect.Actions(
+        cleanup: fn(key) { process.send(self, EffectRequestedCleanup(key)) },
+        dispatch: fn(message) {
+          process.send(self, EffectDispatchedMessage(message))
+        },
+        emit: fn(name, data) { process.send(self, EffectEmitEvent(name, data)) },
+        provide: fn(key, value) {
+          process.send(self, EffectProvidedValue(key, value))
+        },
+        register: fn(key, cleanup) {
+          process.send(self, EffectRegisteredCleanup(key, cleanup))
+        },
+        root: fn() { dynamic.nil() },
+        select: fn(selector) {
+          selector
+          |> process.map_selector(EffectDispatchedMessage)
+          |> EffectAddedSelector
+          |> process.send(self, _)
+        },
+      )
+
     let state =
       State(
         self:,
@@ -101,9 +126,12 @@ pub fn start(
         //
         subscribers: dict.new(),
         callbacks: set.new(),
+        //
+        actions:,
+        effects: dict.new(),
       )
 
-    handle_effect(self, effect)
+    effect.perform(effect, state.actions)
 
     actor.initialised(state)
     |> actor.selecting(base_selector)
@@ -143,6 +171,8 @@ pub type Message(msg) {
   EffectDispatchedMessage(message: msg)
   EffectEmitEvent(name: String, data: Json)
   EffectProvidedValue(key: String, value: Json)
+  EffectRegisteredCleanup(key: Key, callback: fn() -> Nil)
+  EffectRequestedCleanup(key: Key)
   //
   MonitorReportedDown(monitor: Monitor)
   //
@@ -245,7 +275,7 @@ fn loop(
       let vdom = state.view(model)
       let diff = diff(state.cache, state.vdom, vdom)
 
-      handle_effect(state.self, effect)
+      effect.perform(effect, state.actions)
 
       let msg = transport.reconcile(diff.patch, cache.memos(diff.cache))
       let _ = broadcast(state.subscribers, state.callbacks, msg)
@@ -284,6 +314,29 @@ fn loop(
       actor.continue(State(..state, providers:))
     }
 
+    EffectRegisteredCleanup(key:, callback:) -> {
+      let effects =
+        dict.upsert(state.effects, key, fn(cleanup) {
+          cleanup
+          |> option.map(list.prepend(_, callback))
+          |> option.unwrap([callback])
+        })
+
+      actor.continue(State(..state, effects:))
+    }
+
+    EffectRequestedCleanup(key:) ->
+      case dict.get(state.effects, key) {
+        Ok(cleanup) -> {
+          let effects = dict.delete(state.effects, key)
+          let _ = list.each(cleanup, fn(callback) { callback() })
+
+          actor.continue(State(..state, effects:))
+        }
+
+        Error(_) -> actor.continue(state)
+      }
+
     MonitorReportedDown(monitor:) -> {
       let subscribers =
         dict.filter(state.subscribers, fn(_, m) { m != monitor })
@@ -318,7 +371,7 @@ fn handle_client_message(
           let #(model, effect) = state.update(state.model, msg)
           let vdom = state.view(model)
 
-          handle_effect(state.self, effect)
+          effect.perform(effect, state.actions)
 
           State(..state, model:, vdom:)
         }
@@ -331,7 +384,7 @@ fn handle_client_message(
           let #(model, effect) = state.update(state.model, msg)
           let vdom = state.view(model)
 
-          handle_effect(state.self, effect)
+          effect.perform(effect, state.actions)
 
           State(..state, model:, vdom:)
         }
@@ -344,7 +397,7 @@ fn handle_client_message(
           let #(model, effect) = state.update(state.model, handler.message)
           let vdom = state.view(model)
 
-          handle_effect(state.self, effect)
+          effect.perform(effect, state.actions)
 
           State(..state, model:, vdom:, cache:)
         }
@@ -360,7 +413,7 @@ fn handle_client_message(
               let #(model, effect) = state.update(state.model, context)
               let vdom = state.view(model)
 
-              handle_effect(state.self, effect)
+              effect.perform(effect, state.actions)
 
               State(..state, model:, vdom:)
             }
@@ -393,25 +446,6 @@ fn handle_property_change(
     Error(_) -> constants.error_nil
     Ok(decoder) -> decode.run(value, decoder) |> result.replace_error(Nil)
   }
-}
-
-@target(erlang)
-fn handle_effect(self: Subject(Message(msg)), effect: Effect(msg)) -> Nil {
-  let send = process.send(self, _)
-  let dispatch = fn(message) { send(EffectDispatchedMessage(message:)) }
-  let emit = fn(name, data) { send(EffectEmitEvent(name:, data:)) }
-  let provide = fn(key, value) { send(EffectProvidedValue(key:, value:)) }
-
-  let select = fn(selector) {
-    selector
-    |> process.map_selector(EffectDispatchedMessage)
-    |> EffectAddedSelector
-    |> send
-  }
-
-  let internals = fn() { dynamic.nil() }
-
-  effect.perform(effect, dispatch, emit, select, internals, provide)
 }
 
 @target(erlang)

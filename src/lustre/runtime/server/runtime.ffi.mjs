@@ -21,11 +21,15 @@ import {
   Message$isEffectEmitEvent,
   Message$EffectProvidedValue,
   Message$isEffectProvidedValue,
+  Message$EffectRegisteredCleanup,
+  Message$isEffectRegisteredCleanup,
+  Message$EffectRequestedCleanup,
+  Message$isEffectRequestedCleanup,
   //
   Message$isSystemRequestedShutdown,
 } from "./runtime.mjs";
 import * as Component from "../../component.mjs";
-import * as Effect from "../../effect.mjs";
+import * as Effect from "../effect.mjs";
 import * as Transport from "../transport.mjs";
 import {
   ServerMessage$isBatch,
@@ -34,7 +38,7 @@ import {
   ServerMessage$isEventFired,
   ServerMessage$isContextProvided,
 } from "../transport.mjs";
-import { iterate, toList } from "../../internals/list.ffi.mjs";
+import { toList } from "../../internals/list.ffi.mjs";
 
 //
 
@@ -50,6 +54,9 @@ export class Runtime {
 
   #callbacks = /* @__PURE__ */ new Set();
 
+  #actions;
+  #effects = /* @__PURE__ */ new Map();
+
   constructor(_, init, update, view, config, start_arguments) {
     const [model, effects] = init(start_arguments);
     this.#model = model;
@@ -59,6 +66,26 @@ export class Runtime {
 
     this.#vdom = this.#view(this.#model);
     this.#cache = Cache.from_node(this.#vdom);
+
+    this.#actions = Effect.Actions$Actions(
+      /*  cleanup */ (key) => {
+        this.send(Message$EffectRequestedCleanup(key));
+      },
+      /* dispatch */ (message) => {
+        this.send(Message$EffectDispatchedMessage(message));
+      },
+      /*     emit */ (name, data) => {
+        this.send(Message$EffectEmitEvent(name, data));
+      },
+      /*  provide */ (key, value) => {
+        this.send(Message$EffectProvidedValue(key, value));
+      },
+      /* register */ (key, cleanup) => {
+        this.send(Message$EffectRegisteredCleanup(key, cleanup));
+      },
+      /*     root */ () => undefined,
+      /*   select */ (selector) => undefined,
+    );
 
     this.#handle_effect(effects);
   }
@@ -118,6 +145,20 @@ export class Runtime {
 
       this.#providers = Dict.insert(this.#providers, key, value);
       this.broadcast(Transport.provide(key, value));
+    } else if (Message$isEffectRegisteredCleanup(msg)) {
+      const { key, callback } = msg;
+
+      this.#effects.set(key, [callback, ...(this.#effects.get(key) ?? [])]);
+    } else if (Message$isEffectRequestedCleanup(msg)) {
+      const { key } = msg;
+
+      if (this.#effects.has(key)) {
+        for (const callback of this.#effects.get(key)) {
+          callback();
+        }
+
+        this.#effects.delete(key);
+      }
     } else if (Message$isSystemRequestedShutdown(msg)) {
       this.#model = null;
       this.#update = null;
@@ -127,6 +168,14 @@ export class Runtime {
       this.#cache = null;
       this.#providers = null;
       this.#callbacks.clear();
+
+      for (const cleanup of this.#effects.values()) {
+        for (const callback of cleanup) {
+          callback();
+        }
+      }
+
+      this.#effects.clear();
     }
   }
 
@@ -229,16 +278,8 @@ export class Runtime {
   }
 
   #handle_effect(effect) {
-    const dispatch = (message) =>
-      this.send(Message$EffectDispatchedMessage(message));
-    const emit = (name, data) => this.send(Message$EffectEmitEvent(name, data));
-    const select = () => undefined;
-    const internals = () => undefined;
-    const provide = (key, value) =>
-      this.send(Message$EffectProvidedValue(key, value));
-
     globalThis.queueMicrotask(() => {
-      Effect.perform(effect, dispatch, emit, select, internals, provide);
+      Effect.perform(effect, this.#actions);
     });
   }
 }

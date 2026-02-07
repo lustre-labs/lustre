@@ -64,17 +64,7 @@
 
 import gleam/dynamic.{type Dynamic}
 import gleam/json.{type Json}
-import gleam/list
-
-@target(javascript)
-import gleam/erlang/process.{type Selector}
-
-@target(erlang)
-import gleam/erlang/process.{type Selector, type Subject}
-
-// CONSTANTS -------------------------------------------------------------------
-
-const empty: Effect(msg) = Effect([], [], [])
+import lustre/runtime/effect
 
 // TYPES -----------------------------------------------------------------------
 
@@ -87,23 +77,13 @@ const empty: Effect(msg) = Effect([], [], [])
 ///
 ///
 ///
-pub opaque type Effect(msg) {
-  Effect(
-    synchronous: List(fn(Actions(msg)) -> Nil),
-    before_paint: List(fn(Actions(msg)) -> Nil),
-    after_paint: List(fn(Actions(msg)) -> Nil),
-  )
-}
+pub type Effect(message) =
+  effect.Effect(message)
 
-type Actions(msg) {
-  Actions(
-    dispatch: fn(msg) -> Nil,
-    emit: fn(String, Json) -> Nil,
-    select: fn(Selector(msg)) -> Nil,
-    root: fn() -> Dynamic,
-    provide: fn(String, Json) -> Nil,
-  )
-}
+///
+///
+pub type Key =
+  effect.Key
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -112,7 +92,7 @@ type Actions(msg) {
 /// side effects, you can use `none` to tell the runtime there's no work to do.
 ///
 pub fn none() -> Effect(msg) {
-  empty
+  effect.none
 }
 
 /// Construct your own reusable effect from a custom callback. This callback is
@@ -146,14 +126,10 @@ pub fn none() -> Effect(msg) {
 /// }
 /// ```
 ///
-pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  let task = fn(actions: Actions(msg)) {
-    let dispatch = actions.dispatch
+pub fn from(effect: fn(fn(message) -> Nil) -> Nil) -> Effect(message) {
+  use actions <- effect.synchronous
 
-    effect(dispatch)
-  }
-
-  Effect(..empty, synchronous: [task])
+  effect(actions.dispatch)
 }
 
 /// Schedule a side effect that is guaranteed to run after your `view` function
@@ -177,15 +153,14 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 /// > **Note**: There is no concept of a "paint" for server components. These
 /// > effects will be ignored in those contexts and never run.
 ///
-pub fn before_paint(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
-  let task = fn(actions: Actions(msg)) {
-    let root = actions.root()
-    let dispatch = actions.dispatch
+pub fn before_paint(
+  effect: fn(fn(message) -> Nil, Dynamic) -> Nil,
+) -> Effect(message) {
+  use actions <- effect.before_paint
+  let root = actions.root()
+  let dispatch = actions.dispatch
 
-    effect(dispatch, root)
-  }
-
-  Effect(..empty, before_paint: [task])
+  effect(dispatch, root)
 }
 
 /// Schedule a side effect that is guaranteed to run after the browser has painted
@@ -198,53 +173,78 @@ pub fn before_paint(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
 /// > **Note**: There is no concept of a "paint" for server components. These
 /// > effects will be ignored in those contexts and never run.
 ///
-pub fn after_paint(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
-  let task = fn(actions: Actions(msg)) {
-    let root = actions.root()
-    let dispatch = actions.dispatch
+pub fn after_paint(
+  effect: fn(fn(message) -> Nil, Dynamic) -> Nil,
+) -> Effect(message) {
+  use actions <- effect.after_paint
+  let root = actions.root()
+  let dispatch = actions.dispatch
 
-    effect(dispatch, root)
-  }
-
-  Effect(..empty, after_paint: [task])
+  effect(dispatch, root)
 }
 
-/// Emit a custom event from a component as an effect. Parents can listen to these
-/// events in their `view` function like any other HTML event. Any data you pass
-/// to `effect.emit` can be accessed by event listeners through the `detail` property
-/// of the event object.
+/// Provide a context value to children. After this effect has been called, any
+/// child component that requests a context with a matching key will be given the
+/// `value` passed here.  Subsequent calls to `provide` will update children with
+/// the new value automatically.
 ///
-@internal
-pub fn event(name: String, data: Json) -> Effect(msg) {
-  let task = fn(actions: Actions(msg)) { actions.emit(name, data) }
-
-  Effect(..empty, synchronous: [task])
-}
-
-@target(erlang)
-@internal
-pub fn select(
-  sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
-) -> Effect(msg) {
-  let task = fn(actions: Actions(msg)) {
-    let self = process.new_subject()
-    let selector = sel(actions.dispatch, self)
-    actions.select(selector)
-  }
-
-  Effect(..empty, synchronous: [task])
-}
-
-@target(javascript)
-@internal
-pub fn select(_sel) {
-  empty
-}
-
+/// > **Note**: timing is significant for context providers! A context value must
+/// > be provided _before_ a child component requests it. It is common for apps
+/// > and components to provide all context values at least once in their `init`
+/// > function.
+///
 pub fn provide(key: String, value: Json) -> Effect(msg) {
-  let task = fn(actions: Actions(msg)) { actions.provide(key, value) }
+  use actions <- effect.synchronous
 
-  Effect(..empty, synchronous: [task])
+  actions.provide(key, value)
+}
+
+/// Construct an effect that has the ability to be cleaned up in the future. The
+/// callback you provide is called with two arguments: a unique [`Key`](#Key) that
+/// identifies the effect, and a function to call with a callback to run when the
+/// effect's cleanup is invoked.
+///
+/// For example, consider an effect that wraps JavaScript's `window.setInterval`
+/// and `window.clearInterval` functions to start a timer that can be stopped in
+/// the future:
+///
+/// ```gleam
+/// fn start_clock() {
+///   use key, cleanup <- effect.with_cleanup
+///   use dispatch <- effect.from
+///   let timer_id = set_interval(1000, fn() { dispatch(ClockTicked) })
+///
+///   cleanup(fn() { clear_interval(timer_id) })
+///   dispatch(TimerStarted(key))
+/// }
+///
+/// fn stop_clock(key) {
+///   effect.cleanup(key)
+/// }
+/// ```
+///
+/// If the `cleanup` callback is called multiple times, every function passed in
+/// will be called when the effect's cleanup is invoked.
+///
+/// > **Note**: there is _no guarantee_ that an effect's cleanup callback(s) will
+/// > ever be invoked.
+///
+pub fn with_cleanup(
+  effect: fn(Key, fn(fn() -> Nil) -> Nil) -> Effect(message),
+) -> Effect(message) {
+  use actions <- effect.deferred
+  let key = effect.key()
+
+  effect(key, actions.register(key, _))
+}
+
+/// Invoke any cleanup functions associated with the effect by the given [`Key`](#Key).
+/// A key can only be acquired by calling [`with_cleanup`](#with_cleanup).
+///
+pub fn cleanup(key: Key) -> Effect(message) {
+  use actions <- effect.synchronous
+
+  actions.cleanup(key)
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
@@ -262,12 +262,7 @@ pub fn provide(key: String, value: Json) -> Effect(msg) {
 /// >    the sequencing inside the effect itself.
 ///
 pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
-  use acc, eff <- list.fold(effects, empty)
-  Effect(
-    synchronous: list.fold(eff.synchronous, acc.synchronous, list.prepend),
-    before_paint: list.fold(eff.before_paint, acc.before_paint, list.prepend),
-    after_paint: list.fold(eff.after_paint, acc.after_paint, list.prepend),
-  )
+  effect.batch(effects)
 }
 
 /// Transform the result of an effect. This is useful for mapping over effects
@@ -277,71 +272,5 @@ pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
 /// > Your mapping function may never be called!
 ///
 pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
-  Effect(
-    synchronous: do_map(effect.synchronous, f),
-    before_paint: do_map(effect.before_paint, f),
-    after_paint: do_map(effect.after_paint, f),
-  )
-}
-
-fn do_map(
-  effects: List(fn(Actions(a)) -> Nil),
-  f: fn(a) -> b,
-) -> List(fn(Actions(b)) -> Nil) {
-  list.map(effects, fn(effect) {
-    fn(actions) { effect(do_comap_actions(actions, f)) }
-  })
-}
-
-fn do_comap_actions(actions: Actions(b), f: fn(a) -> b) -> Actions(a) {
-  Actions(
-    dispatch: fn(msg) { actions.dispatch(f(msg)) },
-    emit: actions.emit,
-    select: fn(selector) { do_comap_select(actions, selector, f) },
-    root: actions.root,
-    provide: actions.provide,
-  )
-}
-
-@target(erlang)
-fn do_comap_select(
-  actions: Actions(b),
-  selector: Selector(a),
-  f: fn(a) -> b,
-) -> Nil {
-  actions.select(process.map_selector(selector, f))
-}
-
-@target(javascript)
-fn do_comap_select(_, _, _) -> Nil {
-  Nil
-}
-
-/// Perform a side effect by supplying your own `dispatch` and `emit`functions.
-/// This is primarily used internally by the server component runtime, but it is
-/// may also useful for testing.
-///
-/// Because this is run outside of the runtime, timing-related effects scheduled
-/// by `before_paint` and `after_paint` will **not** be run.
-///
-/// > **Note**: For now, you should **not** consider this function a part of the
-/// > public API. It may be removed in a future minor or patch release. If you have
-/// > a specific use case for this function, we'd love to hear about it! Please
-/// > reach out on the [Gleam Discord](https://discord.gg/Fm8Pwmy) or
-/// > [open an issue](https://github.com/lustre-labs/lustre/issues/new)!
-///
-///
-@internal
-pub fn perform(
-  effect: Effect(a),
-  dispatch: fn(a) -> Nil,
-  emit: fn(String, Json) -> Nil,
-  select: fn(Selector(a)) -> Nil,
-  root: fn() -> Dynamic,
-  provide: fn(String, Json) -> Nil,
-) -> Nil {
-  let actions = Actions(dispatch:, emit:, select:, root:, provide:)
-  use run <- list.each(effect.synchronous)
-
-  run(actions)
+  effect.map(effect, f)
 }

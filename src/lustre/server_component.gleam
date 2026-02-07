@@ -80,9 +80,10 @@
 import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import lustre/attribute.{type Attribute, attribute}
-import lustre/effect.{type Effect}
+import lustre/effect.{type Effect} as _
 import lustre/element.{type Element}
 import lustre/element/html
+import lustre/runtime/effect
 import lustre/runtime/server/runtime
 import lustre/runtime/transport
 import lustre/vdom/vattr.{Event}
@@ -314,7 +315,9 @@ pub fn deregister_callback(
 /// listener to the server component element and listen for these events.
 ///
 pub fn emit(event: String, data: Json) -> Effect(msg) {
-  effect.event(event, data)
+  use actions <- effect.synchronous
+
+  actions.emit(event, data)
 }
 
 /// On the Erlang target, Lustre's server component runtime is an OTP
@@ -337,9 +340,25 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
 /// > and `Selector`s don't exist, and is the equivalent of returning `effect.none()`.
 ///
 pub fn select(
-  sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
+  effect: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
 ) -> Effect(msg) {
-  effect.select(sel)
+  do_select(effect)
+}
+
+@target(erlang)
+fn do_select(
+  effect: fn(fn(message) -> Nil, Subject(a)) -> Selector(message),
+) -> Effect(message) {
+  use actions <- effect.synchronous
+  let self = process.new_subject()
+  let selector = effect(actions.dispatch, self)
+
+  actions.select(selector)
+}
+
+@target(javascript)
+fn do_select(_) -> Effect(message) {
+  effect.none
 }
 
 // DECODERS --------------------------------------------------------------------

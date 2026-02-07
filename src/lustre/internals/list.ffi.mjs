@@ -4,7 +4,6 @@ import {
   List$NonEmpty$first,
 } from "../../gleam.mjs";
 import { empty_list } from "./constants.mjs";
-import { append as $list_append } from "../../../gleam_stdlib/gleam/list.mjs";
 
 export const toList = (arr) =>
   arr.reduceRight((xs, x) => List$NonEmpty(x, xs), empty_list);
@@ -31,15 +30,5 @@ export const iterate = (list, callback) => {
     for (list; List$NonEmpty$rest(list); list = List$NonEmpty$rest(list)) {
       callback(List$NonEmpty$first(list));
     }
-  }
-};
-
-export const append = (a, b) => {
-  if (!List$NonEmpty$rest(a)) {
-    return b;
-  } else if (!List$NonEmpty$rest(b)) {
-    return a;
-  } else {
-    return $list_append(a, b);
   }
 };

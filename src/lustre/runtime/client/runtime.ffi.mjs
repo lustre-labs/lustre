@@ -1,6 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { Result$isOk, Result$Ok$0, List$isNonEmpty } from "../../../gleam.mjs";
+import { Result$isOk, Result$Ok$0 } from "../../../gleam.mjs";
 import { empty_list } from "../../internals/constants.mjs";
 import { diff } from "../../vdom/diff.mjs";
 import * as Cache from "../../vdom/cache.mjs";
@@ -8,7 +8,8 @@ import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
 import { virtualise } from "../../vdom/virtualise.ffi.mjs";
 import { document } from "../../internals/constants.ffi.mjs";
 import { isEqual } from "../../internals/equals.ffi.mjs";
-import { append, iterate } from "../../internals/list.ffi.mjs";
+
+import * as Effect from "../effect.mjs";
 
 //
 
@@ -83,7 +84,12 @@ export class Runtime {
       }
     };
 
-    this.#reconciler = new Reconciler(this.root, decodeEvent, dispatch, options);
+    this.#reconciler = new Reconciler(
+      this.root,
+      decodeEvent,
+      dispatch,
+      options,
+    );
 
     // We want the first render to be synchronous too
     // The initial vdom is whatever we can virtualise from the root node when we
@@ -174,17 +180,29 @@ export class Runtime {
   #shouldQueue = false;
   #queue = [];
 
-  #beforePaint = empty_list;
-  #afterPaint = empty_list;
+  #beforePaint = Effect.none;
+  #afterPaint = Effect.none;
   #renderTimer = null;
 
-  #actions = {
-    dispatch: (msg) => this.dispatch(msg),
-    emit: (event, data) => this.emit(event, data),
-    select: () => {},
-    root: () => this.root,
-    provide: (key, value) => this.provide(key, value),
-  };
+  #effects = new Map();
+  #actions = Effect.Actions$Actions(
+    /*  cleanup */ (key) => {
+      if (this.#effects.has(key)) {
+        for (const callback of this.#effects.get(key)) {
+          callback();
+        }
+
+        this.#effects.delete(key);
+      }
+    },
+    /* dispatch */ (message) => this.dispatch(message),
+    /*     emit */ (name, data) => this.emit(name, data),
+    /*  provide */ (key, value) => this.provide(key, value),
+    /* register */ (key, cleanup) =>
+      this.#effects.set(key, [cleanup, ...(this.#effects.get(key) ?? [])]),
+    /*     root */ () => this.root,
+    /*   select */ (selector) => undefined,
+  );
 
   // A `#tick` is where we process effects and trigger any synchronous updates.
   // Once a tick has been processed a render will be scheduled if none is already.
@@ -216,15 +234,15 @@ export class Runtime {
     // we add it to a queue and process another `update` cycle. This continues
     // until there are no more synchronous effects or messages to process.
     while (true) {
-      // We pass the runtime directly to each effect. It has all the methods
-      // of the `Actions` record define in the effect module.
-      iterate(effects.synchronous, (effect) => effect(this.#actions));
+      const [before_paint, after_paint] = Effect.perform(
+        effects,
+        this.#actions,
+      );
 
-      // Both `before_paint` and `after_paint` are lists of effects that should
-      // be deferred until we next perform a render. That means we need to collect
-      // them all up in order and save them for later.
-      this.#beforePaint = append(this.#beforePaint, effects.before_paint);
-      this.#afterPaint = append(this.#afterPaint, effects.after_paint);
+      // Any `before_paint` or `after_paint` effects are once that we need to
+      // defer until we're next rendering.
+      this.#beforePaint = Effect.batch2(this.#beforePaint, before_paint);
+      this.#afterPaint = Effect.batch2(this.#afterPaint, after_paint);
 
       // Once we've batched any deferred effects, we check if there are any
       // messages in the queue. If not, we can break out of the loop and continue
@@ -255,9 +273,9 @@ export class Runtime {
     // not yet been given the opportunity to paint. We queue a microtask to block
     // the browser from painting until we have processed any effects that need to
     // be run first.
-    if (List$isNonEmpty(this.#beforePaint)) {
-      const effects = makeEffect(this.#beforePaint);
-      this.#beforePaint = empty_list;
+    if (!Effect.Effect$isNone(this.#beforePaint)) {
+      const effects = this.#beforePaint;
+      this.#beforePaint = Effect.none;
 
       // We explicitly queue a microtask instead of synchronously calling the
       // `#tick` function to allow the runtime to process any microtasks queued
@@ -269,9 +287,9 @@ export class Runtime {
 
     // If there are effects to schedule for after the browser has painted, we can
     // request an animation frame and process them then.
-    if (List$isNonEmpty(this.#afterPaint)) {
-      const effects = makeEffect(this.#afterPaint);
-      this.#afterPaint = empty_list;
+    if (!Effect.Effect$isNone(this.#afterPaint)) {
+      const effects = this.#afterPaint;
+      this.#afterPaint = Effect.none;
 
       window.requestAnimationFrame(() => this.#tick(effects, true));
     }
@@ -296,7 +314,9 @@ const copiedStyleSheets = new WeakMap();
 
 export async function adoptStylesheets(shadowRoot) {
   const pendingParentStylesheets = [];
-  for (const node of document().querySelectorAll("link[rel=stylesheet], style")) {
+  for (const node of document().querySelectorAll(
+    "link[rel=stylesheet], style",
+  )) {
     if (node.sheet) continue;
 
     pendingParentStylesheets.push(

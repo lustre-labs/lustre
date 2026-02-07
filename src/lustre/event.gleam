@@ -6,8 +6,9 @@ import gleam/json.{type Json}
 import gleam/pair
 import gleam/result
 import lustre/attribute.{type Attribute}
-import lustre/effect.{type Effect}
+import lustre/effect.{type Effect} as _
 import lustre/internals/constants
+import lustre/runtime/effect
 import lustre/vdom/vattr.{Event, Handler}
 
 // TYPES -----------------------------------------------------------------------
@@ -29,7 +30,9 @@ pub type Handler(msg) =
 /// event listeners to decode. This data will be on the event's `detail` property.
 ///
 pub fn emit(event: String, data: Json) -> Effect(msg) {
-  effect.event(event, data)
+  use actions <- effect.synchronous
+
+  actions.emit(event, data)
 }
 
 // CUSTOM EVENTS ---------------------------------------------------------------
