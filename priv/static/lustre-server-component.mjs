@@ -248,13 +248,12 @@ var Reconciler = class {
     const childCount = children.length;
     if (index2 < childCount) return children[index2].node;
     if (node.endNode) return node.endNode;
-    if (!node.isVirtual || !childCount) return null;
-    let lastChild = children[childCount - 1];
-    while (lastChild.isVirtual && lastChild.children.length) {
-      if (lastChild.endNode) return lastChild.endNode.nextSibling;
-      lastChild = lastChild.children[lastChild.children.length - 1];
+    if (!node.isVirtual) return null;
+    while (node.isVirtual && node.children.length) {
+      if (node.endNode) return node.endNode.nextSibling;
+      node = node.children[node.children.length - 1];
     }
-    return lastChild.node.nextSibling;
+    return node.node.nextSibling;
   }
   #move(parent, { key, before }) {
     before = before | 0;
