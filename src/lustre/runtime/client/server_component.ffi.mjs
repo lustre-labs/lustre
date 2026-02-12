@@ -379,7 +379,19 @@ export class ServerComponent extends HTMLElement {
     // events that they're interested in the value of the input. Regardless of
     // whether they remember to include it in the event, we'll include it for them.
     if (event.type === "input" || event.type === "change") {
-      include.push("target.value");
+      // The boolean "value" of a checkbox is accessed via the target.checked
+      // property.
+      if (event.target.type === "checkbox") {
+        include.push("target.checked");
+      } else {
+        include.push("target.value");
+      }
+    }
+
+    // Similarly, it's overwhelmingly likely that if someone is listening for
+    // key-related events that they're interested in the input key.
+    if (event.type === "keydown" || event.type === "keyup" || event.type === "keypress") {
+      include.push("key");
     }
 
     // We have non-standard handling of the submit event in Lustre. We automatically
