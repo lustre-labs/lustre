@@ -1,0 +1,11 @@
+---
+version: 1.5.3
+title: [html] Component prerender should render declarative shadow root template with correct content
+---
+<my-component>
+  <template shadowrootmode="open">
+    <div>
+      I&#39;m in a declarative shadow root template
+    </div>
+  </template>
+</my-component>

@@ -1,7 +1,13 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import birdie
+import gleam/dynamic/decode
+import gleam/int
+import gleam/json
+import lustre
 import lustre/attribute
+import lustre/component
+import lustre/effect
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/element/keyed
@@ -444,6 +450,69 @@ pub fn namespaced_nesting_default_html_test() {
 
   input
   |> snapshot("Namespaced element with nested html element")
+}
+
+// COMPONENT TESTS -------------------------------------------------------------
+
+pub fn component_prerender_test() {
+  use <- lustre_test.test_filter("component_prerender_test")
+  let tag = "my-component"
+  let component =
+    lustre.element(
+      html.div([], [html.text("I'm in a declarative shadow root template")]),
+    )
+
+  component
+  |> component.prerender(tag, [], [])
+  |> snapshot(
+    "Component prerender should render declarative shadow root template with correct content",
+  )
+}
+
+pub fn component_prerender_with_attributes_test() {
+  use <- lustre_test.test_filter("component_prerender_with_attributes_test")
+  let tag = "my-component"
+  let component =
+    lustre.component(
+      init: fn(_) { #(0, effect.none()) },
+      update: fn(_, count) { #(count, effect.none()) },
+      view: fn(count) { html.div([], [html.text(int.to_string(count))]) },
+      options: [component.on_attribute_change("count", int.parse)],
+    )
+
+  component
+  |> component.prerender(tag, [attribute.attribute("count", "10")], [])
+  |> snapshot(
+    "Component prerender should apply attributes before rendering declarative shadow root template",
+  )
+}
+
+pub fn component_prerender_with_properties_test() {
+  use <- lustre_test.test_filter("component_prerender_with_properties_test")
+  let tag = "my-component"
+  let component =
+    lustre.component(
+      init: fn(_) { #(0, effect.none()) },
+      update: fn(_, count) { #(count, effect.none()) },
+      view: fn(count) { html.div([], [html.text(int.to_string(count))]) },
+      options: [component.on_property_change("count", decode.int)],
+    )
+
+  component
+  |> component.prerender(tag, [attribute.property("count", json.int(10))], [])
+  |> snapshot("Component prerender should ignore properties")
+}
+
+pub fn component_prerender_with_children_test() {
+  use <- lustre_test.test_filter("component_prerender_with_children_test")
+  let tag = "my-component"
+  let component = lustre.element(component.default_slot([], []))
+
+  component
+  |> component.prerender(tag, [], [html.div([], [html.text("Child content")])])
+  |> snapshot(
+    "Component prerender should include children after declarative shadow root template",
+  )
 }
 
 // UTILS -----------------------------------------------------------------------

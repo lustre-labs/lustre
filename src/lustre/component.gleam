@@ -35,7 +35,6 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/list
@@ -45,8 +44,8 @@ import lustre/attribute.{type Attribute, attribute}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
-import lustre/internals/constants
-import lustre/runtime/server/runtime
+import lustre/runtime/app.{type App, Config, Option}
+import lustre/vdom/vattr.{Attribute, Event, Property}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -55,23 +54,8 @@ import lustre/runtime/server/runtime
 /// to define what features the component supports and what platform functionality
 /// it should have access to.
 ///
-pub opaque type Config(msg) {
-  Config(
-    //
-    open_shadow_root: Bool,
-    adopt_styles: Bool,
-    delegates_focus: Bool,
-    //
-    attributes: List(#(String, fn(String) -> Result(msg, Nil))),
-    properties: List(#(String, Decoder(msg))),
-    contexts: List(#(String, Decoder(msg))),
-    //
-    is_form_associated: Bool,
-    on_form_autofill: option.Option(fn(String) -> msg),
-    on_form_reset: option.Option(msg),
-    on_form_restore: option.Option(fn(String) -> msg),
-  )
-}
+pub type Config(message) =
+  app.Config(message)
 
 /// Options are used to configure a component's behaviour.
 ///
@@ -117,41 +101,8 @@ pub opaque type Config(msg) {
 /// > **Note**: Not all options are available for server components. For example
 /// > server components cannot be form-associated and participate in form submission.
 ///
-pub opaque type Option(msg) {
-  Option(apply: fn(Config(msg)) -> Config(msg))
-}
-
-/// 🚨 This is an **internal** function and should not be consumed by user code.
-/// Internal functions may depend on unstable APIs or require certain usage
-/// patterns: no guarantees are made about the stability _or_ reliability of
-/// internal functions.
-///
-/// Construct a new `Config` record and apply a list of `Option`s to it. Options
-/// are applied in order and later options may override earlier ones.
-///
-@internal
-pub fn new(options: List(Option(msg))) -> Config(msg) {
-  let init =
-    Config(
-      //
-      open_shadow_root: True,
-      adopt_styles: True,
-      delegates_focus: False,
-      //
-      attributes: constants.empty_list,
-      properties: constants.empty_list,
-      contexts: constants.empty_list,
-      //
-      is_form_associated: False,
-      on_form_autofill: option.None,
-      on_form_reset: option.None,
-      on_form_restore: option.None,
-    )
-
-  use config, option <- list.fold(options, init)
-
-  option.apply(config)
-}
+pub type Option(message) =
+  app.Option(message)
 
 // BUILDERS --------------------------------------------------------------------
 
@@ -166,8 +117,8 @@ pub fn new(options: List(Option(msg))) -> Config(msg) {
 ///
 pub fn on_attribute_change(
   name: String,
-  decoder: fn(String) -> Result(msg, Nil),
-) -> Option(msg) {
+  decoder: fn(String) -> Result(message, Nil),
+) -> Option(message) {
   use config <- Option
   let attributes = [#(name, decoder), ..config.attributes]
 
@@ -182,7 +133,10 @@ pub fn on_attribute_change(
 /// Properties can be any JavaScript object. For server components, properties
 /// will be any _JSON-serialisable_ value.
 ///
-pub fn on_property_change(name: String, decoder: Decoder(msg)) -> Option(msg) {
+pub fn on_property_change(
+  name: String,
+  decoder: Decoder(message),
+) -> Option(message) {
   use config <- Option
   let properties = [#(name, decoder), ..config.properties]
 
@@ -198,7 +152,10 @@ pub fn on_property_change(name: String, decoder: Decoder(msg)) -> Option(msg) {
 /// Contexts can be any JavaScript object. For server components, contexts will
 /// be any _JSON-serialisable_ value.
 ///
-pub fn on_context_change(key: String, decoder: Decoder(msg)) -> Option(msg) {
+pub fn on_context_change(
+  key: String,
+  decoder: Decoder(message),
+) -> Option(message) {
   use config <- Option
   let contexts = [#(key, decoder), ..config.contexts]
 
@@ -213,7 +170,7 @@ pub fn on_context_change(key: String, decoder: Decoder(msg)) -> Option(msg) {
 /// > for both technical and ideological reasons. If you'd like a component that
 /// > participates in form submission, you should use a client component!
 ///
-pub fn form_associated() -> Option(msg) {
+pub fn form_associated() -> Option(message) {
   use config <- Option
 
   Config(..config, is_form_associated: True)
@@ -227,7 +184,7 @@ pub fn form_associated() -> Option(msg) {
 /// > **Note**: server components cannot participate in form submission and configuring
 /// > this option will do nothing.
 ///
-pub fn on_form_autofill(handler: fn(String) -> msg) -> Option(msg) {
+pub fn on_form_autofill(handler: fn(String) -> message) -> Option(message) {
   use config <- Option
 
   Config(..config, is_form_associated: True, on_form_autofill: Some(handler))
@@ -239,10 +196,10 @@ pub fn on_form_autofill(handler: fn(String) -> msg) -> Option(msg) {
 /// > **Note**: server components cannot participate in form submission and configuring
 /// > this option will do nothing.
 ///
-pub fn on_form_reset(msg: msg) -> Option(msg) {
+pub fn on_form_reset(message: message) -> Option(message) {
   use config <- Option
 
-  Config(..config, is_form_associated: True, on_form_reset: Some(msg))
+  Config(..config, is_form_associated: True, on_form_reset: Some(message))
 }
 
 /// Set a callback that runs when the browser restores this
@@ -252,7 +209,7 @@ pub fn on_form_reset(msg: msg) -> Option(msg) {
 /// > **Note**: server components cannot participate in form submission and configuring
 /// > this option will do nothing.
 ///
-pub fn on_form_restore(handler: fn(String) -> msg) -> Option(msg) {
+pub fn on_form_restore(handler: fn(String) -> message) -> Option(message) {
   use config <- Option
 
   Config(..config, is_form_associated: True, on_form_restore: Some(handler))
@@ -266,7 +223,7 @@ pub fn on_form_restore(handler: fn(String) -> msg) -> Option(msg) {
 /// this option manually if you intend to build a component for use outside of
 /// Lustre.
 ///
-pub fn open_shadow_root(open: Bool) -> Option(msg) {
+pub fn open_shadow_root(open: Bool) -> Option(message) {
   use config <- Option
 
   Config(..config, open_shadow_root: open)
@@ -286,7 +243,7 @@ pub fn open_shadow_root(open: Bool) -> Option(msg) {
 /// if you are building a component for use outside of Lustre and do not want
 /// document styles to interfere with your component's styling
 ///
-pub fn adopt_styles(adopt: Bool) -> Option(msg) {
+pub fn adopt_styles(adopt: Bool) -> Option(message) {
   use config <- Option
 
   Config(..config, adopt_styles: adopt)
@@ -308,35 +265,13 @@ pub fn adopt_styles(adopt: Bool) -> Option(msg) {
 /// By default this option is **disabled**. You may want to enable this option
 /// when creating complex interactive widgets.
 ///
-pub fn delegates_focus(delegates: Bool) -> Option(msg) {
+pub fn delegates_focus(delegates: Bool) -> Option(message) {
   use config <- Option
 
   Config(..config, delegates_focus: delegates)
 }
 
 // CONVERSIONS -----------------------------------------------------------------
-
-/// 🚨 This is an **internal** function and should not be consumed by user code.
-/// Internal functions may depend on unstable APIs or require certain usage
-/// patterns: no guarantees are made about the stability _or_ reliability of
-/// internal functions.
-///
-/// The server component runtime has to define its own `Config` type to avoid
-/// circular dependencies. This function converts the public-facing component
-/// config into an internal server component one: which is handy because not all
-/// options are available in server components anyway.
-///
-@internal
-pub fn to_server_component_config(config: Config(msg)) -> runtime.Config(msg) {
-  runtime.Config(
-    open_shadow_root: config.open_shadow_root,
-    adopt_styles: config.adopt_styles,
-    // we reverse both lists here such that the last added value takes precedence
-    attributes: dict.from_list(list.reverse(config.attributes)),
-    properties: dict.from_list(list.reverse(config.properties)),
-    contexts: dict.from_list(list.reverse(config.contexts)),
-  )
-}
 
 // ELEMENTS --------------------------------------------------------------------
 
@@ -349,12 +284,12 @@ pub fn to_server_component_config(config: Config(msg)) -> runtime.Config(msg) {
 ///
 /// To learn more about Shadow DOM and slots, see this excellent guide:
 ///
-///   https://javascript.info/slots-composition
+///   - https://javascript.info/slots-composition
 ///
 pub fn default_slot(
-  attributes: List(Attribute(msg)),
-  fallback: List(Element(msg)),
-) -> Element(msg) {
+  attributes: List(Attribute(message)),
+  fallback: List(Element(message)),
+) -> Element(message) {
   html.slot(attributes, fallback)
 }
 
@@ -367,13 +302,13 @@ pub fn default_slot(
 ///
 /// To learn more about Shadow DOM and slots, see this excellent guide:
 ///
-///   https://javascript.info/slots-composition
+///   - https://javascript.info/slots-composition
 ///
 pub fn named_slot(
   name: String,
-  attributes: List(Attribute(msg)),
-  fallback: List(Element(msg)),
-) -> Element(msg) {
+  attributes: List(Attribute(message)),
+  fallback: List(Element(message)),
+) -> Element(message) {
   html.slot([attribute("name", name), ..attributes], fallback)
 }
 
@@ -420,7 +355,7 @@ pub fn named_slot(
 ///
 ///   - https://developer.mozilla.org/en-US/docs/Web/CSS/::part
 ///
-pub fn part(name: String) -> Attribute(msg) {
+pub fn part(name: String) -> Attribute(message) {
   attribute("part", name)
 }
 
@@ -445,7 +380,7 @@ pub fn part(name: String) -> Attribute(msg) {
 /// }
 /// ```
 ///
-pub fn parts(names: List(#(String, Bool))) -> Attribute(msg) {
+pub fn parts(names: List(#(String, Bool))) -> Attribute(message) {
   part(do_parts(names, ""))
 }
 
@@ -514,7 +449,7 @@ fn do_parts(names: List(#(String, Bool)), part: String) -> String {
 ///
 ///   - https://developer.mozilla.org/en-US/docs/Web/CSS/::part
 ///
-pub fn exportparts(names: List(String)) -> Attribute(msg) {
+pub fn exportparts(names: List(String)) -> Attribute(message) {
   attribute("exportparts", string.join(names, ", "))
 }
 
@@ -523,11 +458,11 @@ pub fn exportparts(names: List(String)) -> Attribute(msg) {
 ///
 /// To learn more about Shadow DOM and slots, see:
 ///
-///   https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/slot
+///   - https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/slot
 ///
-///   https://javascript.info/slots-composition
+///   - https://javascript.info/slots-composition
 ///
-pub fn slot(name: String) -> Attribute(msg) {
+pub fn slot(name: String) -> Attribute(message) {
   attribute("slot", name)
 }
 
@@ -538,7 +473,7 @@ pub fn slot(name: String) -> Attribute(msg) {
 /// automatically included in the form submission and available in the form's
 /// `FormData` object.
 ///
-pub fn set_form_value(value: String) -> Effect(msg) {
+pub fn set_form_value(value: String) -> Effect(message) {
   use _, root <- effect.before_paint
   do_set_form_value(root, value)
 }
@@ -552,7 +487,7 @@ fn do_set_form_value(_root: Dynamic, _value: String) -> Nil {
 /// When the form is submitted, this component's value will not be included in
 /// the form data.
 ///
-pub fn clear_form_value() -> Effect(msg) {
+pub fn clear_form_value() -> Effect(message) {
   use _, root <- effect.before_paint
   do_clear_form_value(root)
 }
@@ -582,7 +517,7 @@ fn do_clear_form_value(_root: Dynamic) -> Nil {
 /// }
 /// ```
 ///
-pub fn set_pseudo_state(value: String) -> Effect(msg) {
+pub fn set_pseudo_state(value: String) -> Effect(message) {
   use _, root <- effect.before_paint
   do_set_pseudo_state(root, value)
 }
@@ -594,7 +529,7 @@ fn do_set_pseudo_state(_root: Dynamic, _value: String) -> Nil {
 
 /// Remove a custom state set by [`set_pseudo_state`](#set_pseudo_state).
 ///
-pub fn remove_pseudo_state(value: String) -> Effect(msg) {
+pub fn remove_pseudo_state(value: String) -> Effect(message) {
   use _, root <- effect.before_paint
   do_remove_pseudo_state(root, value)
 }
@@ -602,4 +537,85 @@ pub fn remove_pseudo_state(value: String) -> Effect(msg) {
 @external(javascript, "./runtime/client/component.ffi.mjs", "remove_pseudo_state")
 fn do_remove_pseudo_state(_root: Dynamic, _value: String) -> Nil {
   Nil
+}
+
+// CONVERSIONS -----------------------------------------------------------------
+
+/// Prerender a component with a declarative shadow DOM. This is different to
+/// just rendering the component's tag because it also renders the component's
+/// internal `view`. Calling this when server-rendering a component allows components
+/// to benefit from hydration by providing an initial HTML structure similar to
+/// hydratation for client applications.
+///
+/// If the component responds to attribute changes, the attributes passed here
+/// will be applied before the component is rendered.
+///
+/// To support both prerendering and client-side rendering, component authors
+/// can use [`lustre.is_browser`](../lustre.html#is_browser) to detect the
+/// environment and prerender the component where appropriate:
+///
+/// ```gleam
+/// import lustre.{type App}
+/// import lustre/attribute.{type Attribute}
+/// import lustre/component
+/// import lustre/element.{type Element, element}
+///
+/// pub fn element(
+///   attributes: List(Attribute(message)),
+///   children: List(Element(message))
+/// ) -> Element(message) {
+///   case lustre.is_browser() {
+///     True -> element(tag, attributes, children)
+///     False -> component.prerender(component(), tag, attributes, children)
+///   }
+/// }
+///
+/// const tag = "my-component"
+///
+/// fn component() -> App(Nil, Model, Message) {
+///   lustre.component(init:, update:, view:, options:)
+/// }
+/// ```
+///
+pub fn prerender(
+  component: App(Nil, model, message),
+  tag: String,
+  attributes: List(Attribute(message)),
+  children: List(Element(message)),
+) -> Element(message) {
+  let #(model, _) =
+    list.fold(attributes, component.init(Nil), fn(state, attribute) {
+      case attribute {
+        Attribute(name:, value:, ..) ->
+          case list.key_find(component.config.attributes, name) {
+            Ok(handler) ->
+              case handler(value) {
+                Ok(message) -> component.update(state.0, message)
+                Error(_) -> state
+              }
+            Error(_) -> state
+          }
+
+        Property(..) | Event(..) -> state
+      }
+    })
+
+  // This attribute is the part that upgrades a `<template>` element to a
+  // "declarative shadow DOM". Whatever gets rendered inside the template will
+  // be moved into the component's shadow root automatically by the browser.
+  let shadowrootmode =
+    attribute.shadowrootmode(case component.config.open_shadow_root {
+      True -> "open"
+      False -> "closed"
+    })
+
+  let shadowrootdelegatesfocus =
+    attribute.shadowrootdelegatesfocus(component.config.delegates_focus)
+
+  element.element(tag, attributes, [
+    html.template([shadowrootmode, shadowrootdelegatesfocus], [
+      component.view(model),
+    ]),
+    ..children
+  ])
 }

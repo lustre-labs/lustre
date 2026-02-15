@@ -6,13 +6,12 @@ import { diff } from "../../vdom/diff.mjs";
 import * as Cache from "../../vdom/cache.mjs";
 import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
 import { virtualise } from "../../vdom/virtualise.ffi.mjs";
-import { document } from "../../internals/constants.ffi.mjs";
 import { isEqual } from "../../internals/equals.ffi.mjs";
 import { append, iterate } from "../../internals/list.ffi.mjs";
 
 //
 
-export const is_browser = () => !!document();
+export const is_browser = () => !!globalThis.document;
 
 export const is_registered = (name) => is_browser() && customElements.get(name);
 
@@ -83,7 +82,12 @@ export class Runtime {
       }
     };
 
-    this.#reconciler = new Reconciler(this.root, decodeEvent, dispatch, options);
+    this.#reconciler = new Reconciler(
+      this.root,
+      decodeEvent,
+      dispatch,
+      options,
+    );
 
     // We want the first render to be synchronous too
     // The initial vdom is whatever we can virtualise from the root node when we
@@ -296,7 +300,9 @@ const copiedStyleSheets = new WeakMap();
 
 export async function adoptStylesheets(shadowRoot) {
   const pendingParentStylesheets = [];
-  for (const node of document().querySelectorAll("link[rel=stylesheet], style")) {
+  for (const node of globalThis.document.querySelectorAll(
+    "link[rel=stylesheet], style",
+  )) {
     if (node.sheet) continue;
 
     pendingParentStylesheets.push(
@@ -319,7 +325,7 @@ export async function adoptStylesheets(shadowRoot) {
 
   const pending = [];
 
-  for (const sheet of document().styleSheets) {
+  for (const sheet of globalThis.document.styleSheets) {
     try {
       shadowRoot.adoptedStyleSheets.push(sheet);
     } catch {

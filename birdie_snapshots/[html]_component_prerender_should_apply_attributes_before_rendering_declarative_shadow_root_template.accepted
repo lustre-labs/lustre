@@ -1,0 +1,11 @@
+---
+version: 1.5.3
+title: [html] Component prerender should apply attributes before rendering declarative shadow root template
+---
+<my-component count="10">
+  <template shadowrootmode="open">
+    <div>
+      10
+    </div>
+  </template>
+</my-component>

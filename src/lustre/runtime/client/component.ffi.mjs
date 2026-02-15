@@ -59,21 +59,23 @@ export const make_component = ({ init, update, view, config }, name) => {
 
     #runtime;
     #adoptedStyleNodes = [];
-    #shadowRoot;
     #contextSubscriptions = new Map();
 
     constructor() {
       super();
-      // a shadow root may have already been constructed through declarative
+
+      // There are talks of potentially having `attachInternals` set `.internals`
+      // automatically in the future.
       this.internals = this.attachInternals();
-      // shadow root elements.
+
+      // Only attach a shadow root if we don't already have one from the declarative
+      // shadow DOM. This means components can be SSR'd and then hydrated like
+      // normal apps.
       if (!this.internals.shadowRoot) {
-        this.#shadowRoot = this.attachShadow({
+        this.attachShadow({
           mode: config.open_shadow_root ? "open" : "closed",
           delegatesFocus: config.delegates_focus,
         });
-      } else {
-        this.#shadowRoot = this.internals.shadowRoot;
       }
 
       if (config.adopt_styles) {
@@ -81,7 +83,7 @@ export const make_component = ({ init, update, view, config }, name) => {
       }
 
       this.#runtime = new Runtime(
-        this.#shadowRoot,
+        this.internals.shadowRoot,
         [model, effects],
         view,
         update,
@@ -98,6 +100,7 @@ export const make_component = ({ init, update, view, config }, name) => {
       iterate(config.contexts, ([key, decoder]) => {
         // An empty key is not valid so we skip over any of those.
         if (!key) return;
+
         // Likewise if we've requested a context for this key already then we
         // don't want to dispatch a second event, even if the user provided a
         // different decoder.
@@ -204,7 +207,9 @@ export const make_component = ({ init, update, view, config }, name) => {
         this.shadowRoot.firstChild.remove();
       }
 
-      this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
+      this.#adoptedStyleNodes = await adoptStylesheets(
+        this.internals.shadowRoot,
+      );
     }
   };
 

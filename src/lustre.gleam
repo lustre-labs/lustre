@@ -38,7 +38,7 @@
 //// - A `Model` that represents your application's state and an `init` function
 ////   to create it.
 ////
-//// - A `Msg` type that represents all the different ways the outside world can
+//// - A `Message` type that represents all the different ways the outside world can
 ////   communicate with your application and an `update` function that modifies
 ////   your model in response to those messages.
 ////
@@ -48,31 +48,31 @@
 //// To see how those pieces fit together, here's a little diagram:
 ////
 //// ```text
-////                                          +--------+
-////                                          |        |
-////                                          | update |
-////                                          |        |
-////                                          +--------+
-////                                            ^    |
-////                                            |    |
-////                                        Msg |    | #(Model, Effect(Msg))
-////                                            |    |
-////                                            |    v
-//// +------+                         +------------------------+
-//// |      |  #(Model, Effect(Msg))  |                        |
-//// | init |------------------------>|     Lustre Runtime     |
-//// |      |                         |                        |
-//// +------+                         +------------------------+
-////                                            ^    |
-////                                            |    |
-////                                        Msg |    | Model
-////                                            |    |
-////                                            |    v
-////                                          +--------+
-////                                          |        |
-////                                          |  view  |
-////                                          |        |
-////                                          +--------+
+////                                            +--------+
+////                                            |        |
+////                                            | update |
+////                                            |        |
+////                                            +--------+
+////                                              ^    |
+////                                              |    |
+////                                      Message |    | #(Model, Effect(Message))
+////                                              |    |
+////                                              |    v
+//// +------+                           +------------------------+
+//// |      | #(Model, Effect(Message)) |                        |
+//// | init |-------------------------->|     Lustre Runtime     |
+//// |      |                           |                        |
+//// +------+                           +------------------------+
+////                                              ^    |
+////                                              |    |
+////                                      message |    | Model
+////                                              |    |
+////                                              |    v
+////                                            +--------+
+////                                            |        |
+////                                            |  view  |
+////                                            |        |
+////                                            +--------+
 //// ```
 ////
 //// The `Effect` type here encompasses things like HTTP requests and other kinds
@@ -163,10 +163,10 @@ import gleam/option
 import gleam/otp/actor
 import gleam/otp/factory_supervisor.{type Builder}
 import gleam/otp/supervision.{type ChildSpecification}
-import lustre/component.{type Config, type Option}
+import lustre/component.{type Option}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
-import lustre/internals/constants
+import lustre/runtime/app.{App}
 import lustre/runtime/server/runtime
 
 // TYPES -----------------------------------------------------------------------
@@ -193,15 +193,8 @@ import lustre/runtime/server/runtime
 /// don't need an `App` at all! You can render an element directly using the
 /// [`element.to_string`](./lustre/element.html#to_string) function.
 ///
-pub opaque type App(start_args, model, msg) {
-  App(
-    name: option.Option(Name(RuntimeMessage(msg))),
-    init: fn(start_args) -> #(model, Effect(msg)),
-    update: fn(model, msg) -> #(model, Effect(msg)),
-    view: fn(model) -> Element(msg),
-    config: Config(msg),
-  )
-}
+pub type App(arguments, model, message) =
+  app.App(arguments, model, message)
 
 /// Starting a Lustre application might fail for a number of reasons. This error
 /// type enumerates all those reasons, even though some of them are only possible
@@ -219,7 +212,7 @@ pub type Error {
 /// use to send messages to your application using the [`dispatch`](#dispatch)
 /// function.
 ///
-pub type Runtime(msg)
+pub type Runtime(message)
 
 /// From outside your Lustre applications, it is possible to communicate with the
 /// runtime by sending more than just messages to your app's `update` function.
@@ -238,8 +231,8 @@ pub type Runtime(msg)
 ///   runtime using [`runtime_message_decoder`](./lustre/server_component.html#runtime_message_decoder)
 ///   and [`send`](#send) them manually.
 ///
-pub type RuntimeMessage(msg) =
-  runtime.Message(msg)
+pub type RuntimeMessage(message) =
+  runtime.Message(message)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -247,7 +240,7 @@ pub type RuntimeMessage(msg) =
 /// primarily used for demonstration purposes. It renders a static Lustre `Element`
 /// on the page and does not have any state or update logic.
 ///
-pub fn element(view: Element(msg)) -> App(start_args, Nil, msg) {
+pub fn element(view: Element(message)) -> App(arguments, Nil, message) {
   application(
     init: fn(_) { #(Nil, effect.none()) },
     update: fn(_, _) { #(Nil, effect.none()) },
@@ -264,12 +257,12 @@ pub fn element(view: Element(msg)) -> App(start_args, Nil, msg) {
 /// you'll want to use the [`application`](#application) constructor instead.
 ///
 pub fn simple(
-  init init: fn(start_args) -> model,
-  update update: fn(model, msg) -> model,
-  view view: fn(model) -> Element(msg),
-) -> App(start_args, model, msg) {
-  let init = fn(start_args) { #(init(start_args), effect.none()) }
-  let update = fn(model, msg) { #(update(model, msg), effect.none()) }
+  init init: fn(arguments) -> model,
+  update update: fn(model, message) -> model,
+  view view: fn(model) -> Element(message),
+) -> App(arguments, model, message) {
+  let init = fn(arguments) { #(init(arguments), effect.none()) }
+  let update = fn(model, message) { #(update(model, message), effect.none()) }
 
   application(init, update, view)
 }
@@ -283,13 +276,11 @@ pub fn simple(
 /// [HTTP requests example](https://github.com/lustre-labs/lustre/tree/main/examples/05-http-requests).
 ///
 pub fn application(
-  init init: fn(start_args) -> #(model, Effect(msg)),
-  update update: fn(model, msg) -> #(model, Effect(msg)),
-  view view: fn(model) -> Element(msg),
-) -> App(start_args, model, msg) {
-  App(name: option.None, init:, update:, view:, config: {
-    component.new(constants.empty_list)
-  })
+  init init: fn(arguments) -> #(model, Effect(message)),
+  update update: fn(model, message) -> #(model, Effect(message)),
+  view view: fn(model) -> Element(message),
+) -> App(arguments, model, message) {
+  App(name: option.None, init:, update:, view:, config: app.default_config)
 }
 
 /// A `component` is a type of Lustre application designed to be embedded within
@@ -311,12 +302,12 @@ pub fn application(
 /// > loop.
 ///
 pub fn component(
-  init init: fn(start_args) -> #(model, Effect(msg)),
-  update update: fn(model, msg) -> #(model, Effect(msg)),
-  view view: fn(model) -> Element(msg),
-  options options: List(Option(msg)),
-) -> App(start_args, model, msg) {
-  App(name: option.None, init:, update:, view:, config: component.new(options))
+  init init: fn(arguments) -> #(model, Effect(message)),
+  update update: fn(model, message) -> #(model, Effect(message)),
+  view view: fn(model) -> Element(message),
+  options options: List(Option(message)),
+) -> App(arguments, model, message) {
+  App(name: option.None, init:, update:, view:, config: app.configure(options))
 }
 
 /// Assign a [`Name`](https://hexdocs.pm/gleam_erlang/gleam/erlang/process.html#Name)
@@ -333,9 +324,9 @@ pub fn component(
 /// > a given name.
 ///
 pub fn named(
-  app: App(start_args, model, msg),
-  name: Name(RuntimeMessage(msg)),
-) -> App(start_args, model, msg) {
+  app: App(arguments, model, message),
+  name: Name(RuntimeMessage(message)),
+) -> App(arguments, model, message) {
   App(..app, name: option.Some(name))
 }
 
@@ -354,21 +345,21 @@ pub fn named(
 /// to the application's `init` function.
 ///
 pub fn start(
-  app: App(start_args, model, msg),
+  app: App(arguments, model, message),
   onto selector: String,
-  with start_args: start_args,
-) -> Result(Runtime(msg), Error) {
+  with arguments: arguments,
+) -> Result(Runtime(message), Error) {
   use <- bool.guard(!is_browser(), Error(NotABrowser))
 
-  do_start(app, selector, start_args)
+  do_start(app, selector, arguments)
 }
 
 @external(javascript, "./lustre/runtime/client/spa.ffi.mjs", "start")
 fn do_start(
-  _app: App(start_args, model, msg),
+  _app: App(arguments, model, message),
   _selector: String,
-  _start_args: start_args,
-) -> Result(Runtime(msg), Error) {
+  _arguments: arguments,
+) -> Result(Runtime(message), Error) {
   Error(NotABrowser)
 }
 
@@ -396,17 +387,17 @@ fn do_start(
 ///
 @external(javascript, "./lustre/runtime/server/runtime.ffi.mjs", "start")
 pub fn start_server_component(
-  app: App(start_args, model, msg),
-  with start_args: start_args,
-) -> Result(Runtime(msg), Error) {
+  app: App(arguments, model, message),
+  with arguments: arguments,
+) -> Result(Runtime(message), Error) {
   let result =
     runtime.start(
       app.name,
       app.init,
       app.update,
       app.view,
-      component.to_server_component_config(app.config),
-      start_args,
+      app.configure_server_component(app.config),
+      arguments,
     )
 
   case result {
@@ -421,9 +412,9 @@ pub fn start_server_component(
 /// target.
 ///
 pub fn supervised(
-  app: App(start_arguments, model, msg),
-  start_arguments: start_arguments,
-) -> ChildSpecification(Subject(RuntimeMessage(msg))) {
+  app: App(arguments, model, message),
+  arguments: arguments,
+) -> ChildSpecification(Subject(RuntimeMessage(message))) {
   use <- supervision.worker
 
   runtime.start(
@@ -431,8 +422,8 @@ pub fn supervised(
     app.init,
     app.update,
     app.view,
-    component.to_server_component_config(app.config),
-    start_arguments,
+    app.configure_server_component(app.config),
+    arguments,
   )
 }
 
@@ -443,25 +434,25 @@ pub fn supervised(
 /// Erlang target.
 ///
 pub fn factory(
-  app: App(start_arguments, model, msg),
-) -> Builder(start_arguments, Subject(RuntimeMessage(msg))) {
-  use start_arguments <- factory_supervisor.worker_child
+  app: App(arguments, model, message),
+) -> Builder(arguments, Subject(RuntimeMessage(message))) {
+  use arguments <- factory_supervisor.worker_child
 
   runtime.start(
     app.name,
     app.init,
     app.update,
     app.view,
-    component.to_server_component_config(app.config),
-    start_arguments,
+    app.configure_server_component(app.config),
+    arguments,
   )
 }
 
 /// Register a Lustre application as a Web Component. This lets you render that
 /// application in another Lustre application's view or use it as a Custom Element
-/// outside of Lustre entirely.The provided application can only have `Nil` start_args
-/// because there is no way to provide an initial value for start_args when using a
-/// Custom Element!
+/// outside of Lustre entirely.The provided application can only have `Nil` start
+/// arguments because there is no way to provide an initial value for arguments
+/// when using a Custom Element!
 ///
 /// The second argument is the name of the Custom Element. This is the name you'd
 /// use in HTML to render the component. For example, if you register a component
@@ -479,7 +470,10 @@ pub fn factory(
 /// > or [`start_actor`](#start_actor) instead.
 ///
 @external(javascript, "./lustre/runtime/client/component.ffi.mjs", "make_component")
-pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error) {
+pub fn register(
+  _app: App(Nil, model, message),
+  _name: String,
+) -> Result(Nil, Error) {
   Error(NotABrowser)
 }
 
@@ -492,8 +486,8 @@ pub fn register(_app: App(Nil, model, msg), _name: String) -> Result(Nil, Error)
 @external(erlang, "gleam@erlang@process", "send")
 @external(javascript, "./lustre/runtime/client/runtime.ffi.mjs", "send")
 pub fn send(
-  to runtime: Runtime(msg),
-  message message: RuntimeMessage(msg),
+  to runtime: Runtime(message),
+  message message: RuntimeMessage(message),
 ) -> Nil
 
 /// Build a message for a running application's `update` function.
@@ -501,8 +495,8 @@ pub fn send(
 /// This message can be delivered to the runtime using [`send`](#send), allowing
 /// communication with a Lustre app without having to use an effect.
 ///
-pub fn dispatch(msg: msg) -> RuntimeMessage(msg) {
-  runtime.EffectDispatchedMessage(msg)
+pub fn dispatch(message: message) -> RuntimeMessage(message) {
+  runtime.EffectDispatchedMessage(message)
 }
 
 /// Instruct a running application to shut down. For client SPAs this will stop
@@ -510,7 +504,7 @@ pub fn dispatch(msg: msg) -> RuntimeMessage(msg) {
 /// stop the runtime and prevent any further patches from being sent to connected
 /// clients.
 ///
-pub fn shutdown() -> RuntimeMessage(msg) {
+pub fn shutdown() -> RuntimeMessage(message) {
   runtime.SystemRequestedShutdown
 }
 
@@ -540,4 +534,4 @@ pub fn is_registered(_name: String) -> Bool {
 
 @external(erlang, "gleam@function", "identity")
 @external(javascript, "../gleam_stdlib/gleam/function.mjs", "identity")
-fn hide_subject(subject: Subject(RuntimeMessage(msg))) -> Runtime(msg)
+fn hide_subject(subject: Subject(RuntimeMessage(message))) -> Runtime(message)

@@ -11,6 +11,10 @@ request to fix it.
 
 ## Unreleased
 
+### Added
+
+- [lustre/component] Added the ability to prerender components when server rendering or producing static HTML.
+
 ### Changed
 
 - [lustre/runtime] Fixed a bug where replacing the only child inside a nested fragment would insert the new child at the end of its parent.

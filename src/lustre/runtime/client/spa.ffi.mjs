@@ -8,7 +8,6 @@ import {
   Message$isEffectEmitEvent,
   Message$isSystemRequestedShutdown,
 } from "../server/runtime.mjs";
-import { document } from "../../internals/constants.ffi.mjs";
 
 //
 
@@ -44,7 +43,7 @@ export const start = ({ init, update, view }, selector, flags) => {
   const root =
     selector instanceof HTMLElement
       ? selector
-      : document().querySelector(selector);
+      : globalThis.document.querySelector(selector);
 
   if (!root) return Result$Error(Error$ElementNotFound(selector));
 
