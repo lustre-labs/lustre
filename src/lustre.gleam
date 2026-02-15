@@ -38,7 +38,7 @@
 //// - A `Model` that represents your application's state and an `init` function
 ////   to create it.
 ////
-//// - A `message` type that represents all the different ways the outside world can
+//// - A `Message` type that represents all the different ways the outside world can
 ////   communicate with your application and an `update` function that modifies
 ////   your model in response to those messages.
 ////
@@ -55,11 +55,11 @@
 ////                                            +--------+
 ////                                              ^    |
 ////                                              |    |
-////                                      message |    | #(Model, Effect(message))
+////                                      Message |    | #(Model, Effect(Message))
 ////                                              |    |
 ////                                              |    v
 //// +------+                           +------------------------+
-//// |      | #(Model, Effect(message)) |                        |
+//// |      | #(Model, Effect(Message)) |                        |
 //// | init |-------------------------->|     Lustre Runtime     |
 //// |      |                           |                        |
 //// +------+                           +------------------------+
