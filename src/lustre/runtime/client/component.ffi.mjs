@@ -173,14 +173,6 @@ export const make_component = ({ init, update, view, config }, name) => {
       }
     }
 
-    disconnectedCallback() {
-      for (const [_, unsubscribe] of this.#contextSubscriptions) {
-        unsubscribe?.();
-      }
-
-      this.#contextSubscriptions.clear();
-    }
-
     // LUSTRE RUNTIME METHODS --------------------------------------------------
 
     send(message) {
