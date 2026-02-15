@@ -17,7 +17,7 @@ import gleam/function
 @target(erlang)
 import gleam/list
 @target(erlang)
-import gleam/option
+import gleam/option.{type Option}
 @target(erlang)
 import gleam/otp/actor.{type Next, type StartError}
 @target(erlang)
@@ -28,53 +28,57 @@ import lustre/internals/constants
 import lustre/vdom/diff.{diff}
 
 @target(javascript)
+import gleam/option
+@target(javascript)
 import gleam/otp/actor.{type StartError}
 
 // STATE -----------------------------------------------------------------------
 
-pub type ServerComponent(msg) =
-  Subject(Message(msg))
+pub type ServerComponent(message) =
+  Subject(Message(message))
 
-pub type State(model, msg) {
+pub type State(model, message) {
   State(
     //
-    self: Subject(Message(msg)),
-    selector: Selector(Message(msg)),
-    base_selector: Selector(Message(msg)),
+    self: Subject(Message(message)),
+    selector: Selector(Message(message)),
+    base_selector: Selector(Message(message)),
     //
     model: model,
-    update: fn(model, msg) -> #(model, Effect(msg)),
-    view: fn(model) -> Element(msg),
-    config: Config(msg),
+    update: fn(model, message) -> #(model, Effect(message)),
+    view: fn(model) -> Element(message),
+    config: Config(message),
     //
-    vdom: Element(msg),
-    cache: Cache(msg),
+    vdom: Element(message),
+    cache: Cache(message),
     providers: Dict(String, Json),
     //
-    subscribers: Dict(Subject(ClientMessage(msg)), Monitor),
-    callbacks: Set(fn(ClientMessage(msg)) -> Nil),
+    subscribers: Dict(Subject(ClientMessage(message)), Monitor),
+    callbacks: Set(fn(ClientMessage(message)) -> Nil),
   )
 }
 
-pub type Config(msg) {
+pub type Config(message) {
   Config(
     open_shadow_root: Bool,
     adopt_styles: Bool,
-    attributes: Dict(String, fn(String) -> Result(msg, Nil)),
-    properties: Dict(String, Decoder(msg)),
-    contexts: Dict(String, Decoder(msg)),
+    attributes: Dict(String, fn(String) -> Result(message, Nil)),
+    properties: Dict(String, Decoder(message)),
+    contexts: Dict(String, Decoder(message)),
+    on_connect: option.Option(message),
+    on_disconnect: option.Option(message),
   )
 }
 
 @target(erlang)
 pub fn start(
-  name: option.Option(process.Name(Message(msg))),
-  init: fn(start_args) -> #(model, Effect(msg)),
-  update: fn(model, msg) -> #(model, Effect(msg)),
-  view: fn(model) -> Element(msg),
-  config: Config(msg),
+  name: Option(process.Name(Message(message))),
+  init: fn(start_args) -> #(model, Effect(message)),
+  update: fn(model, message) -> #(model, Effect(message)),
+  view: fn(model) -> Element(message),
+  config: Config(message),
   start_args: start_args,
-) -> Result(actor.Started(Subject(Message(msg))), StartError) {
+) -> Result(actor.Started(Subject(Message(message))), StartError) {
   actor.new_with_initialiser(1000, fn(self) {
     let #(model, effect) = init(start_args)
     let vdom = view(model)
@@ -126,21 +130,21 @@ pub fn start(
   _,
   _,
   _,
-) -> Result(actor.Started(Subject(Message(msg))), StartError) {
+) -> Result(actor.Started(Subject(Message(message))), StartError) {
   Error(actor.InitFailed("Not Erlang"))
 }
 
 // UPDATE ----------------------------------------------------------------------
 
-pub type Message(msg) {
+pub type Message(message) {
   ClientDispatchedMessage(message: ServerMessage)
-  ClientRegisteredSubject(client: Subject(ClientMessage(msg)))
-  ClientDeregisteredSubject(client: Subject(ClientMessage(msg)))
-  ClientRegisteredCallback(callback: fn(ClientMessage(msg)) -> Nil)
-  ClientDeregisteredCallback(callback: fn(ClientMessage(msg)) -> Nil)
+  ClientRegisteredSubject(client: Subject(ClientMessage(message)))
+  ClientDeregisteredSubject(client: Subject(ClientMessage(message)))
+  ClientRegisteredCallback(callback: fn(ClientMessage(message)) -> Nil)
+  ClientDeregisteredCallback(callback: fn(ClientMessage(message)) -> Nil)
   //
-  EffectAddedSelector(selector: Selector(Message(msg)))
-  EffectDispatchedMessage(message: msg)
+  EffectAddedSelector(selector: Selector(Message(message)))
+  EffectDispatchedMessage(message: message)
   EffectEmitEvent(name: String, data: Json)
   EffectProvidedValue(key: String, value: Json)
   //
@@ -151,16 +155,16 @@ pub type Message(msg) {
 
 @target(erlang)
 fn loop(
-  state: State(model, msg),
-  message: Message(msg),
-) -> Next(State(model, msg), Message(msg)) {
+  state: State(model, message),
+  message: Message(message),
+) -> Next(State(model, message), Message(message)) {
   case message {
     ClientDispatchedMessage(message:) -> {
       let next = handle_client_message(state, message)
       let diff = diff(state.cache, state.vdom, next.vdom)
 
-      let msg = transport.reconcile(diff.patch, cache.memos(diff.cache))
-      let _ = broadcast(state.subscribers, state.callbacks, msg)
+      let message = transport.reconcile(diff.patch, cache.memos(diff.cache))
+      let _ = broadcast(state.subscribers, state.callbacks, message)
 
       actor.continue(State(..next, cache: diff.cache))
     }
@@ -189,6 +193,12 @@ fn loop(
                 ),
               )
 
+              case state.config.on_connect {
+                option.None -> Nil
+                option.Some(message) ->
+                  process.send(state.self, EffectDispatchedMessage(message:))
+              }
+
               actor.continue(State(..state, subscribers:))
             }
           }
@@ -197,6 +207,12 @@ fn loop(
 
     ClientDeregisteredSubject(client:) -> {
       let subscribers = dict.delete(state.subscribers, client)
+
+      case state.config.on_disconnect {
+        option.None -> Nil
+        option.Some(message) ->
+          process.send(state.self, EffectDispatchedMessage(message:))
+      }
 
       actor.continue(State(..state, subscribers:))
     }
@@ -218,6 +234,12 @@ fn loop(
             memos: cache.memos(state.cache),
           ))
 
+          case state.config.on_connect {
+            option.None -> Nil
+            option.Some(message) ->
+              process.send(state.self, EffectDispatchedMessage(message:))
+          }
+
           actor.continue(State(..state, callbacks:))
         }
       }
@@ -227,6 +249,12 @@ fn loop(
         False -> actor.continue(state)
         True -> {
           let callbacks = set.delete(state.callbacks, callback)
+
+          case state.config.on_disconnect {
+            option.None -> Nil
+            option.Some(message) ->
+              process.send(state.self, EffectDispatchedMessage(message:))
+          }
 
           actor.continue(State(..state, callbacks:))
         }
@@ -247,8 +275,8 @@ fn loop(
 
       handle_effect(state.self, effect)
 
-      let msg = transport.reconcile(diff.patch, cache.memos(diff.cache))
-      let _ = broadcast(state.subscribers, state.callbacks, msg)
+      let message = transport.reconcile(diff.patch, cache.memos(diff.cache))
+      let _ = broadcast(state.subscribers, state.callbacks, message)
 
       actor.continue(State(..state, model:, vdom:, cache: diff.cache))
     }
@@ -304,9 +332,9 @@ fn loop(
 
 @target(erlang)
 fn handle_client_message(
-  state: State(model, msg),
+  state: State(model, message),
   message: ServerMessage,
-) -> State(model, msg) {
+) -> State(model, message) {
   case message {
     transport.Batch(messages:, ..) ->
       list.fold(messages, state, handle_client_message)
@@ -314,8 +342,8 @@ fn handle_client_message(
     transport.AttributeChanged(name:, value:, ..) ->
       case handle_attribute_change(state.config.attributes, name, value) {
         Error(_) -> state
-        Ok(msg) -> {
-          let #(model, effect) = state.update(state.model, msg)
+        Ok(message) -> {
+          let #(model, effect) = state.update(state.model, message)
           let vdom = state.view(model)
 
           handle_effect(state.self, effect)
@@ -327,8 +355,8 @@ fn handle_client_message(
     transport.PropertyChanged(name:, value:, ..) ->
       case handle_property_change(state.config.properties, name, value) {
         Error(_) -> state
-        Ok(msg) -> {
-          let #(model, effect) = state.update(state.model, msg)
+        Ok(message) -> {
+          let #(model, effect) = state.update(state.model, message)
           let vdom = state.view(model)
 
           handle_effect(state.self, effect)
@@ -373,10 +401,10 @@ fn handle_client_message(
 
 @target(erlang)
 fn handle_attribute_change(
-  attributes: Dict(String, fn(String) -> Result(msg, Nil)),
+  attributes: Dict(String, fn(String) -> Result(message, Nil)),
   name: String,
   value: String,
-) -> Result(msg, Nil) {
+) -> Result(message, Nil) {
   case dict.get(attributes, name) {
     Error(_) -> constants.error_nil
     Ok(handler) -> handler(value)
@@ -385,10 +413,10 @@ fn handle_attribute_change(
 
 @target(erlang)
 fn handle_property_change(
-  properties: Dict(String, Decoder(msg)),
+  properties: Dict(String, Decoder(message)),
   name: String,
   value: Dynamic,
-) -> Result(msg, Nil) {
+) -> Result(message, Nil) {
   case dict.get(properties, name) {
     Error(_) -> constants.error_nil
     Ok(decoder) -> decode.run(value, decoder) |> result.replace_error(Nil)
@@ -396,7 +424,10 @@ fn handle_property_change(
 }
 
 @target(erlang)
-fn handle_effect(self: Subject(Message(msg)), effect: Effect(msg)) -> Nil {
+fn handle_effect(
+  self: Subject(Message(message)),
+  effect: Effect(message),
+) -> Nil {
   let send = process.send(self, _)
   let dispatch = fn(message) { send(EffectDispatchedMessage(message:)) }
   let emit = fn(name, data) { send(EffectEmitEvent(name:, data:)) }
@@ -416,9 +447,9 @@ fn handle_effect(self: Subject(Message(msg)), effect: Effect(msg)) -> Nil {
 
 @target(erlang)
 fn broadcast(
-  clients: Dict(Subject(ClientMessage(msg)), Monitor),
-  callbacks: Set(fn(ClientMessage(msg)) -> Nil),
-  message: ClientMessage(msg),
+  clients: Dict(Subject(ClientMessage(message)), Monitor),
+  callbacks: Set(fn(ClientMessage(message)) -> Nil),
+  message: ClientMessage(message),
 ) -> Nil {
   let _ = dict.each(clients, fn(client, _) { process.send(client, message) })
   let _ = set.each(callbacks, fn(callback) { callback(message) })

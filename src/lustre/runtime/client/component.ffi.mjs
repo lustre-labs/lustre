@@ -92,50 +92,54 @@ export const make_component = ({ init, update, view, config }, name) => {
 
     // CUSTOM ELEMENT LIFECYCLE METHODS ----------------------------------------
 
+    // When an element is constructed by `document.createElement` and then added
+    // to the DOM, the lifecycle callbacks run in this order:
+    //
+    //   constructor -> attributeChangedCallback -> connectedCallback
+    //
+    // If the element is added to the document through `document.importNode` then
+    // we get:
+    //
+    //   constructor -> connectedCallback
+    //
+    // The connectedCallback is also called when the element is moved to a new
+    // position in the same document, so it's important we don't do any *one-time*
+    // work here.
+    //
     connectedCallback() {
-      // Keep track of the requested contexts so we don't request the same one
-      // twice.
-      const requested = new Set();
+      this.#requestContexts();
 
-      iterate(config.contexts, ([key, decoder]) => {
-        // An empty key is not valid so we skip over any of those.
-        if (!key) return;
-
-        // Likewise if we've requested a context for this key already then we
-        // don't want to dispatch a second event, even if the user provided a
-        // different decoder.
-        if (requested.has(key)) return;
-
-        this.dispatchEvent(
-          new ContextRequestEvent(
-            key,
-            (value, unsubscribe) => {
-              const previousUnsubscribe = this.#contextSubscriptions.get(key);
-
-              // Call the old unsubscribe callback if it has changed. This probably
-              // means we have a new provider.
-              if (previousUnsubscribe !== unsubscribe) {
-                previousUnsubscribe?.();
-              }
-
-              const decoded = decode(value, decoder);
-              this.#contextSubscriptions.set(key, unsubscribe);
-
-              if (Result$isOk(decoded)) {
-                this.dispatch(Result$Ok$0(decoded), true);
-              }
-            },
-            true,
-          ),
-        );
-
-        requested.add(key);
-      });
+      if (Option$isSome(config.on_connect)) {
+        this.dispatch(Option$Some$0(config.on_connect));
+      }
     }
 
+    // If the element is imported into the document through `document.adoptNode`
+    // then the lifecycle callbacks are:
+    //
+    //   disconnectedCallback -> adoptedCallback -> connectedCallback
+    //
     adoptedCallback() {
       if (config.adopt_styles) {
         this.#adoptStyleSheets();
+      }
+
+      this.#unsubscribeContexts();
+
+      if (Option$isSome(config.on_adopt)) {
+        this.dispatch(Option$Some$0(config.on_adopt));
+      }
+    }
+
+    // The disconnected callback is also called when the element is disconnected
+    // from the document even if it is reconnected somewhere else. It's important
+    // we use this callback just for DOM-related cleanup.
+    //
+    disconnectedCallback() {
+      this.#unsubscribeContexts();
+
+      if (Option$isSome(config.on_disconnect)) {
+        this.dispatch(Option$Some$0(config.on_disconnect));
       }
     }
 
@@ -199,6 +203,55 @@ export const make_component = ({ init, update, view, config }, name) => {
 
     provide(key, value) {
       this.#runtime.provide(key, value);
+    }
+
+    // INTERNAL METHODS --------------------------------------------------------
+
+    #requestContexts() {
+      const requested = new Set();
+
+      iterate(config.contexts, ([key, decoder]) => {
+        // An empty key is not valid so we skip over any of those.
+        if (!key) return;
+
+        // Likewise if we've requested a context for this key already then we
+        // don't want to dispatch a second event, even if the user provided a
+        // different decoder.
+        if (requested.has(key)) return;
+
+        this.dispatchEvent(
+          new ContextRequestEvent(
+            key,
+            (value, unsubscribe) => {
+              const previousUnsubscribe = this.#contextSubscriptions.get(key);
+
+              // Call the old unsubscribe callback if it has changed. This probably
+              // means we have a new provider.
+              if (previousUnsubscribe !== unsubscribe) {
+                previousUnsubscribe?.();
+              }
+
+              const decoded = decode(value, decoder);
+              this.#contextSubscriptions.set(key, unsubscribe);
+
+              if (Result$isOk(decoded)) {
+                this.dispatch(Result$Ok$0(decoded), true);
+              }
+            },
+            true,
+          ),
+        );
+
+        requested.add(key);
+      });
+    }
+
+    #unsubscribeContexts() {
+      for (const [_, unsubscribe] of this.#contextSubscriptions) {
+        unsubscribe?.();
+      }
+
+      this.#contextSubscriptions.clear();
     }
 
     async #adoptStyleSheets() {
