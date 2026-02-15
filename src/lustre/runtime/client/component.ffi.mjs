@@ -35,7 +35,7 @@ import { iterate } from "../../internals/list.ffi.mjs";
 export const make_component = ({ init, update, view, config }, name) => {
   if (!is_browser()) return Result$Error(Error$NotABrowser());
   if (!name.includes("-")) return Result$Error(Error$BadComponentName(name));
-  if (customElements.get(name)) {
+  if (globalThis.customElements.get(name)) {
     return Result$Error(Error$ComponentAlreadyRegistered(name));
   }
 
@@ -50,7 +50,7 @@ export const make_component = ({ init, update, view, config }, name) => {
 
   const [model, effects] = init(undefined);
 
-  const component = class Component extends HTMLElement {
+  const component = class Component extends globalThis.HTMLElement {
     static get observedAttributes() {
       return observedAttributes;
     }
@@ -287,7 +287,7 @@ export const make_component = ({ init, update, view, config }, name) => {
     });
   });
 
-  customElements.define(name, component);
+  globalThis.customElements.define(name, component);
 
   return Result$Ok(undefined);
 };
