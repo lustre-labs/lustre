@@ -37,6 +37,10 @@ pub type Config(message) {
     on_form_autofill: option.Option(fn(String) -> message),
     on_form_reset: option.Option(message),
     on_form_restore: option.Option(fn(String) -> message),
+    //
+    on_connect: option.Option(message),
+    on_adopt: option.Option(message),
+    on_disconnect: option.Option(message),
   )
 }
 
@@ -57,6 +61,9 @@ pub const default_config: Config(message) = Config(
   on_form_autofill: option.None,
   on_form_reset: option.None,
   on_form_restore: option.None,
+  on_connect: option.None,
+  on_adopt: option.None,
+  on_disconnect: option.None,
 )
 
 // MANIPULATIONS ---------------------------------------------------------------
@@ -75,5 +82,8 @@ pub fn configure_server_component(
     attributes: dict.from_list(list.reverse(config.attributes)),
     properties: dict.from_list(list.reverse(config.properties)),
     contexts: dict.from_list(list.reverse(config.contexts)),
+    //
+    on_connect: config.on_connect,
+    on_disconnect: config.on_disconnect,
   )
 }

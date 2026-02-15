@@ -271,7 +271,64 @@ pub fn delegates_focus(delegates: Bool) -> Option(message) {
   Config(..config, delegates_focus: delegates)
 }
 
-// CONVERSIONS -----------------------------------------------------------------
+/// Set a message to be sent when a client component is connected to a document
+/// or a server component registers a new connection.
+///
+/// ## Client components
+///
+/// The provided message will be dispatched when the component is connected to a
+/// new document. This corresponds to the custom element `connectedCallback` and
+/// is a good signal to perform effects that interact with the DOM or many browser
+/// APIs.
+///
+/// ## Server components
+///
+/// The provided message will be dispatched when a new connection is registered
+/// by either [`server_component.register_subject`](./server_component.html#register_subject)
+/// or [`server_component.register_callback`](./server_component.html#register_callback).
+/// Importantly, repeated calls to either of these functions will **not** trigger
+/// the message multiple times.
+///
+///
+pub fn on_connect(message: message) -> Option(message) {
+  use config <- Option
+
+  Config(..config, on_connect: Some(message))
+}
+
+/// The message provided to this option will be dispatched whenever a client component
+/// is adopted into a new document.
+///
+/// > **Note**: this option is only useful for components that will be built and
+/// > distributed outside of a typical Lustre application.
+///
+pub fn on_adopt(message: message) -> Option(message) {
+  use config <- Option
+
+  Config(..config, on_adopt: Some(message))
+}
+
+/// Set a message to be sent when a client component is disconnected from a document
+/// or a server component deregisters a connection.
+///
+/// ## Client components
+///
+/// The provided message will be dispatched when the component is disconnected from
+/// a document, for example when the element is no longer rendered by your app's
+/// `view` function. This corresponds to the custom element `disconnectedCallback`
+/// and should be used to clean up any effects.
+///
+/// ## Server components
+///
+/// The provided message will be dispatched when a connection is deregistered by
+/// either [`server_component.deregister_subject`](./server_component.html#deregister_subject)
+/// or [`server_component.deregister_callback`](./server_component.html#deregister_callback).
+///
+pub fn on_disconnect(message: message) -> Option(message) {
+  use config <- Option
+
+  Config(..config, on_disconnect: Some(message))
+}
 
 // ELEMENTS --------------------------------------------------------------------
 

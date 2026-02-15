@@ -7,6 +7,7 @@ import {
 } from "../../../gleam.mjs";
 import * as Decode from "../../../../gleam_stdlib/gleam/dynamic/decode.mjs";
 import * as Dict from "../../../../gleam_stdlib/gleam/dict.mjs";
+import * as Option from "../../../../gleam_stdlib/gleam/option.mjs";
 import * as Diff from "../../vdom/diff.mjs";
 import * as Cache from "../../vdom/cache.mjs";
 import { isEqual } from "../../internals/equals.ffi.mjs";
@@ -34,7 +35,7 @@ import {
   ServerMessage$isEventFired,
   ServerMessage$isContextProvided,
 } from "../transport.mjs";
-import { iterate, toList } from "../../internals/list.ffi.mjs";
+import { toList } from "../../internals/list.ffi.mjs";
 
 //
 
@@ -89,9 +90,17 @@ export class Runtime {
           Cache.memos(this.#cache),
         ),
       );
+
+      if (Option.Option$isSome(config.on_connect)) {
+        this.#dispatch(Option.Option$Some$0(config.on_connect));
+      }
     } else if (Message$isClientDeregisteredCallback(msg)) {
       const { callback } = msg;
       this.#callbacks.delete(callback);
+
+      if (Option.Option$isSome(config.on_disconnect)) {
+        this.#dispatch(Option.Option$Some$0(config.on_disconnect));
+      }
     } else if (Message$isEffectDispatchedMessage(msg)) {
       const { message } = msg;
       const [model, effect] = this.#update(this.#model, message);

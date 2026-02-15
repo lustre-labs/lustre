@@ -35,7 +35,7 @@ import { iterate } from "../../internals/list.ffi.mjs";
 export const make_component = ({ init, update, view, config }, name) => {
   if (!is_browser()) return Result$Error(Error$NotABrowser());
   if (!name.includes("-")) return Result$Error(Error$BadComponentName(name));
-  if (customElements.get(name)) {
+  if (globalThis.customElements.get(name)) {
     return Result$Error(Error$ComponentAlreadyRegistered(name));
   }
 
@@ -50,7 +50,7 @@ export const make_component = ({ init, update, view, config }, name) => {
 
   const [model, effects] = init(undefined);
 
-  const component = class Component extends HTMLElement {
+  const component = class Component extends globalThis.HTMLElement {
     static get observedAttributes() {
       return observedAttributes;
     }
@@ -92,9 +92,114 @@ export const make_component = ({ init, update, view, config }, name) => {
 
     // CUSTOM ELEMENT LIFECYCLE METHODS ----------------------------------------
 
+    // When an element is constructed by `document.createElement` and then added
+    // to the DOM, the lifecycle callbacks run in this order:
+    //
+    //   constructor -> attributeChangedCallback -> connectedCallback
+    //
+    // If the element is added to the document through `document.importNode` then
+    // we get:
+    //
+    //   constructor -> connectedCallback
+    //
+    // The connectedCallback is also called when the element is moved to a new
+    // position in the same document, so it's important we don't do any *one-time*
+    // work here.
+    //
     connectedCallback() {
-      // Keep track of the requested contexts so we don't request the same one
-      // twice.
+      this.#requestContexts();
+
+      if (Option$isSome(config.on_connect)) {
+        this.dispatch(Option$Some$0(config.on_connect));
+      }
+    }
+
+    // If the element is imported into the document through `document.adoptNode`
+    // then the lifecycle callbacks are:
+    //
+    //   disconnectedCallback -> adoptedCallback -> connectedCallback
+    //
+    adoptedCallback() {
+      if (config.adopt_styles) {
+        this.#adoptStyleSheets();
+      }
+
+      this.#unsubscribeContexts();
+
+      if (Option$isSome(config.on_adopt)) {
+        this.dispatch(Option$Some$0(config.on_adopt));
+      }
+    }
+
+    // The disconnected callback is also called when the element is disconnected
+    // from the document even if it is reconnected somewhere else. It's important
+    // we use this callback just for DOM-related cleanup.
+    //
+    disconnectedCallback() {
+      this.#unsubscribeContexts();
+
+      if (Option$isSome(config.on_disconnect)) {
+        this.dispatch(Option$Some$0(config.on_disconnect));
+      }
+    }
+
+    attributeChangedCallback(name, _, value) {
+      const decoded = attributes.get(name)(value ?? "");
+
+      if (Result$isOk(decoded)) {
+        this.dispatch(Result$Ok$0(decoded), true);
+      }
+    }
+
+    formResetCallback() {
+      if (Option$isSome(config.on_form_reset)) {
+        this.dispatch(Option$Some$0(config.on_form_reset));
+      }
+    }
+
+    formStateRestoreCallback(state, reason) {
+      switch (reason) {
+        case "restore":
+          if (Option$isSome(config.on_form_restore)) {
+            this.dispatch(Option$Some$0(config.on_form_restore)(state));
+          }
+          break;
+
+        case "autocomplete":
+          if (Option$isSome(config.on_form_autofill)) {
+            this.dispatch(Option$Some$0(config.on_form_autofill)(state));
+          }
+          break;
+      }
+    }
+
+    // LUSTRE RUNTIME METHODS --------------------------------------------------
+
+    send(message) {
+      if (Message$isEffectDispatchedMessage(message)) {
+        this.dispatch(message.message, false);
+      } else if (Message$isEffectEmitEvent(message)) {
+        this.emit(message.name, message.data);
+      } else if (Message$isSystemRequestedShutdown(message)) {
+        // TODO
+      }
+    }
+
+    dispatch(msg, shouldFlush = false) {
+      this.#runtime.dispatch(msg, shouldFlush);
+    }
+
+    emit(event, data) {
+      this.#runtime.emit(event, data);
+    }
+
+    provide(key, value) {
+      this.#runtime.provide(key, value);
+    }
+
+    // INTERNAL METHODS --------------------------------------------------------
+
+    #requestContexts() {
       const requested = new Set();
 
       iterate(config.contexts, ([key, decoder]) => {
@@ -133,72 +238,12 @@ export const make_component = ({ init, update, view, config }, name) => {
       });
     }
 
-    adoptedCallback() {
-      if (config.adopt_styles) {
-        this.#adoptStyleSheets();
-      }
-    }
-
-    attributeChangedCallback(name, _, value) {
-      const decoded = attributes.get(name)(value ?? "");
-
-      if (Result$isOk(decoded)) {
-        this.dispatch(Result$Ok$0(decoded), true);
-      }
-    }
-
-    formResetCallback() {
-      if (Option$isSome(config.on_form_reset)) {
-        this.dispatch(Option$Some$0(config.on_form_reset));
-      }
-    }
-
-    formStateRestoreCallback(state, reason) {
-      switch (reason) {
-        case "restore":
-          if (Option$isSome(config.on_form_restore)) {
-            this.dispatch(Option$Some$0(config.on_form_restore)(state));
-          }
-          break;
-
-        case "autocomplete":
-          if (Option$isSome(config.on_form_autofill)) {
-            this.dispatch(Option$Some$0(config.on_form_autofill)(state));
-          }
-          break;
-      }
-    }
-
-    disconnectedCallback() {
+    #unsubscribeContexts() {
       for (const [_, unsubscribe] of this.#contextSubscriptions) {
         unsubscribe?.();
       }
 
       this.#contextSubscriptions.clear();
-    }
-
-    // LUSTRE RUNTIME METHODS --------------------------------------------------
-
-    send(message) {
-      if (Message$isEffectDispatchedMessage(message)) {
-        this.dispatch(message.message, false);
-      } else if (Message$isEffectEmitEvent(message)) {
-        this.emit(message.name, message.data);
-      } else if (Message$isSystemRequestedShutdown(message)) {
-        // TODO
-      }
-    }
-
-    dispatch(msg, shouldFlush = false) {
-      this.#runtime.dispatch(msg, shouldFlush);
-    }
-
-    emit(event, data) {
-      this.#runtime.emit(event, data);
-    }
-
-    provide(key, value) {
-      this.#runtime.provide(key, value);
     }
 
     async #adoptStyleSheets() {
@@ -234,7 +279,7 @@ export const make_component = ({ init, update, view, config }, name) => {
     });
   });
 
-  customElements.define(name, component);
+  globalThis.customElements.define(name, component);
 
   return Result$Ok(undefined);
 };
