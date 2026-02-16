@@ -1,5 +1,10 @@
 # Announcements
 
+- [2026-02-16](./announcements/2026-02-16.html):
+  This release sees even tighter integration with the Web Component spec through
+  component prerendering with declarative shadow roots and integration with the
+  custom element lifecycle events.
+
 - [2026-01-10](./announcements/2026-01-10.html):
   The release of Lustre v5.5.0 brings a performance-focused api with `element.memo`
   and better integration with `gleam/otp`.
