@@ -11,6 +11,8 @@ request to fix it.
 
 ## Unreleased
 
+## [v5.6.0] - 2026-02-16
+
 ### Added
 
 - [lustre/component] Added the ability to prerender components when server rendering or producing static HTML.
