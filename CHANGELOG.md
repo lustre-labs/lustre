@@ -14,6 +14,7 @@ request to fix it.
 ### Changed
 
 - [lustre/event] Fixed a bug where moving keyed elements would sometimes remove their event listeners.
+- [lustre/runtime] Fixed a bug where an extra frame would be scheduled after `before_paint` and `after_paint` effects.
 
 ## [v5.6.0] - 2026-02-16
 
