@@ -11,6 +11,10 @@ request to fix it.
 
 ## Unreleased
 
+### Changed
+
+- [lustre/event] Fixed a bug where moving keyed elements would sometimes remove their event listeners.
+
 ## [v5.6.0] - 2026-02-16
 
 ### Added
