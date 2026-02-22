@@ -86,35 +86,50 @@ fn do_diff(
     // We've run out of new children to diff. We now need to check whether the
     // each remaining child has been moved (and so can be ignored) here, or if it
     // needs to be removed.
-    [prev, ..old], [] -> {
-      let removed = case
-        prev.key == "" || !mutable_map.has_key(moved, prev.key)
-      {
+    [prev, ..old], [] ->
+      case prev.key == "" || !mutable_map.has_key(moved, prev.key) {
         // This node wasn't keyed or it wasn't moved during a keyed diff. Either
         // way, we need to remove it!
-        True -> removed + 1
-        False -> removed
+        True -> {
+          let events = cache.remove_child(cache, events, path, node_index, prev)
+
+          do_diff(
+            old:,
+            old_keyed:,
+            new:,
+            new_keyed:,
+            moved:,
+            moved_offset:,
+            removed: removed + 1,
+            node_index:,
+            patch_index:,
+            changes:,
+            children:,
+            path:,
+            cache:,
+            events:,
+          )
+        }
+
+        // this node was keyed and got moved.
+        False ->
+          do_diff(
+            old:,
+            old_keyed:,
+            new:,
+            new_keyed:,
+            moved:,
+            moved_offset:,
+            removed:,
+            node_index:,
+            patch_index:,
+            changes:,
+            children:,
+            path:,
+            cache:,
+            events:,
+          )
       }
-
-      let events = cache.remove_child(cache, events, path, node_index, prev)
-
-      do_diff(
-        old:,
-        old_keyed:,
-        new:,
-        new_keyed:,
-        moved:,
-        moved_offset:,
-        removed:,
-        node_index:,
-        patch_index:,
-        changes:,
-        children:,
-        path:,
-        cache:,
-        events:,
-      )
-    }
 
     // We've run out of old children to diff. We can produce a single `Insert`
     // change to group the all the new children together, but we still need to
