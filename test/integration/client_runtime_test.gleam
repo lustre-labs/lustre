@@ -552,6 +552,52 @@ pub fn client_runtime_keyed_fragments_test() {
   assert second_pos < first_pos
 }
 
+@target(javascript)
+pub fn client_runtime_keyed_move_events_test() {
+  use <- lustre_test.test_filter("client_runtime_keyed_move_events_test")
+
+  let view = fn(model: #(List(Int), List(Int))) {
+    let #(unclicked, clicked) = model
+    keyed.div(
+      [attribute.id("deck")],
+      list.append(
+        list.map(unclicked, fn(id) {
+          let id_str = "card-" <> int.to_string(id)
+          #(
+            id_str,
+            html.div([attribute.id(id_str), event.on_click(id)], [
+              html.text(id_str),
+            ]),
+          )
+        }),
+        list.map(clicked, fn(id) {
+          let id_str = "card-" <> int.to_string(id)
+          #(id_str, html.div([attribute.id(id_str)], [html.text(id_str)]))
+        }),
+      ),
+    )
+  }
+
+  let update = fn(model: #(List(Int), List(Int)), id: Int) {
+    let #(unclicked, clicked) = model
+    #(list.filter(unclicked, fn(x) { x != id }), [id, ..clicked])
+  }
+
+  let initial_model = #([1, 2], [])
+  let app = lustre.simple(fn(_) { initial_model }, update, view)
+
+  let initial = view(initial_model)
+  let html_string = element.to_string(initial)
+
+  use runtime <- with_client_runtime(html_string, app)
+
+  use <- emit("#card-1", "click")
+  assert get_model(runtime) == #([2], [1])
+
+  use <- emit("#card-2", "click")
+  assert get_model(runtime) == #([], [2, 1])
+}
+
 // FFI ------------------------------------------------------------------------
 
 @target(javascript)

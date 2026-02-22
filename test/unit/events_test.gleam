@@ -449,3 +449,40 @@ pub fn keyed_element_replaced_test() {
 
   assert actual == expected
 }
+
+pub fn moved_keyed_element_keeps_events_test() {
+  use <- lustre_test.test_filter("moved_keyed_element_keeps_events_test")
+
+  let prev =
+    keyed.div([], [
+      #("1", html.div([event.on_click("click 1")], [html.text("card 1")])),
+      #("2", html.div([event.on_click("click 2")], [html.text("card 2")])),
+    ])
+
+  let next =
+    keyed.div([], [
+      #("2", html.div([event.on_click("click 2")], [html.text("card 2")])),
+      #("1", html.div([], [html.text("card 1")])),
+    ])
+
+  let result = diff.diff(cache.new(), prev, next)
+
+  let path_card2 = path.root |> path.add(0, "") |> path.add(0, "2")
+
+  let expected =
+    Ok(Handler(
+      prevent_default: False,
+      stop_propagation: False,
+      message: "click 2",
+    ))
+
+  let #(_, actual) =
+    cache.handle(
+      result.cache,
+      path.to_string(path_card2),
+      "click",
+      dynamic.nil(),
+    )
+
+  assert actual == expected
+}
