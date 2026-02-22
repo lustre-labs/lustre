@@ -96,7 +96,7 @@ export class Runtime {
     // The initial set of events is empty, since we just virtualised.
     this.#cache = Cache.new$();
 
-    // // We want the first render to be synchronous and force it immediately.
+    // We want the first render to be synchronous and force it immediately.
     // Afterwards, events triggered by virtualisation will dispatch, if any.
     this.#handleEffects(effects);
     this.#render();
@@ -113,7 +113,10 @@ export class Runtime {
       const [model, effects] = this.#update(this.#model, msg);
 
       this.#model = model;
-      this.#tick(effects, shouldFlush);
+
+      // Since we called update, we always want to schedule a new frame.
+      this.#scheduleRender(shouldFlush);
+      this.#handleEffects(effects);
     }
   }
 
@@ -190,21 +193,16 @@ export class Runtime {
     provide: (key, value) => this.provide(key, value),
   };
 
-  // A `#tick` is where we process effects and trigger any synchronous updates.
-  // Once a tick has been processed a render will be scheduled if none is already.
-  #tick(effects, shouldFlush = false) {
-    this.#handleEffects(effects);
+  #scheduleRender(shouldFlush = false) {
+    if (this.#renderTimer) return;
 
-    // queue the next frame if we need to.
-    if (!this.#renderTimer) {
-      if (shouldFlush) {
-        // when rendering synchronously, we still want to delay using a microtask
-        // to batch all attribute/property updates.
-        this.#renderTimer = "sync";
-        queueMicrotask(() => this.#render());
-      } else {
-        this.#renderTimer = window.requestAnimationFrame(() => this.#render());
-      }
+    if (shouldFlush) {
+      // when rendering synchronously, we still want to delay using a microtask
+      // to batch all attribute/property updates.
+      this.#renderTimer = "sync";
+      queueMicrotask(() => this.#render());
+    } else {
+      this.#renderTimer = window.requestAnimationFrame(() => this.#render());
     }
   }
 
@@ -214,6 +212,11 @@ export class Runtime {
     // make it so that any messages dispatched immediately will be queued up and
     // applied before the next render.
     this.#shouldQueue = true;
+
+    // beforePaint and aterPaint effects get run without an preceeding `update`.
+    // To know if we need to schedule another frame, we need to know if the `model`
+    // has been touched while processing effects.
+    let updateCalledDuringEffects = false;
 
     // We step into this loop to process any synchronous effects and batch any
     // deferred ones. When a synchronous effect immediately dispatches a message,
@@ -239,10 +242,23 @@ export class Runtime {
       // `this.#model` and the argument to this function: `effects`!
       const msg = this.#queue.shift();
       [this.#model, effects] = this.#update(this.#model, msg);
+
+      updateCalledDuringEffects = true;
     }
 
     // Remember to flip this off so subsequent messages trigger another tick.
     this.#shouldQueue = false;
+
+    return updateCalledDuringEffects;
+  }
+
+  // Async effects (before_paint and after_paint) can trigger without causing a
+  // new model update. Here we process these effects and schedules the next
+  // (synchronous) frame if required.
+  #handleAsyncEffects(effects) {
+    if (this.#handleEffects(effects)) {
+      this.#scheduleRender(true);
+    }
   }
 
   #render() {
@@ -264,11 +280,9 @@ export class Runtime {
       this.#beforePaint = empty_list;
 
       // We explicitly queue a microtask instead of synchronously calling the
-      // `#tick` function to allow the runtime to process any microtasks queued
-      // by synchronous effects first such as promise callbacks.
-      queueMicrotask(() => {
-        this.#tick(effects, true);
-      });
+      // `handleAsyncEffects` function to allow the runtime to process any
+      // microtasks queued by synchronous effects first such as promise callbacks.
+      queueMicrotask(() => this.#handleAsyncEffects(effects));
     }
 
     // If there are effects to schedule for after the browser has painted, we can
@@ -277,7 +291,7 @@ export class Runtime {
       const effects = makeEffect(this.#afterPaint);
       this.#afterPaint = empty_list;
 
-      window.requestAnimationFrame(() => this.#tick(effects, true));
+      window.requestAnimationFrame(() => this.#handleAsyncEffects(effects));
     }
   }
 }
