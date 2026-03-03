@@ -218,18 +218,23 @@ fn view(model: Model) -> Element(Msg) {
           attribute.title_alignment("center"),
         ],
         [
-          tui.text_node([attribute.dim(True), attribute.fg("#888")], [
-            tui.text(
+          tui.text([
+            attribute.content(
               "Arrows to navigate, Space/Enter to toggle, Ctrl+Q to quit",
             ),
+            attribute.dim(True),
+            attribute.fg("#888"),
           ]),
-          tui.text_node([attribute.dim(True), attribute.fg("#f39c12")], [
-            tui.text("Updates are optimistic - changes appear instantly!"),
+          tui.text([
+            attribute.content("Updates are optimistic - changes appear instantly!"),
+            attribute.dim(True),
+            attribute.fg("#f39c12"),
           ]),
           case model.loading {
             True ->
-              tui.text_node([attribute.fg("#f1c40f")], [
-                tui.text("Loading todos..."),
+              tui.text([
+                attribute.content("Loading todos..."),
+                attribute.fg("#f1c40f"),
               ])
             False ->
               tui.scrollbox(
@@ -290,16 +295,14 @@ fn view_todo(item: Todo, index: Int, focus_index: Int) -> Element(Msg) {
       ],
     ]),
     [
-      tui.text_node(
-        [
-          attribute.fg(case item.completed {
-            True -> "#69db7c"
-            False -> "#555"
-          }),
-        ],
-        [tui.text(checkbox)],
-      ),
-      tui.text_node(text_style, [tui.text(item.title)]),
+      tui.text([
+        attribute.content(checkbox),
+        attribute.fg(case item.completed {
+          True -> "#69db7c"
+          False -> "#555"
+        }),
+      ]),
+      tui.text([attribute.content(item.title), ..text_style]),
     ],
   )
 }

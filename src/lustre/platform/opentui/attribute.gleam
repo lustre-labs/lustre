@@ -681,6 +681,12 @@ pub fn value(value: String) -> Attribute(msg) {
   attribute("value", value)
 }
 
+/// Set the initial value of a textarea element.
+///
+pub fn initial_value(value: String) -> Attribute(msg) {
+  attribute("initial-value", value)
+}
+
 /// Set a title.
 ///
 pub fn title(value: String) -> Attribute(msg) {
@@ -716,10 +722,10 @@ pub fn filetype(value: String) -> Attribute(msg) {
   attribute("filetype", value)
 }
 
-/// Set the content of a code or markdown element.
+/// Set the text content of a text, code, or markdown element.
 ///
 pub fn content(value: String) -> Attribute(msg) {
-  attribute("content", value)
+  property("content", json.string(value))
 }
 
 /// Enable or disable text concealing in code/markdown.
@@ -866,10 +872,12 @@ pub fn show_cursor(value: Bool) -> Attribute(msg) {
   }
 }
 
-/// Set the scroll margin (number of lines visible at the edge while scrolling).
+/// Set the scroll margin as a fraction of the viewport height (e.g. 0.2 means
+/// scrolling starts when the cursor is within 20% of the top/bottom edge).
+/// Only applicable to textarea elements.
 ///
-pub fn scroll_margin(value: Int) -> Attribute(msg) {
-  attribute("scroll-margin", int.to_string(value))
+pub fn scroll_margin(value: Float) -> Attribute(msg) {
+  attribute("scroll-margin", float.to_string(value))
 }
 
 /// Set the scroll speed.

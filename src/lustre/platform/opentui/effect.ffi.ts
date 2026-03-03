@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { ScrollBoxRenderable, RGBA } from "@opentui/core";
-import type { Renderable, CursorStyle } from "@opentui/core";
+import { ScrollBoxRenderable, RGBA, CliRenderEvents } from "@opentui/core";
+import type { CliRenderer, Renderable, CursorStyle } from "@opentui/core";
 import { KeyEvent } from "./effect.mjs";
 import { get_renderer } from "../opentui.ffi.ts";
 
@@ -18,7 +18,21 @@ type Dispatch<Msg> = (msg: Msg) => void;
 
 // HELPERS ---------------------------------------------------------------------
 
+const isDestroyed = (node: Renderable | null | undefined): boolean =>
+  node != null && node.isDestroyed === true;
+
+const isRendererDestroyed = (): boolean => {
+  try {
+    const renderer = get_renderer();
+    return isDestroyed(renderer.root);
+  } catch {
+    return false; // can't confirm destroyed, let it fire
+  }
+};
+
 function collectFocusables(node: Renderable): Renderable[] {
+  // Guard: skip destroyed nodes
+  if (isDestroyed(node)) return [];
   const result: Renderable[] = [];
   if (node.focusable) result.push(node);
   for (const child of node.getChildren()) {
@@ -28,12 +42,24 @@ function collectFocusables(node: Renderable): Renderable[] {
 }
 
 function findDescendantById(root: Renderable, id: string): Renderable | null {
+  // Guard: skip destroyed nodes
+  if (isDestroyed(root)) return null;
   if (root.id === id) return root;
   for (const child of root.getChildren()) {
     const found = findDescendantById(child, id);
     if (found) return found;
   }
   return null;
+}
+
+// CUSTOM EFFECTS --------------------------------------------------------------
+
+export function with_renderer<Msg>(
+  handler: (dispatch: Dispatch<Msg>, renderer: CliRenderer) => void,
+  dispatch: Dispatch<Msg>
+): void {
+  const renderer = get_renderer();
+  handler(dispatch, renderer);
 }
 
 // FOCUS EFFECTS ---------------------------------------------------------------
@@ -44,6 +70,8 @@ export function subscribe_keyboard<Msg>(
 ): void {
   const renderer = get_renderer();
   renderer.keyInput.on("keypress", (keyEvent: KeyEventData) => {
+    // Guard: don't dispatch if renderer is destroyed
+    if (isRendererDestroyed()) return;
     const ke = new KeyEvent(
       keyEvent.name ?? "",
       !!keyEvent.ctrl,
@@ -56,27 +84,46 @@ export function subscribe_keyboard<Msg>(
 
 export function focus_next(_dispatch: Dispatch<unknown>): void {
   const renderer = get_renderer();
-  const focusables = collectFocusables(renderer.root);
+  // Filter out destroyed nodes from focusables
+  const focusables = collectFocusables(renderer.root).filter((n) => !isDestroyed(n));
   if (focusables.length === 0) return;
   const idx = focusables.findIndex((n) => n.focused);
   const next = (idx + 1) % focusables.length;
-  focusables[next]!.focus?.();
+  const target = focusables[next];
+  if (target && !isDestroyed(target)) target.focus?.();
 }
 
 export function focus_previous(_dispatch: Dispatch<unknown>): void {
   const renderer = get_renderer();
-  const focusables = collectFocusables(renderer.root);
+  // Filter out destroyed nodes from focusables
+  const focusables = collectFocusables(renderer.root).filter((n) => !isDestroyed(n));
   if (focusables.length === 0) return;
   const idx = focusables.findIndex((n) => n.focused);
   const prev = idx <= 0 ? focusables.length - 1 : idx - 1;
-  focusables[prev]!.focus?.();
+  const target = focusables[prev];
+  if (target && !isDestroyed(target)) target.focus?.();
 }
 
 export function focus(id: string, _dispatch: Dispatch<unknown>): void {
   const renderer = get_renderer();
-  const focusables = collectFocusables(renderer.root);
+  // Filter out destroyed nodes from focusables
+  const focusables = collectFocusables(renderer.root).filter((n) => !isDestroyed(n));
   const target = focusables.find((n) => n.id === id);
-  if (target) target.focus?.();
+  if (target && !isDestroyed(target)) target.focus?.();
+}
+
+export function get_focused_id_raw(): string {
+  const renderer = get_renderer();
+  const focusables = collectFocusables(renderer.root).filter((n) => !isDestroyed(n));
+  const focused = focusables.find((n) => n.focused);
+  return focused?.id ?? "";
+}
+
+export function get_focused_node_raw(): Renderable | null {
+  const renderer = get_renderer();
+  const focusables = collectFocusables(renderer.root).filter((n) => !isDestroyed(n));
+  const focused = focusables.find((n) => n.focused);
+  return focused ?? null;
 }
 
 // TERMINAL CONTROL EFFECTS ----------------------------------------------------
@@ -134,6 +181,8 @@ export function subscribe_terminal_resize<Msg>(
 ): void {
   const renderer = get_renderer();
   renderer.on("resize", (width: number, height: number) => {
+    // Guard: don't dispatch if renderer is destroyed
+    if (isRendererDestroyed()) return;
     dispatch(handler(width, height));
   });
 }
@@ -190,6 +239,11 @@ export function stop(_dispatch: Dispatch<unknown>): void {
   renderer.stop();
 }
 
+export function on_destroy(callback: () => void): void {
+  const renderer = get_renderer();
+  renderer.on(CliRenderEvents.DESTROY, callback);
+}
+
 // SCROLLING EFFECTS -----------------------------------------------------------
 
 export function scroll_by(
@@ -200,7 +254,8 @@ export function scroll_by(
 ): void {
   const renderer = get_renderer();
   const node = findDescendantById(renderer.root, element_id);
-  if (node instanceof ScrollBoxRenderable) {
+  // Guard: skip if node is destroyed
+  if (node instanceof ScrollBoxRenderable && !isDestroyed(node)) {
     node.scrollBy({ x: delta_x, y: delta_y });
   }
 }
@@ -213,7 +268,8 @@ export function scroll_to(
 ): void {
   const renderer = get_renderer();
   const node = findDescendantById(renderer.root, element_id);
-  if (node instanceof ScrollBoxRenderable) {
+  // Guard: skip if node is destroyed
+  if (node instanceof ScrollBoxRenderable && !isDestroyed(node)) {
     node.scrollTo({ x, y });
   }
 }
@@ -227,7 +283,8 @@ export function scroll_into_view(
   const container = findDescendantById(renderer.root, container_id);
   const child = findDescendantById(renderer.root, child_id);
 
-  if (!(container instanceof ScrollBoxRenderable) || !child) {
+  // Guard: skip if container or child is destroyed
+  if (!(container instanceof ScrollBoxRenderable) || !child || isDestroyed(container) || isDestroyed(child)) {
     return;
   }
 

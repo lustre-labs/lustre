@@ -31,19 +31,11 @@ pub fn box(
   element.element("box", attributes, children)
 }
 
-/// A text element — displays styled text. Maps to TextRenderable.
+/// A styled text element. Maps to TextRenderable.
+/// Pass content("...") as an attribute alongside styling attributes.
 ///
-pub fn text(content: String) -> Element(msg) {
-  element.text(content)
-}
-
-/// A styled text element with attributes. Maps to TextRenderable.
-///
-pub fn text_node(
-  attributes: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) {
-  element.element("text", attributes, children)
+pub fn text(attributes: List(Attribute(msg))) -> Element(msg) {
+  element.element("text", attributes, [])
 }
 
 /// A text input field. Maps to InputRenderable.
@@ -235,19 +227,14 @@ pub type RawNodeContent =
 /// }
 /// ```
 pub fn raw_node(
-  name: String,
-  tag: String,
-  attrs: List(Attribute(msg)),
-  factory: RawNodeFactory,
+  name name: String,
+  factory factory: RawNodeFactory,
 ) -> Element(msg) {
   // Bundle the name and factory together. The comparator only compares names,
   // so the factory can be a fresh closure each render without triggering replacement.
   let content: RawNodeContent = #(name, factory)
-  element.unsafe_raw_content(
+  element.unsafe_raw(
     "",
-    "",
-    tag,
-    attrs,
     content,
     Some(fn(a: RawNodeContent, b: RawNodeContent) { a.0 == b.0 }),
   )

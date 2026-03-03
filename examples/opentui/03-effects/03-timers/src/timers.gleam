@@ -131,8 +131,10 @@ fn view(model: Model) -> Element(Msg) {
             attribute.ascii_color("#ffaff3"),
             attribute.font("block"),
           ]),
-          tui.text_node([attribute.dim(True), attribute.color("#888")], [
-            tui.text("Press 'q' to quit"),
+          tui.text([
+            attribute.content("Press 'q' to quit"),
+            attribute.dim(True),
+            attribute.color("#888"),
           ]),
         ],
       ),

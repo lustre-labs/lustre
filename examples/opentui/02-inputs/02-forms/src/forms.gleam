@@ -223,15 +223,9 @@ fn view(model: Model) -> Element(Msg) {
             attribute.gap(1),
           ],
           [
-            tui.text_node([attribute.color("#69db7c"), attribute.bold(True)], [
-              tui.text("Welcome, " <> username <> "!"),
-            ]),
-            tui.text_node([attribute.color("#a0a0a0")], [
-              tui.text("I hope you're having a lovely day!"),
-            ]),
-            tui.text_node([attribute.dim(True), attribute.color("#666")], [
-              tui.text("Press Ctrl+Q to quit"),
-            ]),
+            tui.text([attribute.content("Welcome, " <> username <> "!"), attribute.color("#69db7c"), attribute.bold(True)]),
+            tui.text([attribute.content("I hope you're having a lovely day!"), attribute.color("#a0a0a0")]),
+            tui.text([attribute.content("Press Ctrl+Q to quit"), attribute.dim(True), attribute.color("#666")]),
           ],
         ),
       ]
@@ -256,17 +250,13 @@ fn view_login(
       attribute.title_alignment("center"),
     ],
     [
-      tui.text_node([attribute.dim(True), attribute.color("#888")], [
-        tui.text("Tab/arrows to navigate, Enter to submit, Ctrl+Q to quit"),
-      ]),
+      tui.text([attribute.content("Tab/arrows to navigate, Enter to submit, Ctrl+Q to quit"), attribute.dim(True), attribute.color("#888")]),
       // Username field
       tui.box(
         [attribute.flex_direction("column"), attribute.gap(0)],
         list.flatten([
           [
-            tui.text_node([attribute.color("#9b59b6"), attribute.bold(True)], [
-              tui.text("Username:"),
-            ]),
+            tui.text([attribute.content("Username:"), attribute.color("#9b59b6"), attribute.bold(True)]),
             tui.box(
               [
                 attribute.border_style("single"),
@@ -290,7 +280,7 @@ fn view_login(
           ],
           case username_error {
             Some(err) -> [
-              tui.text_node([attribute.color("#e74c3c")], [tui.text(err)]),
+              tui.text([attribute.content(err), attribute.color("#e74c3c")]),
             ]
             None -> []
           },
@@ -301,9 +291,7 @@ fn view_login(
         [attribute.flex_direction("column"), attribute.gap(0)],
         list.flatten([
           [
-            tui.text_node([attribute.color("#9b59b6"), attribute.bold(True)], [
-              tui.text("Password:"),
-            ]),
+            tui.text([attribute.content("Password:"), attribute.color("#9b59b6"), attribute.bold(True)]),
             tui.box(
               [
                 attribute.border_style("single"),
@@ -327,7 +315,7 @@ fn view_login(
           ],
           case password_error {
             Some(err) -> [
-              tui.text_node([attribute.color("#e74c3c")], [tui.text(err)]),
+              tui.text([attribute.content(err), attribute.color("#e74c3c")]),
             ]
             None -> []
           },
@@ -351,10 +339,7 @@ fn view_login(
               event.on_activate(UserSubmittedForm),
             ],
             [
-              tui.text_node(
-                [attribute.color("#9b59b6"), attribute.bold(True)],
-                [tui.text("Login")],
-              ),
+              tui.text([attribute.content("Login"), attribute.color("#9b59b6"), attribute.bold(True)]),
             ],
           ),
         ],

@@ -86,17 +86,18 @@ fn view(model: Model) -> Element(Msg) {
           attribute.title_alignment("center"),
         ],
         [
-          tui.text_node(
-            [attribute.dim(True), attribute.color("#888")],
-            [tui.text("Type to enter a name (max 10 chars), Ctrl+Q to quit")],
-          ),
+          tui.text([
+            attribute.content("Type to enter a name (max 10 chars), Ctrl+Q to quit"),
+            attribute.dim(True),
+            attribute.color("#888"),
+          ]),
           tui.box(
             [attribute.flex_direction("row"), attribute.gap(1), attribute.align_items("center")],
             [
-              tui.text_node(
-                [attribute.color("#e0e0e0")],
-                [tui.text("Enter a name:")],
-              ),
+              tui.text([
+                attribute.content("Enter a name:"),
+                attribute.color("#e0e0e0"),
+              ]),
               tui.input([
                 attribute.id("name-input"),
                 attribute.value(model.name),
@@ -112,10 +113,11 @@ fn view(model: Model) -> Element(Msg) {
           tui.box(
             [attribute.margin_top(1)],
             [
-              tui.text_node(
-                [attribute.color("#69db7c"), attribute.bold(True)],
-                [tui.text("Hello there, " <> model.name <> "!")],
-              ),
+              tui.text([
+                attribute.content("Hello there, " <> model.name <> "!"),
+                attribute.color("#69db7c"),
+                attribute.bold(True),
+              ]),
             ],
           ),
         ],

@@ -18,13 +18,14 @@ import {
   FrameBufferRenderable,
   TextAttributes,
 } from "@opentui/core";
-import type { CliRenderer, Renderable, RootRenderable } from "@opentui/core";
+import type { CliRenderer, Renderable } from "@opentui/core";
 import {
   Result$Ok,
   Result$Error,
   Result$isOk,
   Result$Ok$0,
 } from "../../gleam.mjs";
+import type { Result } from "../../gleam.mjs";
 import { none } from "../../../lustre_platform/lustre/element.mjs";
 import { insertMetadataChild } from "../../../lustre_platform/lustre/vdom/reconciler.ffi.mjs";
 import { element_kind } from "../../../lustre_platform/lustre/vdom/vnode.mjs";
@@ -44,7 +45,6 @@ interface TuiNode extends Renderable {
   [key: string]: unknown;
 }
 
-
 interface RendererConfig {
   exit_on_ctrl_c: boolean;
   use_alternate_screen: boolean;
@@ -62,6 +62,7 @@ interface RendererConfig {
   remote: boolean;
   background_color: unknown;
   use_kitty_keyboard: boolean;
+  custom_elements: Iterable<[string, (renderer: CliRenderer) => TuiNode]>;
 }
 
 interface KeyEventData {
@@ -98,8 +99,13 @@ export function get_renderer(): CliRenderer {
 
 // HELPERS ---------------------------------------------------------------------
 
-const unwrapResult = <T>(result: unknown): T | null =>
-  Result$isOk(result) ? Result$Ok$0(result) as T : null;
+const unwrapResult = <T>(result: Result<T, unknown>): T | null =>
+  Result$isOk(result) ? Result$Ok$0(result) ?? null : null;
+
+const isDestroyed = (node: TuiNode | null | undefined): boolean =>
+  node != null &&
+  "isDestroyed" in node &&
+  (node as { isDestroyed: boolean }).isDestroyed === true;
 
 // TAG → Renderable class mapping, built from static imports.
 const RENDERABLE_MAP: Record<string, RenderableConstructor> = {
@@ -119,23 +125,54 @@ const RENDERABLE_MAP: Record<string, RenderableConstructor> = {
   framebuffer: FrameBufferRenderable as unknown as RenderableConstructor,
 };
 
+// Custom element registry: tag name → factory function.
+// Populated from config.custom_elements in platform(), checked by make_create_element.
+const CUSTOM_ELEMENT_REGISTRY = new Map<
+  string,
+  (renderer: CliRenderer) => TuiNode
+>();
+
 // Properties that must be integers for OpenTUI's Yoga layout engine.
 const NUMERIC_PROPS = new Set([
-  "width", "height", "minWidth", "maxWidth", "minHeight", "maxHeight",
-  "flexGrow", "flexShrink",
-  "padding", "paddingTop", "paddingBottom", "paddingLeft", "paddingRight",
-  "margin", "marginTop", "marginBottom", "marginLeft", "marginRight",
-  "gap", "rowGap", "columnGap",
-  "top", "bottom", "left", "right", "zIndex",
-  "maxLength", "scrollMargin", "scrollSpeed",
-  "selectedIndex", "itemSpacing", "fastScrollStep",
-  "tabWidth", "lineNumberOffset", "maxStatSamples",
+  "width",
+  "height",
+  "minWidth",
+  "maxWidth",
+  "minHeight",
+  "maxHeight",
+  "flexGrow",
+  "flexShrink",
+  "padding",
+  "paddingTop",
+  "paddingBottom",
+  "paddingLeft",
+  "paddingRight",
+  "margin",
+  "marginTop",
+  "marginBottom",
+  "marginLeft",
+  "marginRight",
+  "gap",
+  "rowGap",
+  "columnGap",
+  "top",
+  "bottom",
+  "left",
+  "right",
+  "zIndex",
+  "maxLength",
+  "scrollMargin",
+  "scrollSpeed",
+  "selectedIndex",
+  "itemSpacing",
+  "fastScrollStep",
+  "tabWidth",
+  "lineNumberOffset",
+  "maxStatSamples",
 ]);
 
 // Properties that are floats.
-const FLOAT_PROPS = new Set([
-  "opacity",
-]);
+const FLOAT_PROPS = new Set(["opacity"]);
 
 // RENDERER --------------------------------------------------------------------
 
@@ -166,9 +203,18 @@ function create_renderer(config: RendererConfig): Promise<CliRenderer> {
 
 // PLATFORM --------------------------------------------------------------------
 
-export function platform(config: RendererConfig, callback: (platform: unknown) => void): void {
+export function platform(
+  config: RendererConfig,
+  callback: (platform: unknown) => void,
+): void {
   create_renderer(config).then((renderer) => {
-    _renderer = renderer;  // Store for effects
+    _renderer = renderer; // Store for effects
+
+    // Populate custom element registry from config.
+    CUSTOM_ELEMENT_REGISTRY.clear();
+    for (const entry of config.custom_elements) {
+      CUSTOM_ELEMENT_REGISTRY.set(entry[0], entry[1]);
+    }
 
     const builtPlatform = platform_new(
       renderer,
@@ -187,6 +233,7 @@ export function platform(config: RendererConfig, callback: (platform: unknown) =
       set_property,
       set_text,
       make_set_raw_content(renderer),
+      make_create_raw_node(renderer),
       add_event_listener,
       remove_event_listener,
       schedule_render,
@@ -199,14 +246,14 @@ export function platform(config: RendererConfig, callback: (platform: unknown) =
 
 // MOUNT -----------------------------------------------------------------------
 
-export function mount(renderer: CliRenderer): [RootRenderable, unknown] {
-  const root = renderer.root;
+export function mount(renderer: CliRenderer): [TuiNode, ReturnType<typeof none>] {
+  // RootRenderable extends Renderable; we add Lustre shims and use it as a TuiNode.
+  const root: TuiNode = Object.assign(renderer.root, {
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  });
 
-  // Add no-op shims for Lustre's context system
-  // @ts-ignore
-  root.addEventListener = () => {};
-  // @ts-ignore
-  root.removeEventListener = () => {};
+
 
   // Set up the reconciler metadata on the root.
   insertMetadataChild(element_kind, null, root, 0, null);
@@ -224,17 +271,17 @@ export function mount(renderer: CliRenderer): [RootRenderable, unknown] {
 // Implements the same add/insertBefore API as TUI renderables so the platform's
 // insert_before implementation works uniformly.
 class TuiFragment {
-  children: (TuiNode | TuiTextNode | TuiComment)[];
+  children: TuiNode[];
 
   constructor() {
     this.children = [];
   }
 
-  add(child: TuiNode | TuiTextNode | TuiComment): void {
+  add(child: TuiNode): void {
     this.children.push(child);
   }
 
-  insertBefore(child: TuiNode | TuiTextNode | TuiComment, ref: TuiNode | TuiTextNode | TuiComment): void {
+  insertBefore(child: TuiNode, ref: TuiNode): void {
     const index = this.children.indexOf(ref);
     if (index === -1) {
       this.children.push(child);
@@ -244,32 +291,9 @@ class TuiFragment {
   }
 }
 
-// TuiComment — an invisible marker node. TUI has no visual representation for
-// comments, so we use a lightweight object.
-class TuiComment {
-  data: string;
-  _parent?: TuiNode | TuiFragment;
-
-  constructor(data: string) {
-    this.data = data;
-  }
-}
-
-// TuiTextNode — a lightweight wrapper around a string. The reconciler needs an
-// object it can attach metadata to (via Symbol). When inserted into a parent
-// TextRenderable, we pass the string content to parent.add() and store a
-// reference to the parent so set_text can update it later.
-class TuiTextNode {
-  data: string;
-  _parent?: TuiNode | TuiFragment;
-
-  constructor(content?: string) {
-    this.data = content ?? "";
-    this._parent = undefined;
-  }
-}
-
-export function make_create_element(renderer: CliRenderer): (ns: string | null, tag: string) => TuiNode {
+export function make_create_element(
+  renderer: CliRenderer,
+): (ns: string | null, tag: string) => TuiNode {
   return (_ns: string | null, tag: string): TuiNode => {
     const Ctor = RENDERABLE_MAP[tag];
 
@@ -283,28 +307,65 @@ export function make_create_element(renderer: CliRenderer): (ns: string | null, 
         }
         return new Ctor(renderer, {});
       } catch {
+        // Fall through to custom registry check
+      }
+    }
+
+    // Check custom element registry before falling back to BoxRenderable.
+    const customFactory = CUSTOM_ELEMENT_REGISTRY.get(tag);
+    if (customFactory) {
+      try {
+        return customFactory(renderer);
+      } catch {
         // Fall through to BoxRenderable fallback
       }
     }
 
     // Unknown tags fall back to a box container.
-    return new (BoxRenderable as unknown as RenderableConstructor)(renderer, {});
+    return new (BoxRenderable as unknown as RenderableConstructor)(
+      renderer,
+      {},
+    );
   };
 }
 
-const create_text_node = (content: string): TuiTextNode => new TuiTextNode(content);
+// Markers are invisible BoxRenderables (visible: false → Display.None → zero
+// layout impact). They participate in getChildren() and are valid insertBefore
+// anchors, matching the DOM behaviour the reconciler expects for fragment/map
+// boundary markers. A parentNode getter is added via Object.defineProperty so
+// the reconciler's MetadataNode.parentNode resolution works for virtual nodes.
+function createMarker(): TuiNode {
+  const node = new (BoxRenderable as unknown as RenderableConstructor)(
+    _renderer!,
+    { visible: false },
+  );
+  Object.defineProperty(node, "parentNode", {
+    get() {
+      return (this as TuiNode)._parent;
+    },
+    configurable: true,
+  });
+  return node as unknown as TuiNode;
+}
+
+const create_text_node = (_content: string): TuiNode => createMarker();
 
 const create_fragment = (): TuiFragment => new TuiFragment();
 
-const create_comment = (data: string): TuiComment => new TuiComment(data);
+const create_comment = (_data: string): TuiNode => createMarker();
 
 // TREE MANIPULATION -----------------------------------------------------------
 
 function doInsertBefore(
   parent: TuiNode | TuiFragment,
-  node: TuiNode | TuiFragment | TuiComment | TuiTextNode,
-  refNode: TuiNode | null
+  node: TuiNode | TuiFragment,
+  refNode: TuiNode | null,
 ): void {
+  // Guard: skip if parent is destroyed
+  if (!(parent instanceof TuiFragment) && isDestroyed(parent as TuiNode)) {
+    return;
+  }
+
   if (node instanceof TuiFragment) {
     for (const child of node.children) {
       doInsertBefore(parent, child, refNode);
@@ -312,70 +373,96 @@ function doInsertBefore(
     return;
   }
 
-  if (node instanceof TuiComment) {
-    // Track parent for comments so we can find siblings during reconciliation.
-    node._parent = parent;
-    // Add to TuiFragment so it gets reparented correctly.
-    if (parent instanceof TuiFragment) {
-      parent.add(node);
-    }
-    return;
-  }
-
-  // TuiTextNode is a lightweight wrapper for text vnodes. For TuiFragment parents,
-  // we keep the TuiTextNode object so reparenting works. For actual TUI renderables
-  // (like TextRenderable), we pass the string content since that's what they expect.
-  if (node instanceof TuiTextNode) {
-    node._parent = parent;
-    if (parent instanceof TuiFragment) {
-      parent.add(node);
-    } else if ((parent as TuiNode).add) {
-      (parent as TuiNode).add!(node.data);
-    }
+  // Guard: skip if node is destroyed
+  if (isDestroyed(node)) {
     return;
   }
 
   // Track parent reference for all TUI nodes so next_sibling can traverse.
-  (node as TuiNode)._parent = parent;
+  node._parent = parent;
+
+  if (parent instanceof TuiFragment) {
+    if (refNode != null) {
+      parent.insertBefore(node, refNode);
+    } else {
+      parent.add(node);
+    }
+    return;
+  }
 
   if (refNode != null && (parent as TuiNode).insertBefore) {
-    (parent as TuiNode).insertBefore!(node as TuiNode, refNode);
+    (parent as TuiNode).insertBefore!(node, refNode);
   } else if ((parent as TuiNode).add) {
-    (parent as TuiNode).add!(node as TuiNode);
+    (parent as TuiNode).add!(node);
   }
 }
 
-const insert_before = (parent: TuiNode, node: TuiNode | TuiFragment | TuiComment | TuiTextNode, ref: unknown): void => {
+const insert_before = (
+  parent: TuiNode,
+  node: TuiNode | TuiFragment,
+  ref: unknown,
+): void => {
   const refNode = unwrapResult<TuiNode>(ref);
   doInsertBefore(parent, node, refNode);
 };
 
-const move_before = (parent: TuiNode, node: TuiNode | TuiTextNode, ref: unknown): void => {
-  if (node instanceof TuiTextNode) return;
+const move_before = (
+  parent: TuiNode,
+  node: TuiNode,
+  ref: unknown,
+): void => {
+  // Guard: skip if parent or node is destroyed
+  if (isDestroyed(parent) || isDestroyed(node)) return;
   const refNode = unwrapResult<TuiNode>(ref);
 
   // Remove from current position
   if (node.id != null && parent.remove) {
-    try { parent.remove(node.id); } catch { /* not found */ }
+    try {
+      parent.remove(node.id);
+    } catch {
+      /* not found */
+    }
   }
 
   // Re-insert at new position
   doInsertBefore(parent, node, refNode);
 };
 
-const remove_child = (parent: TuiNode, child: TuiNode | TuiComment | TuiFragment | TuiTextNode): void => {
-  if (child instanceof TuiComment || child instanceof TuiFragment || child instanceof TuiTextNode) {
+const remove_child = (
+  parent: TuiNode,
+  child: TuiNode | TuiFragment,
+): void => {
+  if (child instanceof TuiFragment) {
     return;
   }
 
-  if (child.id != null && parent.remove) {
-    try { parent.remove(child.id); } catch { /* not found */ }
+  // Detach from parent (guarded — parent may be null/undefined or destroyed)
+  if (parent && !isDestroyed(parent) && child.id != null && parent.remove) {
+    try {
+      parent.remove(child.id);
+    } catch {
+      /* not found */
+    }
+  }
+
+  // Always destroy the removed node to free yoga layout nodes and trigger cleanup
+  // (e.g., clearInterval in destroySelf). Without this, replaced nodes leak.
+  try {
+    if (child.destroyRecursively) {
+      child.destroyRecursively();
+    } else if (child.destroy) {
+      child.destroy();
+    }
+  } catch {
+    // ignore — node may already be destroyed
   }
 };
 
 const next_sibling = (node: TuiNode): unknown => {
   const parent = node._parent as TuiNode | undefined;
-  if (!parent || !parent.getChildren) return Result$Error(undefined);
+  // Guard: skip if parent is destroyed
+  if (!parent || !parent.getChildren || isDestroyed(parent))
+    return Result$Error(undefined);
   const children = parent.getChildren();
   const index = children.indexOf(node);
   if (index === -1 || index === children.length - 1) {
@@ -389,19 +476,19 @@ const next_sibling = (node: TuiNode): unknown => {
 // Map of Lustre attribute names → OpenTUI property names.
 const ATTR_MAP: Record<string, string> = {
   // Base layout
-  "id": "id",
-  "width": "width",
-  "height": "height",
+  id: "id",
+  width: "width",
+  height: "height",
   "min-width": "minWidth",
   "min-height": "minHeight",
   "max-width": "maxWidth",
   "max-height": "maxHeight",
-  "visible": "visible",
-  "opacity": "opacity",
-  "buffered": "buffered",
-  "live": "live",
+  visible: "visible",
+  opacity: "opacity",
+  buffered: "buffered",
+  live: "live",
   "enable-layout": "enableLayout",
-  "selectable": "selectable",
+  selectable: "selectable",
 
   // Flexbox
   "flex-direction": "flexDirection",
@@ -414,17 +501,17 @@ const ATTR_MAP: Record<string, string> = {
   "justify-content": "justifyContent",
 
   // Spacing
-  "padding": "padding",
+  padding: "padding",
   "padding-top": "paddingTop",
   "padding-bottom": "paddingBottom",
   "padding-left": "paddingLeft",
   "padding-right": "paddingRight",
-  "margin": "margin",
+  margin: "margin",
   "margin-top": "marginTop",
   "margin-bottom": "marginBottom",
   "margin-left": "marginLeft",
   "margin-right": "marginRight",
-  "gap": "gap",
+  gap: "gap",
   "row-gap": "rowGap",
   "column-gap": "columnGap",
 
@@ -434,8 +521,8 @@ const ATTR_MAP: Record<string, string> = {
 
   // Colors & styling
   // Text components (TextBufferRenderable): use fg/bg
-  "fg": "fg",
-  "bg": "bg",
+  fg: "fg",
+  bg: "bg",
   // Box components: use backgroundColor
   "background-color": "backgroundColor",
   // Textarea/Input: use focusedBackgroundColor/focusedTextColor
@@ -467,36 +554,37 @@ const ATTR_MAP: Record<string, string> = {
   "ascii-color": "color",
 
   // Overflow
-  "overflow": "overflow",
+  overflow: "overflow",
 
   // Position
-  "position": "position",
-  "top": "top",
-  "bottom": "bottom",
-  "left": "left",
-  "right": "right",
+  position: "position",
+  top: "top",
+  bottom: "bottom",
+  left: "left",
+  right: "right",
   "z-index": "zIndex",
 
   // Text styling
   "wrap-mode": "wrapMode",
-  "bold": "bold",
-  "italic": "italic",
-  "underline": "underline",
-  "strikethrough": "strikethrough",
-  "dim": "dim",
-  "blink": "blink",
-  "inverse": "inverse",
+  bold: "bold",
+  italic: "italic",
+  underline: "underline",
+  strikethrough: "strikethrough",
+  dim: "dim",
+  blink: "blink",
+  inverse: "inverse",
   "hidden-text": "hiddenText",
-  "truncate": "truncate",
+  truncate: "truncate",
 
   // Text / input
-  "placeholder": "placeholder",
-  "value": "value",
-  "title": "title",
-  "language": "language",
-  "filetype": "language",
-  "content": "content",
-  "focusable": "focusable",
+  placeholder: "placeholder",
+  value: "value",
+  "initial-value": "initialValue",
+  title: "title",
+  language: "language",
+  filetype: "language",
+  content: "content",
+  focusable: "focusable",
 
   // Box
   "should-fill": "shouldFill",
@@ -509,12 +597,12 @@ const ATTR_MAP: Record<string, string> = {
   "scroll-speed": "scrollSpeed",
 
   // Code/Markdown
-  "conceal": "conceal",
+  conceal: "conceal",
   "draw-unstyled-text": "drawUnstyledText",
-  "streaming": "streaming",
+  streaming: "streaming",
 
   // Diff
-  "view": "view",
+  view: "view",
   "show-line-numbers": "showLineNumbers",
 
   // Select
@@ -531,11 +619,11 @@ const ATTR_MAP: Record<string, string> = {
   "show-underline": "showUnderline",
 
   // Slider
-  "orientation": "orientation",
+  orientation: "orientation",
 
   // ASCIIFont
   "ascii-text": "text",
-  "font": "font",
+  font: "font",
 
   // LineNumber
   "line-number-offset": "lineNumberOffset",
@@ -548,25 +636,38 @@ const ATTR_MAP: Record<string, string> = {
 
 const BOOLEAN_PROPS = new Set([
   "focusable",
-  "visible", "buffered", "live", "enableLayout", "selectable",
-  "shouldFill", "truncate",
-  "showCursor", "conceal", "drawUnstyledText", "streaming",
-  "showLineNumbers", "showScrollIndicator", "wrapSelection", "showDescription",
-  "showScrollArrows", "showUnderline",
-  "stickyScroll", "viewportCulling",
+  "visible",
+  "buffered",
+  "live",
+  "enableLayout",
+  "selectable",
+  "shouldFill",
+  "truncate",
+  "showCursor",
+  "conceal",
+  "drawUnstyledText",
+  "streaming",
+  "showLineNumbers",
+  "showScrollIndicator",
+  "wrapSelection",
+  "showDescription",
+  "showScrollArrows",
+  "showUnderline",
+  "stickyScroll",
+  "viewportCulling",
 ]);
 
 // Map of text styling attributes to their TextAttributes flag values.
 // These get combined into a single `attributes` property using bitwise OR.
 const TEXT_ATTR_FLAGS: Record<string, number> = {
-  "bold": TextAttributes.BOLD,
-  "dim": TextAttributes.DIM,
-  "italic": TextAttributes.ITALIC,
-  "underline": TextAttributes.UNDERLINE,
-  "blink": TextAttributes.BLINK,
-  "inverse": TextAttributes.INVERSE,
-  "strikethrough": TextAttributes.STRIKETHROUGH,
-  "hiddenText": TextAttributes.HIDDEN,
+  bold: TextAttributes.BOLD,
+  dim: TextAttributes.DIM,
+  italic: TextAttributes.ITALIC,
+  underline: TextAttributes.UNDERLINE,
+  blink: TextAttributes.BLINK,
+  inverse: TextAttributes.INVERSE,
+  strikethrough: TextAttributes.STRIKETHROUGH,
+  hiddenText: TextAttributes.HIDDEN,
 };
 
 function coerceValue(prop: string, value: unknown): unknown {
@@ -593,19 +694,23 @@ const get_attribute = (node: TuiNode, name: string): unknown => {
 };
 
 const set_attribute = (node: TuiNode, name: string, value: unknown): void => {
+  // Guard: skip if node is destroyed
+  if (isDestroyed(node)) return;
   const prop = ATTR_MAP[name] ?? name;
   // Handle text styling attributes by combining into `attributes` property.
   const flag = TEXT_ATTR_FLAGS[prop];
   if (flag !== undefined) {
     const enabled = value === "true" || value === true;
     const current = node.attributes ?? 0;
-    node.attributes = enabled ? (current | flag) : (current & ~flag);
+    node.attributes = enabled ? current | flag : current & ~flag;
     return;
   }
   node[prop] = coerceValue(prop, value ?? "");
 };
 
 const remove_attribute = (node: TuiNode, name: string): void => {
+  // Guard: skip if node is destroyed
+  if (isDestroyed(node)) return;
   const prop = ATTR_MAP[name] ?? name;
   // Handle text styling attributes by clearing the flag.
   const flag = TEXT_ATTR_FLAGS[prop];
@@ -618,9 +723,16 @@ const remove_attribute = (node: TuiNode, name: string): void => {
 };
 
 const set_property = (node: TuiNode, name: string, value: unknown): void => {
+  // Guard: skip if node is destroyed
+  if (isDestroyed(node)) return;
   if (name === "__fb_handler" && typeof value === "function") {
     // Call handler with the node after a microtask (ensures node is mounted)
-    queueMicrotask(() => (value as (node: TuiNode) => void)(node));
+    // Re-check isDestroyed in the microtask since node may be destroyed by then
+    queueMicrotask(() => {
+      if (!isDestroyed(node)) {
+        (value as (node: TuiNode) => void)(node);
+      }
+    });
     return;
   }
   node[name] = value;
@@ -628,32 +740,58 @@ const set_property = (node: TuiNode, name: string, value: unknown): void => {
 
 // CONTENT ---------------------------------------------------------------------
 
-const set_text = (node: TuiNode | TuiTextNode, content: string | null): void => {
-  if (node instanceof TuiTextNode) {
-    node.data = content ?? "";
-    // Update the parent TextRenderable — clear and re-add the text.
-    const parent = node._parent as TuiNode | undefined;
-    if (parent && parent.clear) {
-      parent.clear();
-      parent.add!(node.data);
-    }
-  } else {
-    node.content = content ?? "";
-  }
+const set_text = (node: TuiNode, content: string | null): void => {
+  // Guard: skip if node is destroyed
+  if (isDestroyed(node)) return;
+  node.content = content ?? "";
 };
 
-export function make_set_raw_content(renderer: CliRenderer): (node: TuiNode, content: unknown) => void {
-  return (node: TuiNode, content: unknown): void => {
+export function make_create_raw_node(
+  renderer: CliRenderer,
+): (content: unknown) => TuiNode {
+  return (content: unknown): TuiNode => {
     // Content is a tuple [name, factory] where factory is (renderer) => Node
-    if (!Array.isArray(content) || content.length !== 2 || typeof content[1] !== "function") {
-      console.error("raw_node content must be a [name, factory] tuple, got:", content);
+    if (
+      Array.isArray(content) &&
+      content.length === 2 &&
+      typeof content[1] === "function"
+    ) {
+      const factory = content[1] as (renderer: CliRenderer) => TuiNode;
+      return factory(renderer);
+    }
+    // If content is already a node, return it as-is (like DOM does)
+    return content as TuiNode;
+  };
+}
+
+export function make_set_raw_content(
+  renderer: CliRenderer,
+): (node: TuiNode, content: unknown) => void {
+  return (node: TuiNode, content: unknown): void => {
+    // Guard: skip if node is destroyed
+    if (isDestroyed(node)) return;
+
+    // Content is a tuple [name, factory] where factory is (renderer) => Node
+    if (
+      !Array.isArray(content) ||
+      content.length !== 2 ||
+      typeof content[1] !== "function"
+    ) {
+      console.error(
+        "raw_node content must be a [name, factory] tuple, got:",
+        content,
+      );
       return;
     }
     const factory = content[1] as (renderer: CliRenderer) => TuiNode;
     const actualContent = factory(renderer);
 
     // For OpenTUI, "inner html" can be a raw renderable node.
-    if (actualContent && typeof actualContent === "object" && actualContent.id !== undefined) {
+    if (
+      actualContent &&
+      typeof actualContent === "object" &&
+      actualContent.id !== undefined
+    ) {
       // Clear existing children first - also destroy them to free yoga nodes
       if (node.getChildren) {
         const existingChildren = [...node.getChildren()];
@@ -665,13 +803,15 @@ export function make_set_raw_content(renderer: CliRenderer): (node: TuiNode, con
               // not found
             }
           }
-          // Destroy the child to free its yoga node
-          if (child.destroySelf) {
-            try {
-              child.destroySelf();
-            } catch {
-              // ignore
+          // Destroy the child and its descendants to free yoga nodes
+          try {
+            if (child.destroyRecursively) {
+              child.destroyRecursively();
+            } else if (child.destroy) {
+              child.destroy();
             }
+          } catch {
+            // ignore
           }
         }
       }
@@ -717,45 +857,46 @@ class TuiSyntheticEvent {
 
 // Mouse events use property setters on the renderable.
 const MOUSE_PROP_MAP: Record<string, string> = {
-  "click": "onMouseDown",
-  "mousedown": "onMouseDown",
-  "mouseup": "onMouseUp",
-  "mousemove": "onMouseMove",
-  "mouseover": "onMouseOver",
-  "mouseout": "onMouseOut",
-  "scroll": "onMouseScroll",
-  "mouse": "onMouse",
-  "mousedrag": "onMouseDrag",
-  "mousedragend": "onMouseDragEnd",
-  "mousedrop": "onMouseDrop",
+  click: "onMouseDown",
+  mousedown: "onMouseDown",
+  mouseup: "onMouseUp",
+  mousemove: "onMouseMove",
+  mouseover: "onMouseOver",
+  mouseout: "onMouseOut",
+  scroll: "onMouseScroll",
+  mouse: "onMouse",
+  mousedrag: "onMouseDrag",
+  mousedragend: "onMouseDragEnd",
+  mousedrop: "onMouseDrop",
 };
 
 // Events that go through the EventEmitter API (node.on / node.off).
 const EMITTER_EVENT_MAP: Record<string, string> = {
-  "focus": "focused",
-  "blur": "blurred",
-  "input": "input",
-  "change": "change",
-  "submit": "enter",
-  "resize": "resized",
-  "select": "itemSelected",
+  focus: "focused",
+  blur: "blurred",
+  input: "input",
+  change: "change",
+  submit: "enter",
+  resize: "resized",
+  select: "itemSelected",
+  selectionchange: "selectionChanged",
 };
 
 // Keyboard events use property setters — once a node is focused (via the
 // focus_next/focus_previous effects), OpenTUI's internal focus handler calls
 // the node's onKeyDown callback.
 const KEYBOARD_PROP_MAP: Record<string, string> = {
-  "keydown": "onKeyDown",
-  "keypress": "onKeyDown",
-  "keyup": "onKeyDown",
+  keydown: "onKeyDown",
+  keypress: "onKeyDown",
+  keyup: "onKeyDown",
 };
 
 // Events that use property setters but aren't mouse/keyboard.
 const PROPERTY_EVENT_MAP: Record<string, string> = {
-  "cursorchange": "onCursorChange",
-  "contentchange": "onContentChange",
-  "highlight": "onHighlight",
-  "sliderchange": "onChange",
+  cursorchange: "onCursorChange",
+  contentchange: "onContentChange",
+  highlight: "onHighlight",
+  sliderchange: "onChange",
 };
 
 // Store wrapped callbacks per node so we can remove them.
@@ -770,14 +911,25 @@ function getHandlers(node: TuiNode): Map<string, EventHandler> {
   return handlers;
 }
 
-function fireEvent(name: string, node: TuiNode, data: unknown, handler: EventHandler): void {
+function fireEvent(
+  name: string,
+  node: TuiNode,
+  data: unknown,
+  handler: EventHandler,
+): void {
   const event = new TuiSyntheticEvent(name, node);
   event.detail = (data as Record<string, unknown>) ?? {};
   handler(event);
 }
 
-const add_event_listener = (node: TuiNode | TuiTextNode, name: string, handler: EventHandler, _passive: boolean): void => {
-  if (node instanceof TuiTextNode) return;
+const add_event_listener = (
+  node: TuiNode,
+  name: string,
+  handler: EventHandler,
+  _passive: boolean,
+): void => {
+  // Guard: skip if node is destroyed
+  if (isDestroyed(node)) return;
 
   const handlers = getHandlers(node);
   handlers.set(name, handler);
@@ -800,7 +952,8 @@ const add_event_listener = (node: TuiNode | TuiTextNode, name: string, handler: 
   // Mouse events → property setters.
   const mouseProp = MOUSE_PROP_MAP[name];
   if (mouseProp) {
-    (node as Record<string, unknown>)[mouseProp] = (data: unknown) => fireEvent(name, node, data, handler);
+    (node as Record<string, unknown>)[mouseProp] = (data: unknown) =>
+      fireEvent(name, node, data, handler);
     return;
   }
 
@@ -825,7 +978,8 @@ const add_event_listener = (node: TuiNode | TuiTextNode, name: string, handler: 
   // Property setter events (cursor change, content change, etc.).
   const propEventProp = PROPERTY_EVENT_MAP[name];
   if (propEventProp) {
-    (node as Record<string, unknown>)[propEventProp] = (data: unknown) => fireEvent(name, node, data, handler);
+    (node as Record<string, unknown>)[propEventProp] = (data: unknown) =>
+      fireEvent(name, node, data, handler);
     return;
   }
 
@@ -839,8 +993,13 @@ const add_event_listener = (node: TuiNode | TuiTextNode, name: string, handler: 
   }
 };
 
-const remove_event_listener = (node: TuiNode | TuiTextNode, name: string, _handler: EventHandler): void => {
-  if (node instanceof TuiTextNode) return;
+const remove_event_listener = (
+  node: TuiNode,
+  name: string,
+  _handler: EventHandler,
+): void => {
+  // Guard: skip if node is destroyed
+  if (isDestroyed(node)) return;
 
   const handlers = getHandlers(node);
 
@@ -880,9 +1039,12 @@ const remove_event_listener = (node: TuiNode | TuiTextNode, name: string, _handl
 
 // SCHEDULING ------------------------------------------------------------------
 
+declare function requestAnimationFrame(callback: (time: number) => void): number;
+declare function cancelAnimationFrame(id: number): void;
+
 const schedule_render = (callback: () => void): (() => void) => {
-  const id = setTimeout(callback, 0);
-  return () => clearTimeout(id);
+  const id = requestAnimationFrame((_time: number) => callback());
+  return () => cancelAnimationFrame(id);
 };
 
 export function make_after_render(renderer: CliRenderer): () => void {

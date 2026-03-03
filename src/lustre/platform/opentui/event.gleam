@@ -89,6 +89,16 @@ pub fn on_select(handler: fn(Int) -> msg) -> Attribute(msg) {
   })
 }
 
+/// Listen for selection change events (e.g. navigating with j/k in a select
+/// list). The handler receives the newly highlighted index.
+///
+pub fn on_selection_change(handler: fn(Int) -> msg) -> Attribute(msg) {
+  event.on("selectionchange", {
+    use index <- decode.then(decode.at(["detail"], decode.int))
+    decode.success(handler(index))
+  })
+}
+
 // SCROLL EVENTS ---------------------------------------------------------------
 
 /// Listen for scroll events.

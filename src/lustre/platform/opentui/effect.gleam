@@ -12,7 +12,11 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode.{type Decoder}
+import gleam/option.{type Option, None, Some}
 import lustre/effect.{type Effect}
+import lustre/platform/opentui.{type Renderer}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -20,6 +24,47 @@ import lustre/effect.{type Effect}
 ///
 pub type KeyEvent {
   KeyEvent(key: String, ctrl: Bool, shift: Bool, meta: Bool)
+}
+
+// CUSTOM EFFECTS --------------------------------------------------------------
+
+/// Create a custom before-paint effect with access to the OpenTUI renderer.
+/// This is like `effect.before_paint` but provides the renderer instead of the
+/// raw root element, letting you interact with OpenTUI's renderer API directly.
+///
+/// Runs after the virtual DOM has been reconciled but before the terminal is
+/// painted, so dispatched messages trigger a second re-render before painting.
+///
+/// ```gleam
+/// import lustre/platform/opentui/effect as opentui_effect
+///
+/// fn my_custom_effect() -> Effect(msg) {
+///   opentui_effect.before_paint(fn(dispatch, renderer) {
+///     // interact with the renderer directly
+///   })
+/// }
+/// ```
+///
+pub fn before_paint(
+  handler: fn(fn(msg) -> Nil, Renderer) -> Nil,
+) -> Effect(msg) {
+  effect.before_paint(fn(dispatch, _root) {
+    do_with_renderer(handler, dispatch)
+  })
+}
+
+/// Create a custom after-paint effect with access to the OpenTUI renderer.
+/// This is like `effect.after_paint` but provides the renderer instead of the
+/// raw root element, letting you interact with OpenTUI's renderer API directly.
+///
+/// Runs after the terminal has been painted.
+///
+pub fn after_paint(
+  handler: fn(fn(msg) -> Nil, Renderer) -> Nil,
+) -> Effect(msg) {
+  effect.after_paint(fn(dispatch, _root) {
+    do_with_renderer(handler, dispatch)
+  })
 }
 
 // KEYBOARD & FOCUS EFFECTS ----------------------------------------------------
@@ -57,6 +102,47 @@ pub fn focus_previous() -> Effect(msg) {
 ///
 pub fn focus(id: String) -> Effect(msg) {
   effect.before_paint(fn(_dispatch, _root) { do_focus(id, fn(_) { Nil }) })
+}
+
+/// Get the id of the currently focused element. The handler receives
+/// `Some(id)` if an element is focused, or `None` if nothing is focused.
+///
+/// This uses `before_paint` to ensure the view has been reconciled before
+/// querying focus state.
+///
+pub fn get_focused_id(handler: fn(Option(String)) -> msg) -> Effect(msg) {
+  effect.before_paint(fn(dispatch, _root) {
+    let id = do_get_focused_id_raw()
+    case id {
+      "" -> dispatch(handler(None))
+      _ -> dispatch(handler(Some(id)))
+    }
+  })
+}
+
+/// Get the currently focused element and decode properties from it.
+/// The decoder runs against the raw focused node — use `decode.field` to
+/// access properties like "id" (String), "focused" (Bool), "width" (Int),
+/// "height" (Int), "value" (String), etc.
+///
+/// The handler receives `Some(value)` when a node is focused and the decoder
+/// succeeds, or `None` when nothing is focused. If a node is focused but the
+/// decoder fails, the handler is not called.
+///
+/// This uses `before_paint` to ensure the view has been reconciled before
+/// querying focus state.
+///
+pub fn get_focused(
+  decoder: Decoder(a),
+  handler: fn(Option(a)) -> msg,
+) -> Effect(msg) {
+  effect.before_paint(fn(dispatch, _root) {
+    let node = do_get_focused_node_raw()
+    case decode.run(node, decode.optional(decoder)) {
+      Ok(value) -> dispatch(handler(value))
+      Error(_) -> Nil
+    }
+  })
 }
 
 // TERMINAL CONTROL EFFECTS ----------------------------------------------------
@@ -177,6 +263,12 @@ pub fn stop() -> Effect(msg) {
   effect.from(do_stop)
 }
 
+/// Subscribe to renderer destroy event. Dispatches the given msg when destroyed.
+///
+pub fn on_destroy(msg: msg) -> Effect(msg) {
+  effect.from(fn(dispatch) { do_on_destroy(fn() { dispatch(msg) }) })
+}
+
 // SCROLLING EFFECTS -----------------------------------------------------------
 
 /// Scroll an element by a delta. The element is found by its id.
@@ -212,6 +304,14 @@ pub fn scroll_into_view(container_id: String, child_id: String) -> Effect(msg) {
 
 // FFI -------------------------------------------------------------------------
 
+@external(javascript, "./effect.ffi.ts", "with_renderer")
+fn do_with_renderer(
+  _handler: fn(fn(msg) -> Nil, Renderer) -> Nil,
+  _dispatch: fn(msg) -> Nil,
+) -> Nil {
+  panic as "lustre/platform/opentui/effect only runs on JavaScript"
+}
+
 @external(javascript, "./effect.ffi.ts", "subscribe_keyboard")
 fn do_subscribe_keyboard(
   _handler: fn(KeyEvent) -> msg,
@@ -232,6 +332,16 @@ fn do_focus_previous(_dispatch: fn(msg) -> Nil) -> Nil {
 
 @external(javascript, "./effect.ffi.ts", "focus")
 fn do_focus(_id: String, _dispatch: fn(msg) -> Nil) -> Nil {
+  panic as "lustre/platform/opentui/effect only runs on JavaScript"
+}
+
+@external(javascript, "./effect.ffi.ts", "get_focused_id_raw")
+fn do_get_focused_id_raw() -> String {
+  panic as "lustre/platform/opentui/effect only runs on JavaScript"
+}
+
+@external(javascript, "./effect.ffi.ts", "get_focused_node_raw")
+fn do_get_focused_node_raw() -> Dynamic {
   panic as "lustre/platform/opentui/effect only runs on JavaScript"
 }
 
@@ -332,6 +442,11 @@ fn do_destroy(_dispatch: fn(msg) -> Nil) -> Nil {
 
 @external(javascript, "./effect.ffi.ts", "stop")
 fn do_stop(_dispatch: fn(msg) -> Nil) -> Nil {
+  panic as "lustre/platform/opentui/effect only runs on JavaScript"
+}
+
+@external(javascript, "./effect.ffi.ts", "on_destroy")
+fn do_on_destroy(_callback: fn() -> Nil) -> Nil {
   panic as "lustre/platform/opentui/effect only runs on JavaScript"
 }
 

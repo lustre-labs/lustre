@@ -79,18 +79,16 @@ fn view(model: Model) {
           attribute.title_alignment("center"),
         ],
         [
-          element.text_node(
-            [
-              attribute.bold(True),
-              attribute.color("#e0e0e0"),
-              attribute.dim(True),
-            ],
-            [element.text("Arrows to navigate, Enter to activate")],
-          ),
-          element.text_node([attribute.bold(True), attribute.color("#fff")], [
-            model.count
-            |> int.to_string()
-            |> element.text(),
+          element.text([
+            attribute.content("Arrows to navigate, Enter to activate"),
+            attribute.bold(True),
+            attribute.color("#e0e0e0"),
+            attribute.dim(True),
+          ]),
+          element.text([
+            attribute.content(int.to_string(model.count)),
+            attribute.bold(True),
+            attribute.color("#fff"),
           ]),
           element.box([attribute.flex_direction("row"), attribute.gap(2)], [
             element.box(
@@ -106,10 +104,11 @@ fn view(model: Model) {
                 event.on_activate(Decrement),
               ],
               [
-                element.text_node(
-                  [attribute.bold(True), attribute.color("#ff6b6b")],
-                  [element.text(" - ")],
-                ),
+                element.text([
+                  attribute.content(" - "),
+                  attribute.bold(True),
+                  attribute.color("#ff6b6b"),
+                ]),
               ],
             ),
             element.box(
@@ -126,10 +125,11 @@ fn view(model: Model) {
                 event.on_activate(Increment),
               ],
               [
-                element.text_node(
-                  [attribute.bold(True), attribute.color("#69db7c")],
-                  [element.text(" + ")],
-                ),
+                element.text([
+                  attribute.content(" + "),
+                  attribute.bold(True),
+                  attribute.color("#69db7c"),
+                ]),
               ],
             ),
           ]),

@@ -154,8 +154,10 @@ fn view(model: Model) -> Element(Msg) {
           attribute.title_alignment("center"),
         ],
         [
-          tui.text_node([attribute.dim(True), attribute.color("#888")], [
-            tui.text("Tab to switch fields, Enter to guess, Ctrl+Q to quit"),
+          tui.text([
+            attribute.content("Tab to switch fields, Enter to guess, Ctrl+Q to quit"),
+            attribute.dim(True),
+            attribute.color("#888"),
           ]),
           tui.box(
             [
@@ -164,8 +166,9 @@ fn view(model: Model) -> Element(Msg) {
               attribute.align_items("center"),
             ],
             [
-              tui.text_node([attribute.color("#e0e0e0")], [
-                tui.text("Enter a number from 1-10:"),
+              tui.text([
+                attribute.content("Enter a number from 1-10:"),
+                attribute.color("#e0e0e0"),
               ]),
               tui.input([
                 attribute.id("guess-input"),
@@ -192,10 +195,11 @@ fn view(model: Model) -> Element(Msg) {
                   event.on_activate(UserSubmittedGuess),
                 ],
                 [
-                  tui.text_node(
-                    [attribute.color("#3498db"), attribute.bold(True)],
-                    [tui.text("Guess!")],
-                  ),
+                  tui.text([
+                    attribute.content("Guess!"),
+                    attribute.color("#3498db"),
+                    attribute.bold(True),
+                  ]),
                 ],
               ),
             ],
@@ -218,8 +222,10 @@ fn view_result(result: Order) -> Element(msg) {
   }
 
   tui.box([attribute.margin_top(1)], [
-    tui.text_node([attribute.color(color), attribute.bold(True)], [
-      tui.text(message),
+    tui.text([
+      attribute.content(message),
+      attribute.color(color),
+      attribute.bold(True),
     ]),
   ])
 }

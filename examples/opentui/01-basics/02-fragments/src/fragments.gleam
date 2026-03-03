@@ -120,10 +120,12 @@ fn view(model: Model) -> Element(Msg) {
           attribute.title_alignment("center"),
         ],
         [
-          tui.text_node([attribute.dim(True), attribute.color("#888")], [
-            tui.text(
+          tui.text([
+            attribute.content(
               "Use arrows to navigate, Enter to expand/collapse, q to quit",
             ),
+            attribute.dim(True),
+            attribute.color("#888"),
           ]),
           // Lists of elements can be grouped using fragments.
           keyed.fragment(
@@ -170,10 +172,12 @@ fn view_entry(
         tui.box(
           [attribute.flex_direction("row")],
           [
-            tui.text_node([attribute.color("#69db7c"), attribute.bold(True)], [
-              tui.text(indicator <> " "),
+            tui.text([
+              attribute.content(indicator <> " "),
+              attribute.color("#69db7c"),
+              attribute.bold(True),
             ]),
-            tui.text_node([attribute.color("#e0e0e0")], [tui.text(question)]),
+            tui.text([attribute.content(question), attribute.color("#e0e0e0")]),
           ],
         ),
         case is_open {
@@ -184,7 +188,10 @@ fn view_entry(
                 attribute.padding(1),
               ],
               [
-                tui.text_node([attribute.color("#a0a0a0")], [tui.text(answer)]),
+                tui.text([
+                  attribute.content(answer),
+                  attribute.color("#a0a0a0"),
+                ]),
               ],
             )
           False -> element.none()

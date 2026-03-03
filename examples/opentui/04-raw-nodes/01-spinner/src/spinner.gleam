@@ -69,14 +69,12 @@ fn next_mode(mode: SpinnerMode) -> SpinnerMode {
 fn framebuffer_spinner(color: String) -> Element(msg) {
   tui_element.raw_node(
     "framebuffer-spinner",
-    "box",
-    [],
     create_framebuffer_spinner(color, 70),
   )
 }
 
 fn text_spinner(color: String) -> Element(msg) {
-  tui_element.raw_node("text-spinner", "box", [], create_text_spinner(color, 70))
+  tui_element.raw_node("text-spinner", create_text_spinner(color, 70))
 }
 
 fn view(model: Model) -> Element(Msg) {
@@ -102,23 +100,27 @@ fn view(model: Model) -> Element(Msg) {
           tui_attr.title_alignment("center"),
         ],
         [
-          tui_element.text_node([tui_attr.color("#888"), tui_attr.dim(True)], [
-            tui_element.text(
+          tui_element.text([
+            tui_attr.content(
               "Press SPACE or ENTER to cycle: Stopped → Text → FrameBuffer",
             ),
+            tui_attr.color("#888"),
+            tui_attr.dim(True),
           ]),
           case model.mode {
             Stopped ->
-              tui_element.text_node([tui_attr.color("#ff6b6b")], [
-                tui_element.text("Stopped"),
+              tui_element.text([
+                tui_attr.content("Stopped"),
+                tui_attr.color("#ff6b6b"),
               ])
             TextRenderer ->
               tui_element.box(
                 [tui_attr.flex_direction("row"), tui_attr.gap(1)],
                 [
                   text_spinner("#f1c40f"),
-                  tui_element.text_node([tui_attr.color("#f1c40f")], [
-                    tui_element.text("TextRenderable"),
+                  tui_element.text([
+                    tui_attr.content("TextRenderable"),
+                    tui_attr.color("#f1c40f"),
                   ]),
                 ],
               )
@@ -127,8 +129,9 @@ fn view(model: Model) -> Element(Msg) {
                 [tui_attr.flex_direction("row"), tui_attr.gap(1)],
                 [
                   framebuffer_spinner("#69db7c"),
-                  tui_element.text_node([tui_attr.color("#69db7c")], [
-                    tui_element.text("FrameBufferRenderable"),
+                  tui_element.text([
+                    tui_attr.content("FrameBufferRenderable"),
+                    tui_attr.color("#69db7c"),
                   ]),
                 ],
               )

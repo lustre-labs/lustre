@@ -25,6 +25,12 @@ pub type Value
 ///
 pub type Renderer
 
+/// A factory function that receives the renderer and returns a renderable node.
+/// Used with `register_element` to define custom element types.
+///
+pub type ElementFactory =
+  fn(Renderer) -> Node
+
 /// Configuration for creating an OpenTUI renderer.
 ///
 pub opaque type Config {
@@ -45,6 +51,7 @@ pub opaque type Config {
     max_stat_samples: Int,
     use_thread: Bool,
     remote: Bool,
+    custom_elements: List(#(String, ElementFactory)),
   )
 }
 
@@ -146,6 +153,21 @@ pub fn remote(config: Config, value: Bool) -> Config {
   Config(..config, remote: value)
 }
 
+/// Register a custom element factory for a tag name. Once registered,
+/// using `element.element(tag, attrs, children)` with this tag will create
+/// a node via the factory instead of falling back to a box container.
+///
+/// Built-in tags (box, text, input, etc.) cannot be overridden — custom
+/// factories are only consulted when no built-in renderable matches.
+///
+pub fn register_element(
+  config: Config,
+  tag: String,
+  factory: ElementFactory,
+) -> Config {
+  Config(..config, custom_elements: [#(tag, factory), ..config.custom_elements])
+}
+
 // CONSTRUCTORS ----------------------------------------------------------------
 
 /// Create a default configuration for the OpenTUI renderer.
@@ -168,6 +190,7 @@ pub fn default_config() -> Config {
     max_stat_samples: 100,
     use_thread: False,
     remote: False,
+    custom_elements: [],
   )
 }
 
@@ -187,7 +210,7 @@ pub fn default_config() -> Config {
 @external(javascript, "./opentui.ffi.ts", "platform")
 pub fn platform(
   _config: Config,
-  _callback: fn(Platform(Node, Renderer, Value, Event, msg)) -> Nil,
+  _callback: fn(Platform(Node, Renderer, Value, Event, msg, raw)) -> Nil,
 ) -> Nil {
   panic as "lustre_opentui only runs on JavaScript"
 }
