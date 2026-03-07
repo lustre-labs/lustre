@@ -11,6 +11,10 @@ request to fix it.
 
 ## Unreleased
 
+### Added
+
+- [lustre/component] Component's can be notified of form disabled events using the `on_form_disabled` configuration option.
+
 ### Changed
 
 - [lustre/event] Fixed a bug where moving keyed elements would sometimes remove their event listeners.
