@@ -173,6 +173,12 @@ export const make_component = ({ init, update, view, config }, name) => {
       }
     }
 
+    formDisabledCallback(disabled) {
+      if (Option$isSome(config.on_form_disabled)) {
+        this.dispatch(Option$Some$0(config.on_form_disabled)(disabled));
+      }
+    }
+
     // LUSTRE RUNTIME METHODS --------------------------------------------------
 
     send(message) {

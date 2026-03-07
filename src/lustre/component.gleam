@@ -215,6 +215,22 @@ pub fn on_form_restore(handler: fn(String) -> message) -> Option(message) {
   Config(..config, is_form_associated: True, on_form_restore: Some(handler))
 }
 
+/// Set a message to be dispatched whenever a form or fieldset containing this
+/// [form-associated](#form_associated) component changes its disabled state.
+///
+/// > **Note**: this event is not fired when the `"disabled"` attribute or
+/// > property of the custom element itself changes. You must register the
+/// > appropriate event handler separately.
+///
+/// > **Note**: server components cannot participate in form submission and configuring
+/// > this option will do nothing.
+///
+pub fn on_form_disabled(handler: fn(Bool) -> message) -> Option(message) {
+  use config <- Option
+
+  Config(..config, is_form_associated: True, on_form_disabled: Some(handler))
+}
+
 /// Configure whether a component's [Shadow Root](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot)
 /// is open or closed. A closed shadow root means the elements rendered inside
 /// the component are not accessible from JavaScript outside the component.

@@ -37,6 +37,7 @@ pub type Config(message) {
     on_form_autofill: option.Option(fn(String) -> message),
     on_form_reset: option.Option(message),
     on_form_restore: option.Option(fn(String) -> message),
+    on_form_disabled: option.Option(fn(Bool) -> message),
     //
     on_connect: option.Option(message),
     on_adopt: option.Option(message),
@@ -61,6 +62,7 @@ pub const default_config: Config(message) = Config(
   on_form_autofill: option.None,
   on_form_reset: option.None,
   on_form_restore: option.None,
+  on_form_disabled: option.None,
   on_connect: option.None,
   on_adopt: option.None,
   on_disconnect: option.None,
