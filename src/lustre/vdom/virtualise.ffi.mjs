@@ -18,6 +18,34 @@ export const virtualise = (root) => {
   // does not have a path.
   const rootMeta = insertMetadataChild(element_kind, null, root, 0, null);
 
+  // If there are multiple children inside the root we know we want to virtualise
+  // this as a fragment.
+  if (root.childNodes.length > 1) {
+    const isFragmentMarker =
+      root.childNodes[0].nodeType === COMMENT_NODE &&
+      root.childNodes[0].data.trim() === "lustre:fragment";
+
+    // It's possible that the HTML we're virtualising wasn't rendered by Lustre,
+    // but by some other library or server: in those cases they won't know that
+    // we inject comment markers around fragments. While children nested in the
+    // tree will never be virtualised as fragments in that case, here at the root
+    // we are permissive and will virtualise the children as a fragment even without
+    // those markers. To do that we inject them directly ourselves.
+    if (!isFragmentMarker) {
+      const open = globalThis.document.createComment("lustre:fragment");
+      const close = globalThis.document.createComment("/lustre:fragment");
+
+      root.insertBefore(open, root.firstChild);
+      root.appendChild(close);
+    }
+
+    return virtualiseFragment(rootMeta, root, root.firstChild, 0).vnode;
+  }
+
+  if (root.childNodes.length === 1) {
+    return virtualiseChild(rootMeta, root, child, 0).vnode;
+  }
+
   for (let child = root.firstChild; child; child = child.nextSibling) {
     const result = virtualiseChild(rootMeta, root, child, 0);
     // lustre view functions always return a single root element inside the root.
