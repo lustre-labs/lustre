@@ -13,7 +13,7 @@ import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute}
 import lustre/internals/mutable_map
 import lustre/internals/ref
-import lustre/vdom/vnode.{Element}
+import lustre/vdom/vnode.{Element, Map}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -285,6 +285,18 @@ pub fn to_string(element: Element(msg)) -> String {
   vnode.to_string(element)
 }
 
+/// Unwrap any `Map` vnodes to peek at the underlying element. This is used by
+/// `to_document_string` and `to_document_string_tree` to correctly detect
+/// `<html>`, `<head>`, and `<body>` elements even when they have been wrapped
+/// by `element.map`.
+///
+fn unwrap_map(el: Element(msg)) -> Element(msg) {
+  case el {
+    Map(child: child, ..) -> unwrap_map(child)
+    _ -> el
+  }
+}
+
 /// Converts an element to a string like [`to_string`](#to_string), but prepends
 /// a `<!doctype html>` declaration to the string. This is useful for rendering
 /// complete HTML documents.
@@ -293,7 +305,7 @@ pub fn to_string(element: Element(msg)) -> String {
 /// a `html` and `body` element.
 ///
 pub fn to_document_string(el: Element(msg)) -> String {
-  vnode.to_string(case el {
+  vnode.to_string(case unwrap_map(el) {
     Element(tag: "html", ..) -> el
     Element(tag: "head", ..) | Element(tag: "body", ..) ->
       element("html", [], [el])
@@ -321,7 +333,7 @@ pub fn to_string_tree(element: Element(msg)) -> StringTree {
 ///
 pub fn to_document_string_tree(el: Element(msg)) -> StringTree {
   vnode.to_string_tree(
-    case el {
+    case unwrap_map(el) {
       Element(tag: "html", ..) -> el
       Element(tag: "head", ..) | Element(tag: "body", ..) ->
         element("html", [], [el])
