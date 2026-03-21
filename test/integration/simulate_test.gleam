@@ -63,7 +63,9 @@ pub fn simulate_events_and_messages_test() {
 // ELEMENT.MAP -----------------------------------------------------------------
 
 pub fn simulate_event_on_directly_mapped_element_test() {
-  use <- lustre_test.test_filter("simulate_event_on_directly_mapped_element_test")
+  use <- lustre_test.test_filter(
+    "simulate_event_on_directly_mapped_element_test",
+  )
   let incr_button = element(data("test-id", "incr"))
 
   simulate.simple(init:, update:, view: fn(model) {
@@ -71,7 +73,10 @@ pub fn simulate_event_on_directly_mapped_element_test() {
       html.button([event.on_click(UserClickedDecrement)], [html.text("-")]),
       html.p([], [html.text(int.to_string(model))]),
       html.button(
-        [attribute.data("test-id", "incr"), event.on_click(UserClickedIncrement)],
+        [
+          attribute.data("test-id", "incr"),
+          event.on_click(UserClickedIncrement),
+        ],
         [html.text("+")],
       )
         |> element.map(fn(msg) { msg }),
@@ -80,7 +85,9 @@ pub fn simulate_event_on_directly_mapped_element_test() {
   |> simulate.start(0)
   |> simulate.event(on: incr_button, name: "click", data: [])
   |> to_snapshot
-  |> birdie.snap("[simulate] Event on element directly wrapped with element.map")
+  |> birdie.snap(
+    "[simulate] Event on element directly wrapped with element.map",
+  )
 }
 
 pub fn simulate_event_on_view_wrapped_in_map_test() {
@@ -94,7 +101,9 @@ pub fn simulate_event_on_view_wrapped_in_map_test() {
   |> simulate.start(0)
   |> simulate.event(on: incr_button, name: "click", data: [])
   |> to_snapshot
-  |> birdie.snap("[simulate] Event on element nested inside element.map wrapper")
+  |> birdie.snap(
+    "[simulate] Event on element nested inside element.map wrapper",
+  )
 }
 
 // PROBLEMS -------------------------------------------------------------------
