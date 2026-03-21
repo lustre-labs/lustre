@@ -1,0 +1,6 @@
+---
+version: 1.5.3
+title: [html] html inside single-child fragment is not wrapped again
+---
+<!doctype html>
+<!-- lustre:fragment --><html><head></head><body></body></html><!-- /lustre:fragment -->

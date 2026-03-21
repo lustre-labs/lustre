@@ -1,0 +1,6 @@
+---
+version: 1.5.3
+title: [html] html inside map is not wrapped again
+---
+<!doctype html>
+<!-- lustre:map --><html><head></head><body></body></html>

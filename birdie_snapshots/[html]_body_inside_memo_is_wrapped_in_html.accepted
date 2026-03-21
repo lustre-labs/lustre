@@ -1,0 +1,6 @@
+---
+version: 1.5.3
+title: [html] body inside memo is wrapped in html
+---
+<!doctype html>
+<html><!-- lustre:memo --><body><p>hello</p></body></html>

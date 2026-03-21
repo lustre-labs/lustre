@@ -1,0 +1,6 @@
+---
+version: 1.5.3
+title: [html] body inside map is wrapped in html
+---
+<!doctype html>
+<html><!-- lustre:map --><body><p>hello</p></body></html>

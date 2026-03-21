@@ -8,12 +8,11 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/string
 import gleam/string_tree.{type StringTree}
 import lustre/attribute.{type Attribute}
 import lustre/internals/mutable_map
 import lustre/internals/ref
-import lustre/vdom/vnode.{Element}
+import lustre/vdom/vnode.{Element, Fragment, Map, Memo, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -293,13 +292,7 @@ pub fn to_string(element: Element(msg)) -> String {
 /// a `html` and `body` element.
 ///
 pub fn to_document_string(el: Element(msg)) -> String {
-  vnode.to_string(case el {
-    Element(tag: "html", ..) -> el
-    Element(tag: "head", ..) | Element(tag: "body", ..) ->
-      element("html", [], [el])
-    _ -> element("html", [], [element("body", [], [el])])
-  })
-  |> string.append("<!doctype html>\n", _)
+  "<!doctype html>\n" <> vnode.to_string(wrap_document(el))
 }
 
 /// Convert a Lustre `Element` to a `StringTree`. This is _not_ pretty-printed,
@@ -320,16 +313,41 @@ pub fn to_string_tree(element: Element(msg)) -> StringTree {
 /// a `html` and `body` element.
 ///
 pub fn to_document_string_tree(el: Element(msg)) -> StringTree {
-  vnode.to_string_tree(
-    case el {
-      Element(tag: "html", ..) -> el
-      Element(tag: "head", ..) | Element(tag: "body", ..) ->
-        element("html", [], [el])
-      _ -> element("html", [], [element("body", [], [el])])
-    },
-    "",
-  )
-  |> string_tree.prepend("<!doctype html>\n")
+  string_tree.from_string("<!doctype html>\n")
+  |> string_tree.append_tree(vnode.to_string_tree(wrap_document(el), ""))
+}
+
+type DocumentType {
+  Html
+  HeadOnly
+  BodyOnly
+  HeadAndBody
+  Other
+}
+
+fn get_document_type(el: Element(msg)) -> DocumentType {
+  case el {
+    Element(tag: "html", ..) | UnsafeInnerHtml(tag: "html", ..) -> Html
+    Element(tag: "head", ..) | UnsafeInnerHtml(tag: "head", ..) -> HeadOnly
+    Element(tag: "body", ..) | UnsafeInnerHtml(tag: "body", ..) -> BodyOnly
+    Map(child:, ..) -> get_document_type(child)
+    Memo(view:, ..) -> get_document_type(view())
+    Fragment(children: [child], ..) -> get_document_type(child)
+    Fragment(children: [head, body], ..) ->
+      case get_document_type(head), get_document_type(body) {
+        HeadOnly, BodyOnly -> HeadAndBody
+        _, _ -> Other
+      }
+    _ -> Other
+  }
+}
+
+fn wrap_document(el: Element(msg)) -> Element(msg) {
+  case get_document_type(el) {
+    Html -> el
+    HeadOnly | BodyOnly | HeadAndBody -> element("html", [], [el])
+    Other -> element("html", [], [element("body", [], [el])])
+  }
 }
 
 /// Converts a Lustre `Element` to a human-readable string by inserting new lines

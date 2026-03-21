@@ -1,0 +1,6 @@
+---
+version: 1.5.3
+title: [html] html inside memo is not wrapped again
+---
+<!doctype html>
+<!-- lustre:memo --><html><head></head><body></body></html>
