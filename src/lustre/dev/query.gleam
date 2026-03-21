@@ -309,10 +309,11 @@ fn find_in_children(
   path: Path,
 ) -> Result(#(Element(msg), Path), Nil) {
   case element {
-    Element(children:, ..) | Fragment(children:, ..) ->
-      find_in_list(children, query, path |> path.add(index, element.key), 0)
-    Map(child:, ..) -> find_in_children(child, query, index, path)
-    Memo(view:, ..) -> find_in_children(view(), query, index, path)
+    Element(key:, children:, ..) | Fragment(key:, children:, ..) ->
+      find_in_list(children, query, path |> path.add(index, key), 0)
+    Map(key:, child:, ..) ->
+      find_path(child, query, 0, path.subtree(path |> path.add(index, key)))
+    Memo(view:, ..) -> find_path(view(), query, index, path)
     UnsafeInnerHtml(..) | Text(..) -> constants.error_nil
   }
 }

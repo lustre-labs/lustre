@@ -1,0 +1,6 @@
+---
+version: 1.5.3
+title: [html] fragment with head+body is wrapped in html only
+---
+<!doctype html>
+<html><!-- lustre:fragment --><head><meta></head><body></body><!-- /lustre:fragment --></html>

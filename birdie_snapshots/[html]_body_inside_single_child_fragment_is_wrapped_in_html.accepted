@@ -1,0 +1,6 @@
+---
+version: 1.5.3
+title: [html] body inside single-child fragment is wrapped in html
+---
+<!doctype html>
+<html><!-- lustre:fragment --><body><p>hello</p></body><!-- /lustre:fragment --></html>

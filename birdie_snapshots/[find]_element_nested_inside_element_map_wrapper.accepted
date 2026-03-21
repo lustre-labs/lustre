@@ -1,0 +1,16 @@
+---
+version: 1.5.3
+title: [find] Element nested inside element.map wrapper
+---
+
+Query:
+
+  #login-form
+
+Match:
+
+  <form id="login-form">
+    <h2>
+      Login
+    </h2>
+  </form>

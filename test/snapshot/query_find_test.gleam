@@ -108,6 +108,44 @@ pub fn find_descendant_by_attribute_test() {
   |> birdie.snap("[find] Submit button by descendant selector")
 }
 
+// ELEMENT.MAP WRAPPING --------------------------------------------------------
+
+pub fn find_element_directly_wrapped_in_map_test() {
+  use <- lustre_test.test_filter("find_element_directly_wrapped_in_map_test")
+  let query = query.element(matching: query.id("login-form"))
+
+  let wrapped =
+    html.form([attribute.id("login-form")], [
+      html.h2([], [html.text("Login")]),
+    ])
+    |> element.map(fn(msg) { msg })
+
+  let assert Ok(found) = query.find(in: wrapped, matching: query)
+
+  found
+  |> to_single_snapshot(query)
+  |> birdie.snap("[find] Element directly wrapped in element.map")
+}
+
+pub fn find_element_nested_inside_map_test() {
+  use <- lustre_test.test_filter("find_element_nested_inside_map_test")
+  let query = query.element(matching: query.id("login-form"))
+
+  let wrapped =
+    html.div([], [
+      html.form([attribute.id("login-form")], [
+        html.h2([], [html.text("Login")]),
+      ]),
+    ])
+    |> element.map(fn(msg) { msg })
+
+  let assert Ok(found) = query.find(in: wrapped, matching: query)
+
+  found
+  |> to_single_snapshot(query)
+  |> birdie.snap("[find] Element nested inside element.map wrapper")
+}
+
 // MULTIPLE ELEMENTS -----------------------------------------------------------
 
 pub fn find_all_by_tag_test() {

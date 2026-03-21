@@ -1,0 +1,6 @@
+---
+version: 1.5.3
+title: [html] head inside memo is wrapped in html
+---
+<!doctype html>
+<html><!-- lustre:memo --><head><meta></head></html>

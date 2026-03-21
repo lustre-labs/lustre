@@ -515,8 +515,97 @@ pub fn component_prerender_with_children_test() {
   )
 }
 
+// TO_DOCUMENT_STRING TESTS ----------------------------------------------------
+
+pub fn to_document_string_html_element_test() {
+  use <- lustre_test.test_filter("to_document_string_html_element_test")
+
+  html.html([], [html.head([], []), html.body([], [])])
+  |> document_snapshot("html element renders with doctype, no extra wrapping")
+}
+
+pub fn to_document_string_body_only_test() {
+  use <- lustre_test.test_filter("to_document_string_body_only_test")
+
+  html.body([], [html.p([], [html.text("hello")])])
+  |> document_snapshot("body element is wrapped in html")
+}
+
+pub fn to_document_string_head_only_test() {
+  use <- lustre_test.test_filter("to_document_string_head_only_test")
+
+  html.head([], [html.meta([])])
+  |> document_snapshot("head element is wrapped in html")
+}
+
+pub fn to_document_string_html_in_memo_test() {
+  use <- lustre_test.test_filter("to_document_string_html_in_memo_test")
+
+  element.memo([], fn() {
+    html.html([], [html.head([], []), html.body([], [])])
+  })
+  |> document_snapshot("html inside memo is not wrapped again")
+}
+
+pub fn to_document_string_body_in_memo_test() {
+  use <- lustre_test.test_filter("to_document_string_body_in_memo_test")
+
+  element.memo([], fn() { html.body([], [html.p([], [html.text("hello")])]) })
+  |> document_snapshot("body inside memo is wrapped in html")
+}
+
+pub fn to_document_string_head_in_memo_test() {
+  use <- lustre_test.test_filter("to_document_string_head_in_memo_test")
+
+  element.memo([], fn() { html.head([], [html.meta([])]) })
+  |> document_snapshot("head inside memo is wrapped in html")
+}
+
+pub fn to_document_string_html_in_fragment_test() {
+  use <- lustre_test.test_filter("to_document_string_html_in_fragment_test")
+
+  element.fragment([html.html([], [html.head([], []), html.body([], [])])])
+  |> document_snapshot("html inside single-child fragment is not wrapped again")
+}
+
+pub fn to_document_string_body_in_fragment_test() {
+  use <- lustre_test.test_filter("to_document_string_body_in_fragment_test")
+
+  element.fragment([html.body([], [html.p([], [html.text("hello")])])])
+  |> document_snapshot("body inside single-child fragment is wrapped in html")
+}
+
+pub fn to_document_string_head_and_body_in_fragment_test() {
+  use <- lustre_test.test_filter(
+    "to_document_string_head_and_body_in_fragment_test",
+  )
+
+  element.fragment([html.head([], [html.meta([])]), html.body([], [])])
+  |> document_snapshot("fragment with head+body is wrapped in html only")
+}
+
+pub fn to_document_string_html_in_map_test() {
+  use <- lustre_test.test_filter("to_document_string_html_in_map_test")
+
+  html.html([], [html.head([], []), html.body([], [])])
+  |> element.map(fn(_) { Nil })
+  |> document_snapshot("html inside map is not wrapped again")
+}
+
+pub fn to_document_string_body_in_map_test() {
+  use <- lustre_test.test_filter("to_document_string_body_in_map_test")
+
+  html.body([], [html.p([], [html.text("hello")])])
+  |> element.map(fn(_) { Nil })
+  |> document_snapshot("body inside map is wrapped in html")
+}
+
 // UTILS -----------------------------------------------------------------------
 
 fn snapshot(el: Element(msg), title: String) -> Nil {
   el |> vnode.to_snapshot(True) |> birdie.snap("[html] " <> title)
+}
+
+fn document_snapshot(el: Element(msg), title: String) -> Nil {
+  el |> element.to_document_string |> birdie.snap("[html] " <> title)
 }

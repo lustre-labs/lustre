@@ -1,0 +1,6 @@
+---
+version: 1.5.3
+title: [html] html element renders with doctype, no extra wrapping
+---
+<!doctype html>
+<html><head></head><body></body></html>

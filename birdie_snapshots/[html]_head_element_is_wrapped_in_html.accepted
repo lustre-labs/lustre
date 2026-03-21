@@ -1,0 +1,6 @@
+---
+version: 1.5.3
+title: [html] head element is wrapped in html
+---
+<!doctype html>
+<html><head><meta></head></html>
