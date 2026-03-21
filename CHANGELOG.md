@@ -17,8 +17,10 @@ request to fix it.
 
 ### Changed
 
+- [lustre/element] fixed a bug where `to_document_string` would sometimes mistakenly wrap a given `html` element again.
 - [lustre/event] Fixed a bug where moving keyed elements would sometimes remove their event listeners.
 - [lustre/runtime] Fixed a bug where an extra frame would be scheduled after `before_paint` and `after_paint` effects.
+- [lustre/dev/simulate] Fixed a bug where simulated events on elements wrapped in `element.map` would not trigger.
 
 ## [v5.6.0] - 2026-02-16
 
