@@ -18,32 +18,34 @@ export const virtualise = (root) => {
   // does not have a path.
   const rootMeta = insertMetadataChild(element_kind, null, root, 0, null);
 
+  const { children } = virtualiseChildren(rootMeta, root, root.firstChild);
+
   // If there are multiple children inside the root we know we want to virtualise
   // this as a fragment.
-  if (root.childNodes.length > 1) {
-    const isFragmentMarker =
-      root.childNodes[0].nodeType === COMMENT_NODE &&
-      root.childNodes[0].data.trim() === "lustre:fragment";
+  //
+  // It's possible that the HTML we're virtualising wasn't rendered by Lustre,
+  // but by some other library or server: in those cases they won't know that
+  // we inject comment markers around fragments. While children nested in the
+  // tree will never be virtualised as fragments in that case, here at the root
+  // we are permissive and will virtualise the children as a fragment even without
+  // those markers. To do that we inject them directly ourselves.
+  if (children.length > 1) {
+    // we need to rewrite the rootMeta node to represent a fragment, and then
+    // insert a _new_ element rootMeta instead
+    const rootNodeMeta = insertMetadataChild(element_kind, null, root, 0, null);
 
-    // It's possible that the HTML we're virtualising wasn't rendered by Lustre,
-    // but by some other library or server: in those cases they won't know that
-    // we inject comment markers around fragments. While children nested in the
-    // tree will never be virtualised as fragments in that case, here at the root
-    // we are permissive and will virtualise the children as a fragment even without
-    // those markers. To do that we inject them directly ourselves.
-    if (!isFragmentMarker) {
-      const open = globalThis.document.createComment("lustre:fragment");
-      const close = globalThis.document.createComment("/lustre:fragment");
+    rootMeta.kind = fragment_kind;
+    rootMeta.node = globalThis.document.createTextNode("");
+    rootMeta.parent = rootNodeMeta;
 
-      root.insertBefore(open, root.firstChild);
-      root.appendChild(close);
-    }
+    rootNodeMeta.children.push(rootMeta);
+    root.insertBefore(rootMeta.node, root.firstChild);
 
-    return virtualiseFragment(rootMeta, root, root.firstChild, 0).vnode;
+    return fragment(toList(children));
   }
 
-  if (root.childNodes.length === 1) {
-    return virtualiseChild(rootMeta, root, root.firstChild, 0).vnode;
+  if (children.length === 1) {
+    return children[0][1];
   }
 
   // no virtualisable children, we can empty the node and return our default text node.
@@ -101,10 +103,24 @@ const virtualiseElement = (metaParent, node, index) => {
   }
 
   const attributes = virtualiseAttributes(node);
+  const { children } = virtualiseChildren(meta, node, node.firstChild);
+
+  const vnode = isHtmlElement
+    ? element(tag, attributes, toList(children))
+    : namespaced(namespace, tag, attributes, toList(children));
+
+  return childResult(key, vnode, node.nextSibling);
+};
+
+const virtualiseChildren = (meta, domParent, childNode) => {
   const children = [];
 
-  for (let childNode = node.firstChild; childNode; ) {
-    const child = virtualiseChild(meta, node, childNode, children.length);
+  while (
+    childNode &&
+    (childNode.nodeType !== COMMENT_NODE ||
+      childNode.data.trim() !== "/lustre:fragment")
+  ) {
+    const child = virtualiseChild(meta, domParent, childNode, children.length);
 
     if (child) {
       children.push([child.key, child.vnode]);
@@ -114,11 +130,7 @@ const virtualiseElement = (metaParent, node, index) => {
     }
   }
 
-  const vnode = isHtmlElement
-    ? element(tag, attributes, toList(children))
-    : namespaced(namespace, tag, attributes, toList(children));
-
-  return childResult(key, vnode, node.nextSibling);
+  return { children, end: childNode };
 };
 
 const virtualiseText = (meta, node, index) => {
@@ -131,27 +143,11 @@ const virtualiseFragment = (metaParent, domParent, node, index) => {
 
   const meta = insertMetadataChild(fragment_kind, metaParent, node, index, key);
 
-  const children = [];
-
-  node = node.nextSibling;
-  while (
-    node &&
-    (node.nodeType !== COMMENT_NODE || node.data.trim() !== "/lustre:fragment")
-  ) {
-    const child = virtualiseChild(meta, domParent, node, children.length);
-
-    if (child) {
-      children.push([child.key, child.vnode]);
-      node = child.next;
-    } else {
-      node = node.nextSibling;
-    }
-  }
-
-  meta.endNode = node;
+  const { children, end } = virtualiseChildren(meta, domParent, node.nextSibling);
+  meta.endNode = end;
 
   const vnode = fragment(toList(children));
-  return childResult(key, vnode, node?.nextSibling);
+  return childResult(key, vnode, end?.nextSibling);
 };
 
 const virtualiseMap = (metaParent, domParent, node, index) => {
