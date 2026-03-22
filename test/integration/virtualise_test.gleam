@@ -187,8 +187,58 @@ pub fn virtualise_complex_nested_test() {
 }
 
 @target(javascript)
+pub fn virtualise_external_html_fragment_test() {
+  use <- lustre_test.test_filter("virtualise_external_html_fragment_test")
+
+  let html = "<p>Hello</p><p>World</p>"
+  let vdom =
+    element.fragment([
+      html.p([], [html.text("Hello")]),
+      html.p([], [html.text("World")]),
+    ])
+
+  test_external_virtualise(html, vdom)
+}
+
+@target(javascript)
+pub fn virtualise_external_html_fragment_with_comments_test() {
+  use <- lustre_test.test_filter(
+    "virtualise_external_html_fragment_with_comments_test",
+  )
+
+  let html = "<!-- ignore me --><p>Hello</p><!-- and me --><p>World</p>"
+  let vdom =
+    element.fragment([
+      html.p([], [html.text("Hello")]),
+      html.p([], [html.text("World")]),
+    ])
+
+  test_external_virtualise(html, vdom)
+}
+
+@target(javascript)
+pub fn virtualise_external_single_element_with_comments_test() {
+  use <- lustre_test.test_filter(
+    "virtualise_external_single_element_with_comments_test",
+  )
+
+  let html = "<!-- ignore me --><p>Hello</p><!-- and me -->"
+  let vdom = html.p([], [html.text("Hello")])
+
+  test_external_virtualise(html, vdom)
+}
+
+// UTILS -----------------------------------------------------------------------
+
+@target(javascript)
 fn test_virtualise(vdom: Element(msg)) {
   use virtualised <- virtualise(element.to_string(vdom))
+  assert lustre_test.nodes_equal(virtualised, vdom)
+}
+
+@target(javascript)
+fn test_external_virtualise(html: String, vdom: Element(msg)) {
+  use virtualised <- virtualise(html)
   assert lustre_test.nodes_equal(virtualised, vdom)
 }
 
