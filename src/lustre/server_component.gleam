@@ -182,13 +182,12 @@ pub fn method(value: TransportMethod) -> Attribute(msg) {
 }
 
 /// Properties of a JavaScript event object are typically not serialisable. This
-/// means if we want to send them to the server we need to make a copy of any
-/// fields we want to decode first.
+/// means if we want to send them to the server Lustre first needs to make a copy
+/// of any fields we want to decode first.
 ///
 /// This attribute tells Lustre what properties to include from an event. Properties
 /// can come from nested fields by using dot notation. For example, you could include
-/// the
-/// `id` of the target `element` by passing `["target.id"]`.
+/// the `id` of the target `element` by passing `["target.id"]`:
 ///
 /// ```gleam
 /// import gleam/dynamic/decode
@@ -204,7 +203,7 @@ pub fn method(value: TransportMethod) -> Attribute(msg) {
 ///   }
 ///
 ///   html.button(
-///     [server_component.include(["target.id"]), event.on("click", handler)],
+///     [event.on("click", handler) |> server_component.include(["target.id"])],
 ///     [html.text("Click me!")],
 ///   )
 /// }
