@@ -173,12 +173,12 @@ fn do_classes(names: List(#(String, Bool)), class: String) -> String {
 /// Indicates whether the element's content is editable by the user, allowing them
 /// to modify the HTML content directly. The following values are accepted:
 ///
-/// | Value        | Description                                           |
-/// |--------------|-------------------------------------------------------|
-/// | "true"       | The element is editable.                              |
-/// | ""           |                                                       |
-/// | "false"      | The element is not editable.                          |
-/// | "plain-text" | The element is editable without rich text formatting. |
+/// | Value            | Description                                           |
+/// |------------------|-------------------------------------------------------|
+/// | "true"           | The element is editable.                              |
+/// | ""               |                                                       |
+/// | "false"          | The element is not editable.                          |
+/// | "plaintext-only" | The element is editable without rich text formatting. |
 ///
 /// > **Note**: setting the value to an empty string does *not* disable this
 /// > attribute, and is instead equivalent to setting it to `"true"`!
