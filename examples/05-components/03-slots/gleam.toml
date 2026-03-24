@@ -5,3 +5,6 @@ dev-dependencies = { lustre_dev_tools = ">= 2.0.0 and < 3.0.0" }
 [dependencies]
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
 lustre = { path = "../../../" }
+
+[tools.lustre.html]
+title = "05-components/03-slots"

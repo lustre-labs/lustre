@@ -7,3 +7,6 @@ gleam_stdlib = ">= 0.44.0 and < 2.0.0"
 lustre = { path = "../../../" }
 gleam_time = ">= 1.1.0 and < 2.0.0"
 gleam_community_maths = ">= 2.0.0 and < 3.0.0"
+
+[tools.lustre.html]
+title = "03-effects/03-timers"

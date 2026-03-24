@@ -7,3 +7,6 @@ gleam_stdlib = ">= 0.44.0 and < 2.0.0"
 lustre = { path = "../../../" }
 gleam_json = ">= 2.3.0 and < 4.0.0"
 formal = ">= 3.0.0 and < 4.0.0"
+
+[tools.lustre.html]
+title = "03-effects/04-local-storage"

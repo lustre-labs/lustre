@@ -8,3 +8,6 @@ gleam_stdlib = ">= 0.44.0 and < 2.0.0"
 lustre = { path = "../../../" }
 gleam_json = ">= 2.3.0 and < 4.0.0"
 rsvp = ">= 1.0.2 and < 2.0.0"
+
+[tools.lustre.html]
+title = "04-applications/04-hydration"
