@@ -22,6 +22,8 @@ request to fix it.
 - [lustre/runtime] Fixed a bug where an extra frame would be scheduled after `before_paint` and `after_paint` effects.
 - [lustre/runtime] Fixed a bug where server-rendered HTML from sources other than Lustre would virtualise incorrectly.
 - [lustre/dev/simulate] Fixed a bug where simulated events on elements wrapped in `element.map` would not trigger.
+- [lustre/dev/query] Fixed a bug where the `text` query matcher did not match text exactly and instead matched if the element's text content contained the given text.
+- [lustre/dev/query] Fixed a bug where the `text` query would not treat `<br>` elements as newlines.
 
 ## [v5.6.0] - 2026-02-16
 
@@ -65,10 +67,10 @@ request to fix it.
 
 ### Changed
 
-- [lustre] Internal JavaScript FFI use has been migrated to Gleam's stable FFI API. 
+- [lustre] Internal JavaScript FFI use has been migrated to Gleam's stable FFI API.
 - [lustre/component] Fixed a bug where the `clear_form_value` effect referenced an undefined variable.
 - [lustre/element] Rendering an element to a string no longer emits `xmlns` attributes on children that match their parent's namespace.
-- [lustre/element] HTML content inside an SVG `<foreignObject>` element will correctly include the XHTML namespace when rendered to a string. 
+- [lustre/element] HTML content inside an SVG `<foreignObject>` element will correctly include the XHTML namespace when rendered to a string.
 - [lustre/runtime] Add the ability to virtualise server-rendered fragments, map, and memo nodes.
 
 ## [v5.4.0] - 2025-11-01
