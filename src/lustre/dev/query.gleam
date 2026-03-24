@@ -32,7 +32,7 @@ pub opaque type Selector {
   HasAttribute(name: String, value: String)
   HasClass(name: String)
   HasStyle(name: String, value: String)
-  Contains(content: String)
+  HasText(content: String)
 }
 
 // QUERIES ---------------------------------------------------------------------
@@ -253,7 +253,7 @@ pub fn aria(name: String, value: String) -> Selector {
 /// > some specific text, such as in a hero banner or a copyright notice.
 ///
 pub fn text(content: String) -> Selector {
-  Contains(content:)
+  HasText(content:)
 }
 
 // SEARCHING -------------------------------------------------------------------
@@ -615,10 +615,8 @@ pub fn matches(
       })
     }
 
-    Element(..), Contains(content:) -> {
-      element
-      |> text_content(False, "")
-      |> string.contains(content)
+    Element(..), HasText(content:) -> {
+      text_content(element, False, "") == content
     }
 
     _, _ -> False
@@ -635,26 +633,48 @@ fn text_content(element: Element(msg), inline: Bool, content: String) -> String 
     Map(child:, ..) -> text_content(child, inline, content)
     Memo(view:, ..) -> text_content(view(), inline, content)
 
+    // Void elements
+    Element(tag: "area", ..)
+    | Element(tag: "base", ..)
+    | Element(tag: "col", ..)
+    | Element(tag: "embed", ..)
+    | Element(tag: "hr", ..)
+    | Element(tag: "img", ..)
+    | Element(tag: "input", ..)
+    | Element(tag: "link", ..)
+    | Element(tag: "meta", ..)
+    | Element(tag: "param", ..)
+    | Element(tag: "script", ..)
+    | Element(tag: "source", ..)
+    | Element(tag: "style", ..)
+    | Element(tag: "track", ..)
+    | Element(tag: "wbr", ..) -> content
+
+    // Any element if we're not only looking for inline text content, or if the
+    // element is not a HTML element (and so we assume it should be treated as
+    // inline regardless of its tag name)
     Element(..) if !inline || element.namespace != "" ->
       list.fold(element.children, content, fn(content, child) {
         text_content(child, True, content)
       })
 
+    // <br> is a special-case void element that is treated as inline and contributes
+    // a newline to the text content
+    Element(tag: "br", ..) -> content <> "\n"
+
+    // Inline elements
     Element(tag: "a", ..)
     | Element(tag: "abbr", ..)
     | Element(tag: "acronym", ..)
     | Element(tag: "b", ..)
     | Element(tag: "bdo", ..)
     | Element(tag: "big", ..)
-    | Element(tag: "br", ..)
     | Element(tag: "button", ..)
     | Element(tag: "cite", ..)
     | Element(tag: "code", ..)
     | Element(tag: "dfn", ..)
     | Element(tag: "em", ..)
     | Element(tag: "i", ..)
-    | Element(tag: "img", ..)
-    | Element(tag: "input", ..)
     | Element(tag: "kbd", ..)
     | Element(tag: "label", ..)
     | Element(tag: "map", ..)
@@ -662,14 +682,11 @@ fn text_content(element: Element(msg), inline: Bool, content: String) -> String 
     | Element(tag: "output", ..)
     | Element(tag: "q", ..)
     | Element(tag: "samp", ..)
-    | Element(tag: "script", ..)
-    | Element(tag: "select", ..)
     | Element(tag: "small", ..)
     | Element(tag: "span", ..)
     | Element(tag: "strong", ..)
     | Element(tag: "sub", ..)
     | Element(tag: "sup", ..)
-    | Element(tag: "textarea", ..)
     | Element(tag: "time", ..)
     | Element(tag: "tt", ..)
     | Element(tag: "var", ..) ->
@@ -677,6 +694,8 @@ fn text_content(element: Element(msg), inline: Bool, content: String) -> String 
         text_content(child, True, content)
       })
 
+    // Any element that may be styled as inline. This check isn't perfect and can
+    // only factor in inline styles.
     Element(..) -> {
       // This doesn't include the semi-colon at the end of the rule because we
       // want to match any of the following:
@@ -744,7 +763,7 @@ fn selector_to_readable_string(selector: Selector) -> String {
     | HasClass(name: "")
     | HasStyle(name: "", ..)
     | HasStyle(value: "", ..)
-    | Contains(content: "") -> ""
+    | HasText(content: "") -> ""
 
     All(of: selectors) ->
       selectors
@@ -759,7 +778,8 @@ fn selector_to_readable_string(selector: Selector) -> String {
     HasAttribute(name:, value:) -> "[" <> name <> "=\"" <> value <> "\"]"
     HasClass(name:) -> "." <> name
     HasStyle(name:, value:) -> "[style*=\"" <> name <> ":" <> value <> "\"]"
-    Contains(content:) -> ":contains(\"" <> content <> "\")"
+    HasText(content:) ->
+      ":contains(\"" <> string.replace(content, "\n", "\\n") <> "\")"
   }
 }
 
@@ -808,6 +828,6 @@ fn sort_selectors(selectors: List(Selector)) -> List(Selector) {
     HasClass(..), _ -> order.Lt
     _, HasClass(..) -> order.Gt
 
-    Contains(..), Contains(..) -> string.compare(a.content, b.content)
+    HasText(..), HasText(..) -> string.compare(a.content, b.content)
   }
 }
