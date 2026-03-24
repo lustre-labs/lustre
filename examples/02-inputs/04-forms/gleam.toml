@@ -6,3 +6,6 @@ dev-dependencies = { lustre_dev_tools = ">= 2.0.0 and < 3.0.0" }
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
 lustre = { path = "../../../" }
 formal = ">= 3.0.0 and < 4.0.0"
+
+[tools.lustre.html]
+title = "02-inputs/04-forms"

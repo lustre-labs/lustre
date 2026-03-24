@@ -46,7 +46,9 @@ pub fn main() {
   // Here, we'll use gleam_json and a simple FFI function to load a serialised
   // JSON blob from our HTML, and turn it into a initial `flags` value that we
   // will pass to our app:
-  let hydrated_todos = case get_text_content("#todos") {
+  let hydrated_todos = case
+    get_text_content("script[type='application/json']")
+  {
     Ok(todos_json) -> {
       let decoder = decode.list(todo_decoder())
       let assert Ok(todos) = json.parse(todos_json, decoder)
