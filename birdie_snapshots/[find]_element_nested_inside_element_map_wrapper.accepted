@@ -1,6 +1,8 @@
 ---
 version: 1.5.3
 title: [find] Element nested inside element.map wrapper
+file: ./test/snapshot/query_find_test.gleam
+test_name: find_element_nested_inside_map_test
 ---
 
 Query:

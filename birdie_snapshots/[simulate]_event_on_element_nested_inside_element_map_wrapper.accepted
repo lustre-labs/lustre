@@ -1,6 +1,8 @@
 ---
 version: 1.5.3
 title: [simulate] Event on element nested inside element.map wrapper
+file: ./test/integration/simulate_test.gleam
+test_name: simulate_event_on_view_wrapped_in_map_test
 ---
 
 Output:

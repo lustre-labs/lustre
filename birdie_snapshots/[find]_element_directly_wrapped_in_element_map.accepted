@@ -1,6 +1,8 @@
 ---
 version: 1.5.3
 title: [find] Element directly wrapped in element.map
+file: ./test/snapshot/query_find_test.gleam
+test_name: find_element_directly_wrapped_in_map_test
 ---
 
 Query:

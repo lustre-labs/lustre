@@ -1,6 +1,8 @@
 ---
 version: 1.5.3
 title: [simulate] Event on element directly wrapped with element.map
+file: ./test/integration/simulate_test.gleam
+test_name: simulate_event_on_directly_mapped_element_test
 ---
 
 Output:

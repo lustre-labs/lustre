@@ -65,7 +65,8 @@ pub fn find_element_by_inline_style_test() {
 
 pub fn find_element_by_text_content_test() {
   use <- lustre_test.test_filter("find_element_by_text_content_test")
-  let query = query.element(matching: text("©"))
+  let query =
+    query.element(matching: text("© 2025 Lustre Labs BV.\nAll rights reserved."))
   let assert Ok(element) = query.find(in: page(), matching: query)
 
   element
