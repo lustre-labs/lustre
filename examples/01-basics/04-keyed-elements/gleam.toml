@@ -8,3 +8,50 @@ lustre = { path = "../../../" }
 
 [tools.lustre.html]
 title = "01-basics/04-keyed-elements"
+
+[[tools.lustre.html.stylesheets]]
+content = """
+    @keyframes flash {
+        0% {
+            outline: 6px solid orangered;
+        }
+        100% {
+            outline: 6px solid transparent;
+        }
+    }
+
+    .flash {
+        animation: flash 0.5s ease-out;
+    }
+"""
+
+[[tools.lustre.html.scripts]]
+content = """
+    // This script is used to flash elements when they are modified or
+    // added to the DOM.
+
+    document.addEventListener("DOMContentLoaded", () => {
+        function flash(node) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                node.classList.add("flash");
+                setTimeout(() => node.classList.remove("flash"), 500);
+            }
+        }
+
+        const observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+                if (mutation.type === "attributes") {
+                    flash(mutation.target);
+                } else if (mutation.type === "childList") {
+                    mutation.addedNodes.forEach(flash);
+                }
+            }
+        });
+
+        observer.observe(document.getElementById("app"), {
+            attributeFilter: ["src"],
+            childList: true,
+            subtree: true,
+        });
+    });
+"""
