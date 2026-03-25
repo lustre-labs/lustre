@@ -302,9 +302,26 @@ export class ServerComponent extends HTMLElement {
     }
   }
 
+  #getCsrfToken() {
+    if (this.hasAttribute("csrf-token")) {
+      return this.getAttribute("csrf-token") || null;
+    } else {
+      const meta = document.querySelector('meta[name="csrf-token"]');
+      const token = meta.getAttribute("content");
+
+      return token || null;
+    }
+  }
+
   #connect() {
     if (!this.#route || !this.#method) return;
     if (this.#transport) this.#transport.close();
+
+    const csrfToken = this.#getCsrfToken();
+
+    if (csrfToken) {
+      this.#route.searchParams.set("csrf_token", csrfToken);
+    }
 
     const onConnect = () => {
       this.#connected = true;
