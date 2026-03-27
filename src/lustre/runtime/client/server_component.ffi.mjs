@@ -90,7 +90,7 @@ export class ServerComponent extends HTMLElement {
     switch (name) {
       case prev !== next && "route": {
         this.#route = new URL(next, location.href);
-        this.#csrfToken = this.#csrfToken = this.#getCsrfToken();
+        this.#csrfToken = this.#getCsrfToken();
         this.#route.searchParams.set("csrf-token", this.#csrfToken);
 
         this.#connect();
