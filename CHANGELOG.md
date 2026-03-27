@@ -14,6 +14,7 @@ request to fix it.
 ### Added
 
 - [lustre/component] Component's can be notified of form disabled events using the `on_form_disabled` configuration option.
+- [lustre/server_component] The server component client runtime will now detect and include any CSRF token embedded in the page as a query parameter in the initial WebSocket connection URL.
 
 ### Changed
 
