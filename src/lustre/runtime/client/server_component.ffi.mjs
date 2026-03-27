@@ -367,7 +367,12 @@ export class ServerComponent extends HTMLElement {
       );
     };
 
-    const options = { onConnect, onMessage, onClose };
+    const options = {
+      onConnect,
+      onMessage,
+      onClose,
+      csrfToken: this.#csrfToken,
+    };
 
     switch (this.#method) {
       case "ws":
@@ -670,6 +675,7 @@ class SseTransport {
 
 class PollingTransport {
   #url;
+  #csrfToken;
   #interval;
   #timer;
 
@@ -677,12 +683,14 @@ class PollingTransport {
   #onMessage;
   #onClose;
 
-  constructor(url, { onConnect, onMessage, onClose, ...opts }) {
+  constructor(url, { onConnect, onMessage, onClose, csrfToken, interval }) {
     this.#url = url;
+    this.#csrfToken = csrfToken;
+    this.#interval = interval ?? 5000;
+
     this.#onConnect = onConnect;
     this.#onMessage = onMessage;
     this.#onClose = onClose;
-    this.#interval = opts.interval ?? 5000;
 
     this.#fetch().finally(() => {
       this.#onConnect();
@@ -698,7 +706,15 @@ class PollingTransport {
   }
 
   #fetch() {
-    return fetch(this.#url)
+    const headers = Object.assign(
+      {},
+      // If a CSRF token is provided, include it as a request header as checking
+      // headers is more common than query param for CSRF protection in traditional
+      // HTTP requests.
+      this.#csrfToken && { "x-csrf-token": this.#csrfToken },
+    );
+
+    return fetch(this.#url, { headers })
       .then((response) => response.json())
       .then(this.#onMessage)
       .catch(console.error);
