@@ -119,6 +119,10 @@ examples demonstrate Lustre's _server components_.
 - [`5-publish-subscribe`](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/05-publish-subscribe)
   shows how to handle multiple individual clients using a publish-subscribe to communicate.
 
+- [`06-csrf-protection`](https://github.com/lustre-labs/lustre/tree/main/examples/06-server-components/06-csrf-protection)
+  demonstrates embedding a csrf-token meta tag in the page and validating it during
+  the initial WebSocket connection.
+
 ## Getting help
 
 If you're having trouble with Lustre or not sure what the right way to do
