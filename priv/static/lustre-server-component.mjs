@@ -106,17 +106,16 @@ var iterate = (list4, callback) => {
 };
 
 // build/dev/javascript/lustre/lustre/internals/constants.ffi.mjs
-var document2 = () => globalThis?.document;
 var NAMESPACE_HTML = "http://www.w3.org/1999/xhtml";
 var SUPPORTS_MOVE_BEFORE = !!globalThis.HTMLElement?.prototype?.moveBefore;
 
 // build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs
 var setTimeout2 = globalThis.setTimeout;
 var clearTimeout = globalThis.clearTimeout;
-var createElementNS = (ns, name) => document2().createElementNS(ns, name);
-var createTextNode = (data) => document2().createTextNode(data);
-var createComment = (data) => document2().createComment(data);
-var createDocumentFragment = () => document2().createDocumentFragment();
+var createElementNS = (ns, name) => globalThis.document.createElementNS(ns, name);
+var createTextNode = (data) => globalThis.document.createTextNode(data);
+var createComment = (data) => globalThis.document.createComment(data);
+var createDocumentFragment = () => globalThis.document.createDocumentFragment();
 var insertBefore = (parent, node, reference) => parent.insertBefore(node, reference);
 var moveBefore = SUPPORTS_MOVE_BEFORE ? (parent, node, reference) => parent.moveBefore(node, reference) : insertBefore;
 var removeChild = (parent, child2) => parent.removeChild(child2);
@@ -357,7 +356,13 @@ var Reconciler = class {
         const marker = "lustre:fragment";
         const head = this.#createHead(marker, metaParent, index2, vnode);
         insertBefore(domParent, head, beforeEl);
-        this.#insertChildren(domParent, beforeEl, head[meta], 0, vnode.children);
+        this.#insertChildren(
+          domParent,
+          beforeEl,
+          head[meta],
+          0,
+          vnode.children
+        );
         if (this.#debug) {
           head[meta].endNode = createComment(` /${marker} `);
           insertBefore(domParent, head[meta].endNode, beforeEl);
@@ -559,7 +564,9 @@ var SYNCED_ATTRIBUTES = {
 var copiedStyleSheets = /* @__PURE__ */ new WeakMap();
 async function adoptStylesheets(shadowRoot) {
   const pendingParentStylesheets = [];
-  for (const node of document2().querySelectorAll("link[rel=stylesheet], style")) {
+  for (const node of globalThis.document.querySelectorAll(
+    "link[rel=stylesheet], style"
+  )) {
     if (node.sheet) continue;
     pendingParentStylesheets.push(
       new Promise((resolve, reject) => {
@@ -574,7 +581,7 @@ async function adoptStylesheets(shadowRoot) {
   }
   shadowRoot.adoptedStyleSheets = shadowRoot.host.getRootNode().adoptedStyleSheets;
   const pending = [];
-  for (const sheet of document2().styleSheets) {
+  for (const sheet of globalThis.document.styleSheets) {
     try {
       shadowRoot.adoptedStyleSheets.push(sheet);
     } catch {
@@ -620,11 +627,12 @@ var context_provided_kind = 4;
 // src/lustre/runtime/client/server_component.ffi.mjs
 var ServerComponent = class extends HTMLElement {
   static get observedAttributes() {
-    return ["route", "method"];
+    return ["route", "method", "csrf-token"];
   }
   #shadowRoot;
   #method = "ws";
   #route = null;
+  #csrfToken = null;
   #transport = null;
   #adoptedStyleNodes = [];
   #reconciler;
@@ -675,6 +683,8 @@ var ServerComponent = class extends HTMLElement {
     switch (name) {
       case (prev !== next && "route"): {
         this.#route = new URL(next, location.href);
+        this.#csrfToken = this.#csrfToken = this.#getCsrfToken();
+        this.#route.searchParams.set("csrf-token", this.#csrfToken);
         this.#connect();
         return;
       }
@@ -686,10 +696,26 @@ var ServerComponent = class extends HTMLElement {
           if (this.#method == "ws") {
             if (this.#route.protocol == "https:") this.#route.protocol = "wss:";
             if (this.#route.protocol == "http:") this.#route.protocol = "ws:";
+          } else if (this.#route.protocol == "wss:") {
+            this.#route.protocol = "https:";
+          } else if (this.#route.protocol == "ws:") {
+            this.#route.protocol = "http:";
           }
           this.#connect();
         }
         return;
+      }
+      case "csrf-token": {
+        if (prev !== next && this.#connected) {
+          this.#transport?.close();
+        }
+        this.#csrfToken = this.#getCsrfToken();
+        if (this.#route) {
+          this.#route.searchParams.set("csrf-token", this.#csrfToken);
+        }
+        if (this.#connected) {
+          this.#connect();
+        }
       }
     }
   }
@@ -775,13 +801,12 @@ var ServerComponent = class extends HTMLElement {
           event2.stopImmediatePropagation();
           const context = this.#contexts.get(event2.context);
           if (event2.subscribe) {
-            const callbackRef = new WeakRef(event2.callback);
             const unsubscribe = () => {
               context.subscribers = context.subscribers.filter(
-                (subscriber) => subscriber !== callbackRef
+                (subscriber) => subscriber !== event2.callback
               );
             };
-            context.subscribers.push([callbackRef, unsubscribe]);
+            context.subscribers.push([event2.callback, unsubscribe]);
             event2.callback(context.value, unsubscribe);
           } else {
             event2.callback(context.value);
@@ -824,14 +849,22 @@ var ServerComponent = class extends HTMLElement {
       const context = this.#contexts.get(key);
       context.value = value;
       for (let i = context.subscribers.length - 1; i >= 0; i--) {
-        const [subscriberRef, unsubscribe] = context.subscribers[i];
-        const subscriber = subscriberRef.deref();
+        const [subscriber, unsubscribe] = context.subscribers[i];
         if (!subscriber) {
           context.subscribers.splice(i, 1);
           continue;
         }
         subscriber(value, unsubscribe);
       }
+    }
+  }
+  #getCsrfToken() {
+    if (this.hasAttribute("csrf-token")) {
+      return this.getAttribute("csrf-token") || null;
+    } else {
+      const meta2 = document.querySelector('meta[name="csrf-token"]');
+      const token = meta2.getAttribute("content");
+      return token || null;
     }
   }
   #connect() {
@@ -860,7 +893,12 @@ var ServerComponent = class extends HTMLElement {
         })
       );
     };
-    const options = { onConnect, onMessage, onClose };
+    const options = {
+      onConnect,
+      onMessage,
+      onClose,
+      csrfToken: this.#csrfToken
+    };
     switch (this.#method) {
       case "ws":
         this.#transport = new WebsocketTransport(this.#route, options);
@@ -894,7 +932,14 @@ var ServerComponent = class extends HTMLElement {
   #createServerEvent(event2, include = []) {
     const data = {};
     if (event2.type === "input" || event2.type === "change") {
-      include.push("target.value");
+      if (event2.target.type === "checkbox") {
+        include.push("target.checked");
+      } else {
+        include.push("target.value");
+      }
+    }
+    if (event2.type === "keydown" || event2.type === "keyup" || event2.type === "keypress") {
+      include.push("key");
     }
     if (event2.type === "submit") {
       include.push("detail.formData");
@@ -1074,17 +1119,19 @@ var SseTransport = class {
 };
 var PollingTransport = class {
   #url;
+  #csrfToken;
   #interval;
   #timer;
   #onConnect;
   #onMessage;
   #onClose;
-  constructor(url, { onConnect, onMessage, onClose, ...opts }) {
+  constructor(url, { onConnect, onMessage, onClose, csrfToken, interval }) {
     this.#url = url;
+    this.#csrfToken = csrfToken;
+    this.#interval = interval ?? 5e3;
     this.#onConnect = onConnect;
     this.#onMessage = onMessage;
     this.#onClose = onClose;
-    this.#interval = opts.interval ?? 5e3;
     this.#fetch().finally(() => {
       this.#onConnect();
       this.#timer = setInterval(() => this.#fetch(), this.#interval);
@@ -1097,7 +1144,14 @@ var PollingTransport = class {
     this.#onClose();
   }
   #fetch() {
-    return fetch(this.#url).then((response) => response.json()).then(this.#onMessage).catch(console.error);
+    const headers = Object.assign(
+      {},
+      // If a CSRF token is provided, include it as a request header as checking
+      // headers is more common than query param for CSRF protection in traditional
+      // HTTP requests.
+      this.#csrfToken && { "x-csrf-token": this.#csrfToken }
+    );
+    return fetch(this.#url, { headers }).then((response) => response.json()).then(this.#onMessage).catch(console.error);
   }
 };
 customElements.define("lustre-server-component", ServerComponent);
