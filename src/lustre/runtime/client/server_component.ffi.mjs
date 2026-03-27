@@ -25,12 +25,13 @@ import {
 
 export class ServerComponent extends HTMLElement {
   static get observedAttributes() {
-    return ["route", "method"];
+    return ["route", "method", "csrf-token"];
   }
 
   #shadowRoot;
   #method = "ws";
   #route = null;
+  #csrfToken = null;
   #transport = null;
   #adoptedStyleNodes = [];
   #reconciler;
@@ -89,6 +90,9 @@ export class ServerComponent extends HTMLElement {
     switch (name) {
       case prev !== next && "route": {
         this.#route = new URL(next, location.href);
+        this.#csrfToken = this.#csrfToken = this.#getCsrfToken();
+        this.#route.searchParams.set("csrf-token", this.#csrfToken);
+
         this.#connect();
         return;
       }
@@ -103,12 +107,32 @@ export class ServerComponent extends HTMLElement {
           if (this.#method == "ws") {
             if (this.#route.protocol == "https:") this.#route.protocol = "wss:";
             if (this.#route.protocol == "http:") this.#route.protocol = "ws:";
+          } else if (this.#route.protocol == "wss:") {
+            this.#route.protocol = "https:";
+          } else if (this.#route.protocol == "ws:") {
+            this.#route.protocol = "http:";
           }
 
           this.#connect();
         }
 
         return;
+      }
+
+      case "csrf-token": {
+        if (prev !== next && this.#connected) {
+          this.#transport?.close();
+        }
+
+        this.#csrfToken = this.#getCsrfToken();
+
+        if (this.#route) {
+          this.#route.searchParams.set("csrf-token", this.#csrfToken);
+        }
+
+        if (this.#connected) {
+          this.#connect();
+        }
       }
     }
   }
@@ -316,12 +340,6 @@ export class ServerComponent extends HTMLElement {
   #connect() {
     if (!this.#route || !this.#method) return;
     if (this.#transport) this.#transport.close();
-
-    const csrfToken = this.#getCsrfToken();
-
-    if (csrfToken) {
-      this.#route.searchParams.set("csrf_token", csrfToken);
-    }
 
     const onConnect = () => {
       this.#connected = true;
