@@ -107,10 +107,6 @@ export class ServerComponent extends HTMLElement {
           if (this.#method == "ws") {
             if (this.#route.protocol == "https:") this.#route.protocol = "wss:";
             if (this.#route.protocol == "http:") this.#route.protocol = "ws:";
-          } else if (this.#route.protocol == "wss:") {
-            this.#route.protocol = "https:";
-          } else if (this.#route.protocol == "ws:") {
-            this.#route.protocol = "http:";
           }
 
           this.#connect();
