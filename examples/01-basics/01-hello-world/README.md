@@ -29,9 +29,9 @@ about pure functions by reading [the hint](https://github.com/lustre-labs/lustre
 
 ## Running the Example
 
-This example and all the others in this repository use Lustre's
-[dev tools](https://hex.pm/packages/lustre_dev_tools) package to build and run
-the app. Just run:
+This example and all the others in this repository (except the server examples)
+use Lustre's [dev tools](https://hex.pm/packages/lustre_dev_tools) package to
+build and run the app. Just run:
 
 ```bash
 gleam run -m lustre/dev start
