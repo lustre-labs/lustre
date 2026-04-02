@@ -327,7 +327,7 @@ export class ServerComponent extends HTMLElement {
       return this.getAttribute("csrf-token") || null;
     } else {
       const meta = document.querySelector('meta[name="csrf-token"]');
-      const token = meta.getAttribute("content");
+      const token = meta?.getAttribute("content");
 
       return token || null;
     }

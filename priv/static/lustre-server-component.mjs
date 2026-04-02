@@ -683,7 +683,7 @@ var ServerComponent = class extends HTMLElement {
     switch (name) {
       case (prev !== next && "route"): {
         this.#route = new URL(next, location.href);
-        this.#csrfToken = this.#csrfToken = this.#getCsrfToken();
+        this.#csrfToken = this.#getCsrfToken();
         this.#route.searchParams.set("csrf-token", this.#csrfToken);
         this.#connect();
         return;
@@ -696,10 +696,6 @@ var ServerComponent = class extends HTMLElement {
           if (this.#method == "ws") {
             if (this.#route.protocol == "https:") this.#route.protocol = "wss:";
             if (this.#route.protocol == "http:") this.#route.protocol = "ws:";
-          } else if (this.#route.protocol == "wss:") {
-            this.#route.protocol = "https:";
-          } else if (this.#route.protocol == "ws:") {
-            this.#route.protocol = "http:";
           }
           this.#connect();
         }
@@ -863,7 +859,7 @@ var ServerComponent = class extends HTMLElement {
       return this.getAttribute("csrf-token") || null;
     } else {
       const meta2 = document.querySelector('meta[name="csrf-token"]');
-      const token = meta2.getAttribute("content");
+      const token = meta2?.getAttribute("content");
       return token || null;
     }
   }
