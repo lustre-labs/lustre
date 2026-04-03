@@ -25,7 +25,7 @@ import {
   //
   Message$isSystemRequestedShutdown,
 } from "./runtime.mjs";
-import * as Component from "../../component.mjs";
+import * as App from "../app.mjs";
 import * as Effect from "../../effect.mjs";
 import * as Transport from "../transport.mjs";
 import {
@@ -253,7 +253,7 @@ export class Runtime {
 }
 
 export const start = (app, start_arguments) => {
-  const config = Component.to_server_component_config(app.config);
+  const config = App.configure_server_component(app.config);
 
   return Result$Ok(
     new Runtime(app.init, app.update, app.view, config, start_arguments),
