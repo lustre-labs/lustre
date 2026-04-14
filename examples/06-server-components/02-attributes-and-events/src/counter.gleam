@@ -14,7 +14,7 @@ import lustre/event
 
 // MAIN ------------------------------------------------------------------------
 
-pub fn component() -> lustre.App(_, Model, Msg) {
+pub fn component() -> lustre.App(_, Model, Message) {
   // Server components are still Lustre components, which means they get access
   // to the same features like listening to changes to attributes and properties
   // or emitting DOM events.
@@ -31,7 +31,7 @@ pub fn component() -> lustre.App(_, Model, Msg) {
   ])
 }
 
-pub fn value(value: Int) -> Attribute(msg) {
+pub fn value(value: Int) -> Attribute(message) {
   attribute.value(int.to_string(value))
 }
 
@@ -40,21 +40,21 @@ pub fn value(value: Int) -> Attribute(msg) {
 pub type Model =
   Int
 
-fn init(_) -> #(Model, Effect(Msg)) {
+fn init(_) -> #(Model, Effect(Message)) {
   #(0, effect.none())
 }
 
 // UPDATE ----------------------------------------------------------------------
 
-pub opaque type Msg {
+pub opaque type Message {
   ParentChangedValue(Int)
   UserClickedIncrement
   UserClickedDecrement
   UserClickedSubmit
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     ParentChangedValue(value) -> #(value, effect.none())
     UserClickedIncrement -> #(model + 1, effect.none())
     UserClickedDecrement -> #(model - 1, effect.none())
@@ -70,7 +70,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   let count = int.to_string(model)
   let styles = [#("display", "flex"), #("justify-content", "space-between")]
 
@@ -82,6 +82,9 @@ fn view(model: Model) -> Element(Msg) {
   ])
 }
 
-fn view_button(label label: String, on_click handle_click: msg) -> Element(msg) {
+fn view_button(
+  label label: String,
+  on_click handle_click: message,
+) -> Element(message) {
   html.button([event.on_click(handle_click)], [html.text(label)])
 }

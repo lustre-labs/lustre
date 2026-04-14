@@ -27,13 +27,13 @@ fn init(_) -> Model {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   UserClickedIncrement
   UserClickedDecrement
 }
 
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(model: Model, message: Message) -> Model {
+  case message {
     UserClickedIncrement -> model + 1
     UserClickedDecrement -> model - 1
   }
@@ -41,7 +41,7 @@ fn update(model: Model, msg: Msg) -> Model {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div(
     [attribute.class("h-screen flex flex-col justify-center items-center")],
     [

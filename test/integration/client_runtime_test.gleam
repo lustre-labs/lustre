@@ -24,10 +24,10 @@ import lustre_test
 // TYPES -----------------------------------------------------------------------
 
 @target(javascript)
-pub type Runtime(msg, model)
+pub type Runtime(message, model)
 
 @target(javascript)
-type CounterMsg {
+type CounterMessage {
   Increment
   Decrement
   Reset
@@ -52,9 +52,11 @@ pub fn client_runtime_map_with_events_test() {
   let html_string = element.to_string(initial)
 
   let app =
-    lustre.simple(fn(_) { [] }, fn(model, msg) { [msg, ..model] }, fn(_model) {
-      initial
-    })
+    lustre.simple(
+      fn(_) { [] },
+      fn(model, message) { [message, ..model] },
+      fn(_model) { initial },
+    )
 
   use runtime <- with_client_runtime(html_string, app)
 
@@ -86,7 +88,7 @@ pub fn client_runtime_memo_caching_test() {
   // called once for element.to_string
   assert booklet.get(call_count) == 1
 
-  let app = lustre.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view)
+  let app = lustre.simple(fn(_) { 0 }, fn(model, _message) { model + 1 }, view)
 
   use runtime <- with_client_runtime(html_string, app)
 
@@ -152,8 +154,8 @@ pub fn client_runtime_single_event_test() {
   let app =
     lustre.simple(
       fn(_) { 0 },
-      fn(model, msg) {
-        case msg {
+      fn(model, message) {
+        case message {
           Increment -> model + 1
           Decrement -> model - 1
           Reset -> 0
@@ -189,8 +191,8 @@ pub fn client_runtime_multiple_events_test() {
   let app =
     lustre.simple(
       fn(_) { 0 },
-      fn(model, msg) {
-        case msg {
+      fn(model, message) {
+        case message {
           Increment -> model + 1
           Decrement -> model - 1
           Reset -> 0
@@ -229,8 +231,8 @@ pub fn client_runtime_fragment_rendering_test() {
   let app =
     lustre.simple(
       fn(_) { 0 },
-      fn(model, msg) {
-        case msg {
+      fn(model, message) {
+        case message {
           Increment -> model + 1
           Decrement -> model - 1
           Reset -> 0
@@ -266,7 +268,7 @@ pub fn client_runtime_controlled_text_input_test() {
     ])
   }
 
-  let app = lustre.simple(fn(_) { "" }, fn(_model, msg) { msg }, view)
+  let app = lustre.simple(fn(_) { "" }, fn(_model, message) { message }, view)
 
   let initial = view("")
   let html_string = element.to_string(initial)
@@ -296,7 +298,8 @@ pub fn client_runtime_controlled_checkbox_test() {
     ])
   }
 
-  let app = lustre.simple(fn(_) { False }, fn(_model, msg) { msg }, view)
+  let app =
+    lustre.simple(fn(_) { False }, fn(_model, message) { message }, view)
 
   let initial = view(False)
   let html_string = element.to_string(initial)
@@ -327,7 +330,8 @@ pub fn client_runtime_select_dropdown_test() {
     ])
   }
 
-  let app = lustre.simple(fn(_) { "red" }, fn(_model, msg) { msg }, view)
+  let app =
+    lustre.simple(fn(_) { "red" }, fn(_model, message) { message }, view)
 
   let initial = view("red")
   let html_string = element.to_string(initial)
@@ -360,7 +364,7 @@ pub fn client_runtime_memo_dependency_change_test() {
     ])
   }
 
-  let app = lustre.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view)
+  let app = lustre.simple(fn(_) { 0 }, fn(model, _message) { model + 1 }, view)
 
   let initial = view(0)
   let html_string = element.to_string(initial)
@@ -402,7 +406,7 @@ pub fn client_runtime_memo_stable_dependency_test() {
   let app =
     lustre.simple(
       fn(_) { #(0, "") },
-      fn(model, _msg) {
+      fn(model, _message) {
         let #(count, text) = model
         #(count, text <> "x")
       },
@@ -442,7 +446,8 @@ pub fn client_runtime_event_bubbling_test() {
     ])
   }
 
-  let app = lustre.simple(fn(_) { [] }, fn(model, msg) { [msg, ..model] }, view)
+  let app =
+    lustre.simple(fn(_) { [] }, fn(model, message) { [message, ..model] }, view)
 
   let initial = view([])
   let html_string = element.to_string(initial)
@@ -476,7 +481,7 @@ pub fn client_runtime_nested_fragments_test() {
     ])
   }
 
-  let app = lustre.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view)
+  let app = lustre.simple(fn(_) { 0 }, fn(model, _message) { model + 1 }, view)
 
   let initial = view(0)
   let html_string = element.to_string(initial)
@@ -507,7 +512,8 @@ pub fn client_runtime_keyed_fragments_test() {
   }
 
   let initial_list = ["First", "Second", "Third"]
-  let app = lustre.simple(fn(_) { initial_list }, fn(_model, msg) { msg }, view)
+  let app =
+    lustre.simple(fn(_) { initial_list }, fn(_model, message) { message }, view)
 
   let initial = view(initial_list)
   let html_string = element.to_string(initial)
@@ -604,15 +610,15 @@ pub fn client_runtime_keyed_move_events_test() {
 @external(javascript, "./client_test.ffi.mjs", "with_client_runtime")
 pub fn with_client_runtime(
   initial_html: String,
-  app: lustre.App(Nil, model, msg),
-  test_callback: fn(Runtime(msg, model)) -> Nil,
+  app: lustre.App(Nil, model, message),
+  test_callback: fn(Runtime(message, model)) -> Nil,
 ) -> Nil
 
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "send")
 pub fn send(
-  runtime: Runtime(msg, model),
-  msg: msg,
+  runtime: Runtime(message, model),
+  message: message,
   callback: fn() -> Nil,
 ) -> Nil
 
@@ -635,8 +641,8 @@ pub fn get_html() -> String
 
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "get_vdom")
-pub fn get_vdom() -> Element(msg)
+pub fn get_vdom() -> Element(message)
 
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "model")
-pub fn get_model(runtime: Runtime(msg, model)) -> model
+pub fn get_model(runtime: Runtime(message, model)) -> model

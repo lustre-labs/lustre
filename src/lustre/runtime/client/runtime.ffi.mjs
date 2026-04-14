@@ -106,11 +106,11 @@ export class Runtime {
 
   root = null;
 
-  dispatch(msg, shouldFlush = false) {
+  dispatch(message, shouldFlush = false) {
     if (this.#shouldQueue) {
-      this.#queue.push(msg);
+      this.#queue.push(message);
     } else {
-      const [model, effects] = this.#update(this.#model, msg);
+      const [model, effects] = this.#update(this.#model, message);
 
       this.#model = model;
 
@@ -186,7 +186,7 @@ export class Runtime {
   #renderTimer = null;
 
   #actions = {
-    dispatch: (msg) => this.dispatch(msg),
+    dispatch: (message) => this.dispatch(message),
     emit: (event, data) => this.emit(event, data),
     select: () => {},
     root: () => this.root,
@@ -240,8 +240,8 @@ export class Runtime {
 
       // This is a destructuring assignment pattern that is mutating both
       // `this.#model` and the argument to this function: `effects`!
-      const msg = this.#queue.shift();
-      [this.#model, effects] = this.#update(this.#model, msg);
+      const message = this.#queue.shift();
+      [this.#model, effects] = this.#update(this.#model, message);
 
       updateCalledDuringEffects = true;
     }

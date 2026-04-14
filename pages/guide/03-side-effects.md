@@ -13,17 +13,17 @@ this:
                                        +--------+
                                          ^    |
                                          |    |
-                                     Msg |    | #(Model, Effect(msg))
+                                     Message |    | #(Model, Effect(message))
                                          |    |
                                          |    v
 +------+                         +------------------------+
-|      |  #(Model, Effect(msg))  |                        |
+|      |  #(Model, Effect(message))  |                        |
 | init |------------------------>|     Lustre Runtime     |
 |      |                         |                        |
 +------+                         +------------------------+
                                          ^    |
                                          |    |
-                                     Msg |    | Model
+                                     Message |    | Model
                                          |    |
                                          |    v
                                        +--------+
@@ -95,21 +95,21 @@ application constructor until now, it is time to upgrade to
 [`lustre.application`](https://hexdocs.pm/lustre/lustre.html#application)!
 
 Full Lustre applications differ from simple applications in one important way by
-returning a tuple of `#(Model, Effect(Msg))` from your `init` and `update`
+returning a tuple of `#(Model, Effect(Message))` from your `init` and `update`
 functions:
 
 ```gleam
 pub fn simple(
   init: fn(flags) -> model,
-  update: fn(model, msg) -> model,
-  view: fn(model) -> Element(msg),
-) -> App(flags, model, msg)
+  update: fn(model, message) -> model,
+  view: fn(model) -> Element(message),
+) -> App(flags, model, message)
 
 pub fn application(
-  init: fn(flags) -> #(model, Effect(msg)),
-  update: fn(model, msg) -> #(model, Effect(msg)),
-  view: fn(model) -> Element(msg),
-) -> App(flags, model, msg)
+  init: fn(flags) -> #(model, Effect(message)),
+  update: fn(model, message) -> #(model, Effect(message)),
+  view: fn(model) -> Element(message),
+) -> App(flags, model, message)
 ```
 
 We can, for example, launch an HTTP request on application start by using `rsvp.get`
@@ -151,10 +151,10 @@ export function read(key) {
 ```
 
 ```gleam
-fn read(key: String, to_msg: fn(Result(String, Nil)) -> msg) -> Effect(msg) {
+fn read(key: String, to_message: fn(Result(String, Nil)) -> message) -> Effect(message) {
   effect.from(fn(dispatch) {
     do_read(key)
-    |> to_msg
+    |> to_message
     |> dispatch
   })
 }
@@ -193,11 +193,11 @@ points in the rendering cycle:
 import lustre/effect
 
 // Measure the width of an element after it's been rendered but before paint
-fn measure_element(id: String, to_msg: fn(Int) -> msg) -> Effect(msg) {
+fn measure_element(id: String, to_message: fn(Int) -> message) -> Effect(message) {
   effect.before_paint(fn(dispatch, _) {
     let element = document.get_element_by_id(id)
     let width = element.client_width
-    dispatch(to_msg(width))
+    dispatch(to_message(width))
   })
 }
 ```
@@ -221,7 +221,7 @@ export function write(key, value) {
 
 ```gleam
 // app.gleam
-fn write(key: String, value: String) -> Effect(msg) {
+fn write(key: String, value: String) -> Effect(message) {
   effect.from(fn(_) {
     do_write(key, value)
   })
@@ -251,7 +251,7 @@ export function every(interval, cb) {
 
 ```gleam
 // app.gleam
-fn every(interval: Int, tick: msg) -> Effect(msg) {
+fn every(interval: Int, tick: message) -> Effect(message) {
   effect.from(fn(dispatch) {
     do_every(interval, fn() {
       dispatch(tick)
@@ -271,8 +271,8 @@ If you need to perform multiple effects at once, you can use `effect.batch` to
 combine them:
 
 ```gleam
-fn update(model, msg) {
-  case msg {
+fn update(model, message) {
+  case message {
     UserClickedRefresh -> #(
       Model(..model, loading: True),
       effect.batch([

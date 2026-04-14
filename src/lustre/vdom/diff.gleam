@@ -17,21 +17,25 @@ import lustre/vdom/vnode.{
 
 ///
 ///
-pub type Diff(msg) {
-  Diff(patch: Patch(msg), cache: Cache(msg))
+pub type Diff(message) {
+  Diff(patch: Patch(message), cache: Cache(message))
 }
 
-type PartialDiff(msg) {
-  PartialDiff(patch: Patch(msg), cache: Cache(msg), events: Events(msg))
+type PartialDiff(message) {
+  PartialDiff(
+    patch: Patch(message),
+    cache: Cache(message),
+    events: Events(message),
+  )
 }
 
 // DIFFING ---------------------------------------------------------------------
 
 pub fn diff(
-  cache: Cache(msg),
-  old: Element(msg),
-  new: Element(msg),
-) -> Diff(msg) {
+  cache: Cache(message),
+  old: Element(message),
+  new: Element(message),
+) -> Diff(message) {
   let cache = cache.tick(cache)
 
   let PartialDiff(patch:, cache:, events:) =
@@ -59,10 +63,10 @@ pub fn diff(
 }
 
 fn do_diff(
-  old old: List(Element(msg)),
-  old_keyed old_keyed: MutableMap(String, Element(msg)),
-  new new: List(Element(msg)),
-  new_keyed new_keyed: MutableMap(String, Element(msg)),
+  old old: List(Element(message)),
+  old_keyed old_keyed: MutableMap(String, Element(message)),
+  new new: List(Element(message)),
+  new_keyed new_keyed: MutableMap(String, Element(message)),
   //
   moved moved: MutableMap(String, Nil),
   moved_offset moved_offset: Int,
@@ -70,13 +74,13 @@ fn do_diff(
   //
   node_index node_index: Int,
   patch_index patch_index: Int,
-  changes changes: List(Change(msg)),
-  children children: List(Patch(msg)),
+  changes changes: List(Change(message)),
+  children children: List(Patch(message)),
   //
   path path: Path,
-  cache cache: Cache(msg),
-  events events: Events(msg),
-) -> PartialDiff(msg) {
+  cache cache: Cache(message),
+  events events: Events(message),
+) -> PartialDiff(message) {
   case old, new {
     [], [] -> {
       let patch = Patch(index: patch_index, removed:, changes:, children:)
@@ -674,7 +678,12 @@ fn do_diff(
 
 // ATTRIBUTE DIFFING -----------------------------------------------------------
 
-fn is_controlled(cache: Cache(msg), namespace: String, tag: String, path: Path) {
+fn is_controlled(
+  cache: Cache(message),
+  namespace: String,
+  tag: String,
+  path: Path,
+) {
   case tag {
     "input" | "select" | "textarea" if namespace == "" ->
       cache.has_dispatched_events(cache, path)
@@ -682,23 +691,23 @@ fn is_controlled(cache: Cache(msg), namespace: String, tag: String, path: Path) 
   }
 }
 
-type AttributeChange(msg) {
+type AttributeChange(message) {
   AttributeChange(
-    added: List(Attribute(msg)),
-    removed: List(Attribute(msg)),
-    events: Events(msg),
+    added: List(Attribute(message)),
+    removed: List(Attribute(message)),
+    events: Events(message),
   )
 }
 
 fn diff_attributes(
   controlled controlled: Bool,
   path path: Path,
-  events events: Events(msg),
-  old old: List(Attribute(msg)),
-  new new: List(Attribute(msg)),
-  added added: List(Attribute(msg)),
-  removed removed: List(Attribute(msg)),
-) -> AttributeChange(msg) {
+  events events: Events(message),
+  old old: List(Attribute(message)),
+  new new: List(Attribute(message)),
+  added added: List(Attribute(message)),
+  removed removed: List(Attribute(message)),
+) -> AttributeChange(message) {
   case old, new {
     [], [] -> AttributeChange(added:, removed:, events:)
 

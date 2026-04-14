@@ -34,9 +34,9 @@ fn init(_) -> Model {
     ),
     #(
       "What is Lustre?",
-      "Lustre is a framework for building Web apps in Gleam! It provides a
-       declarative, functional API for constructing HTML, and is able to run
-       not only in the browser, but on the server as well!",
+      "Lustre is a library for building Web apps in Gleam! It provides a declarative,
+      functional API for constructing HTML, and is able to run not only in the browser,
+      but on the server as well!",
     ),
     #(
       "How can I get help?",
@@ -49,12 +49,12 @@ fn init(_) -> Model {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   UserToggledEntry(String)
 }
 
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(model: Model, message: Message) -> Model {
+  case message {
     UserToggledEntry(id) ->
       case set.contains(model.open, id) {
         True -> Model(..model, open: set.delete(model.open, id))
@@ -65,7 +65,7 @@ fn update(model: Model, msg: Msg) -> Model {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div([attribute.class("p-32 w-full max-w-2xl mx-auto space-y-4")], [
     html.h1([attribute.class("text-2xl font-semibold")], [html.text("FAQ")]),
     // Lists of elements can be grouped using fragments. Fragments only exist
@@ -99,7 +99,7 @@ fn view(model: Model) -> Element(Msg) {
 fn view_entry(
   open: Set(String),
   entry: #(String, String),
-) -> #(String, Element(Msg)) {
+) -> #(String, Element(Message)) {
   let #(question, answer) = entry
   let is_open = set.contains(open, question)
 

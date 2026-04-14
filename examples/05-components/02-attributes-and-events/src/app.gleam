@@ -29,19 +29,19 @@ fn init(_) -> Model {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   CounterUpdatedValue(Int)
 }
 
-fn update(_model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(_model: Model, message: Message) -> Model {
+  case message {
     CounterUpdatedValue(value) -> value
   }
 }
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div([attribute.class("p-32 mx-auto w-full max-w-2xl space-y-4")], [
     html.div([attribute.class("border rounded p-2")], [
       counter.element([

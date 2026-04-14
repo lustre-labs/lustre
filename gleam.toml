@@ -2,7 +2,7 @@ name = "lustre"
 version = "5.6.0"
 gleam = ">= 1.13.0"
 
-description = "A Gleam web framework for building HTML templates, single page applications, and real-time server components."
+description = "Create HTML templates, single page applications, Web Components, and real-time server components in Gleam!"
 repository = { type = "github", user = "lustre-labs", repo = "lustre" }
 licences = ["MIT"]
 

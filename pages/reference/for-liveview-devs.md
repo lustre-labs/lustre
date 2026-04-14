@@ -129,13 +129,13 @@ fn init(_) -> Model {
   0
 }
 
-type Msg {
+type Message {
   Incr
   Decr
 }
 
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(model: Model, message: Message) -> Model {
+  case message {
     Incr -> model + 1
     Decr -> model - 1
   }
@@ -254,13 +254,13 @@ LiveView also has stateful components using `Phoenix.LiveComponent`.
 **In Lustre**, simple components are typically view functions:
 
 ```gleam
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div([], [
     greet(model.name)
   ])
 }
 
-fn greet(name: String) -> Element(Msg) {
+fn greet(name: String) -> Element(Message) {
   html.h1([], [html.text("Hello, " <> name)])
 }
 ```
@@ -268,7 +268,7 @@ fn greet(name: String) -> Element(Msg) {
 Lustre also provides stateful components with their own MVU cycle:
 
 ```gleam
-pub fn counter_component() -> Component(CounterModel, CounterMsg, CounterEvent, props) {
+pub fn counter_component() -> Component(CounterModel, CounterMessage, CounterEvent, props) {
   lustre.component(counter_init, counter_update, counter_view, [])
 }
 ```
@@ -297,19 +297,19 @@ end
 **In Lustre**, you use the effect system to handle side effects like data fetching:
 
 ```gleam
-fn init(_) -> #(Model, Effect(Msg)) {
+fn init(_) -> #(Model, Effect(Message)) {
   #(Model(loading: True, data: None), fetch_data())
 }
 
-fn fetch_data() -> Effect(Msg) {
+fn fetch_data() -> Effect(Message) {
   rsvp.get(
     "https://api.example.com/data",
     rsvp.expect_json(data_decoder, DataFetched)
   )
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     DataFetched(Ok(data)) -> #(
       Model(loading: False, data: Some(data)),
       effect.none()

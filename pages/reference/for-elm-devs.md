@@ -91,13 +91,13 @@ type alias Model = Int
 init : Model
 init = 0
 
-type Msg
+type Message
     = Incr
     | Decr
 
-update : Msg -> Model -> Model
-update msg model =
-    case msg of
+update : Message -> Model -> Model
+update message model =
+    case message of
         Incr ->
             model + 1
 
@@ -116,13 +116,13 @@ fn init(_) -> Model {
   0
 }
 
-type Msg {
+type Message {
   Incr
   Decr
 }
 
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(model: Model, message: Message) -> Model {
+  case message {
     Incr -> model + 1
     Decr -> model - 1
   }
@@ -135,10 +135,10 @@ fn update(model: Model, msg: Msg) -> Model {
 `update` function returns both a new model and a command to perform:
 
 ```elm
-type Msg
+type Message
   = ApiReturnedBookResponse (Result Http.Error String)
 
-getBook : Cmd Msg
+getBook : Cmd Message
 getBook =
   Http.get
     { url = "https://elm-lang.org/assets/public-opinion.txt"
@@ -147,9 +147,9 @@ getBook =
 
 type alias Model = { bookResponse : Result Http.Error String }
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-  case msg of
+update : Message -> Model -> ( Model, Cmd Message )
+update message model =
+  case message of
     ApiReturnedBookResponse response ->
       ( { model | bookResponse = response }, Cmd.none )
 ```
@@ -158,11 +158,11 @@ update msg model =
 is to use the `rsvp` package for HTTP requests:
 
 ```gleam
-type Msg {
+type Message {
   ApiReturnedBookResponse(Result(String, rsvp.Error))
 }
 
-fn get_book() -> Effect(Msg) {
+fn get_book() -> Effect(Message) {
   rsvp.get(
     "https://elm-lang.org/assets/public-opinion.txt",
     rsvp.expect_text(ApiReturnedBookResponse)
@@ -173,8 +173,8 @@ type Model {
   Model(book_response: Result(String, rsvp.Error))
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     ApiReturnedBookResponse(response) -> #(
       Model(..model, book_response: response),
       effect.none()
@@ -189,9 +189,9 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 that return HTML elements:
 
 ```elm
-viewButton : String -> msg -> Html msg
-viewButton label msg =
-  Html.button [ Html.Events.onClick msg ] [ Html.text label ]
+viewButton : String -> message -> Html message
+viewButton label message =
+  Html.button [ Html.Events.onClick message ] [ Html.text label ]
 
 -- In your view
 view model =
@@ -206,12 +206,12 @@ supports stateful components:
 
 ```gleam
 // Simple view function (like Elm)
-fn view_button(label: String, msg: msg) -> Element(msg) {
-  html.button([event.on_click(msg)], [html.text(label)])
+fn view_button(label: String, message: message) -> Element(message) {
+  html.button([event.on_click(message)], [html.text(label)])
 }
 
 // In your view
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div([], [
     view_button("Increment", Incr),
     view_button("Decrement", Decr)
@@ -219,7 +219,7 @@ fn view(model: Model) -> Element(Msg) {
 }
 
 // Lustre also supports stateful components with their own MVU cycle
-pub fn counter_component() -> App(Nil, CounterModel, CounterMsg) {
+pub fn counter_component() -> App(Nil, CounterModel, CounterMessage) {
   lustre.component(counter_init, counter_update, counter_view, [])
 }
 ```
@@ -229,12 +229,12 @@ pub fn counter_component() -> App(Nil, CounterModel, CounterMsg) {
 **In Elm**, you typically use `List.map` to render lists of items:
 
 ```elm
-view : Model -> Html Msg
+view : Model -> Html Message
 view model =
   Html.ul []
     (List.map viewItem model.items)
 
-viewItem : String -> Html Msg
+viewItem : String -> Html Message
 viewItem item =
   Html.li [] [ Html.text item ]
 ```
@@ -242,13 +242,13 @@ viewItem item =
 **In Lustre**, it works the same way using `list.map`:
 
 ```gleam
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.ul([],
     list.map(model.items, view_item)
   )
 }
 
-fn view_item(item: String) -> Element(Msg) {
+fn view_item(item: String) -> Element(Message) {
   html.li([], [html.text(item)])
 }
 ```
@@ -257,7 +257,7 @@ For better performance with large lists, you can use `keyed.ul` to provide a
 unique key for each item:
 
 ```gleam
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   keyed.ul([],
     list.map(model.items, fn(item) {
       #(item.id, html.li([], [html.text(item.text)]))
@@ -271,9 +271,9 @@ fn view(model: Model) -> Element(Msg) {
 **In Elm**, you typically use event handlers like `onInput` to capture form changes:
 
 ```elm
-type Msg = UpdateName String
+type Message = UpdateName String
 
-view : Model -> Html Msg
+view : Model -> Html Message
 view model =
   Html.input
     [ Html.Attributes.value model.name
@@ -285,11 +285,11 @@ view model =
 **In Lustre**, this works similarly:
 
 ```gleam
-type Msg {
+type Message {
   UpdateName(String)
 }
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.input([
     attribute.value(model.name),
     event.on_input(UpdateName)

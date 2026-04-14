@@ -181,7 +181,7 @@ on the same three building blocks:
 - A `Model` type that represents the entire state of your application and an
   `init` function to construct the first model to render.
 
-- A `Msg` type that represents all the different ways the outside world can
+- A `Message` type that represents all the different ways the outside world can
   communicate with your application and an `update` function to receive those
   messages and update the model.
 
@@ -206,7 +206,7 @@ fn init(_args) -> Model {
 > guides we'll see how this can be used to pass in configuration or hydration
 > data when your app starts.
 
-The core of every Lustre application is its `Msg` type and update function. By
+The core of every Lustre application is its `Message` type and update function. By
 looking at these, we can get a holistic understanding of how our application
 works by seeing up-front all the different ways the outside world can affect
 changes to our model.
@@ -215,13 +215,13 @@ For our counter app we need two messages, one to handle the user clicking an
 "increment" button and another to handle "decrement".
 
 ```gleam
-type Msg {
+type Message {
   UserClickedIncrement
   UserClickedDecrement
 }
 
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(model: Model, message: Message) -> Model {
+  case message {
     UserClickedIncrement -> model + 1
     UserClickedDecrement -> model - 1
   }
@@ -239,7 +239,7 @@ you write custom event handlers for any event, but it also includes some of the
 most common events like `on_click` out of the box.
 
 ```gleam
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   let count = int.to_string(model)
 
   html.div([], [
@@ -254,7 +254,7 @@ fn view(model: Model) -> Element(Msg) {
 }
 ```
 
-Notice how the return type is `Element(Msg)` instead of just `Element`. This means
+Notice how the return type is `Element(Message)` instead of just `Element`. This means
 for any fragment of HTML, the type system knows what kinds of messages it can
 dispatch and will error if we try to put things together that don't fit!
 
@@ -263,9 +263,9 @@ the foundation for every Lustre application:
 
 - A `Model` is rendered to HTML using a `view` function.
 
-- That view may produce a `Msg` in response to user interaction.
+- That view may produce a `Message` in response to user interaction.
 
-- That `Msg` is passed to an `update` function that returns a new `Model`.
+- That `Message` is passed to an `update` function that returns a new `Model`.
 
 - ... and the cycle continues!
 
@@ -327,7 +327,7 @@ type Cat {
   Cat(id: String, url: String)
 }
 
-fn init(_args) -> #(Model, Effect(Msg)) {
+fn init(_args) -> #(Model, Effect(Message)) {
   let model = Model(total: 0, cats: [])
 
   #(model, effect.none())
@@ -339,14 +339,14 @@ the app starts. On the other hand, we _do_ want to perform an effect in our
 update function to fetch a new cat image.
 
 ```gleam
-type Msg {
+type Message {
   UserClickedAddCat
   UserClickedRemoveCat
   ApiReturnedCats(Result(List(Cat), rsvp.Error))
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     UserClickedAddCat -> #(
       Model(..model, total: model.total + 1),
       get_cat()
@@ -370,7 +370,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 Let's take a look at how the `get_cat` effect is implemented...
 
 ```gleam
-fn get_cat() -> Effect(Msg) {
+fn get_cat() -> Effect(Message) {
   let decoder = {
     use id <- decode.field("id", decode.string)
     use url <- decode.field("url", decode.string)
@@ -384,7 +384,7 @@ fn get_cat() -> Effect(Msg) {
 }
 ```
 
-Notice how this function returns an `Effect(Msg)` rather than a `Msg` or the result
+Notice how this function returns an `Effect(Message)` rather than a `Message` or the result
 of the API call. Instead, we added the `ApiReturnedCats` message variant and
 passed this to `rsvp`. The library will dispatch this message to our `update`
 function when the request completes.
@@ -401,7 +401,7 @@ Before we forget, let's also update our `view` function to actually display the
 cat images we're fetching:
 
 ```gleam
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div([], [
     html.div([], [
       html.button([event.on_click(UserClickedAddCat)], [

@@ -17,8 +17,8 @@ import lustre/vdom/vattr.{Event, Handler}
 /// with the [`handler`](#handler) function and use them with the [`advanced`](#advanced)
 /// event listener.
 ///
-pub type Handler(msg) =
-  vattr.Handler(msg)
+pub type Handler(message) =
+  vattr.Handler(message)
 
 // EFFECTS ---------------------------------------------------------------------
 
@@ -28,7 +28,7 @@ pub type Handler(msg) =
 /// Any JSON-serialisable payload can be attached as additional data for any
 /// event listeners to decode. This data will be on the event's `detail` property.
 ///
-pub fn emit(event: String, data: Json) -> Effect(msg) {
+pub fn emit(event: String, data: Json) -> Effect(message) {
   effect.event(event, data)
 }
 
@@ -46,11 +46,11 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
 /// > use [`server_component.include`](./server_component.html#include) to state
 /// > which properties of the event you need to be sent to the server.
 ///
-pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
+pub fn on(name: String, handler: Decoder(message)) -> Attribute(message) {
   vattr.event(
     name:,
-    handler: decode.map(handler, fn(msg) {
-      Handler(prevent_default: False, stop_propagation: False, message: msg)
+    handler: decode.map(handler, fn(message) {
+      Handler(prevent_default: False, stop_propagation: False, message: message)
     }),
     include: constants.empty_list,
     prevent_default: vattr.never,
@@ -74,7 +74,10 @@ pub fn on(name: String, handler: Decoder(msg)) -> Attribute(msg) {
 /// > use [`server_component.include`](./server_component.html#include) to state
 /// > which properties of the event you need to be sent to the server.
 ///
-pub fn advanced(name: String, handler: Decoder(Handler(msg))) -> Attribute(msg) {
+pub fn advanced(
+  name: String,
+  handler: Decoder(Handler(message)),
+) -> Attribute(message) {
   vattr.event(
     name:,
     handler:,
@@ -90,10 +93,10 @@ pub fn advanced(name: String, handler: Decoder(Handler(msg))) -> Attribute(msg) 
 /// to conditionally stop propagation or prevent the default behaviour of an event.
 ///
 pub fn handler(
-  dispatch message: msg,
+  dispatch message: message,
   prevent_default prevent_default: Bool,
   stop_propagation stop_propagation: Bool,
-) -> Handler(msg) {
+) -> Handler(message) {
   Handler(prevent_default:, stop_propagation:, message:)
 }
 
@@ -103,7 +106,7 @@ pub fn handler(
 /// > **Note**: this will override the conditional behaviour of an event handler
 /// > created with [`advanced`](#advanced).
 ///
-pub fn prevent_default(event: Attribute(msg)) -> Attribute(msg) {
+pub fn prevent_default(event: Attribute(message)) -> Attribute(message) {
   case event {
     Event(..) -> Event(..event, prevent_default: vattr.always)
     _ -> event
@@ -116,7 +119,7 @@ pub fn prevent_default(event: Attribute(msg)) -> Attribute(msg) {
 /// > **Note**: this will override the conditional behaviour of an event handler
 /// > created with [`advanced`](#advanced).
 ///
-pub fn stop_propagation(event: Attribute(msg)) -> Attribute(msg) {
+pub fn stop_propagation(event: Attribute(message)) -> Attribute(message) {
   case event {
     Event(..) -> Event(..event, stop_propagation: vattr.always)
     _ -> event
@@ -140,7 +143,7 @@ pub fn stop_propagation(event: Attribute(msg)) -> Attribute(msg) {
 /// ### Example:
 ///
 /// ```gleam
-/// type Msg {
+/// type Message {
 ///     UserInputText(String)
 /// }
 ///
@@ -151,7 +154,7 @@ pub fn stop_propagation(event: Attribute(msg)) -> Attribute(msg) {
 /// > typical interaction patterns and experiment with different delays to balance
 /// > responsiveness and update frequency.
 ///
-pub fn debounce(event: Attribute(msg), delay: Int) -> Attribute(msg) {
+pub fn debounce(event: Attribute(message), delay: Int) -> Attribute(message) {
   case event {
     Event(..) -> Event(..event, debounce: int.max(0, delay))
     _ -> event
@@ -176,7 +179,7 @@ pub fn debounce(event: Attribute(msg), delay: Int) -> Attribute(msg) {
 /// > typical interaction patterns and experiment with different delays to balance
 /// > responsiveness and update frequency.
 ///
-pub fn throttle(event: Attribute(msg), delay: Int) -> Attribute(msg) {
+pub fn throttle(event: Attribute(message), delay: Int) -> Attribute(message) {
   case event {
     Event(..) -> Event(..event, throttle: int.max(0, delay))
     _ -> event
@@ -186,38 +189,38 @@ pub fn throttle(event: Attribute(msg), delay: Int) -> Attribute(msg) {
 // MOUSE EVENTS ----------------------------------------------------------------
 
 ///
-pub fn on_click(msg: msg) -> Attribute(msg) {
-  on("click", decode.success(msg))
+pub fn on_click(message: message) -> Attribute(message) {
+  on("click", decode.success(message))
 }
 
 ///
-pub fn on_mouse_down(msg: msg) -> Attribute(msg) {
-  on("mousedown", decode.success(msg))
+pub fn on_mouse_down(message: message) -> Attribute(message) {
+  on("mousedown", decode.success(message))
 }
 
 ///
-pub fn on_mouse_up(msg: msg) -> Attribute(msg) {
-  on("mouseup", decode.success(msg))
+pub fn on_mouse_up(message: message) -> Attribute(message) {
+  on("mouseup", decode.success(message))
 }
 
 ///
-pub fn on_mouse_enter(msg: msg) -> Attribute(msg) {
-  on("mouseenter", decode.success(msg))
+pub fn on_mouse_enter(message: message) -> Attribute(message) {
+  on("mouseenter", decode.success(message))
 }
 
 ///
-pub fn on_mouse_leave(msg: msg) -> Attribute(msg) {
-  on("mouseleave", decode.success(msg))
+pub fn on_mouse_leave(message: message) -> Attribute(message) {
+  on("mouseleave", decode.success(message))
 }
 
 ///
-pub fn on_mouse_over(msg: msg) -> Attribute(msg) {
-  on("mouseover", decode.success(msg))
+pub fn on_mouse_over(message: message) -> Attribute(message) {
+  on("mouseover", decode.success(message))
 }
 
 ///
-pub fn on_mouse_out(msg: msg) -> Attribute(msg) {
-  on("mouseout", decode.success(msg))
+pub fn on_mouse_out(message: message) -> Attribute(message) {
+  on("mouseout", decode.success(message))
 }
 
 // KEYBOARD EVENTS -------------------------------------------------------------
@@ -225,33 +228,33 @@ pub fn on_mouse_out(msg: msg) -> Attribute(msg) {
 /// Listens for key presses on an element, and dispatches a message with the
 /// current key being pressed.
 ///
-pub fn on_keypress(msg: fn(String) -> msg) -> Attribute(msg) {
+pub fn on_keypress(message: fn(String) -> message) -> Attribute(message) {
   on("keypress", {
     use key <- decode.field("key", decode.string)
 
-    key |> msg |> decode.success
+    key |> message |> decode.success
   })
 }
 
 /// Listens for key down events on an element, and dispatches a message with the
 /// current key being pressed.
 ///
-pub fn on_keydown(msg: fn(String) -> msg) -> Attribute(msg) {
+pub fn on_keydown(message: fn(String) -> message) -> Attribute(message) {
   on("keydown", {
     use key <- decode.field("key", decode.string)
 
-    key |> msg |> decode.success
+    key |> message |> decode.success
   })
 }
 
 /// Listens for key up events on an element, and dispatches a message with the
 /// current key being released.
 ///
-pub fn on_keyup(msg: fn(String) -> msg) -> Attribute(msg) {
+pub fn on_keyup(message: fn(String) -> message) -> Attribute(message) {
   on("keyup", {
     use key <- decode.field("key", decode.string)
 
-    key |> msg |> decode.success
+    key |> message |> decode.success
   })
 }
 
@@ -262,11 +265,11 @@ pub fn on_keyup(msg: fn(String) -> msg) -> Attribute(msg) {
 /// and passes it to the given message function. This is commonly used to
 /// implement [controlled inputs](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
 ///
-pub fn on_input(msg: fn(String) -> msg) -> Attribute(msg) {
+pub fn on_input(message: fn(String) -> message) -> Attribute(message) {
   on("input", {
     use value <- decode.subfield(["target", "value"], decode.string)
 
-    decode.success(msg(value))
+    decode.success(message(value))
   })
 }
 
@@ -275,11 +278,11 @@ pub fn on_input(msg: fn(String) -> msg) -> Attribute(msg) {
 /// and passes it to the given message function. This is commonly used to
 /// implement [controlled inputs](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
 ///
-pub fn on_change(msg: fn(String) -> msg) -> Attribute(msg) {
+pub fn on_change(message: fn(String) -> message) -> Attribute(message) {
   on("change", {
     use value <- decode.subfield(["target", "value"], decode.string)
 
-    decode.success(msg(value))
+    decode.success(message(value))
   })
 }
 
@@ -288,11 +291,11 @@ pub fn on_change(msg: fn(String) -> msg) -> Attribute(msg) {
 /// the given message function. This is commonly used to implement
 /// [controlled inputs](https://github.com/lustre-labs/lustre/blob/main/pages/hints/controlled-vs-uncontrolled-inputs.md).
 ///
-pub fn on_check(msg: fn(Bool) -> msg) -> Attribute(msg) {
+pub fn on_check(message: fn(Bool) -> message) -> Attribute(message) {
   on("change", {
     use checked <- decode.subfield(["target", "checked"], decode.bool)
 
-    decode.success(msg(checked))
+    decode.success(message(checked))
   })
 }
 
@@ -308,12 +311,14 @@ pub fn on_check(msg: fn(Bool) -> msg) -> Attribute(msg) {
 /// the browser's native form submission. In a Lustre app you'll want to handle
 /// that yourself as an [`Effect`](./effect.html#Effect).
 ///
-pub fn on_submit(msg: fn(List(#(String, String))) -> msg) -> Attribute(msg) {
+pub fn on_submit(
+  message: fn(List(#(String, String))) -> message,
+) -> Attribute(message) {
   on("submit", {
     use formdata <- decode.subfield(["detail", "formData"], formdata_decoder())
 
     formdata
-    |> msg
+    |> message
     |> decode.success
   })
   |> prevent_default
@@ -345,10 +350,10 @@ fn formdata_decoder() -> Decoder(List(#(String, String))) {
 
 // FOCUS EVENTS ----------------------------------------------------------------
 
-pub fn on_focus(msg: msg) -> Attribute(msg) {
-  on("focus", decode.success(msg))
+pub fn on_focus(message: message) -> Attribute(message) {
+  on("focus", decode.success(message))
 }
 
-pub fn on_blur(msg: msg) -> Attribute(msg) {
-  on("blur", decode.success(msg))
+pub fn on_blur(message: message) -> Attribute(message) {
+  on("blur", decode.success(message))
 }

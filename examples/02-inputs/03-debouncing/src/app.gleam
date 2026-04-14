@@ -29,13 +29,13 @@ fn init(_) -> Model {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   UserUpdatedName(String)
   UserMovedMouse(x: Int, y: Int)
 }
 
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(model: Model, message: Message) -> Model {
+  case message {
     UserUpdatedName(name) -> Model(..model, name:)
     UserMovedMouse(x:, y:) -> Model(..model, x:, y:)
   }
@@ -43,7 +43,7 @@ fn update(model: Model, msg: Msg) -> Model {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div([attribute.class("p-32 mx-auto w-full max-w-2xl space-y-8")], [
     view_debounced_input(name: model.name, on_input: UserUpdatedName),
     view_xy_pad(x: model.x, y: model.y, on_mousemove: UserMovedMouse),
@@ -52,8 +52,8 @@ fn view(model: Model) -> Element(Msg) {
 
 fn view_debounced_input(
   name name: String,
-  on_input handle_input: fn(String) -> msg,
-) -> Element(msg) {
+  on_input handle_input: fn(String) -> message,
+) -> Element(message) {
   html.div([attribute.class("space-y-2")], [
     html.label([attribute.class("flex gap-2")], [
       html.span([], [html.text("Enter a name: ")]),
@@ -78,8 +78,8 @@ fn view_debounced_input(
 fn view_xy_pad(
   x x: Int,
   y y: Int,
-  on_mousemove handle_mousemove: fn(Int, Int) -> msg,
-) -> Element(msg) {
+  on_mousemove handle_mousemove: fn(Int, Int) -> message,
+) -> Element(message) {
   let on_mousemove =
     event.on("mousemove", {
       use x <- decode.field("offsetX", decode.int)

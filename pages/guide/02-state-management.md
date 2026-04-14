@@ -26,7 +26,7 @@ The MVU architecture is an example of _unidirectional data flow_:
                                        +--------+
                                          ^    |
                                          |    |
-                                     Msg |    | Model
+                                 Message |    | Model
                                          |    |
                                          |    v
 +------+                         +------------------------+
@@ -36,7 +36,7 @@ The MVU architecture is an example of _unidirectional data flow_:
 +------+                         +------------------------+
                                          ^    |
                                          |    |
-                                     Msg |    | Model
+                                 Message |    | Model
                                          |    |
                                          |    v
                                        +--------+
@@ -102,11 +102,11 @@ Gleam's `Result` type or maybe a `Dict` representing loaded posts.
 
 ## Messages not actions
 
-Lustre is not the first frontend framework to use the MVU architecture or to
-focus on dispatching messages to update state. State management libraries like
-Redux and Zustand follow a very similar pattern. The devil is in the details
-though, and these libraries often talk in terms of _actions_ but you'll see
-Elm and Lustre prefer the term _message_.
+Lustre is not the first frontend library to use the MVU architecture or to focus
+on dispatching messages to update state. State management libraries like Redux and
+Zustand follow a very similar pattern. The devil is in the details though, and
+these libraries often talk in terms of _actions_ but you'll see Elm and Lustre
+prefer the term _message_.
 
 Actions frame incoming events as _things to do_: "add a new todo", "make an HTTP
 request", etc. This can work well in the beginning, but as your application grows
@@ -130,7 +130,7 @@ reset form, the user can type in a new password and submit it and our app waits
 for a response. As a first-pass we might end up with something like this:
 
 ```gleam
-type Msg {
+type Message {
   SetPassword(String)
   ResetPassword
   PasswordReset(Result(Nil, String))
@@ -146,7 +146,7 @@ holistic view of what our app can handle. Things become much clearer if we refac
 this example to the Subject Verb Object naming pattern:
 
 ```gleam
-type Msg {
+type Message {
   UserUpdatedPassword(String)
   UserRequestedPasswordReset
   BackendResetPassword(Result(Nil, String))
@@ -225,7 +225,7 @@ there are some tangible benefits to this approach:
 
   Components share the same shape as any other Lustre application. That means for
   any component you want to create, you also need to define an `init`, `update`,
-  and `view` function, a `Model` type, and a `Msg` type. If you find yourself
+  and `view` function, a `Model` type, and a `Message` type. If you find yourself
   thinking "wow, this is a lot of boilerplate just to do X" then listen to your
   gut!
 

@@ -40,15 +40,22 @@ pub fn test_filter(name: String, f: fn() -> Nil) -> Nil {
   }
 }
 
-pub fn nodes_equal_ignoring_memo(left: Element(msg), right: Element(msg)) {
+pub fn nodes_equal_ignoring_memo(
+  left: Element(message),
+  right: Element(message),
+) {
   do_nodes_equal(left, right, True)
 }
 
-pub fn nodes_equal(left: Element(msg), right: Element(msg)) {
+pub fn nodes_equal(left: Element(message), right: Element(message)) {
   do_nodes_equal(left, right, False)
 }
 
-fn do_nodes_equal(left: Element(msg), right: Element(msg), ignore_memo: Bool) {
+fn do_nodes_equal(
+  left: Element(message),
+  right: Element(message),
+  ignore_memo: Bool,
+) {
   case left, right {
     vnode.Fragment(..), vnode.Fragment(..) ->
       left.key == right.key
@@ -89,8 +96,8 @@ fn do_nodes_equal(left: Element(msg), right: Element(msg), ignore_memo: Bool) {
 }
 
 fn children_equal(
-  left: List(Element(msg)),
-  right: List(Element(msg)),
+  left: List(Element(message)),
+  right: List(Element(message)),
   ignore_memo: Bool,
 ) -> Bool {
   case left, right {

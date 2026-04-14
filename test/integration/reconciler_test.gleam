@@ -76,7 +76,7 @@ pub fn reconciler_server_component_mount_input_test() {
 }
 
 @target(javascript)
-fn test_mount(vdom: Element(msg)) {
+fn test_mount(vdom: Element(message)) {
   use reconciler <- with_reconciler(True)
 
   mount(reconciler, vdom)
@@ -763,16 +763,18 @@ pub fn reconciler_push_map_with_fragment_test() {
 
   let prev =
     html.div([], [
-      element.map(element.fragment([html.text("a"), html.text("b")]), fn(msg) {
-        msg
-      }),
+      element.map(
+        element.fragment([html.text("a"), html.text("b")]),
+        fn(message) { message },
+      ),
     ])
 
   let next =
     html.div([], [
-      element.map(element.fragment([html.text("c"), html.text("d")]), fn(msg) {
-        msg
-      }),
+      element.map(
+        element.fragment([html.text("c"), html.text("d")]),
+        fn(message) { message },
+      ),
     ])
 
   test_diff(prev, next)
@@ -791,7 +793,7 @@ pub fn reconciler_push_map_with_nested_fragment_test() {
           element.fragment([html.text("a"), html.text("b")]),
           html.text("c"),
         ]),
-        fn(msg) { msg },
+        fn(message) { message },
       ),
     ])
 
@@ -802,7 +804,7 @@ pub fn reconciler_push_map_with_nested_fragment_test() {
           element.fragment([html.text("x"), html.text("y")]),
           html.text("z"),
         ]),
-        fn(msg) { msg },
+        fn(message) { message },
       ),
     ])
 
@@ -856,18 +858,20 @@ pub fn reconciler_push_memo_map_with_fragment_test() {
   let prev =
     html.div([], [
       element.memo([dep1], fn() {
-        element.map(element.fragment([html.text("a"), html.text("b")]), fn(msg) {
-          msg
-        })
+        element.map(
+          element.fragment([html.text("a"), html.text("b")]),
+          fn(message) { message },
+        )
       }),
     ])
 
   let next =
     html.div([], [
       element.memo([dep2], fn() {
-        element.map(element.fragment([html.text("c"), html.text("d")]), fn(msg) {
-          msg
-        })
+        element.map(
+          element.fragment([html.text("c"), html.text("d")]),
+          fn(message) { message },
+        )
       }),
     ])
 
@@ -875,7 +879,7 @@ pub fn reconciler_push_memo_map_with_fragment_test() {
 }
 
 @target(javascript)
-fn test_diff(prev: Element(msg), next: Element(msg)) {
+fn test_diff(prev: Element(message), next: Element(message)) {
   use reconciler <- with_reconciler(True)
 
   let diff.Diff(patch:, ..) = diff.diff(cache.new(), prev, next)
@@ -901,7 +905,7 @@ pub fn with_reconciler(debug: Bool, f: fn(Reconciler) -> Nil) -> Nil
 
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "mount")
-pub fn mount(reconciler: Reconciler, vdom: Element(msg)) -> Nil
+pub fn mount(reconciler: Reconciler, vdom: Element(message)) -> Nil
 
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "mount")
@@ -909,7 +913,7 @@ fn mount_json(reconciler: Reconciler, vdom: json.Json) -> Nil
 
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "push")
-fn push(reconciler: Reconciler, patch: Patch(msg)) -> Nil
+fn push(reconciler: Reconciler, patch: Patch(message)) -> Nil
 
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "push")
@@ -921,4 +925,4 @@ pub fn get_html() -> String
 
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "get_vdom")
-fn get_vdom() -> Element(msg)
+fn get_vdom() -> Element(message)

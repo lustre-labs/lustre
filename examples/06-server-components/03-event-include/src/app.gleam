@@ -96,13 +96,13 @@ fn serve_chat(request: Request(Connection)) -> Response(ResponseData) {
 
 type ChatSocket {
   ChatSocket(
-    component: lustre.Runtime(chat.Msg),
-    self: Subject(server_component.ClientMessage(chat.Msg)),
+    component: lustre.Runtime(chat.Message),
+    self: Subject(server_component.ClientMessage(chat.Message)),
   )
 }
 
 type ChatSocketMessage =
-  server_component.ClientMessage(chat.Msg)
+  server_component.ClientMessage(chat.Message)
 
 type ChatSocketInit =
   #(ChatSocket, Option(Selector(ChatSocketMessage)))

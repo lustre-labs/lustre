@@ -27,13 +27,13 @@ fn init(_) -> Model {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   UserClickedIncrement
   UserClickedDecrement
 }
 
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(model: Model, message: Message) -> Model {
+  case message {
     UserClickedIncrement -> model + 1
     UserClickedDecrement -> model - 1
   }
@@ -41,10 +41,10 @@ fn update(model: Model, msg: Msg) -> Model {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div([], [
     // Labelled view functions give a similar experience to props in other
-    // frameworks, while still just being functions!
+    // frontend libraries, while still just being functions!
     view_button(on_click: UserClickedDecrement, label: "-"),
     view_count(model),
     view_button(on_click: UserClickedIncrement, label: "+"),
@@ -55,16 +55,19 @@ fn view(model: Model) -> Element(Msg) {
 /// Because these are just Gleam functions, they can take any number of arguments
 /// and often include messages or event handlers.
 ///
-fn view_button(on_click handle_click: msg, label text: String) -> Element(msg) {
+fn view_button(
+  on_click handle_click: message,
+  label text: String,
+) -> Element(message) {
   html.button([event.on_click(handle_click)], [html.text(text)])
 }
 
 /// It's common practice for view functions that never produce events to return
-/// `Element(msg)` instead of `Element(Nil)`. This allows you to use these view
+/// `Element(message)` instead of `Element(Nil)`. This allows you to use these view
 /// functions in other contexts, while also communicating that these cannot
-/// possibly produce events: there's no way to create a `msg` from nothing!
+/// possibly produce events: there's no way to create a `message` from nothing!
 ///
-fn view_count(count: Int) -> Element(msg) {
+fn view_count(count: Int) -> Element(message) {
   html.p(
     [
       attribute.class(case count > 10 {

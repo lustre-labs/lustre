@@ -12,13 +12,13 @@ import lustre/internals/json_object_builder
 
 // TYPES -----------------------------------------------------------------------
 
-pub type Attribute(msg) {
+pub type Attribute(message) {
   Attribute(kind: Int, name: String, value: String)
   Property(kind: Int, name: String, value: Json)
   Event(
     kind: Int,
     name: String,
-    handler: Decoder(Handler(msg)),
+    handler: Decoder(Handler(message)),
     include: List(String),
     prevent_default: EventBehaviour,
     stop_propagation: EventBehaviour,
@@ -27,8 +27,8 @@ pub type Attribute(msg) {
   )
 }
 
-pub type Handler(msg) {
-  Handler(prevent_default: Bool, stop_propagation: Bool, message: msg)
+pub type Handler(message) {
+  Handler(prevent_default: Bool, stop_propagation: Bool, message: message)
 }
 
 pub type EventBehaviour {
@@ -41,13 +41,13 @@ pub type EventBehaviour {
 
 pub const attribute_kind: Int = 0
 
-pub fn attribute(name name: String, vaue value: String) -> Attribute(msg) {
+pub fn attribute(name name: String, vaue value: String) -> Attribute(message) {
   Attribute(kind: attribute_kind, name:, value:)
 }
 
 pub const property_kind: Int = 1
 
-pub fn property(name name: String, value value: Json) -> Attribute(msg) {
+pub fn property(name name: String, value value: Json) -> Attribute(message) {
   Property(kind: property_kind, name:, value:)
 }
 
@@ -55,13 +55,13 @@ pub const event_kind: Int = 2
 
 pub fn event(
   name name: String,
-  handler handler: Decoder(Handler(msg)),
+  handler handler: Decoder(Handler(message)),
   include include: List(String),
   prevent_default prevent_default: EventBehaviour,
   stop_propagation stop_propagation: EventBehaviour,
   debounce debounce: Int,
   throttle throttle: Int,
-) -> Attribute(msg) {
+) -> Attribute(message) {
   Event(
     kind: event_kind,
     name:,
@@ -88,7 +88,7 @@ pub const always: EventBehaviour = Always(kind: always_kind)
 
 //
 
-pub fn prepare(attributes: List(Attribute(msg))) -> List(Attribute(msg)) {
+pub fn prepare(attributes: List(Attribute(message))) -> List(Attribute(message)) {
   case attributes {
     // empty attribute lists or attribute lists with only a single attribute are
     // always sorted and merged by definition, so we don't have to touch them.
@@ -103,9 +103,9 @@ pub fn prepare(attributes: List(Attribute(msg))) -> List(Attribute(msg)) {
 }
 
 pub fn merge(
-  attributes: List(Attribute(msg)),
-  merged: List(Attribute(msg)),
-) -> List(Attribute(msg)) {
+  attributes: List(Attribute(message)),
+  merged: List(Attribute(message)),
+) -> List(Attribute(message)) {
   case attributes {
     [] -> merged
 
@@ -141,13 +141,13 @@ pub fn merge(
 }
 
 @external(javascript, "./vattr.ffi.mjs", "compare")
-pub fn compare(a: Attribute(msg), b: Attribute(msg)) -> Order {
+pub fn compare(a: Attribute(message), b: Attribute(message)) -> Order {
   string.compare(a.name, b.name)
 }
 
 // ENCODING --------------------------------------------------------------------
 
-pub fn to_json(attribute: Attribute(msg)) -> Json {
+pub fn to_json(attribute: Attribute(message)) -> Json {
   case attribute {
     Attribute(kind:, name:, value:) -> attribute_to_json(kind, name, value)
     Property(kind:, name:, value:) -> property_to_json(kind, name, value)
@@ -232,7 +232,7 @@ pub fn to_string_tree(
   key: String,
   namespace: String,
   parent_namespace: String,
-  attributes: List(Attribute(msg)),
+  attributes: List(Attribute(message)),
 ) -> StringTree {
   let attributes = case key != "" {
     True -> [attribute("data-lustre-key", key), ..attributes]

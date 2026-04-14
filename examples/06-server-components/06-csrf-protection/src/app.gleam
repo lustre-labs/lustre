@@ -173,13 +173,13 @@ fn serve_counter(
 
 type CounterSocket {
   CounterSocket(
-    component: lustre.Runtime(counter.Msg),
-    self: Subject(server_component.ClientMessage(counter.Msg)),
+    component: lustre.Runtime(counter.Message),
+    self: Subject(server_component.ClientMessage(counter.Message)),
   )
 }
 
 type CounterSocketMessage =
-  server_component.ClientMessage(counter.Msg)
+  server_component.ClientMessage(counter.Message)
 
 type CounterSocketInit =
   #(CounterSocket, Option(Selector(CounterSocketMessage)))

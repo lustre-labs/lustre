@@ -82,7 +82,7 @@ fn parse_route(uri: Uri) -> Route {
 /// can then use on `html.a` elements. It is important to keep this function in
 /// sync with the parsing, but once you do, all links are guaranteed to work!
 ///
-fn href(route: Route) -> Attribute(msg) {
+fn href(route: Route) -> Attribute(message) {
   let url = case route {
     Index -> "/"
     About -> "/about"
@@ -94,7 +94,7 @@ fn href(route: Route) -> Attribute(msg) {
   attribute.href(url)
 }
 
-fn init(_) -> #(Model, Effect(Msg)) {
+fn init(_) -> #(Model, Effect(Message)) {
   // The server for a typical SPA will often serve the application to *any*
   // HTTP request, and let the app itself determine what to show. Modem stores
   // the first URL so we can parse it for the app's initial route.
@@ -113,7 +113,7 @@ fn init(_) -> #(Model, Effect(Msg)) {
   let effect =
     // We need to initialise modem in order for it to intercept links. To do that
     // we pass in a function that takes the `Uri` of the link that was clicked and
-    // turns it into a `Msg`.
+    // turns it into a `Message`.
     modem.init(fn(uri) {
       uri
       |> parse_route
@@ -125,19 +125,19 @@ fn init(_) -> #(Model, Effect(Msg)) {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   UserNavigatedTo(route: Route)
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     UserNavigatedTo(route:) -> #(Model(..model, route:), effect.none())
   }
 }
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div([attribute.class("mx-auto max-w-2xl px-32")], [
     html.nav([attribute.class("flex justify-between items-center my-16")], [
       html.h1([attribute.class("text-purple-600 font-medium text-xl")], [
@@ -167,7 +167,7 @@ fn view_header_link(
   to target: Route,
   current current: Route,
   label text: String,
-) -> Element(msg) {
+) -> Element(message) {
   let is_active = case current, target {
     PostById(_), Posts -> True
     _, _ -> current == target
@@ -186,7 +186,7 @@ fn view_header_link(
 
 // VIEW PAGES ------------------------------------------------------------------
 
-fn view_index() -> List(Element(msg)) {
+fn view_index() -> List(Element(message)) {
   [
     title("Hello, Joe"),
     leading(
@@ -201,7 +201,7 @@ fn view_index() -> List(Element(msg)) {
   ]
 }
 
-fn view_posts(model: Model) -> List(Element(msg)) {
+fn view_posts(model: Model) -> List(Element(message)) {
   let posts =
     model.posts
     |> dict.values
@@ -220,7 +220,7 @@ fn view_posts(model: Model) -> List(Element(msg)) {
   [title("Posts"), ..posts]
 }
 
-fn view_post(model: Model, post_id: Int) -> List(Element(msg)) {
+fn view_post(model: Model, post_id: Int) -> List(Element(message)) {
   case dict.get(model.posts, post_id) {
     Error(_) -> view_not_found()
     Ok(post) -> [
@@ -234,7 +234,7 @@ fn view_post(model: Model, post_id: Int) -> List(Element(msg)) {
   }
 }
 
-fn view_about() -> List(Element(msg)) {
+fn view_about() -> List(Element(message)) {
   [
     title("Me"),
     paragraph(
@@ -248,7 +248,7 @@ fn view_about() -> List(Element(msg)) {
   ]
 }
 
-fn view_not_found() -> List(Element(msg)) {
+fn view_not_found() -> List(Element(message)) {
   [
     title("Not found"),
     paragraph(
@@ -260,26 +260,26 @@ fn view_not_found() -> List(Element(msg)) {
 
 // VIEW HELPERS ----------------------------------------------------------------
 
-fn title(title: String) -> Element(msg) {
+fn title(title: String) -> Element(message) {
   html.h2([attribute.class("text-3xl text-purple-800 font-light")], [
     html.text(title),
   ])
 }
 
-fn leading(text: String) -> Element(msg) {
+fn leading(text: String) -> Element(message) {
   html.p([attribute.class("mt-8 text-lg")], [html.text(text)])
 }
 
-fn paragraph(text: String) -> Element(msg) {
+fn paragraph(text: String) -> Element(message) {
   html.p([attribute.class("mt-14")], [html.text(text)])
 }
 
-/// In other frameworks you might see special `<Link />` components that are
-/// used to handle navigation logic. Using modem, we can just use normal HTML
+/// In some frontend frameworks you might see special `<Link />` components that
+/// are used to handle navigation logic. Using modem, we can just use normal HTML
 /// `<a>` elements and pass in the `href` attribute. This means we have the option
 /// of rendering our app as static HTML in the future!
 ///
-fn link(target: Route, title: String) -> Element(msg) {
+fn link(target: Route, title: String) -> Element(message) {
   html.a(
     [
       href(target),

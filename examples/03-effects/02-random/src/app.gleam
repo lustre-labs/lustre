@@ -32,7 +32,7 @@ type Model {
   Model(target: Int, guess: Int, result: Option(Order))
 }
 
-fn init(initial_target: Int) -> #(Model, Effect(Msg)) {
+fn init(initial_target: Int) -> #(Model, Effect(Message)) {
   let model = Model(target: initial_target, guess: 0, result: None)
 
   #(model, effect.none())
@@ -40,14 +40,14 @@ fn init(initial_target: Int) -> #(Model, Effect(Msg)) {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   ComputerPickedNumber(Int)
   UserUpdatedGuess(Int)
   UserSubmittedGuess
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     ComputerPickedNumber(target) -> #(Model(..model, target:), effect.none())
 
     UserUpdatedGuess(guess) -> #(
@@ -70,7 +70,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   }
 }
 
-fn generate_new_target() -> Effect(Msg) {
+fn generate_new_target() -> Effect(Message) {
   // `effect.from` lets us write custom effects that can send messages back to
   // the runtime using `dispatch`.
   use dispatch <- effect.from
@@ -85,7 +85,7 @@ fn generate_new_target() -> Effect(Msg) {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div([attribute.class("p-32 mx-auto w-full max-w-3xl space-y-4")], [
     html.div([attribute.class("flex items-center gap-2")], [
       html.label([attribute.class("contents")], [
@@ -111,8 +111,8 @@ fn view(model: Model) -> Element(Msg) {
 
 fn view_number_input(
   value value: Int,
-  on_input handle_input: fn(Int) -> msg,
-) -> Element(msg) {
+  on_input handle_input: fn(Int) -> message,
+) -> Element(message) {
   let on_input =
     event.on("input", {
       use value <- decode.subfield(["target", "value"], decode.string)
@@ -130,7 +130,7 @@ fn view_number_input(
   ])
 }
 
-fn view_result(result: Order) -> Element(msg) {
+fn view_result(result: Order) -> Element(message) {
   let class =
     attribute.class(case result {
       Eq -> "text-green-500"

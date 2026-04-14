@@ -44,7 +44,7 @@ type Todo {
 
 /// Now our app can perform effects, the return type of the `init` and `update`
 /// functions changes to return a tuple.
-fn init(_) -> #(Model, Effect(Msg)) {
+fn init(_) -> #(Model, Effect(Message)) {
   let model = optimist.from([])
   let effect = fetch_todos(on_response: ApiReturnedTodos)
 
@@ -52,8 +52,8 @@ fn init(_) -> #(Model, Effect(Msg)) {
 }
 
 fn fetch_todos(
-  on_response handle_response: fn(Result(List(Todo), rsvp.Error)) -> msg,
-) -> Effect(msg) {
+  on_response handle_response: fn(Result(List(Todo), rsvp.Error)) -> message,
+) -> Effect(message) {
   let url = "https://jsonplaceholder.typicode.com/todos/"
   let decoder = decode.list(todo_decoder()) |> decode.map(list.take(_, 10))
   let handler = rsvp.expect_json(decoder, handle_response)
@@ -73,14 +73,14 @@ fn todo_decoder() -> Decoder(Todo) {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   UserClickedComplete(id: Int, completed: Bool)
   ApiReturnedTodos(Result(List(Todo), rsvp.Error))
   ApiUpdatedTodo(Result(Int, rsvp.Error))
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     UserClickedComplete(id, completed) -> #(
       // An optimistic update means we update the model before we get an actual
       // response: it's what we *expect* to happen.
@@ -123,11 +123,11 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 fn complete_todo(
   id id: Int,
   completed completed: Bool,
-  on_response handle_response: fn(Result(Int, rsvp.Error)) -> msg,
+  on_response handle_response: fn(Result(Int, rsvp.Error)) -> message,
   // Just like the `Element` type, the `Effect` type is parametrised by the type
   // of messages it produces. This is how we know messages we get back from an
   // effect are type-safe and can be handled by the `update` function.
-) -> Effect(msg) {
+) -> Effect(message) {
   let url = "https://jsonplaceholder.typicode.com/todos/" <> int.to_string(id)
   let handler = rsvp.expect_json(decode.success(id), handle_response)
   let body = json.object([#("completed", json.bool(completed))])
@@ -145,7 +145,7 @@ fn complete_todo(
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div([attribute.class("p-32 mx-auto w-full max-w-2xl space-y-8")], [
     html.h1([attribute.class("font-semibold text-2xl")], [html.text("Todo:")]),
     keyed.ul([attribute.class("flex flex-col gap-2")], {
@@ -167,8 +167,8 @@ fn view(model: Model) -> Element(Msg) {
 
 fn view_todo(
   item item: Todo,
-  on_complete handle_complete: fn(Bool) -> msg,
-) -> Element(msg) {
+  on_complete handle_complete: fn(Bool) -> message,
+) -> Element(message) {
   html.label([attribute.class("flex gap-2 items-baseline")], [
     html.p(
       [

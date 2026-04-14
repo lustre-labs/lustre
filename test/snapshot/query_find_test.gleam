@@ -119,7 +119,7 @@ pub fn find_element_directly_wrapped_in_map_test() {
     html.form([attribute.id("login-form")], [
       html.h2([], [html.text("Login")]),
     ])
-    |> element.map(fn(msg) { msg })
+    |> element.map(fn(message) { message })
 
   let assert Ok(found) = query.find(in: wrapped, matching: query)
 
@@ -138,7 +138,7 @@ pub fn find_element_nested_inside_map_test() {
         html.h2([], [html.text("Login")]),
       ]),
     ])
-    |> element.map(fn(msg) { msg })
+    |> element.map(fn(message) { message })
 
   let assert Ok(found) = query.find(in: wrapped, matching: query)
 

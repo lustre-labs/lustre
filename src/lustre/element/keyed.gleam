@@ -72,9 +72,9 @@ import lustre/vdom/vnode
 ///
 pub fn element(
   tag: String,
-  attributes: List(Attribute(msg)),
-  children: List(#(String, Element(msg))),
-) -> Element(msg) {
+  attributes: List(Attribute(message)),
+  children: List(#(String, Element(message))),
+) -> Element(message) {
   let #(keyed_children, children) = extract_keyed_children(children)
 
   vnode.element(
@@ -101,9 +101,9 @@ pub fn element(
 pub fn namespaced(
   namespace: String,
   tag: String,
-  attributes: List(Attribute(msg)),
-  children: List(#(String, Element(msg))),
-) -> Element(msg) {
+  attributes: List(Attribute(message)),
+  children: List(#(String, Element(message))),
+) -> Element(message) {
   let #(keyed_children, children) = extract_keyed_children(children)
 
   vnode.element(
@@ -127,7 +127,7 @@ pub fn namespaced(
 /// > but it doesn't have to be unique across the whole application. It's fine to
 /// > use the same key in different lists.
 ///
-pub fn fragment(children: List(#(String, Element(msg)))) -> Element(msg) {
+pub fn fragment(children: List(#(String, Element(message)))) -> Element(message) {
   let #(keyed_children, children) = extract_keyed_children(children)
 
   vnode.fragment(key: "", children:, keyed_children:)
@@ -136,53 +136,53 @@ pub fn fragment(children: List(#(String, Element(msg)))) -> Element(msg) {
 // ELEMENTS --------------------------------------------------------------------
 
 pub fn ul(
-  attributes: List(Attribute(msg)),
-  children: List(#(String, Element(msg))),
-) -> Element(msg) {
+  attributes: List(Attribute(message)),
+  children: List(#(String, Element(message))),
+) -> Element(message) {
   element("ul", attributes, children)
 }
 
 pub fn ol(
-  attributes: List(Attribute(msg)),
-  children: List(#(String, Element(msg))),
-) -> Element(msg) {
+  attributes: List(Attribute(message)),
+  children: List(#(String, Element(message))),
+) -> Element(message) {
   element("ol", attributes, children)
 }
 
 pub fn div(
-  attributes: List(Attribute(msg)),
-  children: List(#(String, Element(msg))),
-) -> Element(msg) {
+  attributes: List(Attribute(message)),
+  children: List(#(String, Element(message))),
+) -> Element(message) {
   element("div", attributes, children)
 }
 
 pub fn tbody(
-  attributes: List(Attribute(msg)),
-  children: List(#(String, Element(msg))),
-) -> Element(msg) {
+  attributes: List(Attribute(message)),
+  children: List(#(String, Element(message))),
+) -> Element(message) {
   element("tbody", attributes, children)
 }
 
 pub fn dl(
-  attributes: List(Attribute(msg)),
-  children: List(#(String, Element(msg))),
-) -> Element(msg) {
+  attributes: List(Attribute(message)),
+  children: List(#(String, Element(message))),
+) -> Element(message) {
   element("dl", attributes, children)
 }
 
 // UTILS -----------------------------------------------------------------------
 
 fn extract_keyed_children(
-  children: List(#(String, Element(msg))),
-) -> #(MutableMap(String, Element(msg)), List(Element(msg))) {
+  children: List(#(String, Element(message))),
+) -> #(MutableMap(String, Element(message)), List(Element(message))) {
   do_extract_keyed_children(children, mutable_map.new(), constants.empty_list)
 }
 
 fn do_extract_keyed_children(
-  key_children_pairs: List(#(String, Element(msg))),
-  keyed_children: MutableMap(String, Element(msg)),
-  children: List(Element(msg)),
-) -> #(MutableMap(String, Element(msg)), List(Element(msg))) {
+  key_children_pairs: List(#(String, Element(message))),
+  keyed_children: MutableMap(String, Element(message)),
+  children: List(Element(message)),
+) -> #(MutableMap(String, Element(message)), List(Element(message))) {
   case key_children_pairs {
     [] -> #(keyed_children, list.reverse(children))
 

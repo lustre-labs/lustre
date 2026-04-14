@@ -27,11 +27,11 @@ import lustre/vdom/path
 /// > you want to simulate messages coming from the outside world, you can use
 /// > the [`message`](#message) or [`event`](#event) functions.
 ///
-pub opaque type App(args, model, msg) {
+pub opaque type App(args, model, message) {
   App(
-    init: fn(args) -> #(model, Effect(msg)),
-    update: fn(model, msg) -> #(model, Effect(msg)),
-    view: fn(model) -> Element(msg),
+    init: fn(args) -> #(model, Effect(message)),
+    update: fn(model, message) -> #(model, Effect(message)),
+    view: fn(model) -> Element(message),
   )
 }
 
@@ -43,13 +43,13 @@ pub opaque type App(args, model, msg) {
 /// Each simulated event returns an updated simulation, making it convenient to
 /// pipe multiple events in sequence.
 ///
-pub opaque type Simulation(model, msg) {
+pub opaque type Simulation(model, message) {
   Simulation(
-    update: fn(model, msg) -> #(model, Effect(msg)),
-    view: fn(model) -> Element(msg),
-    history: List(Event(msg)),
+    update: fn(model, message) -> #(model, Effect(message)),
+    view: fn(model) -> Element(message),
+    history: List(Event(message)),
     model: model,
-    html: Element(msg),
+    html: Element(message),
   )
 }
 
@@ -63,8 +63,8 @@ pub opaque type Simulation(model, msg) {
 /// the results you expect. You can use the [`history`](#history) function to
 /// introspect a simulation for this event log.
 ///
-pub type Event(msg) {
-  Dispatch(message: msg)
+pub type Event(message) {
+  Dispatch(message: message)
   Event(target: Query, name: String, data: Json)
   Problem(name: String, message: String)
 }
@@ -80,12 +80,12 @@ pub type Event(msg) {
 ///
 pub fn simple(
   init init: fn(args) -> model,
-  update update: fn(model, msg) -> model,
-  view view: fn(model) -> Element(msg),
-) -> App(args, model, msg) {
+  update update: fn(model, message) -> model,
+  view view: fn(model) -> Element(message),
+) -> App(args, model, message) {
   App(
     init: fn(args) { #(init(args), effect.none()) },
-    update: fn(model, msg) { #(update(model, msg), effect.none()) },
+    update: fn(model, message) { #(update(model, message), effect.none()) },
     view:,
   )
 }
@@ -102,10 +102,10 @@ pub fn simple(
 /// > effects you should test your application in a real environment.
 ///
 pub fn application(
-  init init: fn(args) -> #(model, Effect(msg)),
-  update update: fn(model, msg) -> #(model, Effect(msg)),
-  view view: fn(model) -> Element(msg),
-) -> App(args, model, msg) {
+  init init: fn(args) -> #(model, Effect(message)),
+  update update: fn(model, message) -> #(model, Effect(message)),
+  view view: fn(model) -> Element(message),
+) -> App(args, model, message) {
   App(init:, update:, view:)
 }
 
@@ -115,7 +115,10 @@ pub fn application(
 /// use the [`message`](#message) and [`event`](#event) functions to simulate
 /// events
 ///
-pub fn start(app: App(args, model, msg), args: args) -> Simulation(model, msg) {
+pub fn start(
+  app: App(args, model, message),
+  args: args,
+) -> Simulation(model, message) {
   let #(model, _) = app.init(args)
   let html = app.view(model)
 
@@ -155,12 +158,12 @@ pub fn start(app: App(args, model, msg), args: args) -> Simulation(model, msg) {
 /// > page that are relevant to the test.
 ///
 pub fn message(
-  simulation: Simulation(model, msg),
-  msg: msg,
-) -> Simulation(model, msg) {
-  let #(model, _) = simulation.update(simulation.model, msg)
+  simulation: Simulation(model, message),
+  message: message,
+) -> Simulation(model, message) {
+  let #(model, _) = simulation.update(simulation.model, message)
   let html = simulation.view(model)
-  let history = [Dispatch(message: msg), ..simulation.history]
+  let history = [Dispatch(message: message), ..simulation.history]
 
   Simulation(..simulation, history:, model:, html:)
 }
@@ -179,11 +182,11 @@ pub fn message(
 /// > to parent elements.
 ///
 pub fn event(
-  simulation: Simulation(model, msg),
+  simulation: Simulation(model, message),
   on query: Query,
   name event: String,
   data payload: List(#(String, Json)),
-) -> Simulation(model, msg) {
+) -> Simulation(model, message) {
   let result = {
     use #(_, path) <- result.try(result.replace_error(
       query.find_path(
@@ -244,9 +247,9 @@ pub fn event(
 /// handlers that do not decode the event payload.
 ///
 pub fn click(
-  simulation: Simulation(model, msg),
+  simulation: Simulation(model, message),
   on query: Query,
-) -> Simulation(model, msg) {
+) -> Simulation(model, message) {
   event(simulation, on: query, name: "click", data: [])
 }
 
@@ -265,10 +268,10 @@ pub fn click(
 /// or custom handlers that only decode the event target value.
 ///
 pub fn input(
-  simulation: Simulation(model, msg),
+  simulation: Simulation(model, message),
   on query: Query,
   value value: String,
-) -> Simulation(model, msg) {
+) -> Simulation(model, message) {
   event(simulation, on: query, name: "input", data: [
     #("target", json.object([#("value", json.string(value))])),
   ])
@@ -292,10 +295,10 @@ pub fn input(
 /// property.
 ///
 pub fn submit(
-  simulation: Simulation(model, msg),
+  simulation: Simulation(model, message),
   on query: Query,
   fields form_data: List(#(String, String)),
-) -> Simulation(model, msg) {
+) -> Simulation(model, message) {
   event(simulation, on: query, name: "submit", data: [
     #(
       "detail",
@@ -321,10 +324,10 @@ pub fn submit(
 /// > like a real application!
 ///
 pub fn problem(
-  simulation: Simulation(model, msg),
+  simulation: Simulation(model, message),
   name name: String,
   message message: String,
-) -> Simulation(model, msg) {
+) -> Simulation(model, message) {
   let history = [Problem(name:, message:), ..simulation.history]
 
   Simulation(..simulation, history:)
@@ -335,7 +338,7 @@ pub fn problem(
 /// Introspect the current `model` of a running simulation. This can be useful
 /// to debug why a simulation is not producing the view you expect.
 ///
-pub fn model(simulation: Simulation(model, msg)) -> model {
+pub fn model(simulation: Simulation(model, message)) -> model {
   simulation.model
 }
 
@@ -344,7 +347,7 @@ pub fn model(simulation: Simulation(model, msg)) -> model {
 /// and/or with the [`query`](./query.html) api to make assertions about the state
 /// of the page.
 ///
-pub fn view(simulation: Simulation(model, msg)) -> Element(msg) {
+pub fn view(simulation: Simulation(model, message)) -> Element(message) {
   simulation.html
 }
 
@@ -356,7 +359,7 @@ pub fn view(simulation: Simulation(model, msg)) -> Element(msg) {
 /// also include entries for when the queried event target could not be found in
 /// the view and cases where an event was fired but not handled by your application.
 ///
-pub fn history(simulation: Simulation(model, msg)) -> List(Event(msg)) {
+pub fn history(simulation: Simulation(model, message)) -> List(Event(message)) {
   simulation.history |> list.reverse
 }
 

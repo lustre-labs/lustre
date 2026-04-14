@@ -602,10 +602,10 @@ pub fn to_document_string_body_in_map_test() {
 
 // UTILS -----------------------------------------------------------------------
 
-fn snapshot(el: Element(msg), title: String) -> Nil {
+fn snapshot(el: Element(message), title: String) -> Nil {
   el |> vnode.to_snapshot(True) |> birdie.snap("[html] " <> title)
 }
 
-fn document_snapshot(el: Element(msg), title: String) -> Nil {
+fn document_snapshot(el: Element(message), title: String) -> Nil {
   el |> element.to_document_string |> birdie.snap("[html] " <> title)
 }

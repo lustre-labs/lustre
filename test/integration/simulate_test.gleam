@@ -79,7 +79,7 @@ pub fn simulate_event_on_directly_mapped_element_test() {
         ],
         [html.text("+")],
       )
-        |> element.map(fn(msg) { msg }),
+        |> element.map(fn(message) { message }),
     ])
   })
   |> simulate.start(0)
@@ -96,7 +96,7 @@ pub fn simulate_event_on_view_wrapped_in_map_test() {
 
   simulate.simple(init:, update:, view: fn(model) {
     view(model)
-    |> element.map(fn(msg) { msg })
+    |> element.map(fn(message) { message })
   })
   |> simulate.start(0)
   |> simulate.event(on: incr_button, name: "click", data: [])
@@ -179,14 +179,14 @@ fn init(initial_count) {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   ParentResetCount(Int)
   UserClickedIncrement
   UserClickedDecrement
 }
 
-fn update(model, msg) {
-  case msg {
+fn update(model, message) {
+  case message {
     ParentResetCount(count) -> count
     UserClickedIncrement -> model + 1
     UserClickedDecrement -> model - 1

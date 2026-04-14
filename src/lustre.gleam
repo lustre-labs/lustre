@@ -1,4 +1,4 @@
-//// Lustre is a framework for rendering Web applications and components using
+//// Lustre is a library for rendering Web applications and components using
 //// Gleam. This module contains the core API for constructing and communicating
 //// with Lustre applications. If you're new to Lustre or frontend development in
 //// general, make sure you check out the [examples](https://github.com/lustre-labs/lustre/tree/main/examples)
@@ -293,8 +293,8 @@ pub fn application(
 /// other HTML element. This dictionary of decoders allows you to specify how to
 /// decode those attributes into messages your component's update loop can handle.
 ///
-/// > **Note**: Lustre components are conceptually a lot "heavier" than components
-/// > in frameworks like React. They should be used for more complex UI widgets
+/// > **Note**: Lustre components take a bit more set up than components in JavaScript
+/// > frameworks like React. They should be used for more complex UI widgets
 /// > like a combobox with complex keyboard interactions rather than simple things
 /// > like buttons or text inputs. Where possible try to think about how to build
 /// > your UI with simple view functions (functions that return [Elements](./lustre/element.html#Element))

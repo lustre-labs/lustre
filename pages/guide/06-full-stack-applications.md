@@ -141,7 +141,7 @@ type Model {
   )
 }
 
-fn init(items: List(GroceryItem)) -> #(Model, Effect(Msg)) {
+fn init(items: List(GroceryItem)) -> #(Model, Effect(Message)) {
   let model =
     Model(items: items, new_item: "", saving: False, error: option.None)
 
@@ -150,7 +150,7 @@ fn init(items: List(GroceryItem)) -> #(Model, Effect(Msg)) {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   ServerSavedList(Result(Response(String), rsvp.Error))
   UserAddedItem
   UserTypedNewItem(String)
@@ -158,8 +158,8 @@ type Msg {
   UserUpdatedQuantity(index: Int, quantity: Int)
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     ServerSavedList(Ok(_)) -> #(
       Model(..model, saving: False, error: option.None),
       effect.none(),
@@ -200,7 +200,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   }
 }
 
-fn save_list(items: List(GroceryItem)) -> Effect(Msg) {
+fn save_list(items: List(GroceryItem)) -> Effect(Message) {
   let body = groceries.grocery_list_to_json(items)
   let url = "/api/groceries"
 
@@ -209,7 +209,7 @@ fn save_list(items: List(GroceryItem)) -> Effect(Msg) {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   let styles = [
     #("max-width", "30ch"),
     #("margin", "0 auto"),
@@ -241,7 +241,7 @@ fn view(model: Model) -> Element(Msg) {
   ])
 }
 
-fn view_new_item(new_item: String) -> Element(Msg) {
+fn view_new_item(new_item: String) -> Element(Message) {
   html.div([], [
     html.input([
       attribute.placeholder("Enter item name"),
@@ -252,7 +252,7 @@ fn view_new_item(new_item: String) -> Element(Msg) {
   ])
 }
 
-fn view_grocery_list(items: List(GroceryItem)) -> Element(Msg) {
+fn view_grocery_list(items: List(GroceryItem)) -> Element(Message) {
   case items {
     [] -> html.p([], [html.text("No items in your list yet.")])
     _ -> {
@@ -266,7 +266,7 @@ fn view_grocery_list(items: List(GroceryItem)) -> Element(Msg) {
   }
 }
 
-fn view_grocery_item(item: GroceryItem, index: Int) -> Element(Msg) {
+fn view_grocery_item(item: GroceryItem, index: Int) -> Element(Message) {
   html.div([attribute.styles([#("display", "flex"), #("gap", "1em")])], [
     html.span([attribute.style("flex", "1")], [html.text(item.name)]),
     html.input([

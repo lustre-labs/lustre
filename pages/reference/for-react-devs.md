@@ -117,19 +117,19 @@ fn init(_) -> Model {
   0
 }
 
-type Msg {
+type Message {
   Incr
   Decr
 }
 
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(model: Model, message: Message) -> Model {
+  case message {
     Incr -> model + 1
     Decr -> model - 1
   }
 }
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div([], [
     html.button([event.on_click(Decr)], [html.text("-")]),
     html.span([], [html.text(int.to_string(model))]),
@@ -191,11 +191,11 @@ function App() {
 **In Lustre**, the primary approach is to create view functions that return elements:
 
 ```gleam
-fn button(label: String, on_click: msg) -> Element(msg) {
+fn button(label: String, on_click: message) -> Element(message) {
   html.button([event.on_click(on_click)], [html.text(label)])
 }
 
-fn view(_model: Model) -> Element(Msg) {
+fn view(_model: Model) -> Element(Message) {
   html.div([], [
     button("Click me", ButtonClicked)
   ])
@@ -206,7 +206,7 @@ Lustre also supports stateful components with their own MVU cycle, similar to ho
 you'd use `useReducer` in React but with better encapsulation:
 
 ```gleam
-pub fn counter_component() -> Component(CounterModel, CounterMsg, CounterEvent, props) {
+pub fn counter_component() -> Component(CounterModel, CounterMessage, CounterEvent, props) {
   lustre.component(counter_init, counter_update, counter_view, [])
 }
 ```
@@ -284,26 +284,26 @@ type Model {
   Model(user: Option(User), loading: Bool, error: Option(String))
 }
 
-type Msg {
+type Message {
   UserFetched(Result(User, rsvp.Error))
 }
 
-fn init(user_id: String) -> #(Model, Effect(Msg)) {
+fn init(user_id: String) -> #(Model, Effect(Message)) {
   #(
     Model(user: None, loading: True, error: None),
     fetch_user(user_id)
   )
 }
 
-fn fetch_user(user_id: String) -> Effect(Msg) {
+fn fetch_user(user_id: String) -> Effect(Message) {
   rsvp.get(
     "/api/users/" <> user_id,
     rsvp.expect_json(user_decoder, UserFetched)
   )
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     UserFetched(Ok(user)) -> #(
       Model(user: Some(user), loading: False, error: None),
       effect.none()
@@ -315,7 +315,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   }
 }
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   case model {
     Model(_, True, _) -> html.p([], [html.text("Loading...")])
     Model(_, _, Some(error)) -> html.p([], [html.text("Error: " <> error)])

@@ -13,12 +13,12 @@ import lustre/vdom/vattr.{type Attribute}
 
 // TYPES -----------------------------------------------------------------------
 
-pub type Element(msg) {
+pub type Element(message) {
   Fragment(
     kind: Int,
     key: String,
-    children: List(Element(msg)),
-    keyed_children: MutableMap(String, Element(msg)),
+    children: List(Element(message)),
+    keyed_children: MutableMap(String, Element(message)),
   )
 
   Element(
@@ -34,9 +34,9 @@ pub type Element(msg) {
     // When constructing a Node with attributes provided by a user, attributes
     // have to be sorted with the `attribute.prepare` function.
     //
-    attributes: List(Attribute(msg)),
-    children: List(Element(msg)),
-    keyed_children: MutableMap(String, Element(msg)),
+    attributes: List(Attribute(message)),
+    children: List(Element(message)),
+    keyed_children: MutableMap(String, Element(message)),
     // These two properties are only useful when rendering Elements to strings.
     // Certain HTML tags like <img> and <input> are called "void" elements,
     // which means they cannot have children and should not have a closing tag.
@@ -55,7 +55,7 @@ pub type Element(msg) {
     namespace: String,
     tag: String,
     //
-    attributes: List(Attribute(msg)),
+    attributes: List(Attribute(message)),
     inner_html: String,
   )
 
@@ -63,17 +63,17 @@ pub type Element(msg) {
     kind: Int,
     key: String,
     mapper: fn(Dynamic) -> Dynamic,
-    child: Element(msg),
+    child: Element(message),
   )
 
-  Memo(kind: Int, key: String, dependencies: List(Ref), view: View(msg))
+  Memo(kind: Int, key: String, dependencies: List(Ref), view: View(message))
 }
 
-pub type Memos(msg) =
-  mutable_map.MutableMap(View(msg), Element(msg))
+pub type Memos(message) =
+  mutable_map.MutableMap(View(message), Element(message))
 
-pub type View(msg) =
-  fn() -> Element(msg)
+pub type View(message) =
+  fn() -> Element(message)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -81,9 +81,9 @@ pub const fragment_kind: Int = 0
 
 pub fn fragment(
   key key: String,
-  children children: List(Element(msg)),
-  keyed_children keyed_children: MutableMap(String, Element(msg)),
-) -> Element(msg) {
+  children children: List(Element(message)),
+  keyed_children keyed_children: MutableMap(String, Element(message)),
+) -> Element(message) {
   Fragment(kind: fragment_kind, key:, children:, keyed_children:)
 }
 
@@ -93,12 +93,12 @@ pub fn element(
   key key: String,
   namespace namespace: String,
   tag tag: String,
-  attributes attributes: List(Attribute(msg)),
-  children children: List(Element(msg)),
-  keyed_children keyed_children: MutableMap(String, Element(msg)),
+  attributes attributes: List(Attribute(message)),
+  children children: List(Element(message)),
+  keyed_children keyed_children: MutableMap(String, Element(message)),
   self_closing self_closing: Bool,
   void void: Bool,
-) -> Element(msg) {
+) -> Element(message) {
   Element(
     kind: element_kind,
     key:,
@@ -138,7 +138,7 @@ pub fn is_void_html_element(tag: String, namespace: String) -> Bool {
 
 pub const text_kind: Int = 2
 
-pub fn text(key key: String, content content: String) -> Element(msg) {
+pub fn text(key key: String, content content: String) -> Element(message) {
   Text(kind: text_kind, key: key, content: content)
 }
 
@@ -148,9 +148,9 @@ pub fn unsafe_inner_html(
   key key: String,
   namespace namespace: String,
   tag tag: String,
-  attributes attributes: List(Attribute(msg)),
+  attributes attributes: List(Attribute(message)),
   inner_html inner_html: String,
-) -> Element(msg) {
+) -> Element(message) {
   UnsafeInnerHtml(
     kind: unsafe_inner_html_kind,
     key:,
@@ -187,8 +187,8 @@ pub const memo_kind: Int = 5
 pub fn memo(
   key key: String,
   dependencies dependencies: List(Ref),
-  view view: fn() -> Element(msg),
-) -> Element(msg) {
+  view view: fn() -> Element(message),
+) -> Element(message) {
   Memo(kind: memo_kind, key:, dependencies:, view:)
 }
 
@@ -198,7 +198,7 @@ fn coerce(a: a) -> b
 
 // MANIPULATION ----------------------------------------------------------------
 
-pub fn to_keyed(key: String, node: Element(msg)) -> Element(msg) {
+pub fn to_keyed(key: String, node: Element(message)) -> Element(message) {
   case node {
     Element(..) -> Element(..node, key:)
     Text(..) -> Text(..node, key:)
@@ -214,7 +214,7 @@ pub fn to_keyed(key: String, node: Element(msg)) -> Element(msg) {
 
 // ENCODERS --------------------------------------------------------------------
 
-pub fn to_json(node: Element(msg), memos: Memos(msg)) -> Json {
+pub fn to_json(node: Element(message), memos: Memos(message)) -> Json {
   case node {
     Fragment(kind:, key:, children:, ..) ->
       fragment_to_json(kind, key, children, memos)
@@ -287,14 +287,14 @@ fn map_to_json(kind, key, child, memos) {
 
 // STRING RENDERING ------------------------------------------------------------
 
-pub fn to_string(node: Element(msg)) -> String {
+pub fn to_string(node: Element(message)) -> String {
   node
   |> to_string_tree("")
   |> string_tree.to_string
 }
 
 pub fn to_string_tree(
-  node: Element(msg),
+  node: Element(message),
   parent_namespace: String,
 ) -> StringTree {
   case node {
@@ -367,20 +367,20 @@ pub fn to_string_tree(
 
 fn children_to_string_tree(
   html: StringTree,
-  children: List(Element(msg)),
+  children: List(Element(message)),
   namespace: String,
 ) -> StringTree {
   use html, child <- list.fold(children, html)
   string_tree.append_tree(html, to_string_tree(child, namespace))
 }
 
-pub fn to_snapshot(node: Element(msg), debug: Bool) -> String {
+pub fn to_snapshot(node: Element(message), debug: Bool) -> String {
   do_to_snapshot_builder(node:, raw: False, debug:, namespace: "", indent: 0)
   |> string_tree.to_string
 }
 
 fn do_to_snapshot_builder(
-  node node: Element(msg),
+  node node: Element(message),
   raw raw: Bool,
   debug debug: Bool,
   namespace parent_namespace: String,
@@ -533,7 +533,7 @@ fn do_to_snapshot_builder(
 
 fn children_to_snapshot_builder(
   html html: StringTree,
-  children children: List(Element(msg)),
+  children children: List(Element(message)),
   raw raw: Bool,
   debug debug: Bool,
   namespace namespace: String,

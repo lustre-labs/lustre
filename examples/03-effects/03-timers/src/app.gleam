@@ -35,19 +35,19 @@ type Model {
   Model(timezone: Duration, time: Timestamp)
 }
 
-fn init(model: Model) -> #(Model, Effect(Msg)) {
+fn init(model: Model) -> #(Model, Effect(Message)) {
   // Calling the `tick` effect immediately on init kicks off our clock!
   #(model, tick())
 }
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   ClockTickedForward
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     ClockTickedForward -> #(
       Model(..model, time: timestamp.add(model.time, duration.seconds(1))),
       // Every tick of the clock, we schedule another one to happen in 1 second.
@@ -58,7 +58,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   }
 }
 
-fn tick() -> Effect(Msg) {
+fn tick() -> Effect(Message) {
   use dispatch <- effect.from
   use <- set_timeout(1000)
 
@@ -77,7 +77,7 @@ fn set_timeout(_delay: Int, _cb: fn() -> a) -> Nil {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   let #(_, time) = timestamp.to_calendar(model.time, model.timezone)
   let hours = int.to_float(time.hours)
   let minutes = int.to_float(time.minutes)
@@ -93,7 +93,7 @@ fn view_clock(
   hours hour: Float,
   minutes minute: Float,
   seconds second: Float,
-) -> Element(msg) {
+) -> Element(message) {
   html.svg(
     [
       attribute("viewBox", "0 0 400 400"),
@@ -114,7 +114,7 @@ fn view_clock(
   )
 }
 
-fn view_hand(width: Int, length: Float, turns: Float) -> Element(msg) {
+fn view_hand(width: Int, length: Float, turns: Float) -> Element(message) {
   let t = 2.0 *. maths.pi() *. { turns -. 0.25 }
   let x = 200.0 +. length *. maths.cos(t)
   let y = 200.0 +. length *. maths.sin(t)

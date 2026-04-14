@@ -36,7 +36,7 @@ fn init(_) -> Model {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg =
+type Message =
   Nil
 
 fn update(_, _) -> Model {
@@ -45,7 +45,7 @@ fn update(_, _) -> Model {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(_) -> Element(Msg) {
+fn view(_) -> Element(Message) {
   html.div(
     [attribute.class("p-32 mx-auto w-full max-w-2xl flex flex-col gap-8")],
     [

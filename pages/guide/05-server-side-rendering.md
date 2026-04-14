@@ -1,6 +1,6 @@
 # 05 Server-side rendering
 
-Up until now, we have focused on Lustre's ability as a framework for building
+Up until now, we have focused on Lustre's ability as a library for building interactive
 Single Page Applications (SPAs). While Lustre's development and feature set is
 primarily focused on SPA development, that doesn't mean it can't be used on the
 backend as well! In this guide we'll set up a small [mist](https://hexdocs.pm/mist/)
@@ -106,7 +106,7 @@ for producing the initial model, so all we need is a way to make sure the initia
 model on the client is the same as what the server used to render the page.
 
 ```gleam
-pub fn view(model: Int) -> Element(Msg) {
+pub fn view(model: Int) -> Element(Message) {
   let count = int.to_string(model)
 
   html.div([], [

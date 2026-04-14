@@ -38,10 +38,10 @@ pub fn main() {
   //   Sending some values to the client runtime also means it doesn't have to
   //   fetch them again.
   //
-  // This second step is what we call "hydration". Compared to other frameworks,
-  // Lustre is very unopinionated on how and what state you send to the client
-  // app. Since Lustre apps are usually singletons, we've found this approach
-  // to work well while being very flexible.
+  // This second step is what we call "hydration". Compared to popular frontend
+  // frameworks, Lustre is very unopinionated on how and what state you send to
+  // the client app. Since Lustre apps are usually singletons, we've found this
+  // approach to work well while being very flexible.
   //
   // Here, we'll use gleam_json and a simple FFI function to load a serialised
   // JSON blob from our HTML, and turn it into a initial `flags` value that we
@@ -92,7 +92,7 @@ fn todo_decoder() -> decode.Decoder(Todo) {
   decode.success(Todo(id:, title:, completed:))
 }
 
-fn init(flags: option.Option(List(Todo))) -> #(Model, Effect(Msg)) {
+fn init(flags: option.Option(List(Todo))) -> #(Model, Effect(Message)) {
   // If we got an initial list of todos from our flags, we use that and can
   // immediately initialise our app in the `Loaded` state.
   // Only if we didn't we need to fetch the todos from the server!
@@ -103,8 +103,8 @@ fn init(flags: option.Option(List(Todo))) -> #(Model, Effect(Msg)) {
 }
 
 fn fetch_todos(
-  on_response handle_response: fn(Result(List(Todo), rsvp.Error)) -> msg,
-) -> Effect(msg) {
+  on_response handle_response: fn(Result(List(Todo), rsvp.Error)) -> message,
+) -> Effect(message) {
   let url = "https://jsonplaceholder.typicode.com/todos/"
   let decoder = decode.list(todo_decoder()) |> decode.map(list.take(_, 10))
   let handler = rsvp.expect_json(decoder, handle_response)
@@ -113,13 +113,13 @@ fn fetch_todos(
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   ApiReturnedTodos(Result(List(Todo), rsvp.Error))
   UserClickedComplete(id: Int, completed: Bool)
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     ApiReturnedTodos(Ok(todos)) -> #(Loaded(todos), effect.none())
     ApiReturnedTodos(Error(error)) -> #(LoadingFailed(error), effect.none())
 
@@ -144,7 +144,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div(
     [attribute.class("p-32 mx-auto w-full max-w-2xl space-y-4")],
     case model {
@@ -155,7 +155,7 @@ fn view(model: Model) -> Element(Msg) {
   )
 }
 
-fn view_loading() -> List(Element(Msg)) {
+fn view_loading() -> List(Element(Message)) {
   [
     html.h1([attribute.class("font-semibold text-2xl")], [
       html.text("Loading..."),
@@ -163,7 +163,7 @@ fn view_loading() -> List(Element(Msg)) {
   ]
 }
 
-fn view_failed(_error: rsvp.Error) -> List(Element(Msg)) {
+fn view_failed(_error: rsvp.Error) -> List(Element(Message)) {
   [
     html.h1([attribute.class("font-semibold text-2xl")], [html.text("Oops!")]),
     html.p([attribute.class("text-lg")], [html.text("Something went wrong!")]),
@@ -171,7 +171,7 @@ fn view_failed(_error: rsvp.Error) -> List(Element(Msg)) {
   ]
 }
 
-fn view_todos(todos: List(Todo)) -> List(Element(Msg)) {
+fn view_todos(todos: List(Todo)) -> List(Element(Message)) {
   [
     html.h1([attribute.class("font-semibold text-2xl")], [html.text("Todo:")]),
     keyed.ul([attribute.class("flex flex-col gap-2")], {
@@ -190,8 +190,8 @@ fn view_todos(todos: List(Todo)) -> List(Element(Msg)) {
 
 fn view_todo(
   item item: Todo,
-  on_complete handle_complete: fn(Bool) -> msg,
-) -> Element(msg) {
+  on_complete handle_complete: fn(Bool) -> message,
+) -> Element(message) {
   html.label([attribute.class("flex gap-2 items-baseline")], [
     html.p(
       [

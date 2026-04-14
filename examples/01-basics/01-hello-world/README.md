@@ -1,10 +1,11 @@
 # 01-basics/01-hello-world
 
-This example demonstrates the fundamental concepts of the Lustre framework.
+This example demonstrates Lustre's fundamental update loop.
 
 ## The Model-View-Update architecture
 
-Lustre follows a Model-View-Update (MVU), which consists of three core parts:
+Lustre follows a Model-View-Update (MVU) architecture, which consists of three core
+parts:
 
 1. A **Model** type: this is the single source of truth for your application's
    state.

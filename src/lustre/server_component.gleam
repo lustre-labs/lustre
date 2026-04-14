@@ -6,13 +6,13 @@
 //// ```text
 //// -- SERVER -----------------------------------------------------------------
 ////
-////                  Msg                            Element(Msg)
+////                  Message                            Element(Message)
 //// +--------+        v        +----------------+        v        +------+
 //// |        | <-------------- |                | <-------------- |      |
 //// | update |                 | Lustre runtime |                 | view |
 //// |        | --------------> |                | --------------> |      |
 //// +--------+        ^        +----------------+        ^        +------+
-////         #(model, Effect(msg))  |        ^          Model
+////         #(model, Effect(message))  |        ^          Model
 ////                                |        |
 ////                                |        |
 ////                    DOM patches |        | DOM events
@@ -106,8 +106,8 @@ import lustre.{type RuntimeMessage}
 /// runtime. This instruct the client runtime to do things like update the DOM
 /// or emit an event from the element.
 ///
-pub type ClientMessage(msg) =
-  transport.ClientMessage(msg)
+pub type ClientMessage(message) =
+  transport.ClientMessage(message)
 
 /// The type of transport the client runtime should use to communicate with your
 /// server component. This is set by the [`method`](#method) attribute on the
@@ -141,9 +141,9 @@ pub type TransportMethod {
 /// > the script source directly with the [`script`](#script) element below.
 ///
 pub fn element(
-  attributes: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) {
+  attributes: List(Attribute(message)),
+  children: List(Element(message)),
+) -> Element(message) {
   element.element("lustre-server-component", attributes, children)
 }
 
@@ -152,7 +152,7 @@ pub fn element(
 /// directory, but this inline script can be useful for development or scenarios
 /// where you don't control the HTML document.
 ///
-pub fn script() -> Element(msg) {
+pub fn script() -> Element(message) {
   html.script(
     [attribute.type_("module")],
     // <<INJECT RUNTIME>>
@@ -167,13 +167,13 @@ pub fn script() -> Element(msg) {
 /// changed (by a clientside Lustre app, for example), the client runtime will
 /// destroy the current connection and set up a new one.
 ///
-pub fn route(path: String) -> Attribute(msg) {
+pub fn route(path: String) -> Attribute(message) {
   attribute("route", path)
 }
 
 ///
 ///
-pub fn method(value: TransportMethod) -> Attribute(msg) {
+pub fn method(value: TransportMethod) -> Attribute(message) {
   attribute("method", case value {
     WebSocket -> "ws"
     ServerSentEvents -> "sse"
@@ -196,7 +196,7 @@ pub fn method(value: TransportMethod) -> Attribute(msg) {
 /// import lustre/event
 /// import lustre/server_component
 ///
-/// pub fn custom_button(on_click: fn(String) -> msg) -> Element(msg) {
+/// pub fn custom_button(on_click: fn(String) -> message) -> Element(message) {
 ///   let handler = fn(event) {
 ///     use id <- decode.at(["target", "id"], decode.string)
 ///     decode.success(on_click(id))
@@ -210,9 +210,9 @@ pub fn method(value: TransportMethod) -> Attribute(msg) {
 /// ```
 ///
 pub fn include(
-  event: Attribute(msg),
+  event: Attribute(message),
   properties: List(String),
-) -> Attribute(msg) {
+) -> Attribute(message) {
   case event {
     Event(..) -> Event(..event, include: properties)
     _ -> event
@@ -229,7 +229,7 @@ pub fn include(
 ///
 /// > **Note**: this function is not available on the JavaScript target.
 ///
-pub fn subject(runtime: Runtime(msg)) -> Subject(RuntimeMessage(msg)) {
+pub fn subject(runtime: Runtime(message)) -> Subject(RuntimeMessage(message)) {
   coerce(runtime)
 }
 
@@ -241,7 +241,7 @@ pub fn subject(runtime: Runtime(msg)) -> Subject(RuntimeMessage(msg)) {
 ///
 /// > **Note**: this function is not available on the JavaScript target.
 ///
-pub fn pid(runtime: Runtime(msg)) -> Pid {
+pub fn pid(runtime: Runtime(message)) -> Pid {
   let assert Ok(pid) = process.subject_owner(subject(runtime))
 
   pid
@@ -259,8 +259,8 @@ fn coerce(value: a) -> b
 /// > you should use [`register_callback`](#register_callback) instead.
 ///
 pub fn register_subject(
-  client: Subject(ClientMessage(msg)),
-) -> RuntimeMessage(msg) {
+  client: Subject(ClientMessage(message)),
+) -> RuntimeMessage(message) {
   runtime.ClientRegisteredSubject(client)
 }
 
@@ -269,8 +269,8 @@ pub fn register_subject(
 /// [`register_subject`](#register_subject) otherwise this will do nothing.
 ///
 pub fn deregister_subject(
-  client: Subject(ClientMessage(msg)),
-) -> RuntimeMessage(msg) {
+  client: Subject(ClientMessage(message)),
+) -> RuntimeMessage(message) {
   runtime.ClientDeregisteredSubject(client)
 }
 
@@ -283,8 +283,8 @@ pub fn deregister_subject(
 /// > function.
 ///
 pub fn register_callback(
-  callback: fn(ClientMessage(msg)) -> Nil,
-) -> RuntimeMessage(msg) {
+  callback: fn(ClientMessage(message)) -> Nil,
+) -> RuntimeMessage(message) {
   runtime.ClientRegisteredCallback(callback)
 }
 
@@ -297,8 +297,8 @@ pub fn register_callback(
 /// > function.
 ///
 pub fn deregister_callback(
-  callback: fn(ClientMessage(msg)) -> Nil,
-) -> RuntimeMessage(msg) {
+  callback: fn(ClientMessage(message)) -> Nil,
+) -> RuntimeMessage(message) {
   runtime.ClientDeregisteredCallback(callback)
 }
 
@@ -312,7 +312,7 @@ pub fn deregister_callback(
 /// This is a real DOM event and any JavaScript on the page can attach an event
 /// listener to the server component element and listen for these events.
 ///
-pub fn emit(event: String, data: Json) -> Effect(msg) {
+pub fn emit(event: String, data: Json) -> Effect(message) {
   effect.event(event, data)
 }
 
@@ -336,8 +336,8 @@ pub fn emit(event: String, data: Json) -> Effect(msg) {
 /// > and `Selector`s don't exist, and is the equivalent of returning `effect.none()`.
 ///
 pub fn select(
-  sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
-) -> Effect(msg) {
+  sel: fn(fn(message) -> Nil, Subject(a)) -> Selector(message),
+) -> Effect(message) {
   effect.select(sel)
 }
 
@@ -348,7 +348,7 @@ pub fn select(
 /// parts of the runtime, you need to decode these actions and pass them to the
 /// server runtime yourself.
 ///
-pub fn runtime_message_decoder() -> Decoder(RuntimeMessage(msg)) {
+pub fn runtime_message_decoder() -> Decoder(RuntimeMessage(message)) {
   decode.map(
     transport.server_message_decoder(),
     runtime.ClientDispatchedMessage,
@@ -364,6 +364,6 @@ pub fn runtime_message_decoder() -> Decoder(RuntimeMessage(msg)) {
 /// Because your WebSocket server sits between the two parts of the runtime, you
 /// need to encode these actions and send them to the client runtime yourself.
 ///
-pub fn client_message_to_json(message: ClientMessage(msg)) -> Json {
+pub fn client_message_to_json(message: ClientMessage(message)) -> Json {
   transport.client_message_to_json(message)
 }

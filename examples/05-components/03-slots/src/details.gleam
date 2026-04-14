@@ -29,23 +29,23 @@ pub fn register() -> Result(Nil, lustre.Error) {
 }
 
 pub fn element(
-  attributes: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) {
+  attributes: List(Attribute(message)),
+  children: List(Element(message)),
+) -> Element(message) {
   element.element(
     "my-details",
     attributes,
-    // We're not passing children into the component directly. In other frameworks
-    // passing children into a component means receiving them as a prop or some
-    // data that you can handle. In Lustre, we use native HTML slots to direct
-    // the children into the right place. This makes slots *declarative*: as we'll
-    // see our `view` function says where the children go, and the component handles
-    // the rest.
+    // We're not passing children into the component directly. In most JavaScript
+    // frameworks passing children into a component means receiving them as a prop
+    // or some data that you can handle. In Lustre, we use native HTML slots to
+    // direct the children into the right place. This makes slots *declarative*:
+    // as we'll see our `view` function says where the children go, and the component
+    // handles the rest.
     children,
   )
 }
 
-pub fn summary(value: String) -> Attribute(msg) {
+pub fn summary(value: String) -> Attribute(message) {
   attribute("summary", value)
 }
 
@@ -61,7 +61,7 @@ type State {
   Expanded
 }
 
-fn init(_) -> #(Model, Effect(Msg)) {
+fn init(_) -> #(Model, Effect(Message)) {
   let model = Model(summary: "", state: Collapsed, height: 0)
 
   #(model, effect.none())
@@ -69,15 +69,15 @@ fn init(_) -> #(Model, Effect(Msg)) {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   DomReturnedHeight(Int)
   DomTransitionEnded
   ParentChangedSummary(String)
   UserClickedToggle
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     DomReturnedHeight(height) -> #(
       Model(..model, state: Expanded, height:),
       effect.none(),
@@ -110,7 +110,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   }
 }
 
-fn measure_height(of selector: String) -> Effect(Msg) {
+fn measure_height(of selector: String) -> Effect(Message) {
   // When we're interacting with the DOM inside a component, it's important that
   // we do so via the component's shadow root. Calling methods like `document.querySelector`
   // won't work as expected because our component content is isolated from the
@@ -134,7 +134,7 @@ fn do_measure_height(
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   element.fragment([
     view_trigger(
       expanded: model.state == Expanded,
@@ -152,8 +152,8 @@ fn view(model: Model) -> Element(Msg) {
 fn view_content(
   expanded expanded: Bool,
   height height: Int,
-  on_collapse handle_collapse: msg,
-) -> Element(msg) {
+  on_collapse handle_collapse: message,
+) -> Element(message) {
   html.div(
     [
       attribute.class("mt-2 overflow-y-hidden"),
@@ -193,8 +193,8 @@ fn view_content(
 fn view_trigger(
   expanded expanded: Bool,
   content summary: String,
-  on_click handle_click: msg,
-) -> Element(msg) {
+  on_click handle_click: message,
+) -> Element(message) {
   let handle_keydown = {
     use key <- decode.field("key", decode.string)
 

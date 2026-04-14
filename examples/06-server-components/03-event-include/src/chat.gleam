@@ -13,7 +13,7 @@ import lustre/server_component
 
 // MAIN ------------------------------------------------------------------------
 
-pub fn component() -> lustre.App(_, Model, Msg) {
+pub fn component() -> lustre.App(_, Model, Message) {
   lustre.simple(init, update, view)
 }
 
@@ -41,12 +41,12 @@ fn init(_) -> Model {
 
 // UPDATE ----------------------------------------------------------------------
 
-pub opaque type Msg {
+pub opaque type Message {
   UserSubmittedMessage(message: String)
 }
 
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(model: Model, message: Message) -> Model {
+  case message {
     UserSubmittedMessage(message:) -> {
       let key = model.key + 1
       let #(history, responses) = case model.responses {
@@ -64,7 +64,7 @@ fn update(model: Model, msg: Msg) -> Model {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   element.fragment([
     view_styles(),
     keyed.div([attribute.class("container")], [
@@ -78,7 +78,7 @@ fn view(model: Model) -> Element(Msg) {
   ])
 }
 
-fn view_history(messages: List(#(Role, String))) -> Element(msg) {
+fn view_history(messages: List(#(Role, String))) -> Element(message) {
   html.ol([attribute.class("history")], {
     use #(role, content) <- list.map(messages)
     let class =
@@ -91,7 +91,9 @@ fn view_history(messages: List(#(Role, String))) -> Element(msg) {
   })
 }
 
-fn view_input(on_submit handle_keydown: fn(String) -> msg) -> Element(msg) {
+fn view_input(
+  on_submit handle_keydown: fn(String) -> message,
+) -> Element(message) {
   let on_keydown =
     // Writing your own event handlers for server components works just like it
     // does for client
@@ -113,7 +115,7 @@ fn view_input(on_submit handle_keydown: fn(String) -> msg) -> Element(msg) {
   html.input([attribute.class("input"), on_keydown, attribute.autofocus(True)])
 }
 
-fn view_styles() -> Element(msg) {
+fn view_styles() -> Element(message) {
   html.style([], {
     "
     :host {

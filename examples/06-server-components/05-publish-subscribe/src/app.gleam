@@ -99,7 +99,7 @@ fn serve_runtime() -> Response(ResponseData) {
 
 fn serve_whiteboard(
   request: Request(Connection),
-  registry: GroupRegistry(whiteboard.SharedMsg),
+  registry: GroupRegistry(whiteboard.SharedMessage),
 ) -> Response(ResponseData) {
   mist.websocket(
     request:,
@@ -111,20 +111,20 @@ fn serve_whiteboard(
 
 type WhiteboardSocket {
   WhiteboardSocket(
-    component: lustre.Runtime(whiteboard.Msg),
-    self: Subject(server_component.ClientMessage(whiteboard.Msg)),
+    component: lustre.Runtime(whiteboard.Message),
+    self: Subject(server_component.ClientMessage(whiteboard.Message)),
   )
 }
 
 type WhiteboardSocketMessage =
-  server_component.ClientMessage(whiteboard.Msg)
+  server_component.ClientMessage(whiteboard.Message)
 
 type WhiteboardSocketInit =
   #(WhiteboardSocket, Option(Selector(WhiteboardSocketMessage)))
 
 fn init_whiteboard_socket(
   _socket: mist.WebsocketConnection,
-  registry: GroupRegistry(whiteboard.SharedMsg),
+  registry: GroupRegistry(whiteboard.SharedMessage),
 ) -> WhiteboardSocketInit {
   // Compared to the "multiple clients" example, we now start a new server
   // component instance for each client, passing the registry we created to its

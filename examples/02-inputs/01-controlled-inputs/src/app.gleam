@@ -27,12 +27,12 @@ fn init(_) -> Model {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   UserUpdatedName(String)
 }
 
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(model: Model, message: Message) -> Model {
+  case message {
     UserUpdatedName(name) ->
       case string.length(name) <= 10 {
         True -> name
@@ -46,7 +46,7 @@ fn update(model: Model, msg: Msg) -> Model {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div([attribute.class("p-32 mx-auto w-full max-w-2xl space-y-4")], [
     html.label([attribute.class("flex gap-2")], [
       html.span([], [html.text("Enter a name: ")]),

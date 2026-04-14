@@ -64,9 +64,9 @@ export class Runtime {
     this.#handle_effect(effects);
   }
 
-  send(msg) {
-    if (Message$isClientDispatchedMessage(msg)) {
-      const { message } = msg;
+  send(message) {
+    if (Message$isClientDispatchedMessage(message)) {
+      const { message } = message;
       const next = this.#handle_client_message(message);
       const diff = Diff.diff(this.#cache, this.#vdom, next);
 
@@ -74,8 +74,8 @@ export class Runtime {
       this.#cache = diff.cache;
 
       this.broadcast(Transport.reconcile(diff.patch, Cache.memos(diff.cache)));
-    } else if (Message$isClientRegisteredCallback(msg)) {
-      const { callback } = msg;
+    } else if (Message$isClientRegisteredCallback(message)) {
+      const { callback } = message;
       this.#callbacks.add(callback);
 
       callback(
@@ -94,15 +94,15 @@ export class Runtime {
       if (Option.Option$isSome(config.on_connect)) {
         this.#dispatch(Option.Option$Some$0(config.on_connect));
       }
-    } else if (Message$isClientDeregisteredCallback(msg)) {
-      const { callback } = msg;
+    } else if (Message$isClientDeregisteredCallback(message)) {
+      const { callback } = message;
       this.#callbacks.delete(callback);
 
       if (Option.Option$isSome(config.on_disconnect)) {
         this.#dispatch(Option.Option$Some$0(config.on_disconnect));
       }
-    } else if (Message$isEffectDispatchedMessage(msg)) {
-      const { message } = msg;
+    } else if (Message$isEffectDispatchedMessage(message)) {
+      const { message } = message;
       const [model, effect] = this.#update(this.#model, message);
       const next = this.#view(model);
       const diff = Diff.diff(this.#cache, this.#vdom, next);
@@ -114,11 +114,11 @@ export class Runtime {
       this.#cache = diff.cache;
 
       this.broadcast(Transport.reconcile(diff.patch, Cache.memos(diff.cache)));
-    } else if (Message$isEffectEmitEvent(msg)) {
-      const { name, data } = msg;
+    } else if (Message$isEffectEmitEvent(message)) {
+      const { name, data } = message;
       this.broadcast(Transport.emit(name, data));
-    } else if (Message$isEffectProvidedValue(msg)) {
-      const { key, value } = msg;
+    } else if (Message$isEffectProvidedValue(message)) {
+      const { key, value } = message;
       const existing = Dict.get(this.#providers, key);
       // we do not need to broadcast an update if the provided value is the same.
       if (Result$isOk(existing) && isEqual(Result$Ok$0(existing), value)) {
@@ -127,7 +127,7 @@ export class Runtime {
 
       this.#providers = Dict.insert(this.#providers, key, value);
       this.broadcast(Transport.provide(key, value));
-    } else if (Message$isSystemRequestedShutdown(msg)) {
+    } else if (Message$isSystemRequestedShutdown(message)) {
       this.#model = null;
       this.#update = null;
       this.#view = null;
@@ -139,15 +139,15 @@ export class Runtime {
     }
   }
 
-  broadcast(msg) {
+  broadcast(message) {
     for (const callback of this.#callbacks) {
-      callback(msg);
+      callback(message);
     }
   }
 
-  #handle_client_message(msg) {
-    if (ServerMessage$isBatch(msg)) {
-      const { messages } = msg;
+  #handle_client_message(message) {
+    if (ServerMessage$isBatch(message)) {
+      const { messages } = message;
       let model = this.#model;
       let effect = Effect.none();
 
@@ -168,24 +168,24 @@ export class Runtime {
       this.#model = model;
 
       return this.#view(model);
-    } else if (ServerMessage$isAttributeChanged(msg)) {
-      const { name, value } = msg;
+    } else if (ServerMessage$isAttributeChanged(message)) {
+      const { name, value } = message;
       const result = this.#handle_attribute_change(name, value);
       if (!Result$isOk(result)) {
         return this.#vdom;
       }
 
       return this.#dispatch(Result$Ok$0(result));
-    } else if (ServerMessage$isPropertyChanged(msg)) {
-      const { name, value } = msg;
+    } else if (ServerMessage$isPropertyChanged(message)) {
+      const { name, value } = message;
       const result = this.#handle_properties_change(name, value);
       if (!Result$isOk(result)) {
         return this.#vdom;
       }
 
       return this.#dispatch(Result$Ok$0(result));
-    } else if (ServerMessage$isEventFired(msg)) {
-      const { path, name, event } = msg;
+    } else if (ServerMessage$isEventFired(message)) {
+      const { path, name, event } = message;
       const [cache, result] = Cache.handle(this.#cache, path, name, event);
 
       this.#cache = cache;
@@ -195,8 +195,8 @@ export class Runtime {
 
       const { message } = Result$Ok$0(result);
       return this.#dispatch(message);
-    } else if (ServerMessage$isContextProvided(msg)) {
-      const { key, value } = msg;
+    } else if (ServerMessage$isContextProvided(message)) {
+      const { key, value } = message;
       let result = Dict.get(this.#config.contexts, key);
       if (!Result$isOk(result)) {
         return this.#vdom;
@@ -211,8 +211,8 @@ export class Runtime {
     }
   }
 
-  #dispatch(msg) {
-    const [model, effects] = this.#update(this.#model, msg);
+  #dispatch(message) {
+    const [model, effects] = this.#update(this.#model, message);
     this.#handle_effect(effects);
     this.#model = model;
 

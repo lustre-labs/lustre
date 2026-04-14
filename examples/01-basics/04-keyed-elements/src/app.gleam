@@ -28,12 +28,12 @@ fn init(_) -> Model {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   UserClickedCycle
 }
 
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(model: Model, message: Message) -> Model {
+  case message {
     UserClickedCycle ->
       case model {
         [head, ..rest] -> list.append(rest, [head])
@@ -44,7 +44,7 @@ fn update(model: Model, msg: Msg) -> Model {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   // Take just the first three images to display
   let images = list.take(model, 3)
 
@@ -61,7 +61,7 @@ fn view(model: Model) -> Element(Msg) {
   ])
 }
 
-fn view_unkeyed_list(images: List(String)) -> Element(msg) {
+fn view_unkeyed_list(images: List(String)) -> Element(message) {
   html.div([], [
     html.h2([attribute.class("text-2xl py-2")], [html.text("Unkeyed")]),
     // This app includes a small script to flash elements that have been updated
@@ -74,7 +74,7 @@ fn view_unkeyed_list(images: List(String)) -> Element(msg) {
   ])
 }
 
-fn view_keyed_list(images: List(String)) -> Element(msg) {
+fn view_keyed_list(images: List(String)) -> Element(message) {
   html.div([], [
     html.h2([attribute.class("text-2xl py-2")], [html.text("Keyed")]),
     // Only the third image flashes in the keyed list. By keying the elements
@@ -86,7 +86,7 @@ fn view_keyed_list(images: List(String)) -> Element(msg) {
   ])
 }
 
-fn view_cat(id: String) -> Element(msg) {
+fn view_cat(id: String) -> Element(message) {
   html.img([
     attribute.class("aspect-square rounded"),
     attribute.src("https://cdn2.thecatapi.com/images/" <> id <> ".jpg"),

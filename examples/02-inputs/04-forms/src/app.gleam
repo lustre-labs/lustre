@@ -72,14 +72,14 @@ fn new_login_form() -> Form(LoginData) {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   // Instead of receiving messages while the user edits the values, we only
   // receive a single message with all the data once the form is submitted and processed.
   UserSubmittedForm(Result(LoginData, Form(LoginData)))
 }
 
-fn update(_model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(_model: Model, message: Message) -> Model {
+  case message {
     UserSubmittedForm(Ok(LoginData(username:, ..))) -> {
       // Validation succeeded - we are logged in!
       LoggedIn(username:)
@@ -93,7 +93,7 @@ fn update(_model: Model, msg: Msg) -> Model {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div(
     [attribute.class("p-32 mx-auto w-full max-w-2xl space-y-4")],
     case model {
@@ -112,7 +112,7 @@ fn view(model: Model) -> Element(Msg) {
   )
 }
 
-fn view_login(form: Form(LoginData)) -> Element(Msg) {
+fn view_login(form: Form(LoginData)) -> Element(Message) {
   // Lustre sends us the form data as a list of tuples, which we can then
   // process, decode, or send off to our backend.
   //
@@ -162,7 +162,7 @@ fn view_input(
   is type_: String,
   name name: String,
   label label: String,
-) -> Element(msg) {
+) -> Element(message) {
   let errors = form.field_error_messages(form, name)
 
   html.div([], [

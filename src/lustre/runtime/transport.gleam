@@ -10,7 +10,7 @@ import lustre/vdom/vnode.{type Element, type Memos}
 
 // TYPES -----------------------------------------------------------------------
 
-pub type ClientMessage(msg) {
+pub type ClientMessage(message) {
   Mount(
     kind: Int,
     open_shadow_root: Bool,
@@ -19,10 +19,10 @@ pub type ClientMessage(msg) {
     observed_properties: List(String),
     requested_contexts: List(String),
     provided_contexts: Dict(String, Json),
-    vdom: Element(msg),
-    memos: Memos(msg),
+    vdom: Element(message),
+    memos: Memos(message),
   )
-  Reconcile(kind: Int, patch: Patch(msg), memos: Memos(msg))
+  Reconcile(kind: Int, patch: Patch(message), memos: Memos(message))
   Emit(kind: Int, name: String, data: Json)
   Provide(kind: Int, key: String, value: Json)
 }
@@ -46,9 +46,9 @@ pub fn mount(
   observed_properties observed_properties: List(String),
   requested_contexts requested_contexts: List(String),
   provided_contexts provided_contexts: Dict(String, Json),
-  vdom vdom: Element(msg),
-  memos memos: Memos(msg),
-) -> ClientMessage(msg) {
+  vdom vdom: Element(message),
+  memos memos: Memos(message),
+) -> ClientMessage(message) {
   Mount(
     kind: mount_kind,
     open_shadow_root:,
@@ -65,21 +65,21 @@ pub fn mount(
 pub const reconcile_kind: Int = 1
 
 pub fn reconcile(
-  patch patch: Patch(msg),
-  memos memos: Memos(msg),
-) -> ClientMessage(msg) {
+  patch patch: Patch(message),
+  memos memos: Memos(message),
+) -> ClientMessage(message) {
   Reconcile(kind: reconcile_kind, patch:, memos:)
 }
 
 pub const emit_kind: Int = 2
 
-pub fn emit(name name: String, data data: Json) -> ClientMessage(msg) {
+pub fn emit(name name: String, data data: Json) -> ClientMessage(message) {
   Emit(kind: emit_kind, name:, data:)
 }
 
 pub const provide_kind: Int = 3
 
-pub fn provide(key: String, value: Json) -> ClientMessage(msg) {
+pub fn provide(key: String, value: Json) -> ClientMessage(message) {
   Provide(kind: provide_kind, key:, value:)
 }
 
@@ -125,7 +125,7 @@ pub fn context_provided(key: String, value: Dynamic) -> ServerMessage {
 
 // ENCODING --------------------------------------------------------------------
 
-pub fn client_message_to_json(message: ClientMessage(msg)) -> Json {
+pub fn client_message_to_json(message: ClientMessage(message)) -> Json {
   case message {
     Mount(
       kind:,
@@ -163,8 +163,8 @@ fn mount_to_json(
   observed_properties: List(String),
   requested_contexts: List(String),
   provided_contexts: Dict(String, Json),
-  vdom: Element(msg),
-  memos: Memos(msg),
+  vdom: Element(message),
+  memos: Memos(message),
 ) -> Json {
   json.object([
     #("kind", json.int(kind)),
@@ -181,7 +181,11 @@ fn mount_to_json(
   ])
 }
 
-fn reconcile_to_json(kind: Int, patch: Patch(msg), memos: Memos(msg)) -> Json {
+fn reconcile_to_json(
+  kind: Int,
+  patch: Patch(message),
+  memos: Memos(message),
+) -> Json {
   json.object([
     #("kind", json.int(kind)),
     #("patch", patch.to_json(patch, memos)),

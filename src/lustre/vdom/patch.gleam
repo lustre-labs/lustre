@@ -22,12 +22,12 @@ import lustre/vdom/vnode.{type Element, type Memos}
 /// - A list of `children` patches that represents a traversal into the node's
 ///   children for further patching.
 ///
-pub type Patch(msg) {
+pub type Patch(message) {
   Patch(
     index: Int,
     removed: Int,
-    changes: List(Change(msg)),
-    children: List(Patch(msg)),
+    changes: List(Change(message)),
+    children: List(Patch(message)),
   )
 }
 
@@ -39,12 +39,16 @@ pub type Patch(msg) {
 /// > constructors to ensure that the `kind` field is set correctly, never construct
 /// > a variant directly.
 ///
-pub type Change(msg) {
+pub type Change(message) {
   // Self upadates:
   //
   ReplaceText(kind: Int, content: String)
   ReplaceInnerHtml(kind: Int, inner_html: String)
-  Update(kind: Int, added: List(Attribute(msg)), removed: List(Attribute(msg)))
+  Update(
+    kind: Int,
+    added: List(Attribute(message)),
+    removed: List(Attribute(message)),
+  )
 
   // Keyed children changes:
   //
@@ -54,11 +58,11 @@ pub type Change(msg) {
   // Indexed children changes:
   //
   /// Replace a node at the given index with a new vnode.
-  Replace(kind: Int, index: Int, with: Element(msg))
+  Replace(kind: Int, index: Int, with: Element(message))
   /// Remove a child at the given index.
   Remove(kind: Int, index: Int)
   /// Insert one or multiple children before the child with the given index.
-  Insert(kind: Int, children: List(Element(msg)), before: Int)
+  Insert(kind: Int, children: List(Element(message)), before: Int)
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
@@ -66,63 +70,63 @@ pub type Change(msg) {
 pub fn new(
   index index: Int,
   removed removed: Int,
-  changes changes: List(Change(msg)),
-  children children: List(Patch(msg)),
-) -> Patch(msg) {
+  changes changes: List(Change(message)),
+  children children: List(Patch(message)),
+) -> Patch(message) {
   Patch(index:, removed:, changes:, children:)
 }
 
 pub const replace_text_kind: Int = 0
 
-pub fn replace_text(content content: String) -> Change(msg) {
+pub fn replace_text(content content: String) -> Change(message) {
   ReplaceText(kind: replace_text_kind, content:)
 }
 
 pub const replace_inner_html_kind: Int = 1
 
-pub fn replace_inner_html(inner_html inner_html: String) -> Change(msg) {
+pub fn replace_inner_html(inner_html inner_html: String) -> Change(message) {
   ReplaceInnerHtml(kind: replace_inner_html_kind, inner_html:)
 }
 
 pub const update_kind: Int = 2
 
 pub fn update(
-  added added: List(Attribute(msg)),
-  removed removed: List(Attribute(msg)),
-) -> Change(msg) {
+  added added: List(Attribute(message)),
+  removed removed: List(Attribute(message)),
+) -> Change(message) {
   Update(kind: update_kind, added:, removed:)
 }
 
 pub const move_kind: Int = 3
 
-pub fn move(key key: String, before before: Int) -> Change(msg) {
+pub fn move(key key: String, before before: Int) -> Change(message) {
   Move(kind: move_kind, key:, before:)
 }
 
 pub const remove_kind: Int = 4
 
-pub fn remove(index index: Int) -> Change(msg) {
+pub fn remove(index index: Int) -> Change(message) {
   Remove(kind: remove_kind, index:)
 }
 
 pub const replace_kind: Int = 5
 
-pub fn replace(index index: Int, with with: Element(msg)) -> Change(msg) {
+pub fn replace(index index: Int, with with: Element(message)) -> Change(message) {
   Replace(kind: replace_kind, index:, with:)
 }
 
 pub const insert_kind: Int = 6
 
 pub fn insert(
-  children children: List(Element(msg)),
+  children children: List(Element(message)),
   before before: Int,
-) -> Change(msg) {
+) -> Change(message) {
   Insert(kind: insert_kind, children:, before:)
 }
 
 // QUERIES ---------------------------------------------------------------------
 
-pub fn is_empty(patch: Patch(msg)) -> Bool {
+pub fn is_empty(patch: Patch(message)) -> Bool {
   case patch {
     Patch(removed: 0, changes: [], children: [], ..) -> True
     _ -> False
@@ -131,7 +135,10 @@ pub fn is_empty(patch: Patch(msg)) -> Bool {
 
 // MANIPULATIONS ---------------------------------------------------------------
 
-pub fn add_child(parent: Patch(msg), child: Patch(msg)) -> Patch(msg) {
+pub fn add_child(
+  parent: Patch(message),
+  child: Patch(message),
+) -> Patch(message) {
   case is_empty(child) {
     True -> parent
     False -> Patch(..parent, children: [child, ..parent.children])
@@ -140,7 +147,7 @@ pub fn add_child(parent: Patch(msg), child: Patch(msg)) -> Patch(msg) {
 
 // ENCODING --------------------------------------------------------------------
 
-pub fn to_json(patch: Patch(msg), memos: Memos(msg)) -> Json {
+pub fn to_json(patch: Patch(message), memos: Memos(message)) -> Json {
   json_object_builder.new()
   |> json_object_builder.int("index", patch.index)
   |> json_object_builder.int("removed", patch.removed)
@@ -153,7 +160,7 @@ pub fn to_json(patch: Patch(msg), memos: Memos(msg)) -> Json {
   |> json_object_builder.build
 }
 
-fn change_to_json(change: Change(msg), memos: Memos(msg)) -> Json {
+fn change_to_json(change: Change(message), memos: Memos(message)) -> Json {
   case change {
     ReplaceText(kind, content) -> replace_text_to_json(kind, content)
     ReplaceInnerHtml(kind, inner_html) ->

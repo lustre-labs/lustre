@@ -15,12 +15,12 @@ import lustre/vdom/vnode.{
 
 // TYPES -----------------------------------------------------------------------
 
-pub opaque type Cache(msg) {
+pub opaque type Cache(message) {
   Cache(
-    events: Events(msg),
+    events: Events(message),
     //
-    vdoms: Memos(msg),
-    old_vdoms: Memos(msg),
+    vdoms: Memos(message),
+    old_vdoms: Memos(message),
     //
     dispatched_paths: List(String),
     next_dispatched_paths: List(String),
@@ -37,22 +37,22 @@ pub opaque type Cache(msg) {
 /// This is necessary for Memo to function, since Memo does not update the old
 /// events when its dependencies don't change.
 ///
-/// 🚨 This means that the `msg` type in `handlers` is a lie until we actually
+/// 🚨 This means that the `message` type in `handlers` is a lie until we actually
 /// handle an evnet!
 ///
-pub opaque type Events(msg) {
+pub opaque type Events(message) {
   Events(
-    handlers: MutableMap(String, Decoder(Handler(msg))),
-    children: MutableMap(String, Child(msg)),
+    handlers: MutableMap(String, Decoder(Handler(message))),
+    children: MutableMap(String, Child(message)),
   )
 }
 
-type Child(msg) {
+type Child(message) {
   Child(
     mapper: Mapper,
-    // 🚨 Because of the `mapper` shenanigans, the `msg` type parameter is
+    // 🚨 Because of the `mapper` shenanigans, the `message` type parameter is
     // a lie until we actually handle an event!
-    events: Events(msg),
+    events: Events(message),
   )
 }
 
@@ -62,14 +62,14 @@ pub type Mapper =
 // MAPPERS ---------------------------------------------------------------------
 
 pub fn compose_mapper(mapper: Mapper, child_mapper: Mapper) -> Mapper {
-  fn(msg) { mapper(child_mapper(msg)) }
+  fn(message) { mapper(child_mapper(message)) }
 }
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
 ///
 ///
-pub fn new() -> Cache(msg) {
+pub fn new() -> Cache(message) {
   Cache(
     events: new_events(),
     vdoms: mutable_map.new(),
@@ -79,17 +79,17 @@ pub fn new() -> Cache(msg) {
   )
 }
 
-pub fn new_events() -> Events(msg) {
+pub fn new_events() -> Events(message) {
   Events(handlers: mutable_map.new(), children: mutable_map.new())
 }
 
-pub fn from_node(root: Element(msg)) -> Cache(msg) {
+pub fn from_node(root: Element(message)) -> Cache(message) {
   let cache = new()
   let #(cache, events) = add_child(cache, cache.events, path.root, 0, root)
   Cache(..cache, events:)
 }
 
-pub fn tick(cache: Cache(msg)) -> Cache(msg) {
+pub fn tick(cache: Cache(message)) -> Cache(message) {
   Cache(
     events: cache.events,
     vdoms: mutable_map.new(),
@@ -99,11 +99,14 @@ pub fn tick(cache: Cache(msg)) -> Cache(msg) {
   )
 }
 
-pub fn events(cache: Cache(msg)) -> Events(msg) {
+pub fn events(cache: Cache(message)) -> Events(message) {
   cache.events
 }
 
-pub fn update_events(cache: Cache(msg), events: Events(msg)) -> Cache(msg) {
+pub fn update_events(
+  cache: Cache(message),
+  events: Events(message),
+) -> Cache(message) {
   Cache(..cache, events:)
 }
 
@@ -111,22 +114,26 @@ pub fn update_events(cache: Cache(msg), events: Events(msg)) -> Cache(msg) {
 
 /// Get a dictionary of all materialised Memo views.
 ///
-pub fn memos(cache: Cache(msg)) -> Memos(msg) {
+pub fn memos(cache: Cache(message)) -> Memos(message) {
   cache.vdoms
 }
 
 ///
 ///
 pub fn get_old_memo(
-  cache: Cache(msg),
-  old old: View(msg),
-  new new: View(msg),
-) -> Element(msg) {
+  cache: Cache(message),
+  old old: View(message),
+  new new: View(message),
+) -> Element(message) {
   mutable_map.get_or_compute(cache.old_vdoms, old, new)
 }
 
 /// Reuses the cached element when dependencies are unchanged.
-pub fn keep_memo(cache: Cache(msg), old old: View(msg), new new: View(msg)) {
+pub fn keep_memo(
+  cache: Cache(message),
+  old old: View(message),
+  new new: View(message),
+) {
   let node = mutable_map.get_or_compute(cache.old_vdoms, old, new)
   let vdoms = mutable_map.insert(cache.vdoms, new, node)
   Cache(..cache, vdoms:)
@@ -134,20 +141,20 @@ pub fn keep_memo(cache: Cache(msg), old old: View(msg), new new: View(msg)) {
 
 /// Caches a newly computed element when dependencies changed.
 pub fn add_memo(
-  cache: Cache(msg),
-  new new: View(msg),
-  node node: Element(msg),
-) -> Cache(msg) {
+  cache: Cache(message),
+  new new: View(message),
+  node node: Element(message),
+) -> Cache(message) {
   let vdoms = mutable_map.insert(cache.vdoms, new, node)
   Cache(..cache, vdoms:)
 }
 
 /// Gets the isolated event subtree for a Map node.
 pub fn get_subtree(
-  events: Events(msg),
+  events: Events(message),
   path: String,
   old_mapper old_mapper: Mapper,
-) -> Events(msg) {
+) -> Events(message) {
   let child =
     mutable_map.get_or_compute(events.children, path, fn() {
       Child(old_mapper, new_events())
@@ -158,11 +165,11 @@ pub fn get_subtree(
 
 /// Updates the Map node's isolated event subtree after diffing its child.
 pub fn update_subtree(
-  parent: Events(msg),
+  parent: Events(message),
   path: String,
   mapper mapper: Mapper,
-  events events: Events(msg),
-) -> Events(msg) {
+  events events: Events(message),
+) -> Events(message) {
   let new_child = Child(mapper:, events:)
   let children = mutable_map.insert(parent.children, path, new_child)
   Events(..parent, children:)
@@ -171,57 +178,57 @@ pub fn update_subtree(
 // EVENTS MANIPULATIONS -------------------------------------------------------
 
 pub fn add_event(
-  events: Events(msg),
+  events: Events(message),
   path: Path,
   name: String,
-  handler: Decoder(Handler(msg)),
-) -> Events(msg) {
+  handler: Decoder(Handler(message)),
+) -> Events(message) {
   let handlers = do_add_event(events.handlers, path, name, handler)
   Events(..events, handlers:)
 }
 
 fn do_add_event(
-  handlers: MutableMap(String, Decoder(Handler(msg))),
+  handlers: MutableMap(String, Decoder(Handler(message))),
   path: Path,
   name: String,
-  handler: Decoder(Handler(msg)),
-) -> MutableMap(String, Decoder(Handler(msg))) {
+  handler: Decoder(Handler(message)),
+) -> MutableMap(String, Decoder(Handler(message))) {
   mutable_map.insert(handlers, path.event(path, name), handler)
 }
 
 pub fn remove_event(
-  events: Events(msg),
+  events: Events(message),
   path: Path,
   name: String,
-) -> Events(msg) {
+) -> Events(message) {
   let handlers = do_remove_event(events.handlers, path, name)
   Events(..events, handlers:)
 }
 
 fn do_remove_event(
-  handlers: MutableMap(String, Decoder(Handler(msg))),
+  handlers: MutableMap(String, Decoder(Handler(message))),
   path: Path,
   name: String,
-) -> MutableMap(String, Decoder(Handler(msg))) {
+) -> MutableMap(String, Decoder(Handler(message))) {
   mutable_map.delete(handlers, path.event(path, name))
 }
 
 pub fn add_child(
-  cache: Cache(msg),
-  events: Events(msg),
+  cache: Cache(message),
+  events: Events(message),
   parent: Path,
   index: Int,
-  child: Element(msg),
-) -> #(Cache(msg), Events(msg)) {
+  child: Element(message),
+) -> #(Cache(message), Events(message)) {
   let children = [child, ..constants.empty_list]
   add_children(cache, events, parent, index, children)
 }
 
 fn add_attributes(
-  handlers: MutableMap(String, Decoder(Handler(msg))),
+  handlers: MutableMap(String, Decoder(Handler(message))),
   path: Path,
-  attributes: List(Attribute(msg)),
-) -> MutableMap(String, Decoder(Handler(msg))) {
+  attributes: List(Attribute(message)),
+) -> MutableMap(String, Decoder(Handler(message))) {
   use events, attribute <- list.fold(attributes, handlers)
   case attribute {
     Event(name:, handler:, ..) -> do_add_event(events, path, name, handler)
@@ -229,23 +236,23 @@ fn add_attributes(
   }
 }
 
-type AddedChildren(msg) {
+type AddedChildren(message) {
   AddedChildren(
-    handlers: MutableMap(String, Decoder(Handler(msg))),
-    children: MutableMap(String, Child(msg)),
-    vdoms: Memos(msg),
+    handlers: MutableMap(String, Decoder(Handler(message))),
+    children: MutableMap(String, Child(message)),
+    vdoms: Memos(message),
   )
 }
 
 ///
 ///
 pub fn add_children(
-  cache: Cache(msg),
-  events: Events(msg),
+  cache: Cache(message),
+  events: Events(message),
   path: Path,
   child_index: Int,
-  nodes: List(Element(msg)),
-) -> #(Cache(msg), Events(msg)) {
+  nodes: List(Element(message)),
+) -> #(Cache(message), Events(message)) {
   let vdoms = cache.vdoms
   let Events(handlers:, children:) = events
   let AddedChildren(handlers:, children:, vdoms:) =
@@ -254,13 +261,13 @@ pub fn add_children(
 }
 
 fn do_add_children(
-  handlers: MutableMap(String, Decoder(Handler(msg))),
-  children: MutableMap(String, Child(msg)),
-  vdoms: Memos(msg),
+  handlers: MutableMap(String, Decoder(Handler(message))),
+  children: MutableMap(String, Child(message)),
+  vdoms: Memos(message),
   parent: Path,
   child_index: Int,
-  nodes: List(Element(msg)),
-) -> AddedChildren(msg) {
+  nodes: List(Element(message)),
+) -> AddedChildren(message) {
   let next = child_index + 1
 
   case nodes {
@@ -332,12 +339,12 @@ fn do_add_children(
 }
 
 pub fn remove_child(
-  cache: Cache(msg),
-  events: Events(msg),
+  cache: Cache(message),
+  events: Events(message),
   parent: Path,
   child_index: Int,
-  child: Element(msg),
-) -> Events(msg) {
+  child: Element(message),
+) -> Events(message) {
   do_remove_children(
     events.handlers,
     events.children,
@@ -349,10 +356,10 @@ pub fn remove_child(
 }
 
 fn remove_attributes(
-  handlers: MutableMap(String, Decoder(Handler(msg))),
+  handlers: MutableMap(String, Decoder(Handler(message))),
   path: Path,
-  attributes: List(Attribute(msg)),
-) -> MutableMap(String, Decoder(Handler(msg))) {
+  attributes: List(Attribute(message)),
+) -> MutableMap(String, Decoder(Handler(message))) {
   use events, attribute <- list.fold(attributes, handlers)
   case attribute {
     Event(name:, ..) -> do_remove_event(events, path, name)
@@ -361,13 +368,13 @@ fn remove_attributes(
 }
 
 fn do_remove_children(
-  handlers: MutableMap(String, Decoder(Handler(msg))),
-  children: MutableMap(String, Child(msg)),
-  vdoms: Memos(msg),
+  handlers: MutableMap(String, Decoder(Handler(message))),
+  children: MutableMap(String, Child(message)),
+  vdoms: Memos(message),
   parent: Path,
   index: Int,
-  nodes: List(Element(msg)),
-) -> Events(msg) {
+  nodes: List(Element(message)),
+) -> Events(message) {
   let next = index + 1
 
   case nodes {
@@ -426,25 +433,25 @@ fn do_remove_children(
 }
 
 pub fn replace_child(
-  cache: Cache(msg),
-  events: Events(msg),
+  cache: Cache(message),
+  events: Events(message),
   parent: Path,
   child_index: Int,
-  prev: Element(msg),
-  next: Element(msg),
-) -> #(Cache(msg), Events(msg)) {
+  prev: Element(message),
+  next: Element(message),
+) -> #(Cache(message), Events(message)) {
   let events = remove_child(cache, events, parent, child_index, prev)
   add_child(cache, events, parent, child_index, next)
 }
 
 // QUERIES ---------------------------------------------------------------------
 
-pub opaque type DecodedEvent(msg) {
-  DecodedEvent(path: String, handler: Handler(msg))
+pub opaque type DecodedEvent(message) {
+  DecodedEvent(path: String, handler: Handler(message))
   DispatchedEvent(path: String)
 }
 
-pub fn decode(cache: Cache(msg), path: String, name: String, event: Dynamic) {
+pub fn decode(cache: Cache(message), path: String, name: String, event: Dynamic) {
   let parts = path.split_subtree_path(path <> path.separator_event <> name)
 
   case get_handler(cache.events, parts, function.identity) {
@@ -458,7 +465,7 @@ pub fn decode(cache: Cache(msg), path: String, name: String, event: Dynamic) {
   }
 }
 
-fn get_handler(events: Events(msg), path: List(String), mapper: Mapper) {
+fn get_handler(events: Events(message), path: List(String), mapper: Mapper) {
   case path {
     [] -> constants.error_nil
 
@@ -489,7 +496,7 @@ fn get_handler(events: Events(msg), path: List(String), mapper: Mapper) {
   }
 }
 
-pub fn dispatch(cache: Cache(msg), event: DecodedEvent(msg)) {
+pub fn dispatch(cache: Cache(message), event: DecodedEvent(message)) {
   let next_dispatched_paths = [event.path, ..cache.next_dispatched_paths]
   let cache = Cache(..cache, next_dispatched_paths:)
 
@@ -502,16 +509,16 @@ pub fn dispatch(cache: Cache(msg), event: DecodedEvent(msg)) {
 ///
 ///
 pub fn handle(
-  cache: Cache(msg),
+  cache: Cache(message),
   path: String,
   name: String,
   event: Dynamic,
-) -> #(Cache(msg), Result(Handler(msg), Nil)) {
+) -> #(Cache(message), Result(Handler(message), Nil)) {
   decode(cache, path, name, event)
   |> dispatch(cache, _)
 }
 
-pub fn has_dispatched_events(cache: Cache(msg), path: Path) {
+pub fn has_dispatched_events(cache: Cache(message), path: Path) {
   path.matches(path, any: cache.dispatched_paths)
 }
 

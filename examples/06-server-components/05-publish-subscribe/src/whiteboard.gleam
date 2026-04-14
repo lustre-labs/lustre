@@ -17,7 +17,7 @@ import lustre/server_component
 
 // MAIN ------------------------------------------------------------------------
 
-pub fn component() -> App(GroupRegistry(SharedMsg), Model, Msg) {
+pub fn component() -> App(GroupRegistry(SharedMessage), Model, Message) {
   lustre.application(init, update, view)
 }
 
@@ -43,11 +43,11 @@ pub type Model {
   Model(
     drawn_points: Dict(#(Int, Int), Color),
     selected_color: Color,
-    registry: GroupRegistry(SharedMsg),
+    registry: GroupRegistry(SharedMessage),
   )
 }
 
-fn init(registry: GroupRegistry(SharedMsg)) -> #(Model, Effect(Msg)) {
+fn init(registry: GroupRegistry(SharedMessage)) -> #(Model, Effect(Message)) {
   let model = Model(drawn_points: dict.new(), selected_color: Red, registry:)
 
   // When the main app starts our server component, it passes us a process registry
@@ -58,13 +58,13 @@ fn init(registry: GroupRegistry(SharedMsg)) -> #(Model, Effect(Msg)) {
   //
   // Note: This still does not make a complete whiteboard app! Try drawing with
   // the first client before connecting the second one.
-  #(model, subscribe(registry, AppReceivedSharedMsg))
+  #(model, subscribe(registry, AppReceivedSharedMessage))
 }
 
 fn subscribe(
   registry: GroupRegistry(topic),
-  on_msg handle_msg: fn(topic) -> msg,
-) -> Effect(msg) {
+  on_message handle_message: fn(topic) -> message,
+) -> Effect(message) {
   // Using the special `select` effect lets us return a `Selector` so that we
   // can receive messages from processes outside of our server component runtime.
   use _, _ <- server_component.select
@@ -74,10 +74,10 @@ fn subscribe(
   let subject = group_registry.join(registry, "whiteboard", process.self())
 
   // We need to teach the server component runtime to listen for messages on
-  // this subject by returning a `Selector` that matches our apps `msg` type.
+  // this subject by returning a `Selector` that matches our apps `message` type.
   let selector =
     process.new_selector()
-    |> process.select_map(subject, handle_msg)
+    |> process.select_map(subject, handle_message)
 
   selector
 }
@@ -89,19 +89,19 @@ fn subscribe(
 /// - Messages that originate from this instance of the server-component
 /// - Messages that we receive from and send to the glubsub topic.
 ///
-/// `SharedMsg` contains messages of the latter type.
-pub opaque type SharedMsg {
+/// `SharedMessage` contains messages of the latter type.
+pub opaque type SharedMessage {
   // Received or sent when any client wants to draw on the whiteboard.
   ClientDrewCircle(x: Int, y: Int, color: Color)
   /// Received or sent when any client wants to clear the screen.
   ClientClearedScreen
 }
 
-/// `Msg` is the usual message type in a Lustre app and contains all messages
+/// `Message` is the usual message type in a Lustre app and contains all messages
 /// that a single instance of our server component can receive.
-pub opaque type Msg {
-  /// We received some SharedMsg from the glubsub topic.
-  AppReceivedSharedMsg(msg: SharedMsg)
+pub opaque type Message {
+  /// We received some SharedMessage from the glubsub topic.
+  AppReceivedSharedMessage(message: SharedMessage)
   /// The user wants to change their selected color;
   /// This color can be different for every single client.
   UserChangedColor(color: Color)
@@ -113,9 +113,9 @@ pub opaque type Msg {
   UserClearedScreen
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
-    AppReceivedSharedMsg(ClientDrewCircle(x:, y:, color:)) -> {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
+    AppReceivedSharedMessage(ClientDrewCircle(x:, y:, color:)) -> {
       // If any client wants to draw on the screen, we do that update locally
       // to reflect that change.
       //
@@ -127,7 +127,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       #(Model(..model, drawn_points: new_points), effect.none())
     }
 
-    AppReceivedSharedMsg(ClientClearedScreen) -> {
+    AppReceivedSharedMessage(ClientClearedScreen) -> {
       let model = Model(..model, drawn_points: dict.new())
 
       #(model, effect.none())
@@ -139,7 +139,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
     UserDrewCircle(x:, y:, color:) -> {
       // If a user wants to draw, instead of doing that directly we broadcast
-      // that intent as a `SharedMsg` over our topic.
+      // that intent as a `SharedMessage` over our topic.
       // Later, we will receive that same message ourselves again, at which point
       // we will update our whiteboard.
       #(model, broadcast(model.registry, ClientDrewCircle(x:, y:, color:)))
@@ -151,16 +151,16 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   }
 }
 
-fn broadcast(registry: GroupRegistry(msg), msg: msg) -> Effect(any) {
+fn broadcast(registry: GroupRegistry(message), message: message) -> Effect(any) {
   use _ <- effect.from
   use member <- list.each(group_registry.members(registry, "whiteboard"))
 
-  process.send(member, msg)
+  process.send(member, message)
 }
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   let on_mouse_move =
     event.on("mousemove", {
       use button <- decode.field("buttons", decode.int)
@@ -174,7 +174,7 @@ fn view(model: Model) -> Element(Msg) {
             y: client_y,
             color: model.selected_color,
           ))
-        _ -> decode.failure(UserDrewCircle(x: 0, y: 0, color: Red), "Msg")
+        _ -> decode.failure(UserDrewCircle(x: 0, y: 0, color: Red), "Message")
       }
     })
     |> server_component.include(["buttons", "clientX", "clientY"])

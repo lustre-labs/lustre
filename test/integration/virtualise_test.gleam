@@ -231,13 +231,13 @@ pub fn virtualise_external_single_element_with_comments_test() {
 // UTILS -----------------------------------------------------------------------
 
 @target(javascript)
-fn test_virtualise(vdom: Element(msg)) {
+fn test_virtualise(vdom: Element(message)) {
   use virtualised <- virtualise(element.to_string(vdom))
   assert lustre_test.nodes_equal(virtualised, vdom)
 }
 
 @target(javascript)
-fn test_external_virtualise(html: String, vdom: Element(msg)) {
+fn test_external_virtualise(html: String, vdom: Element(message)) {
   use virtualised <- virtualise(html)
   assert lustre_test.nodes_equal(virtualised, vdom)
 }
@@ -246,4 +246,4 @@ fn test_external_virtualise(html: String, vdom: Element(msg)) {
 
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "virtualise")
-fn virtualise(html: String, callback: fn(Element(msg)) -> Nil) -> Nil
+fn virtualise(html: String, callback: fn(Element(message)) -> Nil) -> Nil

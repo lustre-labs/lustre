@@ -82,8 +82,8 @@ export function with_client_runtime(initial_html, app, callback) {
       lustre: null,
     };
 
-    const wrappedUpdate = (model, msg) => {
-      const [newModel, effects] = app.update(model, msg);
+    const wrappedUpdate = (model, message) => {
+      const [newModel, effects] = app.update(model, message);
       runtime.model = newModel;
       return [newModel, effects];
     };
@@ -106,8 +106,8 @@ export function with_client_runtime(initial_html, app, callback) {
   });
 }
 
-export async function send(runtime, msg, callback) {
-  runtime.lustre.dispatch(msg, true);
+export async function send(runtime, message, callback) {
+  runtime.lustre.dispatch(message, true);
   await waitForNextFrame();
   await callback();
 }

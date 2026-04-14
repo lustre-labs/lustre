@@ -1,9 +1,10 @@
-//// Lustre wouldn't be much use as a frontend framework if it didn't provide a
+//// Lustre wouldn't be much use as a frontend library if it didn't provide a
 //// way to create HTML elements. This module contains the basic functions
 //// necessary to construct and manipulate different HTML elements.
 ////
 //// It is also possible to use Lustre as a HTML templating library, without
-//// using its runtime or framework features.
+//// using its runtime features, by passing elements to functions like
+//// [`to_string_tree`](#to_string_tree) or [`to_document_string`](#to_document_string). 
 ////
 
 // IMPORTS ---------------------------------------------------------------------
@@ -16,12 +17,12 @@ import lustre/vdom/vnode.{Element, Fragment, Map, Memo, UnsafeInnerHtml}
 
 // TYPES -----------------------------------------------------------------------
 
-/// The `Element` type is how Lustre represents chunks of HTML. The `msg` type
+/// The `Element` type is how Lustre represents chunks of HTML. The `message` type
 /// variable is used to represent the types of messages that can be produced from
 /// events on the element or its children.
 ///
 /// > **Note**: Just because an element _can_ produces messages of a given type,
-/// > doesn't mean that it _will_! The `msg` type variable is used to represent the
+/// > doesn't mean that it _will_! The `message` type variable is used to represent the
 /// > potential for messages to be produced, not a guarantee.
 ///
 /// The most basic ways to create elements are:
@@ -61,8 +62,8 @@ import lustre/vdom/vnode.{Element, Fragment, Map, Memo, UnsafeInnerHtml}
 ///   inappropriate use can expose your application to XSS attacks. Make sure you
 ///   never take untrusted user input and pass it to this function!
 ///
-pub type Element(msg) =
-  vnode.Element(msg)
+pub type Element(message) =
+  vnode.Element(message)
 
 /// `Ref`s are used as dependencies for memoised elements created using the
 /// [`memo`](#memo) function. They wrap arbitrary Gleam values and are used by
@@ -105,9 +106,9 @@ pub type Ref =
 ///
 pub fn element(
   tag: String,
-  attributes: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) {
+  attributes: List(Attribute(message)),
+  children: List(Element(message)),
+) -> Element(message) {
   vnode.element(
     key: "",
     namespace: "",
@@ -126,9 +127,9 @@ pub fn element(
 pub fn namespaced(
   namespace: String,
   tag: String,
-  attributes: List(Attribute(msg)),
-  children: List(Element(msg)),
-) -> Element(msg) {
+  attributes: List(Attribute(message)),
+  children: List(Element(message)),
+) -> Element(message) {
   vnode.element(
     key: "",
     namespace:,
@@ -149,11 +150,11 @@ pub fn namespaced(
 pub fn advanced(
   namespace: String,
   tag: String,
-  attributes: List(Attribute(msg)),
-  children: List(Element(msg)),
+  attributes: List(Attribute(message)),
+  children: List(Element(message)),
   self_closing: Bool,
   void: Bool,
-) -> Element(msg) {
+) -> Element(message) {
   vnode.element(
     key: "",
     namespace:,
@@ -171,7 +172,7 @@ pub fn advanced(
 /// Instead, we need a way to take a `String` and turn it into an `Element` somehow:
 /// this function is exactly that!
 ///
-pub fn text(content: String) -> Element(msg) {
+pub fn text(content: String) -> Element(message) {
   vnode.text(key: "", content:)
 }
 
@@ -179,7 +180,7 @@ pub fn text(content: String) -> Element(msg) {
 /// rendering, where you might want to render something only if a certain
 /// condition is met.
 ///
-pub fn none() -> Element(msg) {
+pub fn none() -> Element(message) {
   vnode.text(key: "", content: "")
 }
 
@@ -188,7 +189,7 @@ pub fn none() -> Element(msg) {
 /// `<div>` or other container element, or returning multiple elements in places
 /// where only one `Element` is expected.
 ///
-pub fn fragment(children: List(Element(msg))) -> Element(msg) {
+pub fn fragment(children: List(Element(message))) -> Element(message) {
   vnode.fragment(key: "", children:, keyed_children: mutable_map.new())
 }
 
@@ -206,9 +207,9 @@ pub fn fragment(children: List(Element(msg))) -> Element(msg) {
 pub fn unsafe_raw_html(
   namespace: String,
   tag: String,
-  attributes: List(Attribute(msg)),
+  attributes: List(Attribute(message)),
   inner_html: String,
-) -> Element(msg) {
+) -> Element(message) {
   vnode.unsafe_inner_html(key: "", namespace:, tag:, attributes:, inner_html:)
 }
 
@@ -242,7 +243,10 @@ pub fn unsafe_raw_html(
 /// > overhead of comparing dependencies and managing memoisation may be more than
 /// > the naive cost of re-rendering the element each time.
 ///
-pub fn memo(dependencies: List(Ref), view: fn() -> Element(msg)) -> Element(msg) {
+pub fn memo(
+  dependencies: List(Ref),
+  view: fn() -> Element(message),
+) -> Element(message) {
   vnode.memo(key: "", dependencies:, view:)
 }
 
@@ -280,7 +284,7 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
 /// [open an issue](https://github.com/lustre-labs/lustre/issues/new) with your
 /// use case and we'll see what we can do!
 ///
-pub fn to_string(element: Element(msg)) -> String {
+pub fn to_string(element: Element(message)) -> String {
   vnode.to_string(element)
 }
 
@@ -291,7 +295,7 @@ pub fn to_string(element: Element(msg)) -> String {
 /// If the provided element is not an `html` element, it will be wrapped in both
 /// a `html` and `body` element.
 ///
-pub fn to_document_string(el: Element(msg)) -> String {
+pub fn to_document_string(el: Element(message)) -> String {
   "<!doctype html>\n" <> vnode.to_string(wrap_document(el))
 }
 
@@ -301,7 +305,7 @@ pub fn to_document_string(el: Element(msg)) -> String {
 /// [open an issue](https://github.com/lustre-labs/lustre/issues/new) with your
 /// use case and we'll see what we can do!
 ///
-pub fn to_string_tree(element: Element(msg)) -> StringTree {
+pub fn to_string_tree(element: Element(message)) -> StringTree {
   vnode.to_string_tree(element, "")
 }
 
@@ -312,7 +316,7 @@ pub fn to_string_tree(element: Element(msg)) -> StringTree {
 /// If the provided element is not an `html` element, it will be wrapped in both
 /// a `html` and `body` element.
 ///
-pub fn to_document_string_tree(el: Element(msg)) -> StringTree {
+pub fn to_document_string_tree(el: Element(message)) -> StringTree {
   string_tree.from_string("<!doctype html>\n")
   |> string_tree.append_tree(vnode.to_string_tree(wrap_document(el), ""))
 }
@@ -325,7 +329,7 @@ type DocumentType {
   Other
 }
 
-fn get_document_type(el: Element(msg)) -> DocumentType {
+fn get_document_type(el: Element(message)) -> DocumentType {
   case el {
     Element(tag: "html", ..) | UnsafeInnerHtml(tag: "html", ..) -> Html
     Element(tag: "head", ..) | UnsafeInnerHtml(tag: "head", ..) -> HeadOnly
@@ -342,7 +346,7 @@ fn get_document_type(el: Element(msg)) -> DocumentType {
   }
 }
 
-fn wrap_document(el: Element(msg)) -> Element(msg) {
+fn wrap_document(el: Element(message)) -> Element(message) {
   case get_document_type(el) {
     Html -> el
     HeadOnly | BodyOnly | HeadAndBody -> element("html", [], [el])
@@ -374,6 +378,6 @@ fn wrap_document(el: Element(msg)) -> Element(msg) {
 /// </header>
 /// ```
 ///
-pub fn to_readable_string(el: Element(msg)) -> String {
+pub fn to_readable_string(el: Element(message)) -> String {
   vnode.to_snapshot(el, False)
 }

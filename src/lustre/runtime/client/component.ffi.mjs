@@ -191,8 +191,8 @@ export const make_component = ({ init, update, view, config }, name) => {
       }
     }
 
-    dispatch(msg, shouldFlush = false) {
-      this.#runtime.dispatch(msg, shouldFlush);
+    dispatch(message, shouldFlush = false) {
+      this.#runtime.dispatch(message, shouldFlush);
     }
 
     emit(event, data) {

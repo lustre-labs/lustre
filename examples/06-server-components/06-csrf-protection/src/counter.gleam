@@ -9,7 +9,7 @@ import lustre/event
 
 // MAIN ------------------------------------------------------------------------
 
-pub fn component() -> App(_, Model, Msg) {
+pub fn component() -> App(_, Model, Message) {
   lustre.simple(init, update, view)
 }
 
@@ -24,13 +24,13 @@ fn init(_) -> Model {
 
 // UPDATE ----------------------------------------------------------------------
 
-pub opaque type Msg {
+pub opaque type Message {
   UserClickedIncrement
   UserClickedDecrement
 }
 
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(model: Model, message: Message) -> Model {
+  case message {
     UserClickedIncrement -> model + 1
     UserClickedDecrement -> model - 1
   }
@@ -38,7 +38,7 @@ fn update(model: Model, msg: Msg) -> Model {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   let count = int.to_string(model)
   let styles = [#("display", "flex"), #("justify-content", "space-between")]
 
@@ -52,6 +52,9 @@ fn view(model: Model) -> Element(Msg) {
   ])
 }
 
-fn view_button(label label: String, on_click handle_click: msg) -> Element(msg) {
+fn view_button(
+  label label: String,
+  on_click handle_click: message,
+) -> Element(message) {
   html.button([event.on_click(handle_click)], [html.text(label)])
 }

@@ -174,15 +174,15 @@ fn init(count) {
 }
 
 @target(erlang)
-type Msg {
+type Message {
   Incr
   Decr
   Reset
 }
 
 @target(erlang)
-fn update(model, msg) {
-  case msg {
+fn update(model, message) {
+  case message {
     Incr -> #(model + 1, effect.none())
     Decr -> #(model - 1, effect.none())
     Reset -> #(0, event.emit("reset", json.null()))

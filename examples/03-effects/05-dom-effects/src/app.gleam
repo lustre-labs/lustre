@@ -30,7 +30,7 @@ type State {
   Expanded
 }
 
-fn init(_) -> #(Model, Effect(Msg)) {
+fn init(_) -> #(Model, Effect(Message)) {
   let model = Model(state: Collapsed, height: 0)
 
   #(model, effect.none())
@@ -38,14 +38,14 @@ fn init(_) -> #(Model, Effect(Msg)) {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   UserClickedExpand
   DomReturnedHeight(Int)
   DomTransitionEnded
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     UserClickedExpand ->
       case model.state {
         Expanded -> #(Model(state: Collapsing, height: 0), effect.none())
@@ -62,7 +62,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   }
 }
 
-fn measure_height() -> Effect(Msg) {
+fn measure_height() -> Effect(Message) {
   // In addition to a `dispatch` function, before_paint and after_paint effects
   // have access to the "root element" of your Lustre app.
   // 
@@ -88,7 +88,7 @@ fn do_measure_height(
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div(
     [
       attribute.class(
@@ -122,8 +122,8 @@ fn view(model: Model) -> Element(Msg) {
 fn view_button(
   controls id: String,
   expanded expanded: Bool,
-  on_click handle_click: msg,
-) -> Element(msg) {
+  on_click handle_click: message,
+) -> Element(message) {
   html.button(
     [
       attribute.class("px-4 py-1 bg-blue-500 text-white rounded"),
@@ -139,9 +139,9 @@ fn view_collapsable(
   id id: String,
   expanded expanded: Bool,
   height height: Int,
-  content child: Element(msg),
-  on_collapse handle_collapse: msg,
-) -> Element(msg) {
+  content child: Element(message),
+  on_collapse handle_collapse: message,
+) -> Element(message) {
   let styles = [
     #("transition", "height 0.5s ease-in-out"),
     #("height", case expanded {

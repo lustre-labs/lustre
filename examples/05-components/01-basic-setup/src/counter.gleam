@@ -23,7 +23,7 @@ pub fn register() -> Result(Nil, lustre.Error) {
 /// underlying element construction: this way users don't have to remember the
 /// exact name of the component.
 ///
-pub fn element() -> Element(msg) {
+pub fn element() -> Element(message) {
   element.element("my-counter", [], [])
 }
 
@@ -41,18 +41,18 @@ fn init(_) -> Model {
 
 // UPDATE ----------------------------------------------------------------------
 
-/// Just like our component's `Model`, the `Msg` type is also private to the
+/// Just like our component's `Model`, the `Message` type is also private to the
 /// component and doesn't need to be handled by the parent app. This makes it
 /// convenient to use components to encapsulate complex functionality and rich
 /// user interaction patterns without complicating the parent app.
 ///
-type Msg {
+type Message {
   UserClickedIncrement
   UserClickedDecrement
 }
 
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(model: Model, message: Message) -> Model {
+  case message {
     UserClickedIncrement -> model + 1
     UserClickedDecrement -> model - 1
   }
@@ -60,7 +60,7 @@ fn update(model: Model, msg: Msg) -> Model {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   let count = int.to_string(model)
 
   html.div([attribute.class("py-4 flex items-center gap-2")], [
@@ -70,7 +70,10 @@ fn view(model: Model) -> Element(Msg) {
   ])
 }
 
-fn view_button(label label: String, on_click handle_click: msg) -> Element(msg) {
+fn view_button(
+  label label: String,
+  on_click handle_click: message,
+) -> Element(message) {
   html.button(
     [
       attribute.class("bg-blue-500 text-white w-12 py-1 rounded"),

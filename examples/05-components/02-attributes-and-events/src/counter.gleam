@@ -41,7 +41,7 @@ pub fn register() -> Result(Nil, lustre.Error) {
   lustre.register(component, "my-counter")
 }
 
-pub fn element(attributes: List(Attribute(msg))) -> Element(msg) {
+pub fn element(attributes: List(Attribute(message))) -> Element(message) {
   element.element("my-counter", attributes, [])
 }
 
@@ -50,7 +50,7 @@ pub fn element(attributes: List(Attribute(msg))) -> Element(msg) {
 /// to use string attributes rather than rich properties so they can also be used
 /// when server-rendering the component's HTML.
 ///
-pub fn value(value: Int) -> Attribute(msg) {
+pub fn value(value: Int) -> Attribute(message) {
   attribute.value(int.to_string(value))
 }
 
@@ -59,7 +59,7 @@ pub fn value(value: Int) -> Attribute(msg) {
 /// you may want to provide the decoder itself in case users want to write their
 /// own event listeners.
 ///
-pub fn on_change(handler: fn(Int) -> msg) -> Attribute(msg) {
+pub fn on_change(handler: fn(Int) -> message) -> Attribute(message) {
   event.on("change", {
     decode.at(["detail"], decode.int) |> decode.map(handler)
   })
@@ -70,21 +70,21 @@ pub fn on_change(handler: fn(Int) -> msg) -> Attribute(msg) {
 type Model =
   Int
 
-fn init(_) -> #(Model, Effect(Msg)) {
+fn init(_) -> #(Model, Effect(Message)) {
   #(0, effect.none())
 }
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   ParentChangedValue(Int)
   UserClickedIncrement
   UserClickedDecrement
   UserClickedSubmit
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     ParentChangedValue(value) -> #(value, effect.none())
     UserClickedIncrement -> #(model + 1, effect.none())
     UserClickedDecrement -> #(model - 1, effect.none())
@@ -100,7 +100,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   let count = int.to_string(model)
 
   html.div([attribute.class("flex items-center gap-2")], [
@@ -111,7 +111,10 @@ fn view(model: Model) -> Element(Msg) {
   ])
 }
 
-fn view_button(label label: String, on_click handle_click: msg) -> Element(msg) {
+fn view_button(
+  label label: String,
+  on_click handle_click: message,
+) -> Element(message) {
   html.button(
     [
       attribute.class("bg-blue-500 text-white min-w-12 px-2 py-1 rounded"),

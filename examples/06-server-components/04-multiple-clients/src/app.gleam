@@ -91,7 +91,7 @@ fn serve_runtime() -> Response(ResponseData) {
 
 fn serve_whiteboard(
   request: Request(Connection),
-  component: lustre.Runtime(whiteboard.Msg),
+  component: lustre.Runtime(whiteboard.Message),
 ) -> Response(ResponseData) {
   mist.websocket(
     request:,
@@ -103,20 +103,20 @@ fn serve_whiteboard(
 
 type WhiteboardSocket {
   WhiteboardSocket(
-    component: lustre.Runtime(whiteboard.Msg),
-    self: Subject(server_component.ClientMessage(whiteboard.Msg)),
+    component: lustre.Runtime(whiteboard.Message),
+    self: Subject(server_component.ClientMessage(whiteboard.Message)),
   )
 }
 
 type WhiteboardSocketMessage =
-  server_component.ClientMessage(whiteboard.Msg)
+  server_component.ClientMessage(whiteboard.Message)
 
 type WhiteboardSocketInit =
   #(WhiteboardSocket, Option(Selector(WhiteboardSocketMessage)))
 
 fn init_whiteboard_socket(
   _,
-  component: lustre.Runtime(whiteboard.Msg),
+  component: lustre.Runtime(whiteboard.Message),
 ) -> WhiteboardSocketInit {
   let self = process.new_subject()
   let selector = process.new_selector() |> process.select(self)

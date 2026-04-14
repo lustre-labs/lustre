@@ -5,7 +5,8 @@
 </div>
 
 <div align="center">
-  A framework for building Web apps in Gleam!
+  Create HTML templates, single page applications, Web Components, and real-time
+  server components in Gleam!
 </div>
 
 <br />
@@ -100,13 +101,13 @@ fn init(_flags) {
   0
 }
 
-type Msg {
+type Message {
   Incr
   Decr
 }
 
-fn update(model, msg) {
-  case msg {
+fn update(model, message) {
+  case message {
     Incr -> model + 1
     Decr -> model - 1
   }
@@ -125,7 +126,7 @@ fn view(model) {
 
 ## Philosophy {#philosophy}
 
-Lustre is an _opinionated_ framework for building frontend Web applications. Modern
+Lustre is an _opinionated_ library for building frontend Web applications. Modern
 frontend development is hard and complex. Some of that complexity is necessary, but
 a lot of it is accidental or comes from having far too many options. Lustre has the
 same design philosophy as Gleam: where possible, there should be only one way to do
@@ -171,7 +172,7 @@ gleam add --dev lustre_dev_tools
 To get up to speed with Lustre, check out the [quickstart guide](https://hexdocs.pm/lustre/guide/01-quickstart.html).
 If you prefer to see some code, the [examples](https://github.com/lustre-labs/lustre/tree/main/examples)
 directory contains a handful of small applications that demonstrate different
-aspects of the framework.
+aspects of the library.
 
 You can also read through the documentation and API reference on
 [HexDocs](https://hexdocs.pm/lustre).

@@ -102,7 +102,7 @@ pub fn benchmark_10_000_rows() {
 
 //
 
-fn run_diff(input: #(Element(msg), Element(msg))) {
+fn run_diff(input: #(Element(message), Element(message))) {
   diff.diff(cache.new(), input.0, input.1)
 }
 
@@ -120,7 +120,7 @@ fn view_table(
   offset: Int,
   shuffle: Bool,
   keyed: Bool,
-) -> Element(msg) {
+) -> Element(message) {
   let rows = list.range(1 + offset, rows + offset)
   let rows = case shuffle {
     True -> list.shuffle(rows)
@@ -133,7 +133,7 @@ fn view_table(
   }
 }
 
-fn view_keyed_table(rows: List(Int)) -> Element(msg) {
+fn view_keyed_table(rows: List(Int)) -> Element(message) {
   html.table([], [
     keyed.tbody([], {
       use id, pos <- list.index_map(rows)
@@ -144,7 +144,7 @@ fn view_keyed_table(rows: List(Int)) -> Element(msg) {
   ])
 }
 
-fn view_unkeyed_table(rows: List(Int)) -> Element(msg) {
+fn view_unkeyed_table(rows: List(Int)) -> Element(message) {
   html.table([], [
     html.tbody([], {
       use id, pos <- list.index_map(rows)
@@ -154,7 +154,7 @@ fn view_unkeyed_table(rows: List(Int)) -> Element(msg) {
   ])
 }
 
-fn view_row(id: Int, pos: Int) -> Element(msg) {
+fn view_row(id: Int, pos: Int) -> Element(message) {
   html.tr([], [
     html.td([], [html.text(int.to_string(pos))]),
     html.td([], [html.text("Row id"), html.text(int.to_string(id))]),

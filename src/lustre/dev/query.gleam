@@ -263,9 +263,9 @@ pub fn text(content: String) -> Selector {
 /// allowing you to render large views but take more precise snapshots.
 ///
 pub fn find(
-  in root: Element(msg),
+  in root: Element(message),
   matching query: Query,
-) -> Result(Element(msg), Nil) {
+) -> Result(Element(message), Nil) {
   case find_path(in: root, matching: query, index: 0, from: path.root) {
     Ok(#(element, _)) -> Ok(element)
     Error(_) -> constants.error_nil
@@ -276,11 +276,11 @@ pub fn find(
 ///
 @internal
 pub fn find_path(
-  in root: Element(msg),
+  in root: Element(message),
   matching query: Query,
   index index: Int,
   from path: Path,
-) -> Result(#(Element(msg), Path), Nil) {
+) -> Result(#(Element(message), Path), Nil) {
   case query {
     FindElement(matching: selector) ->
       case matches(root, selector) {
@@ -303,11 +303,11 @@ pub fn find_path(
 }
 
 fn find_in_children(
-  element: Element(msg),
+  element: Element(message),
   query: Query,
   index: Int,
   path: Path,
-) -> Result(#(Element(msg), Path), Nil) {
+) -> Result(#(Element(message), Path), Nil) {
   case element {
     Element(key:, children:, ..) | Fragment(key:, children:, ..) ->
       find_in_list(children, query, path |> path.add(index, key), 0)
@@ -319,11 +319,11 @@ fn find_in_children(
 }
 
 fn find_in_list(
-  elements: List(Element(msg)),
+  elements: List(Element(message)),
   query: Query,
   path: Path,
   index: Int,
-) -> Result(#(Element(msg), Path), Nil) {
+) -> Result(#(Element(message), Path), Nil) {
   case elements {
     [] -> constants.error_nil
 
@@ -337,10 +337,10 @@ fn find_in_list(
 }
 
 fn find_direct_child(
-  parent: Element(msg),
+  parent: Element(message),
   selector: Selector,
   path: Path,
-) -> Result(#(Element(msg), Path), Nil) {
+) -> Result(#(Element(message), Path), Nil) {
   case parent {
     Element(children:, ..) | Fragment(children:, ..) ->
       find_matching_in_list(children, selector, path, 0)
@@ -353,11 +353,11 @@ fn find_direct_child(
 }
 
 fn find_matching_in_list(
-  elements: List(Element(msg)),
+  elements: List(Element(message)),
   selector: Selector,
   path: Path,
   index: Int,
-) -> Result(#(Element(msg), Path), Nil) {
+) -> Result(#(Element(message), Path), Nil) {
   case elements {
     [] -> constants.error_nil
 
@@ -378,10 +378,10 @@ fn find_matching_in_list(
 }
 
 fn find_descendant(
-  parent: Element(msg),
+  parent: Element(message),
   selector: Selector,
   path: Path,
-) -> Result(#(Element(msg), Path), Nil) {
+) -> Result(#(Element(message), Path), Nil) {
   case find_direct_child(parent, selector, path) {
     Ok(element) -> Ok(element)
     Error(_) ->
@@ -398,11 +398,11 @@ fn find_descendant(
 }
 
 fn find_descendant_in_list(
-  elements: List(Element(msg)),
+  elements: List(Element(message)),
   selector: Selector,
   path: Path,
   index: Int,
-) -> Result(#(Element(msg), Path), Nil) {
+) -> Result(#(Element(message), Path), Nil) {
   case elements {
     [] -> constants.error_nil
     [first, ..rest] -> {
@@ -425,9 +425,9 @@ fn find_descendant_in_list(
 /// given query.
 ///
 pub fn find_all(
-  in root: Element(msg),
+  in root: Element(message),
   matching query: Query,
-) -> List(Element(msg)) {
+) -> List(Element(message)) {
   case query {
     FindElement(matching: selector) ->
       case matches(root, selector) {
@@ -448,9 +448,9 @@ pub fn find_all(
 }
 
 fn find_all_in_children(
-  element: Element(msg),
+  element: Element(message),
   query: Query,
-) -> List(Element(msg)) {
+) -> List(Element(message)) {
   case element {
     Element(children:, ..) | Fragment(children:, ..) ->
       find_all_in_list(children, query)
@@ -463,9 +463,9 @@ fn find_all_in_children(
 }
 
 fn find_all_in_list(
-  elements: List(Element(msg)),
+  elements: List(Element(message)),
   query: Query,
-) -> List(Element(msg)) {
+) -> List(Element(message)) {
   case elements {
     [] -> []
     [first, ..rest] -> {
@@ -478,9 +478,9 @@ fn find_all_in_list(
 }
 
 fn find_all_direct_children(
-  parent: Element(msg),
+  parent: Element(message),
   selector: Selector,
-) -> List(Element(msg)) {
+) -> List(Element(message)) {
   case parent {
     Element(children:, ..) | Fragment(children:, ..) ->
       find_all_matching_in_list(children, selector)
@@ -493,9 +493,9 @@ fn find_all_direct_children(
 }
 
 fn find_all_matching_in_list(
-  elements: List(Element(msg)),
+  elements: List(Element(message)),
   selector: Selector,
-) -> List(Element(msg)) {
+) -> List(Element(message)) {
   case elements {
     [] -> []
     [first, ..rest] ->
@@ -507,9 +507,9 @@ fn find_all_matching_in_list(
 }
 
 fn find_all_descendants(
-  parent: Element(msg),
+  parent: Element(message),
   selector: Selector,
-) -> List(Element(msg)) {
+) -> List(Element(message)) {
   let direct_matches = find_all_direct_children(parent, selector)
   let descendant_matches = case parent {
     Element(children:, ..) | Fragment(children:, ..) ->
@@ -525,9 +525,9 @@ fn find_all_descendants(
 }
 
 fn find_all_descendants_in_list(
-  elements: List(Element(msg)),
+  elements: List(Element(message)),
   selector: Selector,
-) -> List(Element(msg)) {
+) -> List(Element(message)) {
   case elements {
     [] -> []
     [first, ..rest] -> {
@@ -542,7 +542,7 @@ fn find_all_descendants_in_list(
 /// Check if an element or any of its descendants match the given
 /// [`Selector`](#Selector).
 ///
-pub fn has(in element: Element(msg), matching selector: Selector) -> Bool {
+pub fn has(in element: Element(message), matching selector: Selector) -> Bool {
   case find(in: element, matching: FindElement(matching: selector)) {
     Ok(_) -> True
     Error(_) -> False
@@ -552,7 +552,7 @@ pub fn has(in element: Element(msg), matching selector: Selector) -> Bool {
 /// Check if the given target element matches the given [`Selector`](#Selector).
 ///
 pub fn matches(
-  target element: Element(msg),
+  target element: Element(message),
   selector selector: Selector,
 ) -> Bool {
   case element, selector {
@@ -623,7 +623,11 @@ pub fn matches(
   }
 }
 
-fn text_content(element: Element(msg), inline: Bool, content: String) -> String {
+fn text_content(
+  element: Element(message),
+  inline: Bool,
+  content: String,
+) -> String {
   case element {
     Fragment(..) ->
       list.fold(element.children, content, fn(content, child) {

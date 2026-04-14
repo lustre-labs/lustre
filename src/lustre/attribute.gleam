@@ -19,8 +19,8 @@ import lustre/vdom/vattr
 ///
 /// - [`event.on`](./event.html#on) can be used to construct event listeners.
 ///
-pub type Attribute(msg) =
-  vattr.Attribute(msg)
+pub type Attribute(message) =
+  vattr.Attribute(message)
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
@@ -31,11 +31,11 @@ pub type Attribute(msg) =
 /// > can read more about the implications of this
 /// > [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
-pub fn attribute(name: String, value: String) -> Attribute(msg) {
+pub fn attribute(name: String, value: String) -> Attribute(message) {
   vattr.attribute(name, value)
 }
 
-fn boolean_attribute(name: String, value: Bool) -> Attribute(msg) {
+fn boolean_attribute(name: String, value: Bool) -> Attribute(message) {
   case value {
     True -> attribute(name, "")
     False -> property(name, json.bool(False))
@@ -50,7 +50,7 @@ fn boolean_attribute(name: String, value: Bool) -> Attribute(msg) {
 /// > can read more about the implications of this
 /// > [here](https://github.com/lustre-labs/lustre/blob/main/pages/hints/attributes-vs-properties.md).
 ///
-pub fn property(name: String, value: Json) -> Attribute(msg) {
+pub fn property(name: String, value: Json) -> Attribute(message) {
   vattr.property(name, value)
 }
 
@@ -58,7 +58,7 @@ pub fn property(name: String, value: Json) -> Attribute(msg) {
 /// calling [`element.to_string`](./element.html#to_string), but it is useful for
 /// _conditionally_ adding attributes to an element.
 ///
-pub fn none() -> Attribute(msg) {
+pub fn none() -> Attribute(message) {
   class("")
 }
 
@@ -76,7 +76,7 @@ pub fn none() -> Attribute(msg) {
 /// | Chrome  | Alt + key         | Ctrl + Option + key | Ctrl + Option + key |
 /// | Safari  |                   |                     | Ctrl + Option + key |
 ///
-pub fn accesskey(key: String) -> Attribute(msg) {
+pub fn accesskey(key: String) -> Attribute(message) {
   attribute("accesskey", key)
 }
 
@@ -109,7 +109,7 @@ pub fn accesskey(key: String) -> Attribute(msg) {
 ///
 /// - **characters**: All letters should default to uppercase.
 ///
-pub fn autocapitalize(value: String) -> Attribute(msg) {
+pub fn autocapitalize(value: String) -> Attribute(message) {
   attribute("autocapitalize", value)
 }
 
@@ -119,7 +119,7 @@ pub fn autocapitalize(value: String) -> Attribute(msg) {
 ///
 /// When disabled the user agent is **never** allowed to correct spelling.
 ///
-pub fn autocorrect(enabled: Bool) -> Attribute(msg) {
+pub fn autocorrect(enabled: Bool) -> Attribute(message) {
   boolean_attribute("autocorrect", enabled)
 }
 
@@ -130,7 +130,7 @@ pub fn autocorrect(enabled: Bool) -> Attribute(msg) {
 /// > Whenever it is toggled true, the element will be automatically focused even
 /// > if it already exists in the DOM.
 ///
-pub fn autofocus(should_autofocus: Bool) -> Attribute(msg) {
+pub fn autofocus(should_autofocus: Bool) -> Attribute(message) {
   boolean_attribute("autofocus", should_autofocus)
 }
 
@@ -145,7 +145,7 @@ pub fn autofocus(should_autofocus: Bool) -> Attribute(msg) {
 /// > with any existing other classes on an element. Classes added _later_ in the
 /// > list will override classes added earlier.
 ///
-pub fn class(name: String) -> Attribute(msg) {
+pub fn class(name: String) -> Attribute(message) {
   attribute("class", name)
 }
 
@@ -158,7 +158,7 @@ pub fn class(name: String) -> Attribute(msg) {
 /// > with any existing other classes on an element. Classes added _later_ in the
 /// > list will override classes added earlier.
 ///
-pub fn classes(names: List(#(String, Bool))) -> Attribute(msg) {
+pub fn classes(names: List(#(String, Bool))) -> Attribute(message) {
   class(do_classes(names, ""))
 }
 
@@ -183,7 +183,7 @@ fn do_classes(names: List(#(String, Bool)), class: String) -> String {
 /// > **Note**: setting the value to an empty string does *not* disable this
 /// > attribute, and is instead equivalent to setting it to `"true"`!
 ///
-pub fn contenteditable(is_editable: String) -> Attribute(msg) {
+pub fn contenteditable(is_editable: String) -> Attribute(message) {
   attribute("contenteditable", is_editable)
 }
 
@@ -192,7 +192,7 @@ pub fn contenteditable(is_editable: String) -> Attribute(msg) {
 /// path `element.dataset.key` where `key` is the key you provide to this
 /// function.
 ///
-pub fn data(key: String, value: String) -> Attribute(msg) {
+pub fn data(key: String, value: String) -> Attribute(message) {
   attribute("data-" <> key, value)
 }
 
@@ -210,14 +210,14 @@ pub fn data(key: String, value: String) -> Attribute(msg) {
 /// > browsers is naive and only considers the first character available that
 /// > indicates the direction.
 ///
-pub fn dir(direction: String) -> Attribute(msg) {
+pub fn dir(direction: String) -> Attribute(message) {
   attribute("dir", direction)
 }
 
 /// Indicates whether the element can be dragged as part of the HTML drag-and-drop
 /// API.
 ///
-pub fn draggable(is_draggable: Bool) -> Attribute(msg) {
+pub fn draggable(is_draggable: Bool) -> Attribute(message) {
   attribute("draggable", case is_draggable {
     True -> "true"
     False -> "false"
@@ -242,7 +242,7 @@ pub fn draggable(is_draggable: Bool) -> Attribute(msg) {
 /// by user agents. When unspecified or invalid, the user agent may use contextual
 /// information such as the type of an input to determine the label.
 ///
-pub fn enterkeyhint(value: String) -> Attribute(msg) {
+pub fn enterkeyhint(value: String) -> Attribute(message) {
   attribute("enterkeyhint", value)
 }
 
@@ -252,7 +252,7 @@ pub fn enterkeyhint(value: String) -> Attribute(msg) {
 /// presentation purposes, but it can be useful for example to render something
 /// that may be made visible later.
 ///
-pub fn hidden(is_hidden: Bool) -> Attribute(msg) {
+pub fn hidden(is_hidden: Bool) -> Attribute(message) {
   boolean_attribute("hidden", is_hidden)
 }
 
@@ -261,7 +261,7 @@ pub fn hidden(is_hidden: Bool) -> Attribute(msg) {
 /// `#id`, in JavaScript with `document.getElementById("id")`, or by anchors on
 /// the same page with the URL `"#id"`.
 ///
-pub fn id(value: String) -> Attribute(msg) {
+pub fn id(value: String) -> Attribute(message) {
   attribute("id", value)
 }
 
@@ -271,7 +271,7 @@ pub fn id(value: String) -> Attribute(msg) {
 /// greying them out: this can help avoid confusion for users who may not otherwise
 /// know the content they are looking at is inactive.
 ///
-pub fn inert(is_inert: Bool) -> Attribute(msg) {
+pub fn inert(is_inert: Bool) -> Attribute(message) {
   boolean_attribute("inert", is_inert)
 }
 
@@ -292,14 +292,14 @@ pub fn inert(is_inert: Bool) -> Attribute(msg) {
 /// The `"none"` value should only be used in cases where you are rendering a
 /// custom input method, otherwise the user will not be able to enter any text!
 ///
-pub fn inputmode(value: String) -> Attribute(msg) {
+pub fn inputmode(value: String) -> Attribute(message) {
   attribute("inputmode", value)
 }
 
 /// Specifies the [customised built-in element](https://html.spec.whatwg.org/#customized-built-in-element)
 /// to be used in place of the native element this attribute is applied to.
 ///
-pub fn is(value: String) -> Attribute(msg) {
+pub fn is(value: String) -> Attribute(message) {
   attribute("is", value)
 }
 
@@ -307,7 +307,7 @@ pub fn is(value: String) -> Attribute(msg) {
 /// specify the global unique identifier of an item, for example books that are
 /// identifiable by their ISBN.
 ///
-pub fn itemid(id: String) -> Attribute(msg) {
+pub fn itemid(id: String) -> Attribute(message) {
   attribute("itemid", id)
 }
 
@@ -315,7 +315,7 @@ pub fn itemid(id: String) -> Attribute(msg) {
 /// specify that the content of the element is to be treated as a value of the
 /// given property name.
 ///
-pub fn itemprop(name: String) -> Attribute(msg) {
+pub fn itemprop(name: String) -> Attribute(message) {
   attribute("itemprop", name)
 }
 
@@ -323,7 +323,7 @@ pub fn itemprop(name: String) -> Attribute(msg) {
 /// indicate that the element and its descendants form a single item of key-value
 /// data.
 ///
-pub fn itemscope(has_scope: Bool) -> Attribute(msg) {
+pub fn itemscope(has_scope: Bool) -> Attribute(message) {
   boolean_attribute("itemscope", has_scope)
 }
 
@@ -332,7 +332,7 @@ pub fn itemscope(has_scope: Bool) -> Attribute(msg) {
 /// a schema containing the vocabulary used for an item's key-value pairs, such
 /// as a schema.org type.
 ///
-pub fn itemtype(url: String) -> Attribute(msg) {
+pub fn itemtype(url: String) -> Attribute(message) {
   attribute("itemtype", url)
 }
 
@@ -343,14 +343,14 @@ pub fn itemtype(url: String) -> Attribute(msg) {
 ///
 /// The value must be a valid [BCP 47 language tag](https://tools.ietf.org/html/bcp47).
 ///
-pub fn lang(language: String) -> Attribute(msg) {
+pub fn lang(language: String) -> Attribute(message) {
   attribute("lang", language)
 }
 
 /// A cryptographic nonce used by CSP (Content Security Policy) to allow or
 /// deny the fetch of a given resource.
 ///
-pub fn nonce(value: String) -> Attribute(msg) {
+pub fn nonce(value: String) -> Attribute(message) {
   attribute("nonce", value)
 }
 
@@ -375,7 +375,7 @@ pub fn nonce(value: String) -> Attribute(msg) {
 /// [`popovertarget`](#popovertarget) attribute on the element that should trigger
 /// the popover.
 ///
-pub fn popover(value: String) -> Attribute(msg) {
+pub fn popover(value: String) -> Attribute(message) {
   attribute("popover", value)
 }
 
@@ -383,7 +383,7 @@ pub fn popover(value: String) -> Attribute(msg) {
 /// This typically only applies to inputs and textareas, or elements that are
 /// [`contenteditable`](#contenteditable).
 ///
-pub fn spellcheck(should_check: Bool) -> Attribute(msg) {
+pub fn spellcheck(should_check: Bool) -> Attribute(message) {
   attribute("spellcheck", case should_check {
     True -> "true"
     False -> "false"
@@ -398,7 +398,7 @@ pub fn spellcheck(should_check: Bool) -> Attribute(msg) {
 /// > with any existing other styles on an element. Styles added _later_ in the
 /// > list will override styles added earlier.
 ///
-pub fn style(property: String, value: String) -> Attribute(msg) {
+pub fn style(property: String, value: String) -> Attribute(message) {
   case property, value {
     "", _ | _, "" -> class("")
     _, _ -> attribute("style", property <> ":" <> value <> ";")
@@ -412,7 +412,7 @@ pub fn style(property: String, value: String) -> Attribute(msg) {
 /// > with any existing other styles on an element. Styles added _later_ in the
 /// > list will override styles added earlier.
 ///
-pub fn styles(properties: List(#(String, String))) -> Attribute(msg) {
+pub fn styles(properties: List(#(String, String))) -> Attribute(message) {
   attribute("style", do_styles(properties, ""))
 }
 
@@ -444,7 +444,7 @@ fn do_styles(properties: List(#(String, String)), styles: String) -> String {
 /// Values other than `0` and `-1` are generally not recommended as managing
 /// the relative order of focusable elements can be difficult and error-prone.
 ///
-pub fn tabindex(index: Int) -> Attribute(msg) {
+pub fn tabindex(index: Int) -> Attribute(message) {
   attribute("tabindex", int.to_string(index))
 }
 
@@ -456,7 +456,7 @@ pub fn tabindex(index: Int) -> Attribute(msg) {
 /// expose the `title` attribute to keyboard-only users or touch devices, for
 /// example.
 ///
-pub fn title(text: String) -> Attribute(msg) {
+pub fn title(text: String) -> Attribute(message) {
   attribute("title", text)
 }
 
@@ -478,7 +478,7 @@ pub fn title(text: String) -> Attribute(msg) {
 /// | style       | *                                          |
 /// | value       | input (with type="button" or type="reset") |
 ///
-pub fn translate(should_translate: Bool) -> Attribute(msg) {
+pub fn translate(should_translate: Bool) -> Attribute(message) {
   attribute("translate", case should_translate {
     True -> "yes"
     False -> "no"
@@ -487,7 +487,7 @@ pub fn translate(should_translate: Bool) -> Attribute(msg) {
 
 /// Indicates if writing suggestions should be enabled for this element.
 ///
-pub fn writingsuggestions(enabled: Bool) -> Attribute(msg) {
+pub fn writingsuggestions(enabled: Bool) -> Attribute(message) {
   attribute("writingsuggestions", case enabled {
     True -> "true"
     False -> "false"
@@ -498,7 +498,7 @@ pub fn writingsuggestions(enabled: Bool) -> Attribute(msg) {
 
 /// Indicates whether the details element is open or closed.
 ///
-pub fn open(is_open: Bool) -> Attribute(msg) {
+pub fn open(is_open: Bool) -> Attribute(message) {
   boolean_attribute("open", is_open)
 }
 
@@ -507,7 +507,7 @@ pub fn open(is_open: Bool) -> Attribute(msg) {
 /// Specifies the URL of a linked resource. This attribute can be used on various
 /// elements to create hyperlinks or to load resources.
 ///
-pub fn href(url: String) -> Attribute(msg) {
+pub fn href(url: String) -> Attribute(message) {
   attribute("href", url)
 }
 
@@ -525,14 +525,14 @@ pub fn href(url: String) -> Attribute(msg) {
 /// > **Note**: consider against using `"_blank"` for links to external sites as it
 /// > removes user control over their browsing experience.
 ///
-pub fn target(value: String) -> Attribute(msg) {
+pub fn target(value: String) -> Attribute(message) {
   attribute("target", value)
 }
 
 /// Indicates that the linked resource should be downloaded rather than displayed.
 /// When provided with a value, it suggests a filename for the downloaded file.
 ///
-pub fn download(filename: String) -> Attribute(msg) {
+pub fn download(filename: String) -> Attribute(message) {
   attribute("download", filename)
 }
 
@@ -540,21 +540,21 @@ pub fn download(filename: String) -> Attribute(msg) {
 /// follows the hyperlink. These URLs will receive POST requests with bodies
 /// of type `ping/1.0`.
 ///
-pub fn ping(urls: List(String)) -> Attribute(msg) {
+pub fn ping(urls: List(String)) -> Attribute(message) {
   attribute("ping", string.join(urls, " "))
 }
 
 /// Specifies the relationship between the current document and the linked resource.
 /// Multiple relationship values can be provided as a space-separated list.
 ///
-pub fn rel(value: String) -> Attribute(msg) {
+pub fn rel(value: String) -> Attribute(message) {
   attribute("rel", value)
 }
 
 /// Specifies the language of the linked resource. The value must be a valid
 /// [BCP 47 language tag](https://tools.ietf.org/html/bcp47).
 ///
-pub fn hreflang(language: String) -> Attribute(msg) {
+pub fn hreflang(language: String) -> Attribute(message) {
   attribute("hreflang", language)
 }
 
@@ -572,7 +572,7 @@ pub fn hreflang(language: String) -> Attribute(msg) {
 /// | "strict-origin-when-cross-origin" | Default policy with varying levels of restriction      |
 /// | "unsafe-url"                      | Always send the full URL                               |
 ///
-pub fn referrerpolicy(value: String) -> Attribute(msg) {
+pub fn referrerpolicy(value: String) -> Attribute(message) {
   attribute("referrerpolicy", value)
 }
 
@@ -598,7 +598,7 @@ pub fn referrerpolicy(value: String) -> Attribute(msg) {
 /// | "video"    | `<video>`                        |
 /// | "worker"   | Worker, SharedWorker             |
 ///
-pub fn as_(value: String) -> Attribute(msg) {
+pub fn as_(value: String) -> Attribute(message) {
   attribute("as", value)
 }
 
@@ -610,7 +610,7 @@ pub fn as_(value: String) -> Attribute(msg) {
 /// an external stylesheet and its critical subresources have been fetched and
 /// applied to the document.
 ///
-pub fn blocking(value: Bool) -> Attribute(msg) {
+pub fn blocking(value: Bool) -> Attribute(message) {
   attribute("blocking", case value {
     True -> "render"
     False -> ""
@@ -624,7 +624,7 @@ pub fn blocking(value: Bool) -> Attribute(msg) {
 /// > `rel="stylesheet"`, `rel="preload"`, or `rel="modulepreload"`. It may also
 /// > be used on `<script>` elements.
 ///
-pub fn integrity(hash: String) -> Attribute(msg) {
+pub fn integrity(hash: String) -> Attribute(message) {
   attribute("integrity", hash)
 }
 
@@ -634,13 +634,13 @@ pub fn integrity(hash: String) -> Attribute(msg) {
 /// This attribute is essential for accessibility, providing context about the
 /// image to users who cannot see it, including those using screen readers.
 ///
-pub fn alt(text: String) -> Attribute(msg) {
+pub fn alt(text: String) -> Attribute(message) {
   attribute("alt", text)
 }
 
 /// Specifies the URL of an image or resource to be used.
 ///
-pub fn src(url: String) -> Attribute(msg) {
+pub fn src(url: String) -> Attribute(message) {
   attribute("src", url)
 }
 
@@ -648,67 +648,67 @@ pub fn src(url: String) -> Attribute(msg) {
 /// browsers to choose the most appropriate image based on factors like screen
 /// resolution and viewport size.
 ///
-pub fn srcset(sources: String) -> Attribute(msg) {
+pub fn srcset(sources: String) -> Attribute(message) {
   attribute("srcset", sources)
 }
 
 /// Used with `srcset` to define the size of images in different layout scenarios.
 /// Helps the browser select the most appropriate image source.
 ///
-pub fn sizes(value: String) -> Attribute(msg) {
+pub fn sizes(value: String) -> Attribute(message) {
   attribute("sizes", value)
 }
 
 /// Configures the CORS (Cross-Origin Resource Sharing) settings for the element.
 /// Valid values are "anonymous" and "use-credentials".
 ///
-pub fn crossorigin(value: String) -> Attribute(msg) {
+pub fn crossorigin(value: String) -> Attribute(message) {
   attribute("crossorigin", value)
 }
 
 /// Specifies the name of an image map to be used with the image.
 ///
-pub fn usemap(value: String) -> Attribute(msg) {
+pub fn usemap(value: String) -> Attribute(message) {
   attribute("usemap", value)
 }
 
 /// Indicates that the image is a server-side image map. When a user clicks on the
 /// image, the coordinates of the click are sent to the server.
 ///
-pub fn ismap(is_map: Bool) -> Attribute(msg) {
+pub fn ismap(is_map: Bool) -> Attribute(message) {
   boolean_attribute("ismap", is_map)
 }
 
 /// Specifies the width of the element in pixels.
 ///
-pub fn width(value: Int) -> Attribute(msg) {
+pub fn width(value: Int) -> Attribute(message) {
   attribute("width", int.to_string(value))
 }
 
 /// Specifies the height of the element in pixels.
 ///
-pub fn height(value: Int) -> Attribute(msg) {
+pub fn height(value: Int) -> Attribute(message) {
   attribute("height", int.to_string(value))
 }
 
 /// Provides a hint about how the image should be decoded. Valid values are
 /// "sync", "async", and "auto".
 ///
-pub fn decoding(value: String) -> Attribute(msg) {
+pub fn decoding(value: String) -> Attribute(message) {
   attribute("decoding", value)
 }
 
 /// Indicates how the browser should load the image. Valid values are "eager"
 /// (load immediately) and "lazy" (defer loading until needed).
 ///
-pub fn loading(value: String) -> Attribute(msg) {
+pub fn loading(value: String) -> Attribute(message) {
   attribute("loading", value)
 }
 
 /// Sets the priority for fetches initiated by the element. Valid values are
 /// "high", "low", and "auto".
 ///
-pub fn fetchpriority(value: String) -> Attribute(msg) {
+pub fn fetchpriority(value: String) -> Attribute(message) {
   attribute("fetchpriority", value)
 }
 
@@ -718,14 +718,14 @@ pub fn fetchpriority(value: String) -> Attribute(msg) {
 /// servers to know how to interpret the form data. Multiple encodings can be
 /// specified as a space-separated list.
 ///
-pub fn accept_charset(charsets: String) -> Attribute(msg) {
+pub fn accept_charset(charsets: String) -> Attribute(message) {
   attribute("accept-charset", charsets)
 }
 
 /// Specifies the URL to which the form's data should be sent when submitted.
 /// This can be overridden by formaction attributes on submit buttons.
 ///
-pub fn action(url: String) -> Attribute(msg) {
+pub fn action(url: String) -> Attribute(message) {
   attribute("action", url)
 }
 
@@ -738,7 +738,7 @@ pub fn action(url: String) -> Attribute(msg) {
 /// | "multipart/form-data"               | Required for file uploads             |
 /// | "text/plain"                        | Simple encoding with minimal escaping  |
 ///
-pub fn enctype(encoding_type: String) -> Attribute(msg) {
+pub fn enctype(encoding_type: String) -> Attribute(message) {
   attribute("enctype", encoding_type)
 }
 
@@ -750,14 +750,14 @@ pub fn enctype(encoding_type: String) -> Attribute(msg) {
 /// | "post"   | Sends form data in the body of the HTTP request          |
 /// | "dialog" | Closes a dialog if the form is inside one                |
 ///
-pub fn method(http_method: String) -> Attribute(msg) {
+pub fn method(http_method: String) -> Attribute(message) {
   attribute("method", http_method)
 }
 
 /// When present, indicates that the form should not be validated when submitted.
 /// This allows submission of forms with invalid or incomplete data.
 ///
-pub fn novalidate(disable_validation: Bool) -> Attribute(msg) {
+pub fn novalidate(disable_validation: Bool) -> Attribute(message) {
   boolean_attribute("novalidate", disable_validation)
 }
 
@@ -782,7 +782,7 @@ pub fn novalidate(disable_validation: Bool) -> Attribute(msg) {
 /// > not guarantee that the user will only be able to select files of the specified
 /// > type.
 ///
-pub fn accept(values: List(String)) -> Attribute(msg) {
+pub fn accept(values: List(String)) -> Attribute(message) {
   attribute("accept", string.join(values, ","))
 }
 
@@ -793,7 +793,7 @@ pub fn accept(values: List(String)) -> Attribute(msg) {
 ///
 /// - `"color"`
 ///
-pub fn alpha(allowed: Bool) -> Attribute(msg) {
+pub fn alpha(allowed: Bool) -> Attribute(message) {
   boolean_attribute("alpha", allowed)
 }
 
@@ -838,7 +838,7 @@ pub fn alpha(allowed: Bool) -> Attribute(msg) {
 /// - `"url"`
 /// - `"week"`
 ///
-pub fn autocomplete(value: String) -> Attribute(msg) {
+pub fn autocomplete(value: String) -> Attribute(message) {
   attribute("autocomplete", value)
 }
 
@@ -852,7 +852,7 @@ pub fn autocomplete(value: String) -> Attribute(msg) {
 /// - `"checkbox"`
 /// - `"radio"`
 ///
-pub fn checked(is_checked: Bool) -> Attribute(msg) {
+pub fn checked(is_checked: Bool) -> Attribute(message) {
   boolean_attribute("checked", is_checked)
 }
 
@@ -865,7 +865,7 @@ pub fn checked(is_checked: Bool) -> Attribute(msg) {
 /// Doing this means your application cannot set the value of an input after it
 /// is modified without using an effect.
 ///
-pub fn default_checked(is_checked: Bool) -> Attribute(msg) {
+pub fn default_checked(is_checked: Bool) -> Attribute(message) {
   boolean_attribute("virtual:defaultChecked", is_checked)
 }
 
@@ -884,13 +884,13 @@ pub fn default_checked(is_checked: Bool) -> Attribute(msg) {
 ///
 /// - `"color"`
 ///
-pub fn colorspace(value: String) -> Attribute(msg) {
+pub fn colorspace(value: String) -> Attribute(message) {
   attribute("colorspace", value)
 }
 
 /// A positive integer value indicating how many visible columns the text control
 /// will have. The default value is 20.
-pub fn cols(value: Int) -> Attribute(msg) {
+pub fn cols(value: Int) -> Attribute(message) {
   attribute("cols", int.to_string(value))
 }
 
@@ -908,26 +908,26 @@ pub fn cols(value: Int) -> Attribute(msg) {
 /// - `"text"`
 /// - `"url"`
 ///
-pub fn dirname(direction: String) -> Attribute(msg) {
+pub fn dirname(direction: String) -> Attribute(message) {
   attribute("dirname", direction)
 }
 
 /// Controls whether or not the input is disabled. Disabled inputs are not
 /// validated during form submission and are not interactive.
 ///
-pub fn disabled(is_disabled: Bool) -> Attribute(msg) {
+pub fn disabled(is_disabled: Bool) -> Attribute(message) {
   boolean_attribute("disabled", is_disabled)
 }
 
 ///
 ///
-pub fn for(id: String) -> Attribute(msg) {
+pub fn for(id: String) -> Attribute(message) {
   attribute("for", id)
 }
 
 /// Associates the input with a form element located elsewhere in the document.
 ///
-pub fn form(id: String) -> Attribute(msg) {
+pub fn form(id: String) -> Attribute(message) {
   attribute("form", id)
 }
 
@@ -939,7 +939,7 @@ pub fn form(id: String) -> Attribute(msg) {
 /// - `"image"`
 /// - `"submit"`
 ///
-pub fn formaction(url: String) -> Attribute(msg) {
+pub fn formaction(url: String) -> Attribute(message) {
   attribute("formaction", url)
 }
 
@@ -948,7 +948,7 @@ pub fn formaction(url: String) -> Attribute(msg) {
 /// - `"image"`
 /// - `"submit"`
 ///
-pub fn formenctype(encoding_type: String) -> Attribute(msg) {
+pub fn formenctype(encoding_type: String) -> Attribute(message) {
   attribute("formenctype", encoding_type)
 }
 
@@ -957,7 +957,7 @@ pub fn formenctype(encoding_type: String) -> Attribute(msg) {
 /// - `"image"`
 /// - `"submit"`
 ///
-pub fn formmethod(method: String) -> Attribute(msg) {
+pub fn formmethod(method: String) -> Attribute(message) {
   attribute("formmethod", method)
 }
 
@@ -966,7 +966,7 @@ pub fn formmethod(method: String) -> Attribute(msg) {
 /// - `"image"`
 /// - `"submit"`
 ///
-pub fn formnovalidate(no_validate: Bool) -> Attribute(msg) {
+pub fn formnovalidate(no_validate: Bool) -> Attribute(message) {
   boolean_attribute("formnovalidate", no_validate)
 }
 
@@ -975,7 +975,7 @@ pub fn formnovalidate(no_validate: Bool) -> Attribute(msg) {
 /// - `"image"`
 /// - `"submit"`
 ///
-pub fn formtarget(target: String) -> Attribute(msg) {
+pub fn formtarget(target: String) -> Attribute(message) {
   attribute("formtarget", target)
 }
 
@@ -997,7 +997,7 @@ pub fn formtarget(target: String) -> Attribute(msg) {
 /// - `"url"`
 /// - `"week"`
 ///
-pub fn list(id: String) -> Attribute(msg) {
+pub fn list(id: String) -> Attribute(message) {
   attribute("list", id)
 }
 
@@ -1015,7 +1015,7 @@ pub fn list(id: String) -> Attribute(msg) {
 /// - `"time"`
 /// - `"week"`
 ///
-pub fn max(value: String) -> Attribute(msg) {
+pub fn max(value: String) -> Attribute(message) {
   attribute("max", value)
 }
 
@@ -1030,7 +1030,7 @@ pub fn max(value: String) -> Attribute(msg) {
 /// - `"text"`
 /// - `"url"`
 ///
-pub fn maxlength(length: Int) -> Attribute(msg) {
+pub fn maxlength(length: Int) -> Attribute(message) {
   attribute("maxlength", int.to_string(length))
 }
 
@@ -1046,7 +1046,7 @@ pub fn maxlength(length: Int) -> Attribute(msg) {
 /// - `"time"`
 /// - `"week"`
 ///
-pub fn min(value: String) -> Attribute(msg) {
+pub fn min(value: String) -> Attribute(message) {
   attribute("min", value)
 }
 
@@ -1059,7 +1059,7 @@ pub fn min(value: String) -> Attribute(msg) {
 /// - `"text"`
 /// - `"url"`
 ///
-pub fn minlength(length: Int) -> Attribute(msg) {
+pub fn minlength(length: Int) -> Attribute(message) {
   attribute("minlength", int.to_string(length))
 }
 
@@ -1070,13 +1070,13 @@ pub fn minlength(length: Int) -> Attribute(msg) {
 /// - `"email"`
 /// - `"file"`
 ///
-pub fn multiple(allow_multiple: Bool) -> Attribute(msg) {
+pub fn multiple(allow_multiple: Bool) -> Attribute(message) {
   boolean_attribute("multiple", allow_multiple)
 }
 
 /// Name of the element to use for form submission and in the form.elements API
 ///
-pub fn name(element_name: String) -> Attribute(msg) {
+pub fn name(element_name: String) -> Attribute(message) {
   attribute("name", element_name)
 }
 
@@ -1089,7 +1089,7 @@ pub fn name(element_name: String) -> Attribute(msg) {
 /// - `"text"`
 /// - `"url"`
 ///
-pub fn pattern(regex: String) -> Attribute(msg) {
+pub fn pattern(regex: String) -> Attribute(message) {
   attribute("pattern", regex)
 }
 
@@ -1103,7 +1103,7 @@ pub fn pattern(regex: String) -> Attribute(msg) {
 /// - `"text"`
 /// - `"url"`
 ///
-pub fn placeholder(text: String) -> Attribute(msg) {
+pub fn placeholder(text: String) -> Attribute(message) {
   attribute("placeholder", text)
 }
 
@@ -1116,7 +1116,7 @@ pub fn placeholder(text: String) -> Attribute(msg) {
 /// - `"reset"`
 /// - `"submit"`
 ///
-pub fn popovertarget(id: String) -> Attribute(msg) {
+pub fn popovertarget(id: String) -> Attribute(message) {
   attribute("popovertarget", id)
 }
 
@@ -1129,7 +1129,7 @@ pub fn popovertarget(id: String) -> Attribute(msg) {
 /// - `"reset"`
 /// - `"submit"`
 ///
-pub fn popovertargetaction(action: String) -> Attribute(msg) {
+pub fn popovertargetaction(action: String) -> Attribute(message) {
   attribute("popovertargetaction", action)
 }
 
@@ -1149,7 +1149,7 @@ pub fn popovertargetaction(action: String) -> Attribute(msg) {
 /// - `"url"`
 /// - `"week"`
 ///
-pub fn readonly(is_readonly: Bool) -> Attribute(msg) {
+pub fn readonly(is_readonly: Bool) -> Attribute(message) {
   boolean_attribute("readonly", is_readonly)
 }
 
@@ -1171,13 +1171,13 @@ pub fn readonly(is_readonly: Bool) -> Attribute(msg) {
 /// - `"url"`
 /// - `"week"`
 ///
-pub fn required(is_required: Bool) -> Attribute(msg) {
+pub fn required(is_required: Bool) -> Attribute(message) {
   boolean_attribute("required", is_required)
 }
 
 /// A positive integer value indicating how many visible rows the text control
 /// will have. The browsers default value is 2.
-pub fn rows(value: Int) -> Attribute(msg) {
+pub fn rows(value: Int) -> Attribute(message) {
   attribute("rows", int.to_string(value))
 }
 
@@ -1185,7 +1185,7 @@ pub fn rows(value: Int) -> Attribute(msg) {
 /// option can be selected at a time, unless the [`"multiple"`](#multiple)
 /// attribute is set on the select element.
 ///
-pub fn selected(is_selected: Bool) -> Attribute(msg) {
+pub fn selected(is_selected: Bool) -> Attribute(message) {
   boolean_attribute("selected", is_selected)
 }
 
@@ -1199,7 +1199,7 @@ pub fn selected(is_selected: Bool) -> Attribute(msg) {
 /// Doing this means your application cannot set the value of an input after it
 /// is modified without using an effect.
 ///
-pub fn default_selected(is_selected: Bool) -> Attribute(msg) {
+pub fn default_selected(is_selected: Bool) -> Attribute(message) {
   boolean_attribute("virtual:defaultSelected", is_selected)
 }
 
@@ -1214,7 +1214,7 @@ pub fn default_selected(is_selected: Bool) -> Attribute(msg) {
 /// - `"text"`
 /// - `"url"`
 ///
-pub fn size(value: String) -> Attribute(msg) {
+pub fn size(value: String) -> Attribute(message) {
   attribute("size", value)
 }
 
@@ -1230,13 +1230,13 @@ pub fn size(value: String) -> Attribute(msg) {
 /// - `"time"`
 /// - `"week"`
 ///
-pub fn step(value: String) -> Attribute(msg) {
+pub fn step(value: String) -> Attribute(message) {
   attribute("step", value)
 }
 
 /// Type of form control
 ///
-pub fn type_(control_type: String) -> Attribute(msg) {
+pub fn type_(control_type: String) -> Attribute(message) {
   attribute("type", control_type)
 }
 
@@ -1248,7 +1248,7 @@ pub fn type_(control_type: String) -> Attribute(msg) {
 /// default value for users to see, use the [`default_value`](#default_value)
 /// attribute instead.
 ///
-pub fn value(control_value: String) -> Attribute(msg) {
+pub fn value(control_value: String) -> Attribute(message) {
   attribute("value", control_value)
 }
 
@@ -1261,7 +1261,7 @@ pub fn value(control_value: String) -> Attribute(msg) {
 /// Doing this means your application cannot set the value of an input after it
 /// is modified without using an effect.
 ///
-pub fn default_value(control_value: String) -> Attribute(msg) {
+pub fn default_value(control_value: String) -> Attribute(message) {
   attribute("virtual:defaultValue", control_value)
 }
 
@@ -1270,28 +1270,28 @@ pub fn default_value(control_value: String) -> Attribute(msg) {
 /// Sets a pragma directive for a document. This is used in meta tags to define
 /// behaviors the user agent should follow.
 ///
-pub fn http_equiv(value: String) -> Attribute(msg) {
+pub fn http_equiv(value: String) -> Attribute(message) {
   attribute("http-equiv", value)
 }
 
 /// Specifies the value of the meta element, which varies depending on the value
 /// of the name or http-equiv attribute.
 ///
-pub fn content(value: String) -> Attribute(msg) {
+pub fn content(value: String) -> Attribute(message) {
   attribute("content", value)
 }
 
 /// Declares the character encoding used in the document. When used with a meta
 /// element, this replaces the need for the `http_equiv("content-type")` attribute.
 ///
-pub fn charset(value: String) -> Attribute(msg) {
+pub fn charset(value: String) -> Attribute(message) {
   attribute("charset", value)
 }
 
 /// Specifies the media types the resource applies to. This is commonly used with
 /// link elements for stylesheets to determine when they should be loaded.
 ///
-pub fn media(query: String) -> Attribute(msg) {
+pub fn media(query: String) -> Attribute(message) {
   attribute("media", query)
 }
 
@@ -1305,28 +1305,28 @@ pub fn media(query: String) -> Attribute(msg) {
 /// > to true, the media will begin playing as if the element's `play()` method
 /// > was called.
 ///
-pub fn autoplay(auto_play: Bool) -> Attribute(msg) {
+pub fn autoplay(auto_play: Bool) -> Attribute(message) {
   boolean_attribute("autoplay", auto_play)
 }
 
 /// When present, this attribute shows the browser's built-in control panel for the
 /// media player, giving users control over playback, volume, seeking, and more.
 ///
-pub fn controls(show_controls: Bool) -> Attribute(msg) {
+pub fn controls(show_controls: Bool) -> Attribute(message) {
   boolean_attribute("controls", show_controls)
 }
 
 /// When present, this attribute indicates that the media should start over again
 /// from the beginning when it reaches the end.
 ///
-pub fn loop(should_loop: Bool) -> Attribute(msg) {
+pub fn loop(should_loop: Bool) -> Attribute(message) {
   boolean_attribute("loop", should_loop)
 }
 
 /// When present, this attribute indicates that the audio output of the media element
 /// should be initially silenced.
 ///
-pub fn muted(is_muted: Bool) -> Attribute(msg) {
+pub fn muted(is_muted: Bool) -> Attribute(message) {
   boolean_attribute("muted", is_muted)
 }
 
@@ -1337,14 +1337,14 @@ pub fn muted(is_muted: Bool) -> Attribute(msg) {
 /// This attribute only acts as a *hint* to the user agent, and setting this to
 /// false does not imply that the video will be played in fullscreen.
 ///
-pub fn playsinline(play_inline: Bool) -> Attribute(msg) {
+pub fn playsinline(play_inline: Bool) -> Attribute(message) {
   boolean_attribute("playsinline", play_inline)
 }
 
 /// Specifies an image to be shown while the video is downloading, or until the
 /// user hits the play button.
 ///
-pub fn poster(url: String) -> Attribute(msg) {
+pub fn poster(url: String) -> Attribute(message) {
   attribute("poster", url)
 }
 
@@ -1357,7 +1357,7 @@ pub fn poster(url: String) -> Attribute(msg) {
 /// | "metadata" | Hints to the user agent that it can fetch the metadata only.     |
 /// | "none"     | Hints to the user agent that server traffic should be minimised. |
 ///
-pub fn preload(value: String) -> Attribute(msg) {
+pub fn preload(value: String) -> Attribute(message) {
   attribute("preload", value)
 }
 
@@ -1376,28 +1376,28 @@ pub fn preload(value: String) -> Attribute(msg) {
 /// > configuration - or `"closed"` if not explicitly set - to ensure the shadow
 /// > root is created correctly.
 ///
-pub fn shadowrootmode(mode: String) -> Attribute(msg) {
+pub fn shadowrootmode(mode: String) -> Attribute(message) {
   attribute("shadowrootmode", mode)
 }
 
 /// Indicates whether focus should be delegated to the shadow root when an element
 /// in the shadow tree gains focus.
 ///
-pub fn shadowrootdelegatesfocus(delegates: Bool) -> Attribute(msg) {
+pub fn shadowrootdelegatesfocus(delegates: Bool) -> Attribute(message) {
   boolean_attribute("shadowrootdelegatesfocus", delegates)
 }
 
 /// Determines whether the shadow root can be cloned when the host element is
 /// cloned.
 ///
-pub fn shadowrootclonable(clonable: Bool) -> Attribute(msg) {
+pub fn shadowrootclonable(clonable: Bool) -> Attribute(message) {
   boolean_attribute("shadowrootclonable", clonable)
 }
 
 /// Controls whether the shadow root should be preserved during serialization
 /// operations like copying to the clipboard or saving a page.
 ///
-pub fn shadowrootserializable(serializable: Bool) -> Attribute(msg) {
+pub fn shadowrootserializable(serializable: Bool) -> Attribute(message) {
   boolean_attribute("shadowrootserializable", serializable)
 }
 
@@ -1408,7 +1408,7 @@ pub fn shadowrootserializable(serializable: Bool) -> Attribute(msg) {
 /// contexts. Some user-agents, such as speech readers, may present this description
 /// before the content itself.
 ///
-pub fn abbr(value: String) -> Attribute(msg) {
+pub fn abbr(value: String) -> Attribute(message) {
   attribute("abbr", value)
 }
 
@@ -1416,14 +1416,14 @@ pub fn abbr(value: String) -> Attribute(msg) {
 /// or extends. The default value is `1`. User agents dismiss values higher than
 /// `1000` as incorrect, defaulting such values to `1`.
 ///
-pub fn colspan(value: Int) -> Attribute(msg) {
+pub fn colspan(value: Int) -> Attribute(message) {
   attribute("colspan", int.to_string(value))
 }
 
 /// A list of space-separated strings corresponding to the id attributes of the
 /// `<th>` elements that provide the headers for this header cell.
 ///
-pub fn headers(ids: List(String)) -> Attribute(msg) {
+pub fn headers(ids: List(String)) -> Attribute(message) {
   attribute("headers", string.join(ids, " "))
 }
 
@@ -1432,7 +1432,7 @@ pub fn headers(ids: List(String)) -> Attribute(msg) {
 /// cell will extends to the end of the table grouping section, that the `<th>`
 /// belongs to. Values higher than `65534` are clipped at `65534`.
 ///
-pub fn rowspan(value: Int) -> Attribute(msg) {
+pub fn rowspan(value: Int) -> Attribute(message) {
   attribute("rowspan", {
     value
     |> int.max(0)
@@ -1444,7 +1444,7 @@ pub fn rowspan(value: Int) -> Attribute(msg) {
 /// Specifies the number of consecutive columns a `<colgroup>` element spans. The
 /// value must be a positive integer greater than zero.
 ///
-pub fn span(value: Int) -> Attribute(msg) {
+pub fn span(value: Int) -> Attribute(message) {
   attribute("span", int.to_string(value))
 }
 
@@ -1453,7 +1453,7 @@ pub fn span(value: Int) -> Attribute(msg) {
 ///
 /// The `scope` attribute is only valid on `<th>` elements.
 ///
-pub fn scope(value: String) -> Attribute(msg) {
+pub fn scope(value: String) -> Attribute(message) {
   attribute("scope", value)
 }
 
@@ -1472,7 +1472,7 @@ pub fn scope(value: String) -> Attribute(msg) {
 ///
 /// A comprehensive list of valid formats can be found on [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/time#valid_datetime_values).
 ///
-pub fn datetime(value: String) -> Attribute(msg) {
+pub fn datetime(value: String) -> Attribute(message) {
   attribute("datetime", value)
 }
 
@@ -1481,20 +1481,20 @@ pub fn datetime(value: String) -> Attribute(msg) {
 /// Add an `aria-*` attribute to an HTML element. The key will be prefixed by
 /// `aria-`.
 ///
-pub fn aria(name: String, value: String) -> Attribute(msg) {
+pub fn aria(name: String, value: String) -> Attribute(message) {
   attribute("aria-" <> name, value)
 }
 
 ///
 ///
-pub fn role(name: String) -> Attribute(msg) {
+pub fn role(name: String) -> Attribute(message) {
   attribute("role", name)
 }
 
 /// The aria-activedescendant attribute identifies the currently active element
 /// when focus is on a composite widget, combobox, textbox, group, or application.
 ///
-pub fn aria_activedescendant(id: String) -> Attribute(msg) {
+pub fn aria_activedescendant(id: String) -> Attribute(message) {
   aria("activedescendant", id)
 }
 
@@ -1503,7 +1503,7 @@ pub fn aria_activedescendant(id: String) -> Attribute(msg) {
 /// of, the changed region based on the change notifications defined by the
 /// aria-relevant attribute.
 ///
-pub fn aria_atomic(value: Bool) -> Attribute(msg) {
+pub fn aria_atomic(value: Bool) -> Attribute(message) {
   aria("atomic", case value {
     True -> "true"
     False -> "false"
@@ -1515,14 +1515,14 @@ pub fn aria_atomic(value: Bool) -> Attribute(msg) {
 /// searchbox, or textbox and specifies how predictions will be presented if they
 /// are made.
 ///
-pub fn aria_autocomplete(value: String) -> Attribute(msg) {
+pub fn aria_autocomplete(value: String) -> Attribute(message) {
   aria("autocomplete", value)
 }
 
 /// The global aria-braillelabel property defines a string value that labels the
 /// current element, which is intended to be converted into Braille.
 ///
-pub fn aria_braillelabel(value: String) -> Attribute(msg) {
+pub fn aria_braillelabel(value: String) -> Attribute(message) {
   aria("braillelabel", value)
 }
 
@@ -1530,7 +1530,7 @@ pub fn aria_braillelabel(value: String) -> Attribute(msg) {
 /// author-localized abbreviated description for the role of an element intended
 /// to be converted into Braille.
 ///
-pub fn aria_brailleroledescription(value: String) -> Attribute(msg) {
+pub fn aria_brailleroledescription(value: String) -> Attribute(message) {
   aria("brailleroledescription", value)
 }
 
@@ -1538,7 +1538,7 @@ pub fn aria_brailleroledescription(value: String) -> Attribute(msg) {
 /// being modified and that assistive technologies may want to wait until the
 /// changes are complete before informing the user about the update.
 ///
-pub fn aria_busy(value: Bool) -> Attribute(msg) {
+pub fn aria_busy(value: Bool) -> Attribute(message) {
   aria("busy", case value {
     True -> "true"
     False -> "false"
@@ -1548,35 +1548,35 @@ pub fn aria_busy(value: Bool) -> Attribute(msg) {
 /// The aria-checked attribute indicates the current "checked" state of checkboxes,
 /// radio buttons, and other widgets.
 ///
-pub fn aria_checked(value: String) -> Attribute(msg) {
+pub fn aria_checked(value: String) -> Attribute(message) {
   aria("checked", value)
 }
 
 /// The aria-colcount attribute defines the total number of columns in a table,
 /// grid, or treegrid when not all columns are present in the DOM.
 ///
-pub fn aria_colcount(value: Int) -> Attribute(msg) {
+pub fn aria_colcount(value: Int) -> Attribute(message) {
   aria("colcount", int.to_string(value))
 }
 
 /// The aria-colindex attribute defines an element's column index or position with
 /// respect to the total number of columns within a table, grid, or treegrid.
 ///
-pub fn aria_colindex(value: Int) -> Attribute(msg) {
+pub fn aria_colindex(value: Int) -> Attribute(message) {
   aria("colindex", int.to_string(value))
 }
 
 /// The aria-colindextext attribute defines a human-readable text alternative of
 /// the numeric aria-colindex.
 ///
-pub fn aria_colindextext(value: String) -> Attribute(msg) {
+pub fn aria_colindextext(value: String) -> Attribute(message) {
   aria("colindextext", value)
 }
 
 /// The aria-colspan attribute defines the number of columns spanned by a cell
 /// or gridcell within a table, grid, or treegrid.
 ///
-pub fn aria_colspan(value: Int) -> Attribute(msg) {
+pub fn aria_colspan(value: Int) -> Attribute(message) {
   aria("colspan", int.to_string(value))
 }
 
@@ -1584,42 +1584,42 @@ pub fn aria_colspan(value: Int) -> Attribute(msg) {
 /// contents or presence are controlled by the element on which this attribute is
 /// set.
 ///
-pub fn aria_controls(value: String) -> Attribute(msg) {
+pub fn aria_controls(value: String) -> Attribute(message) {
   aria("controls", value)
 }
 
 /// A non-null aria-current state on an element indicates that this element represents
 /// the current item within a container or set of related elements.
 ///
-pub fn aria_current(value: String) -> Attribute(msg) {
+pub fn aria_current(value: String) -> Attribute(message) {
   aria("current", value)
 }
 
 /// The global aria-describedby attribute identifies the element (or elements)
 /// that describes the element on which the attribute is set.
 ///
-pub fn aria_describedby(value: String) -> Attribute(msg) {
+pub fn aria_describedby(value: String) -> Attribute(message) {
   aria("describedby", value)
 }
 
 /// The global aria-description attribute defines a string value that describes
 /// or annotates the current element.
 ///
-pub fn aria_description(value: String) -> Attribute(msg) {
+pub fn aria_description(value: String) -> Attribute(message) {
   aria("description", value)
 }
 
 /// The global aria-details attribute identifies the element (or elements) that
 /// provide additional information related to the object.
 ///
-pub fn aria_details(value: String) -> Attribute(msg) {
+pub fn aria_details(value: String) -> Attribute(message) {
   aria("details", value)
 }
 
 /// The aria-disabled state indicates that the element is perceivable but disabled,
 /// so it is not editable or otherwise operable.
 ///
-pub fn aria_disabled(value: Bool) -> Attribute(msg) {
+pub fn aria_disabled(value: Bool) -> Attribute(message) {
   aria("disabled", case value {
     True -> "true"
     False -> "false"
@@ -1629,7 +1629,7 @@ pub fn aria_disabled(value: Bool) -> Attribute(msg) {
 /// The aria-errormessage attribute on an object identifies the element that
 /// provides an error message for that object.
 ///
-pub fn aria_errormessage(value: String) -> Attribute(msg) {
+pub fn aria_errormessage(value: String) -> Attribute(message) {
   aria("errormessage", value)
 }
 
@@ -1637,7 +1637,7 @@ pub fn aria_errormessage(value: String) -> Attribute(msg) {
 /// expanded or collapsed, and whether or not the controlled elements are displayed
 /// or hidden.
 ///
-pub fn aria_expanded(value: Bool) -> Attribute(msg) {
+pub fn aria_expanded(value: Bool) -> Attribute(message) {
   aria("expanded", case value {
     True -> "true"
     False -> "false"
@@ -1649,7 +1649,7 @@ pub fn aria_expanded(value: Bool) -> Attribute(msg) {
 /// override the general default of reading in document source order at the user's
 /// discretion.
 ///
-pub fn aria_flowto(value: String) -> Attribute(msg) {
+pub fn aria_flowto(value: String) -> Attribute(message) {
   aria("flowto", value)
 }
 
@@ -1657,14 +1657,14 @@ pub fn aria_flowto(value: String) -> Attribute(msg) {
 /// popup element that can be triggered by the element on which the attribute is
 /// set.
 ///
-pub fn aria_haspopup(value: String) -> Attribute(msg) {
+pub fn aria_haspopup(value: String) -> Attribute(message) {
   aria("haspopup", value)
 }
 
 /// The aria-hidden state indicates whether the element is exposed to an accessibility
 /// API.
 ///
-pub fn aria_hidden(value: Bool) -> Attribute(msg) {
+pub fn aria_hidden(value: Bool) -> Attribute(message) {
   aria("hidden", case value {
     True -> "true"
     False -> "false"
@@ -1674,35 +1674,35 @@ pub fn aria_hidden(value: Bool) -> Attribute(msg) {
 /// The aria-invalid state indicates the entered value does not conform to the
 /// format expected by the application.
 ///
-pub fn aria_invalid(value: String) -> Attribute(msg) {
+pub fn aria_invalid(value: String) -> Attribute(message) {
   aria("invalid", value)
 }
 
 /// The global aria-keyshortcuts attribute indicates keyboard shortcuts that an
 /// author has implemented to activate or give focus to an element.
 ///
-pub fn aria_keyshortcuts(value: String) -> Attribute(msg) {
+pub fn aria_keyshortcuts(value: String) -> Attribute(message) {
   aria("keyshortcuts", value)
 }
 
 /// The aria-label attribute defines a string value that can be used to name an
 /// element, as long as the element's role does not prohibit naming.
 ///
-pub fn aria_label(value: String) -> Attribute(msg) {
+pub fn aria_label(value: String) -> Attribute(message) {
   aria("label", value)
 }
 
 /// The aria-labelledby attribute identifies the element (or elements) that labels
 /// the element it is applied to.
 ///
-pub fn aria_labelledby(value: String) -> Attribute(msg) {
+pub fn aria_labelledby(value: String) -> Attribute(message) {
   aria("labelledby", value)
 }
 
 /// The aria-level attribute defines the hierarchical level of an element within
 /// a structure.
 ///
-pub fn aria_level(value: Int) -> Attribute(msg) {
+pub fn aria_level(value: Int) -> Attribute(message) {
   aria("level", int.to_string(value))
 }
 
@@ -1710,13 +1710,13 @@ pub fn aria_level(value: Int) -> Attribute(msg) {
 /// describes the types of updates the user agents, assistive technologies, and
 /// user can expect from the live region.
 ///
-pub fn aria_live(value: String) -> Attribute(msg) {
+pub fn aria_live(value: String) -> Attribute(message) {
   aria("live", value)
 }
 
 /// The aria-modal attribute indicates whether an element is modal when displayed.
 ///
-pub fn aria_modal(value: Bool) -> Attribute(msg) {
+pub fn aria_modal(value: Bool) -> Attribute(message) {
   aria("modal", case value {
     True -> "true"
     False -> "false"
@@ -1726,7 +1726,7 @@ pub fn aria_modal(value: Bool) -> Attribute(msg) {
 /// The aria-multiline attribute indicates whether a textbox accepts multiple
 /// lines of input or only a single line.
 ///
-pub fn aria_multiline(value: Bool) -> Attribute(msg) {
+pub fn aria_multiline(value: Bool) -> Attribute(message) {
   aria("multiline", case value {
     True -> "true"
     False -> "false"
@@ -1736,7 +1736,7 @@ pub fn aria_multiline(value: Bool) -> Attribute(msg) {
 /// The aria-multiselectable attribute indicates that the user may select more
 /// than one item from the current selectable descendants.
 ///
-pub fn aria_multiselectable(value: Bool) -> Attribute(msg) {
+pub fn aria_multiselectable(value: Bool) -> Attribute(message) {
   aria("multiselectable", case value {
     True -> "true"
     False -> "false"
@@ -1746,7 +1746,7 @@ pub fn aria_multiselectable(value: Bool) -> Attribute(msg) {
 /// The aria-orientation attribute indicates whether the element's orientation is
 /// horizontal, vertical, or unknown/ambiguous.
 ///
-pub fn aria_orientation(value: String) -> Attribute(msg) {
+pub fn aria_orientation(value: String) -> Attribute(message) {
   aria("orientation", value)
 }
 
@@ -1754,7 +1754,7 @@ pub fn aria_orientation(value: String) -> Attribute(msg) {
 /// a visual, functional, or contextual relationship between a parent and its
 /// child elements when the DOM hierarchy cannot be used to represent the relationship.
 ///
-pub fn aria_owns(value: String) -> Attribute(msg) {
+pub fn aria_owns(value: String) -> Attribute(message) {
   aria("owns", value)
 }
 
@@ -1762,7 +1762,7 @@ pub fn aria_owns(value: String) -> Attribute(msg) {
 /// intended to help the user with data entry when a form control has no value.
 /// The hint can be a sample value or a brief description of the expected format.
 ///
-pub fn aria_placeholder(value: String) -> Attribute(msg) {
+pub fn aria_placeholder(value: String) -> Attribute(message) {
   aria("placeholder", value)
 }
 
@@ -1770,21 +1770,21 @@ pub fn aria_placeholder(value: String) -> Attribute(msg) {
 /// current set of listitems or treeitems when not all items are present in the
 /// DOM.
 ///
-pub fn aria_posinset(value: Int) -> Attribute(msg) {
+pub fn aria_posinset(value: Int) -> Attribute(message) {
   aria("posinset", int.to_string(value))
 }
 
 /// The aria-pressed attribute indicates the current "pressed" state of a toggle
 /// button.
 ///
-pub fn aria_pressed(value: String) -> Attribute(msg) {
+pub fn aria_pressed(value: String) -> Attribute(message) {
   aria("pressed", value)
 }
 
 /// The aria-readonly attribute indicates that the element is not editable, but is
 /// otherwise operable.
 ///
-pub fn aria_readonly(value: Bool) -> Attribute(msg) {
+pub fn aria_readonly(value: Bool) -> Attribute(message) {
   aria("readonly", case value {
     True -> "true"
     False -> "false"
@@ -1795,14 +1795,14 @@ pub fn aria_readonly(value: Bool) -> Attribute(msg) {
 /// notifications the user agent will trigger when the accessibility tree within
 /// a live region is modified.
 ///
-pub fn aria_relevant(value: String) -> Attribute(msg) {
+pub fn aria_relevant(value: String) -> Attribute(message) {
   aria("relevant", value)
 }
 
 /// The aria-required attribute indicates that user input is required on the element
 /// before a form may be submitted.
 ///
-pub fn aria_required(value: Bool) -> Attribute(msg) {
+pub fn aria_required(value: Bool) -> Attribute(message) {
   aria("required", case value {
     True -> "true"
     False -> "false"
@@ -1812,42 +1812,42 @@ pub fn aria_required(value: Bool) -> Attribute(msg) {
 /// The aria-roledescription attribute defines a human-readable, author-localised
 /// description for the role of an element.
 ///
-pub fn aria_roledescription(value: String) -> Attribute(msg) {
+pub fn aria_roledescription(value: String) -> Attribute(message) {
   aria("roledescription", value)
 }
 
 /// The aria-rowcount attribute defines the total number of rows in a table,
 /// grid, or treegrid.
 ///
-pub fn aria_rowcount(value: Int) -> Attribute(msg) {
+pub fn aria_rowcount(value: Int) -> Attribute(message) {
   aria("rowcount", int.to_string(value))
 }
 
 /// The aria-rowindex attribute defines an element's position with respect to the
 /// total number of rows within a table, grid, or treegrid.
 ///
-pub fn aria_rowindex(value: Int) -> Attribute(msg) {
+pub fn aria_rowindex(value: Int) -> Attribute(message) {
   aria("rowindex", int.to_string(value))
 }
 
 /// The aria-rowindextext attribute defines a human-readable text alternative of
 /// aria-rowindex.
 ///
-pub fn aria_rowindextext(value: String) -> Attribute(msg) {
+pub fn aria_rowindextext(value: String) -> Attribute(message) {
   aria("rowindextext", value)
 }
 
 /// The aria-rowspan attribute defines the number of rows spanned by a cell or
 /// gridcell within a table, grid, or treegrid.
 ///
-pub fn aria_rowspan(value: Int) -> Attribute(msg) {
+pub fn aria_rowspan(value: Int) -> Attribute(message) {
   aria("rowspan", int.to_string(value))
 }
 
 /// The aria-selected attribute indicates the current "selected" state of various
 /// widgets.
 ///
-pub fn aria_selected(value: Bool) -> Attribute(msg) {
+pub fn aria_selected(value: Bool) -> Attribute(message) {
   aria("selected", case value {
     True -> "true"
     False -> "false"
@@ -1857,40 +1857,40 @@ pub fn aria_selected(value: Bool) -> Attribute(msg) {
 /// The aria-setsize attribute defines the number of items in the current set of
 /// listitems or treeitems when not all items in the set are present in the DOM.
 ///
-pub fn aria_setsize(value: Int) -> Attribute(msg) {
+pub fn aria_setsize(value: Int) -> Attribute(message) {
   aria("setsize", int.to_string(value))
 }
 
 /// The aria-sort attribute indicates if items in a table or grid are sorted in
 /// ascending or descending order.
 ///
-pub fn aria_sort(value: String) -> Attribute(msg) {
+pub fn aria_sort(value: String) -> Attribute(message) {
   aria("sort", value)
 }
 
 /// The aria-valuemax attribute defines the maximum allowed value for a range
 /// widget.
 ///
-pub fn aria_valuemax(value: String) -> Attribute(msg) {
+pub fn aria_valuemax(value: String) -> Attribute(message) {
   aria("valuemax", value)
 }
 
 /// The aria-valuemin attribute defines the minimum allowed value for a range
 /// widget.
 ///
-pub fn aria_valuemin(value: String) -> Attribute(msg) {
+pub fn aria_valuemin(value: String) -> Attribute(message) {
   aria("valuemin", value)
 }
 
 /// The aria-valuenow attribute defines the current value for a range widget.
 ///
-pub fn aria_valuenow(value: String) -> Attribute(msg) {
+pub fn aria_valuenow(value: String) -> Attribute(message) {
   aria("valuenow", value)
 }
 
 /// The aria-valuetext attribute defines the human-readable text alternative of
 /// aria-valuenow for a range widget.
 ///
-pub fn aria_valuetext(value: String) -> Attribute(msg) {
+pub fn aria_valuetext(value: String) -> Attribute(message) {
   aria("valuetext", value)
 }

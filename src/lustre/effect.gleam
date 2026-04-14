@@ -1,4 +1,4 @@
-//// In other frameworks it's common for components to perform side effects
+//// In many frontend frameworks it's common for components to perform side effects
 //// whenever the need them. An event handler might make an HTTP request, or a
 //// component might reach into the DOM to focus an input.
 ////
@@ -74,7 +74,7 @@ import gleam/erlang/process.{type Selector, type Subject}
 
 // CONSTANTS -------------------------------------------------------------------
 
-const empty: Effect(msg) = Effect([], [], [])
+const empty: Effect(message) = Effect([], [], [])
 
 // TYPES -----------------------------------------------------------------------
 
@@ -87,19 +87,19 @@ const empty: Effect(msg) = Effect([], [], [])
 ///
 ///
 ///
-pub opaque type Effect(msg) {
+pub opaque type Effect(message) {
   Effect(
-    synchronous: List(fn(Actions(msg)) -> Nil),
-    before_paint: List(fn(Actions(msg)) -> Nil),
-    after_paint: List(fn(Actions(msg)) -> Nil),
+    synchronous: List(fn(Actions(message)) -> Nil),
+    before_paint: List(fn(Actions(message)) -> Nil),
+    after_paint: List(fn(Actions(message)) -> Nil),
   )
 }
 
-type Actions(msg) {
+type Actions(message) {
   Actions(
-    dispatch: fn(msg) -> Nil,
+    dispatch: fn(message) -> Nil,
     emit: fn(String, Json) -> Nil,
-    select: fn(Selector(msg)) -> Nil,
+    select: fn(Selector(message)) -> Nil,
     root: fn() -> Dynamic,
     provide: fn(String, Json) -> Nil,
   )
@@ -107,11 +107,11 @@ type Actions(msg) {
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
-/// Most Lustre applications need to return a tuple of `#(model, Effect(msg))`
+/// Most Lustre applications need to return a tuple of `#(model, Effect(message))`
 /// from their `init` and `update` functions. If you don't want to perform any
 /// side effects, you can use `none` to tell the runtime there's no work to do.
 ///
-pub fn none() -> Effect(msg) {
+pub fn none() -> Effect(message) {
   empty
 }
 
@@ -130,11 +130,11 @@ pub fn none() -> Effect(msg) {
 ///   Model(Int)
 /// }
 ///
-/// type Msg {
+/// type message {
 ///   FetchState
 /// }
 ///
-/// fn init(_flags) -> #(Model, Effect(Msg)) {
+/// fn init(_flags) -> #(Model, Effect(message)) {
 ///   #(
 ///     Model(0),
 ///     effect.from(fn(dispatch) {
@@ -146,8 +146,8 @@ pub fn none() -> Effect(msg) {
 /// }
 /// ```
 ///
-pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
-  let task = fn(actions: Actions(msg)) {
+pub fn from(effect: fn(fn(message) -> Nil) -> Nil) -> Effect(message) {
+  let task = fn(actions: Actions(message)) {
     let dispatch = actions.dispatch
 
     effect(dispatch)
@@ -177,8 +177,10 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Effect(msg) {
 /// > **Note**: There is no concept of a "paint" for server components. These
 /// > effects will be ignored in those contexts and never run.
 ///
-pub fn before_paint(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
-  let task = fn(actions: Actions(msg)) {
+pub fn before_paint(
+  effect: fn(fn(message) -> Nil, Dynamic) -> Nil,
+) -> Effect(message) {
+  let task = fn(actions: Actions(message)) {
     let root = actions.root()
     let dispatch = actions.dispatch
 
@@ -198,8 +200,10 @@ pub fn before_paint(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
 /// > **Note**: There is no concept of a "paint" for server components. These
 /// > effects will be ignored in those contexts and never run.
 ///
-pub fn after_paint(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
-  let task = fn(actions: Actions(msg)) {
+pub fn after_paint(
+  effect: fn(fn(message) -> Nil, Dynamic) -> Nil,
+) -> Effect(message) {
+  let task = fn(actions: Actions(message)) {
     let root = actions.root()
     let dispatch = actions.dispatch
 
@@ -215,8 +219,8 @@ pub fn after_paint(effect: fn(fn(msg) -> Nil, Dynamic) -> Nil) -> Effect(msg) {
 /// of the event object.
 ///
 @internal
-pub fn event(name: String, data: Json) -> Effect(msg) {
-  let task = fn(actions: Actions(msg)) { actions.emit(name, data) }
+pub fn event(name: String, data: Json) -> Effect(message) {
+  let task = fn(actions: Actions(message)) { actions.emit(name, data) }
 
   Effect(..empty, synchronous: [task])
 }
@@ -224,9 +228,9 @@ pub fn event(name: String, data: Json) -> Effect(msg) {
 @target(erlang)
 @internal
 pub fn select(
-  sel: fn(fn(msg) -> Nil, Subject(a)) -> Selector(msg),
-) -> Effect(msg) {
-  let task = fn(actions: Actions(msg)) {
+  sel: fn(fn(message) -> Nil, Subject(a)) -> Selector(message),
+) -> Effect(message) {
+  let task = fn(actions: Actions(message)) {
     let self = process.new_subject()
     let selector = sel(actions.dispatch, self)
     actions.select(selector)
@@ -241,8 +245,8 @@ pub fn select(_sel) {
   empty
 }
 
-pub fn provide(key: String, value: Json) -> Effect(msg) {
-  let task = fn(actions: Actions(msg)) { actions.provide(key, value) }
+pub fn provide(key: String, value: Json) -> Effect(message) {
+  let task = fn(actions: Actions(message)) { actions.provide(key, value) }
 
   Effect(..empty, synchronous: [task])
 }
@@ -255,13 +259,13 @@ pub fn provide(key: String, value: Json) -> Effect(msg) {
 /// > are performed! If you need to chain or sequence effects together, you have
 /// > two broad options:
 /// >
-/// > 1. Create variants of your `msg` type to represent each step in the sequence
+/// > 1. Create variants of your `message` type to represent each step in the sequence
 /// >    and fire off the next effect in response to the previous one.
 /// >
 /// > 2. If you're defining effects yourself, consider whether or not you can handle
 /// >    the sequencing inside the effect itself.
 ///
-pub fn batch(effects: List(Effect(msg))) -> Effect(msg) {
+pub fn batch(effects: List(Effect(message))) -> Effect(message) {
   use acc, eff <- list.fold(effects, empty)
   Effect(
     synchronous: list.fold(eff.synchronous, acc.synchronous, list.prepend),
@@ -295,7 +299,7 @@ fn do_map(
 
 fn do_comap_actions(actions: Actions(b), f: fn(a) -> b) -> Actions(a) {
   Actions(
-    dispatch: fn(msg) { actions.dispatch(f(msg)) },
+    dispatch: fn(message) { actions.dispatch(f(message)) },
     emit: actions.emit,
     select: fn(selector) { do_comap_select(actions, selector, f) },
     root: actions.root,

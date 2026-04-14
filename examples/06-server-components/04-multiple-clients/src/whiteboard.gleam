@@ -13,7 +13,7 @@ import lustre/server_component
 
 // MAIN ------------------------------------------------------------------------
 
-pub fn component() -> App(_, Model, Msg) {
+pub fn component() -> App(_, Model, Message) {
   lustre.simple(init, update, view)
 }
 
@@ -45,14 +45,14 @@ fn init(_) -> Model {
 
 // UPDATE ----------------------------------------------------------------------
 
-pub opaque type Msg {
+pub opaque type Message {
   UserDrewCircle(x: Int, y: Int, color: Color)
   UserChangedColor(color: Color)
   UserClearedScreen
 }
 
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
+fn update(model: Model, message: Message) -> Model {
+  case message {
     UserDrewCircle(x:, y:, color:) -> {
       let new_points =
         model.drawn_points
@@ -74,7 +74,7 @@ fn update(model: Model, msg: Msg) -> Model {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   let on_mouse_move =
     event.on("mousemove", {
       use button <- decode.field("buttons", decode.int)
@@ -88,7 +88,7 @@ fn view(model: Model) -> Element(Msg) {
             y: client_y,
             color: model.selected_color,
           ))
-        _ -> decode.failure(UserDrewCircle(x: 0, y: 0, color: Red), "Msg")
+        _ -> decode.failure(UserDrewCircle(x: 0, y: 0, color: Red), "Message")
       }
     })
     |> server_component.include(["buttons", "clientX", "clientY"])

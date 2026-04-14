@@ -29,19 +29,19 @@ fn init(_) -> Model {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   UserMovedMouse(x: Int, y: Int)
 }
 
-fn update(_, msg: Msg) -> Model {
-  case msg {
+fn update(_, message: Message) -> Model {
+  case message {
     UserMovedMouse(x:, y:) -> Model(x:, y:)
   }
 }
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div(
     [attribute.class("w-screen h-screen flex justify-center items-center")],
     [view_xy_pad(x: model.x, y: model.y, on_mousemove: UserMovedMouse)],
@@ -51,8 +51,8 @@ fn view(model: Model) -> Element(Msg) {
 fn view_xy_pad(
   x x: Int,
   y y: Int,
-  on_mousemove handle_mousemove: fn(Int, Int) -> msg,
-) -> Element(msg) {
+  on_mousemove handle_mousemove: fn(Int, Int) -> message,
+) -> Element(message) {
   let on_mousemove =
     // Custom event handlers can be created using `event.on` and providing a
     // decoder for the event object. In this case we have a `MouseEvent` which we

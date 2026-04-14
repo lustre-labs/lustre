@@ -28,8 +28,8 @@ export class Spa {
     }
   }
 
-  dispatch(msg) {
-    this.#runtime.dispatch(msg);
+  dispatch(message) {
+    this.#runtime.dispatch(message);
   }
 
   emit(event, data) {

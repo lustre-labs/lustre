@@ -95,8 +95,8 @@ pub type Config(message) =
 ///
 ///   Setting `adopt_styles` to `True` tells Lustre to attempt to adopt or clone
 ///   stylesheets from the parent document _into_ the shadow DOM. This can give
-///   you an experience similar to components in other frameworks like React or
-///   Vue.
+///   you an experience similar to components in JavaScript frameworks like React
+///   or Vue.
 ///
 /// > **Note**: Not all options are available for server components. For example
 /// > server components cannot be form-associated and participate in form submission.

@@ -34,7 +34,7 @@ type Todo {
   Todo(id: Int, title: String, completed: Bool)
 }
 
-fn init(_) -> #(Model, Effect(Msg)) {
+fn init(_) -> #(Model, Effect(Message)) {
   let todos = []
   let next_id = 0
 
@@ -46,14 +46,14 @@ fn init(_) -> #(Model, Effect(Msg)) {
 
 // UPDATE ----------------------------------------------------------------------
 
-type Msg {
+type Message {
   LocalStorageReturnedTodos(Result(List(Todo), Nil))
   UserToggledTodo(id: Int, completed: Bool)
   UserCreatedTodo(Result(String, Nil))
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  case msg {
+fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
     LocalStorageReturnedTodos(Error(_)) -> #(model, effect.none())
     LocalStorageReturnedTodos(Ok(todos)) -> {
       let next_id =
@@ -89,7 +89,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   }
 }
 
-fn get_todos() -> Effect(Msg) {
+fn get_todos() -> Effect(Message) {
   use dispatch <- effect.from
   let result =
     // Once we're inside a custom effect, we can call effectful functions like
@@ -119,9 +119,9 @@ fn get_localstorage(_key: String) -> Result(Dynamic, Nil) {
 }
 
 // Not all effects will dispatch messages. Just like element's that dont dispatch
-// events, it's good practice to annotate these effects using a generic `msg`
+// events, it's good practice to annotate these effects using a generic `message`
 // type so they can be used in any context.
-fn set_todos(todos: List(Todo)) -> Effect(msg) {
+fn set_todos(todos: List(Todo)) -> Effect(message) {
   use _ <- effect.from
   let json = json.array(todos, encode_todo)
 
@@ -143,7 +143,7 @@ fn set_localstorage(_key: String, _value: String) -> Nil {
 
 // VIEW ------------------------------------------------------------------------
 
-fn view(model: Model) -> Element(Msg) {
+fn view(model: Model) -> Element(Message) {
   html.div([attribute.class("p-32 mx-auto w-full max-w-2xl space-y-8")], [
     html.h1([attribute.class("font-semibold text-2xl")], [html.text("Todo:")]),
     keyed.ul([attribute.class("flex flex-col gap-2")], {
@@ -164,8 +164,8 @@ fn view(model: Model) -> Element(Msg) {
 
 fn view_todo(
   item item: Todo,
-  on_complete handle_complete: fn(Bool) -> msg,
-) -> Element(msg) {
+  on_complete handle_complete: fn(Bool) -> message,
+) -> Element(message) {
   html.label([attribute.class("flex gap-2 items-baseline")], [
     html.p(
       [
@@ -183,8 +183,8 @@ fn view_todo(
 }
 
 fn view_input(
-  on_submit handle_submit: fn(Result(String, Nil)) -> msg,
-) -> Element(msg) {
+  on_submit handle_submit: fn(Result(String, Nil)) -> message,
+) -> Element(message) {
   let on_submit =
     event.on_submit(fn(fields) {
       form.new({
