@@ -13,6 +13,11 @@ import lustre/vdom/vnode.{type Element, type Memos}
 ///
 /// - An `index` which is the index of the node in the real DOM relative to its
 ///   parent's `childNodes` list.
+/// 
+/// - A `path` which represents any additional traversal to get to the relevant
+///   node. This happens when we have a change deep in the tree and no changes to
+///   any of the nodes above it. By compressing the path into a single list we can
+///   cut down on the payload size of diffs sent over the wire in server components.
 ///
 /// - A `removed` count for the number of child nodes to remove *after* the list
 ///   of `changes` has been applied.
@@ -25,8 +30,8 @@ import lustre/vdom/vnode.{type Element, type Memos}
 ///
 pub type Patch(message) {
   Patch(
-    path: List(Int),
     index: Int,
+    path: List(Int),
     removed: Int,
     changes: List(Change(message)),
     children: List(Patch(message)),
