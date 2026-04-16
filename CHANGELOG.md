@@ -18,13 +18,14 @@ request to fix it.
 
 ### Changed
 
+- [lustre/dev/simulate] Fixed a bug where simulated events on elements wrapped in `element.map` would not trigger.
+- [lustre/dev/query] Fixed a bug where the `text` query matcher did not match text exactly and instead matched if the element's text content contained the given text.
+- [lustre/dev/query] Fixed a bug where the `text` query would not treat `<br>` elements as newlines.
 - [lustre/element] fixed a bug where `to_document_string` would sometimes mistakenly wrap a given `html` element again.
 - [lustre/event] Fixed a bug where moving keyed elements would sometimes remove their event listeners.
 - [lustre/runtime] Fixed a bug where an extra frame would be scheduled after `before_paint` and `after_paint` effects.
 - [lustre/runtime] Fixed a bug where server-rendered HTML from sources other than Lustre would virtualise incorrectly.
-- [lustre/dev/simulate] Fixed a bug where simulated events on elements wrapped in `element.map` would not trigger.
-- [lustre/dev/query] Fixed a bug where the `text` query matcher did not match text exactly and instead matched if the element's text content contained the given text.
-- [lustre/dev/query] Fixed a bug where the `text` query would not treat `<br>` elements as newlines.
+- [lustre/server_component] Reduce size of patches sent over the wire by compressing deeply nested patches.
 
 ## [v5.6.0] - 2026-02-16
 
