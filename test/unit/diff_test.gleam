@@ -992,7 +992,7 @@ pub fn memo_not_recomputed_test() {
   let patch = diff.diff(cache, vdom1, vdom2).patch
 
   assert booklet.get(counter) == 1
-  assert patch == patch.Patch(0, 0, [], [])
+  assert patch == patch.Patch([], 0, 0, [], [])
 }
 
 pub fn memo_recomputed_when_dependency_changes_test() {
@@ -1037,7 +1037,7 @@ pub fn memo_with_multiple_dependencies_test() {
   let patch = diff.diff(cache, vdom1, vdom2).patch
 
   assert booklet.get(counter) == 1
-  assert patch == patch.Patch(0, 0, [], [])
+  assert patch == patch.Patch([], 0, 0, [], [])
 }
 
 pub fn memo_recomputed_when_one_dependency_changes_test() {
@@ -1063,7 +1063,7 @@ pub fn memo_recomputed_when_one_dependency_changes_test() {
   let patch = diff.diff(cache, vdom1, vdom2).patch
 
   assert booklet.get(counter) == 2
-  assert patch == patch.Patch(0, 0, [], [])
+  assert patch == patch.Patch([], 0, 0, [], [])
 }
 
 pub fn memo_with_map_event_test() {
@@ -1196,7 +1196,7 @@ pub fn nested_memo_test() {
   assert booklet.get(counter2) == 1
   assert booklet.get(counter1) == 1
 
-  assert diff2.patch == patch.Patch(0, 0, [], [])
+  assert diff2.patch == patch.Patch([], 0, 0, [], [])
 }
 
 pub fn nested_memo_outer_changes_test() {
@@ -1232,5 +1232,5 @@ pub fn nested_memo_outer_changes_test() {
   assert booklet.get(counter2) == 2
   assert booklet.get(counter1) == 1
 
-  assert diff2.patch == patch.Patch(0, 0, [], [])
+  assert diff2.patch == patch.Patch([], 0, 0, [], [])
 }

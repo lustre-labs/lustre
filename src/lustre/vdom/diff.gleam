@@ -83,7 +83,11 @@ fn do_diff(
 ) -> PartialDiff(message) {
   case old, new {
     [], [] -> {
-      let patch = Patch(index: patch_index, removed:, changes:, children:)
+      let patch = case removed, changes, children {
+        0, [], [child] -> patch.add_parent(child, patch_index)
+        _, _, _ -> patch.new(index: patch_index, removed:, changes:, children:)
+      }
+
       PartialDiff(patch:, cache:, events:)
     }
 
@@ -146,7 +150,7 @@ fn do_diff(
       let insert =
         patch.insert(children: new, before: node_index - moved_offset)
       let changes = [insert, ..changes]
-      let patch = Patch(index: patch_index, removed:, changes:, children:)
+      let patch = patch.new(index: patch_index, removed:, changes:, children:)
 
       PartialDiff(patch:, cache:, events:)
     }

@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/json.{type Json}
+import lustre/internals/constants
 import lustre/internals/json_object_builder
 import lustre/vdom/vattr.{type Attribute}
 import lustre/vdom/vnode.{type Element, type Memos}
@@ -24,6 +25,7 @@ import lustre/vdom/vnode.{type Element, type Memos}
 ///
 pub type Patch(message) {
   Patch(
+    path: List(Int),
     index: Int,
     removed: Int,
     changes: List(Change(message)),
@@ -73,7 +75,7 @@ pub fn new(
   changes changes: List(Change(message)),
   children children: List(Patch(message)),
 ) -> Patch(message) {
-  Patch(index:, removed:, changes:, children:)
+  Patch(path: constants.empty_list, index:, removed:, changes:, children:)
 }
 
 pub const replace_text_kind: Int = 0
@@ -135,20 +137,16 @@ pub fn is_empty(patch: Patch(message)) -> Bool {
 
 // MANIPULATIONS ---------------------------------------------------------------
 
-pub fn add_child(
-  parent: Patch(message),
-  child: Patch(message),
-) -> Patch(message) {
-  case is_empty(child) {
-    True -> parent
-    False -> Patch(..parent, children: [child, ..parent.children])
-  }
+@external(javascript, "./patch.ffi.mjs", "addParent")
+pub fn add_parent(child: Patch(message), index: Int) -> Patch(message) {
+  Patch(..child, path: [child.index, ..child.path], index:)
 }
 
 // ENCODING --------------------------------------------------------------------
 
 pub fn to_json(patch: Patch(message), memos: Memos(message)) -> Json {
   json_object_builder.new()
+  |> json_object_builder.list("path", patch.path, json.int)
   |> json_object_builder.int("index", patch.index)
   |> json_object_builder.int("removed", patch.removed)
   |> json_object_builder.list("changes", patch.changes, fn(change) {
