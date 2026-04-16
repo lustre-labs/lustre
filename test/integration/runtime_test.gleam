@@ -66,11 +66,10 @@ pub fn client_send_event_test() {
   runtime.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
 
   let patch =
-    patch.new(0, 0, [], [
-      patch.new(0, 0, [], [
-        patch.new(1, 0, [], [patch.new(0, 0, [patch.replace_text("1")], [])]),
-      ]),
-    ])
+    patch.new(0, 0, [patch.replace_text("1")], [])
+    |> patch.add_parent(1)
+    |> patch.add_parent(0)
+    |> patch.add_parent(0)
 
   assert process.receive_forever(client)
     == transport.reconcile(patch, mutable_map.new())
@@ -93,11 +92,10 @@ pub fn client_send_multiple_events_test() {
   let _ = process.receive_forever(client)
 
   let patch =
-    patch.new(0, 0, [], [
-      patch.new(0, 0, [], [
-        patch.new(1, 0, [], [patch.new(0, 0, [patch.replace_text("2")], [])]),
-      ]),
-    ])
+    patch.new(0, 0, [patch.replace_text("2")], [])
+    |> patch.add_parent(1)
+    |> patch.add_parent(0)
+    |> patch.add_parent(0)
 
   assert process.receive_forever(client)
     == transport.reconcile(patch, mutable_map.new())
@@ -117,11 +115,10 @@ pub fn effect_send_event_test() {
   |> lustre.send(to: runtime)
 
   let patch =
-    patch.new(0, 0, [], [
-      patch.new(0, 0, [], [
-        patch.new(1, 0, [], [patch.new(0, 0, [patch.replace_text("1")], [])]),
-      ]),
-    ])
+    patch.new(0, 0, [patch.replace_text("1")], [])
+    |> patch.add_parent(1)
+    |> patch.add_parent(0)
+    |> patch.add_parent(0)
 
   assert process.receive_forever(client)
     == transport.reconcile(patch, mutable_map.new())
