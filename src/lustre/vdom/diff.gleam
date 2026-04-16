@@ -40,9 +40,9 @@ pub fn diff(
 
   let PartialDiff(patch:, cache:, events:) =
     do_diff(
-      old: [old, ..constants.empty_list],
+      old: constants.singleton_list(old),
       old_keyed: mutable_map.new(),
-      new: [new, ..constants.empty_list],
+      new: constants.singleton_list(new),
       new_keyed: mutable_map.new(),
       //
       moved: mutable_map.new(),
@@ -280,7 +280,8 @@ fn do_diff(
           let before = node_index - moved_offset
           let #(cache, events) =
             cache.add_child(cache, events, path, node_index, next)
-          let insert = patch.insert(children: [next], before:)
+          let insert =
+            patch.insert(children: constants.singleton_list(next), before:)
           let changes = [insert, ..changes]
 
           do_diff(
@@ -401,7 +402,11 @@ fn do_diff(
 
       let initial_child_changes = case added_attrs, removed_attrs {
         [], [] -> constants.empty_list
-        _, _ -> [patch.update(added: added_attrs, removed: removed_attrs)]
+        _, _ ->
+          constants.singleton_list(patch.update(
+            added: added_attrs,
+            removed: removed_attrs,
+          ))
       }
 
       let PartialDiff(patch:, cache:, events:) =
@@ -474,7 +479,7 @@ fn do_diff(
         patch.new(
           index: node_index,
           removed: 0,
-          changes: [patch.replace_text(next.content)],
+          changes: constants.singleton_list(patch.replace_text(next.content)),
           children: constants.empty_list,
         )
 
@@ -512,7 +517,11 @@ fn do_diff(
 
       let child_changes = case added_attrs, removed_attrs {
         [], [] -> constants.empty_list
-        _, _ -> [patch.update(added: added_attrs, removed: removed_attrs)]
+        _, _ ->
+          constants.singleton_list(patch.update(
+            added: added_attrs,
+            removed: removed_attrs,
+          ))
       }
 
       let child_changes = case prev.inner_html == next.inner_html {
@@ -522,7 +531,10 @@ fn do_diff(
 
       let children = case child_changes {
         [] -> children
-        _ -> [patch.new(node_index, 0, child_changes, []), ..children]
+        _ -> [
+          patch.new(node_index, 0, child_changes, constants.empty_list),
+          ..children
+        ]
       }
 
       do_diff(
@@ -550,9 +562,9 @@ fn do_diff(
       // Diff the child element as a "single-element fragment" using a new events subtree.
       let PartialDiff(patch:, cache:, events: child_events) =
         do_diff(
-          old: [prev.child, ..constants.empty_list],
+          old: constants.singleton_list(prev.child),
           old_keyed: mutable_map.new(),
-          new: [next.child, ..constants.empty_list],
+          new: constants.singleton_list(next.child),
           new_keyed: mutable_map.new(),
           moved: mutable_map.new(),
           moved_offset: 0,

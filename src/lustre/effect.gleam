@@ -65,6 +65,7 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/json.{type Json}
 import gleam/list
+import lustre/internals/constants
 
 @target(javascript)
 import gleam/erlang/process.{type Selector}
@@ -74,7 +75,11 @@ import gleam/erlang/process.{type Selector, type Subject}
 
 // CONSTANTS -------------------------------------------------------------------
 
-const empty: Effect(message) = Effect([], [], [])
+const empty: Effect(message) = Effect(
+  constants.empty_list,
+  constants.empty_list,
+  constants.empty_list,
+)
 
 // TYPES -----------------------------------------------------------------------
 
@@ -153,7 +158,7 @@ pub fn from(effect: fn(fn(message) -> Nil) -> Nil) -> Effect(message) {
     effect(dispatch)
   }
 
-  Effect(..empty, synchronous: [task])
+  Effect(..empty, synchronous: constants.singleton_list(task))
 }
 
 /// Schedule a side effect that is guaranteed to run after your `view` function
@@ -187,7 +192,7 @@ pub fn before_paint(
     effect(dispatch, root)
   }
 
-  Effect(..empty, before_paint: [task])
+  Effect(..empty, before_paint: constants.singleton_list(task))
 }
 
 /// Schedule a side effect that is guaranteed to run after the browser has painted
@@ -210,7 +215,7 @@ pub fn after_paint(
     effect(dispatch, root)
   }
 
-  Effect(..empty, after_paint: [task])
+  Effect(..empty, after_paint: constants.singleton_list(task))
 }
 
 /// Emit a custom event from a component as an effect. Parents can listen to these
@@ -222,7 +227,7 @@ pub fn after_paint(
 pub fn event(name: String, data: Json) -> Effect(message) {
   let task = fn(actions: Actions(message)) { actions.emit(name, data) }
 
-  Effect(..empty, synchronous: [task])
+  Effect(..empty, synchronous: constants.singleton_list(task))
 }
 
 @target(erlang)
@@ -236,7 +241,7 @@ pub fn select(
     actions.select(selector)
   }
 
-  Effect(..empty, synchronous: [task])
+  Effect(..empty, synchronous: constants.singleton_list(task))
 }
 
 @target(javascript)
@@ -248,7 +253,7 @@ pub fn select(_sel) {
 pub fn provide(key: String, value: Json) -> Effect(message) {
   let task = fn(actions: Actions(message)) { actions.provide(key, value) }
 
-  Effect(..empty, synchronous: [task])
+  Effect(..empty, synchronous: constants.singleton_list(task))
 }
 
 // MANIPULATIONS ---------------------------------------------------------------
