@@ -191,9 +191,12 @@ var Reconciler = class {
   #reconcile() {
     const stack = this.#stack;
     while (stack.length) {
-      const { node, patch } = stack.pop();
+      let { node, patch } = stack.pop();
+      const { path, changes, removed, children: childPatches } = patch;
+      iterate(path, (index2) => {
+        node = node.children[index2];
+      });
       const { children: childNodes } = node;
-      const { changes, removed, children: childPatches } = patch;
       iterate(changes, (change) => this.#patch(node, change));
       if (removed) {
         this.#removeChildren(node, childNodes.length - removed, removed);
