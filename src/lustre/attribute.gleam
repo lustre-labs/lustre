@@ -182,6 +182,24 @@ pub fn closedby(value: String) -> Attribute(message) {
   attribute("closedby", value)
 }
 
+/// Specifies the action to be performed on the dialog or popover referenced by
+/// the `commandfor` attribute.
+///
+/// The attribute is supported by the `<button>` element.
+///
+/// | Value            | Description                                                    |
+/// |------------------|----------------------------------------------------------------|
+/// | "show-modal"     | Opens a `<dialog>` as a modal.                                 |
+/// | "close"          | Closes a `<dialog>`.                                           |
+/// | "request-close"  | Triggers a `cancel` event on a `<dialog>`.                     |
+/// | "show-popover"   | Shows a popover.                                               |
+/// | "hide-popover"   | Hides a popover.                                               |
+/// | "toggle-popover" | Toggles the visibility of a popover.                           |
+///
+pub fn command(value: String) -> Attribute(message) {
+  attribute("command", value)
+}
+
 /// Indicates whether the element's content is editable by the user, allowing them
 /// to modify the HTML content directly. The following values are accepted:
 ///
