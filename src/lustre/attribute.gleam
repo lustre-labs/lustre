@@ -200,6 +200,15 @@ pub fn command(value: String) -> Attribute(message) {
   attribute("command", value)
 }
 
+/// References the ID of the element that receives the command specified by
+/// the `command` attribute.
+///
+/// The attribute is supported by the `<button>` element.
+/// 
+pub fn commandfor(value: String) -> Attribute(message) {
+  attribute("commandfor", value)
+}
+
 /// Indicates whether the element's content is editable by the user, allowing them
 /// to modify the HTML content directly. The following values are accepted:
 ///
