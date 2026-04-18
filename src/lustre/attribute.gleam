@@ -170,6 +170,45 @@ fn do_classes(names: List(#(String, Bool)), class: String) -> String {
   }
 }
 
+/// Specifies the user actions that can close a `<dialog>` element.
+///
+/// | Value          | Description                                                                                       |
+/// |----------------|---------------------------------------------------------------------------------------------------|
+/// | "any"          | The dialog can be closed with any method.                                                         |
+/// | "closerequest" | The dialog can be closed with a platform-specific user action or a developer-specified mechanism. |
+/// | "none"         | The dialog can be closed with a developer-specified mechanism.                                    |
+///
+pub fn closedby(value: String) -> Attribute(message) {
+  attribute("closedby", value)
+}
+
+/// Specifies the action to be performed on the dialog or popover referenced by
+/// the `commandfor` attribute.
+///
+/// The attribute is supported by the `<button>` element.
+///
+/// | Value            | Description                                                    |
+/// |------------------|----------------------------------------------------------------|
+/// | "show-modal"     | Opens a `<dialog>` as a modal.                                 |
+/// | "close"          | Closes a `<dialog>`.                                           |
+/// | "request-close"  | Triggers a `cancel` event on a `<dialog>`.                     |
+/// | "show-popover"   | Shows a popover.                                               |
+/// | "hide-popover"   | Hides a popover.                                               |
+/// | "toggle-popover" | Toggles the visibility of a popover.                           |
+///
+pub fn command(value: String) -> Attribute(message) {
+  attribute("command", value)
+}
+
+/// References the ID of the element that receives the command specified by
+/// the `command` attribute.
+///
+/// The attribute is supported by the `<button>` element.
+/// 
+pub fn commandfor(value: String) -> Attribute(message) {
+  attribute("commandfor", value)
+}
+
 /// Indicates whether the element's content is editable by the user, allowing them
 /// to modify the HTML content directly. The following values are accepted:
 ///
