@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/json.{type Json}
+import lustre/internals/constants
 import lustre/internals/json_object_builder
 import lustre/vdom/vattr.{type Attribute}
 import lustre/vdom/vnode.{type Element, type Memos}
@@ -12,6 +13,11 @@ import lustre/vdom/vnode.{type Element, type Memos}
 ///
 /// - An `index` which is the index of the node in the real DOM relative to its
 ///   parent's `childNodes` list.
+/// 
+/// - A `path` which represents any additional traversal to get to the relevant
+///   node. This happens when we have a change deep in the tree and no changes to
+///   any of the nodes above it. By compressing the path into a single list we can
+///   cut down on the payload size of diffs sent over the wire in server components.
 ///
 /// - A `removed` count for the number of child nodes to remove *after* the list
 ///   of `changes` has been applied.
@@ -25,6 +31,7 @@ import lustre/vdom/vnode.{type Element, type Memos}
 pub type Patch(message) {
   Patch(
     index: Int,
+    path: List(Int),
     removed: Int,
     changes: List(Change(message)),
     children: List(Patch(message)),
@@ -73,7 +80,7 @@ pub fn new(
   changes changes: List(Change(message)),
   children children: List(Patch(message)),
 ) -> Patch(message) {
-  Patch(index:, removed:, changes:, children:)
+  Patch(path: constants.empty_list, index:, removed:, changes:, children:)
 }
 
 pub const replace_text_kind: Int = 0
@@ -135,20 +142,15 @@ pub fn is_empty(patch: Patch(message)) -> Bool {
 
 // MANIPULATIONS ---------------------------------------------------------------
 
-pub fn add_child(
-  parent: Patch(message),
-  child: Patch(message),
-) -> Patch(message) {
-  case is_empty(child) {
-    True -> parent
-    False -> Patch(..parent, children: [child, ..parent.children])
-  }
+pub fn add_parent(child: Patch(message), index: Int) -> Patch(message) {
+  Patch(..child, path: [child.index, ..child.path], index:)
 }
 
 // ENCODING --------------------------------------------------------------------
 
 pub fn to_json(patch: Patch(message), memos: Memos(message)) -> Json {
   json_object_builder.new()
+  |> json_object_builder.list("path", patch.path, json.int)
   |> json_object_builder.int("index", patch.index)
   |> json_object_builder.int("removed", patch.removed)
   |> json_object_builder.list("changes", patch.changes, fn(change) {

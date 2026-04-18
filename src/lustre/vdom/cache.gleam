@@ -220,7 +220,7 @@ pub fn add_child(
   index: Int,
   child: Element(message),
 ) -> #(Cache(message), Events(message)) {
-  let children = [child, ..constants.empty_list]
+  let children = constants.singleton_list(child)
   add_children(cache, events, parent, index, children)
 }
 
@@ -311,7 +311,7 @@ fn do_add_children(
           vdoms,
           path.subtree(path),
           0,
-          [child, ..constants.empty_list],
+          constants.singleton_list(child),
         )
 
       let vdoms = added.vdoms
@@ -351,7 +351,7 @@ pub fn remove_child(
     cache.old_vdoms,
     parent,
     child_index,
-    [child, ..constants.empty_list],
+    constants.singleton_list(child),
   )
 }
 

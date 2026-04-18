@@ -197,9 +197,14 @@ export class Reconciler {
     const stack = this.#stack;
 
     while (stack.length) {
-      const { node, patch } = stack.pop();
+      let { node, patch } = stack.pop();
+      const { path, changes, removed, children: childPatches } = patch;
+
+      iterate(path, (index) => {
+        node = node.children[index];
+      });
+
       const { children: childNodes } = node;
-      const { changes, removed, children: childPatches } = patch;
 
       iterate(changes, (change) => this.#patch(node, change));
 
