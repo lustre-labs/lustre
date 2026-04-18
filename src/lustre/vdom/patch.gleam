@@ -142,7 +142,6 @@ pub fn is_empty(patch: Patch(message)) -> Bool {
 
 // MANIPULATIONS ---------------------------------------------------------------
 
-@external(javascript, "./patch.ffi.mjs", "addParent")
 pub fn add_parent(child: Patch(message), index: Int) -> Patch(message) {
   Patch(..child, path: [child.index, ..child.path], index:)
 }

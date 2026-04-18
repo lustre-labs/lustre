@@ -83,9 +83,10 @@ fn do_diff(
 ) -> PartialDiff(message) {
   case old, new {
     [], [] -> {
-      let patch = case removed, changes, children {
-        0, [], [child] -> patch.add_parent(child, patch_index)
-        _, _, _ -> patch.new(index: patch_index, removed:, changes:, children:)
+      let patch = case removed, changes, children, is_browser() {
+        0, [], [child], False -> patch.add_parent(child, patch_index)
+        _, _, _, _ ->
+          patch.new(index: patch_index, removed:, changes:, children:)
       }
 
       PartialDiff(patch:, cache:, events:)
@@ -910,4 +911,9 @@ fn diff_attributes(
 @external(javascript, "../internals/equals.ffi.mjs", "isEqual")
 fn property_value_equal(a: json.Json, b: json.Json) -> Bool {
   a == b
+}
+
+@external(javascript, "../runtime/client/runtime.ffi.mjs", "is_browser")
+fn is_browser() -> Bool {
+  False
 }
