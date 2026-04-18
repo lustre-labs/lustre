@@ -170,6 +170,18 @@ fn do_classes(names: List(#(String, Bool)), class: String) -> String {
   }
 }
 
+/// Specifies the user actions that can close a `<dialog>` element.
+///
+/// | Value          | Description                                                                                       |
+/// |----------------|---------------------------------------------------------------------------------------------------|
+/// | "any"          | The dialog can be closed with any method.                                                         |
+/// | "closerequest" | The dialog can be closed with a platform-specific user action or a developer-specified mechanism. |
+/// | "none"         | The dialog can be closed with a developer-specified mechanism.                                    |
+///
+pub fn closedby(value: String) -> Attribute(message) {
+  attribute("closedby", value)
+}
+
 /// Indicates whether the element's content is editable by the user, allowing them
 /// to modify the HTML content directly. The following values are accepted:
 ///
