@@ -425,12 +425,6 @@ fn view(model: Model) -> Element(Message) {
 }
 ```
 
-Depending on your network speed, you might notice that when you add a new cat
-the last cat image is duplicated for a moment before the new one appears. While
-we won't touch on it in this guide, you can learn more about why this happens and
-how to prevent it in the [rendering lists](https://github.com/lustre-labs/lustre/blob/main/pages/hints/rendering-lists.md)
-hint.
-
 ## What next
 
 Believe it or not, we've seen a large part of what Lustre has to offer. From these
