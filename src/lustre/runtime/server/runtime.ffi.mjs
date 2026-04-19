@@ -91,15 +91,15 @@ export class Runtime {
         ),
       );
 
-      if (Option.Option$isSome(config.on_connect)) {
-        this.#dispatch(Option.Option$Some$0(config.on_connect));
+      if (Option.Option$isSome(this.#config.on_connect)) {
+        this.#dispatch(Option.Option$Some$0(this.#config.on_connect));
       }
     } else if (Message$isClientDeregisteredCallback(message)) {
       const { callback } = message;
       this.#callbacks.delete(callback);
 
-      if (Option.Option$isSome(config.on_disconnect)) {
-        this.#dispatch(Option.Option$Some$0(config.on_disconnect));
+      if (Option.Option$isSome(this.#config.on_disconnect)) {
+        this.#dispatch(Option.Option$Some$0(this.#config.on_disconnect));
       }
     } else if (Message$isEffectDispatchedMessage(message)) {
       const { message } = message;
