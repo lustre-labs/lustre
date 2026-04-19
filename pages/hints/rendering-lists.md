@@ -14,9 +14,11 @@ function so Lustre can more accurately track which items in a list have changed.
 
 ## Seeing double
 
-One example of a visual issue can be seen in the [quickstart program](../guide/01-quickstart.md)
-where it is possible to briefly see a duplicated cat image before the new image has
-completely loaded. Let's walk through why this happens.
+One example of a visual issue can be seen with a variation of the [quickstart
+program](../guide/01-quickstart.md). If new cat images were added to the front
+of the list instead of being appended, it is possible to briefly see a duplicated
+cat image before the new image has completely loaded. Let's walk through why this
+happens.
 
 When you first click the increment button, the http side effect will eventually
 cause a cat image slug, let's call it `a`, to be added the model's `cat` list.
