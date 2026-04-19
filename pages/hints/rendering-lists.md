@@ -14,19 +14,19 @@ function so Lustre can more accurately track which items in a list have changed.
 
 ## Seeing double
 
-One example of a visual issue can be seen in the [quickstart program](../guide/01-quickstart.md)
-where it is possible to briefly see a duplicated cat image before the new image has
-completely loaded. Let's walk through why this happens.
+One example of a visual issue can be seen in a program that [prepends](https://tour.gleam.run/basics/lists/)
+items to a list of images, where it is possible to briefly see a duplicated image
+before the new image has completely loaded. Let's walk through why this happens.
 
-When you first click the increment button, the http side effect will eventually
-cause a cat image slug, let's call it `a`, to be added the model's `cat` list.
-The view will render a single image tag for this list, it will be added to the DOM,
-and the browser will make a request for this image, displaying it once it has completed
+When the list is first updated, the side effect will eventually cause an image
+slug, let's call it `a`, to be added to the model's image list. The view will
+render a single image tag for this list, it will be added to the DOM, and the
+browser will make a request for this image, displaying it once it has completed
 downloading.
 
-When the increment button is clicked a second time, the http side effect will
-eventually cause a cat image slug, let's call it `b`, to be [added to the front](https://tour.gleam.run/basics/lists/)
-of the model's `cat` list. So this list has changed from `[a]` to `[b, a]`. The view
+When the list is updated a second time, the side effect will eventually cause
+an image slug, let's call it `b`, to be added to the **front** of the model's
+image list. So this list has changed from `[a]` to `[b, a]`. The view
 will now render two image tags, first for `b` and then for `a`, as it walks the list.
 When this virtual DOM is diffed with the current DOM, it looks like the image tag
 that used to show `a` has been changed to show `b`, and a new image tag for `a` has
@@ -34,7 +34,7 @@ been added as a sibling element. This causes the browser to request image `b`, b
 that is downloading, the previous image shown on screen for this tag remains visible.
 Also while `b` is downloading, the browser needs to show the image `a` for new tag.
 This can be pulled from the browser cache so is immediately displayed without the user
-experiencing any delay. The visual issue presents as a duplicate `a` cat image until
+experiencing any delay. The visual issue presents as a duplicate `a` image until
 image `b` is downloaded, at which point it replaces the first `a` image.
 
 > **Note**: Because the cat API returns a random image, it is possible for the final
@@ -59,19 +59,17 @@ Increment ->                 Increment ->
 ```
 
 
-### Fixing the quickstart program
+### Fixing this issue
 
 As mentioned in the first section above, the way to fix this issue is to [key the
 elements](https://hexdocs.pm/lustre/lustre/element/keyed.html#element). This allows
-Lustre to better track which items have changed, moved, been removed, etc. Keyed
-elements were intentionally not used in the quickstart tutorial in an attempt to
-focus on the fundamentals.
+Lustre to better track which items have changed, moved, been removed, etc.
 
-Here is one possible way to use `element.keyed` in the `view` function, where the
-image slug is used as the key:
+Here is one possible way to use `element.keyed`, where the image slug is used as
+the key:
 
 ```gleam
-keyed.div([], list.map(model.cats, fn(cat) {
-  #(cat.id, html.img([attribute.src(cat.url)]))
+keyed.div([], list.map(model.images, fn(image) {
+  #(image.id, html.img([attribute.src(image.url)]))
 }))
 ```
