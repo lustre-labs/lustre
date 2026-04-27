@@ -167,7 +167,7 @@ pub fn debounce(event: Attribute(message), delay: Int) -> Attribute(message) {
 ///
 /// ```
 /// original : --a-b-cd--e----------f--------
-/// throttled : -a------ e----------e--------
+/// throttled : -a------ e----------f--------
 /// ```
 ///
 /// This is particularly useful for server components where many events in quick
