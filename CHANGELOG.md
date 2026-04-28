@@ -27,7 +27,7 @@ request to fix it.
 - [lustre/runtime] Fixed a bug where an extra frame would be scheduled after `before_paint` and `after_paint` effects.
 - [lustre/runtime] Fixed a bug where server-rendered HTML from sources other than Lustre would virtualise incorrectly.
 - [lustre/server_component] Reduce size of patches sent over the wire by compressing deeply nested patches.
-- [lustre/server_component] Server components can now always decode `event.detail` when present, even when it is not explicitly listed in `server_component.include`.
+- [lustre/server_component] Server components can now always decode `event.detail` from events emit but child Lustre apps, even when it is not explicitly listed in `server_component.include`.
 
 ## [v5.6.0] - 2026-02-16
 

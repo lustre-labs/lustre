@@ -8,6 +8,7 @@ import { Reconciler } from "../../../../build/dev/javascript/lustre/lustre/vdom/
 import {
   adoptStylesheets,
   ContextRequestEvent,
+  LustreEvent,
 } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs";
 import {
   mount_kind,
@@ -265,7 +266,7 @@ export class ServerComponent extends HTMLElement {
       }
 
       case emit_kind: {
-        this.dispatchEvent(new CustomEvent(data.name, { detail: data.data }));
+        this.dispatchEvent(new LustreEvent(data.name, data.data));
 
         break;
       }
@@ -409,14 +410,11 @@ export class ServerComponent extends HTMLElement {
   #createServerEvent(event, include = []) {
     const data = {};
 
-    // When a `detail` property is present we always include it by default. In
-    // Lustre, the `detail` property is used to attach data to custom events so
-    // it's safe to assume that the user will want to decode it.
-    //
-    // Because this object is constructed by the runtime and not part of native
-    // events, it will be fully enumerable and thus we can just include the top-level
-    // property and be sure everything will serialise no problems.
-    include.push("detail");
+    // For events emit but other Lustre components, we know it's always safe to
+    // include the entire `detail` property as-is. 
+    if (event instanceof LustreEvent) {
+      include.push("detail");
+    }
 
     // It's overwhelmingly likely that if someone is listening for input or change
     // events that they're interested in the value of the input. Regardless of
@@ -439,6 +437,18 @@ export class ServerComponent extends HTMLElement {
       event.type === "keypress"
     ) {
       include.push("key");
+    }
+
+    // We have non-standard handling of the submit event in Lustre. We automatically
+    // extract the form fields into a special `formData` property on the event's
+    // `detail` field. This is because we need a way for normal Lustre apps to get
+    // at this data without needing to go through FFI to construct a `new FormData`
+    // themselves – this would be impossible for server components!
+    //
+    // If the user is handling a submit event they almost definitely want to know
+    // about the form's data, so we always include it.
+    if (event.type === "submit") {
+      include.push("detail.formData");
     }
 
     for (const property of include) {
