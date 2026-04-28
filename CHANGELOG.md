@@ -15,6 +15,7 @@ request to fix it.
 
 - [lustre/attribute] Added `closedby`, `command`, and `commandfor` attributes.
 - [lustre/component] Component's can be notified of form disabled events using the `on_form_disabled` configuration option.
+- [lustre/effect] Added the `subscribe` and `unsubscribe` effects so applications can now subscribe and unsubscribe to context changes from parent elements.
 - [lustre/server_component] The server component client runtime will now detect and include any CSRF token embedded in the page as a query parameter in the initial WebSocket connection URL.
 
 ### Changed
