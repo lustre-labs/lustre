@@ -8,6 +8,7 @@ import { Reconciler } from "../../../../build/dev/javascript/lustre/lustre/vdom/
 import {
   adoptStylesheets,
   ContextRequestEvent,
+  LustreEvent,
 } from "../../../../build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs";
 import {
   mount_kind,
@@ -265,7 +266,7 @@ export class ServerComponent extends HTMLElement {
       }
 
       case emit_kind: {
-        this.dispatchEvent(new CustomEvent(data.name, { detail: data.data }));
+        this.dispatchEvent(new LustreEvent(data.name, data.data));
 
         break;
       }
@@ -408,6 +409,12 @@ export class ServerComponent extends HTMLElement {
    */
   #createServerEvent(event, include = []) {
     const data = {};
+
+    // For events emit but other Lustre components, we know it's always safe to
+    // include the entire `detail` property as-is. 
+    if (event.isLustreEvent) {
+      include.push("detail");
+    }
 
     // It's overwhelmingly likely that if someone is listening for input or change
     // events that they're interested in the value of the input. Regardless of

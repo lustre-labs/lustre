@@ -123,13 +123,7 @@ export class Runtime {
   emit(event, data) {
     const target = this.root.host ?? this.root;
 
-    target.dispatchEvent(
-      new CustomEvent(event, {
-        detail: data,
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    target.dispatchEvent(new LustreEvent(event, data));
   }
 
   // Provide a context value for any child nodes that request it using the given
@@ -373,5 +367,19 @@ export class ContextRequestEvent extends Event {
     this.context = context;
     this.callback = callback;
     this.subscribe = subscribe;
+  }
+}
+
+// We subclass `CustomEvent` so we know when it's safe to automatically include
+// the `detail` field of an event in server component event handlers. In the future
+// we may be able to derive what fields to include by introspecting the decoders
+// itself and then this can go away.
+export class LustreEvent extends CustomEvent {
+  // We can't rely on `instanceof` checks because the server component client
+  // runtime is bundled on its own and thus will have its own copy of this class.
+  isLustreEvent = true;
+
+  constructor(name, detail) {
+    super(name, { detail, bubbles: true, composed: true });
   }
 }
