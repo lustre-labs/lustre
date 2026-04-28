@@ -152,6 +152,8 @@ pub fn on_property_change(
 /// Contexts can be any JavaScript object. For server components, contexts will
 /// be any _JSON-serialisable_ value.
 ///
+@deprecated("Static context subscriptions are deprecated in favour of the explicit
+`effect.subscribe` and `effect.unsubscribe` effects.")
 pub fn on_context_change(
   key: String,
   decoder: Decoder(message),

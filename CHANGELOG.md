@@ -23,6 +23,7 @@ request to fix it.
 - [lustre/dev/simulate] Fixed a bug where simulated events on elements wrapped in `element.map` would not trigger.
 - [lustre/dev/query] Fixed a bug where the `text` query matcher did not match text exactly and instead matched if the element's text content contained the given text.
 - [lustre/dev/query] Fixed a bug where the `text` query would not treat `<br>` elements as newlines.
+- [lustre/component] The `on_context_change` option has been deprecated in favour of the explicit `effect.subscribe` and `effect.unsubscribe` effects.
 - [lustre/element] fixed a bug where `to_document_string` would sometimes mistakenly wrap a given `html` element again.
 - [lustre/event] Fixed a bug where moving keyed elements would sometimes remove their event listeners.
 - [lustre/runtime] Fixed a bug where an extra frame would be scheduled after `before_paint` and `after_paint` effects.
