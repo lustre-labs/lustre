@@ -28,6 +28,7 @@ request to fix it.
 - [lustre/runtime] Fixed a bug where server-rendered HTML from sources other than Lustre would virtualise incorrectly.
 - [lustre/server_component] Reduce size of patches sent over the wire by compressing deeply nested patches.
 - [lustre/server_component] Server components can now always decode `event.detail` from events emit but child Lustre apps, even when it is not explicitly listed in `server_component.include`.
+- [lustre/server_component] Fixed a bug where attempting to use the `on_connect` and `on_disconnect` options on the JavaScript target would throw a runtime error.
 
 ## [v5.6.0] - 2026-02-16
 
