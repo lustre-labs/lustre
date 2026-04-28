@@ -375,6 +375,10 @@ export class ContextRequestEvent extends Event {
 // we may be able to derive what fields to include by introspecting the decoders
 // itself and then this can go away.
 export class LustreEvent extends CustomEvent {
+  // We can't rely on `instanceof` checks because the server component client
+  // runtime is bundled on its own and thus will have its own copy of this class.
+  isLustreEvent = true;
+
   constructor(name, detail) {
     super(name, { detail, bubbles: true, composed: true });
   }

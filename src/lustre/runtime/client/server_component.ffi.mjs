@@ -412,7 +412,7 @@ export class ServerComponent extends HTMLElement {
 
     // For events emit but other Lustre components, we know it's always safe to
     // include the entire `detail` property as-is. 
-    if (event instanceof LustreEvent) {
+    if (event.isLustreEvent) {
       include.push("detail");
     }
 
