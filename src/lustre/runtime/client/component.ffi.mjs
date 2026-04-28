@@ -11,6 +11,7 @@ import {
   Option$isSome,
   Option$Some$0,
 } from "../../../../gleam_stdlib/gleam/option.mjs";
+import * as Dict from "../../../../gleam_stdlib/gleam/dict.mjs";
 
 import {
   Error$BadComponentName,
@@ -59,7 +60,7 @@ export const make_component = ({ init, update, view, config }, name) => {
 
     #runtime;
     #adoptedStyleNodes = [];
-    #contextSubscriptions = new Map();
+    #initialContexts = config.contexts;
 
     constructor() {
       super();
@@ -203,12 +204,28 @@ export const make_component = ({ init, update, view, config }, name) => {
       this.#runtime.provide(key, value);
     }
 
+    subscribe(key, decoder) {
+      this.#runtime.subscribe(key, decoder);
+    }
+
+    unsubscribe(key) {
+      this.#runtime.unsubscribe(key);
+      // Once a component is running and has a context subscription torn down, we
+      // don't want it to start back up again if the component is disconnected but
+      // later reconnected to the DOM.
+      //
+      // In future versions of Lustre the static `on_context_change` option will
+      // go awawy in favour of the uniform `effect.subscribe` and then we won't
+      // need this.
+      this.#initialContexts = Dict.delete(this.#initialContexts, key);
+    }
+
     // INTERNAL METHODS --------------------------------------------------------
 
     #requestContexts() {
       const requested = new Set();
 
-      iterate(config.contexts, ([key, decoder]) => {
+      iterate(this.#initialContexts, ([key, decoder]) => {
         // An empty key is not valid so we skip over any of those.
         if (!key) return;
 
@@ -217,39 +234,13 @@ export const make_component = ({ init, update, view, config }, name) => {
         // different decoder.
         if (requested.has(key)) return;
 
-        this.dispatchEvent(
-          new ContextRequestEvent(
-            key,
-            (value, unsubscribe) => {
-              const previousUnsubscribe = this.#contextSubscriptions.get(key);
-
-              // Call the old unsubscribe callback if it has changed. This probably
-              // means we have a new provider.
-              if (previousUnsubscribe !== unsubscribe) {
-                previousUnsubscribe?.();
-              }
-
-              const decoded = decode(value, decoder);
-              this.#contextSubscriptions.set(key, unsubscribe);
-
-              if (Result$isOk(decoded)) {
-                this.dispatch(Result$Ok$0(decoded), true);
-              }
-            },
-            true,
-          ),
-        );
-
+        this.#runtime.subscribe(key, decoder);
         requested.add(key);
       });
     }
 
     #unsubscribeContexts() {
-      for (const [_, unsubscribe] of this.#contextSubscriptions) {
-        unsubscribe?.();
-      }
-
-      this.#contextSubscriptions.clear();
+      this.#runtime.unsubscribeAll();
     }
 
     async #adoptStyleSheets() {

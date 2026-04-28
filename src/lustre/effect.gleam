@@ -63,6 +63,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
 import lustre/internals/constants
@@ -107,6 +108,8 @@ type Actions(message) {
     select: fn(Selector(message)) -> Nil,
     root: fn() -> Dynamic,
     provide: fn(String, Json) -> Nil,
+    subscribe: fn(String, Decoder(message)) -> Nil,
+    unsubscribe: fn(String) -> Nil,
   )
 }
 
@@ -309,6 +312,10 @@ fn do_comap_actions(actions: Actions(b), f: fn(a) -> b) -> Actions(a) {
     select: fn(selector) { do_comap_select(actions, selector, f) },
     root: actions.root,
     provide: actions.provide,
+    subscribe: fn(name, decoder) {
+      actions.subscribe(name, decode.map(decoder, f))
+    },
+    unsubscribe: actions.unsubscribe,
   )
 }
 
@@ -342,14 +349,26 @@ fn do_comap_select(_, _, _) -> Nil {
 ///
 @internal
 pub fn perform(
-  effect: Effect(a),
-  dispatch: fn(a) -> Nil,
+  effect: Effect(message),
+  dispatch: fn(message) -> Nil,
   emit: fn(String, Json) -> Nil,
-  select: fn(Selector(a)) -> Nil,
+  select: fn(Selector(message)) -> Nil,
   root: fn() -> Dynamic,
   provide: fn(String, Json) -> Nil,
+  subscribe: fn(String, Decoder(message)) -> Nil,
+  unsubscribe: fn(String) -> Nil,
 ) -> Nil {
-  let actions = Actions(dispatch:, emit:, select:, root:, provide:)
+  let actions =
+    Actions(
+      dispatch:,
+      emit:,
+      select:,
+      root:,
+      provide:,
+      subscribe:,
+      unsubscribe:,
+    )
+
   use run <- list.each(effect.synchronous)
 
   run(actions)
