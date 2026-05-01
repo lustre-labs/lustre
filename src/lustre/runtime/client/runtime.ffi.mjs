@@ -8,6 +8,7 @@ import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
 import { virtualise } from "../../vdom/virtualise.ffi.mjs";
 import { isEqual } from "../../internals/equals.ffi.mjs";
 import { append, iterate } from "../../internals/list.ffi.mjs";
+import { run as decode } from "../../../../gleam_stdlib/gleam/dynamic/decode.mjs";
 
 //
 
@@ -161,6 +162,57 @@ export class Runtime {
     }
   }
 
+  subscribe(key, decoder) {
+    // An empty key is not valid so we skip over any of those.
+    if (!key) return;
+
+    // If we were previously subscribed to this context, we should unsubscribe
+    // before before subscribing again with the new decoder.
+    this.#contextSubscriptions.get(key)?.();
+
+    const target = this.root.host ?? this.root;
+
+    target.dispatchEvent(
+      new ContextRequestEvent(
+        key,
+        (value, unsubscribe) => {
+          const previousUnsubscribe = this.#contextSubscriptions.get(key);
+
+          // Call the old unsubscribe callback if it has changed. This probably
+          // means we have a new provider.
+          if (previousUnsubscribe !== unsubscribe) {
+            previousUnsubscribe?.();
+          }
+
+          const decoded = decode(value, decoder);
+          this.#contextSubscriptions.set(key, unsubscribe);
+
+          if (Result$isOk(decoded)) {
+            this.dispatch(Result$Ok$0(decoded), true);
+          }
+        },
+        true,
+      )
+    );
+  }
+
+  unsubscribe(key) {
+    const unsubscribe = this.#contextSubscriptions.get(key);
+
+    if (unsubscribe) {
+      unsubscribe();
+      this.#contextSubscriptions.delete(key);
+    }
+  }
+
+  unsubscribeAll() {
+    for (const [_, unsubscribe] of this.#contextSubscriptions) {
+      unsubscribe?.();
+    }
+
+    this.#contextSubscriptions.clear();
+  }
+
   // PRIVATE API ---------------------------------------------------------------
 
   #model;
@@ -171,6 +223,7 @@ export class Runtime {
   #cache;
   #reconciler;
   #contexts = new Map();
+  #contextSubscriptions = new Map();
 
   #shouldQueue = false;
   #queue = [];
@@ -185,6 +238,8 @@ export class Runtime {
     select: () => {},
     root: () => this.root,
     provide: (key, value) => this.provide(key, value),
+    subscribe: (key, decoder) => this.subscribe(key, decoder),
+    unsubscribe: (key) => this.unsubscribe(key),
   };
 
   #scheduleRender(shouldFlush = false) {

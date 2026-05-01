@@ -15,6 +15,8 @@ import {
   reconcile_kind,
   emit_kind,
   provide_kind,
+  subscribe_kind,
+  unsubscribe_kind,
   attribute_changed_kind,
   property_changed_kind,
   event_fired_kind,
@@ -201,17 +203,7 @@ export class ServerComponent extends HTMLElement {
         }
 
         for (const key of [...new Set(data.requested_contexts)]) {
-          this.dispatchEvent(
-            new ContextRequestEvent(key, (value, unsubscribe) => {
-              this.#transport?.send({
-                kind: context_provided_kind,
-                key,
-                value,
-              });
-
-              this.#contextSubscriptions.add(unsubscribe);
-            }),
-          );
+          this.subscribe(key);
         }
 
         if (messages.length) {
@@ -275,18 +267,23 @@ export class ServerComponent extends HTMLElement {
         this.provide(data.key, data.value);
         break;
       }
+
+      case subscribe_kind: {
+        this.subscribe(data.key, null);
+        break;
+      }
+
+      case unsubscribe_kind: {
+        this.unsubscribe(data.key);
+        break;
+      }
     }
   }
 
   //
 
   disconnectedCallback() {
-    // Clean up any context subscriptions
-    for (const unsubscribe of this.#contextSubscriptions) {
-      unsubscribe();
-    }
-
-    this.#contextSubscriptions.clear();
+    this.unsubscribeAll();
 
     // Close the transport connection
     if (this.#transport) {
@@ -321,6 +318,36 @@ export class ServerComponent extends HTMLElement {
         subscriber(value, unsubscribe);
       }
     }
+  }
+
+  subscribe(key) {
+    if (!key) return;
+
+    this.#contextSubscriptions.get(key)?.();
+    this.dispatchEvent(
+      new ContextRequestEvent(key, (value, unsubscribe) => {
+        this.#transport?.send({
+          kind: context_provided_kind,
+          key,
+          value,
+        });
+
+        this.#contextSubscriptions.add(unsubscribe);
+      }),
+    );
+  }
+
+  unsubscribe(key) {
+    this.#contextSubscriptions.get(key)?.();
+    this.#contextSubscriptions.delete(key);
+  }
+
+  unsubscribeAll() {
+    for (const [_, unsubscribe] of this.#contextSubscriptions) {
+      unsubscribe?.();
+    }
+
+    this.#contextSubscriptions.clear();
   }
 
   #getCsrfToken() {

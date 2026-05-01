@@ -63,6 +63,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
 import lustre/internals/constants
@@ -107,6 +108,8 @@ type Actions(message) {
     select: fn(Selector(message)) -> Nil,
     root: fn() -> Dynamic,
     provide: fn(String, Json) -> Nil,
+    subscribe: fn(String, Decoder(message)) -> Nil,
+    unsubscribe: fn(String) -> Nil,
   )
 }
 
@@ -250,8 +253,50 @@ pub fn select(_sel) {
   empty
 }
 
+/// Provide a context value to child components in the DOM that this Lustre app
+/// didn't render. This occurs in components with that render one or more `<slot>`
+/// elements in their `view` function.
+/// 
+/// Once a value for the given key has been provided, children can [`subscribe`](#subscribe)
+/// to changes and receive updates any subsequent times `provide` is called with
+/// the same key. This facilities parent-child communication even in cases where
+/// the parent doesn't own the child element directly. 
+/// 
+/// **Note**: This is one half of the WCCG [Context Protocol](https://github.com/webcomponents-cg/community-protocols/blob/main/proposals/context.md)
+/// and will work in tandem with not just Lustre components but any third-party
+/// Web Component that implements the [`context-request` event](https://github.com/webcomponents-cg/community-protocols/blob/main/proposals/context.md#the-context-request-event).
+/// 
 pub fn provide(key: String, value: Json) -> Effect(message) {
   let task = fn(actions: Actions(message)) { actions.provide(key, value) }
+
+  Effect(..empty, synchronous: constants.singleton_list(task))
+}
+
+/// Subscribe to changes for a context value provided by a parent element in the
+/// DOM. This effect will decode the context value from the first parent element
+/// that has _already provided_ a context for this key at least once. Once a
+/// subscription is set up, any changes to the context value will trigger additional
+/// messages to be dispatch with the new decoded value.
+/// 
+/// If no parent elements have provided a context for the given key at the time
+/// this effect is run, no subscription is set up even if a parent later provides
+/// a context for this key.
+/// 
+/// **Note**: This is one half of the WCCG [Context Protocol](https://github.com/webcomponents-cg/community-protocols/blob/main/proposals/context.md)
+/// and will work in tandem with not just Lustre components and applications, but
+/// any third-party Web Component that acts as a [context provider](https://github.com/webcomponents-cg/community-protocols/blob/main/proposals/context.md#context-providers).
+/// 
+pub fn subscribe(key: String, decoder: Decoder(message)) -> Effect(message) {
+  let task = fn(actions: Actions(message)) { actions.subscribe(key, decoder) }
+
+  Effect(..empty, synchronous: constants.singleton_list(task))
+}
+
+/// Unsubscribe to a context [`subscription`](#subscribe) that was previously set
+/// up for this key.
+/// 
+pub fn unsubscribe(key: String) -> Effect(message) {
+  let task = fn(actions: Actions(message)) { actions.unsubscribe(key) }
 
   Effect(..empty, synchronous: constants.singleton_list(task))
 }
@@ -309,6 +354,10 @@ fn do_comap_actions(actions: Actions(b), f: fn(a) -> b) -> Actions(a) {
     select: fn(selector) { do_comap_select(actions, selector, f) },
     root: actions.root,
     provide: actions.provide,
+    subscribe: fn(name, decoder) {
+      actions.subscribe(name, decode.map(decoder, f))
+    },
+    unsubscribe: actions.unsubscribe,
   )
 }
 
@@ -342,14 +391,26 @@ fn do_comap_select(_, _, _) -> Nil {
 ///
 @internal
 pub fn perform(
-  effect: Effect(a),
-  dispatch: fn(a) -> Nil,
+  effect: Effect(message),
+  dispatch: fn(message) -> Nil,
   emit: fn(String, Json) -> Nil,
-  select: fn(Selector(a)) -> Nil,
+  select: fn(Selector(message)) -> Nil,
   root: fn() -> Dynamic,
   provide: fn(String, Json) -> Nil,
+  subscribe: fn(String, Decoder(message)) -> Nil,
+  unsubscribe: fn(String) -> Nil,
 ) -> Nil {
-  let actions = Actions(dispatch:, emit:, select:, root:, provide:)
+  let actions =
+    Actions(
+      dispatch:,
+      emit:,
+      select:,
+      root:,
+      provide:,
+      subscribe:,
+      unsubscribe:,
+    )
+
   use run <- list.each(effect.synchronous)
 
   run(actions)
