@@ -11,7 +11,7 @@ import {
   Option$isSome,
   Option$Some$0,
 } from "../../../../gleam_stdlib/gleam/option.mjs";
-import * as Dict from "../../../../gleam_stdlib/gleam/dict.mjs";
+import { filter } from "../../../../gleam_stdlib/gleam/list.mjs";
 
 import {
   Error$BadComponentName,
@@ -217,7 +217,9 @@ export const make_component = ({ init, update, view, config }, name) => {
       // In future versions of Lustre the static `on_context_change` option will
       // go awawy in favour of the uniform `effect.subscribe` and then we won't
       // need this.
-      this.#initialContexts = Dict.delete(this.#initialContexts, key);
+      this.#initialContexts = filter(this.#initialContexts, (subscription) => {
+        return subscription[0] !== key;
+      });
     }
 
     // INTERNAL METHODS --------------------------------------------------------
