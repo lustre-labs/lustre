@@ -147,6 +147,8 @@ pub type Message(message) {
   EffectDispatchedMessage(message: message)
   EffectEmitEvent(name: String, data: Json)
   EffectProvidedValue(key: String, value: Json)
+  EffectRequestedContextSubscription(key: String, decoder: Decoder(message))
+  EffectRemovedContextSubscription(key: String)
   //
   MonitorReportedDown(monitor: Monitor)
   //
@@ -312,6 +314,32 @@ fn loop(
       actor.continue(State(..state, providers:))
     }
 
+    EffectRequestedContextSubscription(key:, decoder:) -> {
+      let message = transport.subscribe(key)
+      let _ = broadcast(state.subscribers, state.callbacks, message)
+
+      let config =
+        Config(
+          ..state.config,
+          contexts: dict.insert(state.config.contexts, key, decoder),
+        )
+
+      actor.continue(State(..state, config:))
+    }
+
+    EffectRemovedContextSubscription(key:) -> {
+      let message = transport.unsubscribe(key)
+      let _ = broadcast(state.subscribers, state.callbacks, message)
+
+      let config =
+        Config(
+          ..state.config,
+          contexts: dict.delete(state.config.contexts, key),
+        )
+
+      actor.continue(State(..state, config:))
+    }
+
     MonitorReportedDown(monitor:) -> {
       let subscribers =
         dict.filter(state.subscribers, fn(_, m) { m != monitor })
@@ -432,6 +460,10 @@ fn handle_effect(
   let dispatch = fn(message) { send(EffectDispatchedMessage(message:)) }
   let emit = fn(name, data) { send(EffectEmitEvent(name:, data:)) }
   let provide = fn(key, value) { send(EffectProvidedValue(key:, value:)) }
+  let subscribe = fn(key, decoder) {
+    send(EffectRequestedContextSubscription(key:, decoder:))
+  }
+  let unsubscribe = fn(key) { send(EffectRemovedContextSubscription(key:)) }
 
   let select = fn(selector) {
     selector
@@ -442,7 +474,16 @@ fn handle_effect(
 
   let internals = fn() { dynamic.nil() }
 
-  effect.perform(effect, dispatch, emit, select, internals, provide)
+  effect.perform(
+    effect,
+    dispatch,
+    emit,
+    select,
+    internals,
+    provide,
+    subscribe,
+    unsubscribe,
+  )
 }
 
 @target(erlang)

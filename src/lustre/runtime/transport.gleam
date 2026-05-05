@@ -25,6 +25,8 @@ pub type ClientMessage(message) {
   Reconcile(kind: Int, patch: Patch(message), memos: Memos(message))
   Emit(kind: Int, name: String, data: Json)
   Provide(kind: Int, key: String, value: Json)
+  Subscribe(kind: Int, key: String)
+  Unsubscribe(kind: Int, key: String)
 }
 
 pub type ServerMessage {
@@ -81,6 +83,18 @@ pub const provide_kind: Int = 3
 
 pub fn provide(key: String, value: Json) -> ClientMessage(message) {
   Provide(kind: provide_kind, key:, value:)
+}
+
+pub const subscribe_kind: Int = 4
+
+pub fn subscribe(key: String) -> ClientMessage(message) {
+  Subscribe(kind: subscribe_kind, key:)
+}
+
+pub const unsubscribe_kind: Int = 5
+
+pub fn unsubscribe(key: String) -> ClientMessage(message) {
+  Unsubscribe(kind: unsubscribe_kind, key:)
 }
 
 pub const attribute_changed_kind: Int = 0
@@ -152,6 +166,8 @@ pub fn client_message_to_json(message: ClientMessage(message)) -> Json {
     Reconcile(kind:, patch:, memos:) -> reconcile_to_json(kind, patch, memos)
     Emit(kind:, name:, data:) -> emit_to_json(kind, name, data)
     Provide(kind:, key:, value:) -> provide_to_json(kind, key, value)
+    Subscribe(kind:, key:) -> subscribe_to_json(kind, key)
+    Unsubscribe(kind:, key:) -> unsubscribe_to_json(kind, key)
   }
 }
 
@@ -205,6 +221,20 @@ fn provide_to_json(kind: Int, key: String, value: Json) -> Json {
     #("kind", json.int(kind)),
     #("key", json.string(key)),
     #("value", value),
+  ])
+}
+
+fn subscribe_to_json(kind: Int, key: String) -> Json {
+  json.object([
+    #("kind", json.int(kind)),
+    #("key", json.string(key)),
+  ])
+}
+
+fn unsubscribe_to_json(kind: Int, key: String) -> Json {
+  json.object([
+    #("kind", json.int(kind)),
+    #("key", json.string(key)),
   ])
 }
 

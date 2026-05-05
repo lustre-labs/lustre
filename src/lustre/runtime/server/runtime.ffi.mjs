@@ -22,6 +22,10 @@ import {
   Message$isEffectEmitEvent,
   Message$EffectProvidedValue,
   Message$isEffectProvidedValue,
+  Message$EffectRequestedContextSubscription,
+  Message$isEffectRequestedContextSubscription,
+  Message$EffectRemovedContextSubscription,
+  Message$isEffectRemovedContextSubscription,
   //
   Message$isSystemRequestedShutdown,
 } from "./runtime.mjs";
@@ -127,6 +131,16 @@ export class Runtime {
 
       this.#providers = Dict.insert(this.#providers, key, value);
       this.broadcast(Transport.provide(key, value));
+    } else if (Message$isEffectRequestedContextSubscription(message)) {
+      const { key, decoder } = message;
+
+      this.broadcast(Transport.subscribe(key));
+      this.#config.contexts = Dict.insert(this.#config.contexts, key, decoder);
+    } else if (Message$isEffectRemovedContextSubscription(message)) {
+      const { key } = message;
+      
+      this.broadcast(Transport.unsubscribe(key));
+      this.#config.contexts = Dict.delete(this.#config.contexts, key);
     } else if (Message$isSystemRequestedShutdown(message)) {
       this.#model = null;
       this.#update = null;
@@ -245,9 +259,21 @@ export class Runtime {
     const internals = () => undefined;
     const provide = (key, value) =>
       this.send(Message$EffectProvidedValue(key, value));
+    const subscribe = (key, decoder) => 
+      this.send(Message$EffectRequestedContextSubscription(key, decoder));
+    const unsubscribe = (key) => 
+      this.send(Message$EffectRemovedContextSubscription(key));
 
     globalThis.queueMicrotask(() => {
-      Effect.perform(effect, dispatch, emit, select, internals, provide);
+      Effect.perform(effect, 
+        dispatch, 
+        emit, 
+        select, 
+        internals, 
+        provide, 
+        subscribe, 
+        unsubscribe
+      );
     });
   }
 }
