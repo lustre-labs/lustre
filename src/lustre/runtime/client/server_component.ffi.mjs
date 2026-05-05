@@ -43,7 +43,7 @@ export class ServerComponent extends HTMLElement {
   #connected = false;
   #changedAttributesQueue = [];
   #contexts = new Map();
-  #contextSubscriptions = new Set();
+  #contextSubscriptions = new Map();
 
   #observer = new MutationObserver((mutations) => {
     const attributes = [];
@@ -269,7 +269,7 @@ export class ServerComponent extends HTMLElement {
       }
 
       case subscribe_kind: {
-        this.subscribe(data.key, null);
+        this.subscribe(data.key);
         break;
       }
 
@@ -332,7 +332,8 @@ export class ServerComponent extends HTMLElement {
           value,
         });
 
-        this.#contextSubscriptions.add(unsubscribe);
+        this.#contextSubscriptions.get(key)?.();
+        this.#contextSubscriptions.set(unsubscribe);
       }),
     );
   }
@@ -438,7 +439,7 @@ export class ServerComponent extends HTMLElement {
     const data = {};
 
     // For events emit but other Lustre components, we know it's always safe to
-    // include the entire `detail` property as-is. 
+    // include the entire `detail` property as-is.
     if (event.isLustreEvent) {
       include.push("detail");
     }
