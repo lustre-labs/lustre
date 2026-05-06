@@ -1,5 +1,10 @@
 # Announcements
 
+- [2026-05-06](./announcements/2026-05-06.html):
+  The v5.7.0 release (hopefully) marks the last minor release of v5, and brings
+  the context protocol to Lustre applications, CSRF protection for server components,
+  and a number of bug fixes.
+
 - [2026-02-16](./announcements/2026-02-16.html):
   This release sees even tighter integration with the Web Component spec through
   component prerendering with declarative shadow roots and integration with the
