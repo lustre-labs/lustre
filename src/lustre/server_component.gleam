@@ -219,6 +219,20 @@ pub fn include(
   }
 }
 
+/// If this attribute is present, the client runtime will include the CSRF token
+/// in the query parameters when connecting to the server. This can be used to
+/// mitigate cross-site request forgery attacks, by ensuring that only clients
+/// that have access to the token can connect to the server component runtime.
+/// 
+/// *Note**: When this attribute is not provided, the client runtime will look for
+/// a `<meta name="csrf-token" content="...">` tag in the page and use the content
+/// of that tag as the CSRF token. We recommend using this approach over the
+/// `csrf_token` attribute where possible.
+/// 
+pub fn csrf_token(token: String) -> Attribute(message) {
+  attribute("csrf-token", token)
+}
+
 // ACTIONS ---------------------------------------------------------------------
 
 @target(erlang)
