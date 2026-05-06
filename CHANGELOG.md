@@ -9,7 +9,7 @@ Changelogs can change! If you spot something is wrong or missing, please conside
 [opening an issue](https://github.com/lustre-labs/lustre/issues/new) or a pull
 request to fix it.
 
-## Unreleased
+## [v5.7.0] - 2026-05-06
 
 ### Added
 
