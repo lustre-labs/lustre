@@ -58,7 +58,7 @@ import lustre/vdom/vnode.{Element, Fragment, Map, Memo, UnsafeInnerHtml}
 ///   you have _pre-sanitised_ HTML or are working with libraries outside of Lustre
 ///   that produce plain HTML strings.
 ///
-///   Lustre will _not_ escape the HTML string provided to this functio, meaning
+///   Lustre will _not_ escape the HTML string provided to this function, meaning
 ///   inappropriate use can expose your application to XSS attacks. Make sure you
 ///   never take untrusted user input and pass it to this function!
 ///
@@ -217,7 +217,7 @@ pub fn unsafe_raw_html(
 
 /// A function for creating "memoised" or "lazy" elements. Lustre will use the
 /// dependencies list to skip calling the provided view function if all of the
-/// dependencies a _reference equal_ to their previous values.
+/// dependencies are _reference equal_ to their previous values.
 ///
 /// `memo` can be used to optimise performance-critical parts of your application,
 /// for example in cases where many instances of the same element are rendered but
@@ -280,9 +280,7 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
 
 /// Convert a Lustre `Element` to a string. This is _not_ pretty-printed, so
 /// there are no newlines or indentation. If you need to pretty-print an element,
-/// reach out on the [Gleam Discord](https://discord.gg/Fm8Pwmy) or
-/// [open an issue](https://github.com/lustre-labs/lustre/issues/new) with your
-/// use case and we'll see what we can do!
+/// consider using [to_readable_string](#to_readable_string) instead.
 ///
 pub fn to_string(element: Element(message)) -> String {
   vnode.to_string(element)
