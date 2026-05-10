@@ -137,7 +137,7 @@ let port = get_port()
 mist.new(handler)
 |> mist.bind(host)
 |> mist.port(port)
-|> mist.start_http
+|> mist.start
 ```
 
 ## Deploying to Fly.io
