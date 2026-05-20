@@ -186,7 +186,7 @@ pub fn unsafe_raw(
   key key: String,
   content content: a,
   compare compare: Option(fn(a, a) -> Bool),
-) -> Element(msg) {
+) -> Element(message) {
   vnode.raw_node(key:, content:, compare:)
 }
 
@@ -270,7 +270,7 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
 ///
 @deprecated("Use lustre/platform/dom.to_string instead")
 @external(erlang, "lustre@platform@dom", "to_string")
-pub fn to_string(_el: Element(msg)) -> String {
+pub fn to_string(_el: Element(message)) -> String {
   panic as "element.to_string is deprecated: use lustre/platform/dom.to_string"
 }
 
@@ -279,7 +279,7 @@ pub fn to_string(_el: Element(msg)) -> String {
 ///
 @deprecated("Use lustre/platform/dom.to_document_string instead")
 @external(erlang, "lustre@platform@dom", "to_document_string")
-pub fn to_document_string(_el: Element(msg)) -> String {
+pub fn to_document_string(_el: Element(message)) -> String {
   panic as "element.to_document_string is deprecated: use lustre/platform/dom.to_document_string"
 }
 
@@ -288,7 +288,7 @@ pub fn to_document_string(_el: Element(msg)) -> String {
 ///
 @deprecated("Use lustre/platform/dom.to_readable_string instead")
 @external(erlang, "lustre@platform@dom", "to_readable_string")
-pub fn to_readable_string(_el: Element(msg)) -> String {
+pub fn to_readable_string(_el: Element(message)) -> String {
   panic as "element.to_readable_string is deprecated: use lustre/platform/dom.to_readable_string"
 }
 
@@ -299,9 +299,9 @@ pub fn to_readable_string(_el: Element(msg)) -> String {
 pub fn unsafe_raw_html(
   namespace: String,
   tag: String,
-  attributes: List(Attribute(msg)),
+  attributes: List(Attribute(message)),
   content: String,
-) -> Element(msg) {
+) -> Element(message) {
   vnode.raw_container(
     key: "",
     namespace:,

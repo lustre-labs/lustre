@@ -177,7 +177,7 @@ pub fn raw_node(
   key key: String,
   content content: a,
   compare compare: Option(fn(a, a) -> Bool),
-) -> Element(msg) {
+) -> Element(message) {
   let raw_compare =
     option.map(compare, fn(cmp) {
       fn(a: RawContent, b: RawContent) -> Bool { cmp(coerce(a), coerce(b)) }
