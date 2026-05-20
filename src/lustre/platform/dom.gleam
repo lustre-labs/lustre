@@ -234,7 +234,11 @@ pub fn with_self_closing_tags(
 /// Check if a tag is a void element in this config.
 /// Only applies to elements in the default HTML namespace (empty string).
 ///
-pub fn is_void(config: SerializerConfig, tag: String, namespace: String) -> Bool {
+pub fn is_void(
+  config: SerializerConfig,
+  tag: String,
+  namespace: String,
+) -> Bool {
   case namespace {
     "" -> set.contains(config.void_elements, tag)
     _ -> False

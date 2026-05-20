@@ -219,7 +219,10 @@ pub fn mtd(
 }
 
 ///
-pub fn mtext(attrs: List(Attribute(message)), text: String) -> Element(message) {
+pub fn mtext(
+  attrs: List(Attribute(message)),
+  text: String,
+) -> Element(message) {
   namespaced(namespace, "mtext", attrs, [element.text(text)])
 }
 

@@ -127,7 +127,10 @@ pub fn remove(index index: Int) -> Change(message) {
 
 pub const replace_kind: Int = 5
 
-pub fn replace(index index: Int, with with: Element(message)) -> Change(message) {
+pub fn replace(
+  index index: Int,
+  with with: Element(message),
+) -> Change(message) {
   Replace(kind: replace_kind, index:, with:)
 }
 

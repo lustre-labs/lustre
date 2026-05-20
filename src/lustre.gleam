@@ -165,9 +165,9 @@ import gleam/otp/supervision.{type ChildSpecification}
 import lustre/component.{type Option}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
-import lustre/runtime/app.{App}
 import lustre/platform.{type Platform}
 import lustre/platform/dom
+import lustre/runtime/app.{App}
 import lustre/runtime/headless
 
 // TYPES -----------------------------------------------------------------------

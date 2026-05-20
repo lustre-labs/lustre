@@ -73,9 +73,11 @@ pub fn client_runtime_map_with_events_test() {
   use runtime <- with_client_runtime(
     html_string,
     fn() {
-      lustre.simple(fn(_) { [] }, fn(model, message) { [message, ..model] }, fn(_model) {
-        initial
-      })
+      lustre.simple(
+        fn(_) { [] },
+        fn(model, message) { [message, ..model] },
+        fn(_model) { initial },
+      )
     },
     get_platform,
   )
@@ -338,7 +340,9 @@ pub fn client_runtime_controlled_checkbox_test() {
 
   use runtime <- with_client_runtime(
     html_string,
-    fn() { lustre.simple(fn(_) { False }, fn(_model, message) { message }, view) },
+    fn() {
+      lustre.simple(fn(_) { False }, fn(_model, message) { message }, view)
+    },
     get_platform,
   )
 
@@ -371,7 +375,9 @@ pub fn client_runtime_select_dropdown_test() {
 
   use runtime <- with_client_runtime(
     html_string,
-    fn() { lustre.simple(fn(_) { "red" }, fn(_model, message) { message }, view) },
+    fn() {
+      lustre.simple(fn(_) { "red" }, fn(_model, message) { message }, view)
+    },
     get_platform,
   )
 
@@ -494,7 +500,11 @@ pub fn client_runtime_event_bubbling_test() {
   use runtime <- with_client_runtime(
     html_string,
     fn() {
-      lustre.simple(fn(_) { [] }, fn(model, message) { [message, ..model] }, view)
+      lustre.simple(
+        fn(_) { [] },
+        fn(model, message) { [message, ..model] },
+        view,
+      )
     },
     get_platform,
   )
@@ -566,7 +576,11 @@ pub fn client_runtime_keyed_fragments_test() {
   use runtime <- with_client_runtime(
     html_string,
     fn() {
-      lustre.simple(fn(_) { initial_list }, fn(_model, message) { message }, view)
+      lustre.simple(
+        fn(_) { initial_list },
+        fn(_model, message) { message },
+        view,
+      )
     },
     get_platform,
   )

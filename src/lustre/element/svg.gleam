@@ -239,7 +239,9 @@ pub fn fe_diffuse_lighting(
 }
 
 ///
-pub fn fe_displacement_map(attrs: List(Attribute(message))) -> Element(message) {
+pub fn fe_displacement_map(
+  attrs: List(Attribute(message)),
+) -> Element(message) {
   namespaced(namespace, "feDisplacementMap", attrs, constants.empty_list)
 }
 

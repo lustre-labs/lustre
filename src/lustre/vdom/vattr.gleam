@@ -86,7 +86,9 @@ pub const always: EventBehaviour = Always(kind: always_kind)
 
 //
 
-pub fn prepare(attributes: List(Attribute(message))) -> List(Attribute(message)) {
+pub fn prepare(
+  attributes: List(Attribute(message)),
+) -> List(Attribute(message)) {
   case attributes {
     // empty attribute lists or attribute lists with only a single attribute are
     // always sorted and merged by definition, so we don't have to touch them.

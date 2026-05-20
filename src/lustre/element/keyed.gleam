@@ -123,7 +123,9 @@ pub fn namespaced(
 /// > but it doesn't have to be unique across the whole application. It's fine to
 /// > use the same key in different lists.
 ///
-pub fn fragment(children: List(#(String, Element(message)))) -> Element(message) {
+pub fn fragment(
+  children: List(#(String, Element(message))),
+) -> Element(message) {
   let #(keyed_children, children) = extract_keyed_children(children)
 
   vnode.fragment(key: "", children:, keyed_children:)

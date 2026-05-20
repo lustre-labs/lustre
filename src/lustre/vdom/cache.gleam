@@ -463,7 +463,12 @@ pub opaque type DecodedEvent(message) {
   DispatchedEvent(path: String)
 }
 
-pub fn decode(cache: Cache(message), path: String, name: String, event: Dynamic) {
+pub fn decode(
+  cache: Cache(message),
+  path: String,
+  name: String,
+  event: Dynamic,
+) {
   let parts = path.split_subtree_path(path <> path.separator_event <> name)
 
   case get_handler(cache.events, parts, function.identity) {

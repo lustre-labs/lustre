@@ -102,14 +102,12 @@ pub fn new(
     String,
     fn(event) -> Nil,
     Bool,
-  ) ->
-    Nil,
+  ) -> Nil,
   remove_event_listener remove_event_listener: fn(
     node,
     String,
     fn(event) -> Nil,
-  ) ->
-    Nil,
+  ) -> Nil,
   schedule_render schedule_render: fn(fn() -> Nil) -> fn() -> Nil,
   after_render after_render: fn() -> Nil,
 ) -> Platform(node, target, value, event, message, raw) {
