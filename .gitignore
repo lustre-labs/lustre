@@ -10,3 +10,9 @@ examples/*/*/manifest.toml
 examples/*/*/priv/static
 
 node_modules/
+
+.direnv
+
+scratchpad/
+
+flake.local.nix

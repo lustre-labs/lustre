@@ -1,0 +1,11 @@
+# Copy this file to `flake.local.nix` (gitignored) and uncomment / add the
+# packages you personally want available in the dev shell — editor, agent
+# harness, language servers, anything per-dev.
+#
+# The flake imports this file when it exists, prepends `pkgs` so you don't
+# need your own nixpkgs reference, and concatenates the result onto the
+# shared package list.
+
+{ pkgs }: with pkgs; [
+  # neovim
+]
