@@ -6,6 +6,9 @@ description = "Create HTML templates, single page applications, Web Components, 
 repository = { type = "github", user = "lustre-labs", repo = "lustre" }
 licences = ["MIT"]
 
+[javascript]
+typescript_declarations = true
+
 links = [
     { title = "Sponsor", href = "https://github.com/sponsors/hayleigh-dot-dev" },
 ]
