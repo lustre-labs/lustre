@@ -243,8 +243,22 @@ export class Reconciler {
   }
 
   #replace(parent, { index, with: child }) {
+    // OpenTUI workaround (session b2b62e25, Feb 2026):
+    // Capture the reference BEFORE removing so the lookup goes through the
+    // metadata array at index+1, never falling through to next_sibling(marker)
+    // — which fails in OpenTUI because fragment markers aren't in the
+    // Renderable's getChildren() list. Upstream uses remove-then-lookup-at-
+    // index, which is the cleaner form but doesn't work for the OpenTUI
+    // adapter without making markers real (invisible) Renderables.
+    //
+    // `(index | 0) + 1` is load-bearing: json_object_builder.int elides 0 to
+    // shrink wire size (so a Replace at index 0 arrives with `index === undefined`),
+    // and the rest of the reconciler relies on `index | 0` to default missing →
+    // 0. Doing `index + 1` directly gives `NaN`, which `| 0` only collapses
+    // back to 0 inside #getReference — returning `children[0]` (the about-to-be-
+    // removed child) instead of falling to the endNode/next_sibling branch.
+    const beforeEl = this.#getReference(parent, (index | 0) + 1);
     this.#removeChildren(parent, index | 0, 1);
-    const beforeEl = this.#getReference(parent, index);
     this.#insertChild(parent.parentNode, beforeEl, parent, index | 0, child);
   }
 
