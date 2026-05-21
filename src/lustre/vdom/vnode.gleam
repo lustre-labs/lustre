@@ -74,6 +74,13 @@ pub type Element(message) {
     compare: Option(RawContentComparator),
   )
 
+  RawNode(
+    kind: Int,
+    key: String,
+    content: RawContent,
+    compare: Option(RawContentComparator),
+  )
+
   Map(
     kind: Int,
     key: String,
@@ -164,6 +171,26 @@ pub fn raw_container(
   )
 }
 
+pub const raw_node_kind: Int = 6
+
+pub fn raw_node(
+  key key: String,
+  content content: a,
+  compare compare: Option(fn(a, a) -> Bool),
+) -> Element(msg) {
+  let raw_compare =
+    option.map(compare, fn(cmp) {
+      fn(a: RawContent, b: RawContent) -> Bool { cmp(coerce(a), coerce(b)) }
+    })
+
+  RawNode(
+    kind: raw_node_kind,
+    key:,
+    content: coerce(content),
+    compare: raw_compare,
+  )
+}
+
 pub const map_kind: Int = 4
 
 pub fn map(element: Element(a), mapper: fn(a) -> b) -> Element(b) {
@@ -206,6 +233,7 @@ pub fn to_keyed(key: String, node: Element(message)) -> Element(message) {
     Element(..) -> Element(..node, key:)
     Text(..) -> Text(..node, key:)
     RawContainer(..) -> RawContainer(..node, key:)
+    RawNode(..) -> RawNode(..node, key:)
     Fragment(..) -> Fragment(..node, key:)
     // because we skip Memo nodes when encoding and reconciling, we have
     // to set the key on the memo (for the diff) as well as the inner node!
@@ -247,6 +275,8 @@ pub fn to_json(
         content,
         serialize_raw_content,
       )
+    RawNode(kind:, key:, content:, ..) ->
+      raw_node_to_json(kind, key, content, serialize_raw_content)
     Map(kind:, key:, child:, ..) ->
       map_to_json(kind, key, child, memos, serialize_raw_content)
     Memo(view:, ..) -> memo_to_json(view, memos, serialize_raw_content)
@@ -304,6 +334,13 @@ fn raw_container_to_json(
   |> json_object_builder.string("namespace", namespace)
   |> json_object_builder.string("tag", tag)
   |> json_object_builder.list("attributes", attributes, vattr.to_json)
+  |> json_object_builder.string("content", serialize_raw_content(content))
+  |> json_object_builder.build
+}
+
+fn raw_node_to_json(kind, key, content, serialize_raw_content) {
+  json_object_builder.tagged(kind)
+  |> json_object_builder.string("key", key)
   |> json_object_builder.string("content", serialize_raw_content(content))
   |> json_object_builder.build
 }

@@ -26,7 +26,7 @@ pub type PlatformError {
 /// Use [`headless`](#headless) for server components that don't render to a DOM.
 /// Custom targets can provide their own implementations via [`new`](#new).
 ///
-pub opaque type Platform(node, target, value, event, message) {
+pub opaque type Platform(node, target, value, event, message, raw) {
   Headless
   Platform(
     target: target,
@@ -44,7 +44,8 @@ pub opaque type Platform(node, target, value, event, message) {
     remove_attribute: fn(node, String) -> Nil,
     set_property: fn(node, String, value) -> Nil,
     set_text: fn(node, String) -> Nil,
-    set_raw_content: fn(node, String) -> Nil,
+    set_raw_content: fn(node, raw) -> Nil,
+    create_raw_node: fn(raw) -> node,
     add_event_listener: fn(node, String, fn(event) -> Nil, Bool) -> Nil,
     remove_event_listener: fn(node, String, fn(event) -> Nil) -> Nil,
     schedule_render: fn(fn() -> Nil) -> fn() -> Nil,
@@ -67,7 +68,7 @@ pub opaque type Platform(node, target, value, event, message) {
 /// let p = platform.headless()
 /// ```
 ///
-pub fn headless() -> Platform(node, target, value, event, message) {
+pub fn headless() -> Platform(node, target, value, event, message, raw) {
   Headless
 }
 
@@ -75,8 +76,8 @@ pub fn headless() -> Platform(node, target, value, event, message) {
 /// methods. This is useful for rendering to non-DOM targets.
 ///
 /// Non-DOM targets can no-op `create_comment`, `create_fragment`,
-/// `set_raw_content`, `add_event_listener`, and `remove_event_listener` and
-/// provide minimal implementations for the rest.
+/// `set_raw_content`, `create_raw_node`, `add_event_listener`, and
+/// `remove_event_listener` and provide minimal implementations for the rest.
 ///
 pub fn new(
   target target: target,
@@ -94,7 +95,8 @@ pub fn new(
   remove_attribute remove_attribute: fn(node, String) -> Nil,
   set_property set_property: fn(node, String, value) -> Nil,
   set_text set_text: fn(node, String) -> Nil,
-  set_raw_content set_raw_content: fn(node, String) -> Nil,
+  set_raw_content set_raw_content: fn(node, raw) -> Nil,
+  create_raw_node create_raw_node: fn(raw) -> node,
   add_event_listener add_event_listener: fn(
     node,
     String,
@@ -110,7 +112,7 @@ pub fn new(
     Nil,
   schedule_render schedule_render: fn(fn() -> Nil) -> fn() -> Nil,
   after_render after_render: fn() -> Nil,
-) -> Platform(node, target, value, event, message) {
+) -> Platform(node, target, value, event, message, raw) {
   Platform(
     target:,
     mount:,
@@ -128,6 +130,7 @@ pub fn new(
     set_property:,
     set_text:,
     set_raw_content:,
+    create_raw_node:,
     add_event_listener:,
     remove_event_listener:,
     schedule_render:,
@@ -141,7 +144,7 @@ pub fn new(
 ///
 @internal
 pub fn mount(
-  platform: Platform(node, target, value, event, message),
+  platform: Platform(node, target, value, event, message, raw),
 ) -> Result(#(node, Element(message)), PlatformError) {
   case platform {
     Headless -> Error(NotMountable)
@@ -152,7 +155,9 @@ pub fn mount(
 /// Check whether a platform is headless (i.e. for server components).
 ///
 @internal
-pub fn is_headless(platform: Platform(node, target, value, event, message)) -> Bool {
+pub fn is_headless(
+  platform: Platform(node, target, value, event, message, raw),
+) -> Bool {
   case platform {
     Headless -> True
     Platform(..) -> False

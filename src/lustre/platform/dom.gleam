@@ -19,7 +19,7 @@ import lustre/platform.{type Platform, type PlatformError}
 import lustre/serializer.{type Serializer, Serializer}
 import lustre/vdom/vattr
 import lustre/vdom/vnode.{
-  type Element, Element, Fragment, Map, Memo, RawContainer, Text,
+  type Element, Element, Fragment, Map, Memo, RawContainer, RawNode, Text,
 }
 
 // TYPES -----------------------------------------------------------------------
@@ -60,7 +60,10 @@ pub opaque type SerializerConfig {
 ///
 pub fn platform(
   onto target: String,
-) -> Result(Platform(DomNode, DomNode, DomNode, DomEvent, message), PlatformError) {
+) -> Result(
+  Platform(DomNode, DomNode, DomNode, DomEvent, message, DomNode),
+  PlatformError,
+) {
   use <- bool.guard(!platform.is_browser(), Error(platform.NotABrowser))
   use target <- result.try(do_query_selector(target))
 
@@ -79,7 +82,7 @@ pub fn platform(
 @internal
 pub fn platform_strict(
   onto _root: DomNode,
-) -> Platform(DomNode, DomNode, DomNode, DomEvent, message) {
+) -> Platform(DomNode, DomNode, DomNode, DomEvent, message, DomNode) {
   panic as "Cannot create DOM platform on Erlang"
 }
 
@@ -345,6 +348,9 @@ pub fn serialize_tree(
       |> string_tree.append("</" <> tag <> ">")
     }
 
+    RawNode(content:, ..) ->
+      string_tree.from_string(vnode.raw_content_to_string(content))
+
     Fragment(key:, children:, ..) -> {
       marker_comment("lustre:fragment", key)
       |> config_children_to_string_tree(config, children, parent_namespace)
@@ -438,6 +444,9 @@ pub fn to_string_tree(
       |> string_tree.append(vnode.raw_content_to_string(content))
       |> string_tree.append("</" <> tag <> ">")
     }
+
+    RawNode(content:, ..) ->
+      string_tree.from_string(vnode.raw_content_to_string(content))
 
     Fragment(key:, children:, ..) -> {
       marker_comment("lustre:fragment", key)
@@ -629,6 +638,10 @@ fn do_to_snapshot_builder(
       |> string_tree.append(vnode.raw_content_to_string(content))
       |> string_tree.append("</" <> tag <> ">")
     }
+
+    RawNode(content:, ..) ->
+      string_tree.from_string(vnode.raw_content_to_string(content))
+      |> string_tree.prepend(spaces)
 
     Fragment(key:, children:, ..) if debug -> {
       marker_comment("lustre:fragment", key)

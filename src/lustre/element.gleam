@@ -171,6 +171,25 @@ pub fn unsafe_raw_content(
   vnode.raw_container(key:, namespace:, tag:, attributes:, content:, compare:)
 }
 
+/// A function for inserting a raw platform node directly into the virtual DOM
+/// tree without a wrapper element. The content is treated as an opaque platform
+/// node and inserted directly using the platform's `insert_before` method.
+///
+/// For inserting raw HTML strings, use [`html.unsafe_raw`](./element/html.html#unsafe_raw)
+/// instead, which wraps the content in a container element (required for innerHTML).
+///
+/// The optional `compare` parameter allows custom equality checking for the content.
+/// When provided, the diff algorithm uses this comparator instead of `==` to
+/// determine if the content has changed.
+///
+pub fn unsafe_raw(
+  key key: String,
+  content content: a,
+  compare compare: Option(fn(a, a) -> Bool),
+) -> Element(msg) {
+  vnode.raw_node(key:, content:, compare:)
+}
+
 // MEMOISATION -----------------------------------------------------------------
 
 /// A function for creating "memoised" or "lazy" elements. Lustre will use the

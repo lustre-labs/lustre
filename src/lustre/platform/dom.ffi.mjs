@@ -98,6 +98,8 @@ export const set_raw_content = (node, content) => {
   node.innerHTML = content ?? "";
 };
 
+export const create_raw_node = (content) => content;
+
 // EVENTS ----------------------------------------------------------------------
 
 export const add_event_listener = (node, name, handler, passive) =>
@@ -137,6 +139,7 @@ export const dom_strict = (root) => {
     set_property,
     set_text,
     set_raw_content,
+    create_raw_node,
     add_event_listener,
     remove_event_listener,
     schedule_render,

@@ -1046,7 +1046,14 @@ pub type Reconciler
 pub fn do_with_reconciler(
   debug: Bool,
   get_platform: fn() ->
-    platform.Platform(dom.DomNode, dom.DomNode, dom.DomNode, dom.DomEvent, message),
+    platform.Platform(
+      dom.DomNode,
+      dom.DomNode,
+      dom.DomNode,
+      dom.DomEvent,
+      message,
+      dom.DomNode,
+    ),
   f: fn(Reconciler) -> Nil,
 ) -> Nil
 
@@ -1057,6 +1064,7 @@ fn get_platform() -> platform.Platform(
   dom.DomNode,
   dom.DomEvent,
   message,
+  dom.DomNode,
 ) {
   let assert Ok(p) = dom.platform("body")
   p

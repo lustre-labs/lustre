@@ -346,7 +346,7 @@ pub fn named(
 ///
 pub fn start(
   app: App(arguments, model, message),
-  on platform: Platform(node, target, value, event, message),
+  on platform: Platform(node, target, value, event, message, raw),
   with arguments: arguments,
 ) -> Result(Runtime(message), Error) {
   case platform.is_headless(platform) {
@@ -368,8 +368,8 @@ fn do_start_rendered(
   _root: node,
   _initial_vdom: element.Element(message),
   _app: App(arguments, model, message),
-  _platform: Platform(node, target, value, event, message),
-  _arguments: arguments,
+  _platform: Platform(node, target, value, event, message, raw),
+  _start_args: arguments,
 ) -> Runtime(message) {
   panic as "Rendered runtime not yet implemented for Erlang"
 }
@@ -472,7 +472,14 @@ pub fn register(
 fn do_register(
   _app: App(Nil, model, message),
   _make_platform: fn(dom.DomNode) ->
-    Platform(dom.DomNode, dom.DomNode, dom.DomNode, dom.DomEvent, message),
+    Platform(
+      dom.DomNode,
+      dom.DomNode,
+      dom.DomNode,
+      dom.DomEvent,
+      message,
+      dom.DomNode,
+    ),
   _name: String,
 ) -> Result(Nil, Error) {
   Error(NotABrowser)

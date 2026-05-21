@@ -53,6 +53,7 @@ pub type Change(message) {
   //
   ReplaceText(kind: Int, content: String)
   ReplaceRawContent(kind: Int, content: RawContent)
+  ReplaceRawNode(kind: Int, with: Element(message))
   Update(
     kind: Int,
     added: List(Attribute(message)),
@@ -95,6 +96,12 @@ pub const replace_raw_content_kind: Int = 1
 
 pub fn replace_raw_content(content content: RawContent) -> Change(message) {
   ReplaceRawContent(kind: replace_raw_content_kind, content:)
+}
+
+pub const replace_raw_node_kind: Int = 7
+
+pub fn replace_raw_node(with with: Element(message)) -> Change(message) {
+  ReplaceRawNode(kind: replace_raw_node_kind, with:)
 }
 
 pub const update_kind: Int = 2
@@ -177,6 +184,8 @@ fn change_to_json(
     ReplaceText(kind, content) -> replace_text_to_json(kind, content)
     ReplaceRawContent(kind, content) ->
       replace_raw_content_to_json(kind, content, serialize_raw_content)
+    ReplaceRawNode(kind, with) ->
+      replace_raw_node_to_json(kind, with, memos, serialize_raw_content)
     Update(kind, added, removed) -> update_to_json(kind, added, removed)
     Move(kind, key, before) -> move_to_json(kind, key, before)
     Remove(kind, index) -> remove_to_json(kind, index)
@@ -196,6 +205,14 @@ fn replace_text_to_json(kind, content) {
 fn replace_raw_content_to_json(kind, content, serialize_raw_content) {
   json_object_builder.tagged(kind)
   |> json_object_builder.string("content", serialize_raw_content(content))
+  |> json_object_builder.build
+}
+
+fn replace_raw_node_to_json(kind, with, memos, serialize_raw_content) {
+  json_object_builder.tagged(kind)
+  |> json_object_builder.json("with", {
+    vnode.to_json(with, memos, serialize_raw_content)
+  })
   |> json_object_builder.build
 }
 

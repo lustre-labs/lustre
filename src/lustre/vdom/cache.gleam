@@ -10,7 +10,7 @@ import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{type Attribute, type Handler, Event, Handler}
 import lustre/vdom/vnode.{
   type Element, type Memos, type View, Element, Fragment, Map, Memo,
-  RawContainer, Text,
+  RawContainer, RawNode, Text,
 }
 
 // TYPES -----------------------------------------------------------------------
@@ -301,6 +301,12 @@ fn do_add_children(
       do_add_children(handlers, children, vdoms, parent, next, rest)
     }
 
+    [RawNode(key:, ..), ..rest] -> {
+      let _path = path.add(parent, child_index, key)
+
+      do_add_children(handlers, children, vdoms, parent, next, rest)
+    }
+
     [Map(key:, child:, mapper:, ..), ..rest] -> {
       let path = path.add(parent, child_index, key)
 
@@ -403,6 +409,12 @@ fn do_remove_children(
       let path = path.add(parent, index, key)
 
       let handlers = remove_attributes(handlers, path, attributes)
+
+      do_remove_children(handlers, children, vdoms, parent, next, rest)
+    }
+
+    [RawNode(key:, ..), ..rest] -> {
+      let _path = path.add(parent, index, key)
 
       do_remove_children(handlers, children, vdoms, parent, next, rest)
     }

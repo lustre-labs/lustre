@@ -11,7 +11,7 @@ import lustre/vdom/patch.{type Change, type Patch, Patch}
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{type Attribute, Attribute, Event, Property}
 import lustre/vdom/vnode.{
-  type Element, Element, Fragment, Map, Memo, RawContainer, Text,
+  type Element, Element, Fragment, Map, Memo, RawContainer, RawNode, Text,
 }
 
 // TYPES -----------------------------------------------------------------------
@@ -544,6 +544,43 @@ fn do_diff(
         [] -> children
         _ -> [
           patch.new(node_index, 0, child_changes, constants.empty_list),
+          ..children
+        ]
+      }
+
+      do_diff(
+        old:,
+        old_keyed:,
+        new:,
+        new_keyed:,
+        moved:,
+        moved_offset:,
+        removed:,
+        node_index: node_index + 1,
+        patch_index:,
+        changes:,
+        children:,
+        path:,
+        cache:,
+        events:,
+      )
+    }
+
+    [RawNode(..) as prev, ..old], [RawNode(..) as next, ..new] -> {
+      let identical_content = case next.compare {
+        Some(cmp) -> cmp(prev.content, next.content)
+        None -> prev.content == next.content
+      }
+
+      let children = case identical_content {
+        True -> children
+        False -> [
+          patch.new(
+            node_index,
+            0,
+            [patch.replace_raw_node(next)],
+            constants.empty_list,
+          ),
           ..children
         ]
       }

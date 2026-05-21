@@ -8,6 +8,7 @@ import {
   map_kind,
   memo_kind,
   raw_container_kind,
+  raw_node_kind,
   text_kind,
 } from "./vnode.mjs";
 
@@ -25,6 +26,7 @@ import {
   remove_kind,
   replace_kind,
   replace_raw_content_kind,
+  replace_raw_node_kind,
   replace_text_kind,
   update_kind,
 } from "./patch.mjs";
@@ -197,6 +199,10 @@ export class Reconciler {
 
       case replace_raw_content_kind:
         this.#replaceRawContent(node, change);
+        break;
+
+      case replace_raw_node_kind:
+        this.#replaceRawNode(node, change);
         break;
 
       case update_kind:
@@ -375,6 +381,18 @@ export class Reconciler {
     this.#platform.set_raw_content(node, content ?? "");
   }
 
+  #replaceRawNode(metaNode, { with: vnode }) {
+    const parentNode = metaNode.parent.parentNode;
+    const oldNode = metaNode.node;
+    const newNode = this.#platform.create_raw_node(vnode.content);
+
+    this.#platform.insert_before(parentNode, newNode, wrapRef(oldNode));
+    this.#platform.remove_child(parentNode, oldNode);
+
+    newNode[meta] = metaNode;
+    metaNode.node = newNode;
+  }
+
   // INSERT --------------------------------------------------------------------
 
   #insertChildren(domParent, beforeEl, metaParent, index, children) {
@@ -437,6 +455,14 @@ export class Reconciler {
         // layout tree before children can be added to it.
         this.#platform.insert_before(domParent, node, wrapRef(beforeEl));
         this.#replaceRawContent({ node }, vnode);
+
+        break;
+      }
+
+      case raw_node_kind: {
+        const node = this.#platform.create_raw_node(vnode.content);
+        insertMetadataChild(raw_node_kind, metaParent, node, index, vnode.key);
+        this.#platform.insert_before(domParent, node, wrapRef(beforeEl));
 
         break;
       }

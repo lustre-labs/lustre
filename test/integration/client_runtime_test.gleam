@@ -47,6 +47,7 @@ fn get_platform() -> platform.Platform(
   dom.DomNode,
   dom.DomEvent,
   message,
+  dom.DomNode,
 ) {
   let assert Ok(p) = dom.platform("body")
   p
@@ -665,7 +666,14 @@ pub fn with_client_runtime(
   initial_html: String,
   make_app: fn() -> lustre.App(Nil, model, message),
   get_platform: fn() ->
-    platform.Platform(dom.DomNode, dom.DomNode, dom.DomNode, dom.DomEvent, message),
+    platform.Platform(
+      dom.DomNode,
+      dom.DomNode,
+      dom.DomNode,
+      dom.DomEvent,
+      message,
+      dom.DomNode,
+    ),
   test_callback: fn(Runtime(message, model)) -> Nil,
 ) -> Nil
 

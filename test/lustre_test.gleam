@@ -91,6 +91,10 @@ fn do_nodes_equal(
       && left.namespace == right.namespace
       && left.attributes == right.attributes
       && left.content == right.content
+
+    vnode.RawNode(..), vnode.RawNode(..) ->
+      left.key == right.key && left.content == right.content
+
     _, _ -> False
   }
 }

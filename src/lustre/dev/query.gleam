@@ -8,7 +8,9 @@ import lustre/element.{type Element}
 import lustre/internals/constants
 import lustre/vdom/path.{type Path}
 import lustre/vdom/vattr.{Attribute}
-import lustre/vdom/vnode.{Element, Fragment, Map, Memo, RawContainer, Text}
+import lustre/vdom/vnode.{
+  Element, Fragment, Map, Memo, RawContainer, RawNode, Text,
+}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -314,7 +316,7 @@ fn find_in_children(
     Map(key:, child:, ..) ->
       find_path(child, query, 0, path.subtree(path |> path.add(index, key)))
     Memo(view:, ..) -> find_path(view(), query, index, path)
-    RawContainer(..) | Text(..) -> constants.error_nil
+    RawContainer(..) | RawNode(..) | Text(..) -> constants.error_nil
   }
 }
 
@@ -348,7 +350,7 @@ fn find_direct_child(
     Map(child:, ..) -> find_direct_child(child, selector, path)
     Memo(view:, ..) -> find_direct_child(view(), selector, path)
 
-    RawContainer(..) | Text(..) -> constants.error_nil
+    RawContainer(..) | RawNode(..) | Text(..) -> constants.error_nil
   }
 }
 
@@ -392,7 +394,7 @@ fn find_descendant(
         Map(child:, ..) -> find_descendant(child, selector, path)
         Memo(view:, ..) -> find_descendant(view(), selector, path)
 
-        RawContainer(..) | Text(..) -> constants.error_nil
+        RawContainer(..) | RawNode(..) | Text(..) -> constants.error_nil
       }
   }
 }
@@ -458,7 +460,7 @@ fn find_all_in_children(
     Map(child:, ..) -> find_all_in_children(child, query)
     Memo(view:, ..) -> find_all_in_children(view(), query)
 
-    RawContainer(..) | Text(..) -> []
+    RawContainer(..) | RawNode(..) | Text(..) -> []
   }
 }
 
@@ -488,7 +490,7 @@ fn find_all_direct_children(
     Map(child:, ..) -> find_all_direct_children(child, selector)
     Memo(view:, ..) -> find_all_direct_children(view(), selector)
 
-    RawContainer(..) | Text(..) -> []
+    RawContainer(..) | RawNode(..) | Text(..) -> []
   }
 }
 
@@ -518,7 +520,7 @@ fn find_all_descendants(
     Map(child:, ..) -> find_all_descendants(child, selector)
     Memo(view:, ..) -> find_all_descendants(view(), selector)
 
-    RawContainer(..) | Text(..) -> []
+    RawContainer(..) | RawNode(..) | Text(..) -> []
   }
 
   list.append(direct_matches, descendant_matches)
@@ -729,7 +731,7 @@ fn text_content(
 
     Text(..) -> content <> element.content
 
-    RawContainer(..) -> content
+    RawContainer(..) | RawNode(..) -> content
   }
 }
 
