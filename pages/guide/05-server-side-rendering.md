@@ -48,7 +48,7 @@ pub fn main() {
     }
     |> mist.new
     |> mist.port(3000)
-    |> mist.start_http
+    |> mist.start
 
   process.sleep_forever()
 }
