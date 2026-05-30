@@ -52,7 +52,8 @@ target. We want to build an app we can run in the browser, so first let's add a
 
 The simplest type of Lustre application is the `element`: this function renders
 a Lustre `Element` but without any of runtime or event handling support. Let's
-start as all good programs do: with "Hello, world!"
+start as all good programs do: with "Hello, world!" In `src/app.gleam` replace the
+generated module with the following code:
 
 ```gleam
 import lustre
