@@ -343,7 +343,7 @@ update function to fetch a new cat image.
 type Message {
   UserClickedAddCat
   UserClickedRemoveCat
-  ApiReturnedCats(Result(List(Cat), rsvp.Error))
+  ApiReturnedCats(Result(List(Cat), rsvp.Error(String)))
 }
 
 fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
