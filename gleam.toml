@@ -26,22 +26,22 @@ pages = [
 
     { title = "Changelog", path = "changelog.html", source = "./CHANGELOG.md" },
     { title = "Examples", path = "reference/examples.html", source = "./pages/reference/examples.md" },
-    { title = " ", path = "#", source = "" },
+
     { title = "Quickstart guide", path = "guide/01-quickstart.html", source = "./pages/guide/01-quickstart.md" },
     { title = "Managing state", path = "guide/02-state-management.html", source = "./pages/guide/02-state-management.md" },
     { title = "Side effects", path = "guide/03-side-effects.html", source = "./pages/guide/03-side-effects.md" },
     { title = "Server side rendering", path = "guide/05-server-side-rendering.html", source = "./pages/guide/05-server-side-rendering.md" },
     { title = "Full stack applications", path = "guide/06-full-stack-applications.html", source = "./pages/guide/06-full-stack-applications.md" },
-    { title = " ", path = "#", source = "" },
     { title = "SPA deployments", path = "guide/04-spa-deployments.html", source = "./pages/guide/04-spa-deployments.md" },
     { title = "Full stack deployments", path = "guide/07-full-stack-deployments.html", source = "./pages/guide/07-full-stack-deployments.md" },
-    { title = " ", path = "#", source = "" },
+
     { title = "For Elm developers", path = "cheatsheets/elm.html", source = "./pages/reference/for-elm-devs.md" },
     { title = "For React developers", path = "cheatsheets/react.html", source = "./pages/reference/for-react-devs.md" },
     { title = "For LiveView developers", path = "cheatsheets/liveview.html", source = "./pages/reference/for-liveview-devs.md" },
 ]
 
 [dependencies]
+exception = ">= 2.0.0 and < 3.0.0"
 gleam_erlang = ">= 1.0.0 and < 2.0.0"
 gleam_json = ">= 1.0.0 and < 4.0.0"
 gleam_otp = ">= 1.0.0 and < 2.0.0"
@@ -52,7 +52,6 @@ houdini = ">= 1.0.0 and < 2.0.0"
 argv = ">= 1.0.2 and < 2.0.0"
 birdie = "~> 1.0"
 esgleam = ">= 1.0.0 and < 2.0.0"
-exception = ">= 2.0.0 and < 3.0.0"
 gleam_regexp = ">= 1.1.0 and < 2.0.0"
 gleamy_bench = ">= 0.5.0 and < 1.0.0"
 gleeunit = "~> 1.0"
