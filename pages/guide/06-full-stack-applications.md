@@ -447,7 +447,7 @@ To run our new full-stack app, we first have to bundle the client app into a Jav
 
 ```sh
 cd ../client
-gleam run -m lustre/dev build --outdir=../server/priv/static
+gleam run -m lustre/dev build --outdir=../server/priv/static --no-html=true
 ```
 
 Afterwards, we can run our server:
