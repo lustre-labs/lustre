@@ -151,7 +151,7 @@ fn init(items: List(GroceryItem)) -> #(Model, Effect(Message)) {
 // UPDATE ----------------------------------------------------------------------
 
 type Message {
-  ServerSavedList(Result(Response(String), rsvp.Error))
+  ServerSavedList(Result(Response(String), rsvp.Error(String)))
   UserAddedItem
   UserTypedNewItem(String)
   UserSavedList
