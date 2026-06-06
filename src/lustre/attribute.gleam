@@ -113,7 +113,7 @@ pub fn autocapitalize(value: String) -> Attribute(message) {
   attribute("autocapitalize", value)
 }
 
-/// Controls whether the user agent may automatically correct mispelled words
+/// Controls whether the user agent may automatically correct misspelled words
 /// while typing. Whether or not spelling is corrected is left up to the user
 /// agent and may also depend on the user's settings.
 ///
@@ -933,7 +933,7 @@ pub fn cols(value: Int) -> Attribute(message) {
   attribute("cols", int.to_string(value))
 }
 
-/// The name of the field included in a form that indicates the direcionality of
+/// The name of the field included in a form that indicates the directionality of
 /// the user's input.
 ///
 /// The following input types support the `"dirname"` attribute:

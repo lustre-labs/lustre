@@ -9,7 +9,7 @@
 ///
 /// Gleam has neither mutable data structures nor reference equality, so it's
 /// incredibly important to use this module with care. It is primarily intended
-/// to be used durring diffing to avoid the expensive overhead of (re)constructing
+/// to be used during diffing to avoid the expensive overhead of (re)constructing
 /// event and keyed node lookups.
 ///
 pub type MutableMap(key, value)

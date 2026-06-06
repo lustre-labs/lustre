@@ -314,7 +314,7 @@ pub fn submit(
   ])
 }
 
-/// Log a problem that occured during the simulation. This function is useful for
+/// Log a problem that occurred during the simulation. This function is useful for
 /// external packages that want to provide functions to simulate certain effects
 /// that may fail in the real world. For example, a routing package may log a
 /// problem if a link has an invalid `href` attribute that would cause no message

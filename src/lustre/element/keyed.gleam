@@ -16,7 +16,7 @@
 ////                              -- insert ->  <img src="a">
 //// ```
 ////
-//// Beacuse the virtual DOM compares elements in order, it sees that the first
+//// Because the virtual DOM compares elements in order, it sees that the first
 //// element has its `src` attribute changed from `"a"` to `"b"` and then sees
 //// that a new element has been added to the _end_ of the list.
 ////
