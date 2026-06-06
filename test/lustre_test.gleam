@@ -26,7 +26,7 @@ pub fn main() {
 /// with an argument `--test-name-filter=` followed by the name of the test
 /// function.
 ///
-/// Gleeunt doesn't have any test filtering built-in but we can fake it by
+/// Gleeunit doesn't have any test filtering built-in but we can fake it by
 /// wrapping all of our tests in this function and passing in the name of the
 /// test.
 ///

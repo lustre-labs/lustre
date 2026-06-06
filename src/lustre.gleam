@@ -461,7 +461,7 @@ pub fn factory(
 ///
 /// > **Note**: There are [some rules](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define#valid_custom_element_names)
 /// > for what names are valid for a Custom Element. The most important one is that
-/// > the name *must* contain a hypen so that it can be distinguished from standard
+/// > the name *must* contain a hyphen so that it can be distinguished from standard
 /// > HTML elements.
 ///
 /// > **Note**: This function is only meaningful when running in the browser and will

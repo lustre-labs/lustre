@@ -71,7 +71,7 @@ pub type Config(message) =
 ///   on the difference between attributes and properties.
 ///
 /// - [`form_associated`](#form_associated) marks the component as "form-associated",
-///   allowing your component to participate in form submission and get accesss
+///   allowing your component to participate in form submission and get access
 ///   to form-specific events.
 ///
 ///   - [`on_form_autofill`](#on_form_autofill) lets you register a callback that
@@ -620,7 +620,7 @@ fn do_remove_pseudo_state(_root: Dynamic, _value: String) -> Nil {
 /// just rendering the component's tag because it also renders the component's
 /// internal `view`. Calling this when server-rendering a component allows components
 /// to benefit from hydration by providing an initial HTML structure similar to
-/// hydratation for client applications.
+/// hydration for client applications.
 ///
 /// If the component responds to attribute changes, the attributes passed here
 /// will be applied before the component is rendered.
