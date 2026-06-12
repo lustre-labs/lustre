@@ -23,7 +23,36 @@ import lustre/platform/opentui.{type Renderer}
 /// A keyboard event from the terminal.
 ///
 pub type KeyEvent {
-  KeyEvent(key: String, ctrl: Bool, shift: Bool, meta: Bool)
+  KeyEvent(key: String, ctrl: Bool, shift: Bool, meta: Bool, option: Bool)
+}
+
+/// A single EditBuffer's contribution to a multi-paragraph selection.
+///
+/// `id` is the OpenTUI Renderable id of the participating EditBuffer. `start`
+/// and `end` are character offsets within that EditBuffer's local text.
+///
+pub type SelectionRange {
+  SelectionRange(id: String, start: Int, end: Int)
+}
+
+/// A renderer-level selection. Used by both `subscribe_selection` (for
+/// drag-completion events) and `get_selection` (for the current state).
+///
+/// `ranges` contains one entry per participating EditBufferRenderable, in the
+/// order OpenTUI's `selectedRenderables` array reports them. Non-EditBuffer
+/// selectables are dropped (they have no character-range API). `focused_id`
+/// is the currently focused Renderable's id at the time of the event, or the
+/// empty string if nothing is focused. `anchor` and `focus` are the drag's
+/// starting and ending terminal cell coordinates `#(column, row)` in absolute
+/// screen space.
+///
+pub type Selection {
+  Selection(
+    ranges: List(SelectionRange),
+    focused_id: String,
+    anchor: #(Int, Int),
+    focus: #(Int, Int),
+  )
 }
 
 // CUSTOM EFFECTS --------------------------------------------------------------
@@ -75,6 +104,42 @@ pub fn after_paint(
 ///
 pub fn subscribe_keyboard(handler: fn(KeyEvent) -> msg) -> Effect(msg) {
   effect.from(do_subscribe_keyboard(handler, _))
+}
+
+/// Subscribe to keyboard events, dispatching only when the predicate returns
+/// `Some(msg)`. Events for which the predicate returns `None` are silently
+/// ignored — no message is dispatched and no render cycle is triggered. This
+/// is useful when only a subset of keys (e.g. escape, modifier combinations)
+/// should trigger an update, avoiding unnecessary renders that can interfere
+/// with focused input elements.
+///
+/// ```gleam
+/// import gleam/option.{None, Some}
+/// import lustre/platform/opentui/effect as opentui_effect
+///
+/// fn subscribe_shortcuts() -> Effect(Msg) {
+///   opentui_effect.subscribe_keyboard_with(fn(key_event) {
+///     let opentui_effect.KeyEvent(key:, ctrl:, ..) = key_event
+///     case key, ctrl {
+///       "z", True -> Some(Undo)
+///       "escape", _ -> Some(Escape)
+///       _, _ -> None
+///     }
+///   })
+/// }
+/// ```
+///
+pub fn subscribe_keyboard_with(
+  predicate: fn(KeyEvent) -> Option(msg),
+) -> Effect(msg) {
+  effect.from(fn(dispatch) {
+    do_subscribe_keyboard_raw(fn(key_event) {
+      case predicate(key_event) {
+        Some(msg) -> dispatch(msg)
+        None -> Nil
+      }
+    })
+  })
 }
 
 /// Focus the next focusable element in the renderable tree.
@@ -212,17 +277,29 @@ pub fn clear_clipboard() -> Effect(msg) {
 
 // SELECTION EFFECTS -----------------------------------------------------------
 
-/// Get the current text selection. The handler receives Ok(text) if there is
-/// a selection, or Error(Nil) if not.
+/// Get the current active renderer-level selection, or `None` if nothing is
+/// selected. The returned `Selection` has the same shape as events delivered
+/// by `subscribe_selection`.
 ///
-pub fn get_selection(handler: fn(Result(String, Nil)) -> msg) -> Effect(msg) {
+pub fn get_selection(handler: fn(Option(Selection)) -> msg) -> Effect(msg) {
   effect.from(fn(dispatch) {
-    let text = do_get_selection_raw()
-    case text {
-      "" -> dispatch(handler(Error(Nil)))
-      _ -> dispatch(handler(Ok(text)))
+    case do_get_selection() {
+      Ok(selection) -> dispatch(handler(Some(selection)))
+      Error(_) -> dispatch(handler(None))
     }
   })
+}
+
+/// Subscribe to renderer-level drag-completion selection events. Fires once
+/// per completed mouse drag. Does NOT fire during in-flight drag updates,
+/// programmatic `set_selection`, or `clear_selection`. Call this in your
+/// `init` function exactly once — calling it multiple times will install
+/// duplicate listeners.
+///
+pub fn subscribe_selection(
+  handler: fn(Selection) -> msg,
+) -> Effect(msg) {
+  effect.from(do_subscribe_selection(handler, _))
 }
 
 /// Clear the current text selection.
@@ -320,6 +397,10 @@ fn do_subscribe_keyboard(
   panic as "lustre/platform/opentui/effect only runs on JavaScript"
 }
 
+@external(javascript, "./effect.ffi.ts", "subscribe_keyboard_raw")
+fn do_subscribe_keyboard_raw(callback: fn(KeyEvent) -> Nil) -> Nil
+
+
 @external(javascript, "./effect.ffi.ts", "focus_next")
 fn do_focus_next(_dispatch: fn(msg) -> Nil) -> Nil {
   panic as "lustre/platform/opentui/effect only runs on JavaScript"
@@ -410,8 +491,16 @@ fn do_clear_clipboard(_dispatch: fn(msg) -> Nil) -> Nil {
   panic as "lustre/platform/opentui/effect only runs on JavaScript"
 }
 
-@external(javascript, "./effect.ffi.ts", "get_selection_raw")
-fn do_get_selection_raw() -> String {
+@external(javascript, "./effect.ffi.ts", "get_selection")
+fn do_get_selection() -> Result(Selection, Nil) {
+  panic as "lustre/platform/opentui/effect only runs on JavaScript"
+}
+
+@external(javascript, "./effect.ffi.ts", "subscribe_selection")
+fn do_subscribe_selection(
+  _handler: fn(Selection) -> msg,
+  _dispatch: fn(msg) -> Nil,
+) -> Nil {
   panic as "lustre/platform/opentui/effect only runs on JavaScript"
 }
 

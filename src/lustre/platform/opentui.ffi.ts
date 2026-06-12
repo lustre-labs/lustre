@@ -26,7 +26,7 @@ import {
   Result$isOk,
   Result$Ok$0,
 } from "../../gleam.mjs";
-import type { Result } from "../../gleam.mjs";
+import type { Result } from "../../prelude.mjs";
 import { none } from "../../../lustre_platform/lustre/element.mjs";
 import { insertMetadataChild } from "../../../lustre_platform/lustre/vdom/reconciler.ffi.mjs";
 import { element_kind } from "../../../lustre_platform/lustre/vdom/vnode.mjs";
@@ -43,7 +43,6 @@ interface TuiNode extends Renderable {
   clear?: () => void;
   content?: string | { getChildren?: () => Renderable[] };
   attributes?: number;
-  [key: string]: unknown;
 }
 
 interface RendererConfig {
@@ -61,7 +60,7 @@ interface RendererConfig {
   max_stat_samples: number;
   use_thread: boolean;
   remote: boolean;
-  background_color: unknown;
+  background_color: Result<string, unknown>;
   use_kitty_keyboard: boolean;
   custom_elements: Iterable<[string, (renderer: CliRenderer) => TuiNode]>;
 }
@@ -72,10 +71,7 @@ interface KeyEventData {
   ctrl?: boolean;
   shift?: boolean;
   meta?: boolean;
-}
-
-interface PasteEvent {
-  text?: string;
+  option?: boolean;
 }
 
 interface RenderableConstructor {
@@ -355,7 +351,7 @@ function createMarker(): TuiNode {
 
 const create_text_node = (_content: string): TuiNode => createMarker();
 
-const create_fragment = (): TuiFragment => new TuiFragment();
+const create_fragment = (): TuiNode => new TuiFragment() as unknown as TuiNode;
 
 const create_comment = (_data: string): TuiNode => createMarker();
 
@@ -396,6 +392,9 @@ function doInsertBefore(
   }
 
   if (refNode != null && (parent as TuiNode).insertBefore) {
+    if (node === refNode) {
+      return;
+    }
     (parent as TuiNode).insertBefore!(node, refNode);
   } else if ((parent as TuiNode).add) {
     (parent as TuiNode).add!(node);
@@ -405,62 +404,59 @@ function doInsertBefore(
 const insert_before = (
   parent: TuiNode,
   node: TuiNode | TuiFragment,
-  ref: unknown,
-): void => {
+  ref: Result<TuiNode, unknown>,
+): undefined => {
   const refNode = unwrapResult<TuiNode>(ref);
   doInsertBefore(parent, node, refNode);
+  return undefined;
 };
 
 const move_before = (
   parent: TuiNode,
   node: TuiNode,
-  ref: unknown,
-): void => {
-  // Guard: skip if parent or node is destroyed
-  if (isDestroyed(parent) || isDestroyed(node)) return;
+  ref: Result<TuiNode, unknown>,
+): undefined => {
+  if (isDestroyed(parent) || isDestroyed(node)) return undefined;
   const refNode = unwrapResult<TuiNode>(ref);
 
-  // Remove from current position
-  if (node.id != null && parent.remove) {
-    try {
-      parent.remove(node.id);
-    } catch {
-      /* not found */
-    }
+  // Guard: Lustre's reconciler can emit move(node, node) when indices shift.
+  if (refNode != null && node === refNode) {
+    return undefined;
   }
 
-  // Re-insert at new position
+  // OpenTUI's insertBefore/add handle same-parent moves atomically — they
+  // internally detach the Yoga node and re-splice before reinserting. No need
+  // to manually call parent.remove() first (which was the source of orphaned
+  // Yoga nodes when the reinsert failed).
   doInsertBefore(parent, node, refNode);
+  return undefined;
 };
 
 const remove_child = (
   parent: TuiNode,
   child: TuiNode | TuiFragment,
-): void => {
+): undefined => {
   if (child instanceof TuiFragment) {
-    return;
+    return undefined;
   }
 
-  // Detach from parent (guarded — parent may be null/undefined or destroyed)
-  if (parent && !isDestroyed(parent) && child.id != null && parent.remove) {
-    try {
-      parent.remove(child.id);
-    } catch {
-      /* not found */
-    }
+  if (parent && !isDestroyed(parent) && parent.remove) {
+    parent.remove(child.id);
   }
+  child._parent = undefined;
 
-  // Always destroy the removed node to free yoga layout nodes and trigger cleanup
-  // (e.g., clearInterval in destroySelf). Without this, replaced nodes leak.
-  try {
-    if (child.destroyRecursively) {
-      child.destroyRecursively();
-    } else if (child.destroy) {
-      child.destroy();
+  const orphan = child;
+  setTimeout(() => {
+    if (isDestroyed(orphan) || orphan._parent) {
+      return;
     }
-  } catch {
-    // ignore — node may already be destroyed
-  }
+    if (orphan.destroyRecursively) {
+      orphan.destroyRecursively();
+    } else if (orphan.destroy) {
+      orphan.destroy();
+    }
+  }, 0);
+  return undefined;
 };
 
 const next_sibling = (node: TuiNode): unknown => {
@@ -697,13 +693,14 @@ function coerceValue(prop: string, value: unknown): unknown {
 
 const get_attribute = (node: TuiNode, name: string): unknown => {
   const prop = ATTR_MAP[name] ?? name;
+  // @ts-expect-error dynamic property access — same pattern as OpenTUI React reconciler (utils/index.ts:93)
   const value = node[prop];
   return value != null ? Result$Ok(String(value)) : Result$Error(undefined);
 };
 
-const set_attribute = (node: TuiNode, name: string, value: unknown): void => {
+const set_attribute = (node: TuiNode, name: string, value: unknown): undefined => {
   // Guard: skip if node is destroyed
-  if (isDestroyed(node)) return;
+  if (isDestroyed(node)) return undefined;
   const prop = ATTR_MAP[name] ?? name;
   // Handle text styling attributes by combining into `attributes` property.
   const flag = TEXT_ATTR_FLAGS[prop];
@@ -711,28 +708,37 @@ const set_attribute = (node: TuiNode, name: string, value: unknown): void => {
     const enabled = value === "true" || value === true;
     const current = node.attributes ?? 0;
     node.attributes = enabled ? current | flag : current & ~flag;
-    return;
+    return undefined;
   }
-  node[prop] = coerceValue(prop, value ?? "");
+  const coerced = coerceValue(prop, value ?? "");
+  // @ts-expect-error dynamic property access — same pattern as OpenTUI React reconciler (utils/index.ts:93)
+  node[prop] = coerced;
+  return undefined;
 };
 
-const remove_attribute = (node: TuiNode, name: string): void => {
+const remove_attribute = (node: TuiNode, name: string): undefined => {
   // Guard: skip if node is destroyed
-  if (isDestroyed(node)) return;
+  if (isDestroyed(node)) return undefined;
   const prop = ATTR_MAP[name] ?? name;
   // Handle text styling attributes by clearing the flag.
   const flag = TEXT_ATTR_FLAGS[prop];
   if (flag !== undefined) {
     const current = node.attributes ?? 0;
     node.attributes = current & ~flag;
-    return;
+    return undefined;
   }
-  node[prop] = undefined;
+  // Blur focused nodes before clearing, matching React/Solid behaviour.
+  if (prop === "focusable" && node.blur) {
+    node.blur();
+  }
+  // @ts-expect-error dynamic property clear with null — same pattern as OpenTUI React reconciler (utils/index.ts:28)
+  node[prop] = null;
+  return undefined;
 };
 
-const set_property = (node: TuiNode, name: string, value: unknown): void => {
+const set_property = (node: TuiNode, name: string, value: unknown): undefined => {
   // Guard: skip if node is destroyed
-  if (isDestroyed(node)) return;
+  if (isDestroyed(node)) return undefined;
   if (name === "__fb_handler" && typeof value === "function") {
     // Call handler with the node after a microtask (ensures node is mounted)
     // Re-check isDestroyed in the microtask since node may be destroyed by then
@@ -741,17 +747,20 @@ const set_property = (node: TuiNode, name: string, value: unknown): void => {
         (value as (node: TuiNode) => void)(node);
       }
     });
-    return;
+    return undefined;
   }
+  // @ts-expect-error dynamic property access — same pattern as OpenTUI React reconciler (utils/index.ts:93)
   node[name] = value;
+  return undefined;
 };
 
 // CONTENT ---------------------------------------------------------------------
 
-const set_text = (node: TuiNode, content: string | null): void => {
+const set_text = (node: TuiNode, content: string | null): undefined => {
   // Guard: skip if node is destroyed
-  if (isDestroyed(node)) return;
+  if (isDestroyed(node)) return undefined;
   node.content = content ?? "";
+  return undefined;
 };
 
 export function make_create_raw_node(
@@ -774,10 +783,10 @@ export function make_create_raw_node(
 
 export function make_set_raw_content(
   renderer: CliRenderer,
-): (node: TuiNode, content: unknown) => void {
-  return (node: TuiNode, content: unknown): void => {
+): (node: TuiNode, content: unknown) => undefined {
+  return (node: TuiNode, content: unknown): undefined => {
     // Guard: skip if node is destroyed
-    if (isDestroyed(node)) return;
+    if (isDestroyed(node)) return undefined;
 
     // Content is a tuple [name, factory] where factory is (renderer) => Node
     if (
@@ -789,7 +798,7 @@ export function make_set_raw_content(
         "raw_node content must be a [name, factory] tuple, got:",
         content,
       );
-      return;
+      return undefined;
     }
     const factory = content[1] as (renderer: CliRenderer) => TuiNode;
     const actualContent = factory(renderer);
@@ -825,6 +834,7 @@ export function make_set_raw_content(
       }
       doInsertBefore(node, actualContent, null);
     }
+    return undefined;
   };
 }
 
@@ -888,6 +898,7 @@ const EMITTER_EVENT_MAP: Record<string, string> = {
   resize: "resized",
   select: "itemSelected",
   selectionchange: "selectionChanged",
+  error: "error",
 };
 
 // Keyboard events use property setters — once a node is focused (via the
@@ -935,9 +946,9 @@ const add_event_listener = (
   name: string,
   handler: EventHandler,
   _passive: boolean,
-): void => {
+): undefined => {
   // Guard: skip if node is destroyed
-  if (isDestroyed(node)) return;
+  if (isDestroyed(node)) return undefined;
 
   const handlers = getHandlers(node);
   handlers.set(name, handler);
@@ -949,20 +960,24 @@ const add_event_listener = (
 
   // Paste events → property setter.
   if (name === "paste") {
-    node.onPaste = (pasteEvent: PasteEvent) => {
+    node.onPaste = (pasteEvent) => {
       const event = new TuiSyntheticEvent("paste", node);
-      event.detail = { text: pasteEvent?.text ?? "" };
+      const text = pasteEvent?.bytes
+        ? new TextDecoder().decode(pasteEvent.bytes)
+        : "";
+      event.detail = { text };
       handler(event);
     };
-    return;
+    return undefined;
   }
 
   // Mouse events → property setters.
   const mouseProp = MOUSE_PROP_MAP[name];
   if (mouseProp) {
-    (node as Record<string, unknown>)[mouseProp] = (data: unknown) =>
+    // @ts-expect-error dynamic property access — same pattern as OpenTUI React reconciler (utils/index.ts:93)
+    node[mouseProp] = (data: unknown) =>
       fireEvent(name, node, data, handler);
-    return;
+    return undefined;
   }
 
   // Keyboard events → property setters. Once a node is focused (via the
@@ -970,68 +985,78 @@ const add_event_listener = (
   // calls the node's onKeyDown callback.
   const kbProp = KEYBOARD_PROP_MAP[name];
   if (kbProp) {
-    (node as Record<string, unknown>)[kbProp] = (keyEvent: KeyEventData) => {
+    // @ts-expect-error dynamic property access — same pattern as OpenTUI React reconciler (utils/index.ts:93)
+    node[kbProp] = (keyEvent: KeyEventData) => {
       const event = new TuiSyntheticEvent(name, node);
       event.detail = {
         key: keyEvent?.name ?? keyEvent?.key ?? "",
         ctrl: !!keyEvent?.ctrl,
         shift: !!keyEvent?.shift,
         meta: !!keyEvent?.meta,
+        option: !!keyEvent?.option,
       };
       handler(event);
     };
-    return;
+    return undefined;
   }
 
   // Property setter events (cursor change, content change, etc.).
   const propEventProp = PROPERTY_EVENT_MAP[name];
   if (propEventProp) {
-    (node as Record<string, unknown>)[propEventProp] = (data: unknown) =>
+    // @ts-expect-error dynamic property access — same pattern as OpenTUI React reconciler (utils/index.ts:93)
+    node[propEventProp] = (data: unknown) =>
       fireEvent(name, node, data, handler);
-    return;
+    return undefined;
   }
 
   // EventEmitter events (focus, blur, input, change, submit, resize, select).
   const emitterName = EMITTER_EVENT_MAP[name];
   if (emitterName && node.on) {
-    const wrapper = (data: unknown) => fireEvent(name, node, data, handler);
+    const wrapper = (data: unknown) => {
+      fireEvent(name, node, data, handler);
+    };
     handlers.set("_wrapper_" + name, wrapper as EventHandler);
     node.on(emitterName, wrapper);
-    return;
+    return undefined;
   }
+  return undefined;
 };
 
 const remove_event_listener = (
   node: TuiNode,
   name: string,
   _handler: EventHandler,
-): void => {
+): undefined => {
   // Guard: skip if node is destroyed
-  if (isDestroyed(node)) return;
+  if (isDestroyed(node)) return undefined;
 
   const handlers = getHandlers(node);
 
   // Paste property setter.
   if (name === "paste") {
-    node.onPaste = undefined;
+    // @ts-expect-error dynamic property clear with null — same pattern as OpenTUI React reconciler (utils/index.ts:28)
+    node.onPaste = null;
   }
 
   // Mouse property setters.
   const mouseProp = MOUSE_PROP_MAP[name];
   if (mouseProp) {
-    (node as Record<string, unknown>)[mouseProp] = null;
+    // @ts-expect-error dynamic property clear with null — same pattern as OpenTUI React reconciler (utils/index.ts:28)
+    node[mouseProp] = null;
   }
 
   // Keyboard property setters.
   const kbProp = KEYBOARD_PROP_MAP[name];
   if (kbProp) {
-    (node as Record<string, unknown>)[kbProp] = null;
+    // @ts-expect-error dynamic property clear with null — same pattern as OpenTUI React reconciler (utils/index.ts:28)
+    node[kbProp] = null;
   }
 
   // Property setter events.
   const propEventProp = PROPERTY_EVENT_MAP[name];
   if (propEventProp) {
-    (node as Record<string, unknown>)[propEventProp] = undefined;
+    // @ts-expect-error dynamic property clear with null — same pattern as OpenTUI React reconciler (utils/index.ts:28)
+    node[propEventProp] = null;
   }
 
   // EventEmitter events.
@@ -1043,6 +1068,7 @@ const remove_event_listener = (
   }
 
   handlers.delete(name);
+  return undefined;
 };
 
 // SCHEDULING ------------------------------------------------------------------
@@ -1050,15 +1076,18 @@ const remove_event_listener = (
 declare function requestAnimationFrame(callback: (time: number) => void): number;
 declare function cancelAnimationFrame(id: number): void;
 
-const schedule_render = (callback: () => void): (() => void) => {
-  const id = requestAnimationFrame((_time: number) => callback());
-  return () => cancelAnimationFrame(id);
+const schedule_render = (callback: () => undefined): (() => undefined) => {
+  const id = requestAnimationFrame((_time: number) => {
+    callback();
+  });
+  return () => { cancelAnimationFrame(id); return undefined; };
 };
 
-export function make_after_render(renderer: CliRenderer): () => void {
-  return (): void => {
+export function make_after_render(renderer: CliRenderer): () => undefined {
+  return (): undefined => {
     if (renderer.requestRender) {
       renderer.requestRender();
     }
+    return undefined;
   };
 }

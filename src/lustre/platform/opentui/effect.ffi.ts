@@ -1,9 +1,21 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { ScrollBoxRenderable, RGBA, CliRenderEvents } from "@opentui/core";
-import type { CliRenderer, Renderable, CursorStyle } from "@opentui/core";
-import { KeyEvent } from "./effect.mjs";
+import {
+  ScrollBoxRenderable,
+  RGBA,
+  CliRenderEvents,
+  isEditBufferRenderable,
+} from "@opentui/core";
+import type {
+  CliRenderer,
+  Renderable,
+  CursorStyle,
+  Selection as OpenTuiSelection,
+} from "@opentui/core";
+import { KeyEvent, Selection, SelectionRange } from "./effect.mjs";
+import { Result$Ok, Result$Error, toList } from "../../../gleam.mjs";
 import { get_renderer } from "../opentui.ffi.ts";
+import { isPortal } from "./portal.ffi.ts";
 
 // TYPES -----------------------------------------------------------------------
 
@@ -12,6 +24,7 @@ interface KeyEventData {
   ctrl?: boolean;
   shift?: boolean;
   meta?: boolean;
+  option?: boolean;
 }
 
 type Dispatch<Msg> = (msg: Msg) => void;
@@ -31,8 +44,9 @@ const isRendererDestroyed = (): boolean => {
 };
 
 function collectFocusables(node: Renderable): Renderable[] {
-  // Guard: skip destroyed nodes
-  if (isDestroyed(node)) return [];
+  // Skip portal children — they are teleported to their target and will be
+  // found there during traversal. Descending here would double-count them.
+  if (isPortal(node) || isDestroyed(node)) return [];
   const result: Renderable[] = [];
   if (node.focusable) result.push(node);
   for (const child of node.getChildren()) {
@@ -42,8 +56,8 @@ function collectFocusables(node: Renderable): Renderable[] {
 }
 
 function findDescendantById(root: Renderable, id: string): Renderable | null {
-  // Guard: skip destroyed nodes
-  if (isDestroyed(root)) return null;
+  // Skip portal children — they are reachable through their teleport target.
+  if (isPortal(root) || isDestroyed(root)) return null;
   if (root.id === id) return root;
   for (const child of root.getChildren()) {
     const found = findDescendantById(child, id);
@@ -77,8 +91,26 @@ export function subscribe_keyboard<Msg>(
       !!keyEvent.ctrl,
       !!keyEvent.shift,
       !!keyEvent.meta,
+      !!keyEvent.option,
     );
     dispatch(handler(ke));
+  });
+}
+
+export function subscribe_keyboard_raw(
+  callback: (keyEvent: KeyEvent) => void,
+): void {
+  const renderer = get_renderer();
+  renderer.keyInput.on("keypress", (keyEvent: KeyEventData) => {
+    if (isRendererDestroyed()) return;
+    const ke = new KeyEvent(
+      keyEvent.name ?? "",
+      !!keyEvent.ctrl,
+      !!keyEvent.shift,
+      !!keyEvent.meta,
+      !!keyEvent.option,
+    );
+    callback(ke);
   });
 }
 
@@ -106,7 +138,6 @@ export function focus_previous(_dispatch: Dispatch<unknown>): void {
 
 export function focus(id: string, _dispatch: Dispatch<unknown>): void {
   const renderer = get_renderer();
-  // Filter out destroyed nodes from focusables
   const focusables = collectFocusables(renderer.root).filter((n) => !isDestroyed(n));
   const target = focusables.find((n) => n.id === id);
   if (target && !isDestroyed(target)) target.focus?.();
@@ -154,7 +185,7 @@ export function set_cursor_style(
   _dispatch: Dispatch<unknown>
 ): void {
   const renderer = get_renderer();
-  renderer.setCursorStyle(style, blinking);
+  renderer.setCursorStyle({ style, blinking });
 }
 
 export function set_cursor_color(color: string, _dispatch: Dispatch<unknown>): void {
@@ -201,10 +232,46 @@ export function clear_clipboard(_dispatch: Dispatch<unknown>): void {
 
 // SELECTION EFFECTS -----------------------------------------------------------
 
-export function get_selection_raw(): string {
+function buildSelectionRecord(sel: OpenTuiSelection): Selection {
   const renderer = get_renderer();
-  const selection = renderer.getSelection();
-  return selection?.getSelectedText() ?? "";
+
+  const ranges: SelectionRange[] = [];
+  for (const r of sel.selectedRenderables) {
+    if (!isEditBufferRenderable(r)) continue;
+    if (isDestroyed(r)) continue;
+    const range = r.getSelection();
+    if (!range) continue;
+    ranges.push(new SelectionRange(r.id, range.start, range.end));
+  }
+
+  const focused = renderer.currentFocusedRenderable;
+  const focusedId = focused?.id ?? "";
+
+  return new Selection(
+    toList(ranges),
+    focusedId,
+    [sel.anchor.x, sel.anchor.y],
+    [sel.focus.x, sel.focus.y],
+  );
+}
+
+export function get_selection(): unknown {
+  const renderer = get_renderer();
+  const sel = renderer.getSelection();
+  if (!sel) return Result$Error(undefined);
+  return Result$Ok(buildSelectionRecord(sel));
+}
+
+export function subscribe_selection<Msg>(
+  handler: (sel: Selection) => Msg,
+  dispatch: Dispatch<Msg>,
+): void {
+  const renderer = get_renderer();
+  renderer.on("selection", (sel: OpenTuiSelection) => {
+    // Guard: don't dispatch if renderer is destroyed
+    if (isRendererDestroyed()) return;
+    dispatch(handler(buildSelectionRecord(sel)));
+  });
 }
 
 export function clear_selection(_dispatch: Dispatch<unknown>): void {

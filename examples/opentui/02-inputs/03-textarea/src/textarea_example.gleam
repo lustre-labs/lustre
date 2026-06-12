@@ -113,9 +113,34 @@ fn view(model: Model) -> Element(Msg) {
             attribute.text_color("#e0e0e0"),
             attribute.cursor_color("#3498db"),
             attribute.wrap_mode("word"),
-            event.on_input(UserUpdatedContent),
+            event.on_content_change(UserUpdatedContent),
             event.on_cursor_change(CursorMoved),
           ]),
+          // Preview
+          tui.box(
+            [
+              attribute.flex_direction("column"),
+              attribute.border_style("single"),
+              attribute.border_color("#555"),
+              attribute.title(" Preview "),
+              attribute.width(50),
+              attribute.height(4),
+              attribute.padding_left(1),
+              attribute.padding_right(1),
+            ],
+            [
+              tui.text([
+                attribute.content(case string.is_empty(model.content) {
+                  True -> "(empty)"
+                  False -> model.content
+                }),
+                attribute.color(case string.is_empty(model.content) {
+                  True -> "#555"
+                  False -> "#e0e0e0"
+                }),
+              ]),
+            ],
+          ),
           // Status bar
           tui.box(
             [

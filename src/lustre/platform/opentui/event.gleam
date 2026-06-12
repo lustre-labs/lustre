@@ -7,33 +7,35 @@
 import gleam/dynamic/decode
 import lustre/attribute.{type Attribute}
 import lustre/event
+import lustre/platform/opentui/effect.{type KeyEvent, KeyEvent}
 
 // KEYBOARD EVENTS -------------------------------------------------------------
 
-/// Listen for key press events. The handler receives the key name as a string.
+/// Listen for key press events. The handler receives a `KeyEvent` containing
+/// the key name and the state of the shift, ctrl, meta, and option modifiers.
 ///
-pub fn on_key_press(handler: fn(String) -> msg) -> Attribute(msg) {
+pub fn on_key_press(handler: fn(KeyEvent) -> msg) -> Attribute(msg) {
   event.on("keypress", {
-    use key <- decode.then(decode_detail_key())
-    decode.success(handler(key))
+    use key_event <- decode.then(decode_key_event())
+    decode.success(handler(key_event))
   })
 }
 
 /// Listen for key down events.
 ///
-pub fn on_key_down(handler: fn(String) -> msg) -> Attribute(msg) {
+pub fn on_key_down(handler: fn(KeyEvent) -> msg) -> Attribute(msg) {
   event.on("keydown", {
-    use key <- decode.then(decode_detail_key())
-    decode.success(handler(key))
+    use key_event <- decode.then(decode_key_event())
+    decode.success(handler(key_event))
   })
 }
 
 /// Listen for key up events.
 ///
-pub fn on_key_up(handler: fn(String) -> msg) -> Attribute(msg) {
+pub fn on_key_up(handler: fn(KeyEvent) -> msg) -> Attribute(msg) {
   event.on("keyup", {
-    use key <- decode.then(decode_detail_key())
-    decode.success(handler(key))
+    use key_event <- decode.then(decode_key_event())
+    decode.success(handler(key_event))
   })
 }
 
@@ -56,7 +58,10 @@ pub fn on_blur(msg: msg) -> Attribute(msg) {
 /// Listen for input value changes. The handler receives the new value.
 ///
 pub fn on_input(handler: fn(String) -> msg) -> Attribute(msg) {
-  event.on_input(handler)
+  event.on("input", {
+    use value <- decode.subfield(["target", "plainText"], decode.string)
+    decode.success(handler(value))
+  })
 }
 
 /// Listen for submit events (e.g. pressing Enter in an input).
@@ -195,10 +200,13 @@ pub fn on_cursor_change(handler: fn(Int, Int) -> msg) -> Attribute(msg) {
   })
 }
 
-/// Listen for content change events.
+/// Listen for content change events. The handler receives the current text.
 ///
-pub fn on_content_change(msg: msg) -> Attribute(msg) {
-  event.on("contentchange", decode.success(msg))
+pub fn on_content_change(handler: fn(String) -> msg) -> Attribute(msg) {
+  event.on("contentchange", {
+    use value <- decode.subfield(["target", "plainText"], decode.string)
+    decode.success(handler(value))
+  })
 }
 
 /// Listen for highlight events.
@@ -239,6 +247,15 @@ fn decode_detail_key() -> decode.Decoder(String) {
   decode.at(["detail", "key"], decode.string)
 }
 
+fn decode_key_event() -> decode.Decoder(KeyEvent) {
+  use key <- decode.then(decode.at(["detail", "key"], decode.string))
+  use ctrl <- decode.then(decode.at(["detail", "ctrl"], decode.bool))
+  use shift <- decode.then(decode.at(["detail", "shift"], decode.bool))
+  use meta <- decode.then(decode.at(["detail", "meta"], decode.bool))
+  use option <- decode.then(decode.at(["detail", "option"], decode.bool))
+  decode.success(KeyEvent(key:, ctrl:, shift:, meta:, option:))
+}
+
 fn decode_detail_value() -> decode.Decoder(String) {
-  decode.at(["detail", "value"], decode.string)
+  decode.at(["detail"], decode.string)
 }
