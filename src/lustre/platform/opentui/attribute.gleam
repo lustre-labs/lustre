@@ -855,12 +855,26 @@ pub fn title_alignment(value: String) -> Attribute(msg) {
   attribute("title-alignment", value)
 }
 
+/// Set the box title color. Falls back to the border color when unset.
+///
+pub fn title_color(value: String) -> Attribute(msg) {
+  attribute("title-color", value)
+}
+
 // INPUT/TEXTAREA-SPECIFIC -----------------------------------------------------
 
 /// Set the maximum input length.
 ///
 pub fn max_length(value: Int) -> Attribute(msg) {
   attribute("max-length", int.to_string(value))
+}
+
+/// Set the minimum input length (input elements only). While the value is
+/// shorter than this, submit (Enter) is rejected and no enter event fires.
+/// Must not exceed `max_length` — OpenTUI throws otherwise.
+///
+pub fn min_length(value: Int) -> Attribute(msg) {
+  attribute("min-length", int.to_string(value))
 }
 
 /// Show or hide the cursor.

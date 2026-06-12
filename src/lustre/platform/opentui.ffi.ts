@@ -158,6 +158,7 @@ const NUMERIC_PROPS = new Set([
   "right",
   "zIndex",
   "maxLength",
+  "minLength",
   "scrollMargin",
   "scrollSpeed",
   "selectedIndex",
@@ -590,9 +591,11 @@ const ATTR_MAP: Record<string, string> = {
   // Box
   "should-fill": "shouldFill",
   "title-alignment": "titleAlignment",
+  "title-color": "titleColor",
 
   // Input/Textarea
   "max-length": "maxLength",
+  "min-length": "minLength",
   "show-cursor": "showCursor",
   "scroll-margin": "scrollMargin",
   "scroll-speed": "scrollSpeed",
