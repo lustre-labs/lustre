@@ -19,6 +19,7 @@ import {
   TextAttributes,
 } from "@opentui/core";
 import type { CliRenderer, Renderable } from "@opentui/core";
+import { PortalRenderable, PORTAL_TAG } from "./opentui/portal.ffi.ts";
 import {
   Result$Ok,
   Result$Error,
@@ -295,6 +296,10 @@ export function make_create_element(
   renderer: CliRenderer,
 ): (ns: string | null, tag: string) => TuiNode {
   return (_ns: string | null, tag: string): TuiNode => {
+    if (tag === PORTAL_TAG) {
+      return new PortalRenderable(renderer) as unknown as TuiNode;
+    }
+
     const Ctor = RENDERABLE_MAP[tag];
 
     if (Ctor) {
@@ -627,6 +632,9 @@ const ATTR_MAP: Record<string, string> = {
 
   // LineNumber
   "line-number-offset": "lineNumberOffset",
+
+  // Portal
+  "use-root": "useRoot",
 
   // ScrollBox
   "sticky-scroll": "stickyScroll",
