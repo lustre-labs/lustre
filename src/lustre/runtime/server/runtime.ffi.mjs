@@ -140,7 +140,7 @@ export class Runtime {
       const { key } = message;
       
       this.broadcast(Transport.unsubscribe(key));
-      this.#config.contexts = Dict.delete(this.#config.contexts, key);
+      this.#config.contexts = Dict.delete$(this.#config.contexts, key);
     } else if (Message$isSystemRequestedShutdown(message)) {
       this.#model = null;
       this.#update = null;
