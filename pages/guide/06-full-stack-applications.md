@@ -537,6 +537,45 @@ pub fn main() {
 
 After that, your app state will persist after reloading.
 
+## Using the development server for the client 
+
+So far you need to manually rebuild the client each time you make updates to the
+client code. An alternative is to use the lustre_dev_tools development server. The
+development server watches for changes to your gleam code and
+automatically rebuilds the updated modules and reload the browser. 
+
+- If you use the development server for the client, the client will be served on
+  a different port than the server. 
+- If you are making a request to a different site (that includes different port
+  on the same domain) you need to configure your web server to handle the browser's
+  [cross-origin resource sharing][cors] (CORS) requests.
+- Lustre has a HTTP [proxy] you can use instead, that's often a better option as
+  you don't need to modify your application.
+
+[cors]: https://en.wikipedia.org/wiki/Cross-origin_resource_sharing
+[proxy]: https://lustre-dev-tools.hexdocs.pm/proxying.html
+
+To use the proxy, add the following to `client/gleam.toml`:
+
+```
+[tools.lustre.dev]
+proxy = { from = "/api", to = "http://localhost:3000/api" }
+```
+
+Now you can start the development server for the client. 
+
+```
+gleam run -m lustre/dev start
+```
+
+Each time you edit and save `client.gleam` the
+clients is automatically recompiled and the browser reloaded. 
+
+With the proxy, any requests made to paths starting with /api will be forwarded
+to http://localhost:3000/api. 
+
+Without the proxy, any request will be denied with a 404 error.
+
 ## Building for production
 
 When preparing for production, you'll want to minify your client application and
@@ -559,4 +598,5 @@ build tool to place the output in our _server's_ priv directory instead.
 
 ## Next steps
 
-To learn how to deploy your full-stack application, check out the [full-stack deployments guide](./07-full-stack-deployments.html).
+To learn how to deploy your full-stack application, check out the [full-stack
+deployments guide](./07-full-stack-deployments.html).
