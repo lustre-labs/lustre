@@ -694,6 +694,12 @@ function coerceValue(prop: string, value: unknown): unknown {
   return value;
 }
 
+// Re-key sentinel ids for the id-collision guard in set_attribute. A
+// monotonic counter keeps them unique; the prefix keeps them clear of app ids
+// and OpenTUI's auto `renderable-N` ids.
+let rekeyCounter = 0;
+const freshRekeyId = (): string => `__lustre_rekey_${rekeyCounter++}`;
+
 const get_attribute = (node: TuiNode, name: string): unknown => {
   const prop = ATTR_MAP[name] ?? name;
   // @ts-expect-error dynamic property access — same pattern as OpenTUI React reconciler (utils/index.ts:93)
@@ -714,6 +720,22 @@ const set_attribute = (node: TuiNode, name: string, value: unknown): undefined =
     return undefined;
   }
   const coerced = coerceValue(prop, value ?? "");
+  // Re-key on id collision. OpenTUI keys child tracking by `node.id` in the
+  // parent's `renderableMapById` (also read by remove/destroy/insertBefore).
+  // The reconciler can transiently assign an id a live sibling still holds —
+  // positionally relabeling unkeyed siblings on delete/reorder — which would
+  // clobber that sibling's map entry and later detach the wrong node (or none)
+  // → a yoga node freed while still attached → use-after-free. If the target id
+  // is already held by a *different* live node, move that node off the contested
+  // key first via its own public id setter; the reconciler relabels or removes
+  // it next, so the sentinel is transient.
+  if (prop === "id") {
+    const parent = (node as unknown as { parent?: { renderableMapById?: Map<string, Renderable> } }).parent;
+    const occupant = parent?.renderableMapById?.get(String(coerced));
+    if (occupant && occupant !== (node as unknown as Renderable) && !isDestroyed(occupant)) {
+      occupant.id = freshRekeyId();
+    }
+  }
   // @ts-expect-error dynamic property access — same pattern as OpenTUI React reconciler (utils/index.ts:93)
   node[prop] = coerced;
   return undefined;
