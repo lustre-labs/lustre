@@ -251,8 +251,6 @@ export function mount(renderer: CliRenderer): [TuiNode, ReturnType<typeof none>]
     removeEventListener: () => {},
   });
 
-
-
   // Set up the reconciler metadata on the root.
   insertMetadataChild(element_kind, null, root, 0, null);
 
@@ -292,7 +290,7 @@ class TuiFragment {
 export function make_create_element(
   renderer: CliRenderer,
 ): (ns: string | null, tag: string) => TuiNode {
-  return (_ns: string | null, tag: string): TuiNode => {
+  const create = (_ns: string | null, tag: string): TuiNode => {
     if (tag === PORTAL_TAG) {
       return new PortalRenderable(renderer) as unknown as TuiNode;
     }
@@ -329,6 +327,10 @@ export function make_create_element(
       {},
     );
   };
+  return (ns: string | null, tag: string): TuiNode => {
+    const node = create(ns, tag);
+    return node;
+  };
 }
 
 // Markers are invisible BoxRenderables (visible: false → Display.None → zero
@@ -350,11 +352,20 @@ function createMarker(): TuiNode {
   return node as unknown as TuiNode;
 }
 
-const create_text_node = (_content: string): TuiNode => createMarker();
+const create_text_node = (_content: string): TuiNode => {
+  const node = createMarker();
+  return node;
+};
 
-const create_fragment = (): TuiNode => new TuiFragment() as unknown as TuiNode;
+const create_fragment = (): TuiNode => {
+  const node = new TuiFragment() as unknown as TuiNode;
+  return node;
+};
 
-const create_comment = (_data: string): TuiNode => createMarker();
+const create_comment = (_data: string): TuiNode => {
+  const node = createMarker();
+  return node;
+};
 
 // TREE MANIPULATION -----------------------------------------------------------
 
@@ -392,6 +403,12 @@ function doInsertBefore(
     return;
   }
 
+  // Create-then-insert: the node's id was set while it was still unparented, so
+  // the set_attribute guard was a no-op. Now that it's being attached, move any
+  // live sibling holding the same id off the key before add()/insertBefore
+  // overwrites the parent's renderableMapById and remove() later detaches wrong.
+  rekeyOccupant(parent, (node as TuiNode).id, node);
+
   if (refNode != null && (parent as TuiNode).insertBefore) {
     if (node === refNode) {
       return;
@@ -417,7 +434,9 @@ const move_before = (
   node: TuiNode,
   ref: Result<TuiNode, unknown>,
 ): undefined => {
-  if (isDestroyed(parent) || isDestroyed(node)) return undefined;
+  if (isDestroyed(parent) || isDestroyed(node)) {
+    return undefined;
+  }
   const refNode = unwrapResult<TuiNode>(ref);
 
   // Guard: Lustre's reconciler can emit move(node, node) when indices shift.
@@ -694,11 +713,27 @@ function coerceValue(prop: string, value: unknown): unknown {
   return value;
 }
 
-// Re-key sentinel ids for the id-collision guard in set_attribute. A
-// monotonic counter keeps them unique; the prefix keeps them clear of app ids
-// and OpenTUI's auto `renderable-N` ids.
+// Re-key sentinel ids for the id-collision guard. A monotonic counter keeps them
+// unique; the prefix keeps them clear of app ids and OpenTUI's auto `renderable-N`.
 let rekeyCounter = 0;
 const freshRekeyId = (): string => `__lustre_rekey_${rekeyCounter++}`;
+
+// If a *different* live node already holds `id` under `parent`, move that node off
+// the contested key via its own public id setter. OpenTUI keys `renderableMapById`
+// (read by remove/destroy/insertBefore) on `node.id`; two live siblings sharing an
+// id make `remove(id)` detach the wrong node → use-after-free / missing nodes. The
+// reconciler can transiently assign an id a live sibling still holds — e.g. a
+// create-before-remove rebuild after a memo bust. The sentinel is transient: the
+// displaced node is removed or relabeled later in the same pass. Public API only
+// (the occupant's id setter), so no yoga/internals poking.
+const rekeyOccupant = (parent: unknown, id: unknown, claimant: unknown): void => {
+  const map = (parent as { renderableMapById?: Map<string, Renderable> } | null | undefined)
+    ?.renderableMapById;
+  const occupant = map?.get(String(id));
+  if (occupant && occupant !== (claimant as Renderable) && !isDestroyed(occupant)) {
+    occupant.id = freshRekeyId();
+  }
+};
 
 const get_attribute = (node: TuiNode, name: string): unknown => {
   const prop = ATTR_MAP[name] ?? name;
@@ -709,7 +744,9 @@ const get_attribute = (node: TuiNode, name: string): unknown => {
 
 const set_attribute = (node: TuiNode, name: string, value: unknown): undefined => {
   // Guard: skip if node is destroyed
-  if (isDestroyed(node)) return undefined;
+  if (isDestroyed(node)) {
+    return undefined;
+  }
   const prop = ATTR_MAP[name] ?? name;
   // Handle text styling attributes by combining into `attributes` property.
   const flag = TEXT_ATTR_FLAGS[prop];
@@ -720,21 +757,15 @@ const set_attribute = (node: TuiNode, name: string, value: unknown): undefined =
     return undefined;
   }
   const coerced = coerceValue(prop, value ?? "");
-  // Re-key on id collision. OpenTUI keys child tracking by `node.id` in the
-  // parent's `renderableMapById` (also read by remove/destroy/insertBefore).
-  // The reconciler can transiently assign an id a live sibling still holds —
-  // positionally relabeling unkeyed siblings on delete/reorder — which would
-  // clobber that sibling's map entry and later detach the wrong node (or none)
-  // → a yoga node freed while still attached → use-after-free. If the target id
-  // is already held by a *different* live node, move that node off the contested
-  // key first via its own public id setter; the reconciler relabels or removes
-  // it next, so the sentinel is transient.
   if (prop === "id") {
     const parent = (node as unknown as { parent?: { renderableMapById?: Map<string, Renderable> } }).parent;
-    const occupant = parent?.renderableMapById?.get(String(coerced));
-    if (occupant && occupant !== (node as unknown as Renderable) && !isDestroyed(occupant)) {
-      occupant.id = freshRekeyId();
-    }
+    // Re-id of an already-parented node: any collision is live now. (On the
+    // create-then-insert path the node is still unparented here, so this is a
+    // no-op — doInsertBefore runs the same check once the node is attached.)
+    rekeyOccupant(parent, coerced, node);
+    // @ts-expect-error dynamic property access — same pattern as OpenTUI React reconciler (utils/index.ts:93)
+    node[prop] = coerced;
+    return undefined;
   }
   // @ts-expect-error dynamic property access — same pattern as OpenTUI React reconciler (utils/index.ts:93)
   node[prop] = coerced;

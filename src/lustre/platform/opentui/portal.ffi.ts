@@ -2,9 +2,6 @@
 
 import { BoxRenderable } from "@opentui/core";
 import type { CliRenderer, Renderable } from "@opentui/core";
-import { appendFileSync } from "node:fs";
-
-const _log = (msg: string) => appendFileSync("/tmp/portal-debug.log", `[portal] ${msg}\n`);
 
 // TYPES -----------------------------------------------------------------------
 
@@ -61,7 +58,6 @@ export class PortalRenderable extends (BoxRenderable as any) {
   constructor(renderer: CliRenderer) {
     super(renderer, { visible: false });
     this.#renderer = renderer;
-    _log(`constructor called, id=${this.id}`);
   }
 
   // -- Target resolution ------------------------------------------------------
@@ -71,12 +67,10 @@ export class PortalRenderable extends (BoxRenderable as any) {
   }
 
   set target(id: string) {
-    _log(`set target="${id}" (was "${this.#targetId}")`);
     if (id === this.#targetId) return;
     this.#moveChildrenFromTarget();
     this.#targetId = id;
     this.#target = this.#resolveTarget();
-    _log(`resolved target=${this.#target ? this.#target.id ?? "root" : "null"}`);
     this.#moveChildrenToTarget();
   }
 
@@ -86,7 +80,6 @@ export class PortalRenderable extends (BoxRenderable as any) {
 
   set useRoot(value: unknown) {
     const flag = value === true || value === "true";
-    _log(`set useRoot=${flag} (was ${this.#useRoot})`);
     if (flag === this.#useRoot) return;
     this.#moveChildrenFromTarget();
     this.#useRoot = flag;
@@ -109,7 +102,6 @@ export class PortalRenderable extends (BoxRenderable as any) {
     const target = findDescendantById(this.#renderer.root, this.#targetId);
 
     if (!target) {
-      _log(`resolveTarget: target "${this.#targetId}" not found, scheduling retry`);
       // The target may not exist yet if it's created later in the same render.
       // Retry once after the current synchronous reconciliation completes.
       if (!this.#pendingRetry) {
@@ -118,7 +110,6 @@ export class PortalRenderable extends (BoxRenderable as any) {
           this.#pendingRetry = false;
           if (this.#target) return; // already resolved
           this.#target = this.#resolveTargetImmediate();
-          _log(`retry: resolved target=${this.#target ? this.#target.id ?? "root" : "null"}, children=${this.#children.length}`);
           this.#moveChildrenToTarget();
         });
       }
@@ -193,17 +184,12 @@ export class PortalRenderable extends (BoxRenderable as any) {
   }
 
   add(child: TuiNode): void {
-    _log(`add child=${child.id}, target=${this.#target?.id ?? "null"}, targetId="${this.#targetId}"`);
     this.#children.push(child);
     if (!this.#target) {
       this.#target = this.#resolveTarget();
-      _log(`add: resolved target=${this.#target ? this.#target.id ?? "root" : "null"}`);
     }
     if (this.#target && !isDestroyed(child)) {
-      _log(`add: delegating to target.add(${child.id})`);
       this.#target.add(child);
-    } else {
-      _log(`add: NOT delegating (target=${!!this.#target}, destroyed=${isDestroyed(child)})`);
     }
   }
 
