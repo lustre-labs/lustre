@@ -4,10 +4,10 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute.{type Attribute}
+import agnostic/event
+import agnostic/platform/opentui/effect.{type KeyEvent, KeyEvent}
 import gleam/dynamic/decode
-import lustre/attribute.{type Attribute}
-import lustre/event
-import lustre/platform/opentui/effect.{type KeyEvent, KeyEvent}
 
 // KEYBOARD EVENTS -------------------------------------------------------------
 

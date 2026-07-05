@@ -9,11 +9,11 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute.{type Attribute}
+import agnostic/internals/mutable_map
+import agnostic/internals/ref
+import agnostic/vdom/vnode
 import gleam/option.{type Option}
-import lustre/attribute.{type Attribute}
-import lustre/internals/mutable_map
-import lustre/internals/ref
-import lustre/vdom/vnode
 
 // TYPES -----------------------------------------------------------------------
 
@@ -75,7 +75,7 @@ pub type Ref =
 // CONSTRUCTORS ----------------------------------------------------------------
 
 /// A general function for constructing any kind of element. In most cases you
-/// will want to use the [`lustre/element/html`](./element/html.html) instead but this
+/// will want to use the [`agnostic/element/html`](./element/html.html) instead but this
 /// function is particularly handy when constructing custom elements, either
 /// from your own Lustre components or from external JavaScript libraries.
 ///
@@ -257,7 +257,7 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
 //
 // WARNING: These functions are DEPRECATED and exist only for backward
 // compatibility with lustre_dev_tools. They will be removed in a future
-// release. Use the functions in `lustre/platform/dom` instead:
+// release. Use the functions in `agnostic/platform/dom` instead:
 //
 //   - element.to_string        -> dom.to_string
 //   - element.to_document_string -> dom.to_document_string
@@ -265,31 +265,31 @@ pub fn map(element: Element(a), f: fn(a) -> b) -> Element(b) {
 //   - element.unsafe_raw_html  -> element.unsafe_raw_content
 //
 
-/// DEPRECATED: Use `lustre/platform/dom.to_string` instead.
+/// DEPRECATED: Use `agnostic/platform/dom.to_string` instead.
 /// This shim exists only for lustre_dev_tools compatibility.
 ///
-@deprecated("Use lustre/platform/dom.to_string instead")
-@external(erlang, "lustre@platform@dom", "to_string")
+@deprecated("Use agnostic/platform/dom.to_string instead")
+@external(erlang, "agnostic@platform@dom", "to_string")
 pub fn to_string(_el: Element(message)) -> String {
-  panic as "element.to_string is deprecated: use lustre/platform/dom.to_string"
+  panic as "element.to_string is deprecated: use agnostic/platform/dom.to_string"
 }
 
-/// DEPRECATED: Use `lustre/platform/dom.to_document_string` instead.
+/// DEPRECATED: Use `agnostic/platform/dom.to_document_string` instead.
 /// This shim exists only for lustre_dev_tools compatibility.
 ///
-@deprecated("Use lustre/platform/dom.to_document_string instead")
-@external(erlang, "lustre@platform@dom", "to_document_string")
+@deprecated("Use agnostic/platform/dom.to_document_string instead")
+@external(erlang, "agnostic@platform@dom", "to_document_string")
 pub fn to_document_string(_el: Element(message)) -> String {
-  panic as "element.to_document_string is deprecated: use lustre/platform/dom.to_document_string"
+  panic as "element.to_document_string is deprecated: use agnostic/platform/dom.to_document_string"
 }
 
-/// DEPRECATED: Use `lustre/platform/dom.to_readable_string` instead.
+/// DEPRECATED: Use `agnostic/platform/dom.to_readable_string` instead.
 /// This shim exists only for lustre_dev_tools compatibility.
 ///
-@deprecated("Use lustre/platform/dom.to_readable_string instead")
-@external(erlang, "lustre@platform@dom", "to_readable_string")
+@deprecated("Use agnostic/platform/dom.to_readable_string instead")
+@external(erlang, "agnostic@platform@dom", "to_readable_string")
 pub fn to_readable_string(_el: Element(message)) -> String {
-  panic as "element.to_readable_string is deprecated: use lustre/platform/dom.to_readable_string"
+  panic as "element.to_readable_string is deprecated: use agnostic/platform/dom.to_readable_string"
 }
 
 /// DEPRECATED: Use `element.unsafe_raw_content` instead.

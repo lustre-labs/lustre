@@ -1,11 +1,11 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic.{type App}
+import agnostic/attribute
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/event
 import gleam/int
-import lustre.{type App}
-import lustre/attribute
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/event
 
 // MAIN ------------------------------------------------------------------------
 
@@ -20,7 +20,7 @@ import lustre/event
 /// it can run in both the browser and the server.
 ///
 pub fn component() -> App(_, Model, Message) {
-  lustre.simple(init, update, view)
+  agnostic.simple(init, update, view)
 }
 
 // MODEL -----------------------------------------------------------------------

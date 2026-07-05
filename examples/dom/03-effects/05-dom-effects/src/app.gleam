@@ -1,21 +1,21 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/event
+import agnostic/platform/dom
 import gleam/dynamic/decode
 import gleam/int
-import lustre
-import lustre/attribute
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/event
-import lustre/platform/dom
 
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
   let assert Ok(platform) = dom.platform("#app")
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
+  let app = agnostic.application(init, update, view)
+  let assert Ok(_) = agnostic.start(app, on: platform, with: Nil)
 
   Nil
 }
@@ -68,7 +68,7 @@ fn measure_height() -> Effect(Message) {
   // In addition to a `dispatch` function, before_paint and after_paint effects
   // have access to the "root element" of your Lustre app.
   // 
-  // For `lustre.start` apps, this is the element that matched your selector.
+  // For `agnostic.start` apps, this is the element that matched your selector.
   // For components, this is their shadow root.
   use dispatch, root_element <- effect.before_paint
 

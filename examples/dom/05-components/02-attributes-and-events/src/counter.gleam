@@ -1,26 +1,26 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute.{type Attribute}
+import agnostic/component
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/event
 import gleam/dynamic/decode
 import gleam/int
 import gleam/json
 import gleam/result
-import lustre
-import lustre/attribute.{type Attribute}
-import lustre/component
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/event
 
 // MAIN ------------------------------------------------------------------------
 
-pub fn register() -> Result(Nil, lustre.Error) {
+pub fn register() -> Result(Nil, agnostic.Error) {
   let component =
-    // Just like in earlier examples we upgraded the `lustre.simple` program to a
-    // `lustre.application`, here we use the `lustre.component` program constructor
+    // Just like in earlier examples we upgraded the `agnostic.simple` program to a
+    // `agnostic.application`, here we use the `agnostic.component` program constructor
     // to get access to component-specific configuration like listening for attribute
     // changes.
-    lustre.component(init, update, view, [
+    agnostic.component(init, update, view, [
       // Attributes are string values that are set on the component's HTML element.
       // We can set up listeners for any attributes we care about and decode them
       // into a message for our update function. Any time the parent app changes
@@ -38,7 +38,7 @@ pub fn register() -> Result(Nil, lustre.Error) {
       }),
     ])
 
-  lustre.register(component, named: "my-counter")
+  agnostic.register(component, named: "my-counter")
 }
 
 pub fn element(attributes: List(Attribute(message))) -> Element(message) {

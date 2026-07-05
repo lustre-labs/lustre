@@ -1,5 +1,11 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute
+import agnostic/element/html.{html}
+import agnostic/platform
+import agnostic/platform/dom
+import agnostic/server_component
 import chat
 import gleam/bytes_tree
 import gleam/erlang/application
@@ -8,12 +14,6 @@ import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/json
 import gleam/option.{type Option, None, Some}
-import lustre
-import lustre/attribute
-import lustre/element/html.{html}
-import lustre/platform
-import lustre/platform/dom
-import lustre/server_component
 import mist.{type Connection, type ResponseData}
 
 // MAIN ------------------------------------------------------------------------
@@ -97,7 +97,7 @@ fn serve_chat(request: Request(Connection)) -> Response(ResponseData) {
 
 type ChatSocket {
   ChatSocket(
-    component: lustre.Runtime(chat.Message),
+    component: agnostic.Runtime(chat.Message),
     self: Subject(server_component.ClientMessage(chat.Message)),
   )
 }
@@ -111,13 +111,13 @@ type ChatSocketInit =
 fn init_chat_socket(_) -> ChatSocketInit {
   let chat = chat.component()
   let assert Ok(component) =
-    lustre.start(chat, on: platform.headless(), with: Nil)
+    agnostic.start(chat, on: platform.headless(), with: Nil)
 
   let self = process.new_subject()
   let selector = process.new_selector() |> process.select(self)
 
   server_component.register_subject(self)
-  |> lustre.send(to: component)
+  |> agnostic.send(to: component)
 
   #(ChatSocket(component:, self:), Some(selector))
 }
@@ -130,7 +130,7 @@ fn loop_chat_socket(
   case message {
     mist.Text(json) -> {
       case json.parse(json, server_component.runtime_message_decoder()) {
-        Ok(runtime_message) -> lustre.send(state.component, runtime_message)
+        Ok(runtime_message) -> agnostic.send(state.component, runtime_message)
         Error(_) -> Nil
       }
 
@@ -160,6 +160,6 @@ fn close_chat_socket(state: ChatSocket) -> Nil {
   // When the websocket connection closes, we need to also shut down the server
   // component runtime. If we forget to do this we'll end up with a memory leak
   // and a zombie process!
-  lustre.shutdown()
-  |> lustre.send(to: state.component)
+  agnostic.shutdown()
+  |> agnostic.send(to: state.component)
 }

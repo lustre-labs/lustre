@@ -1,16 +1,16 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/event
+import agnostic/platform/dom
 import gleam/dynamic/decode
 import gleam/int
 import gleam/option.{type Option, None, Some}
 import gleam/order.{type Order, Eq, Gt, Lt}
-import lustre
-import lustre/attribute
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/event
-import lustre/platform/dom
 
 // MAIN ------------------------------------------------------------------------
 
@@ -22,8 +22,8 @@ pub fn main() {
   let initial_target = int.random(10)
 
   let assert Ok(platform) = dom.platform("#app")
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, on: platform, with: initial_target)
+  let app = agnostic.application(init, update, view)
+  let assert Ok(_) = agnostic.start(app, on: platform, with: initial_target)
 
   Nil
 }

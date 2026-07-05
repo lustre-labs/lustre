@@ -35,23 +35,23 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute.{type Attribute, attribute}
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/runtime/app.{type App, Config, Option}
+import agnostic/runtime/headless
+import agnostic/vdom/vattr.{Attribute, Event, Property}
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/list
 import gleam/option.{Some}
 import gleam/string
-import lustre/attribute.{type Attribute, attribute}
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/runtime/app.{type App, Config, Option}
-import lustre/runtime/headless
-import lustre/vdom/vattr.{Attribute, Event, Property}
 
 // TYPES -----------------------------------------------------------------------
 
-/// The configuration for a Lustre [`component`](../lustre.html#component). In
+/// The configuration for a Lustre [`component`](../agnostic.html#component). In
 /// Lustre, components are real custom elements. You can use this configuration
 /// to define what features the component supports and what platform functionality
 /// it should have access to.
@@ -422,8 +422,8 @@ pub fn named_slot(
 ///
 /// ```gleam
 /// import gleam/int
-/// import lustre/component
-/// import lustre/element/html
+/// import agnostic/component
+/// import agnostic/element/html
 ///
 /// fn view(model) {
 ///   html.div([], [
@@ -458,8 +458,8 @@ pub fn part(name: String) -> Attribute(message) {
 /// that may be active and you want to conditionally assign the `"active"` part:
 ///
 /// ```gleam
-/// import lustre/component
-/// import lustre/element/html
+/// import agnostic/component
+/// import agnostic/element/html
 ///
 /// fn view(item) {
 ///   html.li(
@@ -498,10 +498,10 @@ fn do_parts(names: List(#(String, Bool)), part: String) -> String {
 ///
 /// ```gleam
 /// import gleam/int
-/// import lustre/attribute.{property}
-/// import lustre/component
-/// import lustre/element.{element}
-/// import lustre/element/html
+/// import agnostic/attribute.{property}
+/// import agnostic/component
+/// import agnostic/element.{element}
+/// import agnostic/element/html
 ///
 /// fn my_component_view(model) {
 ///   html.div([], [
@@ -645,20 +645,20 @@ fn do_remove_pseudo_state(_root: Dynamic, _value: String) -> Nil {
 /// will be applied before the component is rendered.
 ///
 /// To support both prerendering and client-side rendering, component authors
-/// can use [`lustre.is_browser`](../lustre.html#is_browser) to detect the
+/// can use [`agnostic.is_browser`](../agnostic.html#is_browser) to detect the
 /// environment and prerender the component where appropriate:
 ///
 /// ```gleam
-/// import lustre.{type App}
-/// import lustre/attribute.{type Attribute}
-/// import lustre/component
-/// import lustre/element.{type Element, element}
+/// import agnostic.{type App}
+/// import agnostic/attribute.{type Attribute}
+/// import agnostic/component
+/// import agnostic/element.{type Element, element}
 ///
 /// pub fn element(
 ///   attributes: List(Attribute(message)),
 ///   children: List(Element(message))
 /// ) -> Element(message) {
-///   case lustre.is_browser() {
+///   case agnostic.is_browser() {
 ///     True -> element(tag, attributes, children)
 ///     False -> component.prerender(component(), tag, attributes, children)
 ///   }
@@ -667,7 +667,7 @@ fn do_remove_pseudo_state(_root: Dynamic, _value: String) -> Nil {
 /// const tag = "my-component"
 ///
 /// fn component() -> App(Nil, Model, Message) {
-///   lustre.component(init:, update:, view:, options:)
+///   agnostic.component(init:, update:, view:, options:)
 /// }
 /// ```
 ///

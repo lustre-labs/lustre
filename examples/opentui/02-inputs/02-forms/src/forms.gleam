@@ -1,23 +1,23 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/effect
+import agnostic/element.{type Element}
+import agnostic/platform/opentui
+import agnostic/platform/opentui/attribute
+import agnostic/platform/opentui/effect as tui_effect
+import agnostic/platform/opentui/element as tui
+import agnostic/platform/opentui/event
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
-import lustre
-import lustre/effect
-import lustre/element.{type Element}
-import lustre/platform/opentui
-import lustre/platform/opentui/attribute
-import lustre/platform/opentui/effect as tui_effect
-import lustre/platform/opentui/element as tui
-import lustre/platform/opentui/event
 
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
   opentui.platform(opentui.default_config(), fn(platform) {
-    let app = lustre.application(init, update, view)
-    let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
+    let app = agnostic.application(init, update, view)
+    let assert Ok(_) = agnostic.start(app, on: platform, with: Nil)
     Nil
   })
 }
@@ -223,9 +223,20 @@ fn view(model: Model) -> Element(Msg) {
             attribute.gap(1),
           ],
           [
-            tui.text([attribute.content("Welcome, " <> username <> "!"), attribute.color("#69db7c"), attribute.bold(True)]),
-            tui.text([attribute.content("I hope you're having a lovely day!"), attribute.color("#a0a0a0")]),
-            tui.text([attribute.content("Press Ctrl+Q to quit"), attribute.dim(True), attribute.color("#666")]),
+            tui.text([
+              attribute.content("Welcome, " <> username <> "!"),
+              attribute.color("#69db7c"),
+              attribute.bold(True),
+            ]),
+            tui.text([
+              attribute.content("I hope you're having a lovely day!"),
+              attribute.color("#a0a0a0"),
+            ]),
+            tui.text([
+              attribute.content("Press Ctrl+Q to quit"),
+              attribute.dim(True),
+              attribute.color("#666"),
+            ]),
           ],
         ),
       ]
@@ -250,13 +261,23 @@ fn view_login(
       attribute.title_alignment("center"),
     ],
     [
-      tui.text([attribute.content("Tab/arrows to navigate, Enter to submit, Ctrl+Q to quit"), attribute.dim(True), attribute.color("#888")]),
+      tui.text([
+        attribute.content(
+          "Tab/arrows to navigate, Enter to submit, Ctrl+Q to quit",
+        ),
+        attribute.dim(True),
+        attribute.color("#888"),
+      ]),
       // Username field
       tui.box(
         [attribute.flex_direction("column"), attribute.gap(0)],
         list.flatten([
           [
-            tui.text([attribute.content("Username:"), attribute.color("#9b59b6"), attribute.bold(True)]),
+            tui.text([
+              attribute.content("Username:"),
+              attribute.color("#9b59b6"),
+              attribute.bold(True),
+            ]),
             tui.box(
               [
                 attribute.border_style("single"),
@@ -291,7 +312,11 @@ fn view_login(
         [attribute.flex_direction("column"), attribute.gap(0)],
         list.flatten([
           [
-            tui.text([attribute.content("Password:"), attribute.color("#9b59b6"), attribute.bold(True)]),
+            tui.text([
+              attribute.content("Password:"),
+              attribute.color("#9b59b6"),
+              attribute.bold(True),
+            ]),
             tui.box(
               [
                 attribute.border_style("single"),
@@ -339,7 +364,11 @@ fn view_login(
               event.on_activate(UserSubmittedForm),
             ],
             [
-              tui.text([attribute.content("Login"), attribute.color("#9b59b6"), attribute.bold(True)]),
+              tui.text([
+                attribute.content("Login"),
+                attribute.color("#9b59b6"),
+                attribute.bold(True),
+              ]),
             ],
           ),
         ],

@@ -1,22 +1,22 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/event
 import gleam/int
-import lustre
-import lustre/attribute
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/event
 
 // MAIN ------------------------------------------------------------------------
 
 //
-pub fn register() -> Result(Nil, lustre.Error) {
-  let component = lustre.simple(init, update, view)
+pub fn register() -> Result(Nil, agnostic.Error) {
+  let component = agnostic.simple(init, update, view)
 
   // The `register` function does not create an app directly, instead it registers
   // a Lustre app as a Custom Element with the name `"my-counter"`. The main app
   // can then render this component like any other HTML element.
-  lustre.register(component, named: "my-counter")
+  agnostic.register(component, named: "my-counter")
 }
 
 /// It's good practice to provide an `element` function that encapsulates the

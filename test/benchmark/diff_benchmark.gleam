@@ -1,13 +1,13 @@
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/element/keyed
+import agnostic/vdom/cache
+import agnostic/vdom/diff
 import birdie
 import exception
 import gleam/int
 import gleam/list
 import gleamy/bench
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/element/keyed
-import lustre/vdom/cache
-import lustre/vdom/diff
 
 const duration = bench.Duration(5000)
 

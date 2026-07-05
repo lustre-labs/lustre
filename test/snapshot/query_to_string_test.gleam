@@ -1,9 +1,9 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import birdie
-import lustre/dev/query.{
+import agnostic/dev/query.{
   and, attribute, child, class, data, descendant, element, id, style, tag, text,
 }
+import birdie
 import lustre_test
 
 // ELEMENT QUERIES -------------------------------------------------------------

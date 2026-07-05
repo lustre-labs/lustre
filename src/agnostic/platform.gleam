@@ -5,7 +5,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import lustre/element.{type Element}
+import agnostic/element.{type Element}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -22,7 +22,7 @@ pub type PlatformError {
 /// calls these methods instead of hardcoded DOM APIs, allowing applications to
 /// render to arbitrary targets beyond the browser DOM.
 ///
-/// Use [`dom.dom()`](platform/dom.html#dom) from `lustre/platform/dom` for the browser DOM.
+/// Use [`dom.dom()`](platform/dom.html#dom) from `agnostic/platform/dom` for the browser DOM.
 /// Use [`headless`](#headless) for server components that don't render to a DOM.
 /// Custom targets can provide their own implementations via [`new`](#new).
 ///
@@ -62,8 +62,8 @@ pub opaque type Platform(node, target, value, event, message, raw) {
 /// ## Example
 ///
 /// ```gleam
-/// import lustre/platform
-/// import lustre/platform/dom
+/// import agnostic/platform
+/// import agnostic/platform/dom
 ///
 /// let p = platform.headless()
 /// ```

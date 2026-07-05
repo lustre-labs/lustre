@@ -1,12 +1,12 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/internals/constants
+import agnostic/internals/json_object_builder
 import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/order.{type Order}
 import gleam/string
-import lustre/internals/constants
-import lustre/internals/json_object_builder
 
 // TYPES -----------------------------------------------------------------------
 

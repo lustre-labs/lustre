@@ -1,6 +1,28 @@
 // IMPORTS ---------------------------------------------------------------------
 
 @target(erlang)
+import agnostic
+@target(erlang)
+import agnostic/effect
+@target(erlang)
+import agnostic/element/html
+@target(erlang)
+import agnostic/event
+@target(erlang)
+import agnostic/internals/mutable_map
+@target(erlang)
+import agnostic/platform
+@target(erlang)
+import agnostic/runtime/headless
+@target(erlang)
+import agnostic/runtime/transport
+@target(erlang)
+import agnostic/server_component
+@target(erlang)
+import agnostic/vdom/patch
+@target(erlang)
+import agnostic/vdom/path
+@target(erlang)
 import gleam/dict
 @target(erlang)
 import gleam/dynamic
@@ -10,28 +32,6 @@ import gleam/erlang/process
 import gleam/int
 @target(erlang)
 import gleam/json
-@target(erlang)
-import lustre
-@target(erlang)
-import lustre/effect
-@target(erlang)
-import lustre/element/html
-@target(erlang)
-import lustre/event
-@target(erlang)
-import lustre/internals/mutable_map
-@target(erlang)
-import lustre/platform
-@target(erlang)
-import lustre/runtime/headless
-@target(erlang)
-import lustre/runtime/transport
-@target(erlang)
-import lustre/server_component
-@target(erlang)
-import lustre/vdom/patch
-@target(erlang)
-import lustre/vdom/path
 @target(erlang)
 import lustre_test
 
@@ -65,7 +65,7 @@ pub fn client_send_event_test() {
 
   let click = transport.event_fired(incr, "click", dynamic.nil())
 
-  headless.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
+  headless.ClientDispatchedMessage(click) |> agnostic.send(to: runtime)
 
   let patch =
     patch.new(0, 0, [patch.replace_text("1")], [])
@@ -87,8 +87,8 @@ pub fn client_send_multiple_events_test() {
 
   let click = transport.event_fired(incr, "click", dynamic.nil())
 
-  headless.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
-  headless.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
+  headless.ClientDispatchedMessage(click) |> agnostic.send(to: runtime)
+  headless.ClientDispatchedMessage(click) |> agnostic.send(to: runtime)
 
   // Discard the first `Reconcile` message
   let _ = process.receive_forever(client)
@@ -114,7 +114,7 @@ pub fn effect_send_event_test() {
   let _ = process.receive_forever(client)
 
   headless.EffectDispatchedMessage(Incr)
-  |> lustre.send(to: runtime)
+  |> agnostic.send(to: runtime)
 
   let patch =
     patch.new(0, 0, [patch.replace_text("1")], [])
@@ -138,7 +138,7 @@ pub fn server_emit_event_test() {
 
   let click = transport.event_fired(reset, "click", dynamic.nil())
 
-  headless.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
+  headless.ClientDispatchedMessage(click) |> agnostic.send(to: runtime)
 
   // Discard the first `Reconcile` message
   let _ = process.receive_forever(client)
@@ -152,17 +152,17 @@ pub fn server_emit_event_test() {
 
 @target(erlang)
 fn with_erlang_runtime(run_test) {
-  let app = lustre.application(init, update, view)
-  let assert Ok(runtime) = lustre.start(app, on: platform.headless(), with: 0)
+  let app = agnostic.application(init, update, view)
+  let assert Ok(runtime) = agnostic.start(app, on: platform.headless(), with: 0)
   let client = process.new_subject()
 
-  server_component.register_subject(client) |> lustre.send(to: runtime)
+  server_component.register_subject(client) |> agnostic.send(to: runtime)
 
   run_test(client, runtime)
 
-  server_component.deregister_subject(client) |> lustre.send(to: runtime)
+  server_component.deregister_subject(client) |> agnostic.send(to: runtime)
 
-  lustre.shutdown() |> lustre.send(to: runtime)
+  agnostic.shutdown() |> agnostic.send(to: runtime)
 }
 
 // COUNTER APP -----------------------------------------------------------------

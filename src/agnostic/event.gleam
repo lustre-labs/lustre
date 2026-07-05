@@ -1,14 +1,14 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute.{type Attribute}
+import agnostic/effect.{type Effect}
+import agnostic/internals/constants
+import agnostic/vdom/vattr.{Event, Handler}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/int
 import gleam/json.{type Json}
 import gleam/pair
 import gleam/result
-import lustre/attribute.{type Attribute}
-import lustre/effect.{type Effect}
-import lustre/internals/constants
-import lustre/vdom/vattr.{Event, Handler}
 
 // TYPES -----------------------------------------------------------------------
 

@@ -4,13 +4,13 @@
 // used as the entry module when running esbuild so we *cant* use imports relative
 // to src/.
 
-import { Reconciler } from "../../../build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs";
+import { Reconciler } from "../../../build/dev/javascript/agnostic/agnostic/vdom/reconciler.ffi.mjs";
 import {
   adoptStylesheets,
   ContextRequestEvent,
   LustreEvent,
-} from "../../../build/dev/javascript/lustre/lustre/runtime/platform/base.ffi.mjs";
-import { dom_strict } from "../../../build/dev/javascript/lustre/lustre/platform.mjs";
+} from "../../../build/dev/javascript/agnostic/agnostic/runtime/platform/base.ffi.mjs";
+import { dom_strict } from "../../../build/dev/javascript/agnostic/agnostic/platform.mjs";
 import {
   mount_kind,
   reconcile_kind,
@@ -23,7 +23,7 @@ import {
   event_fired_kind,
   batch_kind,
   context_provided_kind,
-} from "../../../build/dev/javascript/lustre/lustre/runtime/transport.mjs";
+} from "../../../build/dev/javascript/agnostic/agnostic/runtime/transport.mjs";
 
 //
 

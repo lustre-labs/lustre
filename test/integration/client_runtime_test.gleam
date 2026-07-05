@@ -1,4 +1,20 @@
 @target(javascript)
+import agnostic
+@target(javascript)
+import agnostic/attribute
+@target(javascript)
+import agnostic/element.{type Element}
+@target(javascript)
+import agnostic/element/html
+@target(javascript)
+import agnostic/element/keyed
+@target(javascript)
+import agnostic/event
+@target(javascript)
+import agnostic/platform
+@target(javascript)
+import agnostic/platform/dom
+@target(javascript)
 import booklet
 @target(javascript)
 import gleam/int
@@ -6,22 +22,6 @@ import gleam/int
 import gleam/list
 @target(javascript)
 import gleam/string
-@target(javascript)
-import lustre
-@target(javascript)
-import lustre/attribute
-@target(javascript)
-import lustre/element.{type Element}
-@target(javascript)
-import lustre/element/html
-@target(javascript)
-import lustre/element/keyed
-@target(javascript)
-import lustre/event
-@target(javascript)
-import lustre/platform
-@target(javascript)
-import lustre/platform/dom
 @target(javascript)
 import lustre_test
 
@@ -73,7 +73,7 @@ pub fn client_runtime_map_with_events_test() {
   use runtime <- with_client_runtime(
     html_string,
     fn() {
-      lustre.simple(
+      agnostic.simple(
         fn(_) { [] },
         fn(model, message) { [message, ..model] },
         fn(_model) { initial },
@@ -112,7 +112,7 @@ pub fn client_runtime_memo_caching_test() {
 
   use runtime <- with_client_runtime(
     html_string,
-    fn() { lustre.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view) },
+    fn() { agnostic.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view) },
     get_platform,
   )
 
@@ -146,7 +146,7 @@ pub fn client_runtime_memo_events_test() {
 
   use runtime <- with_client_runtime(
     html_string,
-    fn() { lustre.simple(fn(_) { 0 }, int.add, view) },
+    fn() { agnostic.simple(fn(_) { 0 }, int.add, view) },
     get_platform,
   )
 
@@ -180,7 +180,7 @@ pub fn client_runtime_single_event_test() {
   use runtime <- with_client_runtime(
     html_string,
     fn() {
-      lustre.simple(
+      agnostic.simple(
         fn(_) { 0 },
         fn(model, message) {
           case message {
@@ -220,7 +220,7 @@ pub fn client_runtime_multiple_events_test() {
   use runtime <- with_client_runtime(
     html_string,
     fn() {
-      lustre.simple(
+      agnostic.simple(
         fn(_) { 0 },
         fn(model, message) {
           case message {
@@ -263,7 +263,7 @@ pub fn client_runtime_fragment_rendering_test() {
   use runtime <- with_client_runtime(
     html_string,
     fn() {
-      lustre.simple(
+      agnostic.simple(
         fn(_) { 0 },
         fn(model, message) {
           case message {
@@ -308,7 +308,9 @@ pub fn client_runtime_controlled_text_input_test() {
 
   use runtime <- with_client_runtime(
     html_string,
-    fn() { lustre.simple(fn(_) { "" }, fn(_model, message) { message }, view) },
+    fn() {
+      agnostic.simple(fn(_) { "" }, fn(_model, message) { message }, view)
+    },
     get_platform,
   )
 
@@ -341,7 +343,7 @@ pub fn client_runtime_controlled_checkbox_test() {
   use runtime <- with_client_runtime(
     html_string,
     fn() {
-      lustre.simple(fn(_) { False }, fn(_model, message) { message }, view)
+      agnostic.simple(fn(_) { False }, fn(_model, message) { message }, view)
     },
     get_platform,
   )
@@ -376,7 +378,7 @@ pub fn client_runtime_select_dropdown_test() {
   use runtime <- with_client_runtime(
     html_string,
     fn() {
-      lustre.simple(fn(_) { "red" }, fn(_model, message) { message }, view)
+      agnostic.simple(fn(_) { "red" }, fn(_model, message) { message }, view)
     },
     get_platform,
   )
@@ -415,7 +417,7 @@ pub fn client_runtime_memo_dependency_change_test() {
 
   use _runtime <- with_client_runtime(
     html_string,
-    fn() { lustre.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view) },
+    fn() { agnostic.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view) },
     get_platform,
   )
 
@@ -457,7 +459,7 @@ pub fn client_runtime_memo_stable_dependency_test() {
   use _runtime <- with_client_runtime(
     html_string,
     fn() {
-      lustre.simple(
+      agnostic.simple(
         fn(_) { #(0, "") },
         fn(model, _msg) {
           let #(count, text) = model
@@ -500,7 +502,7 @@ pub fn client_runtime_event_bubbling_test() {
   use runtime <- with_client_runtime(
     html_string,
     fn() {
-      lustre.simple(
+      agnostic.simple(
         fn(_) { [] },
         fn(model, message) { [message, ..model] },
         view,
@@ -541,7 +543,7 @@ pub fn client_runtime_nested_fragments_test() {
 
   use runtime <- with_client_runtime(
     html_string,
-    fn() { lustre.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view) },
+    fn() { agnostic.simple(fn(_) { 0 }, fn(model, _msg) { model + 1 }, view) },
     get_platform,
   )
 
@@ -576,7 +578,7 @@ pub fn client_runtime_keyed_fragments_test() {
   use runtime <- with_client_runtime(
     html_string,
     fn() {
-      lustre.simple(
+      agnostic.simple(
         fn(_) { initial_list },
         fn(_model, message) { message },
         view,
@@ -661,7 +663,7 @@ pub fn client_runtime_keyed_move_events_test() {
 
   use runtime <- with_client_runtime(
     html_string,
-    fn() { lustre.simple(fn(_) { initial_model }, update, view) },
+    fn() { agnostic.simple(fn(_) { initial_model }, update, view) },
     get_platform,
   )
 
@@ -678,7 +680,7 @@ pub fn client_runtime_keyed_move_events_test() {
 @external(javascript, "./client_test.ffi.mjs", "with_client_runtime")
 pub fn with_client_runtime(
   initial_html: String,
-  make_app: fn() -> lustre.App(Nil, model, message),
+  make_app: fn() -> agnostic.App(Nil, model, message),
   get_platform: fn() ->
     platform.Platform(
       dom.DomNode,

@@ -1,15 +1,19 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/runtime/transport.{type ClientMessage, type ServerMessage}
+import agnostic/vdom/cache.{type Cache}
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/process.{type Monitor, type Selector, type Subject}
 import gleam/json.{type Json}
 import gleam/set.{type Set}
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/runtime/transport.{type ClientMessage, type ServerMessage}
-import lustre/vdom/cache.{type Cache}
 
+@target(erlang)
+import agnostic/internals/constants
+@target(erlang)
+import agnostic/vdom/diff.{diff}
 @target(erlang)
 import gleam/dynamic.{type Dynamic}
 @target(erlang)
@@ -22,10 +26,6 @@ import gleam/option.{type Option}
 import gleam/otp/actor.{type Next, type StartError}
 @target(erlang)
 import gleam/result
-@target(erlang)
-import lustre/internals/constants
-@target(erlang)
-import lustre/vdom/diff.{diff}
 
 @target(javascript)
 import gleam/option

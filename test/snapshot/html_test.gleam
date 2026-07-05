@@ -1,20 +1,20 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute
+import agnostic/component
+import agnostic/effect
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/element/keyed
+import agnostic/element/mathml
+import agnostic/element/svg
+import agnostic/platform/dom
+import agnostic/vdom/vnode
 import birdie
 import gleam/dynamic/decode
 import gleam/int
 import gleam/json
-import lustre
-import lustre/attribute
-import lustre/component
-import lustre/effect
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/element/keyed
-import lustre/element/mathml
-import lustre/element/svg
-import lustre/platform/dom
-import lustre/vdom/vnode
 import lustre_test
 
 // ELEMENT TESTS ---------------------------------------------------------------
@@ -489,7 +489,7 @@ pub fn component_prerender_test() {
   use <- lustre_test.test_filter("component_prerender_test")
   let tag = "my-component"
   let component =
-    lustre.element(
+    agnostic.element(
       html.div([], [html.text("I'm in a declarative shadow root template")]),
     )
 
@@ -504,7 +504,7 @@ pub fn component_prerender_with_attributes_test() {
   use <- lustre_test.test_filter("component_prerender_with_attributes_test")
   let tag = "my-component"
   let component =
-    lustre.component(
+    agnostic.component(
       init: fn(_) { #(0, effect.none()) },
       update: fn(_, count) { #(count, effect.none()) },
       view: fn(count) { html.div([], [html.text(int.to_string(count))]) },
@@ -522,7 +522,7 @@ pub fn component_prerender_with_properties_test() {
   use <- lustre_test.test_filter("component_prerender_with_properties_test")
   let tag = "my-component"
   let component =
-    lustre.component(
+    agnostic.component(
       init: fn(_) { #(0, effect.none()) },
       update: fn(_, count) { #(count, effect.none()) },
       view: fn(count) { html.div([], [html.text(int.to_string(count))]) },
@@ -537,7 +537,7 @@ pub fn component_prerender_with_properties_test() {
 pub fn component_prerender_with_children_test() {
   use <- lustre_test.test_filter("component_prerender_with_children_test")
   let tag = "my-component"
-  let component = lustre.element(component.default_slot([], []))
+  let component = agnostic.element(component.default_slot([], []))
 
   component
   |> component.prerender(tag, [], [html.div([], [html.text("Child content")])])

@@ -1,5 +1,11 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute
+import agnostic/element/html.{html}
+import agnostic/platform
+import agnostic/platform/dom
+import agnostic/server_component
 import gleam/bytes_tree
 import gleam/erlang/application
 import gleam/erlang/process.{type Selector, type Subject}
@@ -9,12 +15,6 @@ import gleam/json
 import gleam/option.{type Option, None, Some}
 import gleam/otp/actor
 import group_registry.{type GroupRegistry}
-import lustre
-import lustre/attribute
-import lustre/element/html.{html}
-import lustre/platform
-import lustre/platform/dom
-import lustre/server_component
 import mist.{type Connection, type ResponseData}
 import whiteboard
 
@@ -112,7 +112,7 @@ fn serve_whiteboard(
 
 type WhiteboardSocket {
   WhiteboardSocket(
-    component: lustre.Runtime(whiteboard.Message),
+    component: agnostic.Runtime(whiteboard.Message),
     self: Subject(server_component.ClientMessage(whiteboard.Message)),
   )
 }
@@ -135,7 +135,7 @@ fn init_whiteboard_socket(
   // other component instances. Check out the whitespace component to learn how!
   let whiteboard = whiteboard.component()
   let assert Ok(component) =
-    lustre.start(
+    agnostic.start(
       whiteboard,
       on: platform.headless(dom.serializer()),
       with: registry,
@@ -145,7 +145,7 @@ fn init_whiteboard_socket(
   let selector = process.new_selector() |> process.select(self)
 
   server_component.register_subject(self)
-  |> lustre.send(to: component)
+  |> agnostic.send(to: component)
 
   #(WhiteboardSocket(component:, self:), Some(selector))
 }
@@ -158,7 +158,7 @@ fn loop_whiteboard_socket(
   case message {
     mist.Text(json) -> {
       case json.parse(json, server_component.runtime_message_decoder()) {
-        Ok(runtime_message) -> lustre.send(state.component, runtime_message)
+        Ok(runtime_message) -> agnostic.send(state.component, runtime_message)
         Error(_) -> Nil
       }
 
@@ -188,6 +188,6 @@ fn close_whiteboard_socket(state: WhiteboardSocket) -> Nil {
   // When the websocket connection closes, we need to also shut down the server
   // component runtime. If we forget to do this we'll end up with a memory leak
   // and a zombie process!
-  lustre.shutdown()
-  |> lustre.send(to: state.component)
+  agnostic.shutdown()
+  |> agnostic.send(to: state.component)
 }

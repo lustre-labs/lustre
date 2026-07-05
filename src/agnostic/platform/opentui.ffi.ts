@@ -27,10 +27,10 @@ import {
   Result$Ok$0,
 } from "../../gleam.mjs";
 import type { Result } from "../../prelude.mjs";
-import { none } from "../../../lustre_platform/lustre/element.mjs";
-import { insertMetadataChild } from "../../../lustre_platform/lustre/vdom/reconciler.ffi.mjs";
-import { element_kind } from "../../../lustre_platform/lustre/vdom/vnode.mjs";
-import { new$ as platform_new } from "../../../lustre_platform/lustre/platform.mjs";
+import { none } from "../../../agnostic/agnostic/element.mjs";
+import { insertMetadataChild } from "../../../agnostic/agnostic/vdom/reconciler.ffi.mjs";
+import { element_kind } from "../../../agnostic/agnostic/vdom/vnode.mjs";
+import { new$ as platform_new } from "../../../agnostic/agnostic/platform.mjs";
 
 // TYPES -----------------------------------------------------------------------
 

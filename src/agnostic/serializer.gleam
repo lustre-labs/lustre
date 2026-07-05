@@ -1,4 +1,4 @@
-import lustre/vdom/vnode.{type Element, type RawContent}
+import agnostic/vdom/vnode.{type Element, type RawContent}
 
 // IMPORTS ---------------------------------------------------------------------
 

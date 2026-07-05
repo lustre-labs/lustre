@@ -1,12 +1,12 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/internals/json_object_builder
+import agnostic/internals/mutable_map.{type MutableMap}
+import agnostic/internals/ref.{type Ref}
+import agnostic/vdom/vattr.{type Attribute}
 import gleam/dynamic.{type Dynamic}
 import gleam/json.{type Json}
 import gleam/option.{type Option}
-import lustre/internals/json_object_builder
-import lustre/internals/mutable_map.{type MutableMap}
-import lustre/internals/ref.{type Ref}
-import lustre/vdom/vattr.{type Attribute}
 
 // TYPES -----------------------------------------------------------------------
 

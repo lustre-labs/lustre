@@ -1,15 +1,15 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute
+import agnostic/dev/query.{
+  and, attribute, child, class, data, descendant, find_all, style, tag, text,
+}
+import agnostic/element
+import agnostic/element/html
+import agnostic/platform/dom
 import birdie
 import gleam/list
 import gleam/string
-import lustre/attribute
-import lustre/dev/query.{
-  and, attribute, child, class, data, descendant, find_all, style, tag, text,
-}
-import lustre/element
-import lustre/element/html
-import lustre/platform/dom
 import lustre_test
 
 // SINGLE ELEMENTS -------------------------------------------------------------

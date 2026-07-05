@@ -1,28 +1,28 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/element/keyed
+import agnostic/platform/opentui
+import agnostic/platform/opentui/attribute
+import agnostic/platform/opentui/effect as tui_effect
+import agnostic/platform/opentui/element as tui
+import agnostic/platform/opentui/event
 import gleam/dynamic/decode.{type Decoder}
 import gleam/http
 import gleam/http/request
 import gleam/int
 import gleam/json
 import gleam/list
-import lustre
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/element/keyed
-import lustre/platform/opentui
-import lustre/platform/opentui/attribute
-import lustre/platform/opentui/effect as tui_effect
-import lustre/platform/opentui/element as tui
-import lustre/platform/opentui/event
 import rsvp
 
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
   opentui.platform(opentui.default_config(), fn(platform) {
-    let app = lustre.application(init, update, view)
-    let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
+    let app = agnostic.application(init, update, view)
+    let assert Ok(_) = agnostic.start(app, on: platform, with: Nil)
     Nil
   })
 }

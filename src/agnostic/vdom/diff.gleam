@@ -1,18 +1,18 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/internals/constants
+import agnostic/internals/mutable_map.{type MutableMap}
+import agnostic/internals/ref
+import agnostic/vdom/cache.{type Cache, type Events}
+import agnostic/vdom/patch.{type Change, type Patch, Patch}
+import agnostic/vdom/path.{type Path}
+import agnostic/vdom/vattr.{type Attribute, Attribute, Event, Property}
+import agnostic/vdom/vnode.{
+  type Element, Element, Fragment, Map, Memo, RawContainer, RawNode, Text,
+}
 import gleam/json
 import gleam/option.{None, Some}
 import gleam/order.{Eq, Gt, Lt}
-import lustre/internals/constants
-import lustre/internals/mutable_map.{type MutableMap}
-import lustre/internals/ref
-import lustre/vdom/cache.{type Cache, type Events}
-import lustre/vdom/patch.{type Change, type Patch, Patch}
-import lustre/vdom/path.{type Path}
-import lustre/vdom/vattr.{type Attribute, Attribute, Event, Property}
-import lustre/vdom/vnode.{
-  type Element, Element, Fragment, Map, Memo, RawContainer, RawNode, Text,
-}
 
 // TYPES -----------------------------------------------------------------------
 

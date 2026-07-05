@@ -1,5 +1,11 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute
+import agnostic/element/html.{html}
+import agnostic/platform
+import agnostic/platform/dom
+import agnostic/server_component
 import counter
 import gleam/bytes_tree
 import gleam/erlang/application
@@ -8,12 +14,6 @@ import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/json
 import gleam/option.{type Option, None, Some}
-import lustre
-import lustre/attribute
-import lustre/element/html.{html}
-import lustre/platform
-import lustre/platform/dom
-import lustre/server_component
 import mist.{type Connection, type ResponseData}
 
 // MAIN ------------------------------------------------------------------------
@@ -123,7 +123,7 @@ fn serve_counter(request: Request(Connection)) -> Response(ResponseData) {
 
 type CounterSocket {
   CounterSocket(
-    component: lustre.Runtime(counter.Message),
+    component: agnostic.Runtime(counter.Message),
     self: Subject(server_component.ClientMessage(counter.Message)),
   )
 }
@@ -136,12 +136,12 @@ type CounterSocketInit =
 
 fn init_counter_socket(_) -> CounterSocketInit {
   let counter = counter.component()
-  // Rather than calling `lustre.start` as we do in the client, we construct the
-  // Lustre runtime by calling `lustre.start_server_component`. This is the same
-  // `Runtime` type we get from `lustre.start` but this function doesn't need a
+  // Rather than calling `agnostic.start` as we do in the client, we construct the
+  // Lustre runtime by calling `agnostic.start_server_component`. This is the same
+  // `Runtime` type we get from `agnostic.start` but this function doesn't need a
   // CSS selector for the element to attach to: there's no DOM here!
   let assert Ok(component) =
-    lustre.start(counter, on: platform.headless(), with: Nil)
+    agnostic.start(counter, on: platform.headless(), with: Nil)
 
   // The server component runtime communicates to the websocket process using
   // Gleam's standard process messaging. We construct a new subject that the
@@ -158,7 +158,7 @@ fn init_counter_socket(_) -> CounterSocketInit {
   // setup: instead the runtime broadcasts messages to any registered subjects
   // and lets you handle the transport layer yourself.
   server_component.register_subject(self)
-  |> lustre.send(to: component)
+  |> agnostic.send(to: component)
 
   #(CounterSocket(component:, self:), Some(selector))
 }
@@ -173,7 +173,7 @@ fn loop_counter_socket(
     // decode and pass to the server component runtime.
     mist.Text(json) -> {
       case json.parse(json, server_component.runtime_message_decoder()) {
-        Ok(runtime_message) -> lustre.send(state.component, runtime_message)
+        Ok(runtime_message) -> agnostic.send(state.component, runtime_message)
         // This case will only be hit if something other than Lustre's client
         // runtime sends us a message.
         Error(_) -> Nil
@@ -209,6 +209,6 @@ fn close_counter_socket(state: CounterSocket) -> Nil {
   // When the websocket connection closes, we need to also shut down the server
   // component runtime. If we forget to do this we'll end up with a memory leak
   // and a zombie process!
-  lustre.shutdown()
-  |> lustre.send(to: state.component)
+  agnostic.shutdown()
+  |> agnostic.send(to: state.component)
 }

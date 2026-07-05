@@ -3,11 +3,11 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute.{type Attribute}
+import agnostic/element.{type Element}
+import agnostic/platform/opentui
 import gleam/json.{type Json}
 import gleam/option.{Some}
-import lustre/attribute.{type Attribute}
-import lustre/element.{type Element}
-import lustre/platform/opentui
 
 // TYPES -----------------------------------------------------------------------
 

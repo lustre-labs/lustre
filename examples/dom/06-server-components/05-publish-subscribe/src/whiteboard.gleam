@@ -1,24 +1,24 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic.{type App}
+import agnostic/attribute.{attribute}
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/element/svg
+import agnostic/event
+import agnostic/server_component
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode
 import gleam/erlang/process
 import gleam/int
 import gleam/list
 import group_registry.{type GroupRegistry}
-import lustre.{type App}
-import lustre/attribute.{attribute}
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/element/svg
-import lustre/event
-import lustre/server_component
 
 // MAIN ------------------------------------------------------------------------
 
 pub fn component() -> App(GroupRegistry(SharedMessage), Model, Message) {
-  lustre.application(init, update, view)
+  agnostic.application(init, update, view)
 }
 
 // MODEL -----------------------------------------------------------------------
@@ -151,7 +151,10 @@ fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
   }
 }
 
-fn broadcast(registry: GroupRegistry(message), message: message) -> Effect(any) {
+fn broadcast(
+  registry: GroupRegistry(message),
+  message: message,
+) -> Effect(any) {
   use _ <- effect.from
   use member <- list.each(group_registry.members(registry, "whiteboard"))
 

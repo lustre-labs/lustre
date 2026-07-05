@@ -299,7 +299,7 @@ export class Reconciler {
           // has a sparse hole at `idx`. Logging is a no-op unless
           // LUSTRE_DEBUG_LOG is set. Note: an intentionally-elided zero
           // index (json_object_builder.int skips 0, see
-          // src/lustre/internals/json_object_builder.gleam:36-41) is
+          // src/agnostic/internals/json_object_builder.gleam:36-41) is
           // benign when childNodes[0] exists; the `child === undefined`
           // check distinguishes the broken case.
           debugWriteLine(

@@ -1,8 +1,8 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import lustre/attribute.{type Attribute}
-import lustre/element.{type Element, namespaced, text as inline_text}
-import lustre/internals/constants
+import agnostic/attribute.{type Attribute}
+import agnostic/element.{type Element, namespaced, text as inline_text}
+import agnostic/internals/constants
 
 // CONSTANTS -------------------------------------------------------------------
 

@@ -1,15 +1,15 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute
+import agnostic/dev/query
+import agnostic/element
+import agnostic/element/html
+import agnostic/element/keyed
+import agnostic/event
+import agnostic/vdom/cache
+import agnostic/vdom/path
+import agnostic/vdom/vattr.{Handler}
 import gleam/dynamic
-import lustre/attribute
-import lustre/dev/query
-import lustre/element
-import lustre/element/html
-import lustre/element/keyed
-import lustre/event
-import lustre/vdom/cache
-import lustre/vdom/path
-import lustre/vdom/vattr.{Handler}
 import lustre_test
 
 //

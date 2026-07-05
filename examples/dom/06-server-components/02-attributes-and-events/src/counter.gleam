@@ -1,24 +1,24 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute.{type Attribute}
+import agnostic/component
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/event
 import gleam/dynamic/decode
 import gleam/int
 import gleam/json
 import gleam/result
-import lustre
-import lustre/attribute.{type Attribute}
-import lustre/component
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/event
 
 // MAIN ------------------------------------------------------------------------
 
-pub fn component() -> lustre.App(_, Model, Message) {
+pub fn component() -> agnostic.App(_, Model, Message) {
   // Server components are still Lustre components, which means they get access
   // to the same features like listening to changes to attributes and properties
   // or emitting DOM events.
-  lustre.component(init, update, view, [
+  agnostic.component(init, update, view, [
     component.on_attribute_change("value", fn(value) {
       int.parse(value) |> result.map(ParentChangedValue)
     }),

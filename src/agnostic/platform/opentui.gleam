@@ -6,7 +6,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 @target(javascript)
-import lustre/platform.{type Platform}
+import agnostic/platform.{type Platform}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -202,8 +202,8 @@ pub fn default_config() -> Config {
 /// ```gleam
 /// pub fn main() {
 ///   opentui.platform(opentui.default_config(), fn(platform) {
-///     let app = lustre.application(init, update, view)
-///     let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
+///     let app = agnostic.application(init, update, view)
+///     let assert Ok(_) = agnostic.start(app, on: platform, with: Nil)
 ///     Nil
 ///   })
 /// }

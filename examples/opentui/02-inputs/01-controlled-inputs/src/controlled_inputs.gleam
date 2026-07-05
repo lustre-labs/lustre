@@ -1,21 +1,21 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/effect
+import agnostic/element.{type Element}
+import agnostic/platform/opentui
+import agnostic/platform/opentui/attribute
+import agnostic/platform/opentui/effect as tui_effect
+import agnostic/platform/opentui/element as tui
+import agnostic/platform/opentui/event
 import gleam/string
-import lustre
-import lustre/effect
-import lustre/element.{type Element}
-import lustre/platform/opentui
-import lustre/platform/opentui/attribute
-import lustre/platform/opentui/effect as tui_effect
-import lustre/platform/opentui/element as tui
-import lustre/platform/opentui/event
 
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
   opentui.platform(opentui.default_config(), fn(platform) {
-    let app = lustre.application(init, update, view)
-    let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
+    let app = agnostic.application(init, update, view)
+    let assert Ok(_) = agnostic.start(app, on: platform, with: Nil)
     Nil
   })
 }
@@ -87,12 +87,18 @@ fn view(model: Model) -> Element(Msg) {
         ],
         [
           tui.text([
-            attribute.content("Type to enter a name (max 10 chars), Ctrl+Q to quit"),
+            attribute.content(
+              "Type to enter a name (max 10 chars), Ctrl+Q to quit",
+            ),
             attribute.dim(True),
             attribute.color("#888"),
           ]),
           tui.box(
-            [attribute.flex_direction("row"), attribute.gap(1), attribute.align_items("center")],
+            [
+              attribute.flex_direction("row"),
+              attribute.gap(1),
+              attribute.align_items("center"),
+            ],
             [
               tui.text([
                 attribute.content("Enter a name:"),
@@ -110,16 +116,13 @@ fn view(model: Model) -> Element(Msg) {
               ]),
             ],
           ),
-          tui.box(
-            [attribute.margin_top(1)],
-            [
-              tui.text([
-                attribute.content("Hello there, " <> model.name <> "!"),
-                attribute.color("#69db7c"),
-                attribute.bold(True),
-              ]),
-            ],
-          ),
+          tui.box([attribute.margin_top(1)], [
+            tui.text([
+              attribute.content("Hello there, " <> model.name <> "!"),
+              attribute.color("#69db7c"),
+              attribute.bold(True),
+            ]),
+          ]),
         ],
       ),
     ],

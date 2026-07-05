@@ -1,22 +1,22 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/dev/query.{type Query}
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/vdom/cache
+import agnostic/vdom/path
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json.{type Json}
 import gleam/list
 import gleam/pair
 import gleam/result
-import lustre/dev/query.{type Query}
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/vdom/cache
-import lustre/vdom/path
 
 // TYPES -----------------------------------------------------------------------
 
-/// A simulated [`lustre.App`](https://hexdocs.pm/lustre/lustre.html#App) ready
+/// A simulated [`agnostic.App`](https://hexdocs.pm/lustre/lustre.html#App) ready
 /// to be started. This module exposes constructor functions that mirrors those
-/// provided by the main `lustre` module:
+/// provided by the main `agnostic` module:
 ///
 /// - [`simple`](#simple)
 ///
@@ -133,9 +133,9 @@ pub fn start(
 ///
 /// ```gleam
 /// import birdie
-/// import lustre/dev/simulate
-/// import lustre/dev/query
-/// import lustre/element
+/// import agnostic/dev/simulate
+/// import agnostic/dev/query
+/// import agnostic/element
 ///
 /// pub fn login_test() {
 ///   let app = simulate.application(init:, update:, view:)

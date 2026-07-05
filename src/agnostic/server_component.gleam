@@ -77,29 +77,29 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute.{type Attribute, attribute}
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/runtime/headless
+import agnostic/runtime/transport
+import agnostic/serializer.{type Serializer}
+import agnostic/vdom/vattr.{Event}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
-import lustre/attribute.{type Attribute, attribute}
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/runtime/headless
-import lustre/runtime/transport
-import lustre/serializer.{type Serializer}
-import lustre/vdom/vattr.{Event}
 
 @target(erlang)
-import gleam/erlang/process.{type Pid, type Selector, type Subject}
+import agnostic.{type Runtime, type RuntimeMessage}
 @target(erlang)
-import lustre.{type Runtime, type RuntimeMessage}
+import gleam/erlang/process.{type Pid, type Selector, type Subject}
 
 // We don't want users of the JavaScript target to see warnings about an unused
 // `Pid` type so we use target-specific imports to only pull in the types we need
 // for each target.
 @target(javascript)
-import gleam/erlang/process.{type Selector, type Subject}
+import agnostic.{type RuntimeMessage}
 @target(javascript)
-import lustre.{type RuntimeMessage}
+import gleam/erlang/process.{type Selector, type Subject}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -193,10 +193,10 @@ pub fn method(value: TransportMethod) -> Attribute(message) {
 ///
 /// ```gleam
 /// import gleam/dynamic/decode
-/// import lustre/element.{type Element}
-/// import lustre/element/html
-/// import lustre/event
-/// import lustre/server_component
+/// import agnostic/element.{type Element}
+/// import agnostic/element/html
+/// import agnostic/event
+/// import agnostic/server_component
 ///
 /// pub fn custom_button(on_click: fn(String) -> message) -> Element(message) {
 ///   let handler = fn(event) {

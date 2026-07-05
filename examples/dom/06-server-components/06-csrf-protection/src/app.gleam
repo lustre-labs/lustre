@@ -15,6 +15,11 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute
+import agnostic/element
+import agnostic/element/html.{html}
+import agnostic/server_component
 import counter
 import gleam/bytes_tree
 import gleam/erlang/application
@@ -25,11 +30,6 @@ import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import lustre
-import lustre/attribute
-import lustre/element
-import lustre/element/html.{html}
-import lustre/server_component
 import mist.{type Connection, type ResponseData}
 import youid/uuid
 
@@ -173,7 +173,7 @@ fn serve_counter(
 
 type CounterSocket {
   CounterSocket(
-    component: lustre.Runtime(counter.Message),
+    component: agnostic.Runtime(counter.Message),
     self: Subject(server_component.ClientMessage(counter.Message)),
   )
 }
@@ -186,7 +186,7 @@ type CounterSocketInit =
 
 fn init_counter_socket(_) -> CounterSocketInit {
   let counter = counter.component()
-  let assert Ok(component) = lustre.start_server_component(counter, Nil)
+  let assert Ok(component) = agnostic.start_server_component(counter, Nil)
 
   let self = process.new_subject()
   let selector =
@@ -194,7 +194,7 @@ fn init_counter_socket(_) -> CounterSocketInit {
     |> process.select(self)
 
   server_component.register_subject(self)
-  |> lustre.send(to: component)
+  |> agnostic.send(to: component)
 
   #(CounterSocket(component:, self:), Some(selector))
 }
@@ -207,7 +207,7 @@ fn loop_counter_socket(
   case message {
     mist.Text(json) -> {
       case json.parse(json, server_component.runtime_message_decoder()) {
-        Ok(runtime_message) -> lustre.send(state.component, runtime_message)
+        Ok(runtime_message) -> agnostic.send(state.component, runtime_message)
         Error(_) -> Nil
       }
 
@@ -230,6 +230,6 @@ fn loop_counter_socket(
 }
 
 fn close_counter_socket(state: CounterSocket) -> Nil {
-  lustre.shutdown()
-  |> lustre.send(to: state.component)
+  agnostic.shutdown()
+  |> agnostic.send(to: state.component)
 }

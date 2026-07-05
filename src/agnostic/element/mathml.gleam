@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import lustre/attribute.{type Attribute}
-import lustre/element.{type Element, namespaced}
+import agnostic/attribute.{type Attribute}
+import agnostic/element.{type Element, namespaced}
 
 // CONSTANTS -------------------------------------------------------------------
 

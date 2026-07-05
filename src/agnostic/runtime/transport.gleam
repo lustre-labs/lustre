@@ -1,14 +1,14 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/element.{type Element}
+import agnostic/serializer
+import agnostic/vdom/patch.{type Patch}
+import agnostic/vdom/vnode.{type Memos, type RawContent}
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/function
 import gleam/json.{type Json}
-import lustre/element.{type Element}
-import lustre/serializer
-import lustre/vdom/patch.{type Patch}
-import lustre/vdom/vnode.{type Memos, type RawContent}
 
 // TYPES -----------------------------------------------------------------------
 

@@ -1,13 +1,13 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/platform/opentui
+import agnostic/platform/opentui/attribute
+import agnostic/platform/opentui/effect as tui_effect
+import agnostic/platform/opentui/element as tui
 import gleam/int
-import lustre
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/platform/opentui
-import lustre/platform/opentui/attribute
-import lustre/platform/opentui/effect as tui_effect
-import lustre/platform/opentui/element as tui
 
 // MAIN ------------------------------------------------------------------------
 
@@ -16,8 +16,8 @@ pub fn main() {
   let now = get_current_time()
 
   opentui.platform(opentui.default_config(), fn(platform) {
-    let app = lustre.application(init, update, view)
-    let assert Ok(_) = lustre.start(app, on: platform, with: now)
+    let app = agnostic.application(init, update, view)
+    let assert Ok(_) = agnostic.start(app, on: platform, with: now)
     Nil
   })
 }

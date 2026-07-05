@@ -1,16 +1,16 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute
+import agnostic/element.{type Element}
+import agnostic/internals/constants
+import agnostic/vdom/path.{type Path}
+import agnostic/vdom/vattr.{Attribute}
+import agnostic/vdom/vnode.{
+  Element, Fragment, Map, Memo, RawContainer, RawNode, Text,
+}
 import gleam/list
 import gleam/order
 import gleam/string
-import lustre/attribute
-import lustre/element.{type Element}
-import lustre/internals/constants
-import lustre/vdom/path.{type Path}
-import lustre/vdom/vattr.{Attribute}
-import lustre/vdom/vnode.{
-  Element, Fragment, Map, Memo, RawContainer, RawNode, Text,
-}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -69,7 +69,7 @@ pub fn descendant(of parent: Query, matching selector: Selector) -> Query {
 /// the class "wibble".
 ///
 /// ```gleam
-/// import lustre/dev/query
+/// import agnostic/dev/query
 ///
 /// pub fn example() {
 ///   let div = query.tag("div")
@@ -83,7 +83,7 @@ pub fn descendant(of parent: Query, matching selector: Selector) -> Query {
 /// something more specific.
 ///
 /// ```gleam
-/// import lustre/dev/query
+/// import agnostic/dev/query
 ///
 /// pub fn example() {
 ///   query.tag("div")
@@ -116,7 +116,7 @@ pub fn tag(value: String) -> Selector {
 /// For example, to select an SVG circle element, you would use:
 ///
 /// ```gleam
-/// import lustre/dev/query
+/// import agnostic/dev/query
 ///
 /// pub fn example() {
 ///   let svg = "http://www.w3.org/2000/svg"
@@ -137,7 +137,7 @@ pub fn namespaced(namespace: String, tag: String) -> Selector {
 /// use:
 ///
 /// ```gleam
-/// import lustre/dev/query
+/// import agnostic/dev/query
 ///
 /// pub fn example() {
 ///   query.element(matching: query.attribute("name", "username"))
@@ -147,7 +147,7 @@ pub fn namespaced(namespace: String, tag: String) -> Selector {
 /// Or to select elements with the `disabled` attribute:
 ///
 /// ```gleam
-/// import lustre/dev/query
+/// import agnostic/dev/query
 ///
 /// pub fn example() {
 ///   query.element(matching: query.attribute("disabled", ""))
@@ -192,7 +192,7 @@ pub fn id(name: String) -> Selector {
 /// select a custom disclosure element that is currently open with:
 ///
 /// ```gleam
-/// import lustre/dev/query
+/// import agnostic/dev/query
 ///
 /// pub fn example() {
 ///   query.element(matching: query.data("open", "true"))
@@ -215,7 +215,7 @@ pub fn test_id(value: String) -> Selector {
 /// select the trigger of a dropdown menu with:
 ///
 /// ```gleam
-/// import lustre/dev/query
+/// import agnostic/dev/query
 ///
 /// pub fn example() {
 ///   query.element(matching: query.aria("expanded", "true"))

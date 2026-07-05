@@ -1,16 +1,16 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/element
+import agnostic/element/html
+import agnostic/element/keyed
+import agnostic/event
+import agnostic/vdom/cache
+import agnostic/vdom/diff
+import agnostic/vdom/path
+import agnostic/vdom/vattr.{Handler}
 import gleam/dynamic
 import gleam/list
 import gleam/string
-import lustre/element
-import lustre/element/html
-import lustre/element/keyed
-import lustre/event
-import lustre/vdom/cache
-import lustre/vdom/diff
-import lustre/vdom/path
-import lustre/vdom/vattr.{Handler}
 import lustre_test
 
 //

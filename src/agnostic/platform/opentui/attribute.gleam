@@ -4,10 +4,10 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute.{type Attribute, attribute, property}
 import gleam/float
 import gleam/int
 import gleam/json.{type Json}
-import lustre/attribute.{type Attribute, attribute, property}
 
 // TYPES -----------------------------------------------------------------------
 

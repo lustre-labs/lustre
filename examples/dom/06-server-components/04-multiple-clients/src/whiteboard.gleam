@@ -1,20 +1,20 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic.{type App}
+import agnostic/attribute.{attribute}
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/element/svg
+import agnostic/event
+import agnostic/server_component
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode
 import gleam/int
-import lustre.{type App}
-import lustre/attribute.{attribute}
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/element/svg
-import lustre/event
-import lustre/server_component
 
 // MAIN ------------------------------------------------------------------------
 
 pub fn component() -> App(_, Model, Message) {
-  lustre.simple(init, update, view)
+  agnostic.simple(init, update, view)
 }
 
 // MODEL -----------------------------------------------------------------------

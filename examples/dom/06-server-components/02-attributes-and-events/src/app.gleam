@@ -1,5 +1,11 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute
+import agnostic/element/html.{html}
+import agnostic/platform
+import agnostic/platform/dom
+import agnostic/server_component
 import counter
 import gleam/bytes_tree
 import gleam/erlang/application
@@ -8,12 +14,6 @@ import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/json
 import gleam/option.{type Option, None, Some}
-import lustre
-import lustre/attribute
-import lustre/element/html.{html}
-import lustre/platform
-import lustre/platform/dom
-import lustre/server_component
 import mist.{type Connection, type ResponseData}
 
 // MAIN ------------------------------------------------------------------------
@@ -126,7 +126,7 @@ fn serve_counter(request: Request(Connection)) -> Response(ResponseData) {
 
 type CounterSocket {
   CounterSocket(
-    component: lustre.Runtime(counter.Message),
+    component: agnostic.Runtime(counter.Message),
     self: Subject(server_component.ClientMessage(counter.Message)),
   )
 }
@@ -140,7 +140,7 @@ type CounterSocketInit =
 fn init_counter_socket(_) -> CounterSocketInit {
   let counter = counter.component()
   let assert Ok(component) =
-    lustre.start(counter, on: platform.headless(), with: Nil)
+    agnostic.start(counter, on: platform.headless(), with: Nil)
 
   let self = process.new_subject()
   let selector =
@@ -148,7 +148,7 @@ fn init_counter_socket(_) -> CounterSocketInit {
     |> process.select(self)
 
   server_component.register_subject(self)
-  |> lustre.send(to: component)
+  |> agnostic.send(to: component)
 
   #(CounterSocket(component:, self:), Some(selector))
 }
@@ -161,7 +161,7 @@ fn loop_counter_socket(
   case message {
     mist.Text(json) -> {
       case json.parse(json, server_component.runtime_message_decoder()) {
-        Ok(runtime_message) -> lustre.send(state.component, runtime_message)
+        Ok(runtime_message) -> agnostic.send(state.component, runtime_message)
         Error(_) -> Nil
       }
 
@@ -191,6 +191,6 @@ fn close_counter_socket(state: CounterSocket) -> Nil {
   // When the websocket connection closes, we need to also shut down the server
   // component runtime. If we forget to do this we'll end up with a memory leak
   // and a zombie process!
-  lustre.shutdown()
-  |> lustre.send(to: state.component)
+  agnostic.shutdown()
+  |> agnostic.send(to: state.component)
 }

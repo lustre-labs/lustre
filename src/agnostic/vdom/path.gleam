@@ -1,8 +1,8 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/internals/constants
 import gleam/int
 import gleam/string
-import lustre/internals/constants
 
 // CONSTANTS -------------------------------------------------------------------
 

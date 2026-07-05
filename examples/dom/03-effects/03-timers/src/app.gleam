@@ -1,18 +1,18 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute.{attribute}
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/element/svg
+import agnostic/platform/dom
 import gleam/float
 import gleam/int
 import gleam/time/calendar
 import gleam/time/duration.{type Duration}
 import gleam/time/timestamp.{type Timestamp}
 import gleam_community/maths
-import lustre
-import lustre/attribute.{attribute}
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/element/svg
-import lustre/platform/dom
 
 // MAIN ------------------------------------------------------------------------
 
@@ -25,8 +25,8 @@ pub fn main() {
   let model = Model(timezone:, time: now)
 
   let assert Ok(platform) = dom.platform("#app")
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, on: platform, with: model)
+  let app = agnostic.application(init, update, view)
+  let assert Ok(_) = agnostic.start(app, on: platform, with: model)
 
   Nil
 }

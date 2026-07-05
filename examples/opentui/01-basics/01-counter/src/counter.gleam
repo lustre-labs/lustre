@@ -1,12 +1,12 @@
 import gleam/int
 
-import lustre
-import lustre/effect
-import lustre/platform/opentui
-import lustre/platform/opentui/attribute
-import lustre/platform/opentui/effect as tui_effect
-import lustre/platform/opentui/element
-import lustre/platform/opentui/event
+import agnostic
+import agnostic/effect
+import agnostic/platform/opentui
+import agnostic/platform/opentui/attribute
+import agnostic/platform/opentui/effect as tui_effect
+import agnostic/platform/opentui/element
+import agnostic/platform/opentui/event
 
 pub fn main() {
   let config =
@@ -14,8 +14,8 @@ pub fn main() {
     |> opentui.use_mouse(False)
 
   use platform <- opentui.platform(config)
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
+  let app = agnostic.application(init, update, view)
+  let assert Ok(_) = agnostic.start(app, on: platform, with: Nil)
   Nil
 }
 

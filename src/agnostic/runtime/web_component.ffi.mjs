@@ -17,7 +17,7 @@ import {
   Error$BadComponentName,
   Error$ComponentAlreadyRegistered,
   Error$NotABrowser,
-} from "../../lustre.mjs";
+} from "../../agnostic.mjs";
 import {
   Runtime,
   ContextRequestEvent,

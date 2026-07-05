@@ -62,11 +62,11 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/internals/constants
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
-import lustre/internals/constants
 
 @target(javascript)
 import gleam/erlang/process.{type Selector}
@@ -131,7 +131,7 @@ pub fn none() -> Effect(message) {
 /// message on the browser window object's `"visibilitychange"` event.
 ///
 /// ```gleam
-/// import lustre/effect.{type Effect}
+/// import agnostic/effect.{type Effect}
 /// import plinth/browser/window
 ///
 /// type Model {

@@ -186,8 +186,8 @@ declare module '*/lustre_platform_opentui_test.mjs' {
 
 }
 
-declare module '*/lustre/platform/opentui.mjs' {
-  import type * as $platform from "../../../lustre_platform/lustre/platform.d.mts";
+declare module '*/agnostic/platform/opentui.mjs' {
+  import type * as $platform from "../../../agnostic/agnostic/platform.d.mts";
   import type * as _ from "../../gleam.d.mts";
 
   export type Node$ = any;
@@ -306,10 +306,10 @@ declare module '*/lustre/platform/opentui.mjs' {
 
 }
 
-declare module '*/lustre/platform/opentui/event.mjs' {
+declare module '*/agnostic/platform/opentui/event.mjs' {
   import type * as $decode from "../../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
-  import type * as $vattr from "../../../../lustre_platform/lustre/vdom/vattr.d.mts";
-  import type * as $effect from "../../../lustre/platform/opentui/effect.d.mts";
+  import type * as $vattr from "../../../../agnostic/agnostic/vdom/vattr.d.mts";
+  import type * as $effect from "../../../agnostic/platform/opentui/effect.d.mts";
 
   export function on_focus<PKT>(msg: PKT): $vattr.Attribute$<PKT>;
 
@@ -391,10 +391,10 @@ declare module '*/lustre/platform/opentui/event.mjs' {
 
 }
 
-declare module '*/lustre/platform/opentui/portal.mjs' {
+declare module '*/agnostic/platform/opentui/portal.mjs' {
   import type * as $decode from "../../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
-  import type * as $vattr from "../../../../lustre_platform/lustre/vdom/vattr.d.mts";
-  import type * as $vnode from "../../../../lustre_platform/lustre/vdom/vnode.d.mts";
+  import type * as $vattr from "../../../../agnostic/agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../../../agnostic/agnostic/vdom/vnode.d.mts";
   import type * as _ from "../../../gleam.d.mts";
 
   export class MissingTarget extends _.CustomType {}
@@ -452,13 +452,13 @@ declare module '*/lustre/platform/opentui/portal.mjs' {
 
 }
 
-declare module '*/lustre/platform/opentui/effect.mjs' {
+declare module '*/agnostic/platform/opentui/effect.mjs' {
   import type * as $dynamic from "../../../../gleam_stdlib/gleam/dynamic.d.mts";
   import type * as $decode from "../../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
   import type * as $option from "../../../../gleam_stdlib/gleam/option.d.mts";
-  import type * as $effect from "../../../../lustre_platform/lustre/effect.d.mts";
+  import type * as $effect from "../../../../agnostic/agnostic/effect.d.mts";
   import type * as _ from "../../../gleam.d.mts";
-  import type * as $opentui from "../../../lustre/platform/opentui.d.mts";
+  import type * as $opentui from "../../../agnostic/platform/opentui.d.mts";
 
   export class KeyEvent extends _.CustomType {
     /** @deprecated */
@@ -666,12 +666,12 @@ declare module '*/lustre/platform/opentui/effect.mjs' {
 
 }
 
-declare module '*/lustre/platform/opentui/element.mjs' {
+declare module '*/agnostic/platform/opentui/element.mjs' {
   import type * as $json from "../../../../gleam_json/gleam/json.d.mts";
-  import type * as $vattr from "../../../../lustre_platform/lustre/vdom/vattr.d.mts";
-  import type * as $vnode from "../../../../lustre_platform/lustre/vdom/vnode.d.mts";
+  import type * as $vattr from "../../../../agnostic/agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../../../agnostic/agnostic/vdom/vnode.d.mts";
   import type * as _ from "../../../gleam.d.mts";
-  import type * as $opentui from "../../../lustre/platform/opentui.d.mts";
+  import type * as $opentui from "../../../agnostic/platform/opentui.d.mts";
 
   export type RawNodeFactory = (x0: $opentui.Renderer$) => $opentui.Node$;
 
@@ -755,9 +755,9 @@ declare module '*/lustre/platform/opentui/element.mjs' {
 
 }
 
-declare module '*/lustre/platform/opentui/attribute.mjs' {
+declare module '*/agnostic/platform/opentui/attribute.mjs' {
   import type * as $json from "../../../../gleam_json/gleam/json.d.mts";
-  import type * as $vattr from "../../../../lustre_platform/lustre/vdom/vattr.d.mts";
+  import type * as $vattr from "../../../../agnostic/agnostic/vdom/vattr.d.mts";
   import type * as _ from "../../../gleam.d.mts";
 
   export class BorderCharacters extends _.CustomType {
@@ -1204,19 +1204,19 @@ declare module '*/lustre/platform/opentui/attribute.mjs' {
 }
 
 // lustre_platform gleam files
-declare module '*/lustre.mjs' {
+declare module '*/agnostic.mjs' {
   import type * as $process from "../gleam_erlang/gleam/erlang/process.d.mts";
   import type * as $actor from "../gleam_otp/gleam/otp/actor.d.mts";
   import type * as $factory_supervisor from "../gleam_otp/gleam/otp/factory_supervisor.d.mts";
   import type * as $supervision from "../gleam_otp/gleam/otp/supervision.d.mts";
   import type * as $option from "../gleam_stdlib/gleam/option.d.mts";
   import type * as _ from "./gleam.d.mts";
-  import type * as $component from "./lustre/component.d.mts";
-  import type * as $effect from "./lustre/effect.d.mts";
-  import type * as $platform from "./lustre/platform.d.mts";
-  import type * as $dom from "./lustre/platform/dom.d.mts";
-  import type * as $headless from "./lustre/runtime/headless.d.mts";
-  import type * as $vnode from "./lustre/vdom/vnode.d.mts";
+  import type * as $component from "./agnostic/component.d.mts";
+  import type * as $effect from "./agnostic/effect.d.mts";
+  import type * as $platform from "./agnostic/platform.d.mts";
+  import type * as $dom from "./agnostic/platform/dom.d.mts";
+  import type * as $headless from "./agnostic/runtime/headless.d.mts";
+  import type * as $vnode from "./agnostic/vdom/vnode.d.mts";
 
   declare class App<KSR, KSQ, KSS> extends _.CustomType {
     /** @deprecated */
@@ -1371,12 +1371,12 @@ declare module '*/gleam.mjs' {
 
 }
 
-declare module '*/lustre/event.mjs' {
+declare module '*/agnostic/event.mjs' {
   import type * as $json from "../../gleam_json/gleam/json.d.mts";
   import type * as $decode from "../../gleam_stdlib/gleam/dynamic/decode.d.mts";
   import type * as _ from "../gleam.d.mts";
-  import type * as $effect from "../lustre/effect.d.mts";
-  import type * as $vattr from "../lustre/vdom/vattr.d.mts";
+  import type * as $effect from "../agnostic/effect.d.mts";
+  import type * as $vattr from "../agnostic/vdom/vattr.d.mts";
 
   export type Handler = $vattr.Handler$<any>;
 
@@ -1453,17 +1453,17 @@ declare module '*/lustre/event.mjs' {
 
 }
 
-declare module '*/lustre/server_component.mjs' {
+declare module '*/agnostic/server_component.mjs' {
   import type * as $process from "../../gleam_erlang/gleam/erlang/process.d.mts";
   import type * as $json from "../../gleam_json/gleam/json.d.mts";
   import type * as $decode from "../../gleam_stdlib/gleam/dynamic/decode.d.mts";
   import type * as _ from "../gleam.d.mts";
-  import type * as $effect from "../lustre/effect.d.mts";
-  import type * as $headless from "../lustre/runtime/headless.d.mts";
-  import type * as $transport from "../lustre/runtime/transport.d.mts";
-  import type * as $serializer from "../lustre/serializer.d.mts";
-  import type * as $vattr from "../lustre/vdom/vattr.d.mts";
-  import type * as $vnode from "../lustre/vdom/vnode.d.mts";
+  import type * as $effect from "../agnostic/effect.d.mts";
+  import type * as $headless from "../agnostic/runtime/headless.d.mts";
+  import type * as $transport from "../agnostic/runtime/transport.d.mts";
+  import type * as $serializer from "../agnostic/serializer.d.mts";
+  import type * as $vattr from "../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
 
   export class WebSocket extends _.CustomType {}
   export function TransportMethod$WebSocket(): TransportMethod$;
@@ -1534,12 +1534,12 @@ declare module '*/lustre/server_component.mjs' {
 
 }
 
-declare module '*/lustre/element.mjs' {
+declare module '*/agnostic/element.mjs' {
   import type * as $option from "../../gleam_stdlib/gleam/option.d.mts";
   import type * as _ from "../gleam.d.mts";
-  import type * as $ref from "../lustre/internals/ref.d.mts";
-  import type * as $vattr from "../lustre/vdom/vattr.d.mts";
-  import type * as $vnode from "../lustre/vdom/vnode.d.mts";
+  import type * as $ref from "../agnostic/internals/ref.d.mts";
+  import type * as $vattr from "../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
 
   export type Element = $vnode.Element$<any>;
 
@@ -1608,9 +1608,9 @@ declare module '*/lustre/element.mjs' {
 
 }
 
-declare module '*/lustre/platform.mjs' {
+declare module '*/agnostic/platform.mjs' {
   import type * as _ from "../gleam.d.mts";
-  import type * as $vnode from "../lustre/vdom/vnode.d.mts";
+  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
 
   export class NotABrowser extends _.CustomType {}
   export function PlatformError$NotABrowser(): PlatformError$;
@@ -1764,7 +1764,7 @@ declare module '*/lustre/platform.mjs' {
 
 }
 
-declare module '*/lustre/effect.mjs' {
+declare module '*/agnostic/effect.mjs' {
   import type * as $process from "../../gleam_erlang/gleam/erlang/process.d.mts";
   import type * as $json from "../../gleam_json/gleam/json.d.mts";
   import type * as $dynamic from "../../gleam_stdlib/gleam/dynamic.d.mts";
@@ -1847,9 +1847,9 @@ declare module '*/lustre/effect.mjs' {
 
 }
 
-declare module '*/lustre/serializer.mjs' {
+declare module '*/agnostic/serializer.mjs' {
   import type * as _ from "../gleam.d.mts";
-  import type * as $vnode from "../lustre/vdom/vnode.d.mts";
+  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
 
   export class Serializer<IPT> extends _.CustomType {
     /** @deprecated */
@@ -1884,15 +1884,15 @@ declare module '*/lustre/serializer.mjs' {
 
 }
 
-declare module '*/lustre/component.mjs' {
+declare module '*/agnostic/component.mjs' {
   import type * as $dynamic from "../../gleam_stdlib/gleam/dynamic.d.mts";
   import type * as $decode from "../../gleam_stdlib/gleam/dynamic/decode.d.mts";
   import type * as $option from "../../gleam_stdlib/gleam/option.d.mts";
   import type * as _ from "../gleam.d.mts";
-  import type * as $effect from "../lustre/effect.d.mts";
-  import type * as $headless from "../lustre/runtime/headless.d.mts";
-  import type * as $vattr from "../lustre/vdom/vattr.d.mts";
-  import type * as $vnode from "../lustre/vdom/vnode.d.mts";
+  import type * as $effect from "../agnostic/effect.d.mts";
+  import type * as $headless from "../agnostic/runtime/headless.d.mts";
+  import type * as $vattr from "../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
 
   declare class Config<JUW> extends _.CustomType {
     /** @deprecated */
@@ -2007,10 +2007,10 @@ declare module '*/lustre/component.mjs' {
 
 }
 
-declare module '*/lustre/attribute.mjs' {
+declare module '*/agnostic/attribute.mjs' {
   import type * as $json from "../../gleam_json/gleam/json.d.mts";
   import type * as _ from "../gleam.d.mts";
-  import type * as $vattr from "../lustre/vdom/vattr.d.mts";
+  import type * as $vattr from "../agnostic/vdom/vattr.d.mts";
 
   export type Attribute = $vattr.Attribute$<any>;
 
@@ -2374,13 +2374,13 @@ declare module '*/lustre/attribute.mjs' {
 
 }
 
-declare module '*/lustre/dev/simulate.mjs' {
+declare module '*/agnostic/dev/simulate.mjs' {
   import type * as $json from "../../../gleam_json/gleam/json.d.mts";
   import type * as $dynamic from "../../../gleam_stdlib/gleam/dynamic.d.mts";
   import type * as _ from "../../gleam.d.mts";
-  import type * as $query from "../../lustre/dev/query.d.mts";
-  import type * as $effect from "../../lustre/effect.d.mts";
-  import type * as $vnode from "../../lustre/vdom/vnode.d.mts";
+  import type * as $query from "../../agnostic/dev/query.d.mts";
+  import type * as $effect from "../../agnostic/effect.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
 
   declare class App<LUW, LUX, LUV> extends _.CustomType {
     /** @deprecated */
@@ -2537,10 +2537,10 @@ declare module '*/lustre/dev/simulate.mjs' {
 
 }
 
-declare module '*/lustre/dev/query.mjs' {
+declare module '*/agnostic/dev/query.mjs' {
   import type * as _ from "../../gleam.d.mts";
-  import type * as $path from "../../lustre/vdom/path.d.mts";
-  import type * as $vnode from "../../lustre/vdom/vnode.d.mts";
+  import type * as $path from "../../agnostic/vdom/path.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
 
   declare class FindElement extends _.CustomType {
     /** @deprecated */
@@ -2671,15 +2671,15 @@ declare module '*/lustre/dev/query.mjs' {
 
 }
 
-declare module '*/lustre/vdom/diff.mjs' {
+declare module '*/agnostic/vdom/diff.mjs' {
   import type * as $json from "../../../gleam_json/gleam/json.d.mts";
   import type * as _ from "../../gleam.d.mts";
-  import type * as $mutable_map from "../../lustre/internals/mutable_map.d.mts";
-  import type * as $cache from "../../lustre/vdom/cache.d.mts";
-  import type * as $patch from "../../lustre/vdom/patch.d.mts";
-  import type * as $path from "../../lustre/vdom/path.d.mts";
-  import type * as $vattr from "../../lustre/vdom/vattr.d.mts";
-  import type * as $vnode from "../../lustre/vdom/vnode.d.mts";
+  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
+  import type * as $cache from "../../agnostic/vdom/cache.d.mts";
+  import type * as $patch from "../../agnostic/vdom/patch.d.mts";
+  import type * as $path from "../../agnostic/vdom/path.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
 
   export class Diff<NQA> extends _.CustomType {
     /** @deprecated */
@@ -2743,7 +2743,7 @@ declare module '*/lustre/vdom/diff.mjs' {
 
 }
 
-declare module '*/lustre/vdom/path.mjs' {
+declare module '*/agnostic/vdom/path.mjs' {
   import type * as _ from "../../gleam.d.mts";
 
   declare class Root extends _.CustomType {}
@@ -2799,14 +2799,14 @@ declare module '*/lustre/vdom/path.mjs' {
 
 }
 
-declare module '*/lustre/vdom/vnode.mjs' {
+declare module '*/agnostic/vdom/vnode.mjs' {
   import type * as $json from "../../../gleam_json/gleam/json.d.mts";
   import type * as $dynamic from "../../../gleam_stdlib/gleam/dynamic.d.mts";
   import type * as $option from "../../../gleam_stdlib/gleam/option.d.mts";
   import type * as _ from "../../gleam.d.mts";
-  import type * as $mutable_map from "../../lustre/internals/mutable_map.d.mts";
-  import type * as $ref from "../../lustre/internals/ref.d.mts";
-  import type * as $vattr from "../../lustre/vdom/vattr.d.mts";
+  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
+  import type * as $ref from "../../agnostic/internals/ref.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
 
   export type RawContent$ = any;
 
@@ -3203,12 +3203,12 @@ declare module '*/lustre/vdom/vnode.mjs' {
 
 }
 
-declare module '*/lustre/vdom/patch.mjs' {
+declare module '*/agnostic/vdom/patch.mjs' {
   import type * as $json from "../../../gleam_json/gleam/json.d.mts";
   import type * as _ from "../../gleam.d.mts";
-  import type * as $mutable_map from "../../lustre/internals/mutable_map.d.mts";
-  import type * as $vattr from "../../lustre/vdom/vattr.d.mts";
-  import type * as $vnode from "../../lustre/vdom/vnode.d.mts";
+  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
 
   export class Patch<IPW> extends _.CustomType {
     /** @deprecated */
@@ -3508,7 +3508,7 @@ declare module '*/lustre/vdom/patch.mjs' {
 
 }
 
-declare module '*/lustre/vdom/vattr.mjs' {
+declare module '*/agnostic/vdom/vattr.mjs' {
   import type * as $json from "../../../gleam_json/gleam/json.d.mts";
   import type * as $decode from "../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
   import type * as $order from "../../../gleam_stdlib/gleam/order.d.mts";
@@ -3745,14 +3745,14 @@ declare module '*/lustre/vdom/vattr.mjs' {
 
 }
 
-declare module '*/lustre/vdom/cache.mjs' {
+declare module '*/agnostic/vdom/cache.mjs' {
   import type * as $dynamic from "../../../gleam_stdlib/gleam/dynamic.d.mts";
   import type * as $decode from "../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
   import type * as _ from "../../gleam.d.mts";
-  import type * as $mutable_map from "../../lustre/internals/mutable_map.d.mts";
-  import type * as $path from "../../lustre/vdom/path.d.mts";
-  import type * as $vattr from "../../lustre/vdom/vattr.d.mts";
-  import type * as $vnode from "../../lustre/vdom/vnode.d.mts";
+  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
+  import type * as $path from "../../agnostic/vdom/path.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
 
   declare class Cache<JBT> extends _.CustomType {
     /** @deprecated */
@@ -3996,7 +3996,7 @@ declare module '*/lustre/vdom/cache.mjs' {
 
 }
 
-declare module '*/lustre/runtime/headless.mjs' {
+declare module '*/agnostic/runtime/headless.mjs' {
   import type * as $process from "../../../gleam_erlang/gleam/erlang/process.d.mts";
   import type * as $json from "../../../gleam_json/gleam/json.d.mts";
   import type * as $actor from "../../../gleam_otp/gleam/otp/actor.d.mts";
@@ -4004,10 +4004,10 @@ declare module '*/lustre/runtime/headless.mjs' {
   import type * as $decode from "../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
   import type * as $set from "../../../gleam_stdlib/gleam/set.d.mts";
   import type * as _ from "../../gleam.d.mts";
-  import type * as $effect from "../../lustre/effect.d.mts";
-  import type * as $transport from "../../lustre/runtime/transport.d.mts";
-  import type * as $cache from "../../lustre/vdom/cache.d.mts";
-  import type * as $vnode from "../../lustre/vdom/vnode.d.mts";
+  import type * as $effect from "../../agnostic/effect.d.mts";
+  import type * as $transport from "../../agnostic/runtime/transport.d.mts";
+  import type * as $cache from "../../agnostic/vdom/cache.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
 
   export class State<JSP, JSQ> extends _.CustomType {
     /** @deprecated */
@@ -4421,16 +4421,16 @@ declare module '*/lustre/runtime/headless.mjs' {
 
 }
 
-declare module '*/lustre/runtime/transport.mjs' {
+declare module '*/agnostic/runtime/transport.mjs' {
   import type * as $json from "../../../gleam_json/gleam/json.d.mts";
   import type * as $dict from "../../../gleam_stdlib/gleam/dict.d.mts";
   import type * as $dynamic from "../../../gleam_stdlib/gleam/dynamic.d.mts";
   import type * as $decode from "../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
   import type * as _ from "../../gleam.d.mts";
-  import type * as $mutable_map from "../../lustre/internals/mutable_map.d.mts";
-  import type * as $serializer from "../../lustre/serializer.d.mts";
-  import type * as $patch from "../../lustre/vdom/patch.d.mts";
-  import type * as $vnode from "../../lustre/vdom/vnode.d.mts";
+  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
+  import type * as $serializer from "../../agnostic/serializer.d.mts";
+  import type * as $patch from "../../agnostic/vdom/patch.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
 
   export class Mount<IVW> extends _.CustomType {
     /** @deprecated */
@@ -4862,7 +4862,7 @@ declare module '*/lustre/runtime/transport.mjs' {
 
 }
 
-declare module '*/lustre/internals/json_object_builder.mjs' {
+declare module '*/agnostic/internals/json_object_builder.mjs' {
   import type * as $json from "../../../gleam_json/gleam/json.d.mts";
   import type * as _ from "../../gleam.d.mts";
 
@@ -4913,7 +4913,7 @@ declare module '*/lustre/internals/json_object_builder.mjs' {
 
 }
 
-declare module '*/lustre/internals/mutable_map.mjs' {
+declare module '*/agnostic/internals/mutable_map.mjs' {
   export type MutableMap$<GTR, GTS> = any;
 
   export function new$(): MutableMap$<any, any>;
@@ -4945,7 +4945,7 @@ declare module '*/lustre/internals/mutable_map.mjs' {
 
 }
 
-declare module '*/lustre/internals/constants.mjs' {
+declare module '*/agnostic/internals/constants.mjs' {
   import type * as _ from "../../gleam.d.mts";
 
   export const empty_list: _.List<any>;
@@ -4954,7 +4954,7 @@ declare module '*/lustre/internals/constants.mjs' {
 
 }
 
-declare module '*/lustre/internals/ref.mjs' {
+declare module '*/agnostic/internals/ref.mjs' {
   import type * as _ from "../../gleam.d.mts";
 
   export type Ref$ = any;
@@ -4967,14 +4967,14 @@ declare module '*/lustre/internals/ref.mjs' {
 
 }
 
-declare module '*/lustre/platform/dom.mjs' {
+declare module '*/agnostic/platform/dom.mjs' {
   import type * as $set from "../../../gleam_stdlib/gleam/set.d.mts";
   import type * as $string_tree from "../../../gleam_stdlib/gleam/string_tree.d.mts";
   import type * as _ from "../../gleam.d.mts";
-  import type * as $platform from "../../lustre/platform.d.mts";
-  import type * as $serializer from "../../lustre/serializer.d.mts";
-  import type * as $vattr from "../../lustre/vdom/vattr.d.mts";
-  import type * as $vnode from "../../lustre/vdom/vnode.d.mts";
+  import type * as $platform from "../../agnostic/platform.d.mts";
+  import type * as $serializer from "../../agnostic/serializer.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
 
   export type DomNode$ = any;
 
@@ -5072,10 +5072,10 @@ declare module '*/lustre/platform/dom.mjs' {
 
 }
 
-declare module '*/lustre/element/svg.mjs' {
+declare module '*/agnostic/element/svg.mjs' {
   import type * as _ from "../../gleam.d.mts";
-  import type * as $vattr from "../../lustre/vdom/vattr.d.mts";
-  import type * as $vnode from "../../lustre/vdom/vnode.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
 
   export const namespace: string;
 
@@ -5363,11 +5363,11 @@ declare module '*/lustre/element/svg.mjs' {
 
 }
 
-declare module '*/lustre/element/keyed.mjs' {
+declare module '*/agnostic/element/keyed.mjs' {
   import type * as _ from "../../gleam.d.mts";
-  import type * as $mutable_map from "../../lustre/internals/mutable_map.d.mts";
-  import type * as $vattr from "../../lustre/vdom/vattr.d.mts";
-  import type * as $vnode from "../../lustre/vdom/vnode.d.mts";
+  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
 
   export function element<MDU>(
     tag: string,
@@ -5413,10 +5413,10 @@ declare module '*/lustre/element/keyed.mjs' {
 
 }
 
-declare module '*/lustre/element/html.mjs' {
+declare module '*/agnostic/element/html.mjs' {
   import type * as _ from "../../gleam.d.mts";
-  import type * as $vattr from "../../lustre/vdom/vattr.d.mts";
-  import type * as $vnode from "../../lustre/vdom/vnode.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
 
   export function html<HJT>(
     attrs: _.List<$vattr.Attribute$<HJT>>,
@@ -5985,10 +5985,10 @@ declare module '*/lustre/element/html.mjs' {
 
 }
 
-declare module '*/lustre/element/mathml.mjs' {
+declare module '*/agnostic/element/mathml.mjs' {
   import type * as _ from "../../gleam.d.mts";
-  import type * as $vattr from "../../lustre/vdom/vattr.d.mts";
-  import type * as $vnode from "../../lustre/vdom/vnode.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
 
   export const namespace: string;
 
@@ -6129,7 +6129,7 @@ declare module '*/lustre/element/mathml.mjs' {
 }
 
 // Manual FFI declarations
-declare module '*/lustre/vdom/reconciler.ffi.mjs' {
+declare module '*/agnostic/vdom/reconciler.ffi.mjs' {
   export function insertMetadataChild(
     kind: unknown,
     parent: unknown,
@@ -6141,6 +6141,6 @@ declare module '*/lustre/vdom/reconciler.ffi.mjs' {
 
 // Short-path aliases for relative imports from .ffi.ts
 declare module '*/effect.mjs' {
-  export * from '*/lustre/platform/opentui/effect.mjs';
+  export * from '*/agnostic/platform/opentui/effect.mjs';
 }
 

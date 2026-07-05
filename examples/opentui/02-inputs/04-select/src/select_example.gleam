@@ -1,14 +1,14 @@
 import gleam/int
 import gleam/option.{type Option, None, Some}
 
-import lustre
-import lustre/effect
-import lustre/element.{type Element}
-import lustre/platform/opentui
-import lustre/platform/opentui/attribute
-import lustre/platform/opentui/effect as tui_effect
-import lustre/platform/opentui/element as tui
-import lustre/platform/opentui/event
+import agnostic
+import agnostic/effect
+import agnostic/element.{type Element}
+import agnostic/platform/opentui
+import agnostic/platform/opentui/attribute
+import agnostic/platform/opentui/effect as tui_effect
+import agnostic/platform/opentui/element as tui
+import agnostic/platform/opentui/event
 
 // MAIN ------------------------------------------------------------------------
 
@@ -18,8 +18,8 @@ pub fn main() {
     |> opentui.use_mouse(False)
 
   use platform <- opentui.platform(config)
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
+  let app = agnostic.application(init, update, view)
+  let assert Ok(_) = agnostic.start(app, on: platform, with: Nil)
   Nil
 }
 
@@ -42,12 +42,30 @@ type Msg {
 }
 
 const menu_options = [
-  attribute.SelectOption(name: "Gleam", description: "Type-safe functional language"),
-  attribute.SelectOption(name: "Rust", description: "Systems programming language"),
-  attribute.SelectOption(name: "TypeScript", description: "Typed superset of JavaScript"),
-  attribute.SelectOption(name: "Elixir", description: "Dynamic, functional language for scalable apps"),
-  attribute.SelectOption(name: "Go", description: "Simple, fast, compiled language"),
-  attribute.SelectOption(name: "Haskell", description: "Purely functional programming language"),
+  attribute.SelectOption(
+    name: "Gleam",
+    description: "Type-safe functional language",
+  ),
+  attribute.SelectOption(
+    name: "Rust",
+    description: "Systems programming language",
+  ),
+  attribute.SelectOption(
+    name: "TypeScript",
+    description: "Typed superset of JavaScript",
+  ),
+  attribute.SelectOption(
+    name: "Elixir",
+    description: "Dynamic, functional language for scalable apps",
+  ),
+  attribute.SelectOption(
+    name: "Go",
+    description: "Simple, fast, compiled language",
+  ),
+  attribute.SelectOption(
+    name: "Haskell",
+    description: "Purely functional programming language",
+  ),
 ]
 
 fn init(_flags: Nil) -> #(Model, effect.Effect(Msg)) {
@@ -76,10 +94,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   case msg {
     UserSelectedItem(index) -> {
       let name = get_option_name(index)
-      #(
-        Model(..model, selected: Some(Selection(index:, name:))),
-        effect.none(),
-      )
+      #(Model(..model, selected: Some(Selection(index:, name:))), effect.none())
     }
     UserChangedSelection(index) -> {
       #(Model(..model, highlighted: Some(index)), effect.none())
@@ -120,7 +135,9 @@ fn view(model: Model) -> Element(Msg) {
         ],
         [
           tui.text([
-            attribute.content("j/k to navigate, Enter to select, Ctrl+Q to quit"),
+            attribute.content(
+              "j/k to navigate, Enter to select, Ctrl+Q to quit",
+            ),
             attribute.dim(True),
             attribute.color("#888"),
           ]),
@@ -145,9 +162,7 @@ fn view(model: Model) -> Element(Msg) {
           case model.highlighted {
             Some(index) ->
               tui.text([
-                attribute.content(
-                  "Browsing: " <> get_option_name(index),
-                ),
+                attribute.content("Browsing: " <> get_option_name(index)),
                 attribute.color("#7c6ff5"),
               ])
             None -> element.none()

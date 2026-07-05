@@ -1,22 +1,22 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute.{type Attribute, attribute}
+import agnostic/component
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/event
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/int
-import lustre
-import lustre/attribute.{type Attribute, attribute}
-import lustre/component
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/event
 
 // MAIN ------------------------------------------------------------------------
 
 //
-pub fn register() -> Result(Nil, lustre.Error) {
+pub fn register() -> Result(Nil, agnostic.Error) {
   let component =
-    lustre.component(init, update, view, [
+    agnostic.component(init, update, view, [
       component.on_attribute_change("summary", fn(value) {
         value |> ParentChangedSummary |> Ok
       }),
@@ -25,7 +25,7 @@ pub fn register() -> Result(Nil, lustre.Error) {
       }),
     ])
 
-  lustre.register(component, named: "my-details")
+  agnostic.register(component, named: "my-details")
 }
 
 pub fn element(

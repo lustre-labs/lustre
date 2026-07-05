@@ -1,17 +1,17 @@
 // IMPORTS ---------------------------------------------------------------------
+import agnostic
+import agnostic/attribute
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/element/keyed
+import agnostic/event
+import agnostic/platform/dom
 import gleam/dynamic/decode
 import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option
-import lustre
-import lustre/attribute
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/element/keyed
-import lustre/event
-import lustre/platform/dom
 import rsvp
 
 // MAIN ------------------------------------------------------------------------
@@ -61,12 +61,12 @@ pub fn main() {
   }
 
   let assert Ok(platform) = dom.platform("#app")
-  let app = lustre.application(init, update, view)
+  let app = agnostic.application(init, update, view)
 
   // We (optionally) pass the hydrated model as `flags` to our init function.
   // Note that the flags could come from anywhere here, and you may fetch data
   // from more than one source before you're sure you can start your Lustre app!
-  let assert Ok(_) = lustre.start(app, on: platform, with: hydrated_todos)
+  let assert Ok(_) = agnostic.start(app, on: platform, with: hydrated_todos)
 
   Nil
 }

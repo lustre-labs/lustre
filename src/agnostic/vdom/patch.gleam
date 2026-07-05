@@ -1,12 +1,12 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/json.{type Json}
-import lustre/internals/constants
-import lustre/internals/json_object_builder
-import lustre/vdom/vattr.{type Attribute}
-import lustre/vdom/vnode.{
+import agnostic/internals/constants
+import agnostic/internals/json_object_builder
+import agnostic/vdom/vattr.{type Attribute}
+import agnostic/vdom/vnode.{
   type Element, type Memos, type RawContent, type RawContentSerializer,
 }
+import gleam/json.{type Json}
 
 // TYPES -----------------------------------------------------------------------
 

@@ -1,11 +1,11 @@
 @target(javascript)
-import lustre/element.{type Element}
+import agnostic/element.{type Element}
 @target(javascript)
-import lustre/element/html
+import agnostic/element/html
 @target(javascript)
-import lustre/element/keyed
+import agnostic/element/keyed
 @target(javascript)
-import lustre/platform/dom
+import agnostic/platform/dom
 @target(javascript)
 import lustre_test
 

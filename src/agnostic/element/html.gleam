@@ -1,10 +1,10 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute.{type Attribute}
+import agnostic/element.{type Element, element, namespaced}
+import agnostic/internals/constants
 import gleam/json
 import gleam/option.{None}
-import lustre/attribute.{type Attribute}
-import lustre/element.{type Element, element, namespaced}
-import lustre/internals/constants
 
 // HTML ELEMENTS: MAIN ROOT ----------------------------------------------------
 

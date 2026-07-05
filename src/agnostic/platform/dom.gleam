@@ -8,6 +8,12 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/platform.{type Platform, type PlatformError}
+import agnostic/serializer.{type Serializer, Serializer}
+import agnostic/vdom/vattr
+import agnostic/vdom/vnode.{
+  type Element, Element, Fragment, Map, Memo, RawContainer, RawNode, Text,
+}
 import gleam/bool
 import gleam/list
 import gleam/result
@@ -15,12 +21,6 @@ import gleam/set.{type Set}
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import houdini
-import lustre/platform.{type Platform, type PlatformError}
-import lustre/serializer.{type Serializer, Serializer}
-import lustre/vdom/vattr
-import lustre/vdom/vnode.{
-  type Element, Element, Fragment, Map, Memo, RawContainer, RawNode, Text,
-}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -107,8 +107,8 @@ fn do_query_selector_raw(_selector: String) -> Result(DomNode, String) {
 /// ## Example
 ///
 /// ```gleam
-/// import lustre/platform
-/// import lustre/platform/dom
+/// import agnostic/platform
+/// import agnostic/platform/dom
 ///
 /// let p = platform.headless(dom.serializer())
 /// ```
@@ -123,8 +123,8 @@ pub fn serializer() -> Serializer(message) {
 /// ## Example
 ///
 /// ```gleam
-/// import lustre/platform
-/// import lustre/platform/dom
+/// import agnostic/platform
+/// import agnostic/platform/dom
 ///
 /// let s = dom.serializer_config()
 ///   |> dom.with_void("custom-void")

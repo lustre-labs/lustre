@@ -4,8 +4,8 @@
 //// It builds up a list of entries in reverse; but since we do not care about
 //// the order of our keys, we can just leave the list like it is.
 
+import agnostic/internals/constants
 import gleam/json.{type Json}
-import lustre/internals/constants
 
 pub type Builder =
   List(#(String, Json))

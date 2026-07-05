@@ -1,5 +1,13 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/element/keyed
+import agnostic/event
+import agnostic/platform/dom
 import formal/form
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
@@ -7,21 +15,13 @@ import gleam/int
 import gleam/json.{type Json}
 import gleam/list
 import gleam/result
-import lustre
-import lustre/attribute
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/element/keyed
-import lustre/event
-import lustre/platform/dom
 
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
   let assert Ok(platform) = dom.platform("#app")
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
+  let app = agnostic.application(init, update, view)
+  let assert Ok(_) = agnostic.start(app, on: platform, with: Nil)
 
   Nil
 }

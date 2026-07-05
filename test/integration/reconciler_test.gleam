@@ -1,31 +1,31 @@
 // IMPORTS ---------------------------------------------------------------------
 //
 @target(javascript)
+import agnostic/attribute.{attribute}
+@target(javascript)
+import agnostic/element.{type Element}
+@target(javascript)
+import agnostic/element/html
+@target(javascript)
+import agnostic/element/keyed
+@target(javascript)
+import agnostic/internals/mutable_map
+@target(javascript)
+import agnostic/platform
+@target(javascript)
+import agnostic/platform/dom
+@target(javascript)
+import agnostic/serializer
+@target(javascript)
+import agnostic/vdom/cache
+@target(javascript)
+import agnostic/vdom/diff
+@target(javascript)
+import agnostic/vdom/patch.{type Patch}
+@target(javascript)
+import agnostic/vdom/vnode
+@target(javascript)
 import gleam/json
-@target(javascript)
-import lustre/attribute.{attribute}
-@target(javascript)
-import lustre/element.{type Element}
-@target(javascript)
-import lustre/element/html
-@target(javascript)
-import lustre/element/keyed
-@target(javascript)
-import lustre/internals/mutable_map
-@target(javascript)
-import lustre/platform
-@target(javascript)
-import lustre/platform/dom
-@target(javascript)
-import lustre/serializer
-@target(javascript)
-import lustre/vdom/cache
-@target(javascript)
-import lustre/vdom/diff
-@target(javascript)
-import lustre/vdom/patch.{type Patch}
-@target(javascript)
-import lustre/vdom/vnode
 @target(javascript)
 import lustre_test
 

@@ -1,17 +1,17 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute
+import agnostic/dev/query.{data, element}
+import agnostic/dev/simulate
+import agnostic/element
+import agnostic/element/html
+import agnostic/event
+import agnostic/platform/dom
 import birdie
 import gleam/int
 import gleam/json
 import gleam/list
 import gleam/string
-import lustre/attribute
-import lustre/dev/query.{data, element}
-import lustre/dev/simulate
-import lustre/element
-import lustre/element/html
-import lustre/event
-import lustre/platform/dom
 import lustre_test
 
 //

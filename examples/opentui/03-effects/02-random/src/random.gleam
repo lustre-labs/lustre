@@ -1,16 +1,16 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/platform/opentui
+import agnostic/platform/opentui/attribute
+import agnostic/platform/opentui/effect as tui_effect
+import agnostic/platform/opentui/element as tui
+import agnostic/platform/opentui/event
 import gleam/int
 import gleam/option.{type Option, None, Some}
 import gleam/order.{type Order, Eq, Gt, Lt}
-import lustre
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/platform/opentui
-import lustre/platform/opentui/attribute
-import lustre/platform/opentui/effect as tui_effect
-import lustre/platform/opentui/element as tui
-import lustre/platform/opentui/event
 
 // MAIN ------------------------------------------------------------------------
 
@@ -19,8 +19,8 @@ pub fn main() {
   let initial_target = int.random(10) + 1
 
   opentui.platform(opentui.default_config(), fn(platform) {
-    let app = lustre.application(init, update, view)
-    let assert Ok(_) = lustre.start(app, on: platform, with: initial_target)
+    let app = agnostic.application(init, update, view)
+    let assert Ok(_) = agnostic.start(app, on: platform, with: initial_target)
     Nil
   })
 }
@@ -155,7 +155,9 @@ fn view(model: Model) -> Element(Msg) {
         ],
         [
           tui.text([
-            attribute.content("Tab to switch fields, Enter to guess, Ctrl+Q to quit"),
+            attribute.content(
+              "Tab to switch fields, Enter to guess, Ctrl+Q to quit",
+            ),
             attribute.dim(True),
             attribute.color("#888"),
           ]),

@@ -52,12 +52,12 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute.{type Attribute}
+import agnostic/element.{type Element}
+import agnostic/internals/constants
+import agnostic/internals/mutable_map.{type MutableMap}
+import agnostic/vdom/vnode
 import gleam/list
-import lustre/attribute.{type Attribute}
-import lustre/element.{type Element}
-import lustre/internals/constants
-import lustre/internals/mutable_map.{type MutableMap}
-import lustre/vdom/vnode
 
 // CONSTRUCTORS ----------------------------------------------------------------
 

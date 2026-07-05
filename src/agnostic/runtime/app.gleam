@@ -1,14 +1,14 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/effect.{type Effect}
+import agnostic/internals/constants
+import agnostic/runtime/headless
+import agnostic/vdom/vnode.{type Element}
 import gleam/dict
 import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/process.{type Name}
 import gleam/list
 import gleam/option
-import lustre/effect.{type Effect}
-import lustre/internals/constants
-import lustre/runtime/headless
-import lustre/vdom/vnode.{type Element}
 
 // TYPES -----------------------------------------------------------------------
 

@@ -24,7 +24,7 @@
 ////
 ////    The server component runtime can run anywhere Gleam does, but the
 ////    client-side runtime must be run in a browser. To use it, either render the
-////    [provided script element](./lustre/server_component.html#script) or serve
+////    [provided script element](./agnostic/server_component.html#script) or serve
 ////    the pre-bundled scripts found in Lustre's `priv/` directory directly.
 ////
 //// No matter where a Lustre application runs, it will always follow the same
@@ -157,18 +157,18 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/component.{type Option}
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/platform.{type Platform}
+import agnostic/platform/dom
+import agnostic/runtime/app.{App}
+import agnostic/runtime/headless
 import gleam/erlang/process.{type Name, type Subject}
 import gleam/option
 import gleam/otp/actor
 import gleam/otp/factory_supervisor.{type Builder}
 import gleam/otp/supervision.{type ChildSpecification}
-import lustre/component.{type Option}
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/platform.{type Platform}
-import lustre/platform/dom
-import lustre/runtime/app.{App}
-import lustre/runtime/headless
 
 // TYPES -----------------------------------------------------------------------
 
@@ -177,7 +177,7 @@ import lustre/runtime/headless
 ///
 /// - Use [`start`](#start) to start a single-page-application in the browser
 ///   or a server component anywhere Gleam runs. Pass the appropriate
-///   [`Platform`](./lustre/platform.html#Platform) to control where the app runs.
+///   [`Platform`](./agnostic/platform.html#Platform) to control where the app runs.
 ///
 ///   This is the most common way to start a Lustre application. If you're new to
 ///   Lustre or frontend development in general, make sure you check out the
@@ -190,7 +190,7 @@ import lustre/runtime/headless
 ///
 /// If you're only interested in using Lustre as a HTML templating engine, you
 /// don't need an `App` at all! You can render an element directly using the
-/// [`dom.to_string`](./lustre/platform/dom.html#to_string) function.
+/// [`dom.to_string`](./agnostic/platform/dom.html#to_string) function.
 ///
 pub type App(arguments, model, message) =
   app.App(arguments, model, message)
@@ -228,7 +228,7 @@ pub type Runtime(message)
 ///   process.
 ///
 /// - When running a server component, you can decode messages from the client
-///   runtime using [`runtime_message_decoder`](./lustre/server_component.html#runtime_message_decoder)
+///   runtime using [`runtime_message_decoder`](./agnostic/server_component.html#runtime_message_decoder)
 ///   and [`send`](#send) them manually.
 ///
 pub type RuntimeMessage(message) =
@@ -272,7 +272,7 @@ pub fn simple(
 /// Lustre applications will use this constructor.
 ///
 /// To learn more about effects and their purpose, take a look at the
-/// [`effect`](./lustre/effect.html) module or the
+/// [`effect`](./agnostic/effect.html) module or the
 /// [HTTP requests example](https://github.com/lustre-labs/lustre/tree/main/examples/05-http-requests).
 ///
 pub fn application(
@@ -297,7 +297,7 @@ pub fn application(
 /// > frameworks like React. They should be used for more complex UI widgets
 /// > like a combobox with complex keyboard interactions rather than simple things
 /// > like buttons or text inputs. Where possible try to think about how to build
-/// > your UI with simple view functions (functions that return [Elements](./lustre/element.html#Element))
+/// > your UI with simple view functions (functions that return [Elements](./agnostic/element.html#Element))
 /// > and only reach for components when you really need to encapsulate that update
 /// > loop.
 ///
@@ -335,10 +335,10 @@ pub fn named(
 /// Start a constructed application. The platform determines where and how the
 /// application runs:
 ///
-/// - Use [`platform.dom`](./lustre/platform.html#dom) to start a client-side
+/// - Use [`platform.dom`](./agnostic/platform.html#dom) to start a client-side
 ///   single-page application (SPA) in the browser.
 ///
-/// - Use [`platform.headless`](./lustre/platform.html#headless) to start a
+/// - Use [`platform.headless`](./agnostic/platform.html#headless) to start a
 ///   server component that sends patches to connected clients.
 ///
 /// The `arguments` argument is the starting data for the application, passed
@@ -363,7 +363,7 @@ pub fn start(
   }
 }
 
-@external(javascript, "./lustre/runtime/platform.ffi.mjs", "start")
+@external(javascript, "./agnostic/runtime/platform.ffi.mjs", "start")
 fn do_start_rendered(
   _root: node,
   _initial_vdom: element.Element(message),
@@ -374,7 +374,7 @@ fn do_start_rendered(
   panic as "Rendered runtime not yet implemented for Erlang"
 }
 
-@external(javascript, "./lustre/runtime/headless.ffi.mjs", "start")
+@external(javascript, "./agnostic/runtime/headless.ffi.mjs", "start")
 fn do_start_headless(
   app: App(arguments, model, message),
   arguments: arguments,
@@ -459,7 +459,7 @@ pub fn factory(
 /// > **Note**: This function is only meaningful when running in the browser and will
 /// > produce a `NotABrowser` error if called anywhere else. For server contexts,
 /// > you can start a server component using [`start`](#start) with
-/// > [`platform.headless`](./lustre/platform.html#headless) instead.
+/// > [`platform.headless`](./agnostic/platform.html#headless) instead.
 ///
 pub fn register(
   app: App(Nil, model, message),
@@ -468,7 +468,7 @@ pub fn register(
   do_register(app, dom.platform_strict, name)
 }
 
-@external(javascript, "./lustre/runtime/web_component.ffi.mjs", "make_component")
+@external(javascript, "./agnostic/runtime/web_component.ffi.mjs", "make_component")
 fn do_register(
   _app: App(Nil, model, message),
   _make_platform: fn(dom.DomNode) ->
@@ -492,7 +492,7 @@ fn do_register(
 /// runtime.
 ///
 @external(erlang, "gleam@erlang@process", "send")
-@external(javascript, "./lustre/runtime/platform/base.ffi.mjs", "send")
+@external(javascript, "./agnostic/runtime/platform/base.ffi.mjs", "send")
 pub fn send(
   to runtime: Runtime(message),
   message message: RuntimeMessage(message),
@@ -520,7 +520,7 @@ pub fn shutdown() -> RuntimeMessage(message) {
 
 /// Check if the application is running in the browser.
 ///
-@external(javascript, "./lustre/runtime/platform/base.ffi.mjs", "is_browser")
+@external(javascript, "./agnostic/runtime/platform/base.ffi.mjs", "is_browser")
 pub fn is_browser() -> Bool {
   False
 }
@@ -529,7 +529,7 @@ pub fn is_browser() -> Bool {
 /// Element. This is particularly useful in contexts where _other web components_
 /// may have been registered and you must avoid collisions.
 ///
-@external(javascript, "./lustre/runtime/platform/base.ffi.mjs", "is_registered")
+@external(javascript, "./agnostic/runtime/platform/base.ffi.mjs", "is_registered")
 pub fn is_registered(_name: String) -> Bool {
   False
 }

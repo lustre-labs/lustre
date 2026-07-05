@@ -1,10 +1,10 @@
-import lustre
-import lustre/effect
-import lustre/element.{type Element}
-import lustre/platform/opentui
-import lustre/platform/opentui/attribute as tui_attr
-import lustre/platform/opentui/effect as tui_effect
-import lustre/platform/opentui/element as tui_element
+import agnostic
+import agnostic/effect
+import agnostic/element.{type Element}
+import agnostic/platform/opentui
+import agnostic/platform/opentui/attribute as tui_attr
+import agnostic/platform/opentui/effect as tui_effect
+import agnostic/platform/opentui/element as tui_element
 
 // FFI for creating spinner node factories
 @external(javascript, "./spinner.ffi.ts", "create_framebuffer_spinner")
@@ -146,8 +146,8 @@ fn view(model: Model) -> Element(Msg) {
 
 pub fn main() {
   opentui.platform(opentui.default_config(), fn(platform) {
-    let app = lustre.application(init, update, view)
-    let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
+    let app = agnostic.application(init, update, view)
+    let assert Ok(_) = agnostic.start(app, on: platform, with: Nil)
     Nil
   })
 }

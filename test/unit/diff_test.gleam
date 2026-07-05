@@ -1,20 +1,20 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute.{attribute}
+import agnostic/element
+import agnostic/element/html
+import agnostic/element/keyed
+import agnostic/event
+import agnostic/vdom/cache
+import agnostic/vdom/diff
+import agnostic/vdom/patch
+import agnostic/vdom/path
+import agnostic/vdom/vattr.{Handler}
+import agnostic/vdom/vnode
 import booklet
 import gleam/dynamic
 import gleam/json
 import gleam/string
-import lustre/attribute.{attribute}
-import lustre/element
-import lustre/element/html
-import lustre/element/keyed
-import lustre/event
-import lustre/vdom/cache
-import lustre/vdom/diff
-import lustre/vdom/patch
-import lustre/vdom/path
-import lustre/vdom/vattr.{Handler}
-import lustre/vdom/vnode
 import lustre_test
 
 //

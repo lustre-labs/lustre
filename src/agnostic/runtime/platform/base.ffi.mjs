@@ -27,7 +27,7 @@ export const throw_server_component_error = () => {
       "the internals and started calling functions you shouldn't be!",
       "\n\n",
       "If you're just looking to start a server component in a JavaScript app,",
-      "you can use `lustre.start` with `platform.headless()`.",
+      "you can use `agnostic.start` with `platform.headless()`.",
       "\n\n",
       "If you're seeing this error and you think it's a bug. Please open an ",
       "issue over on Github: https://github.com/lustre-labs/lustre/issues/new",

@@ -13,15 +13,15 @@
 // IMPORTS ---------------------------------------------------------------------
 
 @target(javascript)
+import agnostic/effect.{type Effect}
+@target(javascript)
+import agnostic/platform/opentui.{type Renderer}
+@target(javascript)
 import gleam/dynamic.{type Dynamic}
 @target(javascript)
 import gleam/dynamic/decode.{type Decoder}
 @target(javascript)
 import gleam/option.{type Option, None, Some}
-@target(javascript)
-import lustre/effect.{type Effect}
-@target(javascript)
-import lustre/platform/opentui.{type Renderer}
 
 // TYPES -----------------------------------------------------------------------
 
@@ -71,7 +71,7 @@ pub type Selection {
 /// painted, so dispatched messages trigger a second re-render before painting.
 ///
 /// ```gleam
-/// import lustre/platform/opentui/effect as opentui_effect
+/// import agnostic/platform/opentui/effect as opentui_effect
 ///
 /// fn my_custom_effect() -> Effect(msg) {
 ///   opentui_effect.before_paint(fn(dispatch, renderer) {
@@ -122,7 +122,7 @@ pub fn subscribe_keyboard(handler: fn(KeyEvent) -> msg) -> Effect(msg) {
 ///
 /// ```gleam
 /// import gleam/option.{None, Some}
-/// import lustre/platform/opentui/effect as opentui_effect
+/// import agnostic/platform/opentui/effect as opentui_effect
 ///
 /// fn subscribe_shortcuts() -> Effect(Msg) {
 ///   opentui_effect.subscribe_keyboard_with(fn(key_event) {

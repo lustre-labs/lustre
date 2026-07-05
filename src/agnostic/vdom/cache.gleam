@@ -1,17 +1,17 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/internals/constants
+import agnostic/internals/mutable_map.{type MutableMap}
+import agnostic/vdom/path.{type Path}
+import agnostic/vdom/vattr.{type Attribute, type Handler, Event, Handler}
+import agnostic/vdom/vnode.{
+  type Element, type Memos, type View, Element, Fragment, Map, Memo,
+  RawContainer, RawNode, Text,
+}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/function
 import gleam/list
-import lustre/internals/constants
-import lustre/internals/mutable_map.{type MutableMap}
-import lustre/vdom/path.{type Path}
-import lustre/vdom/vattr.{type Attribute, type Handler, Event, Handler}
-import lustre/vdom/vnode.{
-  type Element, type Memos, type View, Element, Fragment, Map, Memo,
-  RawContainer, RawNode, Text,
-}
 
 // TYPES -----------------------------------------------------------------------
 

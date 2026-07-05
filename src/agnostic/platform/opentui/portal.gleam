@@ -6,10 +6,10 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/attribute.{type Attribute}
+import agnostic/element.{type Element}
+import agnostic/event
 import gleam/dynamic/decode.{type Decoder}
-import lustre/attribute.{type Attribute}
-import lustre/element.{type Element}
-import lustre/event
 
 // CONSTANTS -------------------------------------------------------------------
 

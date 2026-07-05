@@ -1,15 +1,15 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute.{type Attribute}
+import agnostic/effect.{type Effect}
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/platform/dom
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
 import gleam/uri.{type Uri}
-import lustre
-import lustre/attribute.{type Attribute}
-import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/platform/dom
 
 // Modem is a package providing effects and functionality for routing in SPAs.
 // This means instead of links taking you to a new page and reloading everything,
@@ -20,8 +20,8 @@ import modem
 
 pub fn main() {
   let assert Ok(platform) = dom.platform("#app")
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
+  let app = agnostic.application(init, update, view)
+  let assert Ok(_) = agnostic.start(app, on: platform, with: Nil)
 
   Nil
 }

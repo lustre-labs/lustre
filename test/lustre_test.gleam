@@ -1,9 +1,9 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/vdom/vnode.{type Element}
 import argv
 import benchmark/diff_benchmark
 import gleeunit
-import lustre/vdom/vnode.{type Element}
 
 // MAIN ------------------------------------------------------------------------
 

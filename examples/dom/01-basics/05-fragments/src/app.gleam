@@ -1,21 +1,21 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic
+import agnostic/attribute
+import agnostic/element.{type Element}
+import agnostic/element/html
+import agnostic/element/keyed
+import agnostic/event
+import agnostic/platform/dom
 import gleam/list
 import gleam/set.{type Set}
-import lustre
-import lustre/attribute
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/element/keyed
-import lustre/event
-import lustre/platform/dom
 
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
   let assert Ok(platform) = dom.platform("#app")
-  let app = lustre.simple(init, update, view)
-  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
+  let app = agnostic.simple(init, update, view)
+  let assert Ok(_) = agnostic.start(app, on: platform, with: Nil)
 
   Nil
 }

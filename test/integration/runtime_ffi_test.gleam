@@ -1,7 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 //
 // This test file serves as a smoke test for the JavaScript FFI modules used by
-// the Lustre runtime. By calling runtime functions like `lustre.is_browser()`,
+// the Lustre runtime. By calling runtime functions like `agnostic.is_browser()`,
 // we force Node.js to load the runtime FFI files, which in turn loads all their
 // imports (including cache.mjs). This catches FFI-related errors such as:
 //
@@ -9,9 +9,9 @@
 // - Syntax errors in FFI files
 
 @target(javascript)
-import lustre
+import agnostic
 @target(javascript)
-import lustre/platform
+import agnostic/platform
 @target(javascript)
 import lustre_test
 
@@ -30,7 +30,7 @@ pub fn runtime_is_browser_test() {
 pub fn runtime_is_registered_test() {
   use <- lustre_test.test_filter("runtime_is_registered_test")
 
-  let _ = lustre.is_registered("test-component")
+  let _ = agnostic.is_registered("test-component")
 
   Nil
 }
