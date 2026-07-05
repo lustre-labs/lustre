@@ -129,6 +129,16 @@ pub fn get_old_memo(
 }
 
 /// Reuses the cached element when dependencies are unchanged.
+///
+/// Also walks the kept node and copies any nested memos' cached vdoms from
+/// `old_vdoms` into the new `vdoms`. Without this, an outer-memo True branch
+/// (deps unchanged) would skip diffing the inner content, and the inner
+/// memo's view-fn would fall out of the cache on the next tick. A later
+/// outer-memo False branch (deps differ) would then recurse into the cached
+/// inner memo, call `get_old_memo` on the inner view-fn, miss the cache,
+/// and fall back to evaluating the *previous render's* closure — which can
+/// return a structure that no longer matches the live metadata tree,
+/// producing a flattened patch path with steps that overrun the metadata.
 pub fn keep_memo(
   cache: Cache(message),
   old old: View(message),
@@ -136,7 +146,33 @@ pub fn keep_memo(
 ) {
   let node = mutable_map.get_or_compute(cache.old_vdoms, old, new)
   let vdoms = mutable_map.insert(cache.vdoms, new, node)
+  let vdoms = propagate_nested_memos(vdoms, cache.old_vdoms, node)
   Cache(..cache, vdoms:)
+}
+
+fn propagate_nested_memos(
+  vdoms: Memos(message),
+  old_vdoms: Memos(message),
+  node: Element(message),
+) -> Memos(message) {
+  case node {
+    Memo(view:, ..) -> {
+      case mutable_map.has_key(old_vdoms, view) {
+        True -> {
+          let cached = mutable_map.unsafe_get(old_vdoms, view)
+          let vdoms = mutable_map.insert(vdoms, view, cached)
+          propagate_nested_memos(vdoms, old_vdoms, cached)
+        }
+        False -> vdoms
+      }
+    }
+    Element(children:, ..) | Fragment(children:, ..) ->
+      list.fold(children, vdoms, fn(vdoms, child) {
+        propagate_nested_memos(vdoms, old_vdoms, child)
+      })
+    Map(child:, ..) -> propagate_nested_memos(vdoms, old_vdoms, child)
+    Text(..) | RawContainer(..) | RawNode(..) -> vdoms
+  }
 }
 
 /// Caches a newly computed element when dependencies changed.

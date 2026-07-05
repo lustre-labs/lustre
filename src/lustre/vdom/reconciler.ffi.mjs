@@ -53,6 +53,45 @@ const clearTimeout = globalThis.clearTimeout;
 // move_before reference nodes and get_attribute return values.
 const wrapRef = (ref) => ref != null ? Result$Ok(ref) : Result$Error(undefined);
 
+// DEBUG LOGGING ---------------------------------------------------------------
+//
+// The reconciler's debug-mode warnings can't use `console.warn` in TUI
+// platforms (opentui, etc.) because that would corrupt the terminal output.
+// Set the LUSTRE_DEBUG_LOG environment variable to a file path; the
+// reconciler will append diagnostic lines there in debug mode. If the env
+// var is unset (or `node:fs` isn't reachable, e.g. in a browser), debug
+// logging is a no-op — debug-mode crashes still happen at their original
+// site, you just don't get the extra context line.
+//
+// The dynamic-import path through a string-concatenated module name keeps
+// bundlers from trying to statically resolve `node:fs` in browser builds.
+let debugWriteLine = () => {};
+const debugLogPath = globalThis.process?.env?.LUSTRE_DEBUG_LOG;
+if (debugLogPath) {
+  try {
+    const fs = await import(/* @vite-ignore */ "node:" + "fs");
+    debugWriteLine = (line) => {
+      try {
+        fs.appendFileSync(debugLogPath, line + "\n");
+      } catch {}
+    };
+  } catch {}
+}
+
+// Convert a Gleam linked list ({head, tail}) to a JS array. Used for
+// debug logging only — Gleam lists encoded as objects need to be unwrapped
+// before JSON.stringify produces something readable. Returns [] on null /
+// empty / non-list input.
+const gleamListToArray = (list) => {
+  const out = [];
+  let cur = list;
+  while (cur && cur.head !== undefined) {
+    out.push(cur.head);
+    cur = cur.tail;
+  }
+  return out;
+};
+
 // METADATA / STATEFUL TREE ----------------------------------------------------
 
 // We store some additional data for every node that we create.
@@ -173,6 +212,72 @@ export class Reconciler {
       const { path, changes, removed, children: childPatches } = patch;
 
       iterate(path, (index) => {
+        if (node === undefined || node.children?.[index] === undefined) {
+          // Path step references a metadata slot that does not exist. This
+          // shows up under add_parent flattening (diff.gleam:88) when the
+          // flattened path's prepended indices do not match the live
+          // metadata tree. Logging is a no-op unless LUSTRE_DEBUG_LOG is
+          // set in the environment (see debugWriteLine setup at top of
+          // file). The next `node.children[index]` line will then crash at
+          // the :179 destructure on the next loop iteration, which is what
+          // we want during development.
+          const changes = gleamListToArray(patch.changes).map((c) => {
+            const summary = { kind: c.kind };
+            if (c.index !== undefined) summary.index = c.index;
+            if (c.before !== undefined) summary.before = c.before;
+            if (c.key !== undefined) summary.key = c.key;
+            if (c.added !== undefined) {
+              summary.added = gleamListToArray(c.added).map((a) => a.name);
+            }
+            if (c.removed !== undefined) {
+              summary.removed = gleamListToArray(c.removed).map((a) => a.name);
+            }
+            return summary;
+          });
+          const childPatches = gleamListToArray(patch.children).map((p) => ({
+            index: p.index,
+            pathLen: gleamListToArray(p.path).length,
+            changesLen: gleamListToArray(p.changes).length,
+          }));
+          // Walk metadata ancestors from current node back to root. Tells
+          // us what the live tree actually looks like at the failure site.
+          const ancestors = [];
+          for (let cur = node; cur; cur = cur.parent) {
+            ancestors.push({
+              kind: cur.kind,
+              key: cur.key,
+              childrenLen: cur.children?.length,
+            });
+          }
+          // Snapshot the pending stack so we can see which siblings are
+          // queued up after the failing patch — the parent patches above
+          // this one in the diff tree.
+          const stackSnapshot = stack.map((entry) => ({
+            patchPath: gleamListToArray(entry.patch.path),
+            patchIndex: entry.patch.index,
+            patchChangeKinds: gleamListToArray(entry.patch.changes).map(
+              (c) => c.kind,
+            ),
+            patchChildrenCount: gleamListToArray(entry.patch.children).length,
+            nodeKind: entry.node?.kind,
+            nodeKey: entry.node?.key,
+          }));
+          debugWriteLine(
+            `[lustre] path descent overruns metadata ${JSON.stringify({
+              patchPath: gleamListToArray(patch.path),
+              patchIndex: patch.index,
+              patchChanges: changes,
+              patchChildren: childPatches,
+              stepIndex: index,
+              nodeKind: node?.kind,
+              nodeKey: node?.key,
+              childrenLen: node?.children?.length,
+              nodeChildKinds: node?.children?.map((c) => c?.kind),
+              ancestors,
+              pendingStack: stackSnapshot,
+            })}`,
+          );
+        }
         node = node.children[index];
       });
 
@@ -185,7 +290,26 @@ export class Reconciler {
       }
 
       iterate(childPatches, (childPatch) => {
-        const child = childNodes[childPatch.index | 0];
+        const idx = childPatch.index | 0;
+        const child = childNodes[idx];
+        if (child === undefined) {
+          // Child-patch resolves to undefined. Either the diff emitted a
+          // bad child-patch index, a Move/Replace/Remove that ran before
+          // this iteration left fewer children than expected, or the array
+          // has a sparse hole at `idx`. Logging is a no-op unless
+          // LUSTRE_DEBUG_LOG is set. Note: an intentionally-elided zero
+          // index (json_object_builder.int skips 0, see
+          // src/lustre/internals/json_object_builder.gleam:36-41) is
+          // benign when childNodes[0] exists; the `child === undefined`
+          // check distinguishes the broken case.
+          debugWriteLine(
+            `[lustre] child patch index resolves to undefined ${JSON.stringify({
+              patchPath: patch.path,
+              index: idx,
+              childNodesLength: childNodes.length,
+            })}`,
+          );
+        }
         this.#stack.push({ node: child, patch: childPatch });
       });
     }

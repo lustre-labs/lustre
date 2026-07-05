@@ -1015,6 +1015,86 @@ pub fn reconciler_push_memo_map_with_fragment_test() {
   test_diff(prev, next)
 }
 
+// Baseline test for the path-flattening (is_browser=False) code path.
+//
+// Downstream (opentui adapter on Bun) reported a TypeError at
+// reconciler.ffi.mjs:179 — `node` undefined during the path-descent loop
+// after a render that combined a memo-deps flip (inner-leaf-element →
+// different-tag-element-with-children), a keyed reorder in the same parent,
+// and a structure that flattens via add_parent (diff.gleam:88,
+// patch.gleam:157-159) into a multi-step `path` field. The flattening only
+// fires under `!is_browser()`, which is why the bug never surfaces in a
+// jsdom/happy-dom test harness.
+//
+// This test exercises that suspect code path: `without_document` deletes
+// `globalThis.document` while the diff runs, so `is_browser()` returns False
+// and `add_parent` flattening engages. The resulting patch has a multi-step
+// `path`, a parent-level Move, and an inner Replace.
+//
+// It does NOT currently crash — neither under this nested-memo+reorder shape
+// nor under the variants I escalated through (more memo layers, nested
+// element.fragment, sibling interior changes, more keyed entries with
+// removes). The descent walks the flattened path correctly because each step
+// lands on a real metadata node. The opentui repro must depend on a vdom
+// shape ingredient not captured here (waiting on downstream for a runnable
+// headless harness driving the exact crashing model). Keep this as a
+// baseline so when that harness arrives, we extend it from a known-passing
+// starting point.
+@target(javascript)
+pub fn reconciler_push_nested_memo_deps_flip_with_reorder_test() {
+  use <- lustre_test.test_filter(
+    "reconciler_push_nested_memo_deps_flip_with_reorder_test",
+  )
+
+  let outer_dep_1 = element.ref(1)
+  let outer_dep_2 = element.ref(2)
+  let inner_dep_1 = element.ref(10)
+  let inner_dep_2 = element.ref(20)
+
+  let prev =
+    keyed.fragment([
+      #(
+        "a",
+        element.memo([outer_dep_1], fn() {
+          keyed.fragment([
+            #("k1", element.memo([inner_dep_1], fn() { html.span([], []) })),
+          ])
+        }),
+      ),
+      #("b", html.div([], [html.text("b-old")])),
+    ])
+
+  let next =
+    keyed.fragment([
+      #("b", html.div([], [html.text("b-new")])),
+      #(
+        "a",
+        element.memo([outer_dep_2], fn() {
+          keyed.fragment([
+            #(
+              "k1",
+              element.memo([inner_dep_2], fn() {
+                html.div([], [
+                  html.text("x"),
+                  html.text("y"),
+                  html.text("z"),
+                ])
+              }),
+            ),
+          ])
+        }),
+      ),
+    ])
+
+  use reconciler <- with_reconciler(False)
+
+  let diff.Diff(patch:, ..) =
+    without_document(fn() { diff.diff(cache.new(), prev, next) })
+
+  mount(reconciler, prev)
+  push(reconciler, patch)
+}
+
 @target(javascript)
 fn test_diff(prev: Element(message), next: Element(message)) {
   use reconciler <- with_reconciler(True)
@@ -1090,6 +1170,10 @@ fn push(reconciler: Reconciler, patch: Patch(message)) -> Nil
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "push")
 fn push_json(reconciler: Reconciler, patch: json.Json) -> Nil
+
+@target(javascript)
+@external(javascript, "./client_test.ffi.mjs", "without_document")
+fn without_document(f: fn() -> a) -> a
 
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "get_html")

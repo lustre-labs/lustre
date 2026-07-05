@@ -71,6 +71,20 @@ export function push(reconciler, patch) {
   reconciler.push(patch);
 }
 
+export function without_document(f) {
+  // Temporarily hide globalThis.document so is_browser() returns False during
+  // the callback. Used to exercise the diff's non-browser code paths
+  // (notably the add_parent path-flattening at diff.gleam:88) inside the
+  // happy-dom test harness.
+  const saved = Object.getOwnPropertyDescriptor(globalThis, "document");
+  delete globalThis.document;
+  try {
+    return f();
+  } finally {
+    if (saved) Object.defineProperty(globalThis, "document", saved);
+  }
+}
+
 export function with_client_runtime(initial_html, make_app, get_platform, callback) {
   return runInBrowserContext(async () => {
     document.body.innerHTML = initial_html;
