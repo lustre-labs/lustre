@@ -105,8 +105,8 @@ var List$NonEmpty = (head, tail) => new NonEmpty(head, tail);
 var List$NonEmpty$first = (value) => value.head;
 var List$NonEmpty$rest = (value) => value.tail;
 var Result = class _Result extends CustomType {
-  static isResult(data) {
-    return data instanceof _Result;
+  static isResult(data2) {
+    return data2 instanceof _Result;
   }
 };
 var Ok = class extends Result {
@@ -170,6 +170,170 @@ function reverse_and_prepend(loop$prefix, loop$suffix) {
 }
 function reverse(list4) {
   return reverse_and_prepend(list4, toList([]));
+}
+function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
+  while (true) {
+    let list1 = loop$list1;
+    let list22 = loop$list2;
+    let compare4 = loop$compare;
+    let acc = loop$acc;
+    if (list1 instanceof Empty) {
+      let list4 = list22;
+      return reverse_and_prepend(list4, acc);
+    } else if (list22 instanceof Empty) {
+      let list4 = list1;
+      return reverse_and_prepend(list4, acc);
+    } else {
+      let first1 = list1.head;
+      let rest1 = list1.tail;
+      let first2 = list22.head;
+      let rest2 = list22.tail;
+      let $ = compare4(first1, first2);
+      if ($ instanceof Lt) {
+        loop$list1 = list1;
+        loop$list2 = rest2;
+        loop$compare = compare4;
+        loop$acc = prepend(first2, acc);
+      } else if ($ instanceof Eq) {
+        loop$list1 = rest1;
+        loop$list2 = list22;
+        loop$compare = compare4;
+        loop$acc = prepend(first1, acc);
+      } else {
+        loop$list1 = rest1;
+        loop$list2 = list22;
+        loop$compare = compare4;
+        loop$acc = prepend(first1, acc);
+      }
+    }
+  }
+}
+function merge_descending_pairs(loop$sequences, loop$compare, loop$acc) {
+  while (true) {
+    let sequences2 = loop$sequences;
+    let compare4 = loop$compare;
+    let acc = loop$acc;
+    if (sequences2 instanceof Empty) {
+      return reverse(acc);
+    } else {
+      let $ = sequences2.tail;
+      if ($ instanceof Empty) {
+        let sequence = sequences2.head;
+        return reverse(prepend(reverse(sequence), acc));
+      } else {
+        let descending1 = sequences2.head;
+        let descending2 = $.head;
+        let rest$1 = $.tail;
+        let ascending = merge_descendings(
+          descending1,
+          descending2,
+          compare4,
+          toList([])
+        );
+        loop$sequences = rest$1;
+        loop$compare = compare4;
+        loop$acc = prepend(ascending, acc);
+      }
+    }
+  }
+}
+function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
+  while (true) {
+    let list1 = loop$list1;
+    let list22 = loop$list2;
+    let compare4 = loop$compare;
+    let acc = loop$acc;
+    if (list1 instanceof Empty) {
+      let list4 = list22;
+      return reverse_and_prepend(list4, acc);
+    } else if (list22 instanceof Empty) {
+      let list4 = list1;
+      return reverse_and_prepend(list4, acc);
+    } else {
+      let first1 = list1.head;
+      let rest1 = list1.tail;
+      let first2 = list22.head;
+      let rest2 = list22.tail;
+      let $ = compare4(first1, first2);
+      if ($ instanceof Lt) {
+        loop$list1 = rest1;
+        loop$list2 = list22;
+        loop$compare = compare4;
+        loop$acc = prepend(first1, acc);
+      } else if ($ instanceof Eq) {
+        loop$list1 = list1;
+        loop$list2 = rest2;
+        loop$compare = compare4;
+        loop$acc = prepend(first2, acc);
+      } else {
+        loop$list1 = list1;
+        loop$list2 = rest2;
+        loop$compare = compare4;
+        loop$acc = prepend(first2, acc);
+      }
+    }
+  }
+}
+function merge_ascending_pairs(loop$sequences, loop$compare, loop$acc) {
+  while (true) {
+    let sequences2 = loop$sequences;
+    let compare4 = loop$compare;
+    let acc = loop$acc;
+    if (sequences2 instanceof Empty) {
+      return reverse(acc);
+    } else {
+      let $ = sequences2.tail;
+      if ($ instanceof Empty) {
+        let sequence = sequences2.head;
+        return reverse(prepend(reverse(sequence), acc));
+      } else {
+        let ascending1 = sequences2.head;
+        let ascending2 = $.head;
+        let rest$1 = $.tail;
+        let descending = merge_ascendings(
+          ascending1,
+          ascending2,
+          compare4,
+          toList([])
+        );
+        loop$sequences = rest$1;
+        loop$compare = compare4;
+        loop$acc = prepend(descending, acc);
+      }
+    }
+  }
+}
+function merge_all(loop$sequences, loop$direction, loop$compare) {
+  while (true) {
+    let sequences2 = loop$sequences;
+    let direction = loop$direction;
+    let compare4 = loop$compare;
+    if (sequences2 instanceof Empty) {
+      return sequences2;
+    } else if (direction instanceof Ascending) {
+      let $ = sequences2.tail;
+      if ($ instanceof Empty) {
+        let sequence = sequences2.head;
+        return sequence;
+      } else {
+        let sequences$1 = merge_ascending_pairs(sequences2, compare4, toList([]));
+        loop$sequences = sequences$1;
+        loop$direction = new Descending();
+        loop$compare = compare4;
+      }
+    } else {
+      let $ = sequences2.tail;
+      if ($ instanceof Empty) {
+        let sequence = sequences2.head;
+        return reverse(sequence);
+      } else {
+        let sequences$1 = merge_descending_pairs(sequences2, compare4, toList([]));
+        loop$sequences = sequences$1;
+        loop$direction = new Ascending();
+        loop$compare = compare4;
+      }
+    }
+  }
 }
 function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$prev, loop$acc) {
   while (true) {
@@ -307,170 +471,6 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
     }
   }
 }
-function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
-  while (true) {
-    let list1 = loop$list1;
-    let list22 = loop$list2;
-    let compare4 = loop$compare;
-    let acc = loop$acc;
-    if (list1 instanceof Empty) {
-      let list4 = list22;
-      return reverse_and_prepend(list4, acc);
-    } else if (list22 instanceof Empty) {
-      let list4 = list1;
-      return reverse_and_prepend(list4, acc);
-    } else {
-      let first1 = list1.head;
-      let rest1 = list1.tail;
-      let first2 = list22.head;
-      let rest2 = list22.tail;
-      let $ = compare4(first1, first2);
-      if ($ instanceof Lt) {
-        loop$list1 = rest1;
-        loop$list2 = list22;
-        loop$compare = compare4;
-        loop$acc = prepend(first1, acc);
-      } else if ($ instanceof Eq) {
-        loop$list1 = list1;
-        loop$list2 = rest2;
-        loop$compare = compare4;
-        loop$acc = prepend(first2, acc);
-      } else {
-        loop$list1 = list1;
-        loop$list2 = rest2;
-        loop$compare = compare4;
-        loop$acc = prepend(first2, acc);
-      }
-    }
-  }
-}
-function merge_ascending_pairs(loop$sequences, loop$compare, loop$acc) {
-  while (true) {
-    let sequences2 = loop$sequences;
-    let compare4 = loop$compare;
-    let acc = loop$acc;
-    if (sequences2 instanceof Empty) {
-      return reverse(acc);
-    } else {
-      let $ = sequences2.tail;
-      if ($ instanceof Empty) {
-        let sequence = sequences2.head;
-        return reverse(prepend(reverse(sequence), acc));
-      } else {
-        let ascending1 = sequences2.head;
-        let ascending2 = $.head;
-        let rest$1 = $.tail;
-        let descending = merge_ascendings(
-          ascending1,
-          ascending2,
-          compare4,
-          toList([])
-        );
-        loop$sequences = rest$1;
-        loop$compare = compare4;
-        loop$acc = prepend(descending, acc);
-      }
-    }
-  }
-}
-function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
-  while (true) {
-    let list1 = loop$list1;
-    let list22 = loop$list2;
-    let compare4 = loop$compare;
-    let acc = loop$acc;
-    if (list1 instanceof Empty) {
-      let list4 = list22;
-      return reverse_and_prepend(list4, acc);
-    } else if (list22 instanceof Empty) {
-      let list4 = list1;
-      return reverse_and_prepend(list4, acc);
-    } else {
-      let first1 = list1.head;
-      let rest1 = list1.tail;
-      let first2 = list22.head;
-      let rest2 = list22.tail;
-      let $ = compare4(first1, first2);
-      if ($ instanceof Lt) {
-        loop$list1 = list1;
-        loop$list2 = rest2;
-        loop$compare = compare4;
-        loop$acc = prepend(first2, acc);
-      } else if ($ instanceof Eq) {
-        loop$list1 = rest1;
-        loop$list2 = list22;
-        loop$compare = compare4;
-        loop$acc = prepend(first1, acc);
-      } else {
-        loop$list1 = rest1;
-        loop$list2 = list22;
-        loop$compare = compare4;
-        loop$acc = prepend(first1, acc);
-      }
-    }
-  }
-}
-function merge_descending_pairs(loop$sequences, loop$compare, loop$acc) {
-  while (true) {
-    let sequences2 = loop$sequences;
-    let compare4 = loop$compare;
-    let acc = loop$acc;
-    if (sequences2 instanceof Empty) {
-      return reverse(acc);
-    } else {
-      let $ = sequences2.tail;
-      if ($ instanceof Empty) {
-        let sequence = sequences2.head;
-        return reverse(prepend(reverse(sequence), acc));
-      } else {
-        let descending1 = sequences2.head;
-        let descending2 = $.head;
-        let rest$1 = $.tail;
-        let ascending = merge_descendings(
-          descending1,
-          descending2,
-          compare4,
-          toList([])
-        );
-        loop$sequences = rest$1;
-        loop$compare = compare4;
-        loop$acc = prepend(ascending, acc);
-      }
-    }
-  }
-}
-function merge_all(loop$sequences, loop$direction, loop$compare) {
-  while (true) {
-    let sequences2 = loop$sequences;
-    let direction = loop$direction;
-    let compare4 = loop$compare;
-    if (sequences2 instanceof Empty) {
-      return sequences2;
-    } else if (direction instanceof Ascending) {
-      let $ = sequences2.tail;
-      if ($ instanceof Empty) {
-        let sequence = sequences2.head;
-        return sequence;
-      } else {
-        let sequences$1 = merge_ascending_pairs(sequences2, compare4, toList([]));
-        loop$sequences = sequences$1;
-        loop$direction = new Descending();
-        loop$compare = compare4;
-      }
-    } else {
-      let $ = sequences2.tail;
-      if ($ instanceof Empty) {
-        let sequence = sequences2.head;
-        return reverse(sequence);
-      } else {
-        let sequences$1 = merge_descending_pairs(sequences2, compare4, toList([]));
-        loop$sequences = sequences$1;
-        loop$direction = new Ascending();
-        loop$compare = compare4;
-      }
-    }
-  }
-}
 function sort(list4, compare4) {
   if (list4 instanceof Empty) {
     return list4;
@@ -536,20 +536,23 @@ function identity3(x) {
   return x;
 }
 
-// build/dev/javascript/lustre/lustre/internals/constants.mjs
+// build/dev/javascript/agnostic/agnostic/internals/constants.mjs
 var empty_list = /* @__PURE__ */ toList([]);
 
-// build/dev/javascript/lustre/lustre/internals/mutable_map.ffi.mjs
+// build/dev/javascript/agnostic/agnostic/internals/mutable_map.ffi.mjs
 function empty() {
   return null;
 }
-function insert2(map6, key, value) {
-  map6 ??= /* @__PURE__ */ new Map();
-  map6.set(key, value);
-  return map6;
+function has_key(map7, key) {
+  return map7 && map7.has(key);
+}
+function insert2(map7, key, value) {
+  map7 ??= /* @__PURE__ */ new Map();
+  map7.set(key, value);
+  return map7;
 }
 
-// build/dev/javascript/lustre/lustre/vdom/vattr.ffi.mjs
+// build/dev/javascript/agnostic/agnostic/vdom/vattr.ffi.mjs
 var GT = /* @__PURE__ */ Order$Gt();
 var LT = /* @__PURE__ */ Order$Lt();
 var EQ = /* @__PURE__ */ Order$Eq();
@@ -563,7 +566,7 @@ function compare3(a, b) {
   }
 }
 
-// build/dev/javascript/lustre/lustre/vdom/vattr.mjs
+// build/dev/javascript/agnostic/agnostic/vdom/vattr.mjs
 var Attribute = class extends CustomType {
   constructor(kind, name, value) {
     super();
@@ -577,6 +580,9 @@ var property_kind = 1;
 var event_kind = 2;
 var never_kind = 0;
 var always_kind = 2;
+function attribute(name, value) {
+  return new Attribute(attribute_kind, name, value);
+}
 function merge(loop$attributes, loop$merged) {
   while (true) {
     let attributes = loop$attributes;
@@ -702,11 +708,8 @@ function prepare(attributes) {
     }
   }
 }
-function attribute(name, value) {
-  return new Attribute(attribute_kind, name, value);
-}
 
-// build/dev/javascript/lustre/lustre/vdom/vnode.mjs
+// build/dev/javascript/agnostic/agnostic/vdom/vnode.mjs
 var Fragment = class extends CustomType {
   constructor(kind, key, children, keyed_children) {
     super();
@@ -717,7 +720,7 @@ var Fragment = class extends CustomType {
   }
 };
 var Element = class extends CustomType {
-  constructor(kind, key, namespace, tag, attributes, children, keyed_children, self_closing, void$) {
+  constructor(kind, key, namespace, tag, attributes, children, keyed_children) {
     super();
     this.kind = kind;
     this.key = key;
@@ -726,8 +729,6 @@ var Element = class extends CustomType {
     this.attributes = attributes;
     this.children = children;
     this.keyed_children = keyed_children;
-    this.self_closing = self_closing;
-    this.void = void$;
   }
 };
 var Text = class extends CustomType {
@@ -738,15 +739,25 @@ var Text = class extends CustomType {
     this.content = content;
   }
 };
-var UnsafeInnerHtml = class extends CustomType {
-  constructor(kind, key, namespace, tag, attributes, inner_html) {
+var RawContainer = class extends CustomType {
+  constructor(kind, key, namespace, tag, attributes, content, compare4) {
     super();
     this.kind = kind;
     this.key = key;
     this.namespace = namespace;
     this.tag = tag;
     this.attributes = attributes;
-    this.inner_html = inner_html;
+    this.content = content;
+    this.compare = compare4;
+  }
+};
+var RawNode = class extends CustomType {
+  constructor(kind, key, content, compare4) {
+    super();
+    this.kind = kind;
+    this.key = key;
+    this.content = content;
+    this.compare = compare4;
   }
 };
 var Map2 = class extends CustomType {
@@ -770,91 +781,14 @@ var Memo = class extends CustomType {
 var fragment_kind = 0;
 var element_kind = 1;
 var text_kind = 2;
-var unsafe_inner_html_kind = 3;
+var raw_container_kind = 3;
+var raw_node_kind = 6;
 var map_kind = 4;
 var memo_kind = 5;
-function is_void_html_element(tag, namespace) {
-  if (namespace === "") {
-    if (tag === "area") {
-      return true;
-    } else if (tag === "base") {
-      return true;
-    } else if (tag === "br") {
-      return true;
-    } else if (tag === "col") {
-      return true;
-    } else if (tag === "embed") {
-      return true;
-    } else if (tag === "hr") {
-      return true;
-    } else if (tag === "img") {
-      return true;
-    } else if (tag === "input") {
-      return true;
-    } else if (tag === "link") {
-      return true;
-    } else if (tag === "meta") {
-      return true;
-    } else if (tag === "param") {
-      return true;
-    } else if (tag === "source") {
-      return true;
-    } else if (tag === "track") {
-      return true;
-    } else if (tag === "wbr") {
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    return false;
-  }
-}
-function to_keyed(key, node) {
-  if (node instanceof Fragment) {
-    return new Fragment(node.kind, key, node.children, node.keyed_children);
-  } else if (node instanceof Element) {
-    return new Element(
-      node.kind,
-      key,
-      node.namespace,
-      node.tag,
-      node.attributes,
-      node.children,
-      node.keyed_children,
-      node.self_closing,
-      node.void
-    );
-  } else if (node instanceof Text) {
-    return new Text(node.kind, key, node.content);
-  } else if (node instanceof UnsafeInnerHtml) {
-    return new UnsafeInnerHtml(
-      node.kind,
-      key,
-      node.namespace,
-      node.tag,
-      node.attributes,
-      node.inner_html
-    );
-  } else if (node instanceof Map2) {
-    let child2 = node.child;
-    return new Map2(node.kind, key, node.mapper, to_keyed(key, child2));
-  } else {
-    let view = node.view;
-    return new Memo(
-      node.kind,
-      key,
-      node.dependencies,
-      () => {
-        return to_keyed(key, view());
-      }
-    );
-  }
-}
 function fragment(key, children, keyed_children) {
   return new Fragment(fragment_kind, key, children, keyed_children);
 }
-function element(key, namespace, tag, attributes, children, keyed_children, self_closing, void$) {
+function element(key, namespace, tag, attributes, children, keyed_children) {
   return new Element(
     element_kind,
     key,
@@ -862,15 +796,13 @@ function element(key, namespace, tag, attributes, children, keyed_children, self
     tag,
     prepare(attributes),
     children,
-    keyed_children,
-    self_closing,
-    void$
+    keyed_children
   );
 }
 function text(key, content) {
   return new Text(text_kind, key, content);
 }
-function map3(element3, mapper) {
+function map4(element3, mapper) {
   if (element3 instanceof Map2) {
     let child_mapper = element3.mapper;
     return new Map2(
@@ -888,21 +820,64 @@ function map3(element3, mapper) {
 function memo(key, dependencies, view) {
   return new Memo(memo_kind, key, dependencies, view);
 }
+function to_keyed(key, node) {
+  if (node instanceof Fragment) {
+    return new Fragment(node.kind, key, node.children, node.keyed_children);
+  } else if (node instanceof Element) {
+    return new Element(
+      node.kind,
+      key,
+      node.namespace,
+      node.tag,
+      node.attributes,
+      node.children,
+      node.keyed_children
+    );
+  } else if (node instanceof Text) {
+    return new Text(node.kind, key, node.content);
+  } else if (node instanceof RawContainer) {
+    return new RawContainer(
+      node.kind,
+      key,
+      node.namespace,
+      node.tag,
+      node.attributes,
+      node.content,
+      node.compare
+    );
+  } else if (node instanceof RawNode) {
+    return new RawNode(node.kind, key, node.content, node.compare);
+  } else if (node instanceof Map2) {
+    let child2 = node.child;
+    return new Map2(node.kind, key, node.mapper, to_keyed(key, child2));
+  } else {
+    let view = node.view;
+    return new Memo(
+      node.kind,
+      key,
+      node.dependencies,
+      () => {
+        return to_keyed(key, view());
+      }
+    );
+  }
+}
 
-// build/dev/javascript/lustre/lustre/vdom/patch.mjs
+// build/dev/javascript/agnostic/agnostic/vdom/patch.mjs
 var replace_text_kind = 0;
-var replace_inner_html_kind = 1;
+var replace_raw_content_kind = 1;
+var replace_raw_node_kind = 7;
 var update_kind = 2;
 var move_kind = 3;
 var remove_kind = 4;
 var replace_kind = 5;
 var insert_kind = 6;
 
-// build/dev/javascript/lustre/lustre/vdom/path.mjs
-var separator_element = "	";
+// build/dev/javascript/agnostic/agnostic/vdom/path.mjs
 var separator_subtree = "\r";
+var separator_element = "	";
 
-// build/dev/javascript/lustre/lustre/internals/list.ffi.mjs
+// build/dev/javascript/agnostic/agnostic/internals/list.ffi.mjs
 var iterate = (list4, callback) => {
   if (Array.isArray(list4)) {
     for (let i = 0; i < list4.length; i++) {
@@ -915,18 +890,44 @@ var iterate = (list4, callback) => {
   }
 };
 
-// build/dev/javascript/lustre/lustre/internals/constants.ffi.mjs
-var document2 = () => globalThis?.document;
+// build/dev/javascript/agnostic/agnostic/internals/constants.ffi.mjs
 var NAMESPACE_HTML = "http://www.w3.org/1999/xhtml";
 var ELEMENT_NODE = 1;
 var TEXT_NODE = 3;
 var COMMENT_NODE = 8;
 var SUPPORTS_MOVE_BEFORE = !!globalThis.HTMLElement?.prototype?.moveBefore;
 
-// build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs
+// build/dev/javascript/agnostic/agnostic/vdom/reconciler.ffi.mjs
 var setTimeout2 = globalThis.setTimeout;
 var clearTimeout = globalThis.clearTimeout;
 var wrapRef = (ref2) => ref2 != null ? Result$Ok(ref2) : Result$Error(void 0);
+var debugWriteLine = () => {
+};
+var debugLogPath = globalThis.process?.env?.AGNOSTIC_DEBUG_LOG;
+if (debugLogPath) {
+  try {
+    const fs = await import(
+      /* @vite-ignore */
+      "node:fs"
+    );
+    debugWriteLine = (line) => {
+      try {
+        fs.appendFileSync(debugLogPath, line + "\n");
+      } catch {
+      }
+    };
+  } catch {
+  }
+}
+var gleamListToArray = (list4) => {
+  const out = [];
+  let cur = list4;
+  while (cur && cur.head !== void 0) {
+    out.push(cur.head);
+    cur = cur.tail;
+  }
+  return out;
+};
 var meta = Symbol("lustre");
 var MetadataNode = class {
   constructor(kind, parent, node, key) {
@@ -994,15 +995,81 @@ var Reconciler = class {
   #reconcile() {
     const stack = this.#stack;
     while (stack.length) {
-      const { node, patch } = stack.pop();
+      let { node, patch } = stack.pop();
+      const { path, changes, removed, children: childPatches } = patch;
+      iterate(path, (index2) => {
+        if (node === void 0 || node.children?.[index2] === void 0) {
+          const changes2 = gleamListToArray(patch.changes).map((c) => {
+            const summary = { kind: c.kind };
+            if (c.index !== void 0) summary.index = c.index;
+            if (c.before !== void 0) summary.before = c.before;
+            if (c.key !== void 0) summary.key = c.key;
+            if (c.added !== void 0) {
+              summary.added = gleamListToArray(c.added).map((a) => a.name);
+            }
+            if (c.removed !== void 0) {
+              summary.removed = gleamListToArray(c.removed).map((a) => a.name);
+            }
+            return summary;
+          });
+          const childPatches2 = gleamListToArray(patch.children).map((p) => ({
+            index: p.index,
+            pathLen: gleamListToArray(p.path).length,
+            changesLen: gleamListToArray(p.changes).length
+          }));
+          const ancestors = [];
+          for (let cur = node; cur; cur = cur.parent) {
+            ancestors.push({
+              kind: cur.kind,
+              key: cur.key,
+              childrenLen: cur.children?.length
+            });
+          }
+          const stackSnapshot = stack.map((entry) => ({
+            patchPath: gleamListToArray(entry.patch.path),
+            patchIndex: entry.patch.index,
+            patchChangeKinds: gleamListToArray(entry.patch.changes).map(
+              (c) => c.kind
+            ),
+            patchChildrenCount: gleamListToArray(entry.patch.children).length,
+            nodeKind: entry.node?.kind,
+            nodeKey: entry.node?.key
+          }));
+          debugWriteLine(
+            `[lustre] path descent overruns metadata ${JSON.stringify({
+              patchPath: gleamListToArray(patch.path),
+              patchIndex: patch.index,
+              patchChanges: changes2,
+              patchChildren: childPatches2,
+              stepIndex: index2,
+              nodeKind: node?.kind,
+              nodeKey: node?.key,
+              childrenLen: node?.children?.length,
+              nodeChildKinds: node?.children?.map((c) => c?.kind),
+              ancestors,
+              pendingStack: stackSnapshot
+            })}`
+          );
+        }
+        node = node.children[index2];
+      });
       const { children: childNodes } = node;
-      const { changes, removed, children: childPatches } = patch;
       iterate(changes, (change) => this.#patch(node, change));
       if (removed) {
         this.#removeChildren(node, childNodes.length - removed, removed);
       }
       iterate(childPatches, (childPatch) => {
-        const child2 = childNodes[childPatch.index | 0];
+        const idx = childPatch.index | 0;
+        const child2 = childNodes[idx];
+        if (child2 === void 0) {
+          debugWriteLine(
+            `[lustre] child patch index resolves to undefined ${JSON.stringify({
+              patchPath: patch.path,
+              index: idx,
+              childNodesLength: childNodes.length
+            })}`
+          );
+        }
         this.#stack.push({ node: child2, patch: childPatch });
       });
     }
@@ -1012,8 +1079,11 @@ var Reconciler = class {
       case replace_text_kind:
         this.#replaceText(node, change);
         break;
-      case replace_inner_html_kind:
-        this.#replaceInnerHtml(node, change);
+      case replace_raw_content_kind:
+        this.#replaceRawContent(node, change);
+        break;
+      case replace_raw_node_kind:
+        this.#replaceRawNode(node, change);
         break;
       case update_kind:
         this.#update(node, change);
@@ -1037,11 +1107,15 @@ var Reconciler = class {
     const fragment3 = this.#platform.create_fragment();
     const beforeEl = this.#getReference(parent, before);
     this.#insertChildren(fragment3, null, parent, before | 0, children);
-    this.#platform.insert_before(parent.parentNode, fragment3, wrapRef(beforeEl));
+    this.#platform.insert_before(
+      parent.parentNode,
+      fragment3,
+      wrapRef(beforeEl)
+    );
   }
   #replace(parent, { index: index2, with: child2 }) {
+    const beforeEl = this.#getReference(parent, (index2 | 0) + 1);
     this.#removeChildren(parent, index2 | 0, 1);
-    const beforeEl = this.#getReference(parent, index2);
     this.#insertChild(parent.parentNode, beforeEl, parent, index2 | 0, child2);
   }
   #getReference(node, index2) {
@@ -1052,10 +1126,14 @@ var Reconciler = class {
     if (node.endNode) return node.endNode;
     if (!node.isVirtual) return null;
     while (node.isVirtual && node.children.length) {
-      if (node.endNode) return node.endNode.nextSibling;
+      if (node.endNode) {
+        const sibling2 = this.#platform.next_sibling(node.endNode);
+        return Result$isOk(sibling2) ? Result$Ok$0(sibling2) : null;
+      }
       node = node.children[node.children.length - 1];
     }
-    return node.node.nextSibling;
+    const sibling = this.#platform.next_sibling(node.node);
+    return Result$isOk(sibling) ? Result$Ok$0(sibling) : null;
   }
   #move(parent, { key, before }) {
     before = before | 0;
@@ -1132,8 +1210,17 @@ var Reconciler = class {
   #replaceText({ node }, { content }) {
     this.#platform.set_text(node, content ?? "");
   }
-  #replaceInnerHtml({ node }, { inner_html }) {
-    this.#platform.set_inner_html(node, inner_html ?? "");
+  #replaceRawContent({ node }, { content }) {
+    this.#platform.set_raw_content(node, content ?? "");
+  }
+  #replaceRawNode(metaNode, { with: vnode }) {
+    const parentNode = metaNode.parent.parentNode;
+    const oldNode = metaNode.node;
+    const newNode = this.#platform.create_raw_node(vnode.content);
+    this.#platform.insert_before(parentNode, newNode, wrapRef(oldNode));
+    this.#platform.remove_child(parentNode, oldNode);
+    newNode[meta] = metaNode;
+    metaNode.node = newNode;
   }
   // INSERT --------------------------------------------------------------------
   #insertChildren(domParent, beforeEl, metaParent, index2, children) {
@@ -1146,8 +1233,8 @@ var Reconciler = class {
     switch (vnode.kind) {
       case element_kind: {
         const node = this.#createElement(metaParent, index2, vnode);
-        this.#insertChildren(node, null, node[meta], 0, vnode.children);
         this.#platform.insert_before(domParent, node, wrapRef(beforeEl));
+        this.#insertChildren(node, null, node[meta], 0, vnode.children);
         break;
       }
       case text_kind: {
@@ -1159,16 +1246,32 @@ var Reconciler = class {
         const marker = "lustre:fragment";
         const head = this.#createHead(marker, metaParent, index2, vnode);
         this.#platform.insert_before(domParent, head, wrapRef(beforeEl));
-        this.#insertChildren(domParent, beforeEl, head[meta], 0, vnode.children);
+        this.#insertChildren(
+          domParent,
+          beforeEl,
+          head[meta],
+          0,
+          vnode.children
+        );
         if (this.#debug) {
           head[meta].endNode = this.#platform.create_comment(` /${marker} `);
-          this.#platform.insert_before(domParent, head[meta].endNode, wrapRef(beforeEl));
+          this.#platform.insert_before(
+            domParent,
+            head[meta].endNode,
+            wrapRef(beforeEl)
+          );
         }
         break;
       }
-      case unsafe_inner_html_kind: {
+      case raw_container_kind: {
         const node = this.#createElement(metaParent, index2, vnode);
-        this.#replaceInnerHtml({ node }, vnode);
+        this.#platform.insert_before(domParent, node, wrapRef(beforeEl));
+        this.#replaceRawContent({ node }, vnode);
+        break;
+      }
+      case raw_node_kind: {
+        const node = this.#platform.create_raw_node(vnode.content);
+        insertMetadataChild(raw_node_kind, metaParent, node, index2, vnode.key);
         this.#platform.insert_before(domParent, node, wrapRef(beforeEl));
         break;
       }
@@ -1186,7 +1289,10 @@ var Reconciler = class {
     }
   }
   #createElement(parent, index2, { kind, key, tag, namespace, attributes }) {
-    const node = this.#platform.create_element(namespace || NAMESPACE_HTML, tag);
+    const node = this.#platform.create_element(
+      namespace || NAMESPACE_HTML,
+      tag
+    );
     insertMetadataChild(kind, parent, node, index2, key);
     if (this.#debug && key) {
       this.#platform.set_attribute(node, "data-lustre-key", key);
@@ -1251,20 +1357,20 @@ var Reconciler = class {
       }
     }
   }
-  #updateDebounceThrottle(map6, name, delay) {
-    const debounceOrThrottle = map6.get(name);
+  #updateDebounceThrottle(map7, name, delay) {
+    const debounceOrThrottle = map7.get(name);
     if (delay > 0) {
       if (debounceOrThrottle) {
         debounceOrThrottle.delay = delay;
       } else {
-        map6.set(name, { delay });
+        map7.set(name, { delay });
       }
     } else if (debounceOrThrottle) {
       const { timeout } = debounceOrThrottle;
       if (timeout) {
         clearTimeout(timeout);
       }
-      map6.delete(name);
+      map7.delete(name);
     }
   }
   #handleEvent(attribute3, event2) {
@@ -1284,7 +1390,7 @@ var Reconciler = class {
         ...new FormData(event2.target, event2.submitter).entries()
       ];
     }
-    const data = this.#decodeEvent(event2, path, type, include);
+    const data2 = this.#decodeEvent(event2, path, type, include);
     const throttle = throttles.get(type);
     if (throttle) {
       const now = Date.now();
@@ -1292,7 +1398,7 @@ var Reconciler = class {
       if (now > last + throttle.delay) {
         throttle.last = now;
         throttle.lastEvent = event2;
-        this.#dispatch(event2, data);
+        this.#dispatch(event2, data2);
       }
     }
     const debounce = debouncers.get(type);
@@ -1300,11 +1406,11 @@ var Reconciler = class {
       clearTimeout(debounce.timeout);
       debounce.timeout = setTimeout2(() => {
         if (event2 === throttles.get(type)?.lastEvent) return;
-        this.#dispatch(event2, data);
+        this.#dispatch(event2, data2);
       }, debounce.delay);
     }
     if (!throttle && !debounce) {
-      this.#dispatch(event2, data);
+      this.#dispatch(event2, data2);
     }
   }
 };
@@ -1359,11 +1465,13 @@ var SYNCED_ATTRIBUTES = {
   }
 };
 
-// build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs
+// build/dev/javascript/agnostic/agnostic/runtime/platform/base.ffi.mjs
 var copiedStyleSheets = /* @__PURE__ */ new WeakMap();
 async function adoptStylesheets(shadowRoot) {
   const pendingParentStylesheets = [];
-  for (const node of document2().querySelectorAll("link[rel=stylesheet], style")) {
+  for (const node of globalThis.document.querySelectorAll(
+    "link[rel=stylesheet], style"
+  )) {
     if (node.sheet) continue;
     pendingParentStylesheets.push(
       new Promise((resolve, reject) => {
@@ -1378,7 +1486,7 @@ async function adoptStylesheets(shadowRoot) {
   }
   shadowRoot.adoptedStyleSheets = shadowRoot.host.getRootNode().adoptedStyleSheets;
   const pending = [];
-  for (const sheet of document2().styleSheets) {
+  for (const sheet of globalThis.document.styleSheets) {
     try {
       shadowRoot.adoptedStyleSheets.push(sheet);
     } catch {
@@ -1409,13 +1517,21 @@ var ContextRequestEvent = class extends Event {
     this.subscribe = subscribe;
   }
 };
+var LustreEvent = class extends CustomEvent {
+  // We can't rely on `instanceof` checks because the server component client
+  // runtime is bundled on its own and thus will have its own copy of this class.
+  isLustreEvent = true;
+  constructor(name, detail) {
+    super(name, { detail, bubbles: true, composed: true });
+  }
+};
 
-// build/dev/javascript/lustre/lustre/attribute.mjs
+// build/dev/javascript/agnostic/agnostic/attribute.mjs
 function attribute2(name, value) {
   return attribute(name, value);
 }
 
-// build/dev/javascript/lustre/lustre/element.mjs
+// build/dev/javascript/agnostic/agnostic/element.mjs
 function text2(content) {
   return text("", content);
 }
@@ -1428,109 +1544,163 @@ function memo2(dependencies, view) {
 function ref(value) {
   return identity3(value);
 }
-function map5(element3, f) {
-  return map3(element3, f);
+function map6(element3, f) {
+  return map4(element3, f);
 }
 
-// build/dev/javascript/lustre/lustre/element/keyed.mjs
-function do_extract_keyed_children(loop$key_children_pairs, loop$keyed_children, loop$children) {
+// build/dev/javascript/agnostic/agnostic/platform.mjs
+var Platform = class extends CustomType {
+  constructor(target, mount, create_element2, create_text_node2, create_fragment2, create_comment2, insert_before2, move_before2, remove_child3, next_sibling2, get_attribute2, set_attribute2, remove_attribute2, set_property2, set_text2, set_raw_content2, create_raw_node2, add_event_listener2, remove_event_listener2, schedule_render2, after_render2) {
+    super();
+    this.target = target;
+    this.mount = mount;
+    this.create_element = create_element2;
+    this.create_text_node = create_text_node2;
+    this.create_fragment = create_fragment2;
+    this.create_comment = create_comment2;
+    this.insert_before = insert_before2;
+    this.move_before = move_before2;
+    this.remove_child = remove_child3;
+    this.next_sibling = next_sibling2;
+    this.get_attribute = get_attribute2;
+    this.set_attribute = set_attribute2;
+    this.remove_attribute = remove_attribute2;
+    this.set_property = set_property2;
+    this.set_text = set_text2;
+    this.set_raw_content = set_raw_content2;
+    this.create_raw_node = create_raw_node2;
+    this.add_event_listener = add_event_listener2;
+    this.remove_event_listener = remove_event_listener2;
+    this.schedule_render = schedule_render2;
+    this.after_render = after_render2;
+  }
+};
+function new$4(target, mount, create_element2, create_text_node2, create_fragment2, create_comment2, insert_before2, move_before2, remove_child3, next_sibling2, get_attribute2, set_attribute2, remove_attribute2, set_property2, set_text2, set_raw_content2, create_raw_node2, add_event_listener2, remove_event_listener2, schedule_render2, after_render2) {
+  return new Platform(
+    target,
+    mount,
+    create_element2,
+    create_text_node2,
+    create_fragment2,
+    create_comment2,
+    insert_before2,
+    move_before2,
+    remove_child3,
+    next_sibling2,
+    get_attribute2,
+    set_attribute2,
+    remove_attribute2,
+    set_property2,
+    set_text2,
+    set_raw_content2,
+    create_raw_node2,
+    add_event_listener2,
+    remove_event_listener2,
+    schedule_render2,
+    after_render2
+  );
+}
+
+// build/dev/javascript/agnostic/agnostic/element/keyed.mjs
+function do_extract_keyed_children(loop$reversed_pairs, loop$keyed_children, loop$children) {
   while (true) {
-    let key_children_pairs = loop$key_children_pairs;
+    let reversed_pairs = loop$reversed_pairs;
     let keyed_children = loop$keyed_children;
     let children = loop$children;
-    if (key_children_pairs instanceof Empty) {
-      return [keyed_children, reverse(children)];
+    if (reversed_pairs instanceof Empty) {
+      return [keyed_children, children];
     } else {
-      let rest = key_children_pairs.tail;
-      let key = key_children_pairs.head[0];
-      let element$1 = key_children_pairs.head[1];
+      let rest = reversed_pairs.tail;
+      let key = reversed_pairs.head[0];
+      let element$1 = reversed_pairs.head[1];
       let keyed_element = to_keyed(key, element$1);
-      let _block;
       if (key === "") {
-        _block = keyed_children;
+        loop$reversed_pairs = rest;
+        loop$keyed_children = keyed_children;
+        loop$children = prepend(keyed_element, children);
       } else {
-        _block = insert2(keyed_children, key, keyed_element);
+        let $ = has_key(keyed_children, key);
+        if ($) {
+          loop$reversed_pairs = rest;
+          loop$keyed_children = keyed_children;
+          loop$children = children;
+        } else {
+          loop$reversed_pairs = rest;
+          loop$keyed_children = insert2(
+            keyed_children,
+            key,
+            keyed_element
+          );
+          loop$children = prepend(keyed_element, children);
+        }
       }
-      let keyed_children$1 = _block;
-      let children$1 = prepend(keyed_element, children);
-      loop$key_children_pairs = rest;
-      loop$keyed_children = keyed_children$1;
-      loop$children = children$1;
     }
   }
 }
 function extract_keyed_children(children) {
   return do_extract_keyed_children(
-    children,
+    reverse(children),
     empty(),
     empty_list
   );
 }
 function element2(tag, attributes, children) {
   let $ = extract_keyed_children(children);
-  let keyed_children;
-  let children$1;
-  keyed_children = $[0];
-  children$1 = $[1];
-  return element(
-    "",
-    "",
-    tag,
-    attributes,
-    children$1,
-    keyed_children,
-    false,
-    is_void_html_element(tag, "")
-  );
+  let keyed_children = $[0];
+  let children$1 = $[1];
+  return element("", "", tag, attributes, children$1, keyed_children);
 }
 function namespaced(namespace, tag, attributes, children) {
   let $ = extract_keyed_children(children);
-  let keyed_children;
-  let children$1;
-  keyed_children = $[0];
-  children$1 = $[1];
+  let keyed_children = $[0];
+  let children$1 = $[1];
   return element(
     "",
     namespace,
     tag,
     attributes,
     children$1,
-    keyed_children,
-    false,
-    is_void_html_element(tag, namespace)
+    keyed_children
   );
 }
 function fragment2(children) {
   let $ = extract_keyed_children(children);
-  let keyed_children;
-  let children$1;
-  keyed_children = $[0];
-  children$1 = $[1];
+  let keyed_children = $[0];
+  let children$1 = $[1];
   return fragment("", children$1, keyed_children);
 }
 
-// build/dev/javascript/lustre/lustre/vdom/virtualise.ffi.mjs
+// build/dev/javascript/agnostic/agnostic/vdom/virtualise.ffi.mjs
 var virtualise = (root2) => {
   const rootMeta = insertMetadataChild(element_kind, null, root2, 0, null);
-  for (let child2 = root2.firstChild; child2; child2 = child2.nextSibling) {
-    const result = virtualiseChild(rootMeta, root2, child2, 0);
-    if (result) return result.vnode;
+  const { children } = virtualiseChildren(rootMeta, root2, root2.firstChild);
+  if (children.length > 1) {
+    const rootNodeMeta = insertMetadataChild(element_kind, null, root2, 0, null);
+    rootMeta.kind = fragment_kind;
+    rootMeta.node = globalThis.document.createTextNode("");
+    rootMeta.parent = rootNodeMeta;
+    rootNodeMeta.children.push(rootMeta);
+    root2.insertBefore(rootMeta.node, root2.firstChild);
+    return fragment2(toList2(children));
   }
-  const placeholder = document2().createTextNode("");
+  if (children.length === 1) {
+    return children[0][1];
+  }
+  const placeholder = globalThis.document.createTextNode("");
   insertMetadataChild(text_kind, rootMeta, placeholder, 0, null);
   root2.insertBefore(placeholder, root2.firstChild);
   return none();
 };
 var virtualiseChild = (meta2, domParent, child2, index2) => {
   if (child2.nodeType === COMMENT_NODE) {
-    const data = child2.data.trim();
-    if (data.startsWith("lustre:fragment")) {
+    const data2 = child2.data.trim();
+    if (data2.startsWith("lustre:fragment")) {
       return virtualiseFragment(meta2, domParent, child2, index2);
     }
-    if (data.startsWith("lustre:map")) {
+    if (data2.startsWith("lustre:map")) {
       return virtualiseMap(meta2, domParent, child2, index2);
     }
-    if (data.startsWith("lustre:memo")) {
+    if (data2.startsWith("lustre:memo")) {
       return virtualiseMemo(meta2, domParent, child2, index2);
     }
     return null;
@@ -1556,9 +1726,14 @@ var virtualiseElement = (metaParent, node, index2) => {
     virtualiseInputEvents(tag, node);
   }
   const attributes = virtualiseAttributes(node);
+  const { children } = virtualiseChildren(meta2, node, node.firstChild);
+  const vnode = isHtmlElement ? element2(tag, attributes, toList2(children)) : namespaced(namespace, tag, attributes, toList2(children));
+  return childResult(key, vnode, node.nextSibling);
+};
+var virtualiseChildren = (meta2, domParent, childNode) => {
   const children = [];
-  for (let childNode = node.firstChild; childNode; ) {
-    const child2 = virtualiseChild(meta2, node, childNode, children.length);
+  while (childNode && (childNode.nodeType !== COMMENT_NODE || childNode.data.trim() !== "/lustre:fragment")) {
+    const child2 = virtualiseChild(meta2, domParent, childNode, children.length);
     if (child2) {
       children.push([child2.key, child2.vnode]);
       childNode = child2.next;
@@ -1566,8 +1741,7 @@ var virtualiseElement = (metaParent, node, index2) => {
       childNode = childNode.nextSibling;
     }
   }
-  const vnode = isHtmlElement ? element2(tag, attributes, toList2(children)) : namespaced(namespace, tag, attributes, toList2(children));
-  return childResult(key, vnode, node.nextSibling);
+  return { children, end: childNode };
 };
 var virtualiseText = (meta2, node, index2) => {
   insertMetadataChild(text_kind, meta2, node, index2, null);
@@ -1576,27 +1750,17 @@ var virtualiseText = (meta2, node, index2) => {
 var virtualiseFragment = (metaParent, domParent, node, index2) => {
   const key = parseKey(node.data);
   const meta2 = insertMetadataChild(fragment_kind, metaParent, node, index2, key);
-  const children = [];
-  node = node.nextSibling;
-  while (node && (node.nodeType !== COMMENT_NODE || node.data.trim() !== "/lustre:fragment")) {
-    const child2 = virtualiseChild(meta2, domParent, node, children.length);
-    if (child2) {
-      children.push([child2.key, child2.vnode]);
-      node = child2.next;
-    } else {
-      node = node.nextSibling;
-    }
-  }
-  meta2.endNode = node;
+  const { children, end } = virtualiseChildren(meta2, domParent, node.nextSibling);
+  meta2.endNode = end;
   const vnode = fragment2(toList2(children));
-  return childResult(key, vnode, node?.nextSibling);
+  return childResult(key, vnode, end?.nextSibling);
 };
 var virtualiseMap = (metaParent, domParent, node, index2) => {
   const key = parseKey(node.data);
   const meta2 = insertMetadataChild(map_kind, metaParent, node, index2, key);
   const child2 = virtualiseNextChild(meta2, domParent, node, 0);
   if (!child2) return null;
-  const vnode = map5(child2.vnode, (x) => x);
+  const vnode = map6(child2.vnode, (x) => x);
   return childResult(key, vnode, child2.next);
 };
 var virtualiseMemo = (meta2, domParent, node, index2) => {
@@ -1640,13 +1804,13 @@ var virtualiseInputEvents = (tag, node) => {
     node.checked = checked;
     node.dispatchEvent(new Event("input", { bubbles: true }));
     node.dispatchEvent(new Event("change", { bubbles: true }));
-    if (document2().activeElement !== node) {
+    if (globalThis.document.activeElement !== node) {
       node.dispatchEvent(new Event("blur", { bubbles: true }));
     }
   });
 };
-var parseKey = (data) => {
-  const keyMatch = data.match(/key="([^"]*)"/);
+var parseKey = (data2) => {
+  const keyMatch = data2.match(/key="([^"]*)"/);
   if (!keyMatch) return "";
   return unescapeKey(keyMatch[1]);
 };
@@ -1655,20 +1819,24 @@ var unescapeKey = (key) => {
 };
 var toList2 = (arr) => arr.reduceRight((xs, x) => List$NonEmpty(x, xs), empty_list);
 
-// build/dev/javascript/lustre/lustre/runtime/client/dom.ffi.mjs
+// build/dev/javascript/agnostic/agnostic/platform/dom.ffi.mjs
 var unwrapResult = (result) => Result$isOk(result) ? Result$Ok$0(result) : null;
 var wrapResult = (value) => value != null ? Result$Ok(value) : Result$Error(void 0);
 var mount_strict = (root2) => {
   const initialVdom = virtualise(root2);
   return [root2, initialVdom];
 };
-var create_element = (ns, tag) => document2().createElementNS(ns || NAMESPACE_HTML, tag);
-var create_text_node = (content) => document2().createTextNode(content ?? "");
-var create_fragment = () => document2().createDocumentFragment();
-var create_comment = (data) => document2().createComment(data);
+var create_element = (ns, tag) => globalThis.document.createElementNS(ns || NAMESPACE_HTML, tag);
+var create_text_node = (content) => globalThis.document.createTextNode(content ?? "");
+var create_fragment = () => globalThis.document.createDocumentFragment();
+var create_comment = (data2) => globalThis.document.createComment(data2);
 var insert_before = (parent, node, ref2) => parent.insertBefore(node, unwrapResult(ref2));
 var move_before = SUPPORTS_MOVE_BEFORE ? (parent, node, ref2) => parent.moveBefore(node, unwrapResult(ref2)) : (parent, node, ref2) => parent.insertBefore(node, unwrapResult(ref2));
 var remove_child2 = (parent, child2) => parent.removeChild(child2);
+var next_sibling = (node) => {
+  const sibling = node.nextSibling;
+  return sibling ? Result$Ok(sibling) : Result$Error(void 0);
+};
 var get_attribute = (node, name) => wrapResult(node.getAttribute(name));
 var set_attribute = (node, name, value) => node.setAttribute(name, value ?? "");
 var remove_attribute = (node, name) => node.removeAttribute(name);
@@ -1678,9 +1846,10 @@ var set_property = (node, name, value) => {
 var set_text = (node, content) => {
   node.data = content ?? "";
 };
-var set_inner_html = (node, html) => {
-  node.innerHTML = html ?? "";
+var set_raw_content = (node, content) => {
+  node.innerHTML = content ?? "";
 };
+var create_raw_node = (content) => content;
 var add_event_listener = (node, name, handler, passive) => node.addEventListener(name, handler, { passive });
 var remove_event_listener = (node, name, handler) => node.removeEventListener(name, handler);
 var schedule_render = (callback) => {
@@ -1689,57 +1858,8 @@ var schedule_render = (callback) => {
 };
 var after_render = () => {
 };
-
-// build/dev/javascript/lustre/lustre/platform.mjs
-var Platform = class extends CustomType {
-  constructor(target, mount, create_element2, create_text_node2, create_fragment2, create_comment2, insert_before2, move_before2, remove_child3, get_attribute2, set_attribute2, remove_attribute2, set_property2, set_text2, set_inner_html2, add_event_listener2, remove_event_listener2, schedule_render2, after_render2) {
-    super();
-    this.target = target;
-    this.mount = mount;
-    this.create_element = create_element2;
-    this.create_text_node = create_text_node2;
-    this.create_fragment = create_fragment2;
-    this.create_comment = create_comment2;
-    this.insert_before = insert_before2;
-    this.move_before = move_before2;
-    this.remove_child = remove_child3;
-    this.get_attribute = get_attribute2;
-    this.set_attribute = set_attribute2;
-    this.remove_attribute = remove_attribute2;
-    this.set_property = set_property2;
-    this.set_text = set_text2;
-    this.set_inner_html = set_inner_html2;
-    this.add_event_listener = add_event_listener2;
-    this.remove_event_listener = remove_event_listener2;
-    this.schedule_render = schedule_render2;
-    this.after_render = after_render2;
-  }
-};
-function new$5(target, mount, create_element2, create_text_node2, create_fragment2, create_comment2, insert_before2, move_before2, remove_child3, get_attribute2, set_attribute2, remove_attribute2, set_property2, set_text2, set_inner_html2, add_event_listener2, remove_event_listener2, schedule_render2, after_render2) {
-  return new Platform(
-    target,
-    mount,
-    create_element2,
-    create_text_node2,
-    create_fragment2,
-    create_comment2,
-    insert_before2,
-    move_before2,
-    remove_child3,
-    get_attribute2,
-    set_attribute2,
-    remove_attribute2,
-    set_property2,
-    set_text2,
-    set_inner_html2,
-    add_event_listener2,
-    remove_event_listener2,
-    schedule_render2,
-    after_render2
-  );
-}
-function dom_strict(root2) {
-  return new$5(
+var dom_strict = (root2) => {
+  return new$4(
     root2,
     mount_strict,
     create_element,
@@ -1749,38 +1869,43 @@ function dom_strict(root2) {
     insert_before,
     move_before,
     remove_child2,
+    next_sibling,
     get_attribute,
     set_attribute,
     remove_attribute,
     set_property,
     set_text,
-    set_inner_html,
+    set_raw_content,
+    create_raw_node,
     add_event_listener,
     remove_event_listener,
     schedule_render,
     after_render
   );
-}
+};
 
-// build/dev/javascript/lustre/lustre/runtime/transport.mjs
+// build/dev/javascript/agnostic/agnostic/runtime/transport.mjs
 var mount_kind = 0;
 var reconcile_kind = 1;
 var emit_kind = 2;
 var provide_kind = 3;
+var subscribe_kind = 4;
+var unsubscribe_kind = 5;
 var attribute_changed_kind = 0;
 var event_fired_kind = 1;
 var property_changed_kind = 2;
 var batch_kind = 3;
 var context_provided_kind = 4;
 
-// src/lustre/runtime/client/server_component.ffi.mjs
+// src/agnostic/runtime/server_component.ffi.mjs
 var ServerComponent = class extends HTMLElement {
   static get observedAttributes() {
-    return ["route", "method"];
+    return ["route", "method", "csrf-token"];
   }
   #shadowRoot;
   #method = "ws";
   #route = null;
+  #csrfToken = null;
   #transport = null;
   #adoptedStyleNodes = [];
   #reconciler;
@@ -1789,7 +1914,7 @@ var ServerComponent = class extends HTMLElement {
   #connected = false;
   #changedAttributesQueue = [];
   #contexts = /* @__PURE__ */ new Map();
-  #contextSubscriptions = /* @__PURE__ */ new Set();
+  #contextSubscriptions = /* @__PURE__ */ new Map();
   #observer = new MutationObserver((mutations) => {
     const attributes = [];
     for (const mutation of mutations) {
@@ -1831,6 +1956,8 @@ var ServerComponent = class extends HTMLElement {
     switch (name) {
       case (prev !== next && "route"): {
         this.#route = new URL(next, location.href);
+        this.#csrfToken = this.#getCsrfToken();
+        this.#route.searchParams.set("csrf-token", this.#csrfToken);
         this.#connect();
         return;
       }
@@ -1847,28 +1974,40 @@ var ServerComponent = class extends HTMLElement {
         }
         return;
       }
+      case "csrf-token": {
+        if (prev !== next && this.#connected) {
+          this.#transport?.close();
+        }
+        this.#csrfToken = this.#getCsrfToken();
+        if (this.#route) {
+          this.#route.searchParams.set("csrf-token", this.#csrfToken);
+        }
+        if (this.#connected) {
+          this.#connect();
+        }
+      }
     }
   }
-  async messageReceivedCallback(data) {
-    switch (data.kind) {
+  async messageReceivedCallback(data2) {
+    switch (data2.kind) {
       case mount_kind: {
         this.#shadowRoot ??= this.attachShadow({
-          mode: data.open_shadow_root ? "open" : "closed"
+          mode: data2.open_shadow_root ? "open" : "closed"
         });
         while (this.#shadowRoot.firstChild) {
           this.#shadowRoot.firstChild.remove();
         }
         const decodeEvent = (event2, path, name, include) => {
-          const data2 = this.#createServerEvent(event2, include ?? []);
+          const data3 = this.#createServerEvent(event2, include ?? []);
           return {
             kind: event_fired_kind,
             path,
             name,
-            event: data2
+            event: data3
           };
         };
-        const dispatch2 = (event2, data2) => {
-          this.#transport?.send(data2);
+        const dispatch2 = (event2, data3) => {
+          this.#transport?.send(data3);
         };
         const platform = dom_strict(this.#shadowRoot);
         this.#reconciler = new Reconciler(
@@ -1877,7 +2016,7 @@ var ServerComponent = class extends HTMLElement {
           dispatch2,
           platform
         );
-        this.#remoteObservedAttributes = new Set(data.observed_attributes);
+        this.#remoteObservedAttributes = new Set(data2.observed_attributes);
         const filteredQueuedAttributes = this.#changedAttributesQueue.filter(
           ([name]) => this.#remoteObservedAttributes.has(name)
         );
@@ -1887,7 +2026,7 @@ var ServerComponent = class extends HTMLElement {
           value
         }));
         this.#changedAttributesQueue = [];
-        this.#remoteObservedProperties = new Set(data.observed_properties);
+        this.#remoteObservedProperties = new Set(data2.observed_properties);
         for (const name of this.#remoteObservedProperties) {
           Object.defineProperty(this, name, {
             get() {
@@ -1903,20 +2042,11 @@ var ServerComponent = class extends HTMLElement {
             }
           });
         }
-        for (const [key, value] of Object.entries(data.provided_contexts)) {
+        for (const [key, value] of Object.entries(data2.provided_contexts)) {
           this.provide(key, value);
         }
-        for (const key of [...new Set(data.requested_contexts)]) {
-          this.dispatchEvent(
-            new ContextRequestEvent(key, (value, unsubscribe) => {
-              this.#transport?.send({
-                kind: context_provided_kind,
-                key,
-                value
-              });
-              this.#contextSubscriptions.add(unsubscribe);
-            })
-          );
+        for (const key of [...new Set(data2.requested_contexts)]) {
+          this.subscribe(key);
         }
         if (messages.length) {
           this.#transport.send({
@@ -1924,7 +2054,7 @@ var ServerComponent = class extends HTMLElement {
             messages
           });
         }
-        if (data.will_adopt_styles) {
+        if (data2.will_adopt_styles) {
           await this.#adoptStyleSheets();
         }
         this.#shadowRoot.addEventListener("context-request", (event2) => {
@@ -1933,42 +2063,46 @@ var ServerComponent = class extends HTMLElement {
           event2.stopImmediatePropagation();
           const context = this.#contexts.get(event2.context);
           if (event2.subscribe) {
-            const callbackRef = new WeakRef(event2.callback);
             const unsubscribe = () => {
               context.subscribers = context.subscribers.filter(
-                (subscriber) => subscriber !== callbackRef
+                (subscriber) => subscriber !== event2.callback
               );
             };
-            context.subscribers.push([callbackRef, unsubscribe]);
+            context.subscribers.push([event2.callback, unsubscribe]);
             event2.callback(context.value, unsubscribe);
           } else {
             event2.callback(context.value);
           }
         });
-        this.#reconciler.mount(data.vdom);
+        this.#reconciler.mount(data2.vdom);
         this.dispatchEvent(new CustomEvent("lustre:mount"));
         break;
       }
       case reconcile_kind: {
-        this.#reconciler.push(data.patch);
+        this.#reconciler.push(data2.patch);
         break;
       }
       case emit_kind: {
-        this.dispatchEvent(new CustomEvent(data.name, { detail: data.data }));
+        this.dispatchEvent(new LustreEvent(data2.name, data2.data));
         break;
       }
       case provide_kind: {
-        this.provide(data.key, data.value);
+        this.provide(data2.key, data2.value);
+        break;
+      }
+      case subscribe_kind: {
+        this.subscribe(data2.key);
+        break;
+      }
+      case unsubscribe_kind: {
+        this.unsubscribe(data2.key);
         break;
       }
     }
   }
   //
   disconnectedCallback() {
-    for (const unsubscribe of this.#contextSubscriptions) {
-      unsubscribe();
-    }
-    this.#contextSubscriptions.clear();
+    this.unsubscribeAll();
     if (this.#transport) {
       this.#transport.close();
       this.#transport = null;
@@ -1982,14 +2116,47 @@ var ServerComponent = class extends HTMLElement {
       const context = this.#contexts.get(key);
       context.value = value;
       for (let i = context.subscribers.length - 1; i >= 0; i--) {
-        const [subscriberRef, unsubscribe] = context.subscribers[i];
-        const subscriber = subscriberRef.deref();
+        const [subscriber, unsubscribe] = context.subscribers[i];
         if (!subscriber) {
           context.subscribers.splice(i, 1);
           continue;
         }
         subscriber(value, unsubscribe);
       }
+    }
+  }
+  subscribe(key) {
+    if (!key) return;
+    this.#contextSubscriptions.get(key)?.();
+    this.dispatchEvent(
+      new ContextRequestEvent(key, (value, unsubscribe) => {
+        this.#transport?.send({
+          kind: context_provided_kind,
+          key,
+          value
+        });
+        this.#contextSubscriptions.get(key)?.();
+        this.#contextSubscriptions.set(unsubscribe);
+      })
+    );
+  }
+  unsubscribe(key) {
+    this.#contextSubscriptions.get(key)?.();
+    this.#contextSubscriptions.delete(key);
+  }
+  unsubscribeAll() {
+    for (const [_, unsubscribe] of this.#contextSubscriptions) {
+      unsubscribe?.();
+    }
+    this.#contextSubscriptions.clear();
+  }
+  #getCsrfToken() {
+    if (this.hasAttribute("csrf-token")) {
+      return this.getAttribute("csrf-token") || null;
+    } else {
+      const meta2 = document.querySelector('meta[name="csrf-token"]');
+      const token = meta2?.getAttribute("content");
+      return token || null;
     }
   }
   #connect() {
@@ -2004,8 +2171,8 @@ var ServerComponent = class extends HTMLElement {
         }
       });
     };
-    const onMessage = (data) => {
-      this.messageReceivedCallback(data);
+    const onMessage = (data2) => {
+      this.messageReceivedCallback(data2);
     };
     const onClose = () => {
       this.#connected = false;
@@ -2018,7 +2185,12 @@ var ServerComponent = class extends HTMLElement {
         })
       );
     };
-    const options = { onConnect, onMessage, onClose };
+    const options = {
+      onConnect,
+      onMessage,
+      onClose,
+      csrfToken: this.#csrfToken
+    };
     switch (this.#method) {
       case "ws":
         this.#transport = new WebsocketTransport(this.#route, options);
@@ -2050,16 +2222,26 @@ var ServerComponent = class extends HTMLElement {
    *
    */
   #createServerEvent(event2, include = []) {
-    const data = {};
+    const data2 = {};
+    if (event2.isLustreEvent) {
+      include.push("detail");
+    }
     if (event2.type === "input" || event2.type === "change") {
-      include.push("target.value");
+      if (event2.target.type === "checkbox") {
+        include.push("target.checked");
+      } else {
+        include.push("target.value");
+      }
+    }
+    if (event2.type === "keydown" || event2.type === "keyup" || event2.type === "keypress") {
+      include.push("key");
     }
     if (event2.type === "submit") {
       include.push("detail.formData");
     }
     for (const property2 of include) {
       const path = property2.split(".");
-      for (let i = 0, input = event2, output = data; i < path.length; i++) {
+      for (let i = 0, input = event2, output = data2; i < path.length; i++) {
         if (i === path.length - 1) {
           output[path[i]] = input[path[i]];
           break;
@@ -2068,7 +2250,7 @@ var ServerComponent = class extends HTMLElement {
         input = input[path[i]];
       }
     }
-    return data;
+    return data2;
   }
 };
 var WebsocketTransport = class {
@@ -2097,9 +2279,9 @@ var WebsocketTransport = class {
       this.#reconnectDelay = 500;
       this.#onConnect();
     };
-    this.#socket.onmessage = ({ data }) => {
+    this.#socket.onmessage = ({ data: data2 }) => {
       try {
-        this.#onMessage(JSON.parse(data));
+        this.#onMessage(JSON.parse(data2));
       } finally {
         if (this.#queue.length) {
           this.#socket.send(
@@ -2145,13 +2327,13 @@ var WebsocketTransport = class {
       setTimeout(reconnect, this.#reconnectDelay);
     }
   }
-  send(data) {
+  send(data2) {
     if (!this.#socket || this.#socket.readyState !== WebSocket.OPEN) return;
     if (this.#waitingForResponse) {
-      this.#queue.push(data);
+      this.#queue.push(data2);
       return;
     } else {
-      this.#socket.send(JSON.stringify(data));
+      this.#socket.send(JSON.stringify(data2));
       this.#waitingForResponse = true;
     }
   }
@@ -2184,9 +2366,9 @@ var SseTransport = class {
     this.#eventSource.onopen = () => {
       this.#onConnect();
     };
-    this.#eventSource.onmessage = ({ data }) => {
+    this.#eventSource.onmessage = ({ data: data2 }) => {
       try {
-        this.#onMessage(JSON.parse(data));
+        this.#onMessage(JSON.parse(data2));
       } catch {
       }
     };
@@ -2222,7 +2404,7 @@ var SseTransport = class {
       setTimeout(reconnect, this.#reconnectDelay);
     }
   }
-  send(data) {
+  send(data2) {
   }
   close() {
     this.#shouldReconnect = false;
@@ -2232,30 +2414,39 @@ var SseTransport = class {
 };
 var PollingTransport = class {
   #url;
+  #csrfToken;
   #interval;
   #timer;
   #onConnect;
   #onMessage;
   #onClose;
-  constructor(url, { onConnect, onMessage, onClose, ...opts }) {
+  constructor(url, { onConnect, onMessage, onClose, csrfToken, interval }) {
     this.#url = url;
+    this.#csrfToken = csrfToken;
+    this.#interval = interval ?? 5e3;
     this.#onConnect = onConnect;
     this.#onMessage = onMessage;
     this.#onClose = onClose;
-    this.#interval = opts.interval ?? 5e3;
     this.#fetch().finally(() => {
       this.#onConnect();
       this.#timer = setInterval(() => this.#fetch(), this.#interval);
     });
   }
-  async send(data) {
+  async send(data2) {
   }
   close() {
     clearInterval(this.#timer);
     this.#onClose();
   }
   #fetch() {
-    return fetch(this.#url).then((response) => response.json()).then(this.#onMessage).catch(console.error);
+    const headers = Object.assign(
+      {},
+      // If a CSRF token is provided, include it as a request header as checking
+      // headers is more common than query param for CSRF protection in traditional
+      // HTTP requests.
+      this.#csrfToken && { "x-csrf-token": this.#csrfToken }
+    );
+    return fetch(this.#url, { headers }).then((response) => response.json()).then(this.#onMessage).catch(console.error);
   }
 };
 customElements.define("lustre-server-component", ServerComponent);

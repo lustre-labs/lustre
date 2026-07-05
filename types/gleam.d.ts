@@ -36,8 +36,8 @@ declare module '*/prelude.mjs' {
   }
   export function List$Empty<T>(): List<T>;
   export function List$NonEmpty<T>(head: T, tail: List<T>): List<T>;
-  export function List$isEmpty<T>(list: List<T>): boolean;
-  export function List$isNonEmpty<T>(list: List<T>): boolean;
+  export function List$isEmpty(list: any): list is List<unknown>;
+  export function List$isNonEmpty(list: any): list is List<unknown>;
   export function List$NonEmpty$first<T>(list: List<T>): T | undefined;
   export function List$NonEmpty$rest<T>(list: List<T>): List<T> | undefined;
   /** @deprecated */
@@ -74,9 +74,11 @@ declare module '*/prelude.mjs' {
   }
   export function BitArray$BitArray(
     buffer: Uint8Array,
-    bitSize: number,
-    bitOffset: number,
+    bitSize?: number,
+    bitOffset?: number,
   ): BitArray;
+  export function BitArray$isBitArray(value: any): value is BitArray;
+  export function BitArray$BitArray$data(value: BitArray): DataView;
 
   export interface UtfCodepoint {
     readonly __gleam: unique symbol;
@@ -100,8 +102,8 @@ declare module '*/prelude.mjs' {
   }
   export function Result$Ok<T, E>(value: T): Result<T, E>;
   export function Result$Error<T, E>(error: E): Result<T, E>;
-  export function Result$isError<T, E>(result: Result<T, E>): boolean;
-  export function Result$isOk<T, E>(result: Result<T, E>): boolean;
+  export function Result$isError(data: any): data is Result<unknown, unknown>;
+  export function Result$isOk(data: any): data is Result<unknown, unknown>;
   export function Result$Ok$0<T, E>(result: Result<T, E>): T | undefined;
   export function Result$Error$0<T, E>(result: Result<T, E>): E | undefined;
   /** @deprecated */
@@ -172,1074 +174,57 @@ declare module '*/prelude.mjs' {
 
 }
 
-// lustre_platform_opentui gleam files
+// agnostic gleam files
+declare module '*/lustre_test.mjs' {
+  import type * as $vnode from "./agnostic/vdom/vnode.d.mts";
+
+  export function main(): undefined;
+
+  export function test_filter(name: string, f: () => undefined): undefined;
+
+  export function nodes_equal_ignoring_memo<LNP>(
+    left: $vnode.Element$<LNP>,
+    right: $vnode.Element$<LNP>
+  ): boolean;
+
+  export function nodes_equal<LNT>(
+    left: $vnode.Element$<LNT>,
+    right: $vnode.Element$<LNT>
+  ): boolean;
+
+}
+
 declare module '*/gleam.mjs' {
   export * from "../prelude.mjs";
   export type * from "../prelude.d.mts";
 
 }
 
-declare module '*/lustre_platform_opentui_test.mjs' {
+declare module '*/build.mjs' {
+  import type * as $simplifile from "../simplifile/simplifile.d.mts";
+  import type * as _ from "./gleam.d.mts";
+
+  export function main(): _.Result<undefined, any>;
+
+}
+
+declare module '*/agnostic_test.mjs' {
   export function main(): undefined;
 
-  export function hello_world_test(): undefined;
-
 }
 
-declare module '*/agnostic/platform/opentui.mjs' {
-  import type * as $platform from "../../../agnostic/agnostic/platform.d.mts";
-  import type * as _ from "../../gleam.d.mts";
-
-  export type Node$ = any;
-
-  export type Event$ = any;
-
-  export type Value$ = any;
-
-  export type Renderer$ = any;
-
-  declare class Config extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      exit_on_ctrl_c: boolean,
-      use_alternate_screen: boolean,
-      use_mouse: boolean,
-      target_fps: number,
-      max_fps: number,
-      debounce_delay: number,
-      auto_focus: boolean,
-      enable_mouse_movement: boolean,
-      background_color: _.Result<string, undefined>,
-      use_console: boolean,
-      open_console_on_error: boolean,
-      use_kitty_keyboard: boolean,
-      gather_stats: boolean,
-      max_stat_samples: number,
-      use_thread: boolean,
-      remote: boolean,
-      custom_elements: _.List<[string, (x0: Renderer$) => Node$]>
-    );
-    /** @deprecated */
-    exit_on_ctrl_c: boolean;
-    /** @deprecated */
-    use_alternate_screen: boolean;
-    /** @deprecated */
-    use_mouse: boolean;
-    /** @deprecated */
-    target_fps: number;
-    /** @deprecated */
-    max_fps: number;
-    /** @deprecated */
-    debounce_delay: number;
-    /** @deprecated */
-    auto_focus: boolean;
-    /** @deprecated */
-    enable_mouse_movement: boolean;
-    /** @deprecated */
-    background_color: _.Result<string, undefined>;
-    /** @deprecated */
-    use_console: boolean;
-    /** @deprecated */
-    open_console_on_error: boolean;
-    /** @deprecated */
-    use_kitty_keyboard: boolean;
-    /** @deprecated */
-    gather_stats: boolean;
-    /** @deprecated */
-    max_stat_samples: number;
-    /** @deprecated */
-    use_thread: boolean;
-    /** @deprecated */
-    remote: boolean;
-    /** @deprecated */
-    custom_elements: _.List<[string, (x0: Renderer$) => Node$]>;
-  }
-
-  export type Config$ = Config;
-
-  export type ElementFactory = (x0: Renderer$) => Node$;
-
-  export function exit_on_ctrl_c(config: Config$, value: boolean): Config$;
-
-  export function use_alternate_screen(config: Config$, value: boolean): Config$;
-
-  export function use_mouse(config: Config$, value: boolean): Config$;
-
-  export function target_fps(config: Config$, value: number): Config$;
-
-  export function max_fps(config: Config$, value: number): Config$;
-
-  export function debounce_delay(config: Config$, value: number): Config$;
-
-  export function auto_focus(config: Config$, value: boolean): Config$;
-
-  export function enable_mouse_movement(config: Config$, value: boolean): Config$;
-
-  export function background_color(config: Config$, value: string): Config$;
-
-  export function use_console(config: Config$, value: boolean): Config$;
-
-  export function open_console_on_error(config: Config$, value: boolean): Config$;
-
-  export function use_kitty_keyboard(config: Config$, value: boolean): Config$;
-
-  export function gather_stats(config: Config$, value: boolean): Config$;
-
-  export function max_stat_samples(config: Config$, value: number): Config$;
-
-  export function use_thread(config: Config$, value: boolean): Config$;
-
-  export function remote(config: Config$, value: boolean): Config$;
-
-  export function register_element(
-    config: Config$,
-    tag: string,
-    factory: (x0: Renderer$) => Node$
-  ): Config$;
-
-  export function default_config(): Config$;
-
-  export function platform(
-    x0: Config$,
-    x1: (x0: $platform.Platform$<Node$, Renderer$, Value$, Event$, any, any>) => undefined
-  ): undefined;
-
-}
-
-declare module '*/agnostic/platform/opentui/event.mjs' {
-  import type * as $decode from "../../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
-  import type * as $vattr from "../../../../agnostic/agnostic/vdom/vattr.d.mts";
-  import type * as $effect from "../../../agnostic/platform/opentui/effect.d.mts";
-
-  export function on_focus<PKT>(msg: PKT): $vattr.Attribute$<PKT>;
-
-  export function on_blur<PKV>(msg: PKV): $vattr.Attribute$<PKV>;
-
-  export function on_input<PKX>(handler: (x0: string) => PKX): $vattr.Attribute$<
-    PKX
-  >;
-
-  export function on_select<PLD>(handler: (x0: number) => PLD): $vattr.Attribute$<
-    PLD
-  >;
-
-  export function on_selection_change<PLF>(handler: (x0: number) => PLF): $vattr.Attribute$<
-    PLF
-  >;
-
-  export function on_scroll<PLH>(msg: PLH): $vattr.Attribute$<PLH>;
-
-  export function on_click<PLJ>(msg: PLJ): $vattr.Attribute$<PLJ>;
-
-  export function on_mouse_down<PLL>(msg: PLL): $vattr.Attribute$<PLL>;
-
-  export function on_mouse_up<PLN>(msg: PLN): $vattr.Attribute$<PLN>;
-
-  export function on_mouse_move<PLP>(msg: PLP): $vattr.Attribute$<PLP>;
-
-  export function on_mouse_over<PLR>(msg: PLR): $vattr.Attribute$<PLR>;
-
-  export function on_mouse_out<PLT>(msg: PLT): $vattr.Attribute$<PLT>;
-
-  export function on_mouse_drag<PLV>(msg: PLV): $vattr.Attribute$<PLV>;
-
-  export function on_mouse_drag_end<PLX>(msg: PLX): $vattr.Attribute$<PLX>;
-
-  export function on_mouse_drop<PLZ>(msg: PLZ): $vattr.Attribute$<PLZ>;
-
-  export function on_paste<PMB>(handler: (x0: string) => PMB): $vattr.Attribute$<
-    PMB
-  >;
-
-  export function on_size_change<PMD>(msg: PMD): $vattr.Attribute$<PMD>;
-
-  export function on_cursor_change<PMF>(handler: (x0: number, x1: number) => PMF): $vattr.Attribute$<
-    PMF
-  >;
-
-  export function on_content_change<PMH>(handler: (x0: string) => PMH): $vattr.Attribute$<
-    PMH
-  >;
-
-  export function on_highlight<PMJ>(msg: PMJ): $vattr.Attribute$<PMJ>;
-
-  export function on_slider_change<PML>(handler: (x0: number) => PML): $vattr.Attribute$<
-    PML
-  >;
-
-  export function on_activate<PMN>(msg: PMN): $vattr.Attribute$<PMN>;
-
-  export function on_key_press<PKN>(handler: (x0: $effect.KeyEvent$) => PKN): $vattr.Attribute$<
-    PKN
-  >;
-
-  export function on_key_down<PKP>(handler: (x0: $effect.KeyEvent$) => PKP): $vattr.Attribute$<
-    PKP
-  >;
-
-  export function on_key_up<PKR>(handler: (x0: $effect.KeyEvent$) => PKR): $vattr.Attribute$<
-    PKR
-  >;
-
-  export function on_submit<PKZ>(handler: (x0: string) => PKZ): $vattr.Attribute$<
-    PKZ
-  >;
-
-  export function on_change<PLB>(handler: (x0: string) => PLB): $vattr.Attribute$<
-    PLB
-  >;
-
-}
-
-declare module '*/agnostic/platform/opentui/portal.mjs' {
-  import type * as $decode from "../../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
-  import type * as $vattr from "../../../../agnostic/agnostic/vdom/vattr.d.mts";
-  import type * as $vnode from "../../../../agnostic/agnostic/vdom/vnode.d.mts";
-  import type * as _ from "../../../gleam.d.mts";
-
-  export class MissingTarget extends _.CustomType {}
-  export function Error$MissingTarget(): Error$;
-  export function Error$isMissingTarget(value: Error$): boolean;
-
-  export class TargetNotFound extends _.CustomType {
-    /** @deprecated */
-    constructor(id: string);
-    /** @deprecated */
-    id: string;
-  }
-  export function Error$TargetNotFound(id: string): Error$;
-  export function Error$isTargetNotFound(value: Error$): boolean;
-  export function Error$TargetNotFound$0(value: Error$): string;
-  export function Error$TargetNotFound$id(value: Error$): string;
-
-  export class TargetIsPortal extends _.CustomType {
-    /** @deprecated */
-    constructor(id: string);
-    /** @deprecated */
-    id: string;
-  }
-  export function Error$TargetIsPortal(id: string): Error$;
-  export function Error$isTargetIsPortal(value: Error$): boolean;
-  export function Error$TargetIsPortal$0(value: Error$): string;
-  export function Error$TargetIsPortal$id(value: Error$): string;
-
-  export type Error$ = MissingTarget | TargetNotFound | TargetIsPortal;
-
-  export const name: string;
-
-  export const missing_target_tag: string;
-
-  export const target_not_found_tag: string;
-
-  export const target_is_portal_tag: string;
-
-  export function to<PSY>(
-    id: string,
-    attributes: _.List<$vattr.Attribute$<PSY>>,
-    children: _.List<$vnode.Element$<PSY>>
-  ): $vnode.Element$<PSY>;
-
-  export function to_root<PTE>(
-    attributes: _.List<$vattr.Attribute$<PTE>>,
-    children: _.List<$vnode.Element$<PTE>>
-  ): $vnode.Element$<PTE>;
-
-  export function error_decoder(): $decode.Decoder$<Error$>;
-
-  export function on_error<PSV>(handler: (x0: Error$) => PSV): $vattr.Attribute$<
-    PSV
-  >;
-
-}
-
-declare module '*/agnostic/platform/opentui/effect.mjs' {
-  import type * as $dynamic from "../../../../gleam_stdlib/gleam/dynamic.d.mts";
-  import type * as $decode from "../../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
-  import type * as $option from "../../../../gleam_stdlib/gleam/option.d.mts";
-  import type * as $effect from "../../../../agnostic/agnostic/effect.d.mts";
-  import type * as _ from "../../../gleam.d.mts";
-  import type * as $opentui from "../../../agnostic/platform/opentui.d.mts";
-
-  export class KeyEvent extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      key: string,
-      ctrl: boolean,
-      shift: boolean,
-      meta: boolean,
-      option: boolean
-    );
-    /** @deprecated */
-    key: string;
-    /** @deprecated */
-    ctrl: boolean;
-    /** @deprecated */
-    shift: boolean;
-    /** @deprecated */
-    meta: boolean;
-    /** @deprecated */
-    option: boolean;
-  }
-  export function KeyEvent$KeyEvent(
-    key: string,
-    ctrl: boolean,
-    shift: boolean,
-    meta: boolean,
-    option: boolean,
-  ): KeyEvent$;
-  export function KeyEvent$isKeyEvent(value: KeyEvent$): boolean;
-  export function KeyEvent$KeyEvent$0(value: KeyEvent$): string;
-  export function KeyEvent$KeyEvent$key(value: KeyEvent$): string;
-  export function KeyEvent$KeyEvent$1(value: KeyEvent$): boolean;
-  export function KeyEvent$KeyEvent$ctrl(value: KeyEvent$): boolean;
-  export function KeyEvent$KeyEvent$2(value: KeyEvent$): boolean;
-  export function KeyEvent$KeyEvent$shift(value: KeyEvent$): boolean;
-  export function KeyEvent$KeyEvent$3(value: KeyEvent$): boolean;
-  export function KeyEvent$KeyEvent$meta(value: KeyEvent$): boolean;
-  export function KeyEvent$KeyEvent$4(value: KeyEvent$): boolean;
-  export function KeyEvent$KeyEvent$option(value: KeyEvent$): boolean;
-
-  export type KeyEvent$ = KeyEvent;
-
-  export class SelectionRange extends _.CustomType {
-    /** @deprecated */
-    constructor(id: string, start: number, end: number);
-    /** @deprecated */
-    id: string;
-    /** @deprecated */
-    start: number;
-    /** @deprecated */
-    end: number;
-  }
-  export function SelectionRange$SelectionRange(
-    id: string,
-    start: number,
-    end: number,
-  ): SelectionRange$;
-  export function SelectionRange$isSelectionRange(
-    value: SelectionRange$,
-  ): boolean;
-  export function SelectionRange$SelectionRange$0(value: SelectionRange$): string;
-  export function SelectionRange$SelectionRange$id(value: SelectionRange$): string;
-  export function SelectionRange$SelectionRange$1(
-    value: SelectionRange$,
-  ): number;
-  export function SelectionRange$SelectionRange$start(value: SelectionRange$): number;
-  export function SelectionRange$SelectionRange$2(
-    value: SelectionRange$,
-  ): number;
-  export function SelectionRange$SelectionRange$end(value: SelectionRange$): number;
-
-  export type SelectionRange$ = SelectionRange;
-
-  export class Selection extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      ranges: _.List<SelectionRange$>,
-      focused_id: string,
-      anchor: [number, number],
-      focus: [number, number]
-    );
-    /** @deprecated */
-    ranges: _.List<SelectionRange$>;
-    /** @deprecated */
-    focused_id: string;
-    /** @deprecated */
-    anchor: [number, number];
-    /** @deprecated */
-    focus: [number, number];
-  }
-  export function Selection$Selection(
-    ranges: _.List<SelectionRange$>,
-    focused_id: string,
-    anchor: [number, number],
-    focus: [number, number],
-  ): Selection$;
-  export function Selection$isSelection(value: Selection$): boolean;
-  export function Selection$Selection$0(value: Selection$): _.List<
-    SelectionRange$
-  >;
-  export function Selection$Selection$ranges(value: Selection$): _.List<
-    SelectionRange$
-  >;
-  export function Selection$Selection$1(value: Selection$): string;
-  export function Selection$Selection$focused_id(value: Selection$): string;
-  export function Selection$Selection$2(value: Selection$): [number, number];
-  export function Selection$Selection$anchor(value: Selection$): [number, number];
-  export function Selection$Selection$3(value: Selection$): [number, number];
-  export function Selection$Selection$focus(value: Selection$): [number, number];
-
-  export type Selection$ = Selection;
-
-  export function before_paint<OXD>(
-    handler: (x0: (x0: OXD) => undefined, x1: $opentui.Renderer$) => undefined
-  ): $effect.Effect$<OXD>;
-
-  export function after_paint<OXF>(
-    handler: (x0: (x0: OXF) => undefined, x1: $opentui.Renderer$) => undefined
-  ): $effect.Effect$<OXF>;
-
-  export function subscribe_keyboard<OXH>(handler: (x0: KeyEvent$) => OXH): $effect.Effect$<
-    OXH
-  >;
-
-  export function subscribe_keyboard_with<OXJ>(
-    predicate: (x0: KeyEvent$) => $option.Option$<OXJ>
-  ): $effect.Effect$<OXJ>;
-
-  export function focus_next(): $effect.Effect$<any>;
-
-  export function focus_previous(): $effect.Effect$<any>;
-
-  export function focus(id: string): $effect.Effect$<any>;
-
-  export function get_focused_id<OXT>(
-    handler: (x0: $option.Option$<string>) => OXT
-  ): $effect.Effect$<OXT>;
-
-  export function get_focused<OXV, OXY>(
-    decoder: $decode.Decoder$<OXV>,
-    handler: (x0: $option.Option$<OXV>) => OXY
-  ): $effect.Effect$<OXY>;
-
-  export function set_terminal_title(title: string): $effect.Effect$<any>;
-
-  export function set_background_color(color: string): $effect.Effect$<any>;
-
-  export function set_cursor_position(x: number, y: number, visible: boolean): $effect.Effect$<
-    any
-  >;
-
-  export function set_cursor_style(style: string, blinking: boolean): $effect.Effect$<
-    any
-  >;
-
-  export function set_cursor_color(color: string): $effect.Effect$<any>;
-
-  export function get_terminal_dimensions<OYK>(
-    handler: (x0: number, x1: number) => OYK
-  ): $effect.Effect$<OYK>;
-
-  export function toggle_debug_overlay(): $effect.Effect$<any>;
-
-  export function subscribe_terminal_resize<OYM>(
-    handler: (x0: number, x1: number) => OYM
-  ): $effect.Effect$<OYM>;
-
-  export function copy_to_clipboard(text: string): $effect.Effect$<any>;
-
-  export function clear_clipboard(): $effect.Effect$<any>;
-
-  export function get_selection<OYV>(
-    handler: (x0: $option.Option$<Selection$>) => OYV
-  ): $effect.Effect$<OYV>;
-
-  export function subscribe_selection<OYX>(handler: (x0: Selection$) => OYX): $effect.Effect$<
-    OYX
-  >;
-
-  export function clear_selection(): $effect.Effect$<any>;
-
-  export function pause(): $effect.Effect$<any>;
-
-  export function suspend(): $effect.Effect$<any>;
-
-  export function resume(): $effect.Effect$<any>;
-
-  export function destroy(): $effect.Effect$<any>;
-
-  export function stop(): $effect.Effect$<any>;
-
-  export function on_destroy<OZL>(msg: OZL): $effect.Effect$<OZL>;
-
-  export function scroll_by(element_id: string, delta_x: number, delta_y: number): $effect.Effect$<
-    any
-  >;
-
-  export function scroll_to(element_id: string, x: number, y: number): $effect.Effect$<
-    any
-  >;
-
-  export function scroll_into_view(container_id: string, child_id: string): $effect.Effect$<
-    any
-  >;
-
-}
-
-declare module '*/agnostic/platform/opentui/element.mjs' {
-  import type * as $json from "../../../../gleam_json/gleam/json.d.mts";
-  import type * as $vattr from "../../../../agnostic/agnostic/vdom/vattr.d.mts";
-  import type * as $vnode from "../../../../agnostic/agnostic/vdom/vnode.d.mts";
-  import type * as _ from "../../../gleam.d.mts";
-  import type * as $opentui from "../../../agnostic/platform/opentui.d.mts";
-
-  export type RawNodeFactory = (x0: $opentui.Renderer$) => $opentui.Node$;
-
-  export type RawNodeContent = [
-    string,
-    (x0: $opentui.Renderer$) => $opentui.Node$
-  ];
-
-  export function box<PGM>(
-    attributes: _.List<$vattr.Attribute$<PGM>>,
-    children: _.List<$vnode.Element$<PGM>>
-  ): $vnode.Element$<PGM>;
-
-  export function text<PGS>(attributes: _.List<$vattr.Attribute$<PGS>>): $vnode.Element$<
-    PGS
-  >;
-
-  export function input<PGW>(attributes: _.List<$vattr.Attribute$<PGW>>): $vnode.Element$<
-    PGW
-  >;
-
-  export function textarea<PHA>(attributes: _.List<$vattr.Attribute$<PHA>>): $vnode.Element$<
-    PHA
-  >;
-
-  export function scrollbox<PHE>(
-    attributes: _.List<$vattr.Attribute$<PHE>>,
-    children: _.List<$vnode.Element$<PHE>>
-  ): $vnode.Element$<PHE>;
-
-  export function select<PHK>(
-    attributes: _.List<$vattr.Attribute$<PHK>>,
-    children: _.List<$vnode.Element$<PHK>>
-  ): $vnode.Element$<PHK>;
-
-  export function code<PHQ>(
-    attributes: _.List<$vattr.Attribute$<PHQ>>,
-    children: _.List<$vnode.Element$<PHQ>>
-  ): $vnode.Element$<PHQ>;
-
-  export function markdown<PHW>(
-    attributes: _.List<$vattr.Attribute$<PHW>>,
-    children: _.List<$vnode.Element$<PHW>>
-  ): $vnode.Element$<PHW>;
-
-  export function diff<PIC>(
-    attributes: _.List<$vattr.Attribute$<PIC>>,
-    children: _.List<$vnode.Element$<PIC>>
-  ): $vnode.Element$<PIC>;
-
-  export function ascii_font<PII>(attributes: _.List<$vattr.Attribute$<PII>>): $vnode.Element$<
-    PII
-  >;
-
-  export function tab_select<PIM>(attributes: _.List<$vattr.Attribute$<PIM>>): $vnode.Element$<
-    PIM
-  >;
-
-  export function line_number<PIQ>(
-    attributes: _.List<$vattr.Attribute$<PIQ>>,
-    children: _.List<$vnode.Element$<PIQ>>
-  ): $vnode.Element$<PIQ>;
-
-  export function slider<PIW>(attributes: _.List<$vattr.Attribute$<PIW>>): $vnode.Element$<
-    PIW
-  >;
-
-  export function frame_buffer<PJA>(attributes: _.List<$vattr.Attribute$<PJA>>): $vnode.Element$<
-    PJA
-  >;
-
-  export function frame_buffer_with_handler<PJE>(
-    handler: $json.Json$,
-    attrs: _.List<$vattr.Attribute$<PJE>>
-  ): $vnode.Element$<PJE>;
-
-  export function raw_node(
-    name: string,
-    factory: (x0: $opentui.Renderer$) => $opentui.Node$
-  ): $vnode.Element$<any>;
-
-}
-
-declare module '*/agnostic/platform/opentui/attribute.mjs' {
-  import type * as $json from "../../../../gleam_json/gleam/json.d.mts";
-  import type * as $vattr from "../../../../agnostic/agnostic/vdom/vattr.d.mts";
-  import type * as _ from "../../../gleam.d.mts";
-
-  export class BorderCharacters extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      top_left: string,
-      top_right: string,
-      bottom_left: string,
-      bottom_right: string,
-      horizontal: string,
-      vertical: string,
-      top_t: string,
-      bottom_t: string,
-      left_t: string,
-      right_t: string,
-      cross: string
-    );
-    /** @deprecated */
-    top_left: string;
-    /** @deprecated */
-    top_right: string;
-    /** @deprecated */
-    bottom_left: string;
-    /** @deprecated */
-    bottom_right: string;
-    /** @deprecated */
-    horizontal: string;
-    /** @deprecated */
-    vertical: string;
-    /** @deprecated */
-    top_t: string;
-    /** @deprecated */
-    bottom_t: string;
-    /** @deprecated */
-    left_t: string;
-    /** @deprecated */
-    right_t: string;
-    /** @deprecated */
-    cross: string;
-  }
-  export function BorderCharacters$BorderCharacters(
-    top_left: string,
-    top_right: string,
-    bottom_left: string,
-    bottom_right: string,
-    horizontal: string,
-    vertical: string,
-    top_t: string,
-    bottom_t: string,
-    left_t: string,
-    right_t: string,
-    cross: string,
-  ): BorderCharacters$;
-  export function BorderCharacters$isBorderCharacters(
-    value: BorderCharacters$,
-  ): boolean;
-  export function BorderCharacters$BorderCharacters$0(value: BorderCharacters$): string;
-  export function BorderCharacters$BorderCharacters$top_left(
-    value: BorderCharacters$,
-  ): string;
-  export function BorderCharacters$BorderCharacters$1(value: BorderCharacters$): string;
-  export function BorderCharacters$BorderCharacters$top_right(
-    value: BorderCharacters$,
-  ): string;
-  export function BorderCharacters$BorderCharacters$2(value: BorderCharacters$): string;
-  export function BorderCharacters$BorderCharacters$bottom_left(
-    value: BorderCharacters$,
-  ): string;
-  export function BorderCharacters$BorderCharacters$3(value: BorderCharacters$): string;
-  export function BorderCharacters$BorderCharacters$bottom_right(
-    value: BorderCharacters$,
-  ): string;
-  export function BorderCharacters$BorderCharacters$4(value: BorderCharacters$): string;
-  export function BorderCharacters$BorderCharacters$horizontal(
-    value: BorderCharacters$,
-  ): string;
-  export function BorderCharacters$BorderCharacters$5(value: BorderCharacters$): string;
-  export function BorderCharacters$BorderCharacters$vertical(
-    value: BorderCharacters$,
-  ): string;
-  export function BorderCharacters$BorderCharacters$6(value: BorderCharacters$): string;
-  export function BorderCharacters$BorderCharacters$top_t(
-    value: BorderCharacters$,
-  ): string;
-  export function BorderCharacters$BorderCharacters$7(value: BorderCharacters$): string;
-  export function BorderCharacters$BorderCharacters$bottom_t(
-    value: BorderCharacters$,
-  ): string;
-  export function BorderCharacters$BorderCharacters$8(value: BorderCharacters$): string;
-  export function BorderCharacters$BorderCharacters$left_t(
-    value: BorderCharacters$,
-  ): string;
-  export function BorderCharacters$BorderCharacters$9(value: BorderCharacters$): string;
-  export function BorderCharacters$BorderCharacters$right_t(
-    value: BorderCharacters$,
-  ): string;
-  export function BorderCharacters$BorderCharacters$10(value: BorderCharacters$): string;
-  export function BorderCharacters$BorderCharacters$cross(
-    value: BorderCharacters$,
-  ): string;
-
-  export type BorderCharacters$ = BorderCharacters;
-
-  export class CursorStyle extends _.CustomType {
-    /** @deprecated */
-    constructor(style: string, blinking: boolean);
-    /** @deprecated */
-    style: string;
-    /** @deprecated */
-    blinking: boolean;
-  }
-  export function CursorStyle$CursorStyle(
-    style: string,
-    blinking: boolean,
-  ): CursorStyle$;
-  export function CursorStyle$isCursorStyle(value: CursorStyle$): boolean;
-  export function CursorStyle$CursorStyle$0(value: CursorStyle$): string;
-  export function CursorStyle$CursorStyle$style(value: CursorStyle$): string;
-  export function CursorStyle$CursorStyle$1(value: CursorStyle$): boolean;
-  export function CursorStyle$CursorStyle$blinking(value: CursorStyle$): boolean;
-
-  export type CursorStyle$ = CursorStyle;
-
-  export class SelectOption extends _.CustomType {
-    /** @deprecated */
-    constructor(name: string, description: string);
-    /** @deprecated */
-    name: string;
-    /** @deprecated */
-    description: string;
-  }
-  export function SelectOption$SelectOption(
-    name: string,
-    description: string,
-  ): SelectOption$;
-  export function SelectOption$isSelectOption(value: SelectOption$): boolean;
-  export function SelectOption$SelectOption$0(value: SelectOption$): string;
-  export function SelectOption$SelectOption$name(value: SelectOption$): string;
-  export function SelectOption$SelectOption$1(value: SelectOption$): string;
-  export function SelectOption$SelectOption$description(value: SelectOption$): string;
-
-  export type SelectOption$ = SelectOption;
-
-  export function width(value: number): $vattr.Attribute$<any>;
-
-  export function height(value: number): $vattr.Attribute$<any>;
-
-  export function min_width(value: number): $vattr.Attribute$<any>;
-
-  export function min_height(value: number): $vattr.Attribute$<any>;
-
-  export function max_width(value: number): $vattr.Attribute$<any>;
-
-  export function max_height(value: number): $vattr.Attribute$<any>;
-
-  export function width_(value: string): $vattr.Attribute$<any>;
-
-  export function height_(value: string): $vattr.Attribute$<any>;
-
-  export function min_width_(value: string): $vattr.Attribute$<any>;
-
-  export function min_height_(value: string): $vattr.Attribute$<any>;
-
-  export function max_width_(value: string): $vattr.Attribute$<any>;
-
-  export function max_height_(value: string): $vattr.Attribute$<any>;
-
-  export function id(value: string): $vattr.Attribute$<any>;
-
-  export function visible(value: boolean): $vattr.Attribute$<any>;
-
-  export function opacity(value: number): $vattr.Attribute$<any>;
-
-  export function z_index(value: number): $vattr.Attribute$<any>;
-
-  export function buffered(value: boolean): $vattr.Attribute$<any>;
-
-  export function live(value: boolean): $vattr.Attribute$<any>;
-
-  export function enable_layout(value: boolean): $vattr.Attribute$<any>;
-
-  export function selectable(value: boolean): $vattr.Attribute$<any>;
-
-  export function flex_direction(value: string): $vattr.Attribute$<any>;
-
-  export function flex_grow(value: number): $vattr.Attribute$<any>;
-
-  export function flex_shrink(value: number): $vattr.Attribute$<any>;
-
-  export function flex_wrap(value: string): $vattr.Attribute$<any>;
-
-  export function flex_basis(value: string): $vattr.Attribute$<any>;
-
-  export function align_items(value: string): $vattr.Attribute$<any>;
-
-  export function align_self(value: string): $vattr.Attribute$<any>;
-
-  export function justify_content(value: string): $vattr.Attribute$<any>;
-
-  export function gap(value: number): $vattr.Attribute$<any>;
-
-  export function gap_(value: string): $vattr.Attribute$<any>;
-
-  export function row_gap(value: number): $vattr.Attribute$<any>;
-
-  export function row_gap_(value: string): $vattr.Attribute$<any>;
-
-  export function column_gap(value: number): $vattr.Attribute$<any>;
-
-  export function column_gap_(value: string): $vattr.Attribute$<any>;
-
-  export function padding(value: number): $vattr.Attribute$<any>;
-
-  export function padding_top(value: number): $vattr.Attribute$<any>;
-
-  export function padding_bottom(value: number): $vattr.Attribute$<any>;
-
-  export function padding_left(value: number): $vattr.Attribute$<any>;
-
-  export function padding_right(value: number): $vattr.Attribute$<any>;
-
-  export function margin(value: number): $vattr.Attribute$<any>;
-
-  export function margin_top(value: number): $vattr.Attribute$<any>;
-
-  export function margin_bottom(value: number): $vattr.Attribute$<any>;
-
-  export function margin_left(value: number): $vattr.Attribute$<any>;
-
-  export function margin_right(value: number): $vattr.Attribute$<any>;
-
-  export function padding_(value: string): $vattr.Attribute$<any>;
-
-  export function padding_top_(value: string): $vattr.Attribute$<any>;
-
-  export function padding_bottom_(value: string): $vattr.Attribute$<any>;
-
-  export function padding_left_(value: string): $vattr.Attribute$<any>;
-
-  export function padding_right_(value: string): $vattr.Attribute$<any>;
-
-  export function margin_(value: string): $vattr.Attribute$<any>;
-
-  export function margin_top_(value: string): $vattr.Attribute$<any>;
-
-  export function margin_bottom_(value: string): $vattr.Attribute$<any>;
-
-  export function margin_left_(value: string): $vattr.Attribute$<any>;
-
-  export function margin_right_(value: string): $vattr.Attribute$<any>;
-
-  export function border_style(value: string): $vattr.Attribute$<any>;
-
-  export function border_color(value: string): $vattr.Attribute$<any>;
-
-  export function focused_border_color(value: string): $vattr.Attribute$<any>;
-
-  export function fg(value: string): $vattr.Attribute$<any>;
-
-  export function bg(value: string): $vattr.Attribute$<any>;
-
-  export function color(value: string): $vattr.Attribute$<any>;
-
-  export function background_color(value: string): $vattr.Attribute$<any>;
-
-  export function focused_background_color(value: string): $vattr.Attribute$<any>;
-
-  export function focused_text_color(value: string): $vattr.Attribute$<any>;
-
-  export function text_color(value: string): $vattr.Attribute$<any>;
-
-  export function selection_bg(value: string): $vattr.Attribute$<any>;
-
-  export function selection_fg(value: string): $vattr.Attribute$<any>;
-
-  export function placeholder_color(value: string): $vattr.Attribute$<any>;
-
-  export function cursor_color(value: string): $vattr.Attribute$<any>;
-
-  export function selected_background_color(value: string): $vattr.Attribute$<any>;
-
-  export function selected_text_color(value: string): $vattr.Attribute$<any>;
-
-  export function description_color(value: string): $vattr.Attribute$<any>;
-
-  export function selected_description_color(value: string): $vattr.Attribute$<
-    any
-  >;
-
-  export function added_bg(value: string): $vattr.Attribute$<any>;
-
-  export function removed_bg(value: string): $vattr.Attribute$<any>;
-
-  export function context_bg(value: string): $vattr.Attribute$<any>;
-
-  export function added_content_bg(value: string): $vattr.Attribute$<any>;
-
-  export function removed_content_bg(value: string): $vattr.Attribute$<any>;
-
-  export function context_content_bg(value: string): $vattr.Attribute$<any>;
-
-  export function added_sign_color(value: string): $vattr.Attribute$<any>;
-
-  export function removed_sign_color(value: string): $vattr.Attribute$<any>;
-
-  export function added_line_number_bg(value: string): $vattr.Attribute$<any>;
-
-  export function removed_line_number_bg(value: string): $vattr.Attribute$<any>;
-
-  export function line_number_fg(value: string): $vattr.Attribute$<any>;
-
-  export function line_number_bg(value: string): $vattr.Attribute$<any>;
-
-  export function ascii_color(value: string): $vattr.Attribute$<any>;
-
-  export function bold(value: boolean): $vattr.Attribute$<any>;
-
-  export function italic(value: boolean): $vattr.Attribute$<any>;
-
-  export function underline(value: boolean): $vattr.Attribute$<any>;
-
-  export function strikethrough(value: boolean): $vattr.Attribute$<any>;
-
-  export function dim(value: boolean): $vattr.Attribute$<any>;
-
-  export function blink(value: boolean): $vattr.Attribute$<any>;
-
-  export function inverse(value: boolean): $vattr.Attribute$<any>;
-
-  export function hidden_text(value: boolean): $vattr.Attribute$<any>;
-
-  export function placeholder(value: string): $vattr.Attribute$<any>;
-
-  export function value(value: string): $vattr.Attribute$<any>;
-
-  export function initial_value(value: string): $vattr.Attribute$<any>;
-
-  export function title(value: string): $vattr.Attribute$<any>;
-
-  export function wrap_mode(value: string): $vattr.Attribute$<any>;
-
-  export function truncate(value: boolean): $vattr.Attribute$<any>;
-
-  export function language(value: string): $vattr.Attribute$<any>;
-
-  export function filetype(value: string): $vattr.Attribute$<any>;
-
-  export function content(value: string): $vattr.Attribute$<any>;
-
-  export function conceal(value: boolean): $vattr.Attribute$<any>;
-
-  export function draw_unstyled_text(value: boolean): $vattr.Attribute$<any>;
-
-  export function streaming(value: boolean): $vattr.Attribute$<any>;
-
-  export function overflow(value: string): $vattr.Attribute$<any>;
-
-  export function focusable(value: boolean): $vattr.Attribute$<any>;
-
-  export function position(value: string): $vattr.Attribute$<any>;
-
-  export function top(value: number): $vattr.Attribute$<any>;
-
-  export function top_(value: string): $vattr.Attribute$<any>;
-
-  export function right(value: number): $vattr.Attribute$<any>;
-
-  export function right_(value: string): $vattr.Attribute$<any>;
-
-  export function bottom(value: number): $vattr.Attribute$<any>;
-
-  export function bottom_(value: string): $vattr.Attribute$<any>;
-
-  export function left(value: number): $vattr.Attribute$<any>;
-
-  export function left_(value: string): $vattr.Attribute$<any>;
-
-  export function should_fill(value: boolean): $vattr.Attribute$<any>;
-
-  export function title_alignment(value: string): $vattr.Attribute$<any>;
-
-  export function max_length(value: number): $vattr.Attribute$<any>;
-
-  export function show_cursor(value: boolean): $vattr.Attribute$<any>;
-
-  export function scroll_margin(value: number): $vattr.Attribute$<any>;
-
-  export function scroll_speed(value: number): $vattr.Attribute$<any>;
-
-  export function view(value: string): $vattr.Attribute$<any>;
-
-  export function show_line_numbers(value: boolean): $vattr.Attribute$<any>;
-
-  export function selected_index(value: number): $vattr.Attribute$<any>;
-
-  export function show_scroll_indicator(value: boolean): $vattr.Attribute$<any>;
-
-  export function wrap_selection(value: boolean): $vattr.Attribute$<any>;
-
-  export function show_description(value: boolean): $vattr.Attribute$<any>;
-
-  export function item_spacing(value: number): $vattr.Attribute$<any>;
-
-  export function fast_scroll_step(value: number): $vattr.Attribute$<any>;
-
-  export function tab_width(value: number): $vattr.Attribute$<any>;
-
-  export function show_scroll_arrows(value: boolean): $vattr.Attribute$<any>;
-
-  export function show_underline(value: boolean): $vattr.Attribute$<any>;
-
-  export function orientation(value: string): $vattr.Attribute$<any>;
-
-  export function slider_value(value: number): $vattr.Attribute$<any>;
-
-  export function min(value: number): $vattr.Attribute$<any>;
-
-  export function max(value: number): $vattr.Attribute$<any>;
-
-  export function view_port_size(value: number): $vattr.Attribute$<any>;
-
-  export function ascii_text(value: string): $vattr.Attribute$<any>;
-
-  export function font(value: string): $vattr.Attribute$<any>;
-
-  export function line_number_offset(value: number): $vattr.Attribute$<any>;
-
-  export function sticky_scroll(value: boolean): $vattr.Attribute$<any>;
-
-  export function sticky_start(value: string): $vattr.Attribute$<any>;
-
-  export function viewport_culling(value: boolean): $vattr.Attribute$<any>;
-
-  export function options(opts: _.List<SelectOption$>): $vattr.Attribute$<any>;
-
-  export function cursor_style(style: string, blinking: boolean): $vattr.Attribute$<
-    any
-  >;
-
-  export function custom_border_chars(chars: BorderCharacters$): $vattr.Attribute$<
-    any
-  >;
-
-}
-
-// lustre_platform gleam files
 declare module '*/agnostic.mjs' {
   import type * as $process from "../gleam_erlang/gleam/erlang/process.d.mts";
   import type * as $actor from "../gleam_otp/gleam/otp/actor.d.mts";
   import type * as $factory_supervisor from "../gleam_otp/gleam/otp/factory_supervisor.d.mts";
   import type * as $supervision from "../gleam_otp/gleam/otp/supervision.d.mts";
-  import type * as $option from "../gleam_stdlib/gleam/option.d.mts";
-  import type * as _ from "./gleam.d.mts";
-  import type * as $component from "./agnostic/component.d.mts";
   import type * as $effect from "./agnostic/effect.d.mts";
   import type * as $platform from "./agnostic/platform.d.mts";
   import type * as $dom from "./agnostic/platform/dom.d.mts";
+  import type * as $app from "./agnostic/runtime/app.d.mts";
   import type * as $headless from "./agnostic/runtime/headless.d.mts";
   import type * as $vnode from "./agnostic/vdom/vnode.d.mts";
-
-  declare class App<KSR, KSQ, KSS> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      name: $option.Option$<$process.Name$<$headless.Message$<any>>>,
-      init: (x0: any) => [any, $effect.Effect$<any>],
-      update: (x0: any, x1: any) => [any, $effect.Effect$<any>],
-      view: (x0: any) => $vnode.Element$<any>,
-      config: $component.Config$<any>
-    );
-    /** @deprecated */
-    name: $option.Option$<$process.Name$<$headless.Message$<any>>>;
-    /** @deprecated */
-    init: (x0: any) => [any, $effect.Effect$<any>];
-    /** @deprecated */
-    update: (x0: any, x1: any) => [any, $effect.Effect$<any>];
-    /** @deprecated */
-    view: (x0: any) => $vnode.Element$<any>;
-    /** @deprecated */
-    config: $component.Config$<any>;
-  }
-
-  export type App$<KSS, KSQ, KSR> = App<KSS, KSR, KSQ>;
+  import type * as _ from "./gleam.d.mts";
 
   export class ActorError extends _.CustomType {
     /** @deprecated */
@@ -1248,7 +233,7 @@ declare module '*/agnostic.mjs' {
     reason: $actor.StartError$;
   }
   export function Error$ActorError(reason: $actor.StartError$): Error$;
-  export function Error$isActorError(value: Error$): boolean;
+  export function Error$isActorError(value: any): value is Error$;
   export function Error$ActorError$0(value: Error$): $actor.StartError$;
   export function Error$ActorError$reason(value: Error$): $actor.StartError$;
 
@@ -1259,7 +244,7 @@ declare module '*/agnostic.mjs' {
     name: string;
   }
   export function Error$BadComponentName(name: string): Error$;
-  export function Error$isBadComponentName(value: Error$): boolean;
+  export function Error$isBadComponentName(value: any): value is Error$;
   export function Error$BadComponentName$0(value: Error$): string;
   export function Error$BadComponentName$name(value: Error$): string;
 
@@ -1270,7 +255,7 @@ declare module '*/agnostic.mjs' {
     name: string;
   }
   export function Error$ComponentAlreadyRegistered(name: string): Error$;
-  export function Error$isComponentAlreadyRegistered(value: Error$): boolean;
+  export function Error$isComponentAlreadyRegistered(value: any): value is Error$;
   export function Error$ComponentAlreadyRegistered$0(value: Error$): string;
   export function Error$ComponentAlreadyRegistered$name(value: Error$): string;
 
@@ -1281,75 +266,83 @@ declare module '*/agnostic.mjs' {
     selector: string;
   }
   export function Error$ElementNotFound(selector: string): Error$;
-  export function Error$isElementNotFound(value: Error$): boolean;
+  export function Error$isElementNotFound(value: any): value is Error$;
   export function Error$ElementNotFound$0(value: Error$): string;
   export function Error$ElementNotFound$selector(value: Error$): string;
 
   export class NotABrowser extends _.CustomType {}
   export function Error$NotABrowser(): Error$;
-  export function Error$isNotABrowser(value: Error$): boolean;
+  export function Error$isNotABrowser(value: any): value is Error$;
 
   export class NotMountable extends _.CustomType {}
   export function Error$NotMountable(): Error$;
-  export function Error$isNotMountable(value: Error$): boolean;
+  export function Error$isNotMountable(value: any): value is Error$;
 
   export type Error$ = ActorError | BadComponentName | ComponentAlreadyRegistered | ElementNotFound | NotABrowser | NotMountable;
 
-  export type Runtime$<KST> = any;
+  export type Runtime$<GGT> = any;
+
+  export type App = $app.App$<any, any, any>;
 
   export type RuntimeMessage = $headless.Message$<any>;
 
-  export function component<KTS, KTT, KTU>(
-    init: (x0: KTS) => [KTT, $effect.Effect$<KTU>],
-    update: (x0: KTT, x1: KTU) => [KTT, $effect.Effect$<KTU>],
-    view: (x0: KTT) => $vnode.Element$<KTU>,
-    options: _.List<$component.Option$<KTU>>
-  ): App$<KTS, KTT, KTU>;
+  export function application<GHP, GHQ, GHR>(
+    init: (x0: GHP) => [GHQ, $effect.Effect$<GHR>],
+    update: (x0: GHQ, x1: GHR) => [GHQ, $effect.Effect$<GHR>],
+    view: (x0: GHQ) => $vnode.Element$<GHR>
+  ): $app.App$<GHP, GHQ, GHR>;
 
-  export function application<KTJ, KTK, KTL>(
-    init: (x0: KTJ) => [KTK, $effect.Effect$<KTL>],
-    update: (x0: KTK, x1: KTL) => [KTK, $effect.Effect$<KTL>],
-    view: (x0: KTK) => $vnode.Element$<KTL>
-  ): App$<KTJ, KTK, KTL>;
-
-  export function element<KSW>(view: $vnode.Element$<KSW>): App$<
+  export function element<GHC>(view: $vnode.Element$<GHC>): $app.App$<
     any,
     undefined,
-    KSW
+    GHC
   >;
 
-  export function simple<KTC, KTD, KTE>(
-    init: (x0: KTC) => KTD,
-    update: (x0: KTD, x1: KTE) => KTD,
-    view: (x0: KTD) => $vnode.Element$<KTE>
-  ): App$<KTC, KTD, KTE>;
+  export function simple<GHI, GHJ, GHK>(
+    init: (x0: GHI) => GHJ,
+    update: (x0: GHJ, x1: GHK) => GHJ,
+    view: (x0: GHJ) => $vnode.Element$<GHK>
+  ): $app.App$<GHI, GHJ, GHK>;
 
-  export function named<KUD, KUE, KUF>(
-    app: App$<KUD, KUE, KUF>,
-    name: $process.Name$<$headless.Message$<KUF>>
-  ): App$<KUD, KUE, KUF>;
+  export function component<GHY, GHZ, GIA>(
+    init: (x0: GHY) => [GHZ, $effect.Effect$<GIA>],
+    update: (x0: GHZ, x1: GIA) => [GHZ, $effect.Effect$<GIA>],
+    view: (x0: GHZ) => $vnode.Element$<GIA>,
+    options: _.List<$app.Option$<GIA>>
+  ): $app.App$<GHY, GHZ, GIA>;
 
-  export function supervised<KWK, KWM>(
-    app: App$<KWK, any, KWM>,
-    start_arguments: KWK
-  ): $supervision.ChildSpecification$<$process.Subject$<$headless.Message$<KWM>>>;
+  export function named<GIJ, GIK, GIL>(
+    app: $app.App$<GIJ, GIK, GIL>,
+    name: $process.Name$<$headless.Message$<GIL>>
+  ): $app.App$<GIJ, GIK, GIL>;
 
-  export function factory<KWT, KWV>(app: App$<KWT, any, KWV>): $factory_supervisor.Builder$<
-    KWT,
-    $process.Subject$<$headless.Message$<KWV>>
+  export function start<GIU, GIW>(
+    app: $app.App$<GIU, any, GIW>,
+    platform: $platform.Platform$<any, any, any, any, GIW, any>,
+    arguments$: GIU
+  ): _.Result<Runtime$<GIW>, Error$>;
+
+  export function supervised<GKQ, GKS>(
+    app: $app.App$<GKQ, any, GKS>,
+    arguments$: GKQ
+  ): $supervision.ChildSpecification$<$process.Subject$<$headless.Message$<GKS>>>;
+
+  export function factory<GKZ, GLB>(app: $app.App$<GKZ, any, GLB>): $factory_supervisor.Builder$<
+    GKZ,
+    $process.Subject$<$headless.Message$<GLB>>
   >;
 
-  export function register(app: App$<undefined, any, any>, name: string): _.Result<
+  export function register(app: $app.App$<undefined, any, any>, name: string): _.Result<
     undefined,
     Error$
   >;
 
-  export function send<KXX>(
-    runtime: Runtime$<KXX>,
-    message: $headless.Message$<KXX>
+  export function send<GMD>(
+    runtime: Runtime$<GMD>,
+    message: $headless.Message$<GMD>
   ): undefined;
 
-  export function dispatch<KYA>(msg: KYA): $headless.Message$<KYA>;
+  export function dispatch<GMG>(message: GMG): $headless.Message$<GMG>;
 
   export function shutdown(): $headless.Message$<any>;
 
@@ -1357,264 +350,17 @@ declare module '*/agnostic.mjs' {
 
   export function is_registered(x0: string): boolean;
 
-  export function start<KUO, KUQ>(
-    app: App$<KUO, any, KUQ>,
-    platform: $platform.Platform$<any, any, any, any, KUQ, any>,
-    start_args: KUO
-  ): _.Result<Runtime$<KUQ>, Error$>;
-
-}
-
-declare module '*/gleam.mjs' {
-  export * from "../prelude.mjs";
-  export type * from "../prelude.d.mts";
-
-}
-
-declare module '*/agnostic/event.mjs' {
-  import type * as $json from "../../gleam_json/gleam/json.d.mts";
-  import type * as $decode from "../../gleam_stdlib/gleam/dynamic/decode.d.mts";
-  import type * as _ from "../gleam.d.mts";
-  import type * as $effect from "../agnostic/effect.d.mts";
-  import type * as $vattr from "../agnostic/vdom/vattr.d.mts";
-
-  export type Handler = $vattr.Handler$<any>;
-
-  export function emit(event: string, data: $json.Json$): $effect.Effect$<any>;
-
-  export function on<NEV>(name: string, handler: $decode.Decoder$<NEV>): $vattr.Attribute$<
-    NEV
-  >;
-
-  export function advanced<NEY>(
-    name: string,
-    handler: $decode.Decoder$<$vattr.Handler$<NEY>>
-  ): $vattr.Attribute$<NEY>;
-
-  export function handler<NFC>(
-    message: NFC,
-    prevent_default: boolean,
-    stop_propagation: boolean
-  ): $vattr.Handler$<NFC>;
-
-  export function prevent_default<NFE>(event: $vattr.Attribute$<NFE>): $vattr.Attribute$<
-    NFE
-  >;
-
-  export function stop_propagation<NFH>(event: $vattr.Attribute$<NFH>): $vattr.Attribute$<
-    NFH
-  >;
-
-  export function debounce<NFK>(event: $vattr.Attribute$<NFK>, delay: number): $vattr.Attribute$<
-    NFK
-  >;
-
-  export function throttle<NFN>(event: $vattr.Attribute$<NFN>, delay: number): $vattr.Attribute$<
-    NFN
-  >;
-
-  export function on_click<NFQ>(msg: NFQ): $vattr.Attribute$<NFQ>;
-
-  export function on_mouse_down<NFS>(msg: NFS): $vattr.Attribute$<NFS>;
-
-  export function on_mouse_up<NFU>(msg: NFU): $vattr.Attribute$<NFU>;
-
-  export function on_mouse_enter<NFW>(msg: NFW): $vattr.Attribute$<NFW>;
-
-  export function on_mouse_leave<NFY>(msg: NFY): $vattr.Attribute$<NFY>;
-
-  export function on_mouse_over<NGA>(msg: NGA): $vattr.Attribute$<NGA>;
-
-  export function on_mouse_out<NGC>(msg: NGC): $vattr.Attribute$<NGC>;
-
-  export function on_keypress<NGE>(msg: (x0: string) => NGE): $vattr.Attribute$<
-    NGE
-  >;
-
-  export function on_keydown<NGG>(msg: (x0: string) => NGG): $vattr.Attribute$<
-    NGG
-  >;
-
-  export function on_keyup<NGI>(msg: (x0: string) => NGI): $vattr.Attribute$<NGI>;
-
-  export function on_input<NGK>(msg: (x0: string) => NGK): $vattr.Attribute$<NGK>;
-
-  export function on_change<NGM>(msg: (x0: string) => NGM): $vattr.Attribute$<NGM>;
-
-  export function on_check<NGO>(msg: (x0: boolean) => NGO): $vattr.Attribute$<NGO>;
-
-  export function on_submit<NGR>(msg: (x0: _.List<[string, string]>) => NGR): $vattr.Attribute$<
-    NGR
-  >;
-
-  export function on_focus<NGV>(msg: NGV): $vattr.Attribute$<NGV>;
-
-  export function on_blur<NGX>(msg: NGX): $vattr.Attribute$<NGX>;
-
-}
-
-declare module '*/agnostic/server_component.mjs' {
-  import type * as $process from "../../gleam_erlang/gleam/erlang/process.d.mts";
-  import type * as $json from "../../gleam_json/gleam/json.d.mts";
-  import type * as $decode from "../../gleam_stdlib/gleam/dynamic/decode.d.mts";
-  import type * as _ from "../gleam.d.mts";
-  import type * as $effect from "../agnostic/effect.d.mts";
-  import type * as $headless from "../agnostic/runtime/headless.d.mts";
-  import type * as $transport from "../agnostic/runtime/transport.d.mts";
-  import type * as $serializer from "../agnostic/serializer.d.mts";
-  import type * as $vattr from "../agnostic/vdom/vattr.d.mts";
-  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
-
-  export class WebSocket extends _.CustomType {}
-  export function TransportMethod$WebSocket(): TransportMethod$;
-  export function TransportMethod$isWebSocket(value: TransportMethod$): boolean;
-
-  export class ServerSentEvents extends _.CustomType {}
-  export function TransportMethod$ServerSentEvents(): TransportMethod$;
-  export function TransportMethod$isServerSentEvents(
-    value: TransportMethod$,
-  ): boolean;
-
-  export class Polling extends _.CustomType {}
-  export function TransportMethod$Polling(): TransportMethod$;
-  export function TransportMethod$isPolling(value: TransportMethod$): boolean;
-
-  export type TransportMethod$ = WebSocket | ServerSentEvents | Polling;
-
-  export type ClientMessage = $transport.ClientMessage$<any>;
-
-  export function element<NNE>(
-    attributes: _.List<$vattr.Attribute$<NNE>>,
-    children: _.List<$vnode.Element$<NNE>>
-  ): $vnode.Element$<NNE>;
-
-  export function script(): $vnode.Element$<any>;
-
-  export function route(path: string): $vattr.Attribute$<any>;
-
-  export function method(value: TransportMethod$): $vattr.Attribute$<any>;
-
-  export function include<NNQ>(
-    event: $vattr.Attribute$<NNQ>,
-    properties: _.List<string>
-  ): $vattr.Attribute$<NNQ>;
-
-  export function register_subject<NNU>(
-    client: $process.Subject$<$transport.ClientMessage$<NNU>>
-  ): $headless.Message$<NNU>;
-
-  export function deregister_subject<NNY>(
-    client: $process.Subject$<$transport.ClientMessage$<NNY>>
-  ): $headless.Message$<NNY>;
-
-  export function register_callback<NOC>(
-    callback: (x0: $transport.ClientMessage$<NOC>) => undefined
-  ): $headless.Message$<NOC>;
-
-  export function deregister_callback<NOF>(
-    callback: (x0: $transport.ClientMessage$<NOF>) => undefined
-  ): $headless.Message$<NOF>;
-
-  export function emit(event: string, data: $json.Json$): $effect.Effect$<any>;
-
-  export function select<NOK>(
-    sel: (x0: (x0: NOK) => undefined, x1: $process.Subject$<any>) => $process.Selector$<
-      NOK
-    >
-  ): $effect.Effect$<NOK>;
-
-  export function runtime_message_decoder(): $decode.Decoder$<
-    $headless.Message$<any>
-  >;
-
-  export function client_message_to_json<NOS>(
-    message: $transport.ClientMessage$<NOS>,
-    serializer: $serializer.Serializer$<NOS>
-  ): $json.Json$;
-
-}
-
-declare module '*/agnostic/element.mjs' {
-  import type * as $option from "../../gleam_stdlib/gleam/option.d.mts";
-  import type * as _ from "../gleam.d.mts";
-  import type * as $ref from "../agnostic/internals/ref.d.mts";
-  import type * as $vattr from "../agnostic/vdom/vattr.d.mts";
-  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
-
-  export type Element = $vnode.Element$<any>;
-
-  export type Ref = $ref.Ref$;
-
-  export function element<HGW>(
-    tag: string,
-    attributes: _.List<$vattr.Attribute$<HGW>>,
-    children: _.List<$vnode.Element$<HGW>>
-  ): $vnode.Element$<HGW>;
-
-  export function namespaced<HHC>(
-    namespace: string,
-    tag: string,
-    attributes: _.List<$vattr.Attribute$<HHC>>,
-    children: _.List<$vnode.Element$<HHC>>
-  ): $vnode.Element$<HHC>;
-
-  export function text(content: string): $vnode.Element$<any>;
-
-  export function none(): $vnode.Element$<any>;
-
-  export function fragment<HHM>(children: _.List<$vnode.Element$<HHM>>): $vnode.Element$<
-    HHM
-  >;
-
-  export function unsafe_raw_content<HHQ, HHT>(
-    key: string,
-    namespace: string,
-    tag: string,
-    attributes: _.List<$vattr.Attribute$<HHQ>>,
-    content: HHT,
-    compare: $option.Option$<(x0: HHT, x1: HHT) => boolean>
-  ): $vnode.Element$<HHQ>;
-
-  export function unsafe_raw<HHW>(
-    key: string,
-    content: HHW,
-    compare: $option.Option$<(x0: HHW, x1: HHW) => boolean>
-  ): $vnode.Element$<any>;
-
-  export function memo<HIB>(
-    dependencies: _.List<$ref.Ref$>,
-    view: () => $vnode.Element$<HIB>
-  ): $vnode.Element$<HIB>;
-
-  export function ref(value: any): $ref.Ref$;
-
-  export function map<HIF, HIH>(
-    element: $vnode.Element$<HIF>,
-    f: (x0: HIF) => HIH
-  ): $vnode.Element$<HIH>;
-
-  export function to_string(x0: $vnode.Element$<any>): string;
-
-  export function to_document_string(x0: $vnode.Element$<any>): string;
-
-  export function to_readable_string(x0: $vnode.Element$<any>): string;
-
-  export function unsafe_raw_html<HIP>(
-    namespace: string,
-    tag: string,
-    attributes: _.List<$vattr.Attribute$<HIP>>,
-    content: string
-  ): $vnode.Element$<HIP>;
-
 }
 
 declare module '*/agnostic/platform.mjs' {
-  import type * as _ from "../gleam.d.mts";
   import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../gleam.d.mts";
 
   export class NotABrowser extends _.CustomType {}
   export function PlatformError$NotABrowser(): PlatformError$;
-  export function PlatformError$isNotABrowser(value: PlatformError$): boolean;
+  export function PlatformError$isNotABrowser(
+    value: any,
+  ): value is PlatformError$;
 
   export class ElementNotFound extends _.CustomType {
     /** @deprecated */
@@ -1623,140 +369,144 @@ declare module '*/agnostic/platform.mjs' {
     selector: string;
   }
   export function PlatformError$ElementNotFound(selector: string): PlatformError$;
-  export function PlatformError$isElementNotFound(value: PlatformError$): boolean;
+  export function PlatformError$isElementNotFound(
+    value: any,
+  ): value is PlatformError$;
   export function PlatformError$ElementNotFound$0(value: PlatformError$): string;
   export function PlatformError$ElementNotFound$selector(value: PlatformError$): string;
 
   export class NotMountable extends _.CustomType {}
   export function PlatformError$NotMountable(): PlatformError$;
-  export function PlatformError$isNotMountable(value: PlatformError$): boolean;
+  export function PlatformError$isNotMountable(
+    value: any,
+  ): value is PlatformError$;
 
   export type PlatformError$ = NotABrowser | ElementNotFound | NotMountable;
 
   declare class Headless extends _.CustomType {}
 
-  declare class Platform<KEY, KFB, KFC, KFA, KEZ, KEX> extends _.CustomType {
+  declare class Platform<FTA, FTB, FTC, FTD, FTE, FTF> extends _.CustomType {
     /** @deprecated */
     constructor(
-      target: KEY,
-      mount: (x0: any) => [any, $vnode.Element$<any>],
-      create_element: (x0: string, x1: string) => any,
-      create_text_node: (x0: string) => any,
-      create_fragment: () => any,
-      create_comment: (x0: string) => any,
-      insert_before: (x0: any, x1: any, x2: _.Result<any, undefined>) => undefined,
-      move_before: (x0: any, x1: any, x2: _.Result<any, undefined>) => undefined,
-      remove_child: (x0: any, x1: any) => undefined,
-      next_sibling: (x0: any) => _.Result<any, undefined>,
-      get_attribute: (x0: any, x1: string) => _.Result<string, undefined>,
-      set_attribute: (x0: any, x1: string, x2: string) => undefined,
-      remove_attribute: (x0: any, x1: string) => undefined,
-      set_property: (x0: any, x1: string, x2: any) => undefined,
-      set_text: (x0: any, x1: string) => undefined,
-      set_raw_content: (x0: any, x1: any) => undefined,
-      create_raw_node: (x0: any) => any,
+      target: FTB,
+      mount: (x0: FTB) => [FTA, $vnode.Element$<FTE>],
+      create_element: (x0: string, x1: string) => FTA,
+      create_text_node: (x0: string) => FTA,
+      create_fragment: () => FTA,
+      create_comment: (x0: string) => FTA,
+      insert_before: (x0: FTA, x1: FTA, x2: _.Result<FTA, undefined>) => undefined,
+      move_before: (x0: FTA, x1: FTA, x2: _.Result<FTA, undefined>) => undefined,
+      remove_child: (x0: FTA, x1: FTA) => undefined,
+      next_sibling: (x0: FTA) => _.Result<FTA, undefined>,
+      get_attribute: (x0: FTA, x1: string) => _.Result<string, undefined>,
+      set_attribute: (x0: FTA, x1: string, x2: string) => undefined,
+      remove_attribute: (x0: FTA, x1: string) => undefined,
+      set_property: (x0: FTA, x1: string, x2: FTC) => undefined,
+      set_text: (x0: FTA, x1: string) => undefined,
+      set_raw_content: (x0: FTA, x1: FTF) => undefined,
+      create_raw_node: (x0: FTF) => FTA,
       add_event_listener: (
-        x0: any,
+        x0: FTA,
         x1: string,
-        x2: (x0: any) => undefined,
+        x2: (x0: FTD) => undefined,
         x3: boolean
       ) => undefined,
-      remove_event_listener: (x0: any, x1: string, x2: (x0: any) => undefined) => undefined,
+      remove_event_listener: (x0: FTA, x1: string, x2: (x0: FTD) => undefined) => undefined,
       schedule_render: (x0: () => undefined) => () => undefined,
       after_render: () => undefined
     );
     /** @deprecated */
-    target: KEY;
+    target: FTB;
     /** @deprecated */
-    mount: (x0: any) => [any, $vnode.Element$<any>];
+    mount: (x0: FTB) => [FTA, $vnode.Element$<FTE>];
     /** @deprecated */
-    create_element: (x0: string, x1: string) => any;
+    create_element: (x0: string, x1: string) => FTA;
     /** @deprecated */
-    create_text_node: (x0: string) => any;
+    create_text_node: (x0: string) => FTA;
     /** @deprecated */
-    create_fragment: () => any;
+    create_fragment: () => FTA;
     /** @deprecated */
-    create_comment: (x0: string) => any;
+    create_comment: (x0: string) => FTA;
     /** @deprecated */
-    insert_before: (x0: any, x1: any, x2: _.Result<any, undefined>) => undefined;
+    insert_before: (x0: FTA, x1: FTA, x2: _.Result<FTA, undefined>) => undefined;
     /** @deprecated */
-    move_before: (x0: any, x1: any, x2: _.Result<any, undefined>) => undefined;
+    move_before: (x0: FTA, x1: FTA, x2: _.Result<FTA, undefined>) => undefined;
     /** @deprecated */
-    remove_child: (x0: any, x1: any) => undefined;
+    remove_child: (x0: FTA, x1: FTA) => undefined;
     /** @deprecated */
-    next_sibling: (x0: any) => _.Result<any, undefined>;
+    next_sibling: (x0: FTA) => _.Result<FTA, undefined>;
     /** @deprecated */
-    get_attribute: (x0: any, x1: string) => _.Result<string, undefined>;
+    get_attribute: (x0: FTA, x1: string) => _.Result<string, undefined>;
     /** @deprecated */
-    set_attribute: (x0: any, x1: string, x2: string) => undefined;
+    set_attribute: (x0: FTA, x1: string, x2: string) => undefined;
     /** @deprecated */
-    remove_attribute: (x0: any, x1: string) => undefined;
+    remove_attribute: (x0: FTA, x1: string) => undefined;
     /** @deprecated */
-    set_property: (x0: any, x1: string, x2: any) => undefined;
+    set_property: (x0: FTA, x1: string, x2: FTC) => undefined;
     /** @deprecated */
-    set_text: (x0: any, x1: string) => undefined;
+    set_text: (x0: FTA, x1: string) => undefined;
     /** @deprecated */
-    set_raw_content: (x0: any, x1: any) => undefined;
+    set_raw_content: (x0: FTA, x1: FTF) => undefined;
     /** @deprecated */
-    create_raw_node: (x0: any) => any;
+    create_raw_node: (x0: FTF) => FTA;
     /** @deprecated */
     add_event_listener: (
-      x0: any,
+      x0: FTA,
       x1: string,
-      x2: (x0: any) => undefined,
+      x2: (x0: FTD) => undefined,
       x3: boolean
     ) => undefined;
     /** @deprecated */
-    remove_event_listener: (x0: any, x1: string, x2: (x0: any) => undefined) => undefined;
+    remove_event_listener: (x0: FTA, x1: string, x2: (x0: FTD) => undefined) => undefined;
     /** @deprecated */
     schedule_render: (x0: () => undefined) => () => undefined;
     /** @deprecated */
     after_render: () => undefined;
   }
 
-  export type Platform$<KFA, KFC, KFB, KEZ, KEX, KEY> = Headless | Platform<
-    KEZ,
-    KFC,
-    KFA,
-    KEY,
-    KEX,
-    KFB
+  export type Platform$<FTA, FTB, FTC, FTD, FTE, FTF> = Headless | Platform<
+    FTA,
+    FTB,
+    FTC,
+    FTD,
+    FTE,
+    FTF
   >;
 
   export function headless(): Platform$<any, any, any, any, any, any>;
 
-  export function new$<KFP, KFQ, KFR, KGB, KGC, KGD>(
-    target: KFP,
-    mount: (x0: KFP) => [KFQ, $vnode.Element$<KFR>],
-    create_element: (x0: string, x1: string) => KFQ,
-    create_text_node: (x0: string) => KFQ,
-    create_fragment: () => KFQ,
-    create_comment: (x0: string) => KFQ,
-    insert_before: (x0: KFQ, x1: KFQ, x2: _.Result<KFQ, undefined>) => undefined,
-    move_before: (x0: KFQ, x1: KFQ, x2: _.Result<KFQ, undefined>) => undefined,
-    remove_child: (x0: KFQ, x1: KFQ) => undefined,
-    next_sibling: (x0: KFQ) => _.Result<KFQ, undefined>,
-    get_attribute: (x0: KFQ, x1: string) => _.Result<string, undefined>,
-    set_attribute: (x0: KFQ, x1: string, x2: string) => undefined,
-    remove_attribute: (x0: KFQ, x1: string) => undefined,
-    set_property: (x0: KFQ, x1: string, x2: KGB) => undefined,
-    set_text: (x0: KFQ, x1: string) => undefined,
-    set_raw_content: (x0: KFQ, x1: KGC) => undefined,
-    create_raw_node: (x0: KGC) => KFQ,
+  export function new$<FTS, FTT, FTU, FUE, FUF, FUG>(
+    target: FTS,
+    mount: (x0: FTS) => [FTT, $vnode.Element$<FTU>],
+    create_element: (x0: string, x1: string) => FTT,
+    create_text_node: (x0: string) => FTT,
+    create_fragment: () => FTT,
+    create_comment: (x0: string) => FTT,
+    insert_before: (x0: FTT, x1: FTT, x2: _.Result<FTT, undefined>) => undefined,
+    move_before: (x0: FTT, x1: FTT, x2: _.Result<FTT, undefined>) => undefined,
+    remove_child: (x0: FTT, x1: FTT) => undefined,
+    next_sibling: (x0: FTT) => _.Result<FTT, undefined>,
+    get_attribute: (x0: FTT, x1: string) => _.Result<string, undefined>,
+    set_attribute: (x0: FTT, x1: string, x2: string) => undefined,
+    remove_attribute: (x0: FTT, x1: string) => undefined,
+    set_property: (x0: FTT, x1: string, x2: FUE) => undefined,
+    set_text: (x0: FTT, x1: string) => undefined,
+    set_raw_content: (x0: FTT, x1: FUF) => undefined,
+    create_raw_node: (x0: FUF) => FTT,
     add_event_listener: (
-      x0: KFQ,
+      x0: FTT,
       x1: string,
-      x2: (x0: KGD) => undefined,
+      x2: (x0: FUG) => undefined,
       x3: boolean
     ) => undefined,
-    remove_event_listener: (x0: KFQ, x1: string, x2: (x0: KGD) => undefined) => undefined,
+    remove_event_listener: (x0: FTT, x1: string, x2: (x0: FUG) => undefined) => undefined,
     schedule_render: (x0: () => undefined) => () => undefined,
     after_render: () => undefined
-  ): Platform$<KFQ, KFP, KGB, KGD, KFR, KGC>;
+  ): Platform$<FTT, FTS, FUE, FUG, FTU, FUF>;
 
-  export function mount<KGK, KGO>(
-    platform: Platform$<KGK, any, any, any, KGO, any>
-  ): _.Result<[KGK, $vnode.Element$<KGO>], PlatformError$>;
+  export function mount<FUN, FUR>(
+    platform: Platform$<FUN, any, any, any, FUR, any>
+  ): _.Result<[FUN, $vnode.Element$<FUR>], PlatformError$>;
 
   export function is_headless(platform: Platform$<any, any, any, any, any, any>): boolean;
 
@@ -1764,230 +514,238 @@ declare module '*/agnostic/platform.mjs' {
 
 }
 
-declare module '*/agnostic/effect.mjs' {
+declare module '*/agnostic/server_component.mjs' {
   import type * as $process from "../../gleam_erlang/gleam/erlang/process.d.mts";
   import type * as $json from "../../gleam_json/gleam/json.d.mts";
-  import type * as $dynamic from "../../gleam_stdlib/gleam/dynamic.d.mts";
+  import type * as $decode from "../../gleam_stdlib/gleam/dynamic/decode.d.mts";
+  import type * as $effect from "../agnostic/effect.d.mts";
+  import type * as $headless from "../agnostic/runtime/headless.d.mts";
+  import type * as $transport from "../agnostic/runtime/transport.d.mts";
+  import type * as $serializer from "../agnostic/serializer.d.mts";
+  import type * as $vattr from "../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
   import type * as _ from "../gleam.d.mts";
 
-  declare class Effect<GNX> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      synchronous: _.List<(x0: Actions$<any>) => undefined>,
-      before_paint: _.List<(x0: Actions$<any>) => undefined>,
-      after_paint: _.List<(x0: Actions$<any>) => undefined>
-    );
-    /** @deprecated */
-    synchronous: _.List<(x0: Actions$<any>) => undefined>;
-    /** @deprecated */
-    before_paint: _.List<(x0: Actions$<any>) => undefined>;
-    /** @deprecated */
-    after_paint: _.List<(x0: Actions$<any>) => undefined>;
-  }
+  export class WebSocket extends _.CustomType {}
+  export function TransportMethod$WebSocket(): TransportMethod$;
+  export function TransportMethod$isWebSocket(
+    value: any,
+  ): value is TransportMethod$;
 
-  export type Effect$<GNX> = Effect<GNX>;
+  export class ServerSentEvents extends _.CustomType {}
+  export function TransportMethod$ServerSentEvents(): TransportMethod$;
+  export function TransportMethod$isServerSentEvents(
+    value: any,
+  ): value is TransportMethod$;
 
-  declare class Actions<GNY> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      dispatch: (x0: any) => undefined,
-      emit: (x0: string, x1: $json.Json$) => undefined,
-      select: (x0: $process.Selector$<any>) => undefined,
-      root: () => $dynamic.Dynamic$,
-      provide: (x0: string, x1: $json.Json$) => undefined
-    );
-    /** @deprecated */
-    dispatch: (x0: any) => undefined;
-    /** @deprecated */
-    emit: (x0: string, x1: $json.Json$) => undefined;
-    /** @deprecated */
-    select: (x0: $process.Selector$<any>) => undefined;
-    /** @deprecated */
-    root: () => $dynamic.Dynamic$;
-    /** @deprecated */
-    provide: (x0: string, x1: $json.Json$) => undefined;
-  }
+  export class Polling extends _.CustomType {}
+  export function TransportMethod$Polling(): TransportMethod$;
+  export function TransportMethod$isPolling(
+    value: any,
+  ): value is TransportMethod$;
 
-  type Actions$<GNY> = Actions<GNY>;
+  export type TransportMethod$ = WebSocket | ServerSentEvents | Polling;
 
-  export function map<GOR, GOT>(effect: Effect$<GOR>, f: (x0: GOR) => GOT): Effect$<
-    GOT
+  export type ClientMessage = $transport.ClientMessage$<any>;
+
+  export function element<KRY>(
+    attributes: _.List<$vattr.Attribute$<KRY>>,
+    children: _.List<$vnode.Element$<KRY>>
+  ): $vnode.Element$<KRY>;
+
+  export function script(): $vnode.Element$<any>;
+
+  export function route(path: string): $vattr.Attribute$<any>;
+
+  export function method(value: TransportMethod$): $vattr.Attribute$<any>;
+
+  export function include<KSK>(
+    event: $vattr.Attribute$<KSK>,
+    properties: _.List<string>
+  ): $vattr.Attribute$<KSK>;
+
+  export function csrf_token(token: string): $vattr.Attribute$<any>;
+
+  export function register_subject<KSQ>(
+    client: $process.Subject$<$transport.ClientMessage$<KSQ>>
+  ): $headless.Message$<KSQ>;
+
+  export function deregister_subject<KSU>(
+    client: $process.Subject$<$transport.ClientMessage$<KSU>>
+  ): $headless.Message$<KSU>;
+
+  export function register_callback<KSY>(
+    callback: (x0: $transport.ClientMessage$<KSY>) => undefined
+  ): $headless.Message$<KSY>;
+
+  export function deregister_callback<KTB>(
+    callback: (x0: $transport.ClientMessage$<KTB>) => undefined
+  ): $headless.Message$<KTB>;
+
+  export function emit(event: string, data: $json.Json$): $effect.Effect$<any>;
+
+  export function select<KTG>(
+    sel: (x0: (x0: KTG) => undefined, x1: $process.Subject$<any>) => $process.Selector$<
+      KTG
+    >
+  ): $effect.Effect$<KTG>;
+
+  export function runtime_message_decoder(): $decode.Decoder$<
+    $headless.Message$<any>
   >;
 
-  export function perform<GPI>(
-    effect: Effect$<GPI>,
-    dispatch: (x0: GPI) => undefined,
-    emit: (x0: string, x1: $json.Json$) => undefined,
-    select: (x0: $process.Selector$<GPI>) => undefined,
-    root: () => $dynamic.Dynamic$,
-    provide: (x0: string, x1: $json.Json$) => undefined
-  ): undefined;
-
-  export function none(): Effect$<any>;
-
-  export function from<GOB>(effect: (x0: (x0: GOB) => undefined) => undefined): Effect$<
-    GOB
-  >;
-
-  export function before_paint<GOD>(
-    effect: (x0: (x0: GOD) => undefined, x1: $dynamic.Dynamic$) => undefined
-  ): Effect$<GOD>;
-
-  export function after_paint<GOF>(
-    effect: (x0: (x0: GOF) => undefined, x1: $dynamic.Dynamic$) => undefined
-  ): Effect$<GOF>;
-
-  export function event(name: string, data: $json.Json$): Effect$<any>;
-
-  export function select(x0: any): Effect$<any>;
-
-  export function provide(key: string, value: $json.Json$): Effect$<any>;
-
-  export function batch<GON>(effects: _.List<Effect$<GON>>): Effect$<GON>;
+  export function client_message_to_json<KTO>(
+    message: $transport.ClientMessage$<KTO>,
+    serializer: $serializer.Serializer$<KTO>
+  ): $json.Json$;
 
 }
 
-declare module '*/agnostic/serializer.mjs' {
-  import type * as _ from "../gleam.d.mts";
+declare module '*/agnostic/element.mjs' {
+  import type * as $option from "../../gleam_stdlib/gleam/option.d.mts";
+  import type * as $ref from "../agnostic/internals/ref.d.mts";
+  import type * as $vattr from "../agnostic/vdom/vattr.d.mts";
   import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../gleam.d.mts";
 
-  export class Serializer<IPT> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      element: (x0: $vnode.Element$<any>) => string,
-      raw_content: (x0: $vnode.RawContent$) => string
-    );
-    /** @deprecated */
-    element: (x0: $vnode.Element$<any>) => string;
-    /** @deprecated */
-    raw_content: (x0: $vnode.RawContent$) => string;
-  }
-  export function Serializer$Serializer<IPT>(
-    element: (x0: $vnode.Element$<any>) => string,
-    raw_content: (x0: $vnode.RawContent$) => string,
-  ): Serializer$<IPT>;
-  export function Serializer$isSerializer<IPT>(value: Serializer$<IPT>): boolean;
-  export function Serializer$Serializer$0<IPT>(value: Serializer$<IPT>): (
-    x0: $vnode.Element$<any>
-  ) => string;
-  export function Serializer$Serializer$element<IPT>(value: Serializer$<IPT>): (
-    x0: $vnode.Element$<any>
-  ) => string;
-  export function Serializer$Serializer$1<IPT>(value: Serializer$<IPT>): (
-    x0: $vnode.RawContent$
-  ) => string;
-  export function Serializer$Serializer$raw_content<IPT>(value: Serializer$<IPT>): (
-    x0: $vnode.RawContent$
-  ) => string;
+  export type Element = $vnode.Element$<any>;
 
-  export type Serializer$<IPT> = Serializer<IPT>;
+  export type Ref = $ref.Ref$;
+
+  export function element<CKT>(
+    tag: string,
+    attributes: _.List<$vattr.Attribute$<CKT>>,
+    children: _.List<$vnode.Element$<CKT>>
+  ): $vnode.Element$<CKT>;
+
+  export function namespaced<CKZ>(
+    namespace: string,
+    tag: string,
+    attributes: _.List<$vattr.Attribute$<CKZ>>,
+    children: _.List<$vnode.Element$<CKZ>>
+  ): $vnode.Element$<CKZ>;
+
+  export function text(content: string): $vnode.Element$<any>;
+
+  export function none(): $vnode.Element$<any>;
+
+  export function fragment<CLJ>(children: _.List<$vnode.Element$<CLJ>>): $vnode.Element$<
+    CLJ
+  >;
+
+  export function unsafe_raw_content<CLN, CLQ>(
+    key: string,
+    namespace: string,
+    tag: string,
+    attributes: _.List<$vattr.Attribute$<CLN>>,
+    content: CLQ,
+    compare: $option.Option$<(x0: CLQ, x1: CLQ) => boolean>
+  ): $vnode.Element$<CLN>;
+
+  export function unsafe_raw<CLT>(
+    key: string,
+    content: CLT,
+    compare: $option.Option$<(x0: CLT, x1: CLT) => boolean>
+  ): $vnode.Element$<any>;
+
+  export function memo<CLY>(
+    dependencies: _.List<$ref.Ref$>,
+    view: () => $vnode.Element$<CLY>
+  ): $vnode.Element$<CLY>;
+
+  export function ref(value: any): $ref.Ref$;
+
+  export function map<CMC, CME>(
+    element: $vnode.Element$<CMC>,
+    f: (x0: CMC) => CME
+  ): $vnode.Element$<CME>;
+
+  export function to_string(x0: $vnode.Element$<any>): string;
+
+  export function to_document_string(x0: $vnode.Element$<any>): string;
+
+  export function to_readable_string(x0: $vnode.Element$<any>): string;
+
+  export function unsafe_raw_html<CMM>(
+    namespace: string,
+    tag: string,
+    attributes: _.List<$vattr.Attribute$<CMM>>,
+    content: string
+  ): $vnode.Element$<CMM>;
 
 }
 
 declare module '*/agnostic/component.mjs' {
   import type * as $dynamic from "../../gleam_stdlib/gleam/dynamic.d.mts";
   import type * as $decode from "../../gleam_stdlib/gleam/dynamic/decode.d.mts";
-  import type * as $option from "../../gleam_stdlib/gleam/option.d.mts";
-  import type * as _ from "../gleam.d.mts";
   import type * as $effect from "../agnostic/effect.d.mts";
+  import type * as $app from "../agnostic/runtime/app.d.mts";
   import type * as $headless from "../agnostic/runtime/headless.d.mts";
   import type * as $vattr from "../agnostic/vdom/vattr.d.mts";
   import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../gleam.d.mts";
 
-  declare class Config<JUW> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      open_shadow_root: boolean,
-      adopt_styles: boolean,
-      delegates_focus: boolean,
-      attributes: _.List<[string, (x0: string) => _.Result<any, undefined>]>,
-      properties: _.List<[string, $decode.Decoder$<any>]>,
-      contexts: _.List<[string, $decode.Decoder$<any>]>,
-      is_form_associated: boolean,
-      on_form_autofill: $option.Option$<(x0: string) => any>,
-      on_form_reset: $option.Option$<any>,
-      on_form_restore: $option.Option$<(x0: string) => any>
-    );
-    /** @deprecated */
-    open_shadow_root: boolean;
-    /** @deprecated */
-    adopt_styles: boolean;
-    /** @deprecated */
-    delegates_focus: boolean;
-    /** @deprecated */
-    attributes: _.List<[string, (x0: string) => _.Result<any, undefined>]>;
-    /** @deprecated */
-    properties: _.List<[string, $decode.Decoder$<any>]>;
-    /** @deprecated */
-    contexts: _.List<[string, $decode.Decoder$<any>]>;
-    /** @deprecated */
-    is_form_associated: boolean;
-    /** @deprecated */
-    on_form_autofill: $option.Option$<(x0: string) => any>;
-    /** @deprecated */
-    on_form_reset: $option.Option$<any>;
-    /** @deprecated */
-    on_form_restore: $option.Option$<(x0: string) => any>;
-  }
+  export type Config = $app.Config$<any>;
 
-  export type Config$<JUW> = Config<JUW>;
+  export type Option = $app.Option$<any>;
 
-  declare class Option<JUX> extends _.CustomType {
-    /** @deprecated */
-    constructor(apply: (x0: Config$<any>) => Config$<any>);
-    /** @deprecated */
-    apply: (x0: Config$<any>) => Config$<any>;
-  }
-
-  export type Option$<JUX> = Option<JUX>;
-
-  export function new$<JUY>(options: _.List<Option$<JUY>>): Config$<JUY>;
-
-  export function on_attribute_change<JVC>(
+  export function on_attribute_change<FDD>(
     name: string,
-    decoder: (x0: string) => _.Result<JVC, undefined>
-  ): Option$<JVC>;
+    decoder: (x0: string) => _.Result<FDD, undefined>
+  ): $app.Option$<FDD>;
 
-  export function on_property_change<JVG>(
+  export function on_property_change<FDH>(
     name: string,
-    decoder: $decode.Decoder$<JVG>
-  ): Option$<JVG>;
+    decoder: $decode.Decoder$<FDH>
+  ): $app.Option$<FDH>;
 
-  export function on_context_change<JVJ>(
+  export function on_context_change<FDK>(
     key: string,
-    decoder: $decode.Decoder$<JVJ>
-  ): Option$<JVJ>;
+    decoder: $decode.Decoder$<FDK>
+  ): $app.Option$<FDK>;
 
-  export function form_associated(): Option$<any>;
+  export function form_associated(): $app.Option$<any>;
 
-  export function on_form_autofill<JVO>(handler: (x0: string) => JVO): Option$<
-    JVO
+  export function on_form_autofill<FDP>(handler: (x0: string) => FDP): $app.Option$<
+    FDP
   >;
 
-  export function on_form_reset<JVQ>(msg: JVQ): Option$<JVQ>;
+  export function on_form_reset<FDR>(message: FDR): $app.Option$<FDR>;
 
-  export function on_form_restore<JVS>(handler: (x0: string) => JVS): Option$<JVS>;
-
-  export function open_shadow_root(open: boolean): Option$<any>;
-
-  export function adopt_styles(adopt: boolean): Option$<any>;
-
-  export function delegates_focus(delegates: boolean): Option$<any>;
-
-  export function to_server_component_config<JWA>(config: Config$<JWA>): $headless.Config$<
-    JWA
+  export function on_form_restore<FDT>(handler: (x0: string) => FDT): $app.Option$<
+    FDT
   >;
 
-  export function default_slot<JWD>(
-    attributes: _.List<$vattr.Attribute$<JWD>>,
-    fallback: _.List<$vnode.Element$<JWD>>
-  ): $vnode.Element$<JWD>;
+  export function on_form_disabled<FDV>(handler: (x0: boolean) => FDV): $app.Option$<
+    FDV
+  >;
 
-  export function named_slot<JWJ>(
+  export function open_shadow_root(open: boolean): $app.Option$<any>;
+
+  export function adopt_styles(adopt: boolean): $app.Option$<any>;
+
+  export function delegates_focus(delegates: boolean): $app.Option$<any>;
+
+  export function on_connect<FED>(message: FED): $app.Option$<FED>;
+
+  export function on_adopt<FEF>(message: FEF): $app.Option$<FEF>;
+
+  export function on_disconnect<FEH>(message: FEH): $app.Option$<FEH>;
+
+  export function to_server_component_config<FEJ>(config: $app.Config$<FEJ>): $headless.Config$<
+    FEJ
+  >;
+
+  export function default_slot<FEM>(
+    attributes: _.List<$vattr.Attribute$<FEM>>,
+    fallback: _.List<$vnode.Element$<FEM>>
+  ): $vnode.Element$<FEM>;
+
+  export function named_slot<FES>(
     name: string,
-    attributes: _.List<$vattr.Attribute$<JWJ>>,
-    fallback: _.List<$vnode.Element$<JWJ>>
-  ): $vnode.Element$<JWJ>;
+    attributes: _.List<$vattr.Attribute$<FES>>,
+    fallback: _.List<$vnode.Element$<FES>>
+  ): $vnode.Element$<FES>;
 
   export function part(name: string): $vattr.Attribute$<any>;
 
@@ -2005,12 +763,109 @@ declare module '*/agnostic/component.mjs' {
 
   export function remove_pseudo_state(value: string): $effect.Effect$<any>;
 
+  export function prerender<FFS>(
+    component: $app.App$<undefined, any, FFS>,
+    tag: string,
+    attributes: _.List<$vattr.Attribute$<FFS>>,
+    children: _.List<$vnode.Element$<FFS>>
+  ): $vnode.Element$<FFS>;
+
+}
+
+declare module '*/agnostic/event.mjs' {
+  import type * as $json from "../../gleam_json/gleam/json.d.mts";
+  import type * as $decode from "../../gleam_stdlib/gleam/dynamic/decode.d.mts";
+  import type * as $effect from "../agnostic/effect.d.mts";
+  import type * as $vattr from "../agnostic/vdom/vattr.d.mts";
+  import type * as _ from "../gleam.d.mts";
+
+  export type Handler = $vattr.Handler$<any>;
+
+  export function emit(event: string, data: $json.Json$): $effect.Effect$<any>;
+
+  export function on<ISW>(name: string, handler: $decode.Decoder$<ISW>): $vattr.Attribute$<
+    ISW
+  >;
+
+  export function advanced<ISZ>(
+    name: string,
+    handler: $decode.Decoder$<$vattr.Handler$<ISZ>>
+  ): $vattr.Attribute$<ISZ>;
+
+  export function handler<ITD>(
+    message: ITD,
+    prevent_default: boolean,
+    stop_propagation: boolean
+  ): $vattr.Handler$<ITD>;
+
+  export function prevent_default<ITF>(event: $vattr.Attribute$<ITF>): $vattr.Attribute$<
+    ITF
+  >;
+
+  export function stop_propagation<ITI>(event: $vattr.Attribute$<ITI>): $vattr.Attribute$<
+    ITI
+  >;
+
+  export function debounce<ITL>(event: $vattr.Attribute$<ITL>, delay: number): $vattr.Attribute$<
+    ITL
+  >;
+
+  export function throttle<ITO>(event: $vattr.Attribute$<ITO>, delay: number): $vattr.Attribute$<
+    ITO
+  >;
+
+  export function on_click<ITR>(message: ITR): $vattr.Attribute$<ITR>;
+
+  export function on_mouse_down<ITT>(message: ITT): $vattr.Attribute$<ITT>;
+
+  export function on_mouse_up<ITV>(message: ITV): $vattr.Attribute$<ITV>;
+
+  export function on_mouse_enter<ITX>(message: ITX): $vattr.Attribute$<ITX>;
+
+  export function on_mouse_leave<ITZ>(message: ITZ): $vattr.Attribute$<ITZ>;
+
+  export function on_mouse_over<IUB>(message: IUB): $vattr.Attribute$<IUB>;
+
+  export function on_mouse_out<IUD>(message: IUD): $vattr.Attribute$<IUD>;
+
+  export function on_keypress<IUF>(message: (x0: string) => IUF): $vattr.Attribute$<
+    IUF
+  >;
+
+  export function on_keydown<IUH>(message: (x0: string) => IUH): $vattr.Attribute$<
+    IUH
+  >;
+
+  export function on_keyup<IUJ>(message: (x0: string) => IUJ): $vattr.Attribute$<
+    IUJ
+  >;
+
+  export function on_input<IUL>(message: (x0: string) => IUL): $vattr.Attribute$<
+    IUL
+  >;
+
+  export function on_change<IUN>(message: (x0: string) => IUN): $vattr.Attribute$<
+    IUN
+  >;
+
+  export function on_check<IUP>(message: (x0: boolean) => IUP): $vattr.Attribute$<
+    IUP
+  >;
+
+  export function on_submit<IUS>(message: (x0: _.List<[string, string]>) => IUS): $vattr.Attribute$<
+    IUS
+  >;
+
+  export function on_focus<IUW>(message: IUW): $vattr.Attribute$<IUW>;
+
+  export function on_blur<IUY>(message: IUY): $vattr.Attribute$<IUY>;
+
 }
 
 declare module '*/agnostic/attribute.mjs' {
   import type * as $json from "../../gleam_json/gleam/json.d.mts";
-  import type * as _ from "../gleam.d.mts";
   import type * as $vattr from "../agnostic/vdom/vattr.d.mts";
+  import type * as _ from "../gleam.d.mts";
 
   export type Attribute = $vattr.Attribute$<any>;
 
@@ -2020,6 +875,10 @@ declare module '*/agnostic/attribute.mjs' {
     any
   >;
 
+  export function class$(name: string): $vattr.Attribute$<any>;
+
+  export function none(): $vattr.Attribute$<any>;
+
   export function accesskey(key: string): $vattr.Attribute$<any>;
 
   export function autocapitalize(value: string): $vattr.Attribute$<any>;
@@ -2028,13 +887,15 @@ declare module '*/agnostic/attribute.mjs' {
 
   export function autofocus(should_autofocus: boolean): $vattr.Attribute$<any>;
 
-  export function class$(name: string): $vattr.Attribute$<any>;
-
-  export function none(): $vattr.Attribute$<any>;
-
   export function classes(names: _.List<[string, boolean]>): $vattr.Attribute$<
     any
   >;
+
+  export function closedby(value: string): $vattr.Attribute$<any>;
+
+  export function command(value: string): $vattr.Attribute$<any>;
+
+  export function commandfor(value: string): $vattr.Attribute$<any>;
 
   export function contenteditable(is_editable: string): $vattr.Attribute$<any>;
 
@@ -2374,64 +1235,3924 @@ declare module '*/agnostic/attribute.mjs' {
 
 }
 
+declare module '*/agnostic/effect.mjs' {
+  import type * as $process from "../../gleam_erlang/gleam/erlang/process.d.mts";
+  import type * as $json from "../../gleam_json/gleam/json.d.mts";
+  import type * as $dynamic from "../../gleam_stdlib/gleam/dynamic.d.mts";
+  import type * as $decode from "../../gleam_stdlib/gleam/dynamic/decode.d.mts";
+  import type * as _ from "../gleam.d.mts";
+
+  declare class Effect<BRA> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      synchronous: _.List<(x0: Actions$<BRA>) => undefined>,
+      before_paint: _.List<(x0: Actions$<BRA>) => undefined>,
+      after_paint: _.List<(x0: Actions$<BRA>) => undefined>
+    );
+    /** @deprecated */
+    synchronous: _.List<(x0: Actions$<BRA>) => undefined>;
+    /** @deprecated */
+    before_paint: _.List<(x0: Actions$<BRA>) => undefined>;
+    /** @deprecated */
+    after_paint: _.List<(x0: Actions$<BRA>) => undefined>;
+  }
+
+  export type Effect$<BRA> = Effect<BRA>;
+
+  declare class Actions<BRB> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      dispatch: (x0: BRB) => undefined,
+      emit: (x0: string, x1: $json.Json$) => undefined,
+      select: (x0: $process.Selector$<BRB>) => undefined,
+      root: () => $dynamic.Dynamic$,
+      provide: (x0: string, x1: $json.Json$) => undefined,
+      subscribe: (x0: string, x1: $decode.Decoder$<BRB>) => undefined,
+      unsubscribe: (x0: string) => undefined
+    );
+    /** @deprecated */
+    dispatch: (x0: BRB) => undefined;
+    /** @deprecated */
+    emit: (x0: string, x1: $json.Json$) => undefined;
+    /** @deprecated */
+    select: (x0: $process.Selector$<BRB>) => undefined;
+    /** @deprecated */
+    root: () => $dynamic.Dynamic$;
+    /** @deprecated */
+    provide: (x0: string, x1: $json.Json$) => undefined;
+    /** @deprecated */
+    subscribe: (x0: string, x1: $decode.Decoder$<BRB>) => undefined;
+    /** @deprecated */
+    unsubscribe: (x0: string) => undefined;
+  }
+
+  type Actions$<BRB> = Actions<BRB>;
+
+  export function none(): Effect$<any>;
+
+  export function from<BRE>(effect: (x0: (x0: BRE) => undefined) => undefined): Effect$<
+    BRE
+  >;
+
+  export function before_paint<BRG>(
+    effect: (x0: (x0: BRG) => undefined, x1: $dynamic.Dynamic$) => undefined
+  ): Effect$<BRG>;
+
+  export function after_paint<BRI>(
+    effect: (x0: (x0: BRI) => undefined, x1: $dynamic.Dynamic$) => undefined
+  ): Effect$<BRI>;
+
+  export function event(name: string, data: $json.Json$): Effect$<any>;
+
+  export function select(x0: any): Effect$<any>;
+
+  export function provide(key: string, value: $json.Json$): Effect$<any>;
+
+  export function subscribe<BRQ>(key: string, decoder: $decode.Decoder$<BRQ>): Effect$<
+    BRQ
+  >;
+
+  export function unsubscribe(key: string): Effect$<any>;
+
+  export function batch<BRV>(effects: _.List<Effect$<BRV>>): Effect$<BRV>;
+
+  export function map<BRZ, BSB>(effect: Effect$<BRZ>, f: (x0: BRZ) => BSB): Effect$<
+    BSB
+  >;
+
+  export function perform<BSQ>(
+    effect: Effect$<BSQ>,
+    dispatch: (x0: BSQ) => undefined,
+    emit: (x0: string, x1: $json.Json$) => undefined,
+    select: (x0: $process.Selector$<BSQ>) => undefined,
+    root: () => $dynamic.Dynamic$,
+    provide: (x0: string, x1: $json.Json$) => undefined,
+    subscribe: (x0: string, x1: $decode.Decoder$<BSQ>) => undefined,
+    unsubscribe: (x0: string) => undefined
+  ): undefined;
+
+}
+
+declare module '*/agnostic/serializer.mjs' {
+  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../gleam.d.mts";
+
+  export class Serializer<DTQ> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      element: (x0: $vnode.Element$<DTQ>) => string,
+      raw_content: (x0: $vnode.RawContent$) => string
+    );
+    /** @deprecated */
+    element: (x0: $vnode.Element$<DTQ>) => string;
+    /** @deprecated */
+    raw_content: (x0: $vnode.RawContent$) => string;
+  }
+  export function Serializer$Serializer<DTQ>(
+    element: (x0: $vnode.Element$<DTQ>) => string,
+    raw_content: (x0: $vnode.RawContent$) => string,
+  ): Serializer$<DTQ>;
+  export function Serializer$isSerializer<DTQ>(
+    value: any,
+  ): value is Serializer$<unknown>;
+  export function Serializer$Serializer$0<DTQ>(value: Serializer$<DTQ>): (
+    x0: $vnode.Element$<DTQ>
+  ) => string;
+  export function Serializer$Serializer$element<DTQ>(value: Serializer$<DTQ>): (
+    x0: $vnode.Element$<DTQ>
+  ) => string;
+  export function Serializer$Serializer$1<DTQ>(value: Serializer$<DTQ>): (
+    x0: $vnode.RawContent$
+  ) => string;
+  export function Serializer$Serializer$raw_content<DTQ>(value: Serializer$<DTQ>): (
+    x0: $vnode.RawContent$
+  ) => string;
+
+  export type Serializer$<DTQ> = Serializer<DTQ>;
+
+}
+
+declare module '*/agnostic/runtime/transport.mjs' {
+  import type * as $json from "../../../gleam_json/gleam/json.d.mts";
+  import type * as $dict from "../../../gleam_stdlib/gleam/dict.d.mts";
+  import type * as $dynamic from "../../../gleam_stdlib/gleam/dynamic.d.mts";
+  import type * as $decode from "../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
+  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
+  import type * as $serializer from "../../agnostic/serializer.d.mts";
+  import type * as $patch from "../../agnostic/vdom/patch.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../gleam.d.mts";
+
+  export class Mount<DZV> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      kind: number,
+      open_shadow_root: boolean,
+      will_adopt_styles: boolean,
+      observed_attributes: _.List<string>,
+      observed_properties: _.List<string>,
+      requested_contexts: _.List<string>,
+      provided_contexts: $dict.Dict$<string, $json.Json$>,
+      vdom: $vnode.Element$<DZV>,
+      memos: $mutable_map.MutableMap$<
+        () => $vnode.Element$<DZV>,
+        $vnode.Element$<DZV>
+      >
+    );
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    open_shadow_root: boolean;
+    /** @deprecated */
+    will_adopt_styles: boolean;
+    /** @deprecated */
+    observed_attributes: _.List<string>;
+    /** @deprecated */
+    observed_properties: _.List<string>;
+    /** @deprecated */
+    requested_contexts: _.List<string>;
+    /** @deprecated */
+    provided_contexts: $dict.Dict$<string, $json.Json$>;
+    /** @deprecated */
+    vdom: $vnode.Element$<DZV>;
+    /** @deprecated */
+    memos: $mutable_map.MutableMap$<
+      () => $vnode.Element$<DZV>,
+      $vnode.Element$<DZV>
+    >;
+  }
+  export function ClientMessage$Mount<DZV>(
+    kind: number,
+    open_shadow_root: boolean,
+    will_adopt_styles: boolean,
+    observed_attributes: _.List<string>,
+    observed_properties: _.List<string>,
+    requested_contexts: _.List<string>,
+    provided_contexts: $dict.Dict$<string, $json.Json$>,
+    vdom: $vnode.Element$<DZV>,
+    memos: $mutable_map.MutableMap$<
+      () => $vnode.Element$<DZV>,
+      $vnode.Element$<DZV>
+    >,
+  ): ClientMessage$<DZV>;
+  export function ClientMessage$isMount<DZV>(
+    value: any,
+  ): value is ClientMessage$<unknown>;
+  export function ClientMessage$Mount$0<DZV>(value: ClientMessage$<DZV>): number;
+  export function ClientMessage$Mount$kind<DZV>(value: ClientMessage$<DZV>): number;
+  export function ClientMessage$Mount$1<DZV>(
+    value: ClientMessage$<DZV>,
+  ): boolean;
+  export function ClientMessage$Mount$open_shadow_root<DZV>(value: ClientMessage$<
+      DZV
+    >): boolean;
+  export function ClientMessage$Mount$2<DZV>(value: ClientMessage$<DZV>): boolean;
+  export function ClientMessage$Mount$will_adopt_styles<DZV>(value: ClientMessage$<
+      DZV
+    >): boolean;
+  export function ClientMessage$Mount$3<DZV>(value: ClientMessage$<DZV>): _.List<
+    string
+  >;
+  export function ClientMessage$Mount$observed_attributes<DZV>(value: ClientMessage$<
+      DZV
+    >): _.List<string>;
+  export function ClientMessage$Mount$4<DZV>(value: ClientMessage$<DZV>): _.List<
+    string
+  >;
+  export function ClientMessage$Mount$observed_properties<DZV>(value: ClientMessage$<
+      DZV
+    >): _.List<string>;
+  export function ClientMessage$Mount$5<DZV>(value: ClientMessage$<DZV>): _.List<
+    string
+  >;
+  export function ClientMessage$Mount$requested_contexts<DZV>(value: ClientMessage$<
+      DZV
+    >): _.List<string>;
+  export function ClientMessage$Mount$6<DZV>(value: ClientMessage$<DZV>): $dict.Dict$<
+    string,
+    $json.Json$
+  >;
+  export function ClientMessage$Mount$provided_contexts<DZV>(value: ClientMessage$<
+      DZV
+    >): $dict.Dict$<string, $json.Json$>;
+  export function ClientMessage$Mount$7<DZV>(value: ClientMessage$<DZV>): $vnode.Element$<
+    DZV
+  >;
+  export function ClientMessage$Mount$vdom<DZV>(value: ClientMessage$<DZV>): $vnode.Element$<
+    DZV
+  >;
+  export function ClientMessage$Mount$8<DZV>(value: ClientMessage$<DZV>): $mutable_map.MutableMap$<
+    () => $vnode.Element$<DZV>,
+    $vnode.Element$<DZV>
+  >;
+  export function ClientMessage$Mount$memos<DZV>(value: ClientMessage$<DZV>): $mutable_map.MutableMap$<
+    () => $vnode.Element$<DZV>,
+    $vnode.Element$<DZV>
+  >;
+
+  export class Reconcile<DZV> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      kind: number,
+      patch: $patch.Patch$<DZV>,
+      memos: $mutable_map.MutableMap$<
+        () => $vnode.Element$<DZV>,
+        $vnode.Element$<DZV>
+      >
+    );
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    patch: $patch.Patch$<DZV>;
+    /** @deprecated */
+    memos: $mutable_map.MutableMap$<
+      () => $vnode.Element$<DZV>,
+      $vnode.Element$<DZV>
+    >;
+  }
+  export function ClientMessage$Reconcile<DZV>(
+    kind: number,
+    patch: $patch.Patch$<DZV>,
+    memos: $mutable_map.MutableMap$<
+      () => $vnode.Element$<DZV>,
+      $vnode.Element$<DZV>
+    >,
+  ): ClientMessage$<DZV>;
+  export function ClientMessage$isReconcile<DZV>(
+    value: any,
+  ): value is ClientMessage$<unknown>;
+  export function ClientMessage$Reconcile$0<DZV>(value: ClientMessage$<DZV>): number;
+  export function ClientMessage$Reconcile$kind<DZV>(
+    value: ClientMessage$<DZV>,
+  ): number;
+  export function ClientMessage$Reconcile$1<DZV>(value: ClientMessage$<DZV>): $patch.Patch$<
+    DZV
+  >;
+  export function ClientMessage$Reconcile$patch<DZV>(value: ClientMessage$<DZV>): $patch.Patch$<
+    DZV
+  >;
+  export function ClientMessage$Reconcile$2<DZV>(value: ClientMessage$<DZV>): $mutable_map.MutableMap$<
+    () => $vnode.Element$<DZV>,
+    $vnode.Element$<DZV>
+  >;
+  export function ClientMessage$Reconcile$memos<DZV>(value: ClientMessage$<DZV>): $mutable_map.MutableMap$<
+    () => $vnode.Element$<DZV>,
+    $vnode.Element$<DZV>
+  >;
+
+  export class Emit extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, name: string, data: $json.Json$);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    name: string;
+    /** @deprecated */
+    data: $json.Json$;
+  }
+  export function ClientMessage$Emit<DZV>(
+    kind: number,
+    name: string,
+    data: $json.Json$,
+  ): ClientMessage$<DZV>;
+  export function ClientMessage$isEmit<DZV>(
+    value: any,
+  ): value is ClientMessage$<unknown>;
+  export function ClientMessage$Emit$0<DZV>(value: ClientMessage$<DZV>): number;
+  export function ClientMessage$Emit$kind<DZV>(value: ClientMessage$<DZV>): number;
+  export function ClientMessage$Emit$1<DZV>(
+    value: ClientMessage$<DZV>,
+  ): string;
+  export function ClientMessage$Emit$name<DZV>(value: ClientMessage$<DZV>): string;
+  export function ClientMessage$Emit$2<DZV>(
+    value: ClientMessage$<DZV>,
+  ): $json.Json$;
+  export function ClientMessage$Emit$data<DZV>(value: ClientMessage$<DZV>): $json.Json$;
+
+  export class Provide extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, key: string, value: $json.Json$);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    key: string;
+    /** @deprecated */
+    value: $json.Json$;
+  }
+  export function ClientMessage$Provide<DZV>(
+    kind: number,
+    key: string,
+    value: $json.Json$,
+  ): ClientMessage$<DZV>;
+  export function ClientMessage$isProvide<DZV>(
+    value: any,
+  ): value is ClientMessage$<unknown>;
+  export function ClientMessage$Provide$0<DZV>(value: ClientMessage$<DZV>): number;
+  export function ClientMessage$Provide$kind<DZV>(
+    value: ClientMessage$<DZV>,
+  ): number;
+  export function ClientMessage$Provide$1<DZV>(value: ClientMessage$<DZV>): string;
+  export function ClientMessage$Provide$key<DZV>(
+    value: ClientMessage$<DZV>,
+  ): string;
+  export function ClientMessage$Provide$2<DZV>(value: ClientMessage$<DZV>): $json.Json$;
+  export function ClientMessage$Provide$value<DZV>(
+    value: ClientMessage$<DZV>,
+  ): $json.Json$;
+
+  export class Subscribe extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, key: string);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    key: string;
+  }
+  export function ClientMessage$Subscribe<DZV>(
+    kind: number,
+    key: string,
+  ): ClientMessage$<DZV>;
+  export function ClientMessage$isSubscribe<DZV>(
+    value: any,
+  ): value is ClientMessage$<unknown>;
+  export function ClientMessage$Subscribe$0<DZV>(value: ClientMessage$<DZV>): number;
+  export function ClientMessage$Subscribe$kind<DZV>(
+    value: ClientMessage$<DZV>,
+  ): number;
+  export function ClientMessage$Subscribe$1<DZV>(value: ClientMessage$<DZV>): string;
+  export function ClientMessage$Subscribe$key<DZV>(
+    value: ClientMessage$<DZV>,
+  ): string;
+
+  export class Unsubscribe extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, key: string);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    key: string;
+  }
+  export function ClientMessage$Unsubscribe<DZV>(
+    kind: number,
+    key: string,
+  ): ClientMessage$<DZV>;
+  export function ClientMessage$isUnsubscribe<DZV>(
+    value: any,
+  ): value is ClientMessage$<unknown>;
+  export function ClientMessage$Unsubscribe$0<DZV>(value: ClientMessage$<DZV>): number;
+  export function ClientMessage$Unsubscribe$kind<DZV>(
+    value: ClientMessage$<DZV>,
+  ): number;
+  export function ClientMessage$Unsubscribe$1<DZV>(value: ClientMessage$<DZV>): string;
+  export function ClientMessage$Unsubscribe$key<DZV>(
+    value: ClientMessage$<DZV>,
+  ): string;
+
+  export type ClientMessage$<DZV> = Mount<DZV> | Reconcile<DZV> | Emit | Provide | Subscribe | Unsubscribe;
+
+  export function ClientMessage$kind<DZV>(value: ClientMessage$<DZV>): number;
+
+  export class Batch extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, messages: _.List<ServerMessage$>);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    messages: _.List<ServerMessage$>;
+  }
+  export function ServerMessage$Batch(
+    kind: number,
+    messages: _.List<ServerMessage$>,
+  ): ServerMessage$;
+  export function ServerMessage$isBatch(value: any): value is ServerMessage$;
+  export function ServerMessage$Batch$0(value: ServerMessage$): number;
+  export function ServerMessage$Batch$kind(value: ServerMessage$): number;
+  export function ServerMessage$Batch$1(value: ServerMessage$): _.List<
+    ServerMessage$
+  >;
+  export function ServerMessage$Batch$messages(value: ServerMessage$): _.List<
+    ServerMessage$
+  >;
+
+  export class AttributeChanged extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, name: string, value: string);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    name: string;
+    /** @deprecated */
+    value: string;
+  }
+  export function ServerMessage$AttributeChanged(
+    kind: number,
+    name: string,
+    value: string,
+  ): ServerMessage$;
+  export function ServerMessage$isAttributeChanged(
+    value: any,
+  ): value is ServerMessage$;
+  export function ServerMessage$AttributeChanged$0(value: ServerMessage$): number;
+  export function ServerMessage$AttributeChanged$kind(value: ServerMessage$): number;
+  export function ServerMessage$AttributeChanged$1(
+    value: ServerMessage$,
+  ): string;
+  export function ServerMessage$AttributeChanged$name(value: ServerMessage$): string;
+  export function ServerMessage$AttributeChanged$2(
+    value: ServerMessage$,
+  ): string;
+  export function ServerMessage$AttributeChanged$value(value: ServerMessage$): string;
+
+  export class PropertyChanged extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, name: string, value: $dynamic.Dynamic$);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    name: string;
+    /** @deprecated */
+    value: $dynamic.Dynamic$;
+  }
+  export function ServerMessage$PropertyChanged(
+    kind: number,
+    name: string,
+    value: $dynamic.Dynamic$,
+  ): ServerMessage$;
+  export function ServerMessage$isPropertyChanged(
+    value: any,
+  ): value is ServerMessage$;
+  export function ServerMessage$PropertyChanged$0(value: ServerMessage$): number;
+  export function ServerMessage$PropertyChanged$kind(value: ServerMessage$): number;
+  export function ServerMessage$PropertyChanged$1(
+    value: ServerMessage$,
+  ): string;
+  export function ServerMessage$PropertyChanged$name(value: ServerMessage$): string;
+  export function ServerMessage$PropertyChanged$2(
+    value: ServerMessage$,
+  ): $dynamic.Dynamic$;
+  export function ServerMessage$PropertyChanged$value(value: ServerMessage$): $dynamic.Dynamic$;
+
+  export class EventFired extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      kind: number,
+      path: string,
+      name: string,
+      event: $dynamic.Dynamic$
+    );
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    path: string;
+    /** @deprecated */
+    name: string;
+    /** @deprecated */
+    event: $dynamic.Dynamic$;
+  }
+  export function ServerMessage$EventFired(
+    kind: number,
+    path: string,
+    name: string,
+    event: $dynamic.Dynamic$,
+  ): ServerMessage$;
+  export function ServerMessage$isEventFired(value: any): value is ServerMessage$;
+  export function ServerMessage$EventFired$0(value: ServerMessage$): number;
+  export function ServerMessage$EventFired$kind(value: ServerMessage$): number;
+  export function ServerMessage$EventFired$1(value: ServerMessage$): string;
+  export function ServerMessage$EventFired$path(value: ServerMessage$): string;
+  export function ServerMessage$EventFired$2(value: ServerMessage$): string;
+  export function ServerMessage$EventFired$name(value: ServerMessage$): string;
+  export function ServerMessage$EventFired$3(value: ServerMessage$): $dynamic.Dynamic$;
+  export function ServerMessage$EventFired$event(
+    value: ServerMessage$,
+  ): $dynamic.Dynamic$;
+
+  export class ContextProvided extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, key: string, value: $dynamic.Dynamic$);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    key: string;
+    /** @deprecated */
+    value: $dynamic.Dynamic$;
+  }
+  export function ServerMessage$ContextProvided(
+    kind: number,
+    key: string,
+    value: $dynamic.Dynamic$,
+  ): ServerMessage$;
+  export function ServerMessage$isContextProvided(
+    value: any,
+  ): value is ServerMessage$;
+  export function ServerMessage$ContextProvided$0(value: ServerMessage$): number;
+  export function ServerMessage$ContextProvided$kind(value: ServerMessage$): number;
+  export function ServerMessage$ContextProvided$1(
+    value: ServerMessage$,
+  ): string;
+  export function ServerMessage$ContextProvided$key(value: ServerMessage$): string;
+  export function ServerMessage$ContextProvided$2(
+    value: ServerMessage$,
+  ): $dynamic.Dynamic$;
+  export function ServerMessage$ContextProvided$value(value: ServerMessage$): $dynamic.Dynamic$;
+
+  export type ServerMessage$ = Batch | AttributeChanged | PropertyChanged | EventFired | ContextProvided;
+
+  export function ServerMessage$kind(value: ServerMessage$): number;
+
+  export const mount_kind: number;
+
+  export const reconcile_kind: number;
+
+  export const emit_kind: number;
+
+  export const provide_kind: number;
+
+  export const subscribe_kind: number;
+
+  export const unsubscribe_kind: number;
+
+  export const attribute_changed_kind: number;
+
+  export const event_fired_kind: number;
+
+  export const property_changed_kind: number;
+
+  export const batch_kind: number;
+
+  export const context_provided_kind: number;
+
+  export function mount<EAB>(
+    open_shadow_root: boolean,
+    will_adopt_styles: boolean,
+    observed_attributes: _.List<string>,
+    observed_properties: _.List<string>,
+    requested_contexts: _.List<string>,
+    provided_contexts: $dict.Dict$<string, $json.Json$>,
+    vdom: $vnode.Element$<EAB>,
+    memos: $mutable_map.MutableMap$<
+      () => $vnode.Element$<EAB>,
+      $vnode.Element$<EAB>
+    >
+  ): ClientMessage$<EAB>;
+
+  export function reconcile<EAF>(
+    patch: $patch.Patch$<EAF>,
+    memos: $mutable_map.MutableMap$<
+      () => $vnode.Element$<EAF>,
+      $vnode.Element$<EAF>
+    >
+  ): ClientMessage$<EAF>;
+
+  export function emit(name: string, data: $json.Json$): ClientMessage$<any>;
+
+  export function provide(key: string, value: $json.Json$): ClientMessage$<any>;
+
+  export function subscribe(key: string): ClientMessage$<any>;
+
+  export function unsubscribe(key: string): ClientMessage$<any>;
+
+  export function attribute_changed(name: string, value: string): ServerMessage$;
+
+  export function event_fired(
+    path: string,
+    name: string,
+    event: $dynamic.Dynamic$
+  ): ServerMessage$;
+
+  export function property_changed(name: string, value: $dynamic.Dynamic$): ServerMessage$;
+
+  export function batch(messages: _.List<ServerMessage$>): ServerMessage$;
+
+  export function context_provided(key: string, value: $dynamic.Dynamic$): ServerMessage$;
+
+  export function client_message_to_json<EAS>(
+    message: ClientMessage$<EAS>,
+    serializer: $serializer.Serializer$<EAS>
+  ): $json.Json$;
+
+  export function server_message_decoder(): $decode.Decoder$<ServerMessage$>;
+
+  export function context_provided_decoder(): $decode.Decoder$<ServerMessage$>;
+
+}
+
+declare module '*/agnostic/runtime/app.mjs' {
+  import type * as $process from "../../../gleam_erlang/gleam/erlang/process.d.mts";
+  import type * as $decode from "../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
+  import type * as $option from "../../../gleam_stdlib/gleam/option.d.mts";
+  import type * as $effect from "../../agnostic/effect.d.mts";
+  import type * as $headless from "../../agnostic/runtime/headless.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../gleam.d.mts";
+
+  export class App<FAF, FAG, FAH> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      name: $option.Option$<$process.Name$<$headless.Message$<FAH>>>,
+      init: (x0: FAF) => [FAG, $effect.Effect$<FAH>],
+      update: (x0: FAG, x1: FAH) => [FAG, $effect.Effect$<FAH>],
+      view: (x0: FAG) => $vnode.Element$<FAH>,
+      config: Config$<FAH>
+    );
+    /** @deprecated */
+    name: $option.Option$<$process.Name$<$headless.Message$<FAH>>>;
+    /** @deprecated */
+    init: (x0: FAF) => [FAG, $effect.Effect$<FAH>];
+    /** @deprecated */
+    update: (x0: FAG, x1: FAH) => [FAG, $effect.Effect$<FAH>];
+    /** @deprecated */
+    view: (x0: FAG) => $vnode.Element$<FAH>;
+    /** @deprecated */
+    config: Config$<FAH>;
+  }
+  export function App$App<FAF, FAG, FAH>(
+    name: $option.Option$<$process.Name$<$headless.Message$<FAH>>>,
+    init: (x0: FAF) => [FAG, $effect.Effect$<FAH>],
+    update: (x0: FAG, x1: FAH) => [FAG, $effect.Effect$<FAH>],
+    view: (x0: FAG) => $vnode.Element$<FAH>,
+    config: Config$<FAH>,
+  ): App$<FAF, FAG, FAH>;
+  export function App$isApp<FAF, FAG, FAH>(
+    value: any,
+  ): value is App$<unknown, unknown, unknown>;
+  export function App$App$0<FAF, FAG, FAH>(value: App$<FAF, FAG, FAH>): $option.Option$<
+    $process.Name$<$headless.Message$<FAH>>
+  >;
+  export function App$App$name<FAF, FAG, FAH>(value: App$<FAF, FAG, FAH>): $option.Option$<
+    $process.Name$<$headless.Message$<FAH>>
+  >;
+  export function App$App$1<FAF, FAG, FAH>(value: App$<FAF, FAG, FAH>): (x0: FAF) => [
+    FAG,
+    $effect.Effect$<FAH>
+  ];
+  export function App$App$init<FAF, FAG, FAH>(value: App$<FAF, FAG, FAH>): (
+    x0: FAF
+  ) => [FAG, $effect.Effect$<FAH>];
+  export function App$App$2<FAF, FAG, FAH>(value: App$<FAF, FAG, FAH>): (
+    x0: FAG,
+    x1: FAH
+  ) => [FAG, $effect.Effect$<FAH>];
+  export function App$App$update<FAF, FAG, FAH>(value: App$<FAF, FAG, FAH>): (
+    x0: FAG,
+    x1: FAH
+  ) => [FAG, $effect.Effect$<FAH>];
+  export function App$App$3<FAF, FAG, FAH>(value: App$<FAF, FAG, FAH>): (x0: FAG) => $vnode.Element$<
+    FAH
+  >;
+  export function App$App$view<FAF, FAG, FAH>(value: App$<FAF, FAG, FAH>): (
+    x0: FAG
+  ) => $vnode.Element$<FAH>;
+  export function App$App$4<FAF, FAG, FAH>(value: App$<FAF, FAG, FAH>): Config$<
+    FAH
+  >;
+  export function App$App$config<FAF, FAG, FAH>(value: App$<FAF, FAG, FAH>): Config$<
+    FAH
+  >;
+
+  export type App$<FAF, FAG, FAH> = App<FAF, FAG, FAH>;
+
+  export class Config<FAI> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      open_shadow_root: boolean,
+      adopt_styles: boolean,
+      delegates_focus: boolean,
+      attributes: _.List<[string, (x0: string) => _.Result<FAI, undefined>]>,
+      properties: _.List<[string, $decode.Decoder$<FAI>]>,
+      contexts: _.List<[string, $decode.Decoder$<FAI>]>,
+      is_form_associated: boolean,
+      on_form_autofill: $option.Option$<(x0: string) => FAI>,
+      on_form_reset: $option.Option$<FAI>,
+      on_form_restore: $option.Option$<(x0: string) => FAI>,
+      on_form_disabled: $option.Option$<(x0: boolean) => FAI>,
+      on_connect: $option.Option$<FAI>,
+      on_adopt: $option.Option$<FAI>,
+      on_disconnect: $option.Option$<FAI>
+    );
+    /** @deprecated */
+    open_shadow_root: boolean;
+    /** @deprecated */
+    adopt_styles: boolean;
+    /** @deprecated */
+    delegates_focus: boolean;
+    /** @deprecated */
+    attributes: _.List<[string, (x0: string) => _.Result<FAI, undefined>]>;
+    /** @deprecated */
+    properties: _.List<[string, $decode.Decoder$<FAI>]>;
+    /** @deprecated */
+    contexts: _.List<[string, $decode.Decoder$<FAI>]>;
+    /** @deprecated */
+    is_form_associated: boolean;
+    /** @deprecated */
+    on_form_autofill: $option.Option$<(x0: string) => FAI>;
+    /** @deprecated */
+    on_form_reset: $option.Option$<FAI>;
+    /** @deprecated */
+    on_form_restore: $option.Option$<(x0: string) => FAI>;
+    /** @deprecated */
+    on_form_disabled: $option.Option$<(x0: boolean) => FAI>;
+    /** @deprecated */
+    on_connect: $option.Option$<FAI>;
+    /** @deprecated */
+    on_adopt: $option.Option$<FAI>;
+    /** @deprecated */
+    on_disconnect: $option.Option$<FAI>;
+  }
+  export function Config$Config<FAI>(
+    open_shadow_root: boolean,
+    adopt_styles: boolean,
+    delegates_focus: boolean,
+    attributes: _.List<[string, (x0: string) => _.Result<FAI, undefined>]>,
+    properties: _.List<[string, $decode.Decoder$<FAI>]>,
+    contexts: _.List<[string, $decode.Decoder$<FAI>]>,
+    is_form_associated: boolean,
+    on_form_autofill: $option.Option$<(x0: string) => FAI>,
+    on_form_reset: $option.Option$<FAI>,
+    on_form_restore: $option.Option$<(x0: string) => FAI>,
+    on_form_disabled: $option.Option$<(x0: boolean) => FAI>,
+    on_connect: $option.Option$<FAI>,
+    on_adopt: $option.Option$<FAI>,
+    on_disconnect: $option.Option$<FAI>,
+  ): Config$<FAI>;
+  export function Config$isConfig<FAI>(value: any): value is Config$<unknown>;
+  export function Config$Config$0<FAI>(value: Config$<FAI>): boolean;
+  export function Config$Config$open_shadow_root<FAI>(value: Config$<FAI>): boolean;
+  export function Config$Config$1<FAI>(
+    value: Config$<FAI>,
+  ): boolean;
+  export function Config$Config$adopt_styles<FAI>(value: Config$<FAI>): boolean;
+  export function Config$Config$2<FAI>(value: Config$<FAI>): boolean;
+  export function Config$Config$delegates_focus<FAI>(value: Config$<FAI>): boolean;
+  export function Config$Config$3<FAI>(
+    value: Config$<FAI>,
+  ): _.List<[string, (x0: string) => _.Result<FAI, undefined>]>;
+  export function Config$Config$attributes<FAI>(value: Config$<FAI>): _.List<
+    [string, (x0: string) => _.Result<FAI, undefined>]
+  >;
+  export function Config$Config$4<FAI>(value: Config$<FAI>): _.List<
+    [string, $decode.Decoder$<FAI>]
+  >;
+  export function Config$Config$properties<FAI>(value: Config$<FAI>): _.List<
+    [string, $decode.Decoder$<FAI>]
+  >;
+  export function Config$Config$5<FAI>(value: Config$<FAI>): _.List<
+    [string, $decode.Decoder$<FAI>]
+  >;
+  export function Config$Config$contexts<FAI>(value: Config$<FAI>): _.List<
+    [string, $decode.Decoder$<FAI>]
+  >;
+  export function Config$Config$6<FAI>(value: Config$<FAI>): boolean;
+  export function Config$Config$is_form_associated<FAI>(value: Config$<FAI>): boolean;
+  export function Config$Config$7<FAI>(
+    value: Config$<FAI>,
+  ): $option.Option$<(x0: string) => FAI>;
+  export function Config$Config$on_form_autofill<FAI>(value: Config$<FAI>): $option.Option$<
+    (x0: string) => FAI
+  >;
+  export function Config$Config$8<FAI>(value: Config$<FAI>): $option.Option$<FAI>;
+  export function Config$Config$on_form_reset<FAI>(value: Config$<FAI>): $option.Option$<
+    FAI
+  >;
+  export function Config$Config$9<FAI>(value: Config$<FAI>): $option.Option$<
+    (x0: string) => FAI
+  >;
+  export function Config$Config$on_form_restore<FAI>(value: Config$<FAI>): $option.Option$<
+    (x0: string) => FAI
+  >;
+  export function Config$Config$10<FAI>(value: Config$<FAI>): $option.Option$<
+    (x0: boolean) => FAI
+  >;
+  export function Config$Config$on_form_disabled<FAI>(value: Config$<FAI>): $option.Option$<
+    (x0: boolean) => FAI
+  >;
+  export function Config$Config$11<FAI>(value: Config$<FAI>): $option.Option$<FAI>;
+  export function Config$Config$on_connect<FAI>(
+    value: Config$<FAI>,
+  ): $option.Option$<FAI>;
+  export function Config$Config$12<FAI>(value: Config$<FAI>): $option.Option$<FAI>;
+  export function Config$Config$on_adopt<FAI>(
+    value: Config$<FAI>,
+  ): $option.Option$<FAI>;
+  export function Config$Config$13<FAI>(value: Config$<FAI>): $option.Option$<FAI>;
+  export function Config$Config$on_disconnect<FAI>(
+    value: Config$<FAI>,
+  ): $option.Option$<FAI>;
+
+  export type Config$<FAI> = Config<FAI>;
+
+  export class Option<FAJ> extends _.CustomType {
+    /** @deprecated */
+    constructor(apply: (x0: Config$<FAJ>) => Config$<FAJ>);
+    /** @deprecated */
+    apply: (x0: Config$<FAJ>) => Config$<FAJ>;
+  }
+  export function Option$Option<FAJ>(
+    apply: (x0: Config$<FAJ>) => Config$<FAJ>,
+  ): Option$<FAJ>;
+  export function Option$isOption<FAJ>(value: any): value is Option$<unknown>;
+  export function Option$Option$0<FAJ>(value: Option$<FAJ>): (x0: Config$<FAJ>) => Config$<
+    FAJ
+  >;
+  export function Option$Option$apply<FAJ>(value: Option$<FAJ>): (
+    x0: Config$<FAJ>
+  ) => Config$<FAJ>;
+
+  export type Option$<FAJ> = Option<FAJ>;
+
+  export const default_config: Config$<any>;
+
+  export function configure<FAK>(options: _.List<Option$<FAK>>): Config$<FAK>;
+
+  export function configure_server_component<FAO>(config: Config$<FAO>): $headless.Config$<
+    FAO
+  >;
+
+}
+
+declare module '*/agnostic/runtime/headless.mjs' {
+  import type * as $process from "../../../gleam_erlang/gleam/erlang/process.d.mts";
+  import type * as $json from "../../../gleam_json/gleam/json.d.mts";
+  import type * as $actor from "../../../gleam_otp/gleam/otp/actor.d.mts";
+  import type * as $dict from "../../../gleam_stdlib/gleam/dict.d.mts";
+  import type * as $decode from "../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
+  import type * as $option from "../../../gleam_stdlib/gleam/option.d.mts";
+  import type * as $set from "../../../gleam_stdlib/gleam/set.d.mts";
+  import type * as $effect from "../../agnostic/effect.d.mts";
+  import type * as $transport from "../../agnostic/runtime/transport.d.mts";
+  import type * as $cache from "../../agnostic/vdom/cache.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../gleam.d.mts";
+
+  export class State<EXV, EXW> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      self: $process.Subject$<Message$<EXW>>,
+      selector: $process.Selector$<Message$<EXW>>,
+      base_selector: $process.Selector$<Message$<EXW>>,
+      model: EXV,
+      update: (x0: EXV, x1: EXW) => [EXV, $effect.Effect$<EXW>],
+      view: (x0: EXV) => $vnode.Element$<EXW>,
+      config: Config$<EXW>,
+      vdom: $vnode.Element$<EXW>,
+      cache: $cache.Cache$<EXW>,
+      providers: $dict.Dict$<string, $json.Json$>,
+      subscribers: $dict.Dict$<
+        $process.Subject$<$transport.ClientMessage$<EXW>>,
+        $process.Monitor$
+      >,
+      callbacks: $set.Set$<(x0: $transport.ClientMessage$<EXW>) => undefined>
+    );
+    /** @deprecated */
+    self: $process.Subject$<Message$<EXW>>;
+    /** @deprecated */
+    selector: $process.Selector$<Message$<EXW>>;
+    /** @deprecated */
+    base_selector: $process.Selector$<Message$<EXW>>;
+    /** @deprecated */
+    model: EXV;
+    /** @deprecated */
+    update: (x0: EXV, x1: EXW) => [EXV, $effect.Effect$<EXW>];
+    /** @deprecated */
+    view: (x0: EXV) => $vnode.Element$<EXW>;
+    /** @deprecated */
+    config: Config$<EXW>;
+    /** @deprecated */
+    vdom: $vnode.Element$<EXW>;
+    /** @deprecated */
+    cache: $cache.Cache$<EXW>;
+    /** @deprecated */
+    providers: $dict.Dict$<string, $json.Json$>;
+    /** @deprecated */
+    subscribers: $dict.Dict$<
+      $process.Subject$<$transport.ClientMessage$<EXW>>,
+      $process.Monitor$
+    >;
+    /** @deprecated */
+    callbacks: $set.Set$<(x0: $transport.ClientMessage$<EXW>) => undefined>;
+  }
+  export function State$State<EXV, EXW>(
+    self: $process.Subject$<Message$<EXW>>,
+    selector: $process.Selector$<Message$<EXW>>,
+    base_selector: $process.Selector$<Message$<EXW>>,
+    model: EXV,
+    update: (x0: EXV, x1: EXW) => [EXV, $effect.Effect$<EXW>],
+    view: (x0: EXV) => $vnode.Element$<EXW>,
+    config: Config$<EXW>,
+    vdom: $vnode.Element$<EXW>,
+    cache: $cache.Cache$<EXW>,
+    providers: $dict.Dict$<string, $json.Json$>,
+    subscribers: $dict.Dict$<
+      $process.Subject$<$transport.ClientMessage$<EXW>>,
+      $process.Monitor$
+    >,
+    callbacks: $set.Set$<(x0: $transport.ClientMessage$<EXW>) => undefined>,
+  ): State$<EXV, EXW>;
+  export function State$isState<EXV, EXW>(
+    value: any,
+  ): value is State$<unknown, unknown>;
+  export function State$State$0<EXV, EXW>(value: State$<EXV, EXW>): $process.Subject$<
+    Message$<EXW>
+  >;
+  export function State$State$self<EXV, EXW>(value: State$<EXV, EXW>): $process.Subject$<
+    Message$<EXW>
+  >;
+  export function State$State$1<EXV, EXW>(value: State$<EXV, EXW>): $process.Selector$<
+    Message$<EXW>
+  >;
+  export function State$State$selector<EXV, EXW>(value: State$<EXV, EXW>): $process.Selector$<
+    Message$<EXW>
+  >;
+  export function State$State$2<EXV, EXW>(value: State$<EXV, EXW>): $process.Selector$<
+    Message$<EXW>
+  >;
+  export function State$State$base_selector<EXV, EXW>(value: State$<EXV, EXW>): $process.Selector$<
+    Message$<EXW>
+  >;
+  export function State$State$3<EXV, EXW>(value: State$<EXV, EXW>): EXV;
+  export function State$State$model<EXV, EXW>(value: State$<EXV, EXW>): EXV;
+  export function State$State$4<EXV, EXW>(value: State$<EXV, EXW>): (
+    x0: EXV,
+    x1: EXW
+  ) => [EXV, $effect.Effect$<EXW>];
+  export function State$State$update<EXV, EXW>(value: State$<EXV, EXW>): (
+    x0: EXV,
+    x1: EXW
+  ) => [EXV, $effect.Effect$<EXW>];
+  export function State$State$5<EXV, EXW>(value: State$<EXV, EXW>): (x0: EXV) => $vnode.Element$<
+    EXW
+  >;
+  export function State$State$view<EXV, EXW>(value: State$<EXV, EXW>): (x0: EXV) => $vnode.Element$<
+    EXW
+  >;
+  export function State$State$6<EXV, EXW>(value: State$<EXV, EXW>): Config$<EXW>;
+  export function State$State$config<EXV, EXW>(value: State$<EXV, EXW>): Config$<
+    EXW
+  >;
+  export function State$State$7<EXV, EXW>(value: State$<EXV, EXW>): $vnode.Element$<
+    EXW
+  >;
+  export function State$State$vdom<EXV, EXW>(value: State$<EXV, EXW>): $vnode.Element$<
+    EXW
+  >;
+  export function State$State$8<EXV, EXW>(value: State$<EXV, EXW>): $cache.Cache$<
+    EXW
+  >;
+  export function State$State$cache<EXV, EXW>(value: State$<EXV, EXW>): $cache.Cache$<
+    EXW
+  >;
+  export function State$State$9<EXV, EXW>(value: State$<EXV, EXW>): $dict.Dict$<
+    string,
+    $json.Json$
+  >;
+  export function State$State$providers<EXV, EXW>(value: State$<EXV, EXW>): $dict.Dict$<
+    string,
+    $json.Json$
+  >;
+  export function State$State$10<EXV, EXW>(value: State$<EXV, EXW>): $dict.Dict$<
+    $process.Subject$<$transport.ClientMessage$<EXW>>,
+    $process.Monitor$
+  >;
+  export function State$State$subscribers<EXV, EXW>(value: State$<EXV, EXW>): $dict.Dict$<
+    $process.Subject$<$transport.ClientMessage$<EXW>>,
+    $process.Monitor$
+  >;
+  export function State$State$11<EXV, EXW>(value: State$<EXV, EXW>): $set.Set$<
+    (x0: $transport.ClientMessage$<EXW>) => undefined
+  >;
+  export function State$State$callbacks<EXV, EXW>(value: State$<EXV, EXW>): $set.Set$<
+    (x0: $transport.ClientMessage$<EXW>) => undefined
+  >;
+
+  export type State$<EXV, EXW> = State<EXV, EXW>;
+
+  export class Config<EXX> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      open_shadow_root: boolean,
+      adopt_styles: boolean,
+      attributes: $dict.Dict$<string, (x0: string) => _.Result<EXX, undefined>>,
+      properties: $dict.Dict$<string, $decode.Decoder$<EXX>>,
+      contexts: $dict.Dict$<string, $decode.Decoder$<EXX>>,
+      on_connect: $option.Option$<EXX>,
+      on_disconnect: $option.Option$<EXX>
+    );
+    /** @deprecated */
+    open_shadow_root: boolean;
+    /** @deprecated */
+    adopt_styles: boolean;
+    /** @deprecated */
+    attributes: $dict.Dict$<string, (x0: string) => _.Result<EXX, undefined>>;
+    /** @deprecated */
+    properties: $dict.Dict$<string, $decode.Decoder$<EXX>>;
+    /** @deprecated */
+    contexts: $dict.Dict$<string, $decode.Decoder$<EXX>>;
+    /** @deprecated */
+    on_connect: $option.Option$<EXX>;
+    /** @deprecated */
+    on_disconnect: $option.Option$<EXX>;
+  }
+  export function Config$Config<EXX>(
+    open_shadow_root: boolean,
+    adopt_styles: boolean,
+    attributes: $dict.Dict$<string, (x0: string) => _.Result<EXX, undefined>>,
+    properties: $dict.Dict$<string, $decode.Decoder$<EXX>>,
+    contexts: $dict.Dict$<string, $decode.Decoder$<EXX>>,
+    on_connect: $option.Option$<EXX>,
+    on_disconnect: $option.Option$<EXX>,
+  ): Config$<EXX>;
+  export function Config$isConfig<EXX>(value: any): value is Config$<unknown>;
+  export function Config$Config$0<EXX>(value: Config$<EXX>): boolean;
+  export function Config$Config$open_shadow_root<EXX>(value: Config$<EXX>): boolean;
+  export function Config$Config$1<EXX>(
+    value: Config$<EXX>,
+  ): boolean;
+  export function Config$Config$adopt_styles<EXX>(value: Config$<EXX>): boolean;
+  export function Config$Config$2<EXX>(value: Config$<EXX>): $dict.Dict$<
+    string,
+    (x0: string) => _.Result<EXX, undefined>
+  >;
+  export function Config$Config$attributes<EXX>(value: Config$<EXX>): $dict.Dict$<
+    string,
+    (x0: string) => _.Result<EXX, undefined>
+  >;
+  export function Config$Config$3<EXX>(value: Config$<EXX>): $dict.Dict$<
+    string,
+    $decode.Decoder$<EXX>
+  >;
+  export function Config$Config$properties<EXX>(value: Config$<EXX>): $dict.Dict$<
+    string,
+    $decode.Decoder$<EXX>
+  >;
+  export function Config$Config$4<EXX>(value: Config$<EXX>): $dict.Dict$<
+    string,
+    $decode.Decoder$<EXX>
+  >;
+  export function Config$Config$contexts<EXX>(value: Config$<EXX>): $dict.Dict$<
+    string,
+    $decode.Decoder$<EXX>
+  >;
+  export function Config$Config$5<EXX>(value: Config$<EXX>): $option.Option$<EXX>;
+  export function Config$Config$on_connect<EXX>(value: Config$<EXX>): $option.Option$<
+    EXX
+  >;
+  export function Config$Config$6<EXX>(value: Config$<EXX>): $option.Option$<EXX>;
+  export function Config$Config$on_disconnect<EXX>(value: Config$<EXX>): $option.Option$<
+    EXX
+  >;
+
+  export type Config$<EXX> = Config<EXX>;
+
+  export class ClientDispatchedMessage extends _.CustomType {
+    /** @deprecated */
+    constructor(message: $transport.ServerMessage$);
+    /** @deprecated */
+    message: $transport.ServerMessage$;
+  }
+  export function Message$ClientDispatchedMessage<EXY>(
+    message: $transport.ServerMessage$,
+  ): Message$<EXY>;
+  export function Message$isClientDispatchedMessage<EXY>(
+    value: any,
+  ): value is Message$<unknown>;
+  export function Message$ClientDispatchedMessage$0<EXY>(value: Message$<EXY>): $transport.ServerMessage$;
+  export function Message$ClientDispatchedMessage$message<EXY>(
+    value: Message$<EXY>,
+  ): $transport.ServerMessage$;
+
+  export class ClientRegisteredSubject<EXY> extends _.CustomType {
+    /** @deprecated */
+    constructor(client: $process.Subject$<$transport.ClientMessage$<EXY>>);
+    /** @deprecated */
+    client: $process.Subject$<$transport.ClientMessage$<EXY>>;
+  }
+  export function Message$ClientRegisteredSubject<EXY>(
+    client: $process.Subject$<$transport.ClientMessage$<EXY>>,
+  ): Message$<EXY>;
+  export function Message$isClientRegisteredSubject<EXY>(
+    value: any,
+  ): value is Message$<unknown>;
+  export function Message$ClientRegisteredSubject$0<EXY>(value: Message$<EXY>): $process.Subject$<
+    $transport.ClientMessage$<EXY>
+  >;
+  export function Message$ClientRegisteredSubject$client<EXY>(value: Message$<EXY>): $process.Subject$<
+    $transport.ClientMessage$<EXY>
+  >;
+
+  export class ClientDeregisteredSubject<EXY> extends _.CustomType {
+    /** @deprecated */
+    constructor(client: $process.Subject$<$transport.ClientMessage$<EXY>>);
+    /** @deprecated */
+    client: $process.Subject$<$transport.ClientMessage$<EXY>>;
+  }
+  export function Message$ClientDeregisteredSubject<EXY>(
+    client: $process.Subject$<$transport.ClientMessage$<EXY>>,
+  ): Message$<EXY>;
+  export function Message$isClientDeregisteredSubject<EXY>(
+    value: any,
+  ): value is Message$<unknown>;
+  export function Message$ClientDeregisteredSubject$0<EXY>(value: Message$<EXY>): $process.Subject$<
+    $transport.ClientMessage$<EXY>
+  >;
+  export function Message$ClientDeregisteredSubject$client<EXY>(value: Message$<
+      EXY
+    >): $process.Subject$<$transport.ClientMessage$<EXY>>;
+
+  export class ClientRegisteredCallback<EXY> extends _.CustomType {
+    /** @deprecated */
+    constructor(callback: (x0: $transport.ClientMessage$<EXY>) => undefined);
+    /** @deprecated */
+    callback: (x0: $transport.ClientMessage$<EXY>) => undefined;
+  }
+  export function Message$ClientRegisteredCallback<EXY>(
+    callback: (x0: $transport.ClientMessage$<EXY>) => undefined,
+  ): Message$<EXY>;
+  export function Message$isClientRegisteredCallback<EXY>(
+    value: any,
+  ): value is Message$<unknown>;
+  export function Message$ClientRegisteredCallback$0<EXY>(value: Message$<EXY>): (
+    x0: $transport.ClientMessage$<EXY>
+  ) => undefined;
+  export function Message$ClientRegisteredCallback$callback<EXY>(value: Message$<
+      EXY
+    >): (x0: $transport.ClientMessage$<EXY>) => undefined;
+
+  export class ClientDeregisteredCallback<EXY> extends _.CustomType {
+    /** @deprecated */
+    constructor(callback: (x0: $transport.ClientMessage$<EXY>) => undefined);
+    /** @deprecated */
+    callback: (x0: $transport.ClientMessage$<EXY>) => undefined;
+  }
+  export function Message$ClientDeregisteredCallback<EXY>(
+    callback: (x0: $transport.ClientMessage$<EXY>) => undefined,
+  ): Message$<EXY>;
+  export function Message$isClientDeregisteredCallback<EXY>(
+    value: any,
+  ): value is Message$<unknown>;
+  export function Message$ClientDeregisteredCallback$0<EXY>(value: Message$<EXY>): (
+    x0: $transport.ClientMessage$<EXY>
+  ) => undefined;
+  export function Message$ClientDeregisteredCallback$callback<EXY>(value: Message$<
+      EXY
+    >): (x0: $transport.ClientMessage$<EXY>) => undefined;
+
+  export class EffectAddedSelector<EXY> extends _.CustomType {
+    /** @deprecated */
+    constructor(selector: $process.Selector$<Message$<EXY>>);
+    /** @deprecated */
+    selector: $process.Selector$<Message$<EXY>>;
+  }
+  export function Message$EffectAddedSelector<EXY>(
+    selector: $process.Selector$<Message$<EXY>>,
+  ): Message$<EXY>;
+  export function Message$isEffectAddedSelector<EXY>(
+    value: any,
+  ): value is Message$<unknown>;
+  export function Message$EffectAddedSelector$0<EXY>(value: Message$<EXY>): $process.Selector$<
+    Message$<EXY>
+  >;
+  export function Message$EffectAddedSelector$selector<EXY>(value: Message$<EXY>): $process.Selector$<
+    Message$<EXY>
+  >;
+
+  export class EffectDispatchedMessage<EXY> extends _.CustomType {
+    /** @deprecated */
+    constructor(message: EXY);
+    /** @deprecated */
+    message: EXY;
+  }
+  export function Message$EffectDispatchedMessage<EXY>(
+    message: EXY,
+  ): Message$<EXY>;
+  export function Message$isEffectDispatchedMessage<EXY>(
+    value: any,
+  ): value is Message$<unknown>;
+  export function Message$EffectDispatchedMessage$0<EXY>(value: Message$<EXY>): EXY;
+  export function Message$EffectDispatchedMessage$message<EXY>(
+    value: Message$<EXY>,
+  ): EXY;
+
+  export class EffectEmitEvent extends _.CustomType {
+    /** @deprecated */
+    constructor(name: string, data: $json.Json$);
+    /** @deprecated */
+    name: string;
+    /** @deprecated */
+    data: $json.Json$;
+  }
+  export function Message$EffectEmitEvent<EXY>(
+    name: string,
+    data: $json.Json$,
+  ): Message$<EXY>;
+  export function Message$isEffectEmitEvent<EXY>(
+    value: any,
+  ): value is Message$<unknown>;
+  export function Message$EffectEmitEvent$0<EXY>(value: Message$<EXY>): string;
+  export function Message$EffectEmitEvent$name<EXY>(value: Message$<EXY>): string;
+  export function Message$EffectEmitEvent$1<EXY>(value: Message$<EXY>): $json.Json$;
+  export function Message$EffectEmitEvent$data<EXY>(
+    value: Message$<EXY>,
+  ): $json.Json$;
+
+  export class EffectProvidedValue extends _.CustomType {
+    /** @deprecated */
+    constructor(key: string, value: $json.Json$);
+    /** @deprecated */
+    key: string;
+    /** @deprecated */
+    value: $json.Json$;
+  }
+  export function Message$EffectProvidedValue<EXY>(
+    key: string,
+    value: $json.Json$,
+  ): Message$<EXY>;
+  export function Message$isEffectProvidedValue<EXY>(
+    value: any,
+  ): value is Message$<unknown>;
+  export function Message$EffectProvidedValue$0<EXY>(value: Message$<EXY>): string;
+  export function Message$EffectProvidedValue$key<EXY>(
+    value: Message$<EXY>,
+  ): string;
+  export function Message$EffectProvidedValue$1<EXY>(value: Message$<EXY>): $json.Json$;
+  export function Message$EffectProvidedValue$value<EXY>(
+    value: Message$<EXY>,
+  ): $json.Json$;
+
+  export class EffectRequestedContextSubscription<EXY> extends _.CustomType {
+    /** @deprecated */
+    constructor(key: string, decoder: $decode.Decoder$<EXY>);
+    /** @deprecated */
+    key: string;
+    /** @deprecated */
+    decoder: $decode.Decoder$<EXY>;
+  }
+  export function Message$EffectRequestedContextSubscription<EXY>(
+    key: string,
+    decoder: $decode.Decoder$<EXY>,
+  ): Message$<EXY>;
+  export function Message$isEffectRequestedContextSubscription<EXY>(
+    value: any,
+  ): value is Message$<unknown>;
+  export function Message$EffectRequestedContextSubscription$0<EXY>(value: Message$<
+      EXY
+    >): string;
+  export function Message$EffectRequestedContextSubscription$key<EXY>(value: Message$<
+      EXY
+    >): string;
+  export function Message$EffectRequestedContextSubscription$1<EXY>(value: Message$<
+      EXY
+    >): $decode.Decoder$<EXY>;
+  export function Message$EffectRequestedContextSubscription$decoder<EXY>(value: Message$<
+      EXY
+    >): $decode.Decoder$<EXY>;
+
+  export class EffectRemovedContextSubscription extends _.CustomType {
+    /** @deprecated */
+    constructor(key: string);
+    /** @deprecated */
+    key: string;
+  }
+  export function Message$EffectRemovedContextSubscription<EXY>(
+    key: string,
+  ): Message$<EXY>;
+  export function Message$isEffectRemovedContextSubscription<EXY>(
+    value: any,
+  ): value is Message$<unknown>;
+  export function Message$EffectRemovedContextSubscription$0<EXY>(value: Message$<
+      EXY
+    >): string;
+  export function Message$EffectRemovedContextSubscription$key<EXY>(value: Message$<
+      EXY
+    >): string;
+
+  export class MonitorReportedDown extends _.CustomType {
+    /** @deprecated */
+    constructor(monitor: $process.Monitor$);
+    /** @deprecated */
+    monitor: $process.Monitor$;
+  }
+  export function Message$MonitorReportedDown<EXY>(
+    monitor: $process.Monitor$,
+  ): Message$<EXY>;
+  export function Message$isMonitorReportedDown<EXY>(
+    value: any,
+  ): value is Message$<unknown>;
+  export function Message$MonitorReportedDown$0<EXY>(value: Message$<EXY>): $process.Monitor$;
+  export function Message$MonitorReportedDown$monitor<EXY>(
+    value: Message$<EXY>,
+  ): $process.Monitor$;
+
+  export class SystemRequestedShutdown extends _.CustomType {}
+  export function Message$SystemRequestedShutdown<EXY>(): Message$<EXY>;
+  export function Message$isSystemRequestedShutdown<EXY>(
+    value: any,
+  ): value is Message$<unknown>;
+
+  export type Message$<EXY> = ClientDispatchedMessage | ClientRegisteredSubject<
+    EXY
+  > | ClientDeregisteredSubject<EXY> | ClientRegisteredCallback<EXY> | ClientDeregisteredCallback<
+    EXY
+  > | EffectAddedSelector<EXY> | EffectDispatchedMessage<EXY> | EffectEmitEvent | EffectProvidedValue | EffectRequestedContextSubscription<
+    EXY
+  > | EffectRemovedContextSubscription | MonitorReportedDown | SystemRequestedShutdown;
+
+  export type ServerComponent = $process.Subject$<Message$<any>>;
+
+  export function start(x0: any, x1: any, x2: any, x3: any, x4: any, x5: any): _.Result<
+    $actor.Started$<$process.Subject$<Message$<any>>>,
+    $actor.StartError$
+  >;
+
+}
+
+declare module '*/agnostic/vdom/diff.mjs' {
+  import type * as $json from "../../../gleam_json/gleam/json.d.mts";
+  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
+  import type * as $cache from "../../agnostic/vdom/cache.d.mts";
+  import type * as $patch from "../../agnostic/vdom/patch.d.mts";
+  import type * as $path from "../../agnostic/vdom/path.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../gleam.d.mts";
+
+  export class Diff<KUX> extends _.CustomType {
+    /** @deprecated */
+    constructor(patch: $patch.Patch$<KUX>, cache: $cache.Cache$<KUX>);
+    /** @deprecated */
+    patch: $patch.Patch$<KUX>;
+    /** @deprecated */
+    cache: $cache.Cache$<KUX>;
+  }
+  export function Diff$Diff<KUX>(
+    patch: $patch.Patch$<KUX>,
+    cache: $cache.Cache$<KUX>,
+  ): Diff$<KUX>;
+  export function Diff$isDiff<KUX>(value: any): value is Diff$<unknown>;
+  export function Diff$Diff$0<KUX>(value: Diff$<KUX>): $patch.Patch$<KUX>;
+  export function Diff$Diff$patch<KUX>(value: Diff$<KUX>): $patch.Patch$<KUX>;
+  export function Diff$Diff$1<KUX>(value: Diff$<KUX>): $cache.Cache$<KUX>;
+  export function Diff$Diff$cache<KUX>(value: Diff$<KUX>): $cache.Cache$<KUX>;
+
+  export type Diff$<KUX> = Diff<KUX>;
+
+  declare class PartialDiff<KUY> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      patch: $patch.Patch$<KUY>,
+      cache: $cache.Cache$<KUY>,
+      events: $cache.Events$<KUY>
+    );
+    /** @deprecated */
+    patch: $patch.Patch$<KUY>;
+    /** @deprecated */
+    cache: $cache.Cache$<KUY>;
+    /** @deprecated */
+    events: $cache.Events$<KUY>;
+  }
+
+  type PartialDiff$<KUY> = PartialDiff<KUY>;
+
+  declare class AttributeChange<KUZ> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      added: _.List<$vattr.Attribute$<KUZ>>,
+      removed: _.List<$vattr.Attribute$<KUZ>>,
+      events: $cache.Events$<KUZ>
+    );
+    /** @deprecated */
+    added: _.List<$vattr.Attribute$<KUZ>>;
+    /** @deprecated */
+    removed: _.List<$vattr.Attribute$<KUZ>>;
+    /** @deprecated */
+    events: $cache.Events$<KUZ>;
+  }
+
+  type AttributeChange$<KUZ> = AttributeChange<KUZ>;
+
+  export function diff<KVA>(
+    cache: $cache.Cache$<KVA>,
+    old: $vnode.Element$<KVA>,
+    new$: $vnode.Element$<KVA>
+  ): Diff$<KVA>;
+
+}
+
+declare module '*/agnostic/vdom/vnode.mjs' {
+  import type * as $json from "../../../gleam_json/gleam/json.d.mts";
+  import type * as $dynamic from "../../../gleam_stdlib/gleam/dynamic.d.mts";
+  import type * as $option from "../../../gleam_stdlib/gleam/option.d.mts";
+  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
+  import type * as $ref from "../../agnostic/internals/ref.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as _ from "../../gleam.d.mts";
+
+  export type RawContent$ = any;
+
+  export class Fragment<CBF> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      kind: number,
+      key: string,
+      children: _.List<Element$<CBF>>,
+      keyed_children: $mutable_map.MutableMap$<string, Element$<CBF>>
+    );
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    key: string;
+    /** @deprecated */
+    children: _.List<Element$<CBF>>;
+    /** @deprecated */
+    keyed_children: $mutable_map.MutableMap$<string, Element$<CBF>>;
+  }
+  export function Element$Fragment<CBF>(
+    kind: number,
+    key: string,
+    children: _.List<Element$<CBF>>,
+    keyed_children: $mutable_map.MutableMap$<string, Element$<CBF>>,
+  ): Element$<CBF>;
+  export function Element$isFragment<CBF>(value: any): value is Element$<unknown>;
+  export function Element$Fragment$0<CBF>(value: Element$<CBF>): number;
+  export function Element$Fragment$kind<CBF>(value: Element$<CBF>): number;
+  export function Element$Fragment$1<CBF>(value: Element$<CBF>): string;
+  export function Element$Fragment$key<CBF>(value: Element$<CBF>): string;
+  export function Element$Fragment$2<CBF>(value: Element$<CBF>): _.List<
+    Element$<CBF>
+  >;
+  export function Element$Fragment$children<CBF>(value: Element$<CBF>): _.List<
+    Element$<CBF>
+  >;
+  export function Element$Fragment$3<CBF>(value: Element$<CBF>): $mutable_map.MutableMap$<
+    string,
+    Element$<CBF>
+  >;
+  export function Element$Fragment$keyed_children<CBF>(value: Element$<CBF>): $mutable_map.MutableMap$<
+    string,
+    Element$<CBF>
+  >;
+
+  export class Element<CBF> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      kind: number,
+      key: string,
+      namespace: string,
+      tag: string,
+      attributes: _.List<$vattr.Attribute$<CBF>>,
+      children: _.List<Element$<CBF>>,
+      keyed_children: $mutable_map.MutableMap$<string, Element$<CBF>>
+    );
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    key: string;
+    /** @deprecated */
+    namespace: string;
+    /** @deprecated */
+    tag: string;
+    /** @deprecated */
+    attributes: _.List<$vattr.Attribute$<CBF>>;
+    /** @deprecated */
+    children: _.List<Element$<CBF>>;
+    /** @deprecated */
+    keyed_children: $mutable_map.MutableMap$<string, Element$<CBF>>;
+  }
+  export function Element$Element<CBF>(
+    kind: number,
+    key: string,
+    namespace: string,
+    tag: string,
+    attributes: _.List<$vattr.Attribute$<CBF>>,
+    children: _.List<Element$<CBF>>,
+    keyed_children: $mutable_map.MutableMap$<string, Element$<CBF>>,
+  ): Element$<CBF>;
+  export function Element$isElement<CBF>(value: any): value is Element$<unknown>;
+  export function Element$Element$0<CBF>(value: Element$<CBF>): number;
+  export function Element$Element$kind<CBF>(value: Element$<CBF>): number;
+  export function Element$Element$1<CBF>(value: Element$<CBF>): string;
+  export function Element$Element$key<CBF>(value: Element$<CBF>): string;
+  export function Element$Element$2<CBF>(value: Element$<CBF>): string;
+  export function Element$Element$namespace<CBF>(value: Element$<CBF>): string;
+  export function Element$Element$3<CBF>(value: Element$<CBF>): string;
+  export function Element$Element$tag<CBF>(value: Element$<CBF>): string;
+  export function Element$Element$4<CBF>(value: Element$<CBF>): _.List<
+    $vattr.Attribute$<CBF>
+  >;
+  export function Element$Element$attributes<CBF>(value: Element$<CBF>): _.List<
+    $vattr.Attribute$<CBF>
+  >;
+  export function Element$Element$5<CBF>(value: Element$<CBF>): _.List<
+    Element$<CBF>
+  >;
+  export function Element$Element$children<CBF>(value: Element$<CBF>): _.List<
+    Element$<CBF>
+  >;
+  export function Element$Element$6<CBF>(value: Element$<CBF>): $mutable_map.MutableMap$<
+    string,
+    Element$<CBF>
+  >;
+  export function Element$Element$keyed_children<CBF>(value: Element$<CBF>): $mutable_map.MutableMap$<
+    string,
+    Element$<CBF>
+  >;
+
+  export class Text extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, key: string, content: string);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    key: string;
+    /** @deprecated */
+    content: string;
+  }
+  export function Element$Text<CBF>(
+    kind: number,
+    key: string,
+    content: string,
+  ): Element$<CBF>;
+  export function Element$isText<CBF>(value: any): value is Element$<unknown>;
+  export function Element$Text$0<CBF>(value: Element$<CBF>): number;
+  export function Element$Text$kind<CBF>(value: Element$<CBF>): number;
+  export function Element$Text$1<CBF>(value: Element$<CBF>): string;
+  export function Element$Text$key<CBF>(value: Element$<CBF>): string;
+  export function Element$Text$2<CBF>(value: Element$<CBF>): string;
+  export function Element$Text$content<CBF>(value: Element$<CBF>): string;
+
+  export class RawContainer<CBF> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      kind: number,
+      key: string,
+      namespace: string,
+      tag: string,
+      attributes: _.List<$vattr.Attribute$<CBF>>,
+      content: RawContent$,
+      compare: $option.Option$<(x0: RawContent$, x1: RawContent$) => boolean>
+    );
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    key: string;
+    /** @deprecated */
+    namespace: string;
+    /** @deprecated */
+    tag: string;
+    /** @deprecated */
+    attributes: _.List<$vattr.Attribute$<CBF>>;
+    /** @deprecated */
+    content: RawContent$;
+    /** @deprecated */
+    compare: $option.Option$<(x0: RawContent$, x1: RawContent$) => boolean>;
+  }
+  export function Element$RawContainer<CBF>(
+    kind: number,
+    key: string,
+    namespace: string,
+    tag: string,
+    attributes: _.List<$vattr.Attribute$<CBF>>,
+    content: RawContent$,
+    compare: $option.Option$<(x0: RawContent$, x1: RawContent$) => boolean>,
+  ): Element$<CBF>;
+  export function Element$isRawContainer<CBF>(
+    value: any,
+  ): value is Element$<unknown>;
+  export function Element$RawContainer$0<CBF>(value: Element$<CBF>): number;
+  export function Element$RawContainer$kind<CBF>(value: Element$<CBF>): number;
+  export function Element$RawContainer$1<CBF>(value: Element$<CBF>): string;
+  export function Element$RawContainer$key<CBF>(value: Element$<CBF>): string;
+  export function Element$RawContainer$2<CBF>(value: Element$<CBF>): string;
+  export function Element$RawContainer$namespace<CBF>(value: Element$<CBF>): string;
+  export function Element$RawContainer$3<CBF>(
+    value: Element$<CBF>,
+  ): string;
+  export function Element$RawContainer$tag<CBF>(value: Element$<CBF>): string;
+  export function Element$RawContainer$4<CBF>(value: Element$<CBF>): _.List<
+    $vattr.Attribute$<CBF>
+  >;
+  export function Element$RawContainer$attributes<CBF>(value: Element$<CBF>): _.List<
+    $vattr.Attribute$<CBF>
+  >;
+  export function Element$RawContainer$5<CBF>(value: Element$<CBF>): RawContent$;
+  export function Element$RawContainer$content<CBF>(value: Element$<CBF>): RawContent$;
+  export function Element$RawContainer$6<CBF>(
+    value: Element$<CBF>,
+  ): $option.Option$<(x0: RawContent$, x1: RawContent$) => boolean>;
+  export function Element$RawContainer$compare<CBF>(value: Element$<CBF>): $option.Option$<
+    (x0: RawContent$, x1: RawContent$) => boolean
+  >;
+
+  export class RawNode extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      kind: number,
+      key: string,
+      content: RawContent$,
+      compare: $option.Option$<(x0: RawContent$, x1: RawContent$) => boolean>
+    );
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    key: string;
+    /** @deprecated */
+    content: RawContent$;
+    /** @deprecated */
+    compare: $option.Option$<(x0: RawContent$, x1: RawContent$) => boolean>;
+  }
+  export function Element$RawNode<CBF>(
+    kind: number,
+    key: string,
+    content: RawContent$,
+    compare: $option.Option$<(x0: RawContent$, x1: RawContent$) => boolean>,
+  ): Element$<CBF>;
+  export function Element$isRawNode<CBF>(value: any): value is Element$<unknown>;
+  export function Element$RawNode$0<CBF>(value: Element$<CBF>): number;
+  export function Element$RawNode$kind<CBF>(value: Element$<CBF>): number;
+  export function Element$RawNode$1<CBF>(value: Element$<CBF>): string;
+  export function Element$RawNode$key<CBF>(value: Element$<CBF>): string;
+  export function Element$RawNode$2<CBF>(value: Element$<CBF>): RawContent$;
+  export function Element$RawNode$content<CBF>(value: Element$<CBF>): RawContent$;
+  export function Element$RawNode$3<CBF>(value: Element$<CBF>): $option.Option$<
+    (x0: RawContent$, x1: RawContent$) => boolean
+  >;
+  export function Element$RawNode$compare<CBF>(value: Element$<CBF>): $option.Option$<
+    (x0: RawContent$, x1: RawContent$) => boolean
+  >;
+
+  export class Map<CBF> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      kind: number,
+      key: string,
+      mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$,
+      child: Element$<CBF>
+    );
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    key: string;
+    /** @deprecated */
+    mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$;
+    /** @deprecated */
+    child: Element$<CBF>;
+  }
+  export function Element$Map<CBF>(
+    kind: number,
+    key: string,
+    mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$,
+    child: Element$<CBF>,
+  ): Element$<CBF>;
+  export function Element$isMap<CBF>(value: any): value is Element$<unknown>;
+  export function Element$Map$0<CBF>(value: Element$<CBF>): number;
+  export function Element$Map$kind<CBF>(value: Element$<CBF>): number;
+  export function Element$Map$1<CBF>(value: Element$<CBF>): string;
+  export function Element$Map$key<CBF>(value: Element$<CBF>): string;
+  export function Element$Map$2<CBF>(value: Element$<CBF>): (
+    x0: $dynamic.Dynamic$
+  ) => $dynamic.Dynamic$;
+  export function Element$Map$mapper<CBF>(value: Element$<CBF>): (
+    x0: $dynamic.Dynamic$
+  ) => $dynamic.Dynamic$;
+  export function Element$Map$3<CBF>(value: Element$<CBF>): Element$<CBF>;
+  export function Element$Map$child<CBF>(value: Element$<CBF>): Element$<CBF>;
+
+  export class Memo<CBF> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      kind: number,
+      key: string,
+      dependencies: _.List<$ref.Ref$>,
+      view: () => Element$<CBF>
+    );
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    key: string;
+    /** @deprecated */
+    dependencies: _.List<$ref.Ref$>;
+    /** @deprecated */
+    view: () => Element$<CBF>;
+  }
+  export function Element$Memo<CBF>(
+    kind: number,
+    key: string,
+    dependencies: _.List<$ref.Ref$>,
+    view: () => Element$<CBF>,
+  ): Element$<CBF>;
+  export function Element$isMemo<CBF>(value: any): value is Element$<unknown>;
+  export function Element$Memo$0<CBF>(value: Element$<CBF>): number;
+  export function Element$Memo$kind<CBF>(value: Element$<CBF>): number;
+  export function Element$Memo$1<CBF>(value: Element$<CBF>): string;
+  export function Element$Memo$key<CBF>(value: Element$<CBF>): string;
+  export function Element$Memo$2<CBF>(value: Element$<CBF>): _.List<$ref.Ref$>;
+  export function Element$Memo$dependencies<CBF>(value: Element$<CBF>): _.List<
+    $ref.Ref$
+  >;
+  export function Element$Memo$3<CBF>(value: Element$<CBF>): () => Element$<CBF>;
+  export function Element$Memo$view<CBF>(value: Element$<CBF>): () => Element$<
+    CBF
+  >;
+
+  export type Element$<CBF> = Fragment<CBF> | Element<CBF> | Text | RawContainer<
+    CBF
+  > | RawNode | Map<CBF> | Memo<CBF>;
+
+  export function Element$key<CBF>(value: Element$<CBF>): string;
+  export function Element$kind<CBF>(value: Element$<CBF>): number;
+
+  export type RawContentComparator = (x0: RawContent$, x1: RawContent$) => boolean;
+
+  export type RawContentSerializer = (x0: RawContent$) => string;
+
+  export type Memos = $mutable_map.MutableMap$<() => Element$<any>, Element$<any>>;
+
+  export type View = () => Element$<any>;
+
+  export const fragment_kind: number;
+
+  export const element_kind: number;
+
+  export const text_kind: number;
+
+  export const raw_container_kind: number;
+
+  export const raw_node_kind: number;
+
+  export const map_kind: number;
+
+  export const memo_kind: number;
+
+  export function to_raw_content(value: any): RawContent$;
+
+  export function raw_content_to_string(content: RawContent$): string;
+
+  export function empty_keyed_children(): $mutable_map.MutableMap$<
+    string,
+    Element$<any>
+  >;
+
+  export function fragment<CBS>(
+    key: string,
+    children: _.List<Element$<CBS>>,
+    keyed_children: $mutable_map.MutableMap$<string, Element$<CBS>>
+  ): Element$<CBS>;
+
+  export function element<CBZ>(
+    key: string,
+    namespace: string,
+    tag: string,
+    attributes: _.List<$vattr.Attribute$<CBZ>>,
+    children: _.List<Element$<CBZ>>,
+    keyed_children: $mutable_map.MutableMap$<string, Element$<CBZ>>
+  ): Element$<CBZ>;
+
+  export function text(key: string, content: string): Element$<any>;
+
+  export function raw_container<CCK, CCN>(
+    key: string,
+    namespace: string,
+    tag: string,
+    attributes: _.List<$vattr.Attribute$<CCK>>,
+    content: CCN,
+    compare: $option.Option$<(x0: CCN, x1: CCN) => boolean>
+  ): Element$<CCK>;
+
+  export function raw_node<CCQ>(
+    key: string,
+    content: CCQ,
+    compare: $option.Option$<(x0: CCQ, x1: CCQ) => boolean>
+  ): Element$<any>;
+
+  export function map<CCU, CCW>(element: Element$<CCU>, mapper: (x0: CCU) => CCW): Element$<
+    CCW
+  >;
+
+  export function memo<CCZ>(
+    key: string,
+    dependencies: _.List<$ref.Ref$>,
+    view: () => Element$<CCZ>
+  ): Element$<CCZ>;
+
+  export function to_keyed<CDE>(key: string, node: Element$<CDE>): Element$<CDE>;
+
+  export function to_json<CDH>(
+    node: Element$<CDH>,
+    memos: $mutable_map.MutableMap$<() => Element$<CDH>, Element$<CDH>>,
+    serialize_raw_content: (x0: RawContent$) => string
+  ): $json.Json$;
+
+}
+
+declare module '*/agnostic/vdom/patch.mjs' {
+  import type * as $json from "../../../gleam_json/gleam/json.d.mts";
+  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../gleam.d.mts";
+
+  export class Patch<DTT> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      index: number,
+      path: _.List<number>,
+      removed: number,
+      changes: _.List<Change$<DTT>>,
+      children: _.List<Patch$<DTT>>
+    );
+    /** @deprecated */
+    index: number;
+    /** @deprecated */
+    path: _.List<number>;
+    /** @deprecated */
+    removed: number;
+    /** @deprecated */
+    changes: _.List<Change$<DTT>>;
+    /** @deprecated */
+    children: _.List<Patch$<DTT>>;
+  }
+  export function Patch$Patch<DTT>(
+    index: number,
+    path: _.List<number>,
+    removed: number,
+    changes: _.List<Change$<DTT>>,
+    children: _.List<Patch$<DTT>>,
+  ): Patch$<DTT>;
+  export function Patch$isPatch<DTT>(value: any): value is Patch$<unknown>;
+  export function Patch$Patch$0<DTT>(value: Patch$<DTT>): number;
+  export function Patch$Patch$index<DTT>(value: Patch$<DTT>): number;
+  export function Patch$Patch$1<DTT>(value: Patch$<DTT>): _.List<number>;
+  export function Patch$Patch$path<DTT>(value: Patch$<DTT>): _.List<number>;
+  export function Patch$Patch$2<DTT>(value: Patch$<DTT>): number;
+  export function Patch$Patch$removed<DTT>(value: Patch$<DTT>): number;
+  export function Patch$Patch$3<DTT>(value: Patch$<DTT>): _.List<Change$<DTT>>;
+  export function Patch$Patch$changes<DTT>(value: Patch$<DTT>): _.List<
+    Change$<DTT>
+  >;
+  export function Patch$Patch$4<DTT>(value: Patch$<DTT>): _.List<Patch$<DTT>>;
+  export function Patch$Patch$children<DTT>(value: Patch$<DTT>): _.List<
+    Patch$<DTT>
+  >;
+
+  export type Patch$<DTT> = Patch<DTT>;
+
+  export class ReplaceText extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, content: string);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    content: string;
+  }
+  export function Change$ReplaceText<DTU>(
+    kind: number,
+    content: string,
+  ): Change$<DTU>;
+  export function Change$isReplaceText<DTU>(
+    value: any,
+  ): value is Change$<unknown>;
+  export function Change$ReplaceText$0<DTU>(value: Change$<DTU>): number;
+  export function Change$ReplaceText$kind<DTU>(value: Change$<DTU>): number;
+  export function Change$ReplaceText$1<DTU>(value: Change$<DTU>): string;
+  export function Change$ReplaceText$content<DTU>(value: Change$<DTU>): string;
+
+  export class ReplaceRawContent extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, content: $vnode.RawContent$);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    content: $vnode.RawContent$;
+  }
+  export function Change$ReplaceRawContent<DTU>(
+    kind: number,
+    content: $vnode.RawContent$,
+  ): Change$<DTU>;
+  export function Change$isReplaceRawContent<DTU>(
+    value: any,
+  ): value is Change$<unknown>;
+  export function Change$ReplaceRawContent$0<DTU>(value: Change$<DTU>): number;
+  export function Change$ReplaceRawContent$kind<DTU>(value: Change$<DTU>): number;
+  export function Change$ReplaceRawContent$1<DTU>(value: Change$<DTU>): $vnode.RawContent$;
+  export function Change$ReplaceRawContent$content<DTU>(
+    value: Change$<DTU>,
+  ): $vnode.RawContent$;
+
+  export class ReplaceRawNode<DTU> extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, with$: $vnode.Element$<DTU>);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    with$: $vnode.Element$<DTU>;
+  }
+  export function Change$ReplaceRawNode<DTU>(
+    kind: number,
+    with$: $vnode.Element$<DTU>,
+  ): Change$<DTU>;
+  export function Change$isReplaceRawNode<DTU>(
+    value: any,
+  ): value is Change$<unknown>;
+  export function Change$ReplaceRawNode$0<DTU>(value: Change$<DTU>): number;
+  export function Change$ReplaceRawNode$kind<DTU>(value: Change$<DTU>): number;
+  export function Change$ReplaceRawNode$1<DTU>(value: Change$<DTU>): $vnode.Element$<
+    DTU
+  >;
+  export function Change$ReplaceRawNode$with<DTU>(value: Change$<DTU>): $vnode.Element$<
+    DTU
+  >;
+
+  export class Update<DTU> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      kind: number,
+      added: _.List<$vattr.Attribute$<DTU>>,
+      removed: _.List<$vattr.Attribute$<DTU>>
+    );
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    added: _.List<$vattr.Attribute$<DTU>>;
+    /** @deprecated */
+    removed: _.List<$vattr.Attribute$<DTU>>;
+  }
+  export function Change$Update<DTU>(
+    kind: number,
+    added: _.List<$vattr.Attribute$<DTU>>,
+    removed: _.List<$vattr.Attribute$<DTU>>,
+  ): Change$<DTU>;
+  export function Change$isUpdate<DTU>(value: any): value is Change$<unknown>;
+  export function Change$Update$0<DTU>(value: Change$<DTU>): number;
+  export function Change$Update$kind<DTU>(value: Change$<DTU>): number;
+  export function Change$Update$1<DTU>(value: Change$<DTU>): _.List<
+    $vattr.Attribute$<DTU>
+  >;
+  export function Change$Update$added<DTU>(value: Change$<DTU>): _.List<
+    $vattr.Attribute$<DTU>
+  >;
+  export function Change$Update$2<DTU>(value: Change$<DTU>): _.List<
+    $vattr.Attribute$<DTU>
+  >;
+  export function Change$Update$removed<DTU>(value: Change$<DTU>): _.List<
+    $vattr.Attribute$<DTU>
+  >;
+
+  export class Move extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, key: string, before: number);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    key: string;
+    /** @deprecated */
+    before: number;
+  }
+  export function Change$Move<DTU>(
+    kind: number,
+    key: string,
+    before: number,
+  ): Change$<DTU>;
+  export function Change$isMove<DTU>(value: any): value is Change$<unknown>;
+  export function Change$Move$0<DTU>(value: Change$<DTU>): number;
+  export function Change$Move$kind<DTU>(value: Change$<DTU>): number;
+  export function Change$Move$1<DTU>(value: Change$<DTU>): string;
+  export function Change$Move$key<DTU>(value: Change$<DTU>): string;
+  export function Change$Move$2<DTU>(value: Change$<DTU>): number;
+  export function Change$Move$before<DTU>(value: Change$<DTU>): number;
+
+  export class Replace<DTU> extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, index: number, with$: $vnode.Element$<DTU>);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    index: number;
+    /** @deprecated */
+    with$: $vnode.Element$<DTU>;
+  }
+  export function Change$Replace<DTU>(
+    kind: number,
+    index: number,
+    with$: $vnode.Element$<DTU>,
+  ): Change$<DTU>;
+  export function Change$isReplace<DTU>(value: any): value is Change$<unknown>;
+  export function Change$Replace$0<DTU>(value: Change$<DTU>): number;
+  export function Change$Replace$kind<DTU>(value: Change$<DTU>): number;
+  export function Change$Replace$1<DTU>(value: Change$<DTU>): number;
+  export function Change$Replace$index<DTU>(value: Change$<DTU>): number;
+  export function Change$Replace$2<DTU>(value: Change$<DTU>): $vnode.Element$<DTU>;
+  export function Change$Replace$with<DTU>(
+    value: Change$<DTU>,
+  ): $vnode.Element$<DTU>;
+
+  export class Remove extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, index: number);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    index: number;
+  }
+  export function Change$Remove<DTU>(kind: number, index: number): Change$<DTU>;
+  export function Change$isRemove<DTU>(value: any): value is Change$<unknown>;
+  export function Change$Remove$0<DTU>(value: Change$<DTU>): number;
+  export function Change$Remove$kind<DTU>(value: Change$<DTU>): number;
+  export function Change$Remove$1<DTU>(value: Change$<DTU>): number;
+  export function Change$Remove$index<DTU>(value: Change$<DTU>): number;
+
+  export class Insert<DTU> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      kind: number,
+      children: _.List<$vnode.Element$<DTU>>,
+      before: number
+    );
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    children: _.List<$vnode.Element$<DTU>>;
+    /** @deprecated */
+    before: number;
+  }
+  export function Change$Insert<DTU>(
+    kind: number,
+    children: _.List<$vnode.Element$<DTU>>,
+    before: number,
+  ): Change$<DTU>;
+  export function Change$isInsert<DTU>(value: any): value is Change$<unknown>;
+  export function Change$Insert$0<DTU>(value: Change$<DTU>): number;
+  export function Change$Insert$kind<DTU>(value: Change$<DTU>): number;
+  export function Change$Insert$1<DTU>(value: Change$<DTU>): _.List<
+    $vnode.Element$<DTU>
+  >;
+  export function Change$Insert$children<DTU>(value: Change$<DTU>): _.List<
+    $vnode.Element$<DTU>
+  >;
+  export function Change$Insert$2<DTU>(value: Change$<DTU>): number;
+  export function Change$Insert$before<DTU>(value: Change$<DTU>): number;
+
+  export type Change$<DTU> = ReplaceText | ReplaceRawContent | ReplaceRawNode<DTU> | Update<
+    DTU
+  > | Move | Replace<DTU> | Remove | Insert<DTU>;
+
+  export function Change$kind<DTU>(value: Change$<DTU>): number;
+
+  export const replace_text_kind: number;
+
+  export const replace_raw_content_kind: number;
+
+  export const replace_raw_node_kind: number;
+
+  export const update_kind: number;
+
+  export const move_kind: number;
+
+  export const remove_kind: number;
+
+  export const replace_kind: number;
+
+  export const insert_kind: number;
+
+  export function new$<DTV>(
+    index: number,
+    removed: number,
+    changes: _.List<Change$<DTV>>,
+    children: _.List<Patch$<DTV>>
+  ): Patch$<DTV>;
+
+  export function replace_text(content: string): Change$<any>;
+
+  export function replace_raw_content(content: $vnode.RawContent$): Change$<any>;
+
+  export function replace_raw_node<DUF>(with$: $vnode.Element$<DUF>): Change$<DUF>;
+
+  export function update<DUI>(
+    added: _.List<$vattr.Attribute$<DUI>>,
+    removed: _.List<$vattr.Attribute$<DUI>>
+  ): Change$<DUI>;
+
+  export function move(key: string, before: number): Change$<any>;
+
+  export function remove(index: number): Change$<any>;
+
+  export function replace<DUS>(index: number, with$: $vnode.Element$<DUS>): Change$<
+    DUS
+  >;
+
+  export function insert<DUV>(
+    children: _.List<$vnode.Element$<DUV>>,
+    before: number
+  ): Change$<DUV>;
+
+  export function is_empty(patch: Patch$<any>): boolean;
+
+  export function add_parent<DVB>(child: Patch$<DVB>, index: number): Patch$<DVB>;
+
+  export function to_json<DVE>(
+    patch: Patch$<DVE>,
+    memos: $mutable_map.MutableMap$<
+      () => $vnode.Element$<DVE>,
+      $vnode.Element$<DVE>
+    >,
+    serialize_raw_content: (x0: $vnode.RawContent$) => string
+  ): $json.Json$;
+
+}
+
+declare module '*/agnostic/vdom/vattr.mjs' {
+  import type * as $json from "../../../gleam_json/gleam/json.d.mts";
+  import type * as $decode from "../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
+  import type * as $order from "../../../gleam_stdlib/gleam/order.d.mts";
+  import type * as _ from "../../gleam.d.mts";
+
+  export class Attribute extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, name: string, value: string);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    name: string;
+    /** @deprecated */
+    value: string;
+  }
+  export function Attribute$Attribute<ASL>(
+    kind: number,
+    name: string,
+    value: string,
+  ): Attribute$<ASL>;
+  export function Attribute$isAttribute<ASL>(
+    value: any,
+  ): value is Attribute$<unknown>;
+  export function Attribute$Attribute$0<ASL>(value: Attribute$<ASL>): number;
+  export function Attribute$Attribute$kind<ASL>(value: Attribute$<ASL>): number;
+  export function Attribute$Attribute$1<ASL>(value: Attribute$<ASL>): string;
+  export function Attribute$Attribute$name<ASL>(value: Attribute$<ASL>): string;
+  export function Attribute$Attribute$2<ASL>(value: Attribute$<ASL>): string;
+  export function Attribute$Attribute$value<ASL>(value: Attribute$<ASL>): string;
+
+  export class Property extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number, name: string, value: $json.Json$);
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    name: string;
+    /** @deprecated */
+    value: $json.Json$;
+  }
+  export function Attribute$Property<ASL>(
+    kind: number,
+    name: string,
+    value: $json.Json$,
+  ): Attribute$<ASL>;
+  export function Attribute$isProperty<ASL>(
+    value: any,
+  ): value is Attribute$<unknown>;
+  export function Attribute$Property$0<ASL>(value: Attribute$<ASL>): number;
+  export function Attribute$Property$kind<ASL>(value: Attribute$<ASL>): number;
+  export function Attribute$Property$1<ASL>(value: Attribute$<ASL>): string;
+  export function Attribute$Property$name<ASL>(value: Attribute$<ASL>): string;
+  export function Attribute$Property$2<ASL>(value: Attribute$<ASL>): $json.Json$;
+  export function Attribute$Property$value<ASL>(value: Attribute$<ASL>): $json.Json$;
+
+  export class Event<ASL> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      kind: number,
+      name: string,
+      handler: $decode.Decoder$<Handler$<ASL>>,
+      include: _.List<string>,
+      prevent_default: EventBehaviour$,
+      stop_propagation: EventBehaviour$,
+      debounce: number,
+      throttle: number
+    );
+    /** @deprecated */
+    kind: number;
+    /** @deprecated */
+    name: string;
+    /** @deprecated */
+    handler: $decode.Decoder$<Handler$<ASL>>;
+    /** @deprecated */
+    include: _.List<string>;
+    /** @deprecated */
+    prevent_default: EventBehaviour$;
+    /** @deprecated */
+    stop_propagation: EventBehaviour$;
+    /** @deprecated */
+    debounce: number;
+    /** @deprecated */
+    throttle: number;
+  }
+  export function Attribute$Event<ASL>(
+    kind: number,
+    name: string,
+    handler: $decode.Decoder$<Handler$<ASL>>,
+    include: _.List<string>,
+    prevent_default: EventBehaviour$,
+    stop_propagation: EventBehaviour$,
+    debounce: number,
+    throttle: number,
+  ): Attribute$<ASL>;
+  export function Attribute$isEvent<ASL>(
+    value: any,
+  ): value is Attribute$<unknown>;
+  export function Attribute$Event$0<ASL>(value: Attribute$<ASL>): number;
+  export function Attribute$Event$kind<ASL>(value: Attribute$<ASL>): number;
+  export function Attribute$Event$1<ASL>(value: Attribute$<ASL>): string;
+  export function Attribute$Event$name<ASL>(value: Attribute$<ASL>): string;
+  export function Attribute$Event$2<ASL>(value: Attribute$<ASL>): $decode.Decoder$<
+    Handler$<ASL>
+  >;
+  export function Attribute$Event$handler<ASL>(value: Attribute$<ASL>): $decode.Decoder$<
+    Handler$<ASL>
+  >;
+  export function Attribute$Event$3<ASL>(value: Attribute$<ASL>): _.List<string>;
+  export function Attribute$Event$include<ASL>(value: Attribute$<ASL>): _.List<
+    string
+  >;
+  export function Attribute$Event$4<ASL>(value: Attribute$<ASL>): EventBehaviour$;
+  export function Attribute$Event$prevent_default<ASL>(value: Attribute$<ASL>): EventBehaviour$;
+  export function Attribute$Event$5<ASL>(
+    value: Attribute$<ASL>,
+  ): EventBehaviour$;
+  export function Attribute$Event$stop_propagation<ASL>(value: Attribute$<ASL>): EventBehaviour$;
+  export function Attribute$Event$6<ASL>(
+    value: Attribute$<ASL>,
+  ): number;
+  export function Attribute$Event$debounce<ASL>(value: Attribute$<ASL>): number;
+  export function Attribute$Event$7<ASL>(value: Attribute$<ASL>): number;
+  export function Attribute$Event$throttle<ASL>(value: Attribute$<ASL>): number;
+
+  export type Attribute$<ASL> = Attribute | Property | Event<ASL>;
+
+  export function Attribute$kind<ASL>(value: Attribute$<ASL>): number;
+  export function Attribute$name<ASL>(value: Attribute$<ASL>): string;
+
+  export class Handler<ASM> extends _.CustomType {
+    /** @deprecated */
+    constructor(prevent_default: boolean, stop_propagation: boolean, message: ASM);
+    /** @deprecated */
+    prevent_default: boolean;
+    /** @deprecated */
+    stop_propagation: boolean;
+    /** @deprecated */
+    message: ASM;
+  }
+  export function Handler$Handler<ASM>(
+    prevent_default: boolean,
+    stop_propagation: boolean,
+    message: ASM,
+  ): Handler$<ASM>;
+  export function Handler$isHandler<ASM>(value: any): value is Handler$<unknown>;
+  export function Handler$Handler$0<ASM>(value: Handler$<ASM>): boolean;
+  export function Handler$Handler$prevent_default<ASM>(value: Handler$<ASM>): boolean;
+  export function Handler$Handler$1<ASM>(
+    value: Handler$<ASM>,
+  ): boolean;
+  export function Handler$Handler$stop_propagation<ASM>(value: Handler$<ASM>): boolean;
+  export function Handler$Handler$2<ASM>(
+    value: Handler$<ASM>,
+  ): ASM;
+  export function Handler$Handler$message<ASM>(value: Handler$<ASM>): ASM;
+
+  export type Handler$<ASM> = Handler<ASM>;
+
+  export class Never extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number);
+    /** @deprecated */
+    kind: number;
+  }
+  export function EventBehaviour$Never(kind: number): EventBehaviour$;
+  export function EventBehaviour$isNever(value: any): value is EventBehaviour$;
+  export function EventBehaviour$Never$0(value: EventBehaviour$): number;
+  export function EventBehaviour$Never$kind(value: EventBehaviour$): number;
+
+  export class Possible extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number);
+    /** @deprecated */
+    kind: number;
+  }
+  export function EventBehaviour$Possible(kind: number): EventBehaviour$;
+  export function EventBehaviour$isPossible(value: any): value is EventBehaviour$;
+  export function EventBehaviour$Possible$0(value: EventBehaviour$): number;
+  export function EventBehaviour$Possible$kind(value: EventBehaviour$): number;
+
+  export class Always extends _.CustomType {
+    /** @deprecated */
+    constructor(kind: number);
+    /** @deprecated */
+    kind: number;
+  }
+  export function EventBehaviour$Always(kind: number): EventBehaviour$;
+  export function EventBehaviour$isAlways(value: any): value is EventBehaviour$;
+  export function EventBehaviour$Always$0(value: EventBehaviour$): number;
+  export function EventBehaviour$Always$kind(value: EventBehaviour$): number;
+
+  export type EventBehaviour$ = Never | Possible | Always;
+
+  export function EventBehaviour$kind(value: EventBehaviour$): number;
+
+  export const attribute_kind: number;
+
+  export const property_kind: number;
+
+  export const event_kind: number;
+
+  export const never_kind: number;
+
+  export const never: EventBehaviour$;
+
+  export const possible_kind: number;
+
+  export const possible: EventBehaviour$;
+
+  export const always_kind: number;
+
+  export const always: EventBehaviour$;
+
+  export function attribute(name: string, value: string): Attribute$<any>;
+
+  export function property(name: string, value: $json.Json$): Attribute$<any>;
+
+  export function event<ASR>(
+    name: string,
+    handler: $decode.Decoder$<Handler$<ASR>>,
+    include: _.List<string>,
+    prevent_default: EventBehaviour$,
+    stop_propagation: EventBehaviour$,
+    debounce: number,
+    throttle: number
+  ): Attribute$<ASR>;
+
+  export function merge<ATB>(
+    attributes: _.List<Attribute$<ATB>>,
+    merged: _.List<Attribute$<ATB>>
+  ): _.List<Attribute$<ATB>>;
+
+  export function compare<ATI>(a: Attribute$<ATI>, b: Attribute$<ATI>): $order.Order$;
+
+  export function prepare<ASW>(attributes: _.List<Attribute$<ASW>>): _.List<
+    Attribute$<ASW>
+  >;
+
+  export function to_json(attribute: Attribute$<any>): $json.Json$;
+
+}
+
+declare module '*/agnostic/vdom/cache.mjs' {
+  import type * as $dynamic from "../../../gleam_stdlib/gleam/dynamic.d.mts";
+  import type * as $decode from "../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
+  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
+  import type * as $path from "../../agnostic/vdom/path.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../gleam.d.mts";
+
+  declare class Cache<EGC> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      events: Events$<EGC>,
+      vdoms: $mutable_map.MutableMap$<
+        () => $vnode.Element$<EGC>,
+        $vnode.Element$<EGC>
+      >,
+      old_vdoms: $mutable_map.MutableMap$<
+        () => $vnode.Element$<EGC>,
+        $vnode.Element$<EGC>
+      >,
+      dispatched_paths: _.List<string>,
+      next_dispatched_paths: _.List<string>
+    );
+    /** @deprecated */
+    events: Events$<EGC>;
+    /** @deprecated */
+    vdoms: $mutable_map.MutableMap$<
+      () => $vnode.Element$<EGC>,
+      $vnode.Element$<EGC>
+    >;
+    /** @deprecated */
+    old_vdoms: $mutable_map.MutableMap$<
+      () => $vnode.Element$<EGC>,
+      $vnode.Element$<EGC>
+    >;
+    /** @deprecated */
+    dispatched_paths: _.List<string>;
+    /** @deprecated */
+    next_dispatched_paths: _.List<string>;
+  }
+
+  export type Cache$<EGC> = Cache<EGC>;
+
+  declare class Events<EGD> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      handlers: $mutable_map.MutableMap$<
+        string,
+        $decode.Decoder$<$vattr.Handler$<EGD>>
+      >,
+      children: $mutable_map.MutableMap$<string, Child$<EGD>>
+    );
+    /** @deprecated */
+    handlers: $mutable_map.MutableMap$<
+      string,
+      $decode.Decoder$<$vattr.Handler$<EGD>>
+    >;
+    /** @deprecated */
+    children: $mutable_map.MutableMap$<string, Child$<EGD>>;
+  }
+
+  export type Events$<EGD> = Events<EGD>;
+
+  declare class Child<EGE> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$,
+      events: Events$<EGE>
+    );
+    /** @deprecated */
+    mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$;
+    /** @deprecated */
+    events: Events$<EGE>;
+  }
+
+  type Child$<EGE> = Child<EGE>;
+
+  declare class AddedChildren<EGF> extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      handlers: $mutable_map.MutableMap$<
+        string,
+        $decode.Decoder$<$vattr.Handler$<EGF>>
+      >,
+      children: $mutable_map.MutableMap$<string, Child$<EGF>>,
+      vdoms: $mutable_map.MutableMap$<
+        () => $vnode.Element$<EGF>,
+        $vnode.Element$<EGF>
+      >
+    );
+    /** @deprecated */
+    handlers: $mutable_map.MutableMap$<
+      string,
+      $decode.Decoder$<$vattr.Handler$<EGF>>
+    >;
+    /** @deprecated */
+    children: $mutable_map.MutableMap$<string, Child$<EGF>>;
+    /** @deprecated */
+    vdoms: $mutable_map.MutableMap$<
+      () => $vnode.Element$<EGF>,
+      $vnode.Element$<EGF>
+    >;
+  }
+
+  type AddedChildren$<EGF> = AddedChildren<EGF>;
+
+  declare class DecodedEvent<EGG> extends _.CustomType {
+    /** @deprecated */
+    constructor(path: string, handler: $vattr.Handler$<EGG>);
+    /** @deprecated */
+    path: string;
+    /** @deprecated */
+    handler: $vattr.Handler$<EGG>;
+  }
+
+  declare class DispatchedEvent extends _.CustomType {
+    /** @deprecated */
+    constructor(path: string);
+    /** @deprecated */
+    path: string;
+  }
+
+  export type DecodedEvent$<EGG> = DecodedEvent<EGG> | DispatchedEvent;
+
+  export type Mapper = (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$;
+
+  export function compose_mapper(
+    mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$,
+    child_mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$
+  ): (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$;
+
+  export function new_events(): Events$<any>;
+
+  export function new$(): Cache$<any>;
+
+  export function add_children<EJV>(
+    cache: Cache$<EJV>,
+    events: Events$<EJV>,
+    path: $path.Path$,
+    child_index: number,
+    nodes: _.List<$vnode.Element$<EJV>>
+  ): [Cache$<EJV>, Events$<EJV>];
+
+  export function add_child<EJE>(
+    cache: Cache$<EJE>,
+    events: Events$<EJE>,
+    parent: $path.Path$,
+    index: number,
+    child: $vnode.Element$<EJE>
+  ): [Cache$<EJE>, Events$<EJE>];
+
+  export function from_node<EGL>(root: $vnode.Element$<EGL>): Cache$<EGL>;
+
+  export function tick<EGO>(cache: Cache$<EGO>): Cache$<EGO>;
+
+  export function events<EGR>(cache: Cache$<EGR>): Events$<EGR>;
+
+  export function update_events<EGU>(cache: Cache$<EGU>, events: Events$<EGU>): Cache$<
+    EGU
+  >;
+
+  export function memos<EGY>(cache: Cache$<EGY>): $mutable_map.MutableMap$<
+    () => $vnode.Element$<EGY>,
+    $vnode.Element$<EGY>
+  >;
+
+  export function get_old_memo<EHB>(
+    cache: Cache$<EHB>,
+    old: () => $vnode.Element$<EHB>,
+    new$: () => $vnode.Element$<EHB>
+  ): $vnode.Element$<EHB>;
+
+  export function keep_memo<EHG>(
+    cache: Cache$<EHG>,
+    old: () => $vnode.Element$<EHG>,
+    new$: () => $vnode.Element$<EHG>
+  ): Cache$<EHG>;
+
+  export function add_memo<EHQ>(
+    cache: Cache$<EHQ>,
+    new$: () => $vnode.Element$<EHQ>,
+    node: $vnode.Element$<EHQ>
+  ): Cache$<EHQ>;
+
+  export function get_subtree<EHV>(
+    events: Events$<EHV>,
+    path: string,
+    old_mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$
+  ): Events$<EHV>;
+
+  export function update_subtree<EHY>(
+    parent: Events$<EHY>,
+    path: string,
+    mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$,
+    events: Events$<EHY>
+  ): Events$<EHY>;
+
+  export function add_event<EIC>(
+    events: Events$<EIC>,
+    path: $path.Path$,
+    name: string,
+    handler: $decode.Decoder$<$vattr.Handler$<EIC>>
+  ): Events$<EIC>;
+
+  export function remove_event<EIS>(
+    events: Events$<EIS>,
+    path: $path.Path$,
+    name: string
+  ): Events$<EIS>;
+
+  export function remove_child<EKO>(
+    cache: Cache$<EKO>,
+    events: Events$<EKO>,
+    parent: $path.Path$,
+    child_index: number,
+    child: $vnode.Element$<EKO>
+  ): Events$<EKO>;
+
+  export function replace_child<ELQ>(
+    cache: Cache$<ELQ>,
+    events: Events$<ELQ>,
+    parent: $path.Path$,
+    child_index: number,
+    prev: $vnode.Element$<ELQ>,
+    next: $vnode.Element$<ELQ>
+  ): [Cache$<ELQ>, Events$<ELQ>];
+
+  export function decode(
+    cache: Cache$<any>,
+    path: string,
+    name: string,
+    event: $dynamic.Dynamic$
+  ): DecodedEvent$<any>;
+
+  export function dispatch<EME>(cache: Cache$<EME>, event: DecodedEvent$<EME>): [
+    Cache$<EME>,
+    _.Result<$vattr.Handler$<EME>, undefined>
+  ];
+
+  export function handle<EMI>(
+    cache: Cache$<EMI>,
+    path: string,
+    name: string,
+    event: $dynamic.Dynamic$
+  ): [Cache$<EMI>, _.Result<$vattr.Handler$<EMI>, undefined>];
+
+  export function has_dispatched_events(cache: Cache$<any>, path: $path.Path$): boolean;
+
+}
+
+declare module '*/agnostic/vdom/path.mjs' {
+  import type * as _ from "../../gleam.d.mts";
+
+  declare class Root extends _.CustomType {}
+
+  declare class Key extends _.CustomType {
+    /** @deprecated */
+    constructor(key: string, parent: Path$);
+    /** @deprecated */
+    key: string;
+    /** @deprecated */
+    parent: Path$;
+  }
+
+  declare class Index extends _.CustomType {
+    /** @deprecated */
+    constructor(index: number, parent: Path$);
+    /** @deprecated */
+    index: number;
+    /** @deprecated */
+    parent: Path$;
+  }
+
+  declare class Subtree extends _.CustomType {
+    /** @deprecated */
+    constructor(parent: Path$);
+    /** @deprecated */
+    parent: Path$;
+  }
+
+  export type Path$ = Root | Key | Index | Subtree;
+
+  export const separator_subtree: string;
+
+  export const separator_element: string;
+
+  export const separator_event: string;
+
+  export const root: Path$;
+
+  export function to_string(path: Path$): string;
+
+  export function matches(path: Path$, candidates: _.List<string>): boolean;
+
+  export function split_subtree_path(path: string): _.List<string>;
+
+  export function add(parent: Path$, index: number, key: string): Path$;
+
+  export function subtree(path: Path$): Path$;
+
+  export function event(path: Path$, event: string): string;
+
+  export function child(path: Path$): string;
+
+}
+
+declare module '*/agnostic/platform/opentui.mjs' {
+  import type * as $platform from "../../agnostic/platform.d.mts";
+  import type * as _ from "../../gleam.d.mts";
+
+  export type Node$ = any;
+
+  export type Event$ = any;
+
+  export type Value$ = any;
+
+  export type Renderer$ = any;
+
+  declare class Config extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      exit_on_ctrl_c: boolean,
+      use_alternate_screen: boolean,
+      use_mouse: boolean,
+      target_fps: number,
+      max_fps: number,
+      debounce_delay: number,
+      auto_focus: boolean,
+      enable_mouse_movement: boolean,
+      background_color: _.Result<string, undefined>,
+      use_console: boolean,
+      open_console_on_error: boolean,
+      use_kitty_keyboard: boolean,
+      gather_stats: boolean,
+      max_stat_samples: number,
+      use_thread: boolean,
+      remote: boolean,
+      custom_elements: _.List<[string, (x0: Renderer$) => Node$]>
+    );
+    /** @deprecated */
+    exit_on_ctrl_c: boolean;
+    /** @deprecated */
+    use_alternate_screen: boolean;
+    /** @deprecated */
+    use_mouse: boolean;
+    /** @deprecated */
+    target_fps: number;
+    /** @deprecated */
+    max_fps: number;
+    /** @deprecated */
+    debounce_delay: number;
+    /** @deprecated */
+    auto_focus: boolean;
+    /** @deprecated */
+    enable_mouse_movement: boolean;
+    /** @deprecated */
+    background_color: _.Result<string, undefined>;
+    /** @deprecated */
+    use_console: boolean;
+    /** @deprecated */
+    open_console_on_error: boolean;
+    /** @deprecated */
+    use_kitty_keyboard: boolean;
+    /** @deprecated */
+    gather_stats: boolean;
+    /** @deprecated */
+    max_stat_samples: number;
+    /** @deprecated */
+    use_thread: boolean;
+    /** @deprecated */
+    remote: boolean;
+    /** @deprecated */
+    custom_elements: _.List<[string, (x0: Renderer$) => Node$]>;
+  }
+
+  export type Config$ = Config;
+
+  export type ElementFactory = (x0: Renderer$) => Node$;
+
+  export function exit_on_ctrl_c(config: Config$, value: boolean): Config$;
+
+  export function use_alternate_screen(config: Config$, value: boolean): Config$;
+
+  export function use_mouse(config: Config$, value: boolean): Config$;
+
+  export function target_fps(config: Config$, value: number): Config$;
+
+  export function max_fps(config: Config$, value: number): Config$;
+
+  export function debounce_delay(config: Config$, value: number): Config$;
+
+  export function auto_focus(config: Config$, value: boolean): Config$;
+
+  export function enable_mouse_movement(config: Config$, value: boolean): Config$;
+
+  export function background_color(config: Config$, value: string): Config$;
+
+  export function use_console(config: Config$, value: boolean): Config$;
+
+  export function open_console_on_error(config: Config$, value: boolean): Config$;
+
+  export function use_kitty_keyboard(config: Config$, value: boolean): Config$;
+
+  export function gather_stats(config: Config$, value: boolean): Config$;
+
+  export function max_stat_samples(config: Config$, value: number): Config$;
+
+  export function use_thread(config: Config$, value: boolean): Config$;
+
+  export function remote(config: Config$, value: boolean): Config$;
+
+  export function register_element(
+    config: Config$,
+    tag: string,
+    factory: (x0: Renderer$) => Node$
+  ): Config$;
+
+  export function default_config(): Config$;
+
+  export function platform(
+    config: Config$,
+    callback: (
+      x0: $platform.Platform$<Node$, Renderer$, Value$, Event$, any, any>
+    ) => undefined
+  ): undefined;
+
+}
+
+declare module '*/agnostic/platform/dom.mjs' {
+  import type * as $set from "../../../gleam_stdlib/gleam/set.d.mts";
+  import type * as $string_tree from "../../../gleam_stdlib/gleam/string_tree.d.mts";
+  import type * as $platform from "../../agnostic/platform.d.mts";
+  import type * as $serializer from "../../agnostic/serializer.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../gleam.d.mts";
+
+  export type DomNode$ = any;
+
+  export type DomEvent$ = any;
+
+  declare class SerializerConfig extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      void_elements: $set.Set$<string>,
+      self_closing_tags: $set.Set$<string>
+    );
+    /** @deprecated */
+    void_elements: $set.Set$<string>;
+    /** @deprecated */
+    self_closing_tags: $set.Set$<string>;
+  }
+
+  export type SerializerConfig$ = SerializerConfig;
+
+  declare class Html extends _.CustomType {}
+
+  declare class HeadOnly extends _.CustomType {}
+
+  declare class BodyOnly extends _.CustomType {}
+
+  declare class HeadAndBody extends _.CustomType {}
+
+  declare class Other extends _.CustomType {}
+
+  type DocumentType$ = Html | HeadOnly | BodyOnly | HeadAndBody | Other;
+
+  export function platform_strict(x0: DomNode$): $platform.Platform$<
+    DomNode$,
+    DomNode$,
+    DomNode$,
+    DomEvent$,
+    any,
+    DomNode$
+  >;
+
+  export function platform(target: string): _.Result<
+    $platform.Platform$<DomNode$, DomNode$, DomNode$, DomEvent$, any, DomNode$>,
+    $platform.PlatformError$
+  >;
+
+  export function attrs_to_string_tree(
+    key: string,
+    namespace: string,
+    parent_namespace: string,
+    attributes: _.List<$vattr.Attribute$<any>>
+  ): $string_tree.StringTree$;
+
+  export function to_string_tree(
+    node: $vnode.Element$<any>,
+    parent_namespace: string
+  ): $string_tree.StringTree$;
+
+  export function to_string(node: $vnode.Element$<any>): string;
+
+  export function serializer(): $serializer.Serializer$<any>;
+
+  export function is_void(
+    config: SerializerConfig$,
+    tag: string,
+    namespace: string
+  ): boolean;
+
+  export function is_self_closing(config: SerializerConfig$, tag: string): boolean;
+
+  export function serialize_tree(
+    config: SerializerConfig$,
+    node: $vnode.Element$<any>,
+    parent_namespace: string
+  ): $string_tree.StringTree$;
+
+  export function serialize(config: SerializerConfig$, node: $vnode.Element$<any>): string;
+
+  export function to_serializer(config: SerializerConfig$): $serializer.Serializer$<
+    any
+  >;
+
+  export function serializer_config(): SerializerConfig$;
+
+  export function empty_serializer_config(): SerializerConfig$;
+
+  export function with_void(config: SerializerConfig$, tag: string): SerializerConfig$;
+
+  export function with_void_elements(
+    config: SerializerConfig$,
+    tags: _.List<string>
+  ): SerializerConfig$;
+
+  export function with_self_closing(config: SerializerConfig$, tag: string): SerializerConfig$;
+
+  export function with_self_closing_tags(
+    config: SerializerConfig$,
+    tags: _.List<string>
+  ): SerializerConfig$;
+
+  export function to_document_string(el: $vnode.Element$<any>): string;
+
+  export function to_document_string_tree(el: $vnode.Element$<any>): $string_tree.StringTree$;
+
+  export function to_snapshot(node: $vnode.Element$<any>, debug: boolean): string;
+
+  export function to_readable_string(el: $vnode.Element$<any>): string;
+
+}
+
+declare module '*/agnostic/platform/opentui/event.mjs' {
+  import type * as $decode from "../../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
+  import type * as $effect from "../../../agnostic/platform/opentui/effect.d.mts";
+  import type * as $vattr from "../../../agnostic/vdom/vattr.d.mts";
+
+  export function on_key_press<KHY>(handler: (x0: $effect.KeyEvent$) => KHY): $vattr.Attribute$<
+    KHY
+  >;
+
+  export function on_key_down<KIA>(handler: (x0: $effect.KeyEvent$) => KIA): $vattr.Attribute$<
+    KIA
+  >;
+
+  export function on_key_up<KIC>(handler: (x0: $effect.KeyEvent$) => KIC): $vattr.Attribute$<
+    KIC
+  >;
+
+  export function on_focus<KIE>(msg: KIE): $vattr.Attribute$<KIE>;
+
+  export function on_blur<KIG>(msg: KIG): $vattr.Attribute$<KIG>;
+
+  export function on_input<KII>(handler: (x0: string) => KII): $vattr.Attribute$<
+    KII
+  >;
+
+  export function on_submit<KIK>(handler: (x0: string) => KIK): $vattr.Attribute$<
+    KIK
+  >;
+
+  export function on_change<KIM>(handler: (x0: string) => KIM): $vattr.Attribute$<
+    KIM
+  >;
+
+  export function on_select<KIO>(handler: (x0: number) => KIO): $vattr.Attribute$<
+    KIO
+  >;
+
+  export function on_selection_change<KIQ>(handler: (x0: number) => KIQ): $vattr.Attribute$<
+    KIQ
+  >;
+
+  export function on_scroll<KIS>(msg: KIS): $vattr.Attribute$<KIS>;
+
+  export function on_click<KIU>(msg: KIU): $vattr.Attribute$<KIU>;
+
+  export function on_mouse_down<KIW>(msg: KIW): $vattr.Attribute$<KIW>;
+
+  export function on_mouse_up<KIY>(msg: KIY): $vattr.Attribute$<KIY>;
+
+  export function on_mouse_move<KJA>(msg: KJA): $vattr.Attribute$<KJA>;
+
+  export function on_mouse_over<KJC>(msg: KJC): $vattr.Attribute$<KJC>;
+
+  export function on_mouse_out<KJE>(msg: KJE): $vattr.Attribute$<KJE>;
+
+  export function on_mouse_drag<KJG>(msg: KJG): $vattr.Attribute$<KJG>;
+
+  export function on_mouse_drag_end<KJI>(msg: KJI): $vattr.Attribute$<KJI>;
+
+  export function on_mouse_drop<KJK>(msg: KJK): $vattr.Attribute$<KJK>;
+
+  export function on_paste<KJM>(handler: (x0: string) => KJM): $vattr.Attribute$<
+    KJM
+  >;
+
+  export function on_size_change<KJO>(msg: KJO): $vattr.Attribute$<KJO>;
+
+  export function on_cursor_change<KJQ>(handler: (x0: number, x1: number) => KJQ): $vattr.Attribute$<
+    KJQ
+  >;
+
+  export function on_content_change<KJS>(handler: (x0: string) => KJS): $vattr.Attribute$<
+    KJS
+  >;
+
+  export function on_highlight<KJU>(msg: KJU): $vattr.Attribute$<KJU>;
+
+  export function on_slider_change<KJW>(handler: (x0: number) => KJW): $vattr.Attribute$<
+    KJW
+  >;
+
+  export function on_activate<KJY>(msg: KJY): $vattr.Attribute$<KJY>;
+
+}
+
+declare module '*/agnostic/platform/opentui/element.mjs' {
+  import type * as $json from "../../../../gleam_json/gleam/json.d.mts";
+  import type * as $opentui from "../../../agnostic/platform/opentui.d.mts";
+  import type * as $vattr from "../../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../../gleam.d.mts";
+
+  export type RawNodeFactory = (x0: $opentui.Renderer$) => $opentui.Node$;
+
+  export type RawNodeContent = [
+    string,
+    (x0: $opentui.Renderer$) => $opentui.Node$
+  ];
+
+  export function box<KDX>(
+    attributes: _.List<$vattr.Attribute$<KDX>>,
+    children: _.List<$vnode.Element$<KDX>>
+  ): $vnode.Element$<KDX>;
+
+  export function text<KED>(attributes: _.List<$vattr.Attribute$<KED>>): $vnode.Element$<
+    KED
+  >;
+
+  export function input<KEH>(attributes: _.List<$vattr.Attribute$<KEH>>): $vnode.Element$<
+    KEH
+  >;
+
+  export function textarea<KEL>(attributes: _.List<$vattr.Attribute$<KEL>>): $vnode.Element$<
+    KEL
+  >;
+
+  export function scrollbox<KEP>(
+    attributes: _.List<$vattr.Attribute$<KEP>>,
+    children: _.List<$vnode.Element$<KEP>>
+  ): $vnode.Element$<KEP>;
+
+  export function select<KEV>(
+    attributes: _.List<$vattr.Attribute$<KEV>>,
+    children: _.List<$vnode.Element$<KEV>>
+  ): $vnode.Element$<KEV>;
+
+  export function code<KFB>(
+    attributes: _.List<$vattr.Attribute$<KFB>>,
+    children: _.List<$vnode.Element$<KFB>>
+  ): $vnode.Element$<KFB>;
+
+  export function markdown<KFH>(
+    attributes: _.List<$vattr.Attribute$<KFH>>,
+    children: _.List<$vnode.Element$<KFH>>
+  ): $vnode.Element$<KFH>;
+
+  export function diff<KFN>(
+    attributes: _.List<$vattr.Attribute$<KFN>>,
+    children: _.List<$vnode.Element$<KFN>>
+  ): $vnode.Element$<KFN>;
+
+  export function ascii_font<KFT>(attributes: _.List<$vattr.Attribute$<KFT>>): $vnode.Element$<
+    KFT
+  >;
+
+  export function tab_select<KFX>(attributes: _.List<$vattr.Attribute$<KFX>>): $vnode.Element$<
+    KFX
+  >;
+
+  export function line_number<KGB>(
+    attributes: _.List<$vattr.Attribute$<KGB>>,
+    children: _.List<$vnode.Element$<KGB>>
+  ): $vnode.Element$<KGB>;
+
+  export function slider<KGH>(attributes: _.List<$vattr.Attribute$<KGH>>): $vnode.Element$<
+    KGH
+  >;
+
+  export function frame_buffer<KGL>(attributes: _.List<$vattr.Attribute$<KGL>>): $vnode.Element$<
+    KGL
+  >;
+
+  export function frame_buffer_with_handler<KGP>(
+    handler: $json.Json$,
+    attrs: _.List<$vattr.Attribute$<KGP>>
+  ): $vnode.Element$<KGP>;
+
+  export function raw_node(
+    name: string,
+    factory: (x0: $opentui.Renderer$) => $opentui.Node$
+  ): $vnode.Element$<any>;
+
+}
+
+declare module '*/agnostic/platform/opentui/portal.mjs' {
+  import type * as $decode from "../../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
+  import type * as $vattr from "../../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../../gleam.d.mts";
+
+  export class MissingTarget extends _.CustomType {}
+  export function Error$MissingTarget(): Error$;
+  export function Error$isMissingTarget(value: any): value is Error$;
+
+  export class TargetNotFound extends _.CustomType {
+    /** @deprecated */
+    constructor(id: string);
+    /** @deprecated */
+    id: string;
+  }
+  export function Error$TargetNotFound(id: string): Error$;
+  export function Error$isTargetNotFound(value: any): value is Error$;
+  export function Error$TargetNotFound$0(value: Error$): string;
+  export function Error$TargetNotFound$id(value: Error$): string;
+
+  export class TargetIsPortal extends _.CustomType {
+    /** @deprecated */
+    constructor(id: string);
+    /** @deprecated */
+    id: string;
+  }
+  export function Error$TargetIsPortal(id: string): Error$;
+  export function Error$isTargetIsPortal(value: any): value is Error$;
+  export function Error$TargetIsPortal$0(value: Error$): string;
+  export function Error$TargetIsPortal$id(value: Error$): string;
+
+  export type Error$ = MissingTarget | TargetNotFound | TargetIsPortal;
+
+  export const target_is_portal_tag: string;
+
+  export const target_not_found_tag: string;
+
+  export const missing_target_tag: string;
+
+  export const name: string;
+
+  export function error_decoder(): $decode.Decoder$<Error$>;
+
+  export function on_error<KQG>(handler: (x0: Error$) => KQG): $vattr.Attribute$<
+    KQG
+  >;
+
+  export function to<KQJ>(
+    id: string,
+    attributes: _.List<$vattr.Attribute$<KQJ>>,
+    children: _.List<$vnode.Element$<KQJ>>
+  ): $vnode.Element$<KQJ>;
+
+  export function to_root<KQP>(
+    attributes: _.List<$vattr.Attribute$<KQP>>,
+    children: _.List<$vnode.Element$<KQP>>
+  ): $vnode.Element$<KQP>;
+
+}
+
+declare module '*/agnostic/platform/opentui/effect.mjs' {
+  import type * as $dynamic from "../../../../gleam_stdlib/gleam/dynamic.d.mts";
+  import type * as $decode from "../../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
+  import type * as $option from "../../../../gleam_stdlib/gleam/option.d.mts";
+  import type * as $effect from "../../../agnostic/effect.d.mts";
+  import type * as $opentui from "../../../agnostic/platform/opentui.d.mts";
+  import type * as _ from "../../../gleam.d.mts";
+
+  export class KeyEvent extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      key: string,
+      ctrl: boolean,
+      shift: boolean,
+      meta: boolean,
+      option: boolean
+    );
+    /** @deprecated */
+    key: string;
+    /** @deprecated */
+    ctrl: boolean;
+    /** @deprecated */
+    shift: boolean;
+    /** @deprecated */
+    meta: boolean;
+    /** @deprecated */
+    option: boolean;
+  }
+  export function KeyEvent$KeyEvent(
+    key: string,
+    ctrl: boolean,
+    shift: boolean,
+    meta: boolean,
+    option: boolean,
+  ): KeyEvent$;
+  export function KeyEvent$isKeyEvent(value: any): value is KeyEvent$;
+  export function KeyEvent$KeyEvent$0(value: KeyEvent$): string;
+  export function KeyEvent$KeyEvent$key(value: KeyEvent$): string;
+  export function KeyEvent$KeyEvent$1(value: KeyEvent$): boolean;
+  export function KeyEvent$KeyEvent$ctrl(value: KeyEvent$): boolean;
+  export function KeyEvent$KeyEvent$2(value: KeyEvent$): boolean;
+  export function KeyEvent$KeyEvent$shift(value: KeyEvent$): boolean;
+  export function KeyEvent$KeyEvent$3(value: KeyEvent$): boolean;
+  export function KeyEvent$KeyEvent$meta(value: KeyEvent$): boolean;
+  export function KeyEvent$KeyEvent$4(value: KeyEvent$): boolean;
+  export function KeyEvent$KeyEvent$option(value: KeyEvent$): boolean;
+
+  export type KeyEvent$ = KeyEvent;
+
+  export class SelectionRange extends _.CustomType {
+    /** @deprecated */
+    constructor(id: string, start: number, end: number);
+    /** @deprecated */
+    id: string;
+    /** @deprecated */
+    start: number;
+    /** @deprecated */
+    end: number;
+  }
+  export function SelectionRange$SelectionRange(
+    id: string,
+    start: number,
+    end: number,
+  ): SelectionRange$;
+  export function SelectionRange$isSelectionRange(
+    value: any,
+  ): value is SelectionRange$;
+  export function SelectionRange$SelectionRange$0(value: SelectionRange$): string;
+  export function SelectionRange$SelectionRange$id(value: SelectionRange$): string;
+  export function SelectionRange$SelectionRange$1(
+    value: SelectionRange$,
+  ): number;
+  export function SelectionRange$SelectionRange$start(value: SelectionRange$): number;
+  export function SelectionRange$SelectionRange$2(
+    value: SelectionRange$,
+  ): number;
+  export function SelectionRange$SelectionRange$end(value: SelectionRange$): number;
+
+  export type SelectionRange$ = SelectionRange;
+
+  export class Selection extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      ranges: _.List<SelectionRange$>,
+      focused_id: string,
+      anchor: [number, number],
+      focus: [number, number]
+    );
+    /** @deprecated */
+    ranges: _.List<SelectionRange$>;
+    /** @deprecated */
+    focused_id: string;
+    /** @deprecated */
+    anchor: [number, number];
+    /** @deprecated */
+    focus: [number, number];
+  }
+  export function Selection$Selection(
+    ranges: _.List<SelectionRange$>,
+    focused_id: string,
+    anchor: [number, number],
+    focus: [number, number],
+  ): Selection$;
+  export function Selection$isSelection(value: any): value is Selection$;
+  export function Selection$Selection$0(value: Selection$): _.List<
+    SelectionRange$
+  >;
+  export function Selection$Selection$ranges(value: Selection$): _.List<
+    SelectionRange$
+  >;
+  export function Selection$Selection$1(value: Selection$): string;
+  export function Selection$Selection$focused_id(value: Selection$): string;
+  export function Selection$Selection$2(value: Selection$): [number, number];
+  export function Selection$Selection$anchor(value: Selection$): [number, number];
+  export function Selection$Selection$3(value: Selection$): [number, number];
+  export function Selection$Selection$focus(value: Selection$): [number, number];
+
+  export type Selection$ = Selection;
+
+  export function before_paint<JVM>(
+    handler: (x0: (x0: JVM) => undefined, x1: $opentui.Renderer$) => undefined
+  ): $effect.Effect$<JVM>;
+
+  export function after_paint<JVO>(
+    handler: (x0: (x0: JVO) => undefined, x1: $opentui.Renderer$) => undefined
+  ): $effect.Effect$<JVO>;
+
+  export function subscribe_keyboard<JVQ>(handler: (x0: KeyEvent$) => JVQ): $effect.Effect$<
+    JVQ
+  >;
+
+  export function subscribe_keyboard_with<JVS>(
+    predicate: (x0: KeyEvent$) => $option.Option$<JVS>
+  ): $effect.Effect$<JVS>;
+
+  export function focus_next(): $effect.Effect$<any>;
+
+  export function focus_previous(): $effect.Effect$<any>;
+
+  export function focus(id: string): $effect.Effect$<any>;
+
+  export function get_focused_id<JWC>(
+    handler: (x0: $option.Option$<string>) => JWC
+  ): $effect.Effect$<JWC>;
+
+  export function get_focused<JWE, JWH>(
+    decoder: $decode.Decoder$<JWE>,
+    handler: (x0: $option.Option$<JWE>) => JWH
+  ): $effect.Effect$<JWH>;
+
+  export function set_terminal_title(title: string): $effect.Effect$<any>;
+
+  export function set_background_color(color: string): $effect.Effect$<any>;
+
+  export function set_cursor_position(x: number, y: number, visible: boolean): $effect.Effect$<
+    any
+  >;
+
+  export function set_cursor_style(style: string, blinking: boolean): $effect.Effect$<
+    any
+  >;
+
+  export function set_cursor_color(color: string): $effect.Effect$<any>;
+
+  export function get_terminal_dimensions<JWT>(
+    handler: (x0: number, x1: number) => JWT
+  ): $effect.Effect$<JWT>;
+
+  export function subscribe_terminal_resize<JWV>(
+    handler: (x0: number, x1: number) => JWV
+  ): $effect.Effect$<JWV>;
+
+  export function toggle_debug_overlay(): $effect.Effect$<any>;
+
+  export function copy_to_clipboard(text: string): $effect.Effect$<any>;
+
+  export function clear_clipboard(): $effect.Effect$<any>;
+
+  export function get_selection<JXE>(
+    handler: (x0: $option.Option$<Selection$>) => JXE
+  ): $effect.Effect$<JXE>;
+
+  export function subscribe_selection<JXG>(handler: (x0: Selection$) => JXG): $effect.Effect$<
+    JXG
+  >;
+
+  export function clear_selection(): $effect.Effect$<any>;
+
+  export function set_selection_span(
+    anchor_id: string,
+    anchor_offset: number,
+    focus_id: string,
+    focus_offset: number
+  ): $effect.Effect$<any>;
+
+  export function pause(): $effect.Effect$<any>;
+
+  export function suspend(): $effect.Effect$<any>;
+
+  export function resume(): $effect.Effect$<any>;
+
+  export function destroy(): $effect.Effect$<any>;
+
+  export function stop(): $effect.Effect$<any>;
+
+  export function on_destroy<JXW>(msg: JXW): $effect.Effect$<JXW>;
+
+  export function scroll_by(element_id: string, delta_x: number, delta_y: number): $effect.Effect$<
+    any
+  >;
+
+  export function scroll_to(element_id: string, x: number, y: number): $effect.Effect$<
+    any
+  >;
+
+  export function scroll_into_view(container_id: string, child_id: string): $effect.Effect$<
+    any
+  >;
+
+}
+
+declare module '*/agnostic/platform/opentui/attribute.mjs' {
+  import type * as $json from "../../../../gleam_json/gleam/json.d.mts";
+  import type * as $vattr from "../../../agnostic/vdom/vattr.d.mts";
+  import type * as _ from "../../../gleam.d.mts";
+
+  export class BorderCharacters extends _.CustomType {
+    /** @deprecated */
+    constructor(
+      top_left: string,
+      top_right: string,
+      bottom_left: string,
+      bottom_right: string,
+      horizontal: string,
+      vertical: string,
+      top_t: string,
+      bottom_t: string,
+      left_t: string,
+      right_t: string,
+      cross: string
+    );
+    /** @deprecated */
+    top_left: string;
+    /** @deprecated */
+    top_right: string;
+    /** @deprecated */
+    bottom_left: string;
+    /** @deprecated */
+    bottom_right: string;
+    /** @deprecated */
+    horizontal: string;
+    /** @deprecated */
+    vertical: string;
+    /** @deprecated */
+    top_t: string;
+    /** @deprecated */
+    bottom_t: string;
+    /** @deprecated */
+    left_t: string;
+    /** @deprecated */
+    right_t: string;
+    /** @deprecated */
+    cross: string;
+  }
+  export function BorderCharacters$BorderCharacters(
+    top_left: string,
+    top_right: string,
+    bottom_left: string,
+    bottom_right: string,
+    horizontal: string,
+    vertical: string,
+    top_t: string,
+    bottom_t: string,
+    left_t: string,
+    right_t: string,
+    cross: string,
+  ): BorderCharacters$;
+  export function BorderCharacters$isBorderCharacters(
+    value: any,
+  ): value is BorderCharacters$;
+  export function BorderCharacters$BorderCharacters$0(value: BorderCharacters$): string;
+  export function BorderCharacters$BorderCharacters$top_left(
+    value: BorderCharacters$,
+  ): string;
+  export function BorderCharacters$BorderCharacters$1(value: BorderCharacters$): string;
+  export function BorderCharacters$BorderCharacters$top_right(
+    value: BorderCharacters$,
+  ): string;
+  export function BorderCharacters$BorderCharacters$2(value: BorderCharacters$): string;
+  export function BorderCharacters$BorderCharacters$bottom_left(
+    value: BorderCharacters$,
+  ): string;
+  export function BorderCharacters$BorderCharacters$3(value: BorderCharacters$): string;
+  export function BorderCharacters$BorderCharacters$bottom_right(
+    value: BorderCharacters$,
+  ): string;
+  export function BorderCharacters$BorderCharacters$4(value: BorderCharacters$): string;
+  export function BorderCharacters$BorderCharacters$horizontal(
+    value: BorderCharacters$,
+  ): string;
+  export function BorderCharacters$BorderCharacters$5(value: BorderCharacters$): string;
+  export function BorderCharacters$BorderCharacters$vertical(
+    value: BorderCharacters$,
+  ): string;
+  export function BorderCharacters$BorderCharacters$6(value: BorderCharacters$): string;
+  export function BorderCharacters$BorderCharacters$top_t(
+    value: BorderCharacters$,
+  ): string;
+  export function BorderCharacters$BorderCharacters$7(value: BorderCharacters$): string;
+  export function BorderCharacters$BorderCharacters$bottom_t(
+    value: BorderCharacters$,
+  ): string;
+  export function BorderCharacters$BorderCharacters$8(value: BorderCharacters$): string;
+  export function BorderCharacters$BorderCharacters$left_t(
+    value: BorderCharacters$,
+  ): string;
+  export function BorderCharacters$BorderCharacters$9(value: BorderCharacters$): string;
+  export function BorderCharacters$BorderCharacters$right_t(
+    value: BorderCharacters$,
+  ): string;
+  export function BorderCharacters$BorderCharacters$10(value: BorderCharacters$): string;
+  export function BorderCharacters$BorderCharacters$cross(
+    value: BorderCharacters$,
+  ): string;
+
+  export type BorderCharacters$ = BorderCharacters;
+
+  export class CursorStyle extends _.CustomType {
+    /** @deprecated */
+    constructor(style: string, blinking: boolean);
+    /** @deprecated */
+    style: string;
+    /** @deprecated */
+    blinking: boolean;
+  }
+  export function CursorStyle$CursorStyle(
+    style: string,
+    blinking: boolean,
+  ): CursorStyle$;
+  export function CursorStyle$isCursorStyle(value: any): value is CursorStyle$;
+  export function CursorStyle$CursorStyle$0(value: CursorStyle$): string;
+  export function CursorStyle$CursorStyle$style(value: CursorStyle$): string;
+  export function CursorStyle$CursorStyle$1(value: CursorStyle$): boolean;
+  export function CursorStyle$CursorStyle$blinking(value: CursorStyle$): boolean;
+
+  export type CursorStyle$ = CursorStyle;
+
+  export class SelectOption extends _.CustomType {
+    /** @deprecated */
+    constructor(name: string, description: string);
+    /** @deprecated */
+    name: string;
+    /** @deprecated */
+    description: string;
+  }
+  export function SelectOption$SelectOption(
+    name: string,
+    description: string,
+  ): SelectOption$;
+  export function SelectOption$isSelectOption(value: any): value is SelectOption$;
+  export function SelectOption$SelectOption$0(value: SelectOption$): string;
+  export function SelectOption$SelectOption$name(value: SelectOption$): string;
+  export function SelectOption$SelectOption$1(value: SelectOption$): string;
+  export function SelectOption$SelectOption$description(value: SelectOption$): string;
+
+  export type SelectOption$ = SelectOption;
+
+  export function width(value: number): $vattr.Attribute$<any>;
+
+  export function height(value: number): $vattr.Attribute$<any>;
+
+  export function min_width(value: number): $vattr.Attribute$<any>;
+
+  export function min_height(value: number): $vattr.Attribute$<any>;
+
+  export function max_width(value: number): $vattr.Attribute$<any>;
+
+  export function max_height(value: number): $vattr.Attribute$<any>;
+
+  export function width_(value: string): $vattr.Attribute$<any>;
+
+  export function height_(value: string): $vattr.Attribute$<any>;
+
+  export function min_width_(value: string): $vattr.Attribute$<any>;
+
+  export function min_height_(value: string): $vattr.Attribute$<any>;
+
+  export function max_width_(value: string): $vattr.Attribute$<any>;
+
+  export function max_height_(value: string): $vattr.Attribute$<any>;
+
+  export function id(value: string): $vattr.Attribute$<any>;
+
+  export function visible(value: boolean): $vattr.Attribute$<any>;
+
+  export function opacity(value: number): $vattr.Attribute$<any>;
+
+  export function z_index(value: number): $vattr.Attribute$<any>;
+
+  export function buffered(value: boolean): $vattr.Attribute$<any>;
+
+  export function live(value: boolean): $vattr.Attribute$<any>;
+
+  export function enable_layout(value: boolean): $vattr.Attribute$<any>;
+
+  export function selectable(value: boolean): $vattr.Attribute$<any>;
+
+  export function flex_direction(value: string): $vattr.Attribute$<any>;
+
+  export function flex_grow(value: number): $vattr.Attribute$<any>;
+
+  export function flex_shrink(value: number): $vattr.Attribute$<any>;
+
+  export function flex_wrap(value: string): $vattr.Attribute$<any>;
+
+  export function flex_basis(value: string): $vattr.Attribute$<any>;
+
+  export function align_items(value: string): $vattr.Attribute$<any>;
+
+  export function align_self(value: string): $vattr.Attribute$<any>;
+
+  export function justify_content(value: string): $vattr.Attribute$<any>;
+
+  export function gap(value: number): $vattr.Attribute$<any>;
+
+  export function gap_(value: string): $vattr.Attribute$<any>;
+
+  export function row_gap(value: number): $vattr.Attribute$<any>;
+
+  export function row_gap_(value: string): $vattr.Attribute$<any>;
+
+  export function column_gap(value: number): $vattr.Attribute$<any>;
+
+  export function column_gap_(value: string): $vattr.Attribute$<any>;
+
+  export function padding(value: number): $vattr.Attribute$<any>;
+
+  export function padding_top(value: number): $vattr.Attribute$<any>;
+
+  export function padding_bottom(value: number): $vattr.Attribute$<any>;
+
+  export function padding_left(value: number): $vattr.Attribute$<any>;
+
+  export function padding_right(value: number): $vattr.Attribute$<any>;
+
+  export function margin(value: number): $vattr.Attribute$<any>;
+
+  export function margin_top(value: number): $vattr.Attribute$<any>;
+
+  export function margin_bottom(value: number): $vattr.Attribute$<any>;
+
+  export function margin_left(value: number): $vattr.Attribute$<any>;
+
+  export function margin_right(value: number): $vattr.Attribute$<any>;
+
+  export function padding_(value: string): $vattr.Attribute$<any>;
+
+  export function padding_top_(value: string): $vattr.Attribute$<any>;
+
+  export function padding_bottom_(value: string): $vattr.Attribute$<any>;
+
+  export function padding_left_(value: string): $vattr.Attribute$<any>;
+
+  export function padding_right_(value: string): $vattr.Attribute$<any>;
+
+  export function margin_(value: string): $vattr.Attribute$<any>;
+
+  export function margin_top_(value: string): $vattr.Attribute$<any>;
+
+  export function margin_bottom_(value: string): $vattr.Attribute$<any>;
+
+  export function margin_left_(value: string): $vattr.Attribute$<any>;
+
+  export function margin_right_(value: string): $vattr.Attribute$<any>;
+
+  export function border_style(value: string): $vattr.Attribute$<any>;
+
+  export function border_color(value: string): $vattr.Attribute$<any>;
+
+  export function focused_border_color(value: string): $vattr.Attribute$<any>;
+
+  export function custom_border_chars(chars: BorderCharacters$): $vattr.Attribute$<
+    any
+  >;
+
+  export function fg(value: string): $vattr.Attribute$<any>;
+
+  export function bg(value: string): $vattr.Attribute$<any>;
+
+  export function color(value: string): $vattr.Attribute$<any>;
+
+  export function background_color(value: string): $vattr.Attribute$<any>;
+
+  export function focused_background_color(value: string): $vattr.Attribute$<any>;
+
+  export function focused_text_color(value: string): $vattr.Attribute$<any>;
+
+  export function text_color(value: string): $vattr.Attribute$<any>;
+
+  export function selection_bg(value: string): $vattr.Attribute$<any>;
+
+  export function selection_fg(value: string): $vattr.Attribute$<any>;
+
+  export function placeholder_color(value: string): $vattr.Attribute$<any>;
+
+  export function cursor_color(value: string): $vattr.Attribute$<any>;
+
+  export function selected_background_color(value: string): $vattr.Attribute$<any>;
+
+  export function selected_text_color(value: string): $vattr.Attribute$<any>;
+
+  export function description_color(value: string): $vattr.Attribute$<any>;
+
+  export function selected_description_color(value: string): $vattr.Attribute$<
+    any
+  >;
+
+  export function added_bg(value: string): $vattr.Attribute$<any>;
+
+  export function removed_bg(value: string): $vattr.Attribute$<any>;
+
+  export function context_bg(value: string): $vattr.Attribute$<any>;
+
+  export function added_content_bg(value: string): $vattr.Attribute$<any>;
+
+  export function removed_content_bg(value: string): $vattr.Attribute$<any>;
+
+  export function context_content_bg(value: string): $vattr.Attribute$<any>;
+
+  export function added_sign_color(value: string): $vattr.Attribute$<any>;
+
+  export function removed_sign_color(value: string): $vattr.Attribute$<any>;
+
+  export function added_line_number_bg(value: string): $vattr.Attribute$<any>;
+
+  export function removed_line_number_bg(value: string): $vattr.Attribute$<any>;
+
+  export function line_number_fg(value: string): $vattr.Attribute$<any>;
+
+  export function line_number_bg(value: string): $vattr.Attribute$<any>;
+
+  export function ascii_color(value: string): $vattr.Attribute$<any>;
+
+  export function bold(value: boolean): $vattr.Attribute$<any>;
+
+  export function italic(value: boolean): $vattr.Attribute$<any>;
+
+  export function underline(value: boolean): $vattr.Attribute$<any>;
+
+  export function strikethrough(value: boolean): $vattr.Attribute$<any>;
+
+  export function dim(value: boolean): $vattr.Attribute$<any>;
+
+  export function blink(value: boolean): $vattr.Attribute$<any>;
+
+  export function inverse(value: boolean): $vattr.Attribute$<any>;
+
+  export function hidden_text(value: boolean): $vattr.Attribute$<any>;
+
+  export function placeholder(value: string): $vattr.Attribute$<any>;
+
+  export function value(value: string): $vattr.Attribute$<any>;
+
+  export function initial_value(value: string): $vattr.Attribute$<any>;
+
+  export function title(value: string): $vattr.Attribute$<any>;
+
+  export function wrap_mode(value: string): $vattr.Attribute$<any>;
+
+  export function truncate(value: boolean): $vattr.Attribute$<any>;
+
+  export function language(value: string): $vattr.Attribute$<any>;
+
+  export function filetype(value: string): $vattr.Attribute$<any>;
+
+  export function content(value: string): $vattr.Attribute$<any>;
+
+  export function conceal(value: boolean): $vattr.Attribute$<any>;
+
+  export function draw_unstyled_text(value: boolean): $vattr.Attribute$<any>;
+
+  export function streaming(value: boolean): $vattr.Attribute$<any>;
+
+  export function overflow(value: string): $vattr.Attribute$<any>;
+
+  export function focusable(value: boolean): $vattr.Attribute$<any>;
+
+  export function position(value: string): $vattr.Attribute$<any>;
+
+  export function top(value: number): $vattr.Attribute$<any>;
+
+  export function top_(value: string): $vattr.Attribute$<any>;
+
+  export function right(value: number): $vattr.Attribute$<any>;
+
+  export function right_(value: string): $vattr.Attribute$<any>;
+
+  export function bottom(value: number): $vattr.Attribute$<any>;
+
+  export function bottom_(value: string): $vattr.Attribute$<any>;
+
+  export function left(value: number): $vattr.Attribute$<any>;
+
+  export function left_(value: string): $vattr.Attribute$<any>;
+
+  export function should_fill(value: boolean): $vattr.Attribute$<any>;
+
+  export function title_alignment(value: string): $vattr.Attribute$<any>;
+
+  export function title_color(value: string): $vattr.Attribute$<any>;
+
+  export function max_length(value: number): $vattr.Attribute$<any>;
+
+  export function min_length(value: number): $vattr.Attribute$<any>;
+
+  export function show_cursor(value: boolean): $vattr.Attribute$<any>;
+
+  export function scroll_margin(value: number): $vattr.Attribute$<any>;
+
+  export function scroll_speed(value: number): $vattr.Attribute$<any>;
+
+  export function cursor_style(style: string, blinking: boolean): $vattr.Attribute$<
+    any
+  >;
+
+  export function view(value: string): $vattr.Attribute$<any>;
+
+  export function show_line_numbers(value: boolean): $vattr.Attribute$<any>;
+
+  export function options(opts: _.List<SelectOption$>): $vattr.Attribute$<any>;
+
+  export function selected_index(value: number): $vattr.Attribute$<any>;
+
+  export function show_scroll_indicator(value: boolean): $vattr.Attribute$<any>;
+
+  export function wrap_selection(value: boolean): $vattr.Attribute$<any>;
+
+  export function show_description(value: boolean): $vattr.Attribute$<any>;
+
+  export function item_spacing(value: number): $vattr.Attribute$<any>;
+
+  export function fast_scroll_step(value: number): $vattr.Attribute$<any>;
+
+  export function tab_width(value: number): $vattr.Attribute$<any>;
+
+  export function show_scroll_arrows(value: boolean): $vattr.Attribute$<any>;
+
+  export function show_underline(value: boolean): $vattr.Attribute$<any>;
+
+  export function orientation(value: string): $vattr.Attribute$<any>;
+
+  export function slider_value(value: number): $vattr.Attribute$<any>;
+
+  export function min(value: number): $vattr.Attribute$<any>;
+
+  export function max(value: number): $vattr.Attribute$<any>;
+
+  export function view_port_size(value: number): $vattr.Attribute$<any>;
+
+  export function ascii_text(value: string): $vattr.Attribute$<any>;
+
+  export function font(value: string): $vattr.Attribute$<any>;
+
+  export function line_number_offset(value: number): $vattr.Attribute$<any>;
+
+  export function sticky_scroll(value: boolean): $vattr.Attribute$<any>;
+
+  export function sticky_start(value: string): $vattr.Attribute$<any>;
+
+  export function viewport_culling(value: boolean): $vattr.Attribute$<any>;
+
+}
+
 declare module '*/agnostic/dev/simulate.mjs' {
   import type * as $json from "../../../gleam_json/gleam/json.d.mts";
   import type * as $dynamic from "../../../gleam_stdlib/gleam/dynamic.d.mts";
-  import type * as _ from "../../gleam.d.mts";
   import type * as $query from "../../agnostic/dev/query.d.mts";
   import type * as $effect from "../../agnostic/effect.d.mts";
   import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../gleam.d.mts";
 
-  declare class App<LUW, LUX, LUV> extends _.CustomType {
+  declare class App<HIS, HIT, HIU> extends _.CustomType {
     /** @deprecated */
     constructor(
-      init: (x0: any) => [any, $effect.Effect$<any>],
-      update: (x0: any, x1: any) => [any, $effect.Effect$<any>],
-      view: (x0: any) => $vnode.Element$<any>
+      init: (x0: HIS) => [HIT, $effect.Effect$<HIU>],
+      update: (x0: HIT, x1: HIU) => [HIT, $effect.Effect$<HIU>],
+      view: (x0: HIT) => $vnode.Element$<HIU>
     );
     /** @deprecated */
-    init: (x0: any) => [any, $effect.Effect$<any>];
+    init: (x0: HIS) => [HIT, $effect.Effect$<HIU>];
     /** @deprecated */
-    update: (x0: any, x1: any) => [any, $effect.Effect$<any>];
+    update: (x0: HIT, x1: HIU) => [HIT, $effect.Effect$<HIU>];
     /** @deprecated */
-    view: (x0: any) => $vnode.Element$<any>;
+    view: (x0: HIT) => $vnode.Element$<HIU>;
   }
 
-  export type App$<LUW, LUX, LUV> = App<LUX, LUV, LUW>;
+  export type App$<HIS, HIT, HIU> = App<HIS, HIT, HIU>;
 
-  declare class Simulation<LUY, LUZ> extends _.CustomType {
+  declare class Simulation<HIV, HIW> extends _.CustomType {
     /** @deprecated */
     constructor(
-      update: (x0: any, x1: any) => [any, $effect.Effect$<any>],
-      view: (x0: any) => $vnode.Element$<any>,
-      history: _.List<Event$<any>>,
-      model: LUY,
-      html: $vnode.Element$<any>
+      update: (x0: HIV, x1: HIW) => [HIV, $effect.Effect$<HIW>],
+      view: (x0: HIV) => $vnode.Element$<HIW>,
+      history: _.List<Event$<HIW>>,
+      model: HIV,
+      html: $vnode.Element$<HIW>
     );
     /** @deprecated */
-    update: (x0: any, x1: any) => [any, $effect.Effect$<any>];
+    update: (x0: HIV, x1: HIW) => [HIV, $effect.Effect$<HIW>];
     /** @deprecated */
-    view: (x0: any) => $vnode.Element$<any>;
+    view: (x0: HIV) => $vnode.Element$<HIW>;
     /** @deprecated */
-    history: _.List<Event$<any>>;
+    history: _.List<Event$<HIW>>;
     /** @deprecated */
-    model: LUY;
+    model: HIV;
     /** @deprecated */
-    html: $vnode.Element$<any>;
+    html: $vnode.Element$<HIW>;
   }
 
-  export type Simulation$<LUY, LUZ> = Simulation<LUY, LUZ>;
+  export type Simulation$<HIV, HIW> = Simulation<HIV, HIW>;
 
-  export class Dispatch<LVA> extends _.CustomType {
+  export class Dispatch<HIX> extends _.CustomType {
     /** @deprecated */
-    constructor(message: LVA);
+    constructor(message: HIX);
     /** @deprecated */
-    message: LVA;
+    message: HIX;
   }
-  export function Event$Dispatch<LVA>(message: LVA): Event$<LVA>;
-  export function Event$isDispatch<LVA>(value: Event$<LVA>): boolean;
-  export function Event$Dispatch$0<LVA>(value: Event$<LVA>): LVA;
-  export function Event$Dispatch$message<LVA>(value: Event$<LVA>): LVA;
+  export function Event$Dispatch<HIX>(message: HIX): Event$<HIX>;
+  export function Event$isDispatch<HIX>(value: any): value is Event$<unknown>;
+  export function Event$Dispatch$0<HIX>(value: Event$<HIX>): HIX;
+  export function Event$Dispatch$message<HIX>(value: Event$<HIX>): HIX;
 
   export class Event extends _.CustomType {
     /** @deprecated */
@@ -2443,18 +5164,18 @@ declare module '*/agnostic/dev/simulate.mjs' {
     /** @deprecated */
     data: $json.Json$;
   }
-  export function Event$Event<LVA>(
+  export function Event$Event<HIX>(
     target: $query.Query$,
     name: string,
     data: $json.Json$,
-  ): Event$<LVA>;
-  export function Event$isEvent<LVA>(value: Event$<LVA>): boolean;
-  export function Event$Event$0<LVA>(value: Event$<LVA>): $query.Query$;
-  export function Event$Event$target<LVA>(value: Event$<LVA>): $query.Query$;
-  export function Event$Event$1<LVA>(value: Event$<LVA>): string;
-  export function Event$Event$name<LVA>(value: Event$<LVA>): string;
-  export function Event$Event$2<LVA>(value: Event$<LVA>): $json.Json$;
-  export function Event$Event$data<LVA>(value: Event$<LVA>): $json.Json$;
+  ): Event$<HIX>;
+  export function Event$isEvent<HIX>(value: any): value is Event$<unknown>;
+  export function Event$Event$0<HIX>(value: Event$<HIX>): $query.Query$;
+  export function Event$Event$target<HIX>(value: Event$<HIX>): $query.Query$;
+  export function Event$Event$1<HIX>(value: Event$<HIX>): string;
+  export function Event$Event$name<HIX>(value: Event$<HIX>): string;
+  export function Event$Event$2<HIX>(value: Event$<HIX>): $json.Json$;
+  export function Event$Event$data<HIX>(value: Event$<HIX>): $json.Json$;
 
   export class Problem extends _.CustomType {
     /** @deprecated */
@@ -2464,83 +5185,83 @@ declare module '*/agnostic/dev/simulate.mjs' {
     /** @deprecated */
     message: string;
   }
-  export function Event$Problem<LVA>(name: string, message: string): Event$<LVA>;
-  export function Event$isProblem<LVA>(value: Event$<LVA>): boolean;
-  export function Event$Problem$0<LVA>(value: Event$<LVA>): string;
-  export function Event$Problem$name<LVA>(value: Event$<LVA>): string;
-  export function Event$Problem$1<LVA>(value: Event$<LVA>): string;
-  export function Event$Problem$message<LVA>(value: Event$<LVA>): string;
+  export function Event$Problem<HIX>(name: string, message: string): Event$<HIX>;
+  export function Event$isProblem<HIX>(value: any): value is Event$<unknown>;
+  export function Event$Problem$0<HIX>(value: Event$<HIX>): string;
+  export function Event$Problem$name<HIX>(value: Event$<HIX>): string;
+  export function Event$Problem$1<HIX>(value: Event$<HIX>): string;
+  export function Event$Problem$message<HIX>(value: Event$<HIX>): string;
 
-  export type Event$<LVA> = Dispatch<LVA> | Event | Problem;
+  export type Event$<HIX> = Dispatch<HIX> | Event | Problem;
 
-  export function simple<LVB, LVC, LVD>(
-    init: (x0: LVB) => LVC,
-    update: (x0: LVC, x1: LVD) => LVC,
-    view: (x0: LVC) => $vnode.Element$<LVD>
-  ): App$<LVB, LVC, LVD>;
+  export function simple<HIY, HIZ, HJA>(
+    init: (x0: HIY) => HIZ,
+    update: (x0: HIZ, x1: HJA) => HIZ,
+    view: (x0: HIZ) => $vnode.Element$<HJA>
+  ): App$<HIY, HIZ, HJA>;
 
-  export function application<LVI, LVJ, LVK>(
-    init: (x0: LVI) => [LVJ, $effect.Effect$<LVK>],
-    update: (x0: LVJ, x1: LVK) => [LVJ, $effect.Effect$<LVK>],
-    view: (x0: LVJ) => $vnode.Element$<LVK>
-  ): App$<LVI, LVJ, LVK>;
+  export function application<HJF, HJG, HJH>(
+    init: (x0: HJF) => [HJG, $effect.Effect$<HJH>],
+    update: (x0: HJG, x1: HJH) => [HJG, $effect.Effect$<HJH>],
+    view: (x0: HJG) => $vnode.Element$<HJH>
+  ): App$<HJF, HJG, HJH>;
 
-  export function start<LVR, LVS, LVT>(app: App$<LVR, LVS, LVT>, args: LVR): Simulation$<
-    LVS,
-    LVT
+  export function start<HJO, HJP, HJQ>(app: App$<HJO, HJP, HJQ>, args: HJO): Simulation$<
+    HJP,
+    HJQ
   >;
 
-  export function message<LVZ, LWA>(simulation: Simulation$<LVZ, LWA>, msg: LWA): Simulation$<
-    LVZ,
-    LWA
-  >;
+  export function message<HJW, HJX>(
+    simulation: Simulation$<HJW, HJX>,
+    message: HJX
+  ): Simulation$<HJW, HJX>;
 
-  export function problem<LXF, LXG>(
-    simulation: Simulation$<LXF, LXG>,
+  export function problem<HLC, HLD>(
+    simulation: Simulation$<HLC, HLD>,
     name: string,
     message: string
-  ): Simulation$<LXF, LXG>;
+  ): Simulation$<HLC, HLD>;
 
-  export function model<LXL>(simulation: Simulation$<LXL, any>): LXL;
-
-  export function view<LXQ>(simulation: Simulation$<any, LXQ>): $vnode.Element$<
-    LXQ
-  >;
-
-  export function history<LXV>(simulation: Simulation$<any, LXV>): _.List<
-    Event$<LXV>
-  >;
-
-  export function event<LWF, LWG>(
-    simulation: Simulation$<LWF, LWG>,
+  export function event<HKC, HKD>(
+    simulation: Simulation$<HKC, HKD>,
     query: $query.Query$,
     event: string,
     payload: _.List<[string, $json.Json$]>
-  ): Simulation$<LWF, LWG>;
+  ): Simulation$<HKC, HKD>;
 
-  export function click<LWM, LWN>(
-    simulation: Simulation$<LWM, LWN>,
+  export function click<HKJ, HKK>(
+    simulation: Simulation$<HKJ, HKK>,
     query: $query.Query$
-  ): Simulation$<LWM, LWN>;
+  ): Simulation$<HKJ, HKK>;
 
-  export function input<LWS, LWT>(
-    simulation: Simulation$<LWS, LWT>,
+  export function input<HKP, HKQ>(
+    simulation: Simulation$<HKP, HKQ>,
     query: $query.Query$,
     value: string
-  ): Simulation$<LWS, LWT>;
+  ): Simulation$<HKP, HKQ>;
 
-  export function submit<LWY, LWZ>(
-    simulation: Simulation$<LWY, LWZ>,
+  export function submit<HKV, HKW>(
+    simulation: Simulation$<HKV, HKW>,
     query: $query.Query$,
     form_data: _.List<[string, string]>
-  ): Simulation$<LWY, LWZ>;
+  ): Simulation$<HKV, HKW>;
+
+  export function model<HLI>(simulation: Simulation$<HLI, any>): HLI;
+
+  export function view<HLN>(simulation: Simulation$<any, HLN>): $vnode.Element$<
+    HLN
+  >;
+
+  export function history<HLS>(simulation: Simulation$<any, HLS>): _.List<
+    Event$<HLS>
+  >;
 
 }
 
 declare module '*/agnostic/dev/query.mjs' {
-  import type * as _ from "../../gleam.d.mts";
   import type * as $path from "../../agnostic/vdom/path.d.mts";
   import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../gleam.d.mts";
 
   declare class FindElement extends _.CustomType {
     /** @deprecated */
@@ -2610,14 +5331,14 @@ declare module '*/agnostic/dev/query.mjs' {
     value: string;
   }
 
-  declare class Contains extends _.CustomType {
+  declare class HasText extends _.CustomType {
     /** @deprecated */
     constructor(content: string);
     /** @deprecated */
     content: string;
   }
 
-  export type Selector$ = All | Type | HasAttribute | HasClass | HasStyle | Contains;
+  export type Selector$ = All | Type | HasAttribute | HasClass | HasStyle | HasText;
 
   export function element(selector: Selector$): Query$;
 
@@ -2649,2216 +5370,81 @@ declare module '*/agnostic/dev/query.mjs' {
 
   export function matches(element: $vnode.Element$<any>, selector: Selector$): boolean;
 
-  export function to_readable_string(query: Query$): string;
-
-  export function find_all<LHR>(root: $vnode.Element$<LHR>, query: Query$): _.List<
-    $vnode.Element$<LHR>
-  >;
-
-  export function find_path<LGF>(
-    root: $vnode.Element$<LGF>,
+  export function find_path<GTR>(
+    root: $vnode.Element$<GTR>,
     query: Query$,
     index: number,
     path: $path.Path$
-  ): _.Result<[$vnode.Element$<LGF>, $path.Path$], undefined>;
+  ): _.Result<[$vnode.Element$<GTR>, $path.Path$], undefined>;
 
-  export function find<LGA>(root: $vnode.Element$<LGA>, query: Query$): _.Result<
-    $vnode.Element$<LGA>,
+  export function find<GTM>(root: $vnode.Element$<GTM>, query: Query$): _.Result<
+    $vnode.Element$<GTM>,
     undefined
+  >;
+
+  export function find_all<GVD>(root: $vnode.Element$<GVD>, query: Query$): _.List<
+    $vnode.Element$<GVD>
   >;
 
   export function has(element: $vnode.Element$<any>, selector: Selector$): boolean;
 
-}
-
-declare module '*/agnostic/vdom/diff.mjs' {
-  import type * as $json from "../../../gleam_json/gleam/json.d.mts";
-  import type * as _ from "../../gleam.d.mts";
-  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
-  import type * as $cache from "../../agnostic/vdom/cache.d.mts";
-  import type * as $patch from "../../agnostic/vdom/patch.d.mts";
-  import type * as $path from "../../agnostic/vdom/path.d.mts";
-  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
-  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
-
-  export class Diff<NQA> extends _.CustomType {
-    /** @deprecated */
-    constructor(patch: $patch.Patch$<any>, cache: $cache.Cache$<any>);
-    /** @deprecated */
-    patch: $patch.Patch$<any>;
-    /** @deprecated */
-    cache: $cache.Cache$<any>;
-  }
-  export function Diff$Diff<NQA>(
-    patch: $patch.Patch$<any>,
-    cache: $cache.Cache$<any>,
-  ): Diff$<NQA>;
-  export function Diff$isDiff<NQA>(value: Diff$<NQA>): boolean;
-  export function Diff$Diff$0<NQA>(value: Diff$<NQA>): $patch.Patch$<any>;
-  export function Diff$Diff$patch<NQA>(value: Diff$<NQA>): $patch.Patch$<any>;
-  export function Diff$Diff$1<NQA>(value: Diff$<NQA>): $cache.Cache$<any>;
-  export function Diff$Diff$cache<NQA>(value: Diff$<NQA>): $cache.Cache$<any>;
-
-  export type Diff$<NQA> = Diff<NQA>;
-
-  declare class PartialDiff<NQB> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      patch: $patch.Patch$<any>,
-      cache: $cache.Cache$<any>,
-      events: $cache.Events$<any>
-    );
-    /** @deprecated */
-    patch: $patch.Patch$<any>;
-    /** @deprecated */
-    cache: $cache.Cache$<any>;
-    /** @deprecated */
-    events: $cache.Events$<any>;
-  }
-
-  type PartialDiff$<NQB> = PartialDiff<NQB>;
-
-  declare class AttributeChange<NQC> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      added: _.List<$vattr.Attribute$<any>>,
-      removed: _.List<$vattr.Attribute$<any>>,
-      events: $cache.Events$<any>
-    );
-    /** @deprecated */
-    added: _.List<$vattr.Attribute$<any>>;
-    /** @deprecated */
-    removed: _.List<$vattr.Attribute$<any>>;
-    /** @deprecated */
-    events: $cache.Events$<any>;
-  }
-
-  type AttributeChange$<NQC> = AttributeChange<NQC>;
-
-  export function diff<NQD>(
-    cache: $cache.Cache$<NQD>,
-    old: $vnode.Element$<NQD>,
-    new$: $vnode.Element$<NQD>
-  ): Diff$<NQD>;
+  export function to_readable_string(query: Query$): string;
 
 }
 
-declare module '*/agnostic/vdom/path.mjs' {
+declare module '*/agnostic/internals/ref.mjs' {
   import type * as _ from "../../gleam.d.mts";
 
-  declare class Root extends _.CustomType {}
+  export type Ref$ = any;
 
-  declare class Key extends _.CustomType {
-    /** @deprecated */
-    constructor(key: string, parent: Path$);
-    /** @deprecated */
-    key: string;
-    /** @deprecated */
-    parent: Path$;
-  }
+  export function from(value: any): Ref$;
 
-  declare class Index extends _.CustomType {
-    /** @deprecated */
-    constructor(index: number, parent: Path$);
-    /** @deprecated */
-    index: number;
-    /** @deprecated */
-    parent: Path$;
-  }
+  export function equal(a: Ref$, b: Ref$): boolean;
 
-  declare class Subtree extends _.CustomType {
-    /** @deprecated */
-    constructor(parent: Path$);
-    /** @deprecated */
-    parent: Path$;
-  }
-
-  export type Path$ = Root | Key | Index | Subtree;
-
-  export const root: Path$;
-
-  export const separator_element: string;
-
-  export const separator_subtree: string;
-
-  export const separator_event: string;
-
-  export function add(parent: Path$, index: number, key: string): Path$;
-
-  export function subtree(path: Path$): Path$;
-
-  export function split_subtree_path(path: string): _.List<string>;
-
-  export function child(path: Path$): string;
-
-  export function to_string(path: Path$): string;
-
-  export function matches(path: Path$, candidates: _.List<string>): boolean;
-
-  export function event(path: Path$, event: string): string;
+  export function equal_lists(xs: _.List<Ref$>, ys: _.List<Ref$>): boolean;
 
 }
 
-declare module '*/agnostic/vdom/vnode.mjs' {
-  import type * as $json from "../../../gleam_json/gleam/json.d.mts";
-  import type * as $dynamic from "../../../gleam_stdlib/gleam/dynamic.d.mts";
-  import type * as $option from "../../../gleam_stdlib/gleam/option.d.mts";
+declare module '*/agnostic/internals/constants.mjs' {
   import type * as _ from "../../gleam.d.mts";
-  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
-  import type * as $ref from "../../agnostic/internals/ref.d.mts";
-  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
 
-  export type RawContent$ = any;
+  export const empty_list: _.List<any>;
 
-  export class Fragment<GWZ> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      kind: number,
-      key: string,
-      children: _.List<Element$<any>>,
-      keyed_children: $mutable_map.MutableMap$<string, Element$<any>>
-    );
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    key: string;
-    /** @deprecated */
-    children: _.List<Element$<any>>;
-    /** @deprecated */
-    keyed_children: $mutable_map.MutableMap$<string, Element$<any>>;
-  }
-  export function Element$Fragment<GWZ>(
-    kind: number,
-    key: string,
-    children: _.List<Element$<any>>,
-    keyed_children: $mutable_map.MutableMap$<string, Element$<any>>,
-  ): Element$<GWZ>;
-  export function Element$isFragment<GWZ>(value: Element$<GWZ>): boolean;
-  export function Element$Fragment$0<GWZ>(value: Element$<GWZ>): number;
-  export function Element$Fragment$kind<GWZ>(value: Element$<GWZ>): number;
-  export function Element$Fragment$1<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Fragment$key<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Fragment$2<GWZ>(value: Element$<GWZ>): _.List<
-    Element$<any>
-  >;
-  export function Element$Fragment$children<GWZ>(value: Element$<GWZ>): _.List<
-    Element$<any>
-  >;
-  export function Element$Fragment$3<GWZ>(value: Element$<GWZ>): $mutable_map.MutableMap$<
-    string,
-    Element$<any>
-  >;
-  export function Element$Fragment$keyed_children<GWZ>(value: Element$<GWZ>): $mutable_map.MutableMap$<
-    string,
-    Element$<any>
-  >;
+  export const error_nil: _.Result<any, undefined>;
 
-  export class Element<GWZ> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      kind: number,
-      key: string,
-      namespace: string,
-      tag: string,
-      attributes: _.List<$vattr.Attribute$<any>>,
-      children: _.List<Element$<any>>,
-      keyed_children: $mutable_map.MutableMap$<string, Element$<any>>
-    );
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    key: string;
-    /** @deprecated */
-    namespace: string;
-    /** @deprecated */
-    tag: string;
-    /** @deprecated */
-    attributes: _.List<$vattr.Attribute$<any>>;
-    /** @deprecated */
-    children: _.List<Element$<any>>;
-    /** @deprecated */
-    keyed_children: $mutable_map.MutableMap$<string, Element$<any>>;
-  }
-  export function Element$Element<GWZ>(
-    kind: number,
-    key: string,
-    namespace: string,
-    tag: string,
-    attributes: _.List<$vattr.Attribute$<any>>,
-    children: _.List<Element$<any>>,
-    keyed_children: $mutable_map.MutableMap$<string, Element$<any>>,
-  ): Element$<GWZ>;
-  export function Element$isElement<GWZ>(value: Element$<GWZ>): boolean;
-  export function Element$Element$0<GWZ>(value: Element$<GWZ>): number;
-  export function Element$Element$kind<GWZ>(value: Element$<GWZ>): number;
-  export function Element$Element$1<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Element$key<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Element$2<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Element$namespace<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Element$3<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Element$tag<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Element$4<GWZ>(value: Element$<GWZ>): _.List<
-    $vattr.Attribute$<any>
-  >;
-  export function Element$Element$attributes<GWZ>(value: Element$<GWZ>): _.List<
-    $vattr.Attribute$<any>
-  >;
-  export function Element$Element$5<GWZ>(value: Element$<GWZ>): _.List<
-    Element$<any>
-  >;
-  export function Element$Element$children<GWZ>(value: Element$<GWZ>): _.List<
-    Element$<any>
-  >;
-  export function Element$Element$6<GWZ>(value: Element$<GWZ>): $mutable_map.MutableMap$<
-    string,
-    Element$<any>
-  >;
-  export function Element$Element$keyed_children<GWZ>(value: Element$<GWZ>): $mutable_map.MutableMap$<
-    string,
-    Element$<any>
-  >;
-
-  export class Text extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, key: string, content: string);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    key: string;
-    /** @deprecated */
-    content: string;
-  }
-  export function Element$Text<GWZ>(
-    kind: number,
-    key: string,
-    content: string,
-  ): Element$<GWZ>;
-  export function Element$isText<GWZ>(value: Element$<GWZ>): boolean;
-  export function Element$Text$0<GWZ>(value: Element$<GWZ>): number;
-  export function Element$Text$kind<GWZ>(value: Element$<GWZ>): number;
-  export function Element$Text$1<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Text$key<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Text$2<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Text$content<GWZ>(value: Element$<GWZ>): string;
-
-  export class RawContainer<GWZ> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      kind: number,
-      key: string,
-      namespace: string,
-      tag: string,
-      attributes: _.List<$vattr.Attribute$<any>>,
-      content: RawContent$,
-      compare: $option.Option$<(x0: RawContent$, x1: RawContent$) => boolean>
-    );
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    key: string;
-    /** @deprecated */
-    namespace: string;
-    /** @deprecated */
-    tag: string;
-    /** @deprecated */
-    attributes: _.List<$vattr.Attribute$<any>>;
-    /** @deprecated */
-    content: RawContent$;
-    /** @deprecated */
-    compare: $option.Option$<(x0: RawContent$, x1: RawContent$) => boolean>;
-  }
-  export function Element$RawContainer<GWZ>(
-    kind: number,
-    key: string,
-    namespace: string,
-    tag: string,
-    attributes: _.List<$vattr.Attribute$<any>>,
-    content: RawContent$,
-    compare: $option.Option$<(x0: RawContent$, x1: RawContent$) => boolean>,
-  ): Element$<GWZ>;
-  export function Element$isRawContainer<GWZ>(value: Element$<GWZ>): boolean;
-  export function Element$RawContainer$0<GWZ>(value: Element$<GWZ>): number;
-  export function Element$RawContainer$kind<GWZ>(value: Element$<GWZ>): number;
-  export function Element$RawContainer$1<GWZ>(value: Element$<GWZ>): string;
-  export function Element$RawContainer$key<GWZ>(value: Element$<GWZ>): string;
-  export function Element$RawContainer$2<GWZ>(value: Element$<GWZ>): string;
-  export function Element$RawContainer$namespace<GWZ>(value: Element$<GWZ>): string;
-  export function Element$RawContainer$3<GWZ>(
-    value: Element$<GWZ>,
-  ): string;
-  export function Element$RawContainer$tag<GWZ>(value: Element$<GWZ>): string;
-  export function Element$RawContainer$4<GWZ>(value: Element$<GWZ>): _.List<
-    $vattr.Attribute$<any>
-  >;
-  export function Element$RawContainer$attributes<GWZ>(value: Element$<GWZ>): _.List<
-    $vattr.Attribute$<any>
-  >;
-  export function Element$RawContainer$5<GWZ>(value: Element$<GWZ>): RawContent$;
-  export function Element$RawContainer$content<GWZ>(value: Element$<GWZ>): RawContent$;
-  export function Element$RawContainer$6<GWZ>(
-    value: Element$<GWZ>,
-  ): $option.Option$<(x0: RawContent$, x1: RawContent$) => boolean>;
-  export function Element$RawContainer$compare<GWZ>(value: Element$<GWZ>): $option.Option$<
-    (x0: RawContent$, x1: RawContent$) => boolean
-  >;
-
-  export class RawNode extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      kind: number,
-      key: string,
-      content: RawContent$,
-      compare: $option.Option$<(x0: RawContent$, x1: RawContent$) => boolean>
-    );
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    key: string;
-    /** @deprecated */
-    content: RawContent$;
-    /** @deprecated */
-    compare: $option.Option$<(x0: RawContent$, x1: RawContent$) => boolean>;
-  }
-  export function Element$RawNode<GWZ>(
-    kind: number,
-    key: string,
-    content: RawContent$,
-    compare: $option.Option$<(x0: RawContent$, x1: RawContent$) => boolean>,
-  ): Element$<GWZ>;
-  export function Element$isRawNode<GWZ>(value: Element$<GWZ>): boolean;
-  export function Element$RawNode$0<GWZ>(value: Element$<GWZ>): number;
-  export function Element$RawNode$kind<GWZ>(value: Element$<GWZ>): number;
-  export function Element$RawNode$1<GWZ>(value: Element$<GWZ>): string;
-  export function Element$RawNode$key<GWZ>(value: Element$<GWZ>): string;
-  export function Element$RawNode$2<GWZ>(value: Element$<GWZ>): RawContent$;
-  export function Element$RawNode$content<GWZ>(value: Element$<GWZ>): RawContent$;
-  export function Element$RawNode$3<GWZ>(value: Element$<GWZ>): $option.Option$<
-    (x0: RawContent$, x1: RawContent$) => boolean
-  >;
-  export function Element$RawNode$compare<GWZ>(value: Element$<GWZ>): $option.Option$<
-    (x0: RawContent$, x1: RawContent$) => boolean
-  >;
-
-  export class Map<GWZ> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      kind: number,
-      key: string,
-      mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$,
-      child: Element$<any>
-    );
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    key: string;
-    /** @deprecated */
-    mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$;
-    /** @deprecated */
-    child: Element$<any>;
-  }
-  export function Element$Map<GWZ>(
-    kind: number,
-    key: string,
-    mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$,
-    child: Element$<any>,
-  ): Element$<GWZ>;
-  export function Element$isMap<GWZ>(value: Element$<GWZ>): boolean;
-  export function Element$Map$0<GWZ>(value: Element$<GWZ>): number;
-  export function Element$Map$kind<GWZ>(value: Element$<GWZ>): number;
-  export function Element$Map$1<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Map$key<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Map$2<GWZ>(value: Element$<GWZ>): (
-    x0: $dynamic.Dynamic$
-  ) => $dynamic.Dynamic$;
-  export function Element$Map$mapper<GWZ>(value: Element$<GWZ>): (
-    x0: $dynamic.Dynamic$
-  ) => $dynamic.Dynamic$;
-  export function Element$Map$3<GWZ>(value: Element$<GWZ>): Element$<any>;
-  export function Element$Map$child<GWZ>(value: Element$<GWZ>): Element$<any>;
-
-  export class Memo<GWZ> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      kind: number,
-      key: string,
-      dependencies: _.List<$ref.Ref$>,
-      view: () => Element$<any>
-    );
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    key: string;
-    /** @deprecated */
-    dependencies: _.List<$ref.Ref$>;
-    /** @deprecated */
-    view: () => Element$<any>;
-  }
-  export function Element$Memo<GWZ>(
-    kind: number,
-    key: string,
-    dependencies: _.List<$ref.Ref$>,
-    view: () => Element$<any>,
-  ): Element$<GWZ>;
-  export function Element$isMemo<GWZ>(value: Element$<GWZ>): boolean;
-  export function Element$Memo$0<GWZ>(value: Element$<GWZ>): number;
-  export function Element$Memo$kind<GWZ>(value: Element$<GWZ>): number;
-  export function Element$Memo$1<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Memo$key<GWZ>(value: Element$<GWZ>): string;
-  export function Element$Memo$2<GWZ>(value: Element$<GWZ>): _.List<$ref.Ref$>;
-  export function Element$Memo$dependencies<GWZ>(value: Element$<GWZ>): _.List<
-    $ref.Ref$
-  >;
-  export function Element$Memo$3<GWZ>(value: Element$<GWZ>): () => Element$<any>;
-  export function Element$Memo$view<GWZ>(value: Element$<GWZ>): () => Element$<
-    any
-  >;
-
-  export type Element$<GWZ> = Fragment<GWZ> | Element<GWZ> | Text | RawContainer<
-    GWZ
-  > | RawNode | Map<GWZ> | Memo<GWZ>;
-
-  export function Element$key<GWZ>(value: Element$<GWZ>): string;
-  export function Element$kind<GWZ>(value: Element$<GWZ>): number;
-
-  export type RawContentComparator = (x0: RawContent$, x1: RawContent$) => boolean;
-
-  export type RawContentSerializer = (x0: RawContent$) => string;
-
-  export type Memos = $mutable_map.MutableMap$<() => Element$<any>, Element$<any>>;
-
-  export type View = () => Element$<any>;
-
-  export const fragment_kind: number;
-
-  export const element_kind: number;
-
-  export const text_kind: number;
-
-  export const raw_container_kind: number;
-
-  export const raw_node_kind: number;
-
-  export const map_kind: number;
-
-  export const memo_kind: number;
-
-  export function to_raw_content(value: any): RawContent$;
-
-  export function raw_content_to_string(content: RawContent$): string;
-
-  export function empty_keyed_children(): $mutable_map.MutableMap$<
-    string,
-    Element$<any>
-  >;
-
-  export function to_keyed<GYY>(key: string, node: Element$<GYY>): Element$<GYY>;
-
-  export function fragment<GXM>(
-    key: string,
-    children: _.List<Element$<GXM>>,
-    keyed_children: $mutable_map.MutableMap$<string, Element$<GXM>>
-  ): Element$<GXM>;
-
-  export function element<GXT>(
-    key: string,
-    namespace: string,
-    tag: string,
-    attributes: _.List<$vattr.Attribute$<GXT>>,
-    children: _.List<Element$<GXT>>,
-    keyed_children: $mutable_map.MutableMap$<string, Element$<GXT>>
-  ): Element$<GXT>;
-
-  export function text(key: string, content: string): Element$<any>;
-
-  export function raw_container<GYE, GYH>(
-    key: string,
-    namespace: string,
-    tag: string,
-    attributes: _.List<$vattr.Attribute$<GYE>>,
-    content: GYH,
-    compare: $option.Option$<(x0: GYH, x1: GYH) => boolean>
-  ): Element$<GYE>;
-
-  export function raw_node<GYK>(
-    key: string,
-    content: GYK,
-    compare: $option.Option$<(x0: GYK, x1: GYK) => boolean>
-  ): Element$<any>;
-
-  export function map<GYO, GYQ>(element: Element$<GYO>, mapper: (x0: GYO) => GYQ): Element$<
-    GYQ
-  >;
-
-  export function memo<GYT>(
-    key: string,
-    dependencies: _.List<$ref.Ref$>,
-    view: () => Element$<GYT>
-  ): Element$<GYT>;
-
-  export function to_json<GZB>(
-    node: Element$<GZB>,
-    memos: $mutable_map.MutableMap$<() => Element$<GZB>, Element$<GZB>>,
-    serialize_raw_content: (x0: RawContent$) => string
-  ): $json.Json$;
+  export function singleton_list<ARL>(item: ARL): _.List<ARL>;
 
 }
 
-declare module '*/agnostic/vdom/patch.mjs' {
-  import type * as $json from "../../../gleam_json/gleam/json.d.mts";
-  import type * as _ from "../../gleam.d.mts";
-  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
-  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
-  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
+declare module '*/agnostic/internals/mutable_map.mjs' {
+  export type MutableMap$<BXX, BXY> = any;
 
-  export class Patch<IPW> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      index: number,
-      removed: number,
-      changes: _.List<Change$<any>>,
-      children: _.List<Patch$<any>>
-    );
-    /** @deprecated */
-    index: number;
-    /** @deprecated */
-    removed: number;
-    /** @deprecated */
-    changes: _.List<Change$<any>>;
-    /** @deprecated */
-    children: _.List<Patch$<any>>;
-  }
-  export function Patch$Patch<IPW>(
-    index: number,
-    removed: number,
-    changes: _.List<Change$<any>>,
-    children: _.List<Patch$<any>>,
-  ): Patch$<IPW>;
-  export function Patch$isPatch<IPW>(value: Patch$<IPW>): boolean;
-  export function Patch$Patch$0<IPW>(value: Patch$<IPW>): number;
-  export function Patch$Patch$index<IPW>(value: Patch$<IPW>): number;
-  export function Patch$Patch$1<IPW>(value: Patch$<IPW>): number;
-  export function Patch$Patch$removed<IPW>(value: Patch$<IPW>): number;
-  export function Patch$Patch$2<IPW>(value: Patch$<IPW>): _.List<Change$<any>>;
-  export function Patch$Patch$changes<IPW>(value: Patch$<IPW>): _.List<
-    Change$<any>
-  >;
-  export function Patch$Patch$3<IPW>(value: Patch$<IPW>): _.List<Patch$<any>>;
-  export function Patch$Patch$children<IPW>(value: Patch$<IPW>): _.List<
-    Patch$<any>
+  export function new$(): MutableMap$<any, any>;
+
+  export function unsafe_get<BYD, BYE>(map: MutableMap$<BYD, BYE>, key: BYD): BYE;
+
+  export function get_or_compute<BYL, BYM>(
+    map: MutableMap$<BYL, BYM>,
+    key: BYL,
+    compute: () => BYM
+  ): BYM;
+
+  export function has_key<BYV>(map: MutableMap$<BYV, any>, key: BYV): boolean;
+
+  export function insert<BZD, BZE>(
+    map: MutableMap$<BZD, BZE>,
+    key: BZD,
+    value: BZE
+  ): MutableMap$<BZD, BZE>;
+
+  export function delete$<BZP, BZQ>(map: MutableMap$<BZP, BZQ>, key: BZP): MutableMap$<
+    BZP,
+    BZQ
   >;
 
-  export type Patch$<IPW> = Patch<IPW>;
+  export function size(map: MutableMap$<any, any>): number;
 
-  export class ReplaceText extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, content: string);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    content: string;
-  }
-  export function Change$ReplaceText<IPX>(
-    kind: number,
-    content: string,
-  ): Change$<IPX>;
-  export function Change$isReplaceText<IPX>(value: Change$<IPX>): boolean;
-  export function Change$ReplaceText$0<IPX>(value: Change$<IPX>): number;
-  export function Change$ReplaceText$kind<IPX>(value: Change$<IPX>): number;
-  export function Change$ReplaceText$1<IPX>(value: Change$<IPX>): string;
-  export function Change$ReplaceText$content<IPX>(value: Change$<IPX>): string;
-
-  export class ReplaceRawContent extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, content: $vnode.RawContent$);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    content: $vnode.RawContent$;
-  }
-  export function Change$ReplaceRawContent<IPX>(
-    kind: number,
-    content: $vnode.RawContent$,
-  ): Change$<IPX>;
-  export function Change$isReplaceRawContent<IPX>(value: Change$<IPX>): boolean;
-  export function Change$ReplaceRawContent$0<IPX>(value: Change$<IPX>): number;
-  export function Change$ReplaceRawContent$kind<IPX>(value: Change$<IPX>): number;
-  export function Change$ReplaceRawContent$1<IPX>(value: Change$<IPX>): $vnode.RawContent$;
-  export function Change$ReplaceRawContent$content<IPX>(
-    value: Change$<IPX>,
-  ): $vnode.RawContent$;
-
-  export class ReplaceRawNode<IPX> extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, with$: $vnode.Element$<any>);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    with$: $vnode.Element$<any>;
-  }
-  export function Change$ReplaceRawNode<IPX>(
-    kind: number,
-    with$: $vnode.Element$<any>,
-  ): Change$<IPX>;
-  export function Change$isReplaceRawNode<IPX>(value: Change$<IPX>): boolean;
-  export function Change$ReplaceRawNode$0<IPX>(value: Change$<IPX>): number;
-  export function Change$ReplaceRawNode$kind<IPX>(value: Change$<IPX>): number;
-  export function Change$ReplaceRawNode$1<IPX>(value: Change$<IPX>): $vnode.Element$<
-    any
-  >;
-  export function Change$ReplaceRawNode$with<IPX>(value: Change$<IPX>): $vnode.Element$<
-    any
-  >;
-
-  export class Update<IPX> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      kind: number,
-      added: _.List<$vattr.Attribute$<any>>,
-      removed: _.List<$vattr.Attribute$<any>>
-    );
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    added: _.List<$vattr.Attribute$<any>>;
-    /** @deprecated */
-    removed: _.List<$vattr.Attribute$<any>>;
-  }
-  export function Change$Update<IPX>(
-    kind: number,
-    added: _.List<$vattr.Attribute$<any>>,
-    removed: _.List<$vattr.Attribute$<any>>,
-  ): Change$<IPX>;
-  export function Change$isUpdate<IPX>(value: Change$<IPX>): boolean;
-  export function Change$Update$0<IPX>(value: Change$<IPX>): number;
-  export function Change$Update$kind<IPX>(value: Change$<IPX>): number;
-  export function Change$Update$1<IPX>(value: Change$<IPX>): _.List<
-    $vattr.Attribute$<any>
-  >;
-  export function Change$Update$added<IPX>(value: Change$<IPX>): _.List<
-    $vattr.Attribute$<any>
-  >;
-  export function Change$Update$2<IPX>(value: Change$<IPX>): _.List<
-    $vattr.Attribute$<any>
-  >;
-  export function Change$Update$removed<IPX>(value: Change$<IPX>): _.List<
-    $vattr.Attribute$<any>
-  >;
-
-  export class Move extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, key: string, before: number);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    key: string;
-    /** @deprecated */
-    before: number;
-  }
-  export function Change$Move<IPX>(
-    kind: number,
-    key: string,
-    before: number,
-  ): Change$<IPX>;
-  export function Change$isMove<IPX>(value: Change$<IPX>): boolean;
-  export function Change$Move$0<IPX>(value: Change$<IPX>): number;
-  export function Change$Move$kind<IPX>(value: Change$<IPX>): number;
-  export function Change$Move$1<IPX>(value: Change$<IPX>): string;
-  export function Change$Move$key<IPX>(value: Change$<IPX>): string;
-  export function Change$Move$2<IPX>(value: Change$<IPX>): number;
-  export function Change$Move$before<IPX>(value: Change$<IPX>): number;
-
-  export class Replace<IPX> extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, index: number, with$: $vnode.Element$<any>);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    index: number;
-    /** @deprecated */
-    with$: $vnode.Element$<any>;
-  }
-  export function Change$Replace<IPX>(
-    kind: number,
-    index: number,
-    with$: $vnode.Element$<any>,
-  ): Change$<IPX>;
-  export function Change$isReplace<IPX>(value: Change$<IPX>): boolean;
-  export function Change$Replace$0<IPX>(value: Change$<IPX>): number;
-  export function Change$Replace$kind<IPX>(value: Change$<IPX>): number;
-  export function Change$Replace$1<IPX>(value: Change$<IPX>): number;
-  export function Change$Replace$index<IPX>(value: Change$<IPX>): number;
-  export function Change$Replace$2<IPX>(value: Change$<IPX>): $vnode.Element$<any>;
-  export function Change$Replace$with<IPX>(
-    value: Change$<IPX>,
-  ): $vnode.Element$<any>;
-
-  export class Remove extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, index: number);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    index: number;
-  }
-  export function Change$Remove<IPX>(kind: number, index: number): Change$<IPX>;
-  export function Change$isRemove<IPX>(value: Change$<IPX>): boolean;
-  export function Change$Remove$0<IPX>(value: Change$<IPX>): number;
-  export function Change$Remove$kind<IPX>(value: Change$<IPX>): number;
-  export function Change$Remove$1<IPX>(value: Change$<IPX>): number;
-  export function Change$Remove$index<IPX>(value: Change$<IPX>): number;
-
-  export class Insert<IPX> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      kind: number,
-      children: _.List<$vnode.Element$<any>>,
-      before: number
-    );
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    children: _.List<$vnode.Element$<any>>;
-    /** @deprecated */
-    before: number;
-  }
-  export function Change$Insert<IPX>(
-    kind: number,
-    children: _.List<$vnode.Element$<any>>,
-    before: number,
-  ): Change$<IPX>;
-  export function Change$isInsert<IPX>(value: Change$<IPX>): boolean;
-  export function Change$Insert$0<IPX>(value: Change$<IPX>): number;
-  export function Change$Insert$kind<IPX>(value: Change$<IPX>): number;
-  export function Change$Insert$1<IPX>(value: Change$<IPX>): _.List<
-    $vnode.Element$<any>
-  >;
-  export function Change$Insert$children<IPX>(value: Change$<IPX>): _.List<
-    $vnode.Element$<any>
-  >;
-  export function Change$Insert$2<IPX>(value: Change$<IPX>): number;
-  export function Change$Insert$before<IPX>(value: Change$<IPX>): number;
-
-  export type Change$<IPX> = ReplaceText | ReplaceRawContent | ReplaceRawNode<IPX> | Update<
-    IPX
-  > | Move | Replace<IPX> | Remove | Insert<IPX>;
-
-  export function Change$kind<IPX>(value: Change$<IPX>): number;
-
-  export const replace_text_kind: number;
-
-  export const replace_raw_content_kind: number;
-
-  export const replace_raw_node_kind: number;
-
-  export const update_kind: number;
-
-  export const move_kind: number;
-
-  export const remove_kind: number;
-
-  export const replace_kind: number;
-
-  export const insert_kind: number;
-
-  export function new$<IPY>(
-    index: number,
-    removed: number,
-    changes: _.List<Change$<IPY>>,
-    children: _.List<Patch$<IPY>>
-  ): Patch$<IPY>;
-
-  export function is_empty(patch: Patch$<any>): boolean;
-
-  export function add_child<IRE>(parent: Patch$<IRE>, child: Patch$<IRE>): Patch$<
-    IRE
-  >;
-
-  export function to_json<IRI>(
-    patch: Patch$<IRI>,
-    memos: $mutable_map.MutableMap$<
-      () => $vnode.Element$<IRI>,
-      $vnode.Element$<IRI>
-    >,
-    serialize_raw_content: (x0: $vnode.RawContent$) => string
-  ): $json.Json$;
-
-  export function replace_text(content: string): Change$<any>;
-
-  export function replace_raw_content(content: $vnode.RawContent$): Change$<any>;
-
-  export function replace_raw_node<IQI>(with$: $vnode.Element$<IQI>): Change$<IQI>;
-
-  export function update<IQL>(
-    added: _.List<$vattr.Attribute$<IQL>>,
-    removed: _.List<$vattr.Attribute$<IQL>>
-  ): Change$<IQL>;
-
-  export function move(key: string, before: number): Change$<any>;
-
-  export function remove(index: number): Change$<any>;
-
-  export function replace<IQV>(index: number, with$: $vnode.Element$<IQV>): Change$<
-    IQV
-  >;
-
-  export function insert<IQY>(
-    children: _.List<$vnode.Element$<IQY>>,
-    before: number
-  ): Change$<IQY>;
-
-}
-
-declare module '*/agnostic/vdom/vattr.mjs' {
-  import type * as $json from "../../../gleam_json/gleam/json.d.mts";
-  import type * as $decode from "../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
-  import type * as $order from "../../../gleam_stdlib/gleam/order.d.mts";
-  import type * as _ from "../../gleam.d.mts";
-
-  export class Attribute extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, name: string, value: string);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    name: string;
-    /** @deprecated */
-    value: string;
-  }
-  export function Attribute$Attribute<FPR>(
-    kind: number,
-    name: string,
-    value: string,
-  ): Attribute$<FPR>;
-  export function Attribute$isAttribute<FPR>(value: Attribute$<FPR>): boolean;
-  export function Attribute$Attribute$0<FPR>(value: Attribute$<FPR>): number;
-  export function Attribute$Attribute$kind<FPR>(value: Attribute$<FPR>): number;
-  export function Attribute$Attribute$1<FPR>(value: Attribute$<FPR>): string;
-  export function Attribute$Attribute$name<FPR>(value: Attribute$<FPR>): string;
-  export function Attribute$Attribute$2<FPR>(value: Attribute$<FPR>): string;
-  export function Attribute$Attribute$value<FPR>(value: Attribute$<FPR>): string;
-
-  export class Property extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, name: string, value: $json.Json$);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    name: string;
-    /** @deprecated */
-    value: $json.Json$;
-  }
-  export function Attribute$Property<FPR>(
-    kind: number,
-    name: string,
-    value: $json.Json$,
-  ): Attribute$<FPR>;
-  export function Attribute$isProperty<FPR>(value: Attribute$<FPR>): boolean;
-  export function Attribute$Property$0<FPR>(value: Attribute$<FPR>): number;
-  export function Attribute$Property$kind<FPR>(value: Attribute$<FPR>): number;
-  export function Attribute$Property$1<FPR>(value: Attribute$<FPR>): string;
-  export function Attribute$Property$name<FPR>(value: Attribute$<FPR>): string;
-  export function Attribute$Property$2<FPR>(value: Attribute$<FPR>): $json.Json$;
-  export function Attribute$Property$value<FPR>(value: Attribute$<FPR>): $json.Json$;
-
-  export class Event<FPR> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      kind: number,
-      name: string,
-      handler: $decode.Decoder$<Handler$<any>>,
-      include: _.List<string>,
-      prevent_default: EventBehaviour$,
-      stop_propagation: EventBehaviour$,
-      debounce: number,
-      throttle: number
-    );
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    name: string;
-    /** @deprecated */
-    handler: $decode.Decoder$<Handler$<any>>;
-    /** @deprecated */
-    include: _.List<string>;
-    /** @deprecated */
-    prevent_default: EventBehaviour$;
-    /** @deprecated */
-    stop_propagation: EventBehaviour$;
-    /** @deprecated */
-    debounce: number;
-    /** @deprecated */
-    throttle: number;
-  }
-  export function Attribute$Event<FPR>(
-    kind: number,
-    name: string,
-    handler: $decode.Decoder$<Handler$<any>>,
-    include: _.List<string>,
-    prevent_default: EventBehaviour$,
-    stop_propagation: EventBehaviour$,
-    debounce: number,
-    throttle: number,
-  ): Attribute$<FPR>;
-  export function Attribute$isEvent<FPR>(value: Attribute$<FPR>): boolean;
-  export function Attribute$Event$0<FPR>(value: Attribute$<FPR>): number;
-  export function Attribute$Event$kind<FPR>(value: Attribute$<FPR>): number;
-  export function Attribute$Event$1<FPR>(value: Attribute$<FPR>): string;
-  export function Attribute$Event$name<FPR>(value: Attribute$<FPR>): string;
-  export function Attribute$Event$2<FPR>(value: Attribute$<FPR>): $decode.Decoder$<
-    Handler$<any>
-  >;
-  export function Attribute$Event$handler<FPR>(value: Attribute$<FPR>): $decode.Decoder$<
-    Handler$<any>
-  >;
-  export function Attribute$Event$3<FPR>(value: Attribute$<FPR>): _.List<string>;
-  export function Attribute$Event$include<FPR>(value: Attribute$<FPR>): _.List<
-    string
-  >;
-  export function Attribute$Event$4<FPR>(value: Attribute$<FPR>): EventBehaviour$;
-  export function Attribute$Event$prevent_default<FPR>(value: Attribute$<FPR>): EventBehaviour$;
-  export function Attribute$Event$5<FPR>(
-    value: Attribute$<FPR>,
-  ): EventBehaviour$;
-  export function Attribute$Event$stop_propagation<FPR>(value: Attribute$<FPR>): EventBehaviour$;
-  export function Attribute$Event$6<FPR>(
-    value: Attribute$<FPR>,
-  ): number;
-  export function Attribute$Event$debounce<FPR>(value: Attribute$<FPR>): number;
-  export function Attribute$Event$7<FPR>(value: Attribute$<FPR>): number;
-  export function Attribute$Event$throttle<FPR>(value: Attribute$<FPR>): number;
-
-  export type Attribute$<FPR> = Attribute | Property | Event<FPR>;
-
-  export function Attribute$kind<FPR>(value: Attribute$<FPR>): number;
-  export function Attribute$name<FPR>(value: Attribute$<FPR>): string;
-
-  export class Handler<FPS> extends _.CustomType {
-    /** @deprecated */
-    constructor(prevent_default: boolean, stop_propagation: boolean, message: FPS);
-    /** @deprecated */
-    prevent_default: boolean;
-    /** @deprecated */
-    stop_propagation: boolean;
-    /** @deprecated */
-    message: FPS;
-  }
-  export function Handler$Handler<FPS>(
-    prevent_default: boolean,
-    stop_propagation: boolean,
-    message: FPS,
-  ): Handler$<FPS>;
-  export function Handler$isHandler<FPS>(value: Handler$<FPS>): boolean;
-  export function Handler$Handler$0<FPS>(value: Handler$<FPS>): boolean;
-  export function Handler$Handler$prevent_default<FPS>(value: Handler$<FPS>): boolean;
-  export function Handler$Handler$1<FPS>(
-    value: Handler$<FPS>,
-  ): boolean;
-  export function Handler$Handler$stop_propagation<FPS>(value: Handler$<FPS>): boolean;
-  export function Handler$Handler$2<FPS>(
-    value: Handler$<FPS>,
-  ): FPS;
-  export function Handler$Handler$message<FPS>(value: Handler$<FPS>): FPS;
-
-  export type Handler$<FPS> = Handler<FPS>;
-
-  export class Never extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number);
-    /** @deprecated */
-    kind: number;
-  }
-  export function EventBehaviour$Never(kind: number): EventBehaviour$;
-  export function EventBehaviour$isNever(value: EventBehaviour$): boolean;
-  export function EventBehaviour$Never$0(value: EventBehaviour$): number;
-  export function EventBehaviour$Never$kind(value: EventBehaviour$): number;
-
-  export class Possible extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number);
-    /** @deprecated */
-    kind: number;
-  }
-  export function EventBehaviour$Possible(kind: number): EventBehaviour$;
-  export function EventBehaviour$isPossible(value: EventBehaviour$): boolean;
-  export function EventBehaviour$Possible$0(value: EventBehaviour$): number;
-  export function EventBehaviour$Possible$kind(value: EventBehaviour$): number;
-
-  export class Always extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number);
-    /** @deprecated */
-    kind: number;
-  }
-  export function EventBehaviour$Always(kind: number): EventBehaviour$;
-  export function EventBehaviour$isAlways(value: EventBehaviour$): boolean;
-  export function EventBehaviour$Always$0(value: EventBehaviour$): number;
-  export function EventBehaviour$Always$kind(value: EventBehaviour$): number;
-
-  export type EventBehaviour$ = Never | Possible | Always;
-
-  export function EventBehaviour$kind(value: EventBehaviour$): number;
-
-  export const attribute_kind: number;
-
-  export const property_kind: number;
-
-  export const event_kind: number;
-
-  export const never_kind: number;
-
-  export const never: EventBehaviour$;
-
-  export const possible_kind: number;
-
-  export const possible: EventBehaviour$;
-
-  export const always_kind: number;
-
-  export const always: EventBehaviour$;
-
-  export function merge<FQH>(
-    attributes: _.List<Attribute$<FQH>>,
-    merged: _.List<Attribute$<FQH>>
-  ): _.List<Attribute$<FQH>>;
-
-  export function compare<FQO>(a: Attribute$<FQO>, b: Attribute$<FQO>): $order.Order$;
-
-  export function prepare<FQC>(attributes: _.List<Attribute$<FQC>>): _.List<
-    Attribute$<FQC>
-  >;
-
-  export function attribute(name: string, value: string): Attribute$<any>;
-
-  export function property(name: string, value: $json.Json$): Attribute$<any>;
-
-  export function event<FPX>(
-    name: string,
-    handler: $decode.Decoder$<Handler$<FPX>>,
-    include: _.List<string>,
-    prevent_default: EventBehaviour$,
-    stop_propagation: EventBehaviour$,
-    debounce: number,
-    throttle: number
-  ): Attribute$<FPX>;
-
-  export function to_json(attribute: Attribute$<any>): $json.Json$;
-
-}
-
-declare module '*/agnostic/vdom/cache.mjs' {
-  import type * as $dynamic from "../../../gleam_stdlib/gleam/dynamic.d.mts";
-  import type * as $decode from "../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
-  import type * as _ from "../../gleam.d.mts";
-  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
-  import type * as $path from "../../agnostic/vdom/path.d.mts";
-  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
-  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
-
-  declare class Cache<JBT> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      events: Events$<any>,
-      vdoms: $mutable_map.MutableMap$<
-        () => $vnode.Element$<any>,
-        $vnode.Element$<any>
-      >,
-      old_vdoms: $mutable_map.MutableMap$<
-        () => $vnode.Element$<any>,
-        $vnode.Element$<any>
-      >,
-      dispatched_paths: _.List<string>,
-      next_dispatched_paths: _.List<string>
-    );
-    /** @deprecated */
-    events: Events$<any>;
-    /** @deprecated */
-    vdoms: $mutable_map.MutableMap$<
-      () => $vnode.Element$<any>,
-      $vnode.Element$<any>
-    >;
-    /** @deprecated */
-    old_vdoms: $mutable_map.MutableMap$<
-      () => $vnode.Element$<any>,
-      $vnode.Element$<any>
-    >;
-    /** @deprecated */
-    dispatched_paths: _.List<string>;
-    /** @deprecated */
-    next_dispatched_paths: _.List<string>;
-  }
-
-  export type Cache$<JBT> = Cache<JBT>;
-
-  declare class Events<JBU> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      handlers: $mutable_map.MutableMap$<
-        string,
-        $decode.Decoder$<$vattr.Handler$<any>>
-      >,
-      children: $mutable_map.MutableMap$<string, Child$<any>>
-    );
-    /** @deprecated */
-    handlers: $mutable_map.MutableMap$<
-      string,
-      $decode.Decoder$<$vattr.Handler$<any>>
-    >;
-    /** @deprecated */
-    children: $mutable_map.MutableMap$<string, Child$<any>>;
-  }
-
-  export type Events$<JBU> = Events<JBU>;
-
-  declare class Child<JBV> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$,
-      events: Events$<any>
-    );
-    /** @deprecated */
-    mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$;
-    /** @deprecated */
-    events: Events$<any>;
-  }
-
-  type Child$<JBV> = Child<JBV>;
-
-  declare class AddedChildren<JBW> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      handlers: $mutable_map.MutableMap$<
-        string,
-        $decode.Decoder$<$vattr.Handler$<any>>
-      >,
-      children: $mutable_map.MutableMap$<string, Child$<any>>,
-      vdoms: $mutable_map.MutableMap$<
-        () => $vnode.Element$<any>,
-        $vnode.Element$<any>
-      >
-    );
-    /** @deprecated */
-    handlers: $mutable_map.MutableMap$<
-      string,
-      $decode.Decoder$<$vattr.Handler$<any>>
-    >;
-    /** @deprecated */
-    children: $mutable_map.MutableMap$<string, Child$<any>>;
-    /** @deprecated */
-    vdoms: $mutable_map.MutableMap$<
-      () => $vnode.Element$<any>,
-      $vnode.Element$<any>
-    >;
-  }
-
-  type AddedChildren$<JBW> = AddedChildren<JBW>;
-
-  declare class DecodedEvent<JBX> extends _.CustomType {
-    /** @deprecated */
-    constructor(path: string, handler: $vattr.Handler$<any>);
-    /** @deprecated */
-    path: string;
-    /** @deprecated */
-    handler: $vattr.Handler$<any>;
-  }
-
-  declare class DispatchedEvent extends _.CustomType {
-    /** @deprecated */
-    constructor(path: string);
-    /** @deprecated */
-    path: string;
-  }
-
-  export type DecodedEvent$<JBX> = DecodedEvent<JBX> | DispatchedEvent;
-
-  export type Mapper = (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$;
-
-  export function compose_mapper(
-    mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$,
-    child_mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$
-  ): (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$;
-
-  export function new_events(): Events$<any>;
-
-  export function new$(): Cache$<any>;
-
-  export function tick<JCF>(cache: Cache$<JCF>): Cache$<JCF>;
-
-  export function events<JCI>(cache: Cache$<JCI>): Events$<JCI>;
-
-  export function update_events<JCL>(cache: Cache$<JCL>, events: Events$<JCL>): Cache$<
-    JCL
-  >;
-
-  export function memos<JCP>(cache: Cache$<JCP>): $mutable_map.MutableMap$<
-    () => $vnode.Element$<JCP>,
-    $vnode.Element$<JCP>
-  >;
-
-  export function get_old_memo<JCS>(
-    cache: Cache$<JCS>,
-    old: () => $vnode.Element$<JCS>,
-    new$: () => $vnode.Element$<JCS>
-  ): $vnode.Element$<JCS>;
-
-  export function keep_memo<JCX>(
-    cache: Cache$<JCX>,
-    old: () => $vnode.Element$<JCX>,
-    new$: () => $vnode.Element$<JCX>
-  ): Cache$<JCX>;
-
-  export function add_memo<JDC>(
-    cache: Cache$<JDC>,
-    new$: () => $vnode.Element$<JDC>,
-    node: $vnode.Element$<JDC>
-  ): Cache$<JDC>;
-
-  export function get_subtree<JDH>(
-    events: Events$<JDH>,
-    path: string,
-    old_mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$
-  ): Events$<JDH>;
-
-  export function update_subtree<JDK>(
-    parent: Events$<JDK>,
-    path: string,
-    mapper: (x0: $dynamic.Dynamic$) => $dynamic.Dynamic$,
-    events: Events$<JDK>
-  ): Events$<JDK>;
-
-  export function add_event<JDO>(
-    events: Events$<JDO>,
-    path: $path.Path$,
-    name: string,
-    handler: $decode.Decoder$<$vattr.Handler$<JDO>>
-  ): Events$<JDO>;
-
-  export function remove_event<JEE>(
-    events: Events$<JEE>,
-    path: $path.Path$,
-    name: string
-  ): Events$<JEE>;
-
-  export function add_children<JFH>(
-    cache: Cache$<JFH>,
-    events: Events$<JFH>,
-    path: $path.Path$,
-    child_index: number,
-    nodes: _.List<$vnode.Element$<JFH>>
-  ): [Cache$<JFH>, Events$<JFH>];
-
-  export function add_child<JEQ>(
-    cache: Cache$<JEQ>,
-    events: Events$<JEQ>,
-    parent: $path.Path$,
-    index: number,
-    child: $vnode.Element$<JEQ>
-  ): [Cache$<JEQ>, Events$<JEQ>];
-
-  export function from_node<JCC>(root: $vnode.Element$<JCC>): Cache$<JCC>;
-
-  export function remove_child<JGA>(
-    cache: Cache$<JGA>,
-    events: Events$<JGA>,
-    parent: $path.Path$,
-    child_index: number,
-    child: $vnode.Element$<JGA>
-  ): Events$<JGA>;
-
-  export function replace_child<JHC>(
-    cache: Cache$<JHC>,
-    events: Events$<JHC>,
-    parent: $path.Path$,
-    child_index: number,
-    prev: $vnode.Element$<JHC>,
-    next: $vnode.Element$<JHC>
-  ): [Cache$<JHC>, Events$<JHC>];
-
-  export function dispatch<JHQ>(cache: Cache$<JHQ>, event: DecodedEvent$<JHQ>): [
-    Cache$<JHQ>,
-    _.Result<$vattr.Handler$<JHQ>, undefined>
-  ];
-
-  export function has_dispatched_events(cache: Cache$<any>, path: $path.Path$): boolean;
-
-  export function decode(
-    cache: Cache$<any>,
-    path: string,
-    name: string,
-    event: $dynamic.Dynamic$
-  ): DecodedEvent$<any>;
-
-  export function handle<JHU>(
-    cache: Cache$<JHU>,
-    path: string,
-    name: string,
-    event: $dynamic.Dynamic$
-  ): [Cache$<JHU>, _.Result<$vattr.Handler$<JHU>, undefined>];
-
-}
-
-declare module '*/agnostic/runtime/headless.mjs' {
-  import type * as $process from "../../../gleam_erlang/gleam/erlang/process.d.mts";
-  import type * as $json from "../../../gleam_json/gleam/json.d.mts";
-  import type * as $actor from "../../../gleam_otp/gleam/otp/actor.d.mts";
-  import type * as $dict from "../../../gleam_stdlib/gleam/dict.d.mts";
-  import type * as $decode from "../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
-  import type * as $set from "../../../gleam_stdlib/gleam/set.d.mts";
-  import type * as _ from "../../gleam.d.mts";
-  import type * as $effect from "../../agnostic/effect.d.mts";
-  import type * as $transport from "../../agnostic/runtime/transport.d.mts";
-  import type * as $cache from "../../agnostic/vdom/cache.d.mts";
-  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
-
-  export class State<JSP, JSQ> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      self: $process.Subject$<Message$<any>>,
-      selector: $process.Selector$<Message$<any>>,
-      base_selector: $process.Selector$<Message$<any>>,
-      model: JSP,
-      update: (x0: any, x1: any) => [any, $effect.Effect$<any>],
-      view: (x0: any) => $vnode.Element$<any>,
-      config: Config$<any>,
-      vdom: $vnode.Element$<any>,
-      cache: $cache.Cache$<any>,
-      providers: $dict.Dict$<string, $json.Json$>,
-      subscribers: $dict.Dict$<
-        $process.Subject$<$transport.ClientMessage$<any>>,
-        $process.Monitor$
-      >,
-      callbacks: $set.Set$<(x0: $transport.ClientMessage$<any>) => undefined>
-    );
-    /** @deprecated */
-    self: $process.Subject$<Message$<any>>;
-    /** @deprecated */
-    selector: $process.Selector$<Message$<any>>;
-    /** @deprecated */
-    base_selector: $process.Selector$<Message$<any>>;
-    /** @deprecated */
-    model: JSP;
-    /** @deprecated */
-    update: (x0: any, x1: any) => [any, $effect.Effect$<any>];
-    /** @deprecated */
-    view: (x0: any) => $vnode.Element$<any>;
-    /** @deprecated */
-    config: Config$<any>;
-    /** @deprecated */
-    vdom: $vnode.Element$<any>;
-    /** @deprecated */
-    cache: $cache.Cache$<any>;
-    /** @deprecated */
-    providers: $dict.Dict$<string, $json.Json$>;
-    /** @deprecated */
-    subscribers: $dict.Dict$<
-      $process.Subject$<$transport.ClientMessage$<any>>,
-      $process.Monitor$
-    >;
-    /** @deprecated */
-    callbacks: $set.Set$<(x0: $transport.ClientMessage$<any>) => undefined>;
-  }
-  export function State$State<JSP, JSQ>(
-    self: $process.Subject$<Message$<any>>,
-    selector: $process.Selector$<Message$<any>>,
-    base_selector: $process.Selector$<Message$<any>>,
-    model: JSP,
-    update: (x0: any, x1: any) => [any, $effect.Effect$<any>],
-    view: (x0: any) => $vnode.Element$<any>,
-    config: Config$<any>,
-    vdom: $vnode.Element$<any>,
-    cache: $cache.Cache$<any>,
-    providers: $dict.Dict$<string, $json.Json$>,
-    subscribers: $dict.Dict$<
-      $process.Subject$<$transport.ClientMessage$<any>>,
-      $process.Monitor$
-    >,
-    callbacks: $set.Set$<(x0: $transport.ClientMessage$<any>) => undefined>,
-  ): State$<JSQ, JSP>;
-  export function State$isState<JSQ, JSP>(value: State$<JSQ, JSP>): boolean;
-  export function State$State$0<JSP, JSQ>(value: State$<JSQ, JSP>): $process.Subject$<
-    Message$<any>
-  >;
-  export function State$State$self<JSP, JSQ>(value: State$<JSQ, JSP>): $process.Subject$<
-    Message$<any>
-  >;
-  export function State$State$1<JSQ, JSP>(value: State$<JSQ, JSP>): $process.Selector$<
-    Message$<any>
-  >;
-  export function State$State$selector<JSQ, JSP>(value: State$<JSQ, JSP>): $process.Selector$<
-    Message$<any>
-  >;
-  export function State$State$2<JSP, JSQ>(value: State$<JSQ, JSP>): $process.Selector$<
-    Message$<any>
-  >;
-  export function State$State$base_selector<JSP, JSQ>(value: State$<JSQ, JSP>): $process.Selector$<
-    Message$<any>
-  >;
-  export function State$State$3<JSQ, JSP>(value: State$<JSQ, JSP>): JSP;
-  export function State$State$model<JSQ, JSP>(value: State$<JSQ, JSP>): JSP;
-  export function State$State$4<JSQ, JSP>(value: State$<JSQ, JSP>): (
-    x0: any,
-    x1: any
-  ) => [any, $effect.Effect$<any>];
-  export function State$State$update<JSP, JSQ>(value: State$<JSQ, JSP>): (
-    x0: any,
-    x1: any
-  ) => [any, $effect.Effect$<any>];
-  export function State$State$5<JSP, JSQ>(value: State$<JSQ, JSP>): (x0: any) => $vnode.Element$<
-    any
-  >;
-  export function State$State$view<JSP, JSQ>(value: State$<JSQ, JSP>): (x0: any) => $vnode.Element$<
-    any
-  >;
-  export function State$State$6<JSP, JSQ>(value: State$<JSQ, JSP>): Config$<any>;
-  export function State$State$config<JSP, JSQ>(value: State$<JSQ, JSP>): Config$<
-    any
-  >;
-  export function State$State$7<JSQ, JSP>(value: State$<JSQ, JSP>): $vnode.Element$<
-    any
-  >;
-  export function State$State$vdom<JSP, JSQ>(value: State$<JSQ, JSP>): $vnode.Element$<
-    any
-  >;
-  export function State$State$8<JSQ, JSP>(value: State$<JSQ, JSP>): $cache.Cache$<
-    any
-  >;
-  export function State$State$cache<JSP, JSQ>(value: State$<JSQ, JSP>): $cache.Cache$<
-    any
-  >;
-  export function State$State$9<JSP, JSQ>(value: State$<JSQ, JSP>): $dict.Dict$<
-    string,
-    $json.Json$
-  >;
-  export function State$State$providers<JSP, JSQ>(value: State$<JSQ, JSP>): $dict.Dict$<
-    string,
-    $json.Json$
-  >;
-  export function State$State$10<JSQ, JSP>(value: State$<JSQ, JSP>): $dict.Dict$<
-    $process.Subject$<$transport.ClientMessage$<any>>,
-    $process.Monitor$
-  >;
-  export function State$State$subscribers<JSP, JSQ>(value: State$<JSQ, JSP>): $dict.Dict$<
-    $process.Subject$<$transport.ClientMessage$<any>>,
-    $process.Monitor$
-  >;
-  export function State$State$11<JSQ, JSP>(value: State$<JSQ, JSP>): $set.Set$<
-    (x0: $transport.ClientMessage$<any>) => undefined
-  >;
-  export function State$State$callbacks<JSP, JSQ>(value: State$<JSQ, JSP>): $set.Set$<
-    (x0: $transport.ClientMessage$<any>) => undefined
-  >;
-
-  export type State$<JSQ, JSP> = State<JSQ, JSP>;
-
-  export class Config<JSR> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      open_shadow_root: boolean,
-      adopt_styles: boolean,
-      attributes: $dict.Dict$<string, (x0: string) => _.Result<any, undefined>>,
-      properties: $dict.Dict$<string, $decode.Decoder$<any>>,
-      contexts: $dict.Dict$<string, $decode.Decoder$<any>>
-    );
-    /** @deprecated */
-    open_shadow_root: boolean;
-    /** @deprecated */
-    adopt_styles: boolean;
-    /** @deprecated */
-    attributes: $dict.Dict$<string, (x0: string) => _.Result<any, undefined>>;
-    /** @deprecated */
-    properties: $dict.Dict$<string, $decode.Decoder$<any>>;
-    /** @deprecated */
-    contexts: $dict.Dict$<string, $decode.Decoder$<any>>;
-  }
-  export function Config$Config<JSR>(
-    open_shadow_root: boolean,
-    adopt_styles: boolean,
-    attributes: $dict.Dict$<string, (x0: string) => _.Result<any, undefined>>,
-    properties: $dict.Dict$<string, $decode.Decoder$<any>>,
-    contexts: $dict.Dict$<string, $decode.Decoder$<any>>,
-  ): Config$<JSR>;
-  export function Config$isConfig<JSR>(value: Config$<JSR>): boolean;
-  export function Config$Config$0<JSR>(value: Config$<JSR>): boolean;
-  export function Config$Config$open_shadow_root<JSR>(value: Config$<JSR>): boolean;
-  export function Config$Config$1<JSR>(
-    value: Config$<JSR>,
-  ): boolean;
-  export function Config$Config$adopt_styles<JSR>(value: Config$<JSR>): boolean;
-  export function Config$Config$2<JSR>(value: Config$<JSR>): $dict.Dict$<
-    string,
-    (x0: string) => _.Result<any, undefined>
-  >;
-  export function Config$Config$attributes<JSR>(value: Config$<JSR>): $dict.Dict$<
-    string,
-    (x0: string) => _.Result<any, undefined>
-  >;
-  export function Config$Config$3<JSR>(value: Config$<JSR>): $dict.Dict$<
-    string,
-    $decode.Decoder$<any>
-  >;
-  export function Config$Config$properties<JSR>(value: Config$<JSR>): $dict.Dict$<
-    string,
-    $decode.Decoder$<any>
-  >;
-  export function Config$Config$4<JSR>(value: Config$<JSR>): $dict.Dict$<
-    string,
-    $decode.Decoder$<any>
-  >;
-  export function Config$Config$contexts<JSR>(value: Config$<JSR>): $dict.Dict$<
-    string,
-    $decode.Decoder$<any>
-  >;
-
-  export type Config$<JSR> = Config<JSR>;
-
-  export class ClientDispatchedMessage extends _.CustomType {
-    /** @deprecated */
-    constructor(message: $transport.ServerMessage$);
-    /** @deprecated */
-    message: $transport.ServerMessage$;
-  }
-  export function Message$ClientDispatchedMessage<JSS>(
-    message: $transport.ServerMessage$,
-  ): Message$<JSS>;
-  export function Message$isClientDispatchedMessage<JSS>(
-    value: Message$<JSS>,
-  ): boolean;
-  export function Message$ClientDispatchedMessage$0<JSS>(value: Message$<JSS>): $transport.ServerMessage$;
-  export function Message$ClientDispatchedMessage$message<JSS>(
-    value: Message$<JSS>,
-  ): $transport.ServerMessage$;
-
-  export class ClientRegisteredSubject<JSS> extends _.CustomType {
-    /** @deprecated */
-    constructor(client: $process.Subject$<$transport.ClientMessage$<any>>);
-    /** @deprecated */
-    client: $process.Subject$<$transport.ClientMessage$<any>>;
-  }
-  export function Message$ClientRegisteredSubject<JSS>(
-    client: $process.Subject$<$transport.ClientMessage$<any>>,
-  ): Message$<JSS>;
-  export function Message$isClientRegisteredSubject<JSS>(
-    value: Message$<JSS>,
-  ): boolean;
-  export function Message$ClientRegisteredSubject$0<JSS>(value: Message$<JSS>): $process.Subject$<
-    $transport.ClientMessage$<any>
-  >;
-  export function Message$ClientRegisteredSubject$client<JSS>(value: Message$<JSS>): $process.Subject$<
-    $transport.ClientMessage$<any>
-  >;
-
-  export class ClientDeregisteredSubject<JSS> extends _.CustomType {
-    /** @deprecated */
-    constructor(client: $process.Subject$<$transport.ClientMessage$<any>>);
-    /** @deprecated */
-    client: $process.Subject$<$transport.ClientMessage$<any>>;
-  }
-  export function Message$ClientDeregisteredSubject<JSS>(
-    client: $process.Subject$<$transport.ClientMessage$<any>>,
-  ): Message$<JSS>;
-  export function Message$isClientDeregisteredSubject<JSS>(
-    value: Message$<JSS>,
-  ): boolean;
-  export function Message$ClientDeregisteredSubject$0<JSS>(value: Message$<JSS>): $process.Subject$<
-    $transport.ClientMessage$<any>
-  >;
-  export function Message$ClientDeregisteredSubject$client<JSS>(value: Message$<
-      JSS
-    >): $process.Subject$<$transport.ClientMessage$<any>>;
-
-  export class ClientRegisteredCallback<JSS> extends _.CustomType {
-    /** @deprecated */
-    constructor(callback: (x0: $transport.ClientMessage$<any>) => undefined);
-    /** @deprecated */
-    callback: (x0: $transport.ClientMessage$<any>) => undefined;
-  }
-  export function Message$ClientRegisteredCallback<JSS>(
-    callback: (x0: $transport.ClientMessage$<any>) => undefined,
-  ): Message$<JSS>;
-  export function Message$isClientRegisteredCallback<JSS>(
-    value: Message$<JSS>,
-  ): boolean;
-  export function Message$ClientRegisteredCallback$0<JSS>(value: Message$<JSS>): (
-    x0: $transport.ClientMessage$<any>
-  ) => undefined;
-  export function Message$ClientRegisteredCallback$callback<JSS>(value: Message$<
-      JSS
-    >): (x0: $transport.ClientMessage$<any>) => undefined;
-
-  export class ClientDeregisteredCallback<JSS> extends _.CustomType {
-    /** @deprecated */
-    constructor(callback: (x0: $transport.ClientMessage$<any>) => undefined);
-    /** @deprecated */
-    callback: (x0: $transport.ClientMessage$<any>) => undefined;
-  }
-  export function Message$ClientDeregisteredCallback<JSS>(
-    callback: (x0: $transport.ClientMessage$<any>) => undefined,
-  ): Message$<JSS>;
-  export function Message$isClientDeregisteredCallback<JSS>(
-    value: Message$<JSS>,
-  ): boolean;
-  export function Message$ClientDeregisteredCallback$0<JSS>(value: Message$<JSS>): (
-    x0: $transport.ClientMessage$<any>
-  ) => undefined;
-  export function Message$ClientDeregisteredCallback$callback<JSS>(value: Message$<
-      JSS
-    >): (x0: $transport.ClientMessage$<any>) => undefined;
-
-  export class EffectAddedSelector<JSS> extends _.CustomType {
-    /** @deprecated */
-    constructor(selector: $process.Selector$<Message$<any>>);
-    /** @deprecated */
-    selector: $process.Selector$<Message$<any>>;
-  }
-  export function Message$EffectAddedSelector<JSS>(
-    selector: $process.Selector$<Message$<any>>,
-  ): Message$<JSS>;
-  export function Message$isEffectAddedSelector<JSS>(
-    value: Message$<JSS>,
-  ): boolean;
-  export function Message$EffectAddedSelector$0<JSS>(value: Message$<JSS>): $process.Selector$<
-    Message$<any>
-  >;
-  export function Message$EffectAddedSelector$selector<JSS>(value: Message$<JSS>): $process.Selector$<
-    Message$<any>
-  >;
-
-  export class EffectDispatchedMessage<JSS> extends _.CustomType {
-    /** @deprecated */
-    constructor(message: JSS);
-    /** @deprecated */
-    message: JSS;
-  }
-  export function Message$EffectDispatchedMessage<JSS>(
-    message: JSS,
-  ): Message$<JSS>;
-  export function Message$isEffectDispatchedMessage<JSS>(
-    value: Message$<JSS>,
-  ): boolean;
-  export function Message$EffectDispatchedMessage$0<JSS>(value: Message$<JSS>): JSS;
-  export function Message$EffectDispatchedMessage$message<JSS>(
-    value: Message$<JSS>,
-  ): JSS;
-
-  export class EffectEmitEvent extends _.CustomType {
-    /** @deprecated */
-    constructor(name: string, data: $json.Json$);
-    /** @deprecated */
-    name: string;
-    /** @deprecated */
-    data: $json.Json$;
-  }
-  export function Message$EffectEmitEvent<JSS>(
-    name: string,
-    data: $json.Json$,
-  ): Message$<JSS>;
-  export function Message$isEffectEmitEvent<JSS>(value: Message$<JSS>): boolean;
-  export function Message$EffectEmitEvent$0<JSS>(value: Message$<JSS>): string;
-  export function Message$EffectEmitEvent$name<JSS>(value: Message$<JSS>): string;
-  export function Message$EffectEmitEvent$1<JSS>(value: Message$<JSS>): $json.Json$;
-  export function Message$EffectEmitEvent$data<JSS>(
-    value: Message$<JSS>,
-  ): $json.Json$;
-
-  export class EffectProvidedValue extends _.CustomType {
-    /** @deprecated */
-    constructor(key: string, value: $json.Json$);
-    /** @deprecated */
-    key: string;
-    /** @deprecated */
-    value: $json.Json$;
-  }
-  export function Message$EffectProvidedValue<JSS>(
-    key: string,
-    value: $json.Json$,
-  ): Message$<JSS>;
-  export function Message$isEffectProvidedValue<JSS>(
-    value: Message$<JSS>,
-  ): boolean;
-  export function Message$EffectProvidedValue$0<JSS>(value: Message$<JSS>): string;
-  export function Message$EffectProvidedValue$key<JSS>(
-    value: Message$<JSS>,
-  ): string;
-  export function Message$EffectProvidedValue$1<JSS>(value: Message$<JSS>): $json.Json$;
-  export function Message$EffectProvidedValue$value<JSS>(
-    value: Message$<JSS>,
-  ): $json.Json$;
-
-  export class MonitorReportedDown extends _.CustomType {
-    /** @deprecated */
-    constructor(monitor: $process.Monitor$);
-    /** @deprecated */
-    monitor: $process.Monitor$;
-  }
-  export function Message$MonitorReportedDown<JSS>(
-    monitor: $process.Monitor$,
-  ): Message$<JSS>;
-  export function Message$isMonitorReportedDown<JSS>(
-    value: Message$<JSS>,
-  ): boolean;
-  export function Message$MonitorReportedDown$0<JSS>(value: Message$<JSS>): $process.Monitor$;
-  export function Message$MonitorReportedDown$monitor<JSS>(
-    value: Message$<JSS>,
-  ): $process.Monitor$;
-
-  export class SystemRequestedShutdown extends _.CustomType {}
-  export function Message$SystemRequestedShutdown<JSS>(): Message$<JSS>;
-  export function Message$isSystemRequestedShutdown<JSS>(
-    value: Message$<JSS>,
-  ): boolean;
-
-  export type Message$<JSS> = ClientDispatchedMessage | ClientRegisteredSubject<
-    JSS
-  > | ClientDeregisteredSubject<JSS> | ClientRegisteredCallback<JSS> | ClientDeregisteredCallback<
-    JSS
-  > | EffectAddedSelector<JSS> | EffectDispatchedMessage<JSS> | EffectEmitEvent | EffectProvidedValue | MonitorReportedDown | SystemRequestedShutdown;
-
-  export type ServerComponent = $process.Subject$<Message$<any>>;
-
-  export function start(x0: any, x1: any, x2: any, x3: any, x4: any, x5: any): _.Result<
-    $actor.Started$<$process.Subject$<Message$<any>>>,
-    $actor.StartError$
-  >;
-
-}
-
-declare module '*/agnostic/runtime/transport.mjs' {
-  import type * as $json from "../../../gleam_json/gleam/json.d.mts";
-  import type * as $dict from "../../../gleam_stdlib/gleam/dict.d.mts";
-  import type * as $dynamic from "../../../gleam_stdlib/gleam/dynamic.d.mts";
-  import type * as $decode from "../../../gleam_stdlib/gleam/dynamic/decode.d.mts";
-  import type * as _ from "../../gleam.d.mts";
-  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
-  import type * as $serializer from "../../agnostic/serializer.d.mts";
-  import type * as $patch from "../../agnostic/vdom/patch.d.mts";
-  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
-
-  export class Mount<IVW> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      kind: number,
-      open_shadow_root: boolean,
-      will_adopt_styles: boolean,
-      observed_attributes: _.List<string>,
-      observed_properties: _.List<string>,
-      requested_contexts: _.List<string>,
-      provided_contexts: $dict.Dict$<string, $json.Json$>,
-      vdom: $vnode.Element$<any>,
-      memos: $mutable_map.MutableMap$<
-        () => $vnode.Element$<any>,
-        $vnode.Element$<any>
-      >
-    );
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    open_shadow_root: boolean;
-    /** @deprecated */
-    will_adopt_styles: boolean;
-    /** @deprecated */
-    observed_attributes: _.List<string>;
-    /** @deprecated */
-    observed_properties: _.List<string>;
-    /** @deprecated */
-    requested_contexts: _.List<string>;
-    /** @deprecated */
-    provided_contexts: $dict.Dict$<string, $json.Json$>;
-    /** @deprecated */
-    vdom: $vnode.Element$<any>;
-    /** @deprecated */
-    memos: $mutable_map.MutableMap$<
-      () => $vnode.Element$<any>,
-      $vnode.Element$<any>
-    >;
-  }
-  export function ClientMessage$Mount<IVW>(
-    kind: number,
-    open_shadow_root: boolean,
-    will_adopt_styles: boolean,
-    observed_attributes: _.List<string>,
-    observed_properties: _.List<string>,
-    requested_contexts: _.List<string>,
-    provided_contexts: $dict.Dict$<string, $json.Json$>,
-    vdom: $vnode.Element$<any>,
-    memos: $mutable_map.MutableMap$<
-      () => $vnode.Element$<any>,
-      $vnode.Element$<any>
-    >,
-  ): ClientMessage$<IVW>;
-  export function ClientMessage$isMount<IVW>(value: ClientMessage$<IVW>): boolean;
-  export function ClientMessage$Mount$0<IVW>(value: ClientMessage$<IVW>): number;
-  export function ClientMessage$Mount$kind<IVW>(value: ClientMessage$<IVW>): number;
-  export function ClientMessage$Mount$1<IVW>(
-    value: ClientMessage$<IVW>,
-  ): boolean;
-  export function ClientMessage$Mount$open_shadow_root<IVW>(value: ClientMessage$<
-      IVW
-    >): boolean;
-  export function ClientMessage$Mount$2<IVW>(value: ClientMessage$<IVW>): boolean;
-  export function ClientMessage$Mount$will_adopt_styles<IVW>(value: ClientMessage$<
-      IVW
-    >): boolean;
-  export function ClientMessage$Mount$3<IVW>(value: ClientMessage$<IVW>): _.List<
-    string
-  >;
-  export function ClientMessage$Mount$observed_attributes<IVW>(value: ClientMessage$<
-      IVW
-    >): _.List<string>;
-  export function ClientMessage$Mount$4<IVW>(value: ClientMessage$<IVW>): _.List<
-    string
-  >;
-  export function ClientMessage$Mount$observed_properties<IVW>(value: ClientMessage$<
-      IVW
-    >): _.List<string>;
-  export function ClientMessage$Mount$5<IVW>(value: ClientMessage$<IVW>): _.List<
-    string
-  >;
-  export function ClientMessage$Mount$requested_contexts<IVW>(value: ClientMessage$<
-      IVW
-    >): _.List<string>;
-  export function ClientMessage$Mount$6<IVW>(value: ClientMessage$<IVW>): $dict.Dict$<
-    string,
-    $json.Json$
-  >;
-  export function ClientMessage$Mount$provided_contexts<IVW>(value: ClientMessage$<
-      IVW
-    >): $dict.Dict$<string, $json.Json$>;
-  export function ClientMessage$Mount$7<IVW>(value: ClientMessage$<IVW>): $vnode.Element$<
-    any
-  >;
-  export function ClientMessage$Mount$vdom<IVW>(value: ClientMessage$<IVW>): $vnode.Element$<
-    any
-  >;
-  export function ClientMessage$Mount$8<IVW>(value: ClientMessage$<IVW>): $mutable_map.MutableMap$<
-    () => $vnode.Element$<any>,
-    $vnode.Element$<any>
-  >;
-  export function ClientMessage$Mount$memos<IVW>(value: ClientMessage$<IVW>): $mutable_map.MutableMap$<
-    () => $vnode.Element$<any>,
-    $vnode.Element$<any>
-  >;
-
-  export class Reconcile<IVW> extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      kind: number,
-      patch: $patch.Patch$<any>,
-      memos: $mutable_map.MutableMap$<
-        () => $vnode.Element$<any>,
-        $vnode.Element$<any>
-      >
-    );
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    patch: $patch.Patch$<any>;
-    /** @deprecated */
-    memos: $mutable_map.MutableMap$<
-      () => $vnode.Element$<any>,
-      $vnode.Element$<any>
-    >;
-  }
-  export function ClientMessage$Reconcile<IVW>(
-    kind: number,
-    patch: $patch.Patch$<any>,
-    memos: $mutable_map.MutableMap$<
-      () => $vnode.Element$<any>,
-      $vnode.Element$<any>
-    >,
-  ): ClientMessage$<IVW>;
-  export function ClientMessage$isReconcile<IVW>(
-    value: ClientMessage$<IVW>,
-  ): boolean;
-  export function ClientMessage$Reconcile$0<IVW>(value: ClientMessage$<IVW>): number;
-  export function ClientMessage$Reconcile$kind<IVW>(
-    value: ClientMessage$<IVW>,
-  ): number;
-  export function ClientMessage$Reconcile$1<IVW>(value: ClientMessage$<IVW>): $patch.Patch$<
-    any
-  >;
-  export function ClientMessage$Reconcile$patch<IVW>(value: ClientMessage$<IVW>): $patch.Patch$<
-    any
-  >;
-  export function ClientMessage$Reconcile$2<IVW>(value: ClientMessage$<IVW>): $mutable_map.MutableMap$<
-    () => $vnode.Element$<any>,
-    $vnode.Element$<any>
-  >;
-  export function ClientMessage$Reconcile$memos<IVW>(value: ClientMessage$<IVW>): $mutable_map.MutableMap$<
-    () => $vnode.Element$<any>,
-    $vnode.Element$<any>
-  >;
-
-  export class Emit extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, name: string, data: $json.Json$);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    name: string;
-    /** @deprecated */
-    data: $json.Json$;
-  }
-  export function ClientMessage$Emit<IVW>(
-    kind: number,
-    name: string,
-    data: $json.Json$,
-  ): ClientMessage$<IVW>;
-  export function ClientMessage$isEmit<IVW>(value: ClientMessage$<IVW>): boolean;
-  export function ClientMessage$Emit$0<IVW>(value: ClientMessage$<IVW>): number;
-  export function ClientMessage$Emit$kind<IVW>(value: ClientMessage$<IVW>): number;
-  export function ClientMessage$Emit$1<IVW>(
-    value: ClientMessage$<IVW>,
-  ): string;
-  export function ClientMessage$Emit$name<IVW>(value: ClientMessage$<IVW>): string;
-  export function ClientMessage$Emit$2<IVW>(
-    value: ClientMessage$<IVW>,
-  ): $json.Json$;
-  export function ClientMessage$Emit$data<IVW>(value: ClientMessage$<IVW>): $json.Json$;
-
-  export class Provide extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, key: string, value: $json.Json$);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    key: string;
-    /** @deprecated */
-    value: $json.Json$;
-  }
-  export function ClientMessage$Provide<IVW>(
-    kind: number,
-    key: string,
-    value: $json.Json$,
-  ): ClientMessage$<IVW>;
-  export function ClientMessage$isProvide<IVW>(
-    value: ClientMessage$<IVW>,
-  ): boolean;
-  export function ClientMessage$Provide$0<IVW>(value: ClientMessage$<IVW>): number;
-  export function ClientMessage$Provide$kind<IVW>(
-    value: ClientMessage$<IVW>,
-  ): number;
-  export function ClientMessage$Provide$1<IVW>(value: ClientMessage$<IVW>): string;
-  export function ClientMessage$Provide$key<IVW>(
-    value: ClientMessage$<IVW>,
-  ): string;
-  export function ClientMessage$Provide$2<IVW>(value: ClientMessage$<IVW>): $json.Json$;
-  export function ClientMessage$Provide$value<IVW>(
-    value: ClientMessage$<IVW>,
-  ): $json.Json$;
-
-  export type ClientMessage$<IVW> = Mount<IVW> | Reconcile<IVW> | Emit | Provide;
-
-  export function ClientMessage$kind<IVW>(value: ClientMessage$<IVW>): number;
-
-  export class Batch extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, messages: _.List<ServerMessage$>);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    messages: _.List<ServerMessage$>;
-  }
-  export function ServerMessage$Batch(
-    kind: number,
-    messages: _.List<ServerMessage$>,
-  ): ServerMessage$;
-  export function ServerMessage$isBatch(value: ServerMessage$): boolean;
-  export function ServerMessage$Batch$0(value: ServerMessage$): number;
-  export function ServerMessage$Batch$kind(value: ServerMessage$): number;
-  export function ServerMessage$Batch$1(value: ServerMessage$): _.List<
-    ServerMessage$
-  >;
-  export function ServerMessage$Batch$messages(value: ServerMessage$): _.List<
-    ServerMessage$
-  >;
-
-  export class AttributeChanged extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, name: string, value: string);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    name: string;
-    /** @deprecated */
-    value: string;
-  }
-  export function ServerMessage$AttributeChanged(
-    kind: number,
-    name: string,
-    value: string,
-  ): ServerMessage$;
-  export function ServerMessage$isAttributeChanged(
-    value: ServerMessage$,
-  ): boolean;
-  export function ServerMessage$AttributeChanged$0(value: ServerMessage$): number;
-  export function ServerMessage$AttributeChanged$kind(value: ServerMessage$): number;
-  export function ServerMessage$AttributeChanged$1(
-    value: ServerMessage$,
-  ): string;
-  export function ServerMessage$AttributeChanged$name(value: ServerMessage$): string;
-  export function ServerMessage$AttributeChanged$2(
-    value: ServerMessage$,
-  ): string;
-  export function ServerMessage$AttributeChanged$value(value: ServerMessage$): string;
-
-  export class PropertyChanged extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, name: string, value: $dynamic.Dynamic$);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    name: string;
-    /** @deprecated */
-    value: $dynamic.Dynamic$;
-  }
-  export function ServerMessage$PropertyChanged(
-    kind: number,
-    name: string,
-    value: $dynamic.Dynamic$,
-  ): ServerMessage$;
-  export function ServerMessage$isPropertyChanged(value: ServerMessage$): boolean;
-  export function ServerMessage$PropertyChanged$0(value: ServerMessage$): number;
-  export function ServerMessage$PropertyChanged$kind(value: ServerMessage$): number;
-  export function ServerMessage$PropertyChanged$1(
-    value: ServerMessage$,
-  ): string;
-  export function ServerMessage$PropertyChanged$name(value: ServerMessage$): string;
-  export function ServerMessage$PropertyChanged$2(
-    value: ServerMessage$,
-  ): $dynamic.Dynamic$;
-  export function ServerMessage$PropertyChanged$value(value: ServerMessage$): $dynamic.Dynamic$;
-
-  export class EventFired extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      kind: number,
-      path: string,
-      name: string,
-      event: $dynamic.Dynamic$
-    );
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    path: string;
-    /** @deprecated */
-    name: string;
-    /** @deprecated */
-    event: $dynamic.Dynamic$;
-  }
-  export function ServerMessage$EventFired(
-    kind: number,
-    path: string,
-    name: string,
-    event: $dynamic.Dynamic$,
-  ): ServerMessage$;
-  export function ServerMessage$isEventFired(value: ServerMessage$): boolean;
-  export function ServerMessage$EventFired$0(value: ServerMessage$): number;
-  export function ServerMessage$EventFired$kind(value: ServerMessage$): number;
-  export function ServerMessage$EventFired$1(value: ServerMessage$): string;
-  export function ServerMessage$EventFired$path(value: ServerMessage$): string;
-  export function ServerMessage$EventFired$2(value: ServerMessage$): string;
-  export function ServerMessage$EventFired$name(value: ServerMessage$): string;
-  export function ServerMessage$EventFired$3(value: ServerMessage$): $dynamic.Dynamic$;
-  export function ServerMessage$EventFired$event(
-    value: ServerMessage$,
-  ): $dynamic.Dynamic$;
-
-  export class ContextProvided extends _.CustomType {
-    /** @deprecated */
-    constructor(kind: number, key: string, value: $dynamic.Dynamic$);
-    /** @deprecated */
-    kind: number;
-    /** @deprecated */
-    key: string;
-    /** @deprecated */
-    value: $dynamic.Dynamic$;
-  }
-  export function ServerMessage$ContextProvided(
-    kind: number,
-    key: string,
-    value: $dynamic.Dynamic$,
-  ): ServerMessage$;
-  export function ServerMessage$isContextProvided(value: ServerMessage$): boolean;
-  export function ServerMessage$ContextProvided$0(value: ServerMessage$): number;
-  export function ServerMessage$ContextProvided$kind(value: ServerMessage$): number;
-  export function ServerMessage$ContextProvided$1(
-    value: ServerMessage$,
-  ): string;
-  export function ServerMessage$ContextProvided$key(value: ServerMessage$): string;
-  export function ServerMessage$ContextProvided$2(
-    value: ServerMessage$,
-  ): $dynamic.Dynamic$;
-  export function ServerMessage$ContextProvided$value(value: ServerMessage$): $dynamic.Dynamic$;
-
-  export type ServerMessage$ = Batch | AttributeChanged | PropertyChanged | EventFired | ContextProvided;
-
-  export function ServerMessage$kind(value: ServerMessage$): number;
-
-  export const mount_kind: number;
-
-  export const reconcile_kind: number;
-
-  export const emit_kind: number;
-
-  export const provide_kind: number;
-
-  export const attribute_changed_kind: number;
-
-  export const event_fired_kind: number;
-
-  export const property_changed_kind: number;
-
-  export const batch_kind: number;
-
-  export const context_provided_kind: number;
-
-  export function client_message_to_json<IWP>(
-    message: ClientMessage$<IWP>,
-    serializer: $serializer.Serializer$<IWP>
-  ): $json.Json$;
-
-  export function mount<IWC>(
-    open_shadow_root: boolean,
-    will_adopt_styles: boolean,
-    observed_attributes: _.List<string>,
-    observed_properties: _.List<string>,
-    requested_contexts: _.List<string>,
-    provided_contexts: $dict.Dict$<string, $json.Json$>,
-    vdom: $vnode.Element$<IWC>,
-    memos: $mutable_map.MutableMap$<
-      () => $vnode.Element$<IWC>,
-      $vnode.Element$<IWC>
-    >
-  ): ClientMessage$<IWC>;
-
-  export function reconcile<IWG>(
-    patch: $patch.Patch$<IWG>,
-    memos: $mutable_map.MutableMap$<
-      () => $vnode.Element$<IWG>,
-      $vnode.Element$<IWG>
-    >
-  ): ClientMessage$<IWG>;
-
-  export function emit(name: string, data: $json.Json$): ClientMessage$<any>;
-
-  export function provide(key: string, value: $json.Json$): ClientMessage$<any>;
-
-  export function attribute_changed(name: string, value: string): ServerMessage$;
-
-  export function event_fired(
-    path: string,
-    name: string,
-    event: $dynamic.Dynamic$
-  ): ServerMessage$;
-
-  export function property_changed(name: string, value: $dynamic.Dynamic$): ServerMessage$;
-
-  export function batch(messages: _.List<ServerMessage$>): ServerMessage$;
-
-  export function context_provided(key: string, value: $dynamic.Dynamic$): ServerMessage$;
-
-  export function context_provided_decoder(): $decode.Decoder$<ServerMessage$>;
-
-  export function server_message_decoder(): $decode.Decoder$<ServerMessage$>;
+  export function is_empty(map: MutableMap$<any, any>): boolean;
 
 }
 
@@ -4898,11 +5484,11 @@ declare module '*/agnostic/internals/json_object_builder.mjs' {
     value: boolean
   ): _.List<[string, $json.Json$]>;
 
-  export function list<FPA>(
+  export function list<ARU>(
     entries: _.List<[string, $json.Json$]>,
     key: string,
-    values: _.List<FPA>,
-    to_json: (x0: FPA) => $json.Json$
+    values: _.List<ARU>,
+    to_json: (x0: ARU) => $json.Json$
   ): _.List<[string, $json.Json$]>;
 
   export function object(
@@ -4913,1218 +5499,1740 @@ declare module '*/agnostic/internals/json_object_builder.mjs' {
 
 }
 
-declare module '*/agnostic/internals/mutable_map.mjs' {
-  export type MutableMap$<GTR, GTS> = any;
-
-  export function new$(): MutableMap$<any, any>;
-
-  export function unsafe_get<GTX, GTY>(map: MutableMap$<GTX, GTY>, key: GTX): GTY;
-
-  export function get_or_compute<GUF, GUG>(
-    map: MutableMap$<GUF, GUG>,
-    key: GUF,
-    compute: () => GUG
-  ): GUG;
-
-  export function has_key<GUP>(map: MutableMap$<GUP, any>, key: GUP): boolean;
-
-  export function insert<GUX, GUY>(
-    map: MutableMap$<GUX, GUY>,
-    key: GUX,
-    value: GUY
-  ): MutableMap$<GUX, GUY>;
-
-  export function delete$<GVJ, GVK>(map: MutableMap$<GVJ, GVK>, key: GVJ): MutableMap$<
-    GVJ,
-    GVK
-  >;
-
-  export function size(map: MutableMap$<any, any>): number;
-
-  export function is_empty(map: MutableMap$<any, any>): boolean;
-
-}
-
-declare module '*/agnostic/internals/constants.mjs' {
-  import type * as _ from "../../gleam.d.mts";
-
-  export const empty_list: _.List<any>;
-
-  export const error_nil: _.Result<any, undefined>;
-
-}
-
-declare module '*/agnostic/internals/ref.mjs' {
-  import type * as _ from "../../gleam.d.mts";
-
-  export type Ref$ = any;
-
-  export function from(value: any): Ref$;
-
-  export function equal(a: Ref$, b: Ref$): boolean;
-
-  export function equal_lists(xs: _.List<Ref$>, ys: _.List<Ref$>): boolean;
-
-}
-
-declare module '*/agnostic/platform/dom.mjs' {
-  import type * as $set from "../../../gleam_stdlib/gleam/set.d.mts";
-  import type * as $string_tree from "../../../gleam_stdlib/gleam/string_tree.d.mts";
-  import type * as _ from "../../gleam.d.mts";
-  import type * as $platform from "../../agnostic/platform.d.mts";
-  import type * as $serializer from "../../agnostic/serializer.d.mts";
-  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
-  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
-
-  export type DomNode$ = any;
-
-  export type DomEvent$ = any;
-
-  declare class SerializerConfig extends _.CustomType {
-    /** @deprecated */
-    constructor(
-      void_elements: $set.Set$<string>,
-      self_closing_tags: $set.Set$<string>
-    );
-    /** @deprecated */
-    void_elements: $set.Set$<string>;
-    /** @deprecated */
-    self_closing_tags: $set.Set$<string>;
-  }
-
-  export type SerializerConfig$ = SerializerConfig;
-
-  export function platform_strict(x0: DomNode$): $platform.Platform$<
-    DomNode$,
-    DomNode$,
-    DomNode$,
-    DomEvent$,
-    any,
-    DomNode$
-  >;
-
-  export function empty_serializer_config(): SerializerConfig$;
-
-  export function with_void(config: SerializerConfig$, tag: string): SerializerConfig$;
-
-  export function with_void_elements(
-    config: SerializerConfig$,
-    tags: _.List<string>
-  ): SerializerConfig$;
-
-  export function with_self_closing(config: SerializerConfig$, tag: string): SerializerConfig$;
-
-  export function with_self_closing_tags(
-    config: SerializerConfig$,
-    tags: _.List<string>
-  ): SerializerConfig$;
-
-  export function is_void(
-    config: SerializerConfig$,
-    tag: string,
-    namespace: string
-  ): boolean;
-
-  export function is_self_closing(config: SerializerConfig$, tag: string): boolean;
-
-  export function attrs_to_string_tree(
-    key: string,
-    namespace: string,
-    parent_namespace: string,
-    attributes: _.List<$vattr.Attribute$<any>>
-  ): $string_tree.StringTree$;
-
-  export function serializer_config(): SerializerConfig$;
-
-  export function to_snapshot(node: $vnode.Element$<any>, debug: boolean): string;
-
-  export function to_readable_string(el: $vnode.Element$<any>): string;
-
-  export function serialize_tree(
-    config: SerializerConfig$,
-    node: $vnode.Element$<any>,
-    parent_namespace: string
-  ): $string_tree.StringTree$;
-
-  export function serialize(config: SerializerConfig$, node: $vnode.Element$<any>): string;
-
-  export function to_serializer(config: SerializerConfig$): $serializer.Serializer$<
-    any
-  >;
-
-  export function to_string_tree(
-    node: $vnode.Element$<any>,
-    parent_namespace: string
-  ): $string_tree.StringTree$;
-
-  export function to_string(node: $vnode.Element$<any>): string;
-
-  export function serializer(): $serializer.Serializer$<any>;
-
-  export function to_document_string(el: $vnode.Element$<any>): string;
-
-  export function to_document_string_tree(el: $vnode.Element$<any>): $string_tree.StringTree$;
-
-  export function platform(target: string): _.Result<
-    $platform.Platform$<DomNode$, DomNode$, DomNode$, DomEvent$, any, DomNode$>,
-    $platform.PlatformError$
-  >;
-
-}
-
 declare module '*/agnostic/element/svg.mjs' {
-  import type * as _ from "../../gleam.d.mts";
   import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
   import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../gleam.d.mts";
 
   export const namespace: string;
 
-  export function animate<MOU>(attrs: _.List<$vattr.Attribute$<MOU>>): $vnode.Element$<
-    MOU
+  export function animate<ICV>(attrs: _.List<$vattr.Attribute$<ICV>>): $vnode.Element$<
+    ICV
   >;
 
-  export function animate_motion<MOY>(attrs: _.List<$vattr.Attribute$<MOY>>): $vnode.Element$<
-    MOY
+  export function animate_motion<ICZ>(attrs: _.List<$vattr.Attribute$<ICZ>>): $vnode.Element$<
+    ICZ
   >;
 
-  export function animate_transform<MPC>(attrs: _.List<$vattr.Attribute$<MPC>>): $vnode.Element$<
-    MPC
+  export function animate_transform<IDD>(attrs: _.List<$vattr.Attribute$<IDD>>): $vnode.Element$<
+    IDD
   >;
 
-  export function mpath<MPG>(attrs: _.List<$vattr.Attribute$<MPG>>): $vnode.Element$<
-    MPG
+  export function mpath<IDH>(attrs: _.List<$vattr.Attribute$<IDH>>): $vnode.Element$<
+    IDH
   >;
 
-  export function set<MPK>(attrs: _.List<$vattr.Attribute$<MPK>>): $vnode.Element$<
-    MPK
+  export function set<IDL>(attrs: _.List<$vattr.Attribute$<IDL>>): $vnode.Element$<
+    IDL
   >;
 
-  export function circle<MPO>(attrs: _.List<$vattr.Attribute$<MPO>>): $vnode.Element$<
-    MPO
+  export function circle<IDP>(attrs: _.List<$vattr.Attribute$<IDP>>): $vnode.Element$<
+    IDP
   >;
 
-  export function ellipse<MPS>(attrs: _.List<$vattr.Attribute$<MPS>>): $vnode.Element$<
-    MPS
+  export function ellipse<IDT>(attrs: _.List<$vattr.Attribute$<IDT>>): $vnode.Element$<
+    IDT
   >;
 
-  export function line<MPW>(attrs: _.List<$vattr.Attribute$<MPW>>): $vnode.Element$<
-    MPW
+  export function line<IDX>(attrs: _.List<$vattr.Attribute$<IDX>>): $vnode.Element$<
+    IDX
   >;
 
-  export function polygon<MQA>(attrs: _.List<$vattr.Attribute$<MQA>>): $vnode.Element$<
-    MQA
+  export function polygon<IEB>(attrs: _.List<$vattr.Attribute$<IEB>>): $vnode.Element$<
+    IEB
   >;
 
-  export function polyline<MQE>(attrs: _.List<$vattr.Attribute$<MQE>>): $vnode.Element$<
-    MQE
+  export function polyline<IEF>(attrs: _.List<$vattr.Attribute$<IEF>>): $vnode.Element$<
+    IEF
   >;
 
-  export function rect<MQI>(attrs: _.List<$vattr.Attribute$<MQI>>): $vnode.Element$<
-    MQI
+  export function rect<IEJ>(attrs: _.List<$vattr.Attribute$<IEJ>>): $vnode.Element$<
+    IEJ
   >;
 
-  export function a<MQM>(
-    attrs: _.List<$vattr.Attribute$<MQM>>,
-    children: _.List<$vnode.Element$<MQM>>
-  ): $vnode.Element$<MQM>;
-
-  export function defs<MQS>(
-    attrs: _.List<$vattr.Attribute$<MQS>>,
-    children: _.List<$vnode.Element$<MQS>>
-  ): $vnode.Element$<MQS>;
-
-  export function g<MQY>(
-    attrs: _.List<$vattr.Attribute$<MQY>>,
-    children: _.List<$vnode.Element$<MQY>>
-  ): $vnode.Element$<MQY>;
-
-  export function marker<MRE>(
-    attrs: _.List<$vattr.Attribute$<MRE>>,
-    children: _.List<$vnode.Element$<MRE>>
-  ): $vnode.Element$<MRE>;
-
-  export function mask<MRK>(
-    attrs: _.List<$vattr.Attribute$<MRK>>,
-    children: _.List<$vnode.Element$<MRK>>
-  ): $vnode.Element$<MRK>;
-
-  export function missing_glyph<MRQ>(
-    attrs: _.List<$vattr.Attribute$<MRQ>>,
-    children: _.List<$vnode.Element$<MRQ>>
-  ): $vnode.Element$<MRQ>;
-
-  export function pattern<MRW>(
-    attrs: _.List<$vattr.Attribute$<MRW>>,
-    children: _.List<$vnode.Element$<MRW>>
-  ): $vnode.Element$<MRW>;
-
-  export function svg<MSC>(
-    attrs: _.List<$vattr.Attribute$<MSC>>,
-    children: _.List<$vnode.Element$<MSC>>
-  ): $vnode.Element$<MSC>;
-
-  export function switch$<MSI>(
-    attrs: _.List<$vattr.Attribute$<MSI>>,
-    children: _.List<$vnode.Element$<MSI>>
-  ): $vnode.Element$<MSI>;
-
-  export function symbol<MSO>(
-    attrs: _.List<$vattr.Attribute$<MSO>>,
-    children: _.List<$vnode.Element$<MSO>>
-  ): $vnode.Element$<MSO>;
-
-  export function view<MSU>(
-    attrs: _.List<$vattr.Attribute$<MSU>>,
-    children: _.List<$vnode.Element$<MSU>>
-  ): $vnode.Element$<MSU>;
-
-  export function desc<MTA>(
-    attrs: _.List<$vattr.Attribute$<MTA>>,
-    children: _.List<$vnode.Element$<MTA>>
-  ): $vnode.Element$<MTA>;
-
-  export function metadata<MTG>(
-    attrs: _.List<$vattr.Attribute$<MTG>>,
-    children: _.List<$vnode.Element$<MTG>>
-  ): $vnode.Element$<MTG>;
-
-  export function title<MTM>(
-    attrs: _.List<$vattr.Attribute$<MTM>>,
-    children: _.List<$vnode.Element$<MTM>>
-  ): $vnode.Element$<MTM>;
-
-  export function filter<MTS>(
-    attrs: _.List<$vattr.Attribute$<MTS>>,
-    children: _.List<$vnode.Element$<MTS>>
-  ): $vnode.Element$<MTS>;
-
-  export function fe_blend<MTY>(attrs: _.List<$vattr.Attribute$<MTY>>): $vnode.Element$<
-    MTY
-  >;
-
-  export function fe_color_matrix<MUC>(attrs: _.List<$vattr.Attribute$<MUC>>): $vnode.Element$<
-    MUC
-  >;
-
-  export function fe_component_transfer<MUG>(
-    attrs: _.List<$vattr.Attribute$<MUG>>
-  ): $vnode.Element$<MUG>;
-
-  export function fe_composite<MUK>(attrs: _.List<$vattr.Attribute$<MUK>>): $vnode.Element$<
-    MUK
-  >;
-
-  export function fe_convolve_matrix<MUO>(attrs: _.List<$vattr.Attribute$<MUO>>): $vnode.Element$<
-    MUO
-  >;
-
-  export function fe_diffuse_lighting<MUS>(
-    attrs: _.List<$vattr.Attribute$<MUS>>,
-    children: _.List<$vnode.Element$<MUS>>
-  ): $vnode.Element$<MUS>;
-
-  export function fe_displacement_map<MUY>(attrs: _.List<$vattr.Attribute$<MUY>>): $vnode.Element$<
-    MUY
-  >;
-
-  export function fe_drop_shadow<MVC>(attrs: _.List<$vattr.Attribute$<MVC>>): $vnode.Element$<
-    MVC
-  >;
-
-  export function fe_flood<MVG>(attrs: _.List<$vattr.Attribute$<MVG>>): $vnode.Element$<
-    MVG
-  >;
-
-  export function fe_func_a<MVK>(attrs: _.List<$vattr.Attribute$<MVK>>): $vnode.Element$<
-    MVK
-  >;
-
-  export function fe_func_b<MVO>(attrs: _.List<$vattr.Attribute$<MVO>>): $vnode.Element$<
-    MVO
-  >;
-
-  export function fe_func_g<MVS>(attrs: _.List<$vattr.Attribute$<MVS>>): $vnode.Element$<
-    MVS
-  >;
-
-  export function fe_func_r<MVW>(attrs: _.List<$vattr.Attribute$<MVW>>): $vnode.Element$<
-    MVW
-  >;
-
-  export function fe_gaussian_blur<MWA>(attrs: _.List<$vattr.Attribute$<MWA>>): $vnode.Element$<
-    MWA
-  >;
-
-  export function fe_image<MWE>(attrs: _.List<$vattr.Attribute$<MWE>>): $vnode.Element$<
-    MWE
-  >;
-
-  export function fe_merge<MWI>(
-    attrs: _.List<$vattr.Attribute$<MWI>>,
-    children: _.List<$vnode.Element$<MWI>>
-  ): $vnode.Element$<MWI>;
-
-  export function fe_merge_node<MWO>(attrs: _.List<$vattr.Attribute$<MWO>>): $vnode.Element$<
-    MWO
-  >;
-
-  export function fe_morphology<MWS>(attrs: _.List<$vattr.Attribute$<MWS>>): $vnode.Element$<
-    MWS
-  >;
-
-  export function fe_offset<MWW>(attrs: _.List<$vattr.Attribute$<MWW>>): $vnode.Element$<
-    MWW
-  >;
-
-  export function fe_specular_lighting<MXA>(
-    attrs: _.List<$vattr.Attribute$<MXA>>,
-    children: _.List<$vnode.Element$<MXA>>
-  ): $vnode.Element$<MXA>;
-
-  export function fe_tile<MXG>(
-    attrs: _.List<$vattr.Attribute$<MXG>>,
-    children: _.List<$vnode.Element$<MXG>>
-  ): $vnode.Element$<MXG>;
-
-  export function fe_turbulence<MXM>(attrs: _.List<$vattr.Attribute$<MXM>>): $vnode.Element$<
-    MXM
-  >;
-
-  export function linear_gradient<MXQ>(
-    attrs: _.List<$vattr.Attribute$<MXQ>>,
-    children: _.List<$vnode.Element$<MXQ>>
-  ): $vnode.Element$<MXQ>;
-
-  export function radial_gradient<MXW>(
-    attrs: _.List<$vattr.Attribute$<MXW>>,
-    children: _.List<$vnode.Element$<MXW>>
-  ): $vnode.Element$<MXW>;
-
-  export function stop<MYC>(attrs: _.List<$vattr.Attribute$<MYC>>): $vnode.Element$<
-    MYC
-  >;
-
-  export function image<MYG>(attrs: _.List<$vattr.Attribute$<MYG>>): $vnode.Element$<
-    MYG
-  >;
-
-  export function path<MYK>(attrs: _.List<$vattr.Attribute$<MYK>>): $vnode.Element$<
-    MYK
-  >;
-
-  export function text<MYO>(
-    attrs: _.List<$vattr.Attribute$<MYO>>,
-    content: string
-  ): $vnode.Element$<MYO>;
-
-  export function use_<MYS>(attrs: _.List<$vattr.Attribute$<MYS>>): $vnode.Element$<
-    MYS
-  >;
-
-  export function fe_distant_light<MYW>(attrs: _.List<$vattr.Attribute$<MYW>>): $vnode.Element$<
-    MYW
-  >;
-
-  export function fe_point_light<MZA>(attrs: _.List<$vattr.Attribute$<MZA>>): $vnode.Element$<
-    MZA
-  >;
-
-  export function fe_spot_light<MZE>(attrs: _.List<$vattr.Attribute$<MZE>>): $vnode.Element$<
-    MZE
-  >;
-
-  export function clip_path<MZI>(
-    attrs: _.List<$vattr.Attribute$<MZI>>,
-    children: _.List<$vnode.Element$<MZI>>
-  ): $vnode.Element$<MZI>;
-
-  export function script<MZO>(attrs: _.List<$vattr.Attribute$<MZO>>, js: string): $vnode.Element$<
-    MZO
-  >;
-
-  export function style<MZS>(attrs: _.List<$vattr.Attribute$<MZS>>, css: string): $vnode.Element$<
-    MZS
-  >;
-
-  export function foreign_object<MZW>(
-    attrs: _.List<$vattr.Attribute$<MZW>>,
-    children: _.List<$vnode.Element$<MZW>>
-  ): $vnode.Element$<MZW>;
-
-  export function text_path<NAC>(
-    attrs: _.List<$vattr.Attribute$<NAC>>,
-    children: _.List<$vnode.Element$<NAC>>
-  ): $vnode.Element$<NAC>;
-
-  export function tspan<NAI>(
-    attrs: _.List<$vattr.Attribute$<NAI>>,
-    children: _.List<$vnode.Element$<NAI>>
-  ): $vnode.Element$<NAI>;
-
-}
-
-declare module '*/agnostic/element/keyed.mjs' {
-  import type * as _ from "../../gleam.d.mts";
-  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
-  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
-  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
-
-  export function element<MDU>(
-    tag: string,
-    attributes: _.List<$vattr.Attribute$<MDU>>,
-    children: _.List<[string, $vnode.Element$<MDU>]>
-  ): $vnode.Element$<MDU>;
-
-  export function namespaced<MEA>(
-    namespace: string,
-    tag: string,
-    attributes: _.List<$vattr.Attribute$<MEA>>,
-    children: _.List<[string, $vnode.Element$<MEA>]>
-  ): $vnode.Element$<MEA>;
-
-  export function fragment<MEG>(children: _.List<[string, $vnode.Element$<MEG>]>): $vnode.Element$<
-    MEG
-  >;
-
-  export function ul<MEK>(
-    attributes: _.List<$vattr.Attribute$<MEK>>,
-    children: _.List<[string, $vnode.Element$<MEK>]>
-  ): $vnode.Element$<MEK>;
-
-  export function ol<MEQ>(
-    attributes: _.List<$vattr.Attribute$<MEQ>>,
-    children: _.List<[string, $vnode.Element$<MEQ>]>
-  ): $vnode.Element$<MEQ>;
-
-  export function div<MEW>(
-    attributes: _.List<$vattr.Attribute$<MEW>>,
-    children: _.List<[string, $vnode.Element$<MEW>]>
-  ): $vnode.Element$<MEW>;
-
-  export function tbody<MFC>(
-    attributes: _.List<$vattr.Attribute$<MFC>>,
-    children: _.List<[string, $vnode.Element$<MFC>]>
-  ): $vnode.Element$<MFC>;
-
-  export function dl<MFI>(
-    attributes: _.List<$vattr.Attribute$<MFI>>,
-    children: _.List<[string, $vnode.Element$<MFI>]>
-  ): $vnode.Element$<MFI>;
-
-}
-
-declare module '*/agnostic/element/html.mjs' {
-  import type * as _ from "../../gleam.d.mts";
-  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
-  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
-
-  export function html<HJT>(
-    attrs: _.List<$vattr.Attribute$<HJT>>,
-    children: _.List<$vnode.Element$<HJT>>
-  ): $vnode.Element$<HJT>;
-
-  export function text(content: string): $vnode.Element$<any>;
-
-  export function unsafe_raw<HKB>(
-    namespace: string,
-    tag: string,
-    attributes: _.List<$vattr.Attribute$<HKB>>,
-    inner_html: string
-  ): $vnode.Element$<HKB>;
-
-  export function base<HKF>(attrs: _.List<$vattr.Attribute$<HKF>>): $vnode.Element$<
-    HKF
-  >;
-
-  export function head<HKJ>(
-    attrs: _.List<$vattr.Attribute$<HKJ>>,
-    children: _.List<$vnode.Element$<HKJ>>
-  ): $vnode.Element$<HKJ>;
-
-  export function link<HKP>(attrs: _.List<$vattr.Attribute$<HKP>>): $vnode.Element$<
-    HKP
-  >;
-
-  export function meta<HKT>(attrs: _.List<$vattr.Attribute$<HKT>>): $vnode.Element$<
-    HKT
-  >;
-
-  export function style<HKX>(attrs: _.List<$vattr.Attribute$<HKX>>, css: string): $vnode.Element$<
-    HKX
-  >;
-
-  export function title<HLB>(
-    attrs: _.List<$vattr.Attribute$<HLB>>,
-    content: string
-  ): $vnode.Element$<HLB>;
-
-  export function body<HLF>(
-    attrs: _.List<$vattr.Attribute$<HLF>>,
-    children: _.List<$vnode.Element$<HLF>>
-  ): $vnode.Element$<HLF>;
-
-  export function address<HLL>(
-    attrs: _.List<$vattr.Attribute$<HLL>>,
-    children: _.List<$vnode.Element$<HLL>>
-  ): $vnode.Element$<HLL>;
-
-  export function article<HLR>(
-    attrs: _.List<$vattr.Attribute$<HLR>>,
-    children: _.List<$vnode.Element$<HLR>>
-  ): $vnode.Element$<HLR>;
-
-  export function aside<HLX>(
-    attrs: _.List<$vattr.Attribute$<HLX>>,
-    children: _.List<$vnode.Element$<HLX>>
-  ): $vnode.Element$<HLX>;
-
-  export function footer<HMD>(
-    attrs: _.List<$vattr.Attribute$<HMD>>,
-    children: _.List<$vnode.Element$<HMD>>
-  ): $vnode.Element$<HMD>;
-
-  export function header<HMJ>(
-    attrs: _.List<$vattr.Attribute$<HMJ>>,
-    children: _.List<$vnode.Element$<HMJ>>
-  ): $vnode.Element$<HMJ>;
-
-  export function h1<HMP>(
-    attrs: _.List<$vattr.Attribute$<HMP>>,
-    children: _.List<$vnode.Element$<HMP>>
-  ): $vnode.Element$<HMP>;
-
-  export function h2<HMV>(
-    attrs: _.List<$vattr.Attribute$<HMV>>,
-    children: _.List<$vnode.Element$<HMV>>
-  ): $vnode.Element$<HMV>;
-
-  export function h3<HNB>(
-    attrs: _.List<$vattr.Attribute$<HNB>>,
-    children: _.List<$vnode.Element$<HNB>>
-  ): $vnode.Element$<HNB>;
-
-  export function h4<HNH>(
-    attrs: _.List<$vattr.Attribute$<HNH>>,
-    children: _.List<$vnode.Element$<HNH>>
-  ): $vnode.Element$<HNH>;
-
-  export function h5<HNN>(
-    attrs: _.List<$vattr.Attribute$<HNN>>,
-    children: _.List<$vnode.Element$<HNN>>
-  ): $vnode.Element$<HNN>;
-
-  export function h6<HNT>(
-    attrs: _.List<$vattr.Attribute$<HNT>>,
-    children: _.List<$vnode.Element$<HNT>>
-  ): $vnode.Element$<HNT>;
-
-  export function hgroup<HNZ>(
-    attrs: _.List<$vattr.Attribute$<HNZ>>,
-    children: _.List<$vnode.Element$<HNZ>>
-  ): $vnode.Element$<HNZ>;
-
-  export function main<HOF>(
-    attrs: _.List<$vattr.Attribute$<HOF>>,
-    children: _.List<$vnode.Element$<HOF>>
-  ): $vnode.Element$<HOF>;
-
-  export function nav<HOL>(
-    attrs: _.List<$vattr.Attribute$<HOL>>,
-    children: _.List<$vnode.Element$<HOL>>
-  ): $vnode.Element$<HOL>;
-
-  export function section<HOR>(
-    attrs: _.List<$vattr.Attribute$<HOR>>,
-    children: _.List<$vnode.Element$<HOR>>
-  ): $vnode.Element$<HOR>;
-
-  export function search<HOX>(
-    attrs: _.List<$vattr.Attribute$<HOX>>,
-    children: _.List<$vnode.Element$<HOX>>
-  ): $vnode.Element$<HOX>;
-
-  export function blockquote<HPD>(
-    attrs: _.List<$vattr.Attribute$<HPD>>,
-    children: _.List<$vnode.Element$<HPD>>
-  ): $vnode.Element$<HPD>;
-
-  export function dd<HPJ>(
-    attrs: _.List<$vattr.Attribute$<HPJ>>,
-    children: _.List<$vnode.Element$<HPJ>>
-  ): $vnode.Element$<HPJ>;
-
-  export function div<HPP>(
-    attrs: _.List<$vattr.Attribute$<HPP>>,
-    children: _.List<$vnode.Element$<HPP>>
-  ): $vnode.Element$<HPP>;
-
-  export function dl<HPV>(
-    attrs: _.List<$vattr.Attribute$<HPV>>,
-    children: _.List<$vnode.Element$<HPV>>
-  ): $vnode.Element$<HPV>;
-
-  export function dt<HQB>(
-    attrs: _.List<$vattr.Attribute$<HQB>>,
-    children: _.List<$vnode.Element$<HQB>>
-  ): $vnode.Element$<HQB>;
-
-  export function figcaption<HQH>(
-    attrs: _.List<$vattr.Attribute$<HQH>>,
-    children: _.List<$vnode.Element$<HQH>>
-  ): $vnode.Element$<HQH>;
-
-  export function figure<HQN>(
-    attrs: _.List<$vattr.Attribute$<HQN>>,
-    children: _.List<$vnode.Element$<HQN>>
-  ): $vnode.Element$<HQN>;
-
-  export function hr<HQT>(attrs: _.List<$vattr.Attribute$<HQT>>): $vnode.Element$<
-    HQT
-  >;
-
-  export function li<HQX>(
-    attrs: _.List<$vattr.Attribute$<HQX>>,
-    children: _.List<$vnode.Element$<HQX>>
-  ): $vnode.Element$<HQX>;
-
-  export function menu<HRD>(
-    attrs: _.List<$vattr.Attribute$<HRD>>,
-    children: _.List<$vnode.Element$<HRD>>
-  ): $vnode.Element$<HRD>;
-
-  export function ol<HRJ>(
-    attrs: _.List<$vattr.Attribute$<HRJ>>,
-    children: _.List<$vnode.Element$<HRJ>>
-  ): $vnode.Element$<HRJ>;
-
-  export function p<HRP>(
-    attrs: _.List<$vattr.Attribute$<HRP>>,
-    children: _.List<$vnode.Element$<HRP>>
-  ): $vnode.Element$<HRP>;
-
-  export function pre<HRV>(
-    attrs: _.List<$vattr.Attribute$<HRV>>,
-    children: _.List<$vnode.Element$<HRV>>
-  ): $vnode.Element$<HRV>;
-
-  export function ul<HSB>(
-    attrs: _.List<$vattr.Attribute$<HSB>>,
-    children: _.List<$vnode.Element$<HSB>>
-  ): $vnode.Element$<HSB>;
-
-  export function a<HSH>(
-    attrs: _.List<$vattr.Attribute$<HSH>>,
-    children: _.List<$vnode.Element$<HSH>>
-  ): $vnode.Element$<HSH>;
-
-  export function abbr<HSN>(
-    attrs: _.List<$vattr.Attribute$<HSN>>,
-    children: _.List<$vnode.Element$<HSN>>
-  ): $vnode.Element$<HSN>;
-
-  export function b<HST>(
-    attrs: _.List<$vattr.Attribute$<HST>>,
-    children: _.List<$vnode.Element$<HST>>
-  ): $vnode.Element$<HST>;
-
-  export function bdi<HSZ>(
-    attrs: _.List<$vattr.Attribute$<HSZ>>,
-    children: _.List<$vnode.Element$<HSZ>>
-  ): $vnode.Element$<HSZ>;
-
-  export function bdo<HTF>(
-    attrs: _.List<$vattr.Attribute$<HTF>>,
-    children: _.List<$vnode.Element$<HTF>>
-  ): $vnode.Element$<HTF>;
-
-  export function br<HTL>(attrs: _.List<$vattr.Attribute$<HTL>>): $vnode.Element$<
-    HTL
-  >;
-
-  export function cite<HTP>(
-    attrs: _.List<$vattr.Attribute$<HTP>>,
-    children: _.List<$vnode.Element$<HTP>>
-  ): $vnode.Element$<HTP>;
-
-  export function code<HTV>(
-    attrs: _.List<$vattr.Attribute$<HTV>>,
-    children: _.List<$vnode.Element$<HTV>>
-  ): $vnode.Element$<HTV>;
-
-  export function data<HUB>(
-    attrs: _.List<$vattr.Attribute$<HUB>>,
-    children: _.List<$vnode.Element$<HUB>>
-  ): $vnode.Element$<HUB>;
-
-  export function dfn<HUH>(
-    attrs: _.List<$vattr.Attribute$<HUH>>,
-    children: _.List<$vnode.Element$<HUH>>
-  ): $vnode.Element$<HUH>;
-
-  export function em<HUN>(
-    attrs: _.List<$vattr.Attribute$<HUN>>,
-    children: _.List<$vnode.Element$<HUN>>
-  ): $vnode.Element$<HUN>;
-
-  export function i<HUT>(
-    attrs: _.List<$vattr.Attribute$<HUT>>,
-    children: _.List<$vnode.Element$<HUT>>
-  ): $vnode.Element$<HUT>;
-
-  export function kbd<HUZ>(
-    attrs: _.List<$vattr.Attribute$<HUZ>>,
-    children: _.List<$vnode.Element$<HUZ>>
-  ): $vnode.Element$<HUZ>;
-
-  export function mark<HVF>(
-    attrs: _.List<$vattr.Attribute$<HVF>>,
-    children: _.List<$vnode.Element$<HVF>>
-  ): $vnode.Element$<HVF>;
-
-  export function q<HVL>(
-    attrs: _.List<$vattr.Attribute$<HVL>>,
-    children: _.List<$vnode.Element$<HVL>>
-  ): $vnode.Element$<HVL>;
-
-  export function rp<HVR>(
-    attrs: _.List<$vattr.Attribute$<HVR>>,
-    children: _.List<$vnode.Element$<HVR>>
-  ): $vnode.Element$<HVR>;
-
-  export function rt<HVX>(
-    attrs: _.List<$vattr.Attribute$<HVX>>,
-    children: _.List<$vnode.Element$<HVX>>
-  ): $vnode.Element$<HVX>;
-
-  export function ruby<HWD>(
-    attrs: _.List<$vattr.Attribute$<HWD>>,
-    children: _.List<$vnode.Element$<HWD>>
-  ): $vnode.Element$<HWD>;
-
-  export function s<HWJ>(
-    attrs: _.List<$vattr.Attribute$<HWJ>>,
-    children: _.List<$vnode.Element$<HWJ>>
-  ): $vnode.Element$<HWJ>;
-
-  export function samp<HWP>(
-    attrs: _.List<$vattr.Attribute$<HWP>>,
-    children: _.List<$vnode.Element$<HWP>>
-  ): $vnode.Element$<HWP>;
-
-  export function small<HWV>(
-    attrs: _.List<$vattr.Attribute$<HWV>>,
-    children: _.List<$vnode.Element$<HWV>>
-  ): $vnode.Element$<HWV>;
-
-  export function span<HXB>(
-    attrs: _.List<$vattr.Attribute$<HXB>>,
-    children: _.List<$vnode.Element$<HXB>>
-  ): $vnode.Element$<HXB>;
-
-  export function strong<HXH>(
-    attrs: _.List<$vattr.Attribute$<HXH>>,
-    children: _.List<$vnode.Element$<HXH>>
-  ): $vnode.Element$<HXH>;
-
-  export function sub<HXN>(
-    attrs: _.List<$vattr.Attribute$<HXN>>,
-    children: _.List<$vnode.Element$<HXN>>
-  ): $vnode.Element$<HXN>;
-
-  export function sup<HXT>(
-    attrs: _.List<$vattr.Attribute$<HXT>>,
-    children: _.List<$vnode.Element$<HXT>>
-  ): $vnode.Element$<HXT>;
-
-  export function time<HXZ>(
-    attrs: _.List<$vattr.Attribute$<HXZ>>,
-    children: _.List<$vnode.Element$<HXZ>>
-  ): $vnode.Element$<HXZ>;
-
-  export function u<HYF>(
-    attrs: _.List<$vattr.Attribute$<HYF>>,
-    children: _.List<$vnode.Element$<HYF>>
-  ): $vnode.Element$<HYF>;
-
-  export function var$<HYL>(
-    attrs: _.List<$vattr.Attribute$<HYL>>,
-    children: _.List<$vnode.Element$<HYL>>
-  ): $vnode.Element$<HYL>;
-
-  export function wbr<HYR>(attrs: _.List<$vattr.Attribute$<HYR>>): $vnode.Element$<
-    HYR
-  >;
-
-  export function area<HYV>(attrs: _.List<$vattr.Attribute$<HYV>>): $vnode.Element$<
-    HYV
-  >;
-
-  export function audio<HYZ>(
-    attrs: _.List<$vattr.Attribute$<HYZ>>,
-    children: _.List<$vnode.Element$<HYZ>>
-  ): $vnode.Element$<HYZ>;
-
-  export function img<HZF>(attrs: _.List<$vattr.Attribute$<HZF>>): $vnode.Element$<
-    HZF
-  >;
-
-  export function map<HZJ>(
-    attrs: _.List<$vattr.Attribute$<HZJ>>,
-    children: _.List<$vnode.Element$<HZJ>>
-  ): $vnode.Element$<HZJ>;
-
-  export function track<HZP>(attrs: _.List<$vattr.Attribute$<HZP>>): $vnode.Element$<
-    HZP
-  >;
-
-  export function video<HZT>(
-    attrs: _.List<$vattr.Attribute$<HZT>>,
-    children: _.List<$vnode.Element$<HZT>>
-  ): $vnode.Element$<HZT>;
-
-  export function embed<HZZ>(attrs: _.List<$vattr.Attribute$<HZZ>>): $vnode.Element$<
-    HZZ
-  >;
-
-  export function iframe<IAD>(attrs: _.List<$vattr.Attribute$<IAD>>): $vnode.Element$<
-    IAD
-  >;
-
-  export function object<IAH>(attrs: _.List<$vattr.Attribute$<IAH>>): $vnode.Element$<
-    IAH
-  >;
-
-  export function picture<IAL>(
-    attrs: _.List<$vattr.Attribute$<IAL>>,
-    children: _.List<$vnode.Element$<IAL>>
-  ): $vnode.Element$<IAL>;
-
-  export function portal<IAR>(attrs: _.List<$vattr.Attribute$<IAR>>): $vnode.Element$<
-    IAR
-  >;
-
-  export function source<IAV>(attrs: _.List<$vattr.Attribute$<IAV>>): $vnode.Element$<
-    IAV
-  >;
-
-  export function math<IAZ>(
-    attrs: _.List<$vattr.Attribute$<IAZ>>,
-    children: _.List<$vnode.Element$<IAZ>>
-  ): $vnode.Element$<IAZ>;
-
-  export function svg<IBF>(
-    attrs: _.List<$vattr.Attribute$<IBF>>,
-    children: _.List<$vnode.Element$<IBF>>
-  ): $vnode.Element$<IBF>;
-
-  export function canvas<IBL>(attrs: _.List<$vattr.Attribute$<IBL>>): $vnode.Element$<
-    IBL
-  >;
-
-  export function noscript<IBP>(
-    attrs: _.List<$vattr.Attribute$<IBP>>,
-    children: _.List<$vnode.Element$<IBP>>
-  ): $vnode.Element$<IBP>;
-
-  export function script<IBV>(attrs: _.List<$vattr.Attribute$<IBV>>, js: string): $vnode.Element$<
-    IBV
-  >;
-
-  export function del<IBZ>(
-    attrs: _.List<$vattr.Attribute$<IBZ>>,
-    children: _.List<$vnode.Element$<IBZ>>
-  ): $vnode.Element$<IBZ>;
-
-  export function ins<ICF>(
-    attrs: _.List<$vattr.Attribute$<ICF>>,
-    children: _.List<$vnode.Element$<ICF>>
-  ): $vnode.Element$<ICF>;
-
-  export function caption<ICL>(
-    attrs: _.List<$vattr.Attribute$<ICL>>,
-    children: _.List<$vnode.Element$<ICL>>
-  ): $vnode.Element$<ICL>;
-
-  export function col<ICR>(attrs: _.List<$vattr.Attribute$<ICR>>): $vnode.Element$<
-    ICR
-  >;
-
-  export function colgroup<ICV>(
-    attrs: _.List<$vattr.Attribute$<ICV>>,
-    children: _.List<$vnode.Element$<ICV>>
-  ): $vnode.Element$<ICV>;
-
-  export function table<IDB>(
-    attrs: _.List<$vattr.Attribute$<IDB>>,
-    children: _.List<$vnode.Element$<IDB>>
-  ): $vnode.Element$<IDB>;
-
-  export function tbody<IDH>(
-    attrs: _.List<$vattr.Attribute$<IDH>>,
-    children: _.List<$vnode.Element$<IDH>>
-  ): $vnode.Element$<IDH>;
-
-  export function td<IDN>(
-    attrs: _.List<$vattr.Attribute$<IDN>>,
-    children: _.List<$vnode.Element$<IDN>>
-  ): $vnode.Element$<IDN>;
-
-  export function tfoot<IDT>(
-    attrs: _.List<$vattr.Attribute$<IDT>>,
-    children: _.List<$vnode.Element$<IDT>>
-  ): $vnode.Element$<IDT>;
-
-  export function th<IDZ>(
-    attrs: _.List<$vattr.Attribute$<IDZ>>,
-    children: _.List<$vnode.Element$<IDZ>>
-  ): $vnode.Element$<IDZ>;
-
-  export function thead<IEF>(
-    attrs: _.List<$vattr.Attribute$<IEF>>,
-    children: _.List<$vnode.Element$<IEF>>
-  ): $vnode.Element$<IEF>;
-
-  export function tr<IEL>(
-    attrs: _.List<$vattr.Attribute$<IEL>>,
-    children: _.List<$vnode.Element$<IEL>>
-  ): $vnode.Element$<IEL>;
-
-  export function button<IER>(
-    attrs: _.List<$vattr.Attribute$<IER>>,
-    children: _.List<$vnode.Element$<IER>>
-  ): $vnode.Element$<IER>;
-
-  export function datalist<IEX>(
-    attrs: _.List<$vattr.Attribute$<IEX>>,
-    children: _.List<$vnode.Element$<IEX>>
-  ): $vnode.Element$<IEX>;
-
-  export function fieldset<IFD>(
-    attrs: _.List<$vattr.Attribute$<IFD>>,
-    children: _.List<$vnode.Element$<IFD>>
-  ): $vnode.Element$<IFD>;
-
-  export function form<IFJ>(
-    attrs: _.List<$vattr.Attribute$<IFJ>>,
-    children: _.List<$vnode.Element$<IFJ>>
-  ): $vnode.Element$<IFJ>;
-
-  export function input<IFP>(attrs: _.List<$vattr.Attribute$<IFP>>): $vnode.Element$<
-    IFP
-  >;
-
-  export function label<IFT>(
-    attrs: _.List<$vattr.Attribute$<IFT>>,
-    children: _.List<$vnode.Element$<IFT>>
-  ): $vnode.Element$<IFT>;
-
-  export function legend<IFZ>(
-    attrs: _.List<$vattr.Attribute$<IFZ>>,
-    children: _.List<$vnode.Element$<IFZ>>
-  ): $vnode.Element$<IFZ>;
-
-  export function meter<IGF>(
-    attrs: _.List<$vattr.Attribute$<IGF>>,
-    children: _.List<$vnode.Element$<IGF>>
-  ): $vnode.Element$<IGF>;
-
-  export function optgroup<IGL>(
-    attrs: _.List<$vattr.Attribute$<IGL>>,
-    children: _.List<$vnode.Element$<IGL>>
-  ): $vnode.Element$<IGL>;
-
-  export function option<IGR>(
-    attrs: _.List<$vattr.Attribute$<IGR>>,
-    label: string
-  ): $vnode.Element$<IGR>;
-
-  export function output<IGV>(
+  export function a<IEN>(
+    attrs: _.List<$vattr.Attribute$<IEN>>,
+    children: _.List<$vnode.Element$<IEN>>
+  ): $vnode.Element$<IEN>;
+
+  export function defs<IET>(
+    attrs: _.List<$vattr.Attribute$<IET>>,
+    children: _.List<$vnode.Element$<IET>>
+  ): $vnode.Element$<IET>;
+
+  export function g<IEZ>(
+    attrs: _.List<$vattr.Attribute$<IEZ>>,
+    children: _.List<$vnode.Element$<IEZ>>
+  ): $vnode.Element$<IEZ>;
+
+  export function marker<IFF>(
+    attrs: _.List<$vattr.Attribute$<IFF>>,
+    children: _.List<$vnode.Element$<IFF>>
+  ): $vnode.Element$<IFF>;
+
+  export function mask<IFL>(
+    attrs: _.List<$vattr.Attribute$<IFL>>,
+    children: _.List<$vnode.Element$<IFL>>
+  ): $vnode.Element$<IFL>;
+
+  export function missing_glyph<IFR>(
+    attrs: _.List<$vattr.Attribute$<IFR>>,
+    children: _.List<$vnode.Element$<IFR>>
+  ): $vnode.Element$<IFR>;
+
+  export function pattern<IFX>(
+    attrs: _.List<$vattr.Attribute$<IFX>>,
+    children: _.List<$vnode.Element$<IFX>>
+  ): $vnode.Element$<IFX>;
+
+  export function svg<IGD>(
+    attrs: _.List<$vattr.Attribute$<IGD>>,
+    children: _.List<$vnode.Element$<IGD>>
+  ): $vnode.Element$<IGD>;
+
+  export function switch$<IGJ>(
+    attrs: _.List<$vattr.Attribute$<IGJ>>,
+    children: _.List<$vnode.Element$<IGJ>>
+  ): $vnode.Element$<IGJ>;
+
+  export function symbol<IGP>(
+    attrs: _.List<$vattr.Attribute$<IGP>>,
+    children: _.List<$vnode.Element$<IGP>>
+  ): $vnode.Element$<IGP>;
+
+  export function view<IGV>(
     attrs: _.List<$vattr.Attribute$<IGV>>,
     children: _.List<$vnode.Element$<IGV>>
   ): $vnode.Element$<IGV>;
 
-  export function progress<IHB>(
+  export function desc<IHB>(
     attrs: _.List<$vattr.Attribute$<IHB>>,
     children: _.List<$vnode.Element$<IHB>>
   ): $vnode.Element$<IHB>;
 
-  export function select<IHH>(
+  export function metadata<IHH>(
     attrs: _.List<$vattr.Attribute$<IHH>>,
     children: _.List<$vnode.Element$<IHH>>
   ): $vnode.Element$<IHH>;
 
-  export function textarea<IHN>(
+  export function title<IHN>(
     attrs: _.List<$vattr.Attribute$<IHN>>,
-    content: string
+    children: _.List<$vnode.Element$<IHN>>
   ): $vnode.Element$<IHN>;
 
-  export function details<IHR>(
-    attrs: _.List<$vattr.Attribute$<IHR>>,
-    children: _.List<$vnode.Element$<IHR>>
-  ): $vnode.Element$<IHR>;
+  export function filter<IHT>(
+    attrs: _.List<$vattr.Attribute$<IHT>>,
+    children: _.List<$vnode.Element$<IHT>>
+  ): $vnode.Element$<IHT>;
 
-  export function dialog<IHX>(
-    attrs: _.List<$vattr.Attribute$<IHX>>,
-    children: _.List<$vnode.Element$<IHX>>
-  ): $vnode.Element$<IHX>;
+  export function fe_blend<IHZ>(attrs: _.List<$vattr.Attribute$<IHZ>>): $vnode.Element$<
+    IHZ
+  >;
 
-  export function summary<IID>(
-    attrs: _.List<$vattr.Attribute$<IID>>,
-    children: _.List<$vnode.Element$<IID>>
-  ): $vnode.Element$<IID>;
+  export function fe_color_matrix<IID>(attrs: _.List<$vattr.Attribute$<IID>>): $vnode.Element$<
+    IID
+  >;
 
-  export function slot<IIJ>(
-    attrs: _.List<$vattr.Attribute$<IIJ>>,
-    fallback: _.List<$vnode.Element$<IIJ>>
-  ): $vnode.Element$<IIJ>;
+  export function fe_component_transfer<IIH>(
+    attrs: _.List<$vattr.Attribute$<IIH>>
+  ): $vnode.Element$<IIH>;
 
-  export function template<IIP>(
-    attrs: _.List<$vattr.Attribute$<IIP>>,
-    children: _.List<$vnode.Element$<IIP>>
-  ): $vnode.Element$<IIP>;
+  export function fe_composite<IIL>(attrs: _.List<$vattr.Attribute$<IIL>>): $vnode.Element$<
+    IIL
+  >;
+
+  export function fe_convolve_matrix<IIP>(attrs: _.List<$vattr.Attribute$<IIP>>): $vnode.Element$<
+    IIP
+  >;
+
+  export function fe_diffuse_lighting<IIT>(
+    attrs: _.List<$vattr.Attribute$<IIT>>,
+    children: _.List<$vnode.Element$<IIT>>
+  ): $vnode.Element$<IIT>;
+
+  export function fe_displacement_map<IIZ>(attrs: _.List<$vattr.Attribute$<IIZ>>): $vnode.Element$<
+    IIZ
+  >;
+
+  export function fe_drop_shadow<IJD>(attrs: _.List<$vattr.Attribute$<IJD>>): $vnode.Element$<
+    IJD
+  >;
+
+  export function fe_flood<IJH>(attrs: _.List<$vattr.Attribute$<IJH>>): $vnode.Element$<
+    IJH
+  >;
+
+  export function fe_func_a<IJL>(attrs: _.List<$vattr.Attribute$<IJL>>): $vnode.Element$<
+    IJL
+  >;
+
+  export function fe_func_b<IJP>(attrs: _.List<$vattr.Attribute$<IJP>>): $vnode.Element$<
+    IJP
+  >;
+
+  export function fe_func_g<IJT>(attrs: _.List<$vattr.Attribute$<IJT>>): $vnode.Element$<
+    IJT
+  >;
+
+  export function fe_func_r<IJX>(attrs: _.List<$vattr.Attribute$<IJX>>): $vnode.Element$<
+    IJX
+  >;
+
+  export function fe_gaussian_blur<IKB>(attrs: _.List<$vattr.Attribute$<IKB>>): $vnode.Element$<
+    IKB
+  >;
+
+  export function fe_image<IKF>(attrs: _.List<$vattr.Attribute$<IKF>>): $vnode.Element$<
+    IKF
+  >;
+
+  export function fe_merge<IKJ>(
+    attrs: _.List<$vattr.Attribute$<IKJ>>,
+    children: _.List<$vnode.Element$<IKJ>>
+  ): $vnode.Element$<IKJ>;
+
+  export function fe_merge_node<IKP>(attrs: _.List<$vattr.Attribute$<IKP>>): $vnode.Element$<
+    IKP
+  >;
+
+  export function fe_morphology<IKT>(attrs: _.List<$vattr.Attribute$<IKT>>): $vnode.Element$<
+    IKT
+  >;
+
+  export function fe_offset<IKX>(attrs: _.List<$vattr.Attribute$<IKX>>): $vnode.Element$<
+    IKX
+  >;
+
+  export function fe_specular_lighting<ILB>(
+    attrs: _.List<$vattr.Attribute$<ILB>>,
+    children: _.List<$vnode.Element$<ILB>>
+  ): $vnode.Element$<ILB>;
+
+  export function fe_tile<ILH>(
+    attrs: _.List<$vattr.Attribute$<ILH>>,
+    children: _.List<$vnode.Element$<ILH>>
+  ): $vnode.Element$<ILH>;
+
+  export function fe_turbulence<ILN>(attrs: _.List<$vattr.Attribute$<ILN>>): $vnode.Element$<
+    ILN
+  >;
+
+  export function linear_gradient<ILR>(
+    attrs: _.List<$vattr.Attribute$<ILR>>,
+    children: _.List<$vnode.Element$<ILR>>
+  ): $vnode.Element$<ILR>;
+
+  export function radial_gradient<ILX>(
+    attrs: _.List<$vattr.Attribute$<ILX>>,
+    children: _.List<$vnode.Element$<ILX>>
+  ): $vnode.Element$<ILX>;
+
+  export function stop<IMD>(attrs: _.List<$vattr.Attribute$<IMD>>): $vnode.Element$<
+    IMD
+  >;
+
+  export function image<IMH>(attrs: _.List<$vattr.Attribute$<IMH>>): $vnode.Element$<
+    IMH
+  >;
+
+  export function path<IML>(attrs: _.List<$vattr.Attribute$<IML>>): $vnode.Element$<
+    IML
+  >;
+
+  export function text<IMP>(
+    attrs: _.List<$vattr.Attribute$<IMP>>,
+    content: string
+  ): $vnode.Element$<IMP>;
+
+  export function use_<IMT>(attrs: _.List<$vattr.Attribute$<IMT>>): $vnode.Element$<
+    IMT
+  >;
+
+  export function fe_distant_light<IMX>(attrs: _.List<$vattr.Attribute$<IMX>>): $vnode.Element$<
+    IMX
+  >;
+
+  export function fe_point_light<INB>(attrs: _.List<$vattr.Attribute$<INB>>): $vnode.Element$<
+    INB
+  >;
+
+  export function fe_spot_light<INF>(attrs: _.List<$vattr.Attribute$<INF>>): $vnode.Element$<
+    INF
+  >;
+
+  export function clip_path<INJ>(
+    attrs: _.List<$vattr.Attribute$<INJ>>,
+    children: _.List<$vnode.Element$<INJ>>
+  ): $vnode.Element$<INJ>;
+
+  export function script<INP>(attrs: _.List<$vattr.Attribute$<INP>>, js: string): $vnode.Element$<
+    INP
+  >;
+
+  export function style<INT>(attrs: _.List<$vattr.Attribute$<INT>>, css: string): $vnode.Element$<
+    INT
+  >;
+
+  export function foreign_object<INX>(
+    attrs: _.List<$vattr.Attribute$<INX>>,
+    children: _.List<$vnode.Element$<INX>>
+  ): $vnode.Element$<INX>;
+
+  export function text_path<IOD>(
+    attrs: _.List<$vattr.Attribute$<IOD>>,
+    children: _.List<$vnode.Element$<IOD>>
+  ): $vnode.Element$<IOD>;
+
+  export function tspan<IOJ>(
+    attrs: _.List<$vattr.Attribute$<IOJ>>,
+    children: _.List<$vnode.Element$<IOJ>>
+  ): $vnode.Element$<IOJ>;
+
+}
+
+declare module '*/agnostic/element/keyed.mjs' {
+  import type * as $mutable_map from "../../agnostic/internals/mutable_map.d.mts";
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../gleam.d.mts";
+
+  export function element<HRR>(
+    tag: string,
+    attributes: _.List<$vattr.Attribute$<HRR>>,
+    children: _.List<[string, $vnode.Element$<HRR>]>
+  ): $vnode.Element$<HRR>;
+
+  export function namespaced<HRX>(
+    namespace: string,
+    tag: string,
+    attributes: _.List<$vattr.Attribute$<HRX>>,
+    children: _.List<[string, $vnode.Element$<HRX>]>
+  ): $vnode.Element$<HRX>;
+
+  export function fragment<HSD>(children: _.List<[string, $vnode.Element$<HSD>]>): $vnode.Element$<
+    HSD
+  >;
+
+  export function ul<HSH>(
+    attributes: _.List<$vattr.Attribute$<HSH>>,
+    children: _.List<[string, $vnode.Element$<HSH>]>
+  ): $vnode.Element$<HSH>;
+
+  export function ol<HSN>(
+    attributes: _.List<$vattr.Attribute$<HSN>>,
+    children: _.List<[string, $vnode.Element$<HSN>]>
+  ): $vnode.Element$<HSN>;
+
+  export function div<HST>(
+    attributes: _.List<$vattr.Attribute$<HST>>,
+    children: _.List<[string, $vnode.Element$<HST>]>
+  ): $vnode.Element$<HST>;
+
+  export function tbody<HSZ>(
+    attributes: _.List<$vattr.Attribute$<HSZ>>,
+    children: _.List<[string, $vnode.Element$<HSZ>]>
+  ): $vnode.Element$<HSZ>;
+
+  export function dl<HTF>(
+    attributes: _.List<$vattr.Attribute$<HTF>>,
+    children: _.List<[string, $vnode.Element$<HTF>]>
+  ): $vnode.Element$<HTF>;
 
 }
 
 declare module '*/agnostic/element/mathml.mjs' {
-  import type * as _ from "../../gleam.d.mts";
   import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
   import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../gleam.d.mts";
 
   export const namespace: string;
 
-  export function merror<MHG>(
-    attrs: _.List<$vattr.Attribute$<MHG>>,
-    children: _.List<$vnode.Element$<MHG>>
-  ): $vnode.Element$<MHG>;
+  export function merror<HVH>(
+    attrs: _.List<$vattr.Attribute$<HVH>>,
+    children: _.List<$vnode.Element$<HVH>>
+  ): $vnode.Element$<HVH>;
 
-  export function mphantom<MHM>(
-    attrs: _.List<$vattr.Attribute$<MHM>>,
-    children: _.List<$vnode.Element$<MHM>>
-  ): $vnode.Element$<MHM>;
+  export function mphantom<HVN>(
+    attrs: _.List<$vattr.Attribute$<HVN>>,
+    children: _.List<$vnode.Element$<HVN>>
+  ): $vnode.Element$<HVN>;
 
-  export function mprescripts<MHS>(
-    attrs: _.List<$vattr.Attribute$<MHS>>,
-    children: _.List<$vnode.Element$<MHS>>
-  ): $vnode.Element$<MHS>;
+  export function mprescripts<HVT>(
+    attrs: _.List<$vattr.Attribute$<HVT>>,
+    children: _.List<$vnode.Element$<HVT>>
+  ): $vnode.Element$<HVT>;
 
-  export function mrow<MHY>(
-    attrs: _.List<$vattr.Attribute$<MHY>>,
-    children: _.List<$vnode.Element$<MHY>>
-  ): $vnode.Element$<MHY>;
+  export function mrow<HVZ>(
+    attrs: _.List<$vattr.Attribute$<HVZ>>,
+    children: _.List<$vnode.Element$<HVZ>>
+  ): $vnode.Element$<HVZ>;
 
-  export function mstyle<MIE>(
-    attrs: _.List<$vattr.Attribute$<MIE>>,
-    children: _.List<$vnode.Element$<MIE>>
-  ): $vnode.Element$<MIE>;
+  export function mstyle<HWF>(
+    attrs: _.List<$vattr.Attribute$<HWF>>,
+    children: _.List<$vnode.Element$<HWF>>
+  ): $vnode.Element$<HWF>;
 
-  export function semantics<MIK>(
-    attrs: _.List<$vattr.Attribute$<MIK>>,
-    children: _.List<$vnode.Element$<MIK>>
-  ): $vnode.Element$<MIK>;
+  export function semantics<HWL>(
+    attrs: _.List<$vattr.Attribute$<HWL>>,
+    children: _.List<$vnode.Element$<HWL>>
+  ): $vnode.Element$<HWL>;
 
-  export function mmultiscripts<MIQ>(
-    attrs: _.List<$vattr.Attribute$<MIQ>>,
-    children: _.List<$vnode.Element$<MIQ>>
-  ): $vnode.Element$<MIQ>;
+  export function mmultiscripts<HWR>(
+    attrs: _.List<$vattr.Attribute$<HWR>>,
+    children: _.List<$vnode.Element$<HWR>>
+  ): $vnode.Element$<HWR>;
 
-  export function mover<MIW>(
-    attrs: _.List<$vattr.Attribute$<MIW>>,
-    children: _.List<$vnode.Element$<MIW>>
-  ): $vnode.Element$<MIW>;
+  export function mover<HWX>(
+    attrs: _.List<$vattr.Attribute$<HWX>>,
+    children: _.List<$vnode.Element$<HWX>>
+  ): $vnode.Element$<HWX>;
 
-  export function msub<MJC>(
-    attrs: _.List<$vattr.Attribute$<MJC>>,
-    children: _.List<$vnode.Element$<MJC>>
-  ): $vnode.Element$<MJC>;
+  export function msub<HXD>(
+    attrs: _.List<$vattr.Attribute$<HXD>>,
+    children: _.List<$vnode.Element$<HXD>>
+  ): $vnode.Element$<HXD>;
 
-  export function msubsup<MJI>(
-    attrs: _.List<$vattr.Attribute$<MJI>>,
-    children: _.List<$vnode.Element$<MJI>>
-  ): $vnode.Element$<MJI>;
+  export function msubsup<HXJ>(
+    attrs: _.List<$vattr.Attribute$<HXJ>>,
+    children: _.List<$vnode.Element$<HXJ>>
+  ): $vnode.Element$<HXJ>;
 
-  export function msup<MJO>(
-    attrs: _.List<$vattr.Attribute$<MJO>>,
-    children: _.List<$vnode.Element$<MJO>>
-  ): $vnode.Element$<MJO>;
+  export function msup<HXP>(
+    attrs: _.List<$vattr.Attribute$<HXP>>,
+    children: _.List<$vnode.Element$<HXP>>
+  ): $vnode.Element$<HXP>;
 
-  export function munder<MJU>(
-    attrs: _.List<$vattr.Attribute$<MJU>>,
-    children: _.List<$vnode.Element$<MJU>>
-  ): $vnode.Element$<MJU>;
+  export function munder<HXV>(
+    attrs: _.List<$vattr.Attribute$<HXV>>,
+    children: _.List<$vnode.Element$<HXV>>
+  ): $vnode.Element$<HXV>;
 
-  export function munderover<MKA>(
-    attrs: _.List<$vattr.Attribute$<MKA>>,
-    children: _.List<$vnode.Element$<MKA>>
-  ): $vnode.Element$<MKA>;
+  export function munderover<HYB>(
+    attrs: _.List<$vattr.Attribute$<HYB>>,
+    children: _.List<$vnode.Element$<HYB>>
+  ): $vnode.Element$<HYB>;
 
-  export function mroot<MKG>(
-    attrs: _.List<$vattr.Attribute$<MKG>>,
-    children: _.List<$vnode.Element$<MKG>>
-  ): $vnode.Element$<MKG>;
+  export function mroot<HYH>(
+    attrs: _.List<$vattr.Attribute$<HYH>>,
+    children: _.List<$vnode.Element$<HYH>>
+  ): $vnode.Element$<HYH>;
 
-  export function msqrt<MKM>(
-    attrs: _.List<$vattr.Attribute$<MKM>>,
-    children: _.List<$vnode.Element$<MKM>>
-  ): $vnode.Element$<MKM>;
+  export function msqrt<HYN>(
+    attrs: _.List<$vattr.Attribute$<HYN>>,
+    children: _.List<$vnode.Element$<HYN>>
+  ): $vnode.Element$<HYN>;
 
-  export function annotation<MKS>(
-    attrs: _.List<$vattr.Attribute$<MKS>>,
-    children: _.List<$vnode.Element$<MKS>>
-  ): $vnode.Element$<MKS>;
+  export function annotation<HYT>(
+    attrs: _.List<$vattr.Attribute$<HYT>>,
+    children: _.List<$vnode.Element$<HYT>>
+  ): $vnode.Element$<HYT>;
 
-  export function annotation_xml<MKY>(
-    attrs: _.List<$vattr.Attribute$<MKY>>,
-    children: _.List<$vnode.Element$<MKY>>
-  ): $vnode.Element$<MKY>;
+  export function annotation_xml<HYZ>(
+    attrs: _.List<$vattr.Attribute$<HYZ>>,
+    children: _.List<$vnode.Element$<HYZ>>
+  ): $vnode.Element$<HYZ>;
 
-  export function mfrac<MLE>(
-    attrs: _.List<$vattr.Attribute$<MLE>>,
-    children: _.List<$vnode.Element$<MLE>>
-  ): $vnode.Element$<MLE>;
+  export function mfrac<HZF>(
+    attrs: _.List<$vattr.Attribute$<HZF>>,
+    children: _.List<$vnode.Element$<HZF>>
+  ): $vnode.Element$<HZF>;
 
-  export function mn<MLK>(attrs: _.List<$vattr.Attribute$<MLK>>, text: string): $vnode.Element$<
-    MLK
+  export function mn<HZL>(attrs: _.List<$vattr.Attribute$<HZL>>, text: string): $vnode.Element$<
+    HZL
   >;
 
-  export function mo<MLO>(attrs: _.List<$vattr.Attribute$<MLO>>, text: string): $vnode.Element$<
-    MLO
+  export function mo<HZP>(attrs: _.List<$vattr.Attribute$<HZP>>, text: string): $vnode.Element$<
+    HZP
   >;
 
-  export function mi<MLS>(attrs: _.List<$vattr.Attribute$<MLS>>, text: string): $vnode.Element$<
-    MLS
+  export function mi<HZT>(attrs: _.List<$vattr.Attribute$<HZT>>, text: string): $vnode.Element$<
+    HZT
   >;
 
-  export function mpadded<MLW>(
-    attrs: _.List<$vattr.Attribute$<MLW>>,
-    children: _.List<$vnode.Element$<MLW>>
-  ): $vnode.Element$<MLW>;
+  export function mpadded<HZX>(
+    attrs: _.List<$vattr.Attribute$<HZX>>,
+    children: _.List<$vnode.Element$<HZX>>
+  ): $vnode.Element$<HZX>;
 
-  export function ms<MMC>(attrs: _.List<$vattr.Attribute$<MMC>>, text: string): $vnode.Element$<
-    MMC
+  export function ms<IAD>(attrs: _.List<$vattr.Attribute$<IAD>>, text: string): $vnode.Element$<
+    IAD
   >;
 
-  export function mspace<MMG>(attrs: _.List<$vattr.Attribute$<MMG>>): $vnode.Element$<
-    MMG
+  export function mspace<IAH>(attrs: _.List<$vattr.Attribute$<IAH>>): $vnode.Element$<
+    IAH
   >;
 
-  export function mtable<MMK>(
-    attrs: _.List<$vattr.Attribute$<MMK>>,
-    children: _.List<$vnode.Element$<MMK>>
-  ): $vnode.Element$<MMK>;
+  export function mtable<IAL>(
+    attrs: _.List<$vattr.Attribute$<IAL>>,
+    children: _.List<$vnode.Element$<IAL>>
+  ): $vnode.Element$<IAL>;
 
-  export function mtd<MMQ>(
-    attrs: _.List<$vattr.Attribute$<MMQ>>,
-    children: _.List<$vnode.Element$<MMQ>>
-  ): $vnode.Element$<MMQ>;
+  export function mtd<IAR>(
+    attrs: _.List<$vattr.Attribute$<IAR>>,
+    children: _.List<$vnode.Element$<IAR>>
+  ): $vnode.Element$<IAR>;
 
-  export function mtext<MMW>(attrs: _.List<$vattr.Attribute$<MMW>>, text: string): $vnode.Element$<
-    MMW
+  export function mtext<IAX>(attrs: _.List<$vattr.Attribute$<IAX>>, text: string): $vnode.Element$<
+    IAX
   >;
 
-  export function mtr<MNA>(
-    attrs: _.List<$vattr.Attribute$<MNA>>,
-    children: _.List<$vnode.Element$<MNA>>
-  ): $vnode.Element$<MNA>;
+  export function mtr<IBB>(
+    attrs: _.List<$vattr.Attribute$<IBB>>,
+    children: _.List<$vnode.Element$<IBB>>
+  ): $vnode.Element$<IBB>;
+
+}
+
+declare module '*/agnostic/element/html.mjs' {
+  import type * as $vattr from "../../agnostic/vdom/vattr.d.mts";
+  import type * as $vnode from "../../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../../gleam.d.mts";
+
+  export function html<CNQ>(
+    attrs: _.List<$vattr.Attribute$<CNQ>>,
+    children: _.List<$vnode.Element$<CNQ>>
+  ): $vnode.Element$<CNQ>;
+
+  export function text(content: string): $vnode.Element$<any>;
+
+  export function unsafe_raw<CNY>(
+    namespace: string,
+    tag: string,
+    attributes: _.List<$vattr.Attribute$<CNY>>,
+    inner_html: string
+  ): $vnode.Element$<CNY>;
+
+  export function base<COC>(attrs: _.List<$vattr.Attribute$<COC>>): $vnode.Element$<
+    COC
+  >;
+
+  export function head<COG>(
+    attrs: _.List<$vattr.Attribute$<COG>>,
+    children: _.List<$vnode.Element$<COG>>
+  ): $vnode.Element$<COG>;
+
+  export function link<COM>(attrs: _.List<$vattr.Attribute$<COM>>): $vnode.Element$<
+    COM
+  >;
+
+  export function meta<COQ>(attrs: _.List<$vattr.Attribute$<COQ>>): $vnode.Element$<
+    COQ
+  >;
+
+  export function style<COU>(attrs: _.List<$vattr.Attribute$<COU>>, css: string): $vnode.Element$<
+    COU
+  >;
+
+  export function title<COY>(
+    attrs: _.List<$vattr.Attribute$<COY>>,
+    content: string
+  ): $vnode.Element$<COY>;
+
+  export function body<CPC>(
+    attrs: _.List<$vattr.Attribute$<CPC>>,
+    children: _.List<$vnode.Element$<CPC>>
+  ): $vnode.Element$<CPC>;
+
+  export function address<CPI>(
+    attrs: _.List<$vattr.Attribute$<CPI>>,
+    children: _.List<$vnode.Element$<CPI>>
+  ): $vnode.Element$<CPI>;
+
+  export function article<CPO>(
+    attrs: _.List<$vattr.Attribute$<CPO>>,
+    children: _.List<$vnode.Element$<CPO>>
+  ): $vnode.Element$<CPO>;
+
+  export function aside<CPU>(
+    attrs: _.List<$vattr.Attribute$<CPU>>,
+    children: _.List<$vnode.Element$<CPU>>
+  ): $vnode.Element$<CPU>;
+
+  export function footer<CQA>(
+    attrs: _.List<$vattr.Attribute$<CQA>>,
+    children: _.List<$vnode.Element$<CQA>>
+  ): $vnode.Element$<CQA>;
+
+  export function header<CQG>(
+    attrs: _.List<$vattr.Attribute$<CQG>>,
+    children: _.List<$vnode.Element$<CQG>>
+  ): $vnode.Element$<CQG>;
+
+  export function h1<CQM>(
+    attrs: _.List<$vattr.Attribute$<CQM>>,
+    children: _.List<$vnode.Element$<CQM>>
+  ): $vnode.Element$<CQM>;
+
+  export function h2<CQS>(
+    attrs: _.List<$vattr.Attribute$<CQS>>,
+    children: _.List<$vnode.Element$<CQS>>
+  ): $vnode.Element$<CQS>;
+
+  export function h3<CQY>(
+    attrs: _.List<$vattr.Attribute$<CQY>>,
+    children: _.List<$vnode.Element$<CQY>>
+  ): $vnode.Element$<CQY>;
+
+  export function h4<CRE>(
+    attrs: _.List<$vattr.Attribute$<CRE>>,
+    children: _.List<$vnode.Element$<CRE>>
+  ): $vnode.Element$<CRE>;
+
+  export function h5<CRK>(
+    attrs: _.List<$vattr.Attribute$<CRK>>,
+    children: _.List<$vnode.Element$<CRK>>
+  ): $vnode.Element$<CRK>;
+
+  export function h6<CRQ>(
+    attrs: _.List<$vattr.Attribute$<CRQ>>,
+    children: _.List<$vnode.Element$<CRQ>>
+  ): $vnode.Element$<CRQ>;
+
+  export function hgroup<CRW>(
+    attrs: _.List<$vattr.Attribute$<CRW>>,
+    children: _.List<$vnode.Element$<CRW>>
+  ): $vnode.Element$<CRW>;
+
+  export function main<CSC>(
+    attrs: _.List<$vattr.Attribute$<CSC>>,
+    children: _.List<$vnode.Element$<CSC>>
+  ): $vnode.Element$<CSC>;
+
+  export function nav<CSI>(
+    attrs: _.List<$vattr.Attribute$<CSI>>,
+    children: _.List<$vnode.Element$<CSI>>
+  ): $vnode.Element$<CSI>;
+
+  export function section<CSO>(
+    attrs: _.List<$vattr.Attribute$<CSO>>,
+    children: _.List<$vnode.Element$<CSO>>
+  ): $vnode.Element$<CSO>;
+
+  export function search<CSU>(
+    attrs: _.List<$vattr.Attribute$<CSU>>,
+    children: _.List<$vnode.Element$<CSU>>
+  ): $vnode.Element$<CSU>;
+
+  export function blockquote<CTA>(
+    attrs: _.List<$vattr.Attribute$<CTA>>,
+    children: _.List<$vnode.Element$<CTA>>
+  ): $vnode.Element$<CTA>;
+
+  export function dd<CTG>(
+    attrs: _.List<$vattr.Attribute$<CTG>>,
+    children: _.List<$vnode.Element$<CTG>>
+  ): $vnode.Element$<CTG>;
+
+  export function div<CTM>(
+    attrs: _.List<$vattr.Attribute$<CTM>>,
+    children: _.List<$vnode.Element$<CTM>>
+  ): $vnode.Element$<CTM>;
+
+  export function dl<CTS>(
+    attrs: _.List<$vattr.Attribute$<CTS>>,
+    children: _.List<$vnode.Element$<CTS>>
+  ): $vnode.Element$<CTS>;
+
+  export function dt<CTY>(
+    attrs: _.List<$vattr.Attribute$<CTY>>,
+    children: _.List<$vnode.Element$<CTY>>
+  ): $vnode.Element$<CTY>;
+
+  export function figcaption<CUE>(
+    attrs: _.List<$vattr.Attribute$<CUE>>,
+    children: _.List<$vnode.Element$<CUE>>
+  ): $vnode.Element$<CUE>;
+
+  export function figure<CUK>(
+    attrs: _.List<$vattr.Attribute$<CUK>>,
+    children: _.List<$vnode.Element$<CUK>>
+  ): $vnode.Element$<CUK>;
+
+  export function hr<CUQ>(attrs: _.List<$vattr.Attribute$<CUQ>>): $vnode.Element$<
+    CUQ
+  >;
+
+  export function li<CUU>(
+    attrs: _.List<$vattr.Attribute$<CUU>>,
+    children: _.List<$vnode.Element$<CUU>>
+  ): $vnode.Element$<CUU>;
+
+  export function menu<CVA>(
+    attrs: _.List<$vattr.Attribute$<CVA>>,
+    children: _.List<$vnode.Element$<CVA>>
+  ): $vnode.Element$<CVA>;
+
+  export function ol<CVG>(
+    attrs: _.List<$vattr.Attribute$<CVG>>,
+    children: _.List<$vnode.Element$<CVG>>
+  ): $vnode.Element$<CVG>;
+
+  export function p<CVM>(
+    attrs: _.List<$vattr.Attribute$<CVM>>,
+    children: _.List<$vnode.Element$<CVM>>
+  ): $vnode.Element$<CVM>;
+
+  export function pre<CVS>(
+    attrs: _.List<$vattr.Attribute$<CVS>>,
+    children: _.List<$vnode.Element$<CVS>>
+  ): $vnode.Element$<CVS>;
+
+  export function ul<CVY>(
+    attrs: _.List<$vattr.Attribute$<CVY>>,
+    children: _.List<$vnode.Element$<CVY>>
+  ): $vnode.Element$<CVY>;
+
+  export function a<CWE>(
+    attrs: _.List<$vattr.Attribute$<CWE>>,
+    children: _.List<$vnode.Element$<CWE>>
+  ): $vnode.Element$<CWE>;
+
+  export function abbr<CWK>(
+    attrs: _.List<$vattr.Attribute$<CWK>>,
+    children: _.List<$vnode.Element$<CWK>>
+  ): $vnode.Element$<CWK>;
+
+  export function b<CWQ>(
+    attrs: _.List<$vattr.Attribute$<CWQ>>,
+    children: _.List<$vnode.Element$<CWQ>>
+  ): $vnode.Element$<CWQ>;
+
+  export function bdi<CWW>(
+    attrs: _.List<$vattr.Attribute$<CWW>>,
+    children: _.List<$vnode.Element$<CWW>>
+  ): $vnode.Element$<CWW>;
+
+  export function bdo<CXC>(
+    attrs: _.List<$vattr.Attribute$<CXC>>,
+    children: _.List<$vnode.Element$<CXC>>
+  ): $vnode.Element$<CXC>;
+
+  export function br<CXI>(attrs: _.List<$vattr.Attribute$<CXI>>): $vnode.Element$<
+    CXI
+  >;
+
+  export function cite<CXM>(
+    attrs: _.List<$vattr.Attribute$<CXM>>,
+    children: _.List<$vnode.Element$<CXM>>
+  ): $vnode.Element$<CXM>;
+
+  export function code<CXS>(
+    attrs: _.List<$vattr.Attribute$<CXS>>,
+    children: _.List<$vnode.Element$<CXS>>
+  ): $vnode.Element$<CXS>;
+
+  export function data<CXY>(
+    attrs: _.List<$vattr.Attribute$<CXY>>,
+    children: _.List<$vnode.Element$<CXY>>
+  ): $vnode.Element$<CXY>;
+
+  export function dfn<CYE>(
+    attrs: _.List<$vattr.Attribute$<CYE>>,
+    children: _.List<$vnode.Element$<CYE>>
+  ): $vnode.Element$<CYE>;
+
+  export function em<CYK>(
+    attrs: _.List<$vattr.Attribute$<CYK>>,
+    children: _.List<$vnode.Element$<CYK>>
+  ): $vnode.Element$<CYK>;
+
+  export function i<CYQ>(
+    attrs: _.List<$vattr.Attribute$<CYQ>>,
+    children: _.List<$vnode.Element$<CYQ>>
+  ): $vnode.Element$<CYQ>;
+
+  export function kbd<CYW>(
+    attrs: _.List<$vattr.Attribute$<CYW>>,
+    children: _.List<$vnode.Element$<CYW>>
+  ): $vnode.Element$<CYW>;
+
+  export function mark<CZC>(
+    attrs: _.List<$vattr.Attribute$<CZC>>,
+    children: _.List<$vnode.Element$<CZC>>
+  ): $vnode.Element$<CZC>;
+
+  export function q<CZI>(
+    attrs: _.List<$vattr.Attribute$<CZI>>,
+    children: _.List<$vnode.Element$<CZI>>
+  ): $vnode.Element$<CZI>;
+
+  export function rp<CZO>(
+    attrs: _.List<$vattr.Attribute$<CZO>>,
+    children: _.List<$vnode.Element$<CZO>>
+  ): $vnode.Element$<CZO>;
+
+  export function rt<CZU>(
+    attrs: _.List<$vattr.Attribute$<CZU>>,
+    children: _.List<$vnode.Element$<CZU>>
+  ): $vnode.Element$<CZU>;
+
+  export function ruby<DAA>(
+    attrs: _.List<$vattr.Attribute$<DAA>>,
+    children: _.List<$vnode.Element$<DAA>>
+  ): $vnode.Element$<DAA>;
+
+  export function s<DAG>(
+    attrs: _.List<$vattr.Attribute$<DAG>>,
+    children: _.List<$vnode.Element$<DAG>>
+  ): $vnode.Element$<DAG>;
+
+  export function samp<DAM>(
+    attrs: _.List<$vattr.Attribute$<DAM>>,
+    children: _.List<$vnode.Element$<DAM>>
+  ): $vnode.Element$<DAM>;
+
+  export function small<DAS>(
+    attrs: _.List<$vattr.Attribute$<DAS>>,
+    children: _.List<$vnode.Element$<DAS>>
+  ): $vnode.Element$<DAS>;
+
+  export function span<DAY>(
+    attrs: _.List<$vattr.Attribute$<DAY>>,
+    children: _.List<$vnode.Element$<DAY>>
+  ): $vnode.Element$<DAY>;
+
+  export function strong<DBE>(
+    attrs: _.List<$vattr.Attribute$<DBE>>,
+    children: _.List<$vnode.Element$<DBE>>
+  ): $vnode.Element$<DBE>;
+
+  export function sub<DBK>(
+    attrs: _.List<$vattr.Attribute$<DBK>>,
+    children: _.List<$vnode.Element$<DBK>>
+  ): $vnode.Element$<DBK>;
+
+  export function sup<DBQ>(
+    attrs: _.List<$vattr.Attribute$<DBQ>>,
+    children: _.List<$vnode.Element$<DBQ>>
+  ): $vnode.Element$<DBQ>;
+
+  export function time<DBW>(
+    attrs: _.List<$vattr.Attribute$<DBW>>,
+    children: _.List<$vnode.Element$<DBW>>
+  ): $vnode.Element$<DBW>;
+
+  export function u<DCC>(
+    attrs: _.List<$vattr.Attribute$<DCC>>,
+    children: _.List<$vnode.Element$<DCC>>
+  ): $vnode.Element$<DCC>;
+
+  export function var$<DCI>(
+    attrs: _.List<$vattr.Attribute$<DCI>>,
+    children: _.List<$vnode.Element$<DCI>>
+  ): $vnode.Element$<DCI>;
+
+  export function wbr<DCO>(attrs: _.List<$vattr.Attribute$<DCO>>): $vnode.Element$<
+    DCO
+  >;
+
+  export function area<DCS>(attrs: _.List<$vattr.Attribute$<DCS>>): $vnode.Element$<
+    DCS
+  >;
+
+  export function audio<DCW>(
+    attrs: _.List<$vattr.Attribute$<DCW>>,
+    children: _.List<$vnode.Element$<DCW>>
+  ): $vnode.Element$<DCW>;
+
+  export function img<DDC>(attrs: _.List<$vattr.Attribute$<DDC>>): $vnode.Element$<
+    DDC
+  >;
+
+  export function map<DDG>(
+    attrs: _.List<$vattr.Attribute$<DDG>>,
+    children: _.List<$vnode.Element$<DDG>>
+  ): $vnode.Element$<DDG>;
+
+  export function track<DDM>(attrs: _.List<$vattr.Attribute$<DDM>>): $vnode.Element$<
+    DDM
+  >;
+
+  export function video<DDQ>(
+    attrs: _.List<$vattr.Attribute$<DDQ>>,
+    children: _.List<$vnode.Element$<DDQ>>
+  ): $vnode.Element$<DDQ>;
+
+  export function embed<DDW>(attrs: _.List<$vattr.Attribute$<DDW>>): $vnode.Element$<
+    DDW
+  >;
+
+  export function iframe<DEA>(attrs: _.List<$vattr.Attribute$<DEA>>): $vnode.Element$<
+    DEA
+  >;
+
+  export function object<DEE>(attrs: _.List<$vattr.Attribute$<DEE>>): $vnode.Element$<
+    DEE
+  >;
+
+  export function picture<DEI>(
+    attrs: _.List<$vattr.Attribute$<DEI>>,
+    children: _.List<$vnode.Element$<DEI>>
+  ): $vnode.Element$<DEI>;
+
+  export function portal<DEO>(attrs: _.List<$vattr.Attribute$<DEO>>): $vnode.Element$<
+    DEO
+  >;
+
+  export function source<DES>(attrs: _.List<$vattr.Attribute$<DES>>): $vnode.Element$<
+    DES
+  >;
+
+  export function math<DEW>(
+    attrs: _.List<$vattr.Attribute$<DEW>>,
+    children: _.List<$vnode.Element$<DEW>>
+  ): $vnode.Element$<DEW>;
+
+  export function svg<DFC>(
+    attrs: _.List<$vattr.Attribute$<DFC>>,
+    children: _.List<$vnode.Element$<DFC>>
+  ): $vnode.Element$<DFC>;
+
+  export function canvas<DFI>(attrs: _.List<$vattr.Attribute$<DFI>>): $vnode.Element$<
+    DFI
+  >;
+
+  export function noscript<DFM>(
+    attrs: _.List<$vattr.Attribute$<DFM>>,
+    children: _.List<$vnode.Element$<DFM>>
+  ): $vnode.Element$<DFM>;
+
+  export function script<DFS>(attrs: _.List<$vattr.Attribute$<DFS>>, js: string): $vnode.Element$<
+    DFS
+  >;
+
+  export function del<DFW>(
+    attrs: _.List<$vattr.Attribute$<DFW>>,
+    children: _.List<$vnode.Element$<DFW>>
+  ): $vnode.Element$<DFW>;
+
+  export function ins<DGC>(
+    attrs: _.List<$vattr.Attribute$<DGC>>,
+    children: _.List<$vnode.Element$<DGC>>
+  ): $vnode.Element$<DGC>;
+
+  export function caption<DGI>(
+    attrs: _.List<$vattr.Attribute$<DGI>>,
+    children: _.List<$vnode.Element$<DGI>>
+  ): $vnode.Element$<DGI>;
+
+  export function col<DGO>(attrs: _.List<$vattr.Attribute$<DGO>>): $vnode.Element$<
+    DGO
+  >;
+
+  export function colgroup<DGS>(
+    attrs: _.List<$vattr.Attribute$<DGS>>,
+    children: _.List<$vnode.Element$<DGS>>
+  ): $vnode.Element$<DGS>;
+
+  export function table<DGY>(
+    attrs: _.List<$vattr.Attribute$<DGY>>,
+    children: _.List<$vnode.Element$<DGY>>
+  ): $vnode.Element$<DGY>;
+
+  export function tbody<DHE>(
+    attrs: _.List<$vattr.Attribute$<DHE>>,
+    children: _.List<$vnode.Element$<DHE>>
+  ): $vnode.Element$<DHE>;
+
+  export function td<DHK>(
+    attrs: _.List<$vattr.Attribute$<DHK>>,
+    children: _.List<$vnode.Element$<DHK>>
+  ): $vnode.Element$<DHK>;
+
+  export function tfoot<DHQ>(
+    attrs: _.List<$vattr.Attribute$<DHQ>>,
+    children: _.List<$vnode.Element$<DHQ>>
+  ): $vnode.Element$<DHQ>;
+
+  export function th<DHW>(
+    attrs: _.List<$vattr.Attribute$<DHW>>,
+    children: _.List<$vnode.Element$<DHW>>
+  ): $vnode.Element$<DHW>;
+
+  export function thead<DIC>(
+    attrs: _.List<$vattr.Attribute$<DIC>>,
+    children: _.List<$vnode.Element$<DIC>>
+  ): $vnode.Element$<DIC>;
+
+  export function tr<DII>(
+    attrs: _.List<$vattr.Attribute$<DII>>,
+    children: _.List<$vnode.Element$<DII>>
+  ): $vnode.Element$<DII>;
+
+  export function button<DIO>(
+    attrs: _.List<$vattr.Attribute$<DIO>>,
+    children: _.List<$vnode.Element$<DIO>>
+  ): $vnode.Element$<DIO>;
+
+  export function datalist<DIU>(
+    attrs: _.List<$vattr.Attribute$<DIU>>,
+    children: _.List<$vnode.Element$<DIU>>
+  ): $vnode.Element$<DIU>;
+
+  export function fieldset<DJA>(
+    attrs: _.List<$vattr.Attribute$<DJA>>,
+    children: _.List<$vnode.Element$<DJA>>
+  ): $vnode.Element$<DJA>;
+
+  export function form<DJG>(
+    attrs: _.List<$vattr.Attribute$<DJG>>,
+    children: _.List<$vnode.Element$<DJG>>
+  ): $vnode.Element$<DJG>;
+
+  export function input<DJM>(attrs: _.List<$vattr.Attribute$<DJM>>): $vnode.Element$<
+    DJM
+  >;
+
+  export function label<DJQ>(
+    attrs: _.List<$vattr.Attribute$<DJQ>>,
+    children: _.List<$vnode.Element$<DJQ>>
+  ): $vnode.Element$<DJQ>;
+
+  export function legend<DJW>(
+    attrs: _.List<$vattr.Attribute$<DJW>>,
+    children: _.List<$vnode.Element$<DJW>>
+  ): $vnode.Element$<DJW>;
+
+  export function meter<DKC>(
+    attrs: _.List<$vattr.Attribute$<DKC>>,
+    children: _.List<$vnode.Element$<DKC>>
+  ): $vnode.Element$<DKC>;
+
+  export function optgroup<DKI>(
+    attrs: _.List<$vattr.Attribute$<DKI>>,
+    children: _.List<$vnode.Element$<DKI>>
+  ): $vnode.Element$<DKI>;
+
+  export function option<DKO>(
+    attrs: _.List<$vattr.Attribute$<DKO>>,
+    label: string
+  ): $vnode.Element$<DKO>;
+
+  export function output<DKS>(
+    attrs: _.List<$vattr.Attribute$<DKS>>,
+    children: _.List<$vnode.Element$<DKS>>
+  ): $vnode.Element$<DKS>;
+
+  export function progress<DKY>(
+    attrs: _.List<$vattr.Attribute$<DKY>>,
+    children: _.List<$vnode.Element$<DKY>>
+  ): $vnode.Element$<DKY>;
+
+  export function select<DLE>(
+    attrs: _.List<$vattr.Attribute$<DLE>>,
+    children: _.List<$vnode.Element$<DLE>>
+  ): $vnode.Element$<DLE>;
+
+  export function textarea<DLK>(
+    attrs: _.List<$vattr.Attribute$<DLK>>,
+    content: string
+  ): $vnode.Element$<DLK>;
+
+  export function details<DLO>(
+    attrs: _.List<$vattr.Attribute$<DLO>>,
+    children: _.List<$vnode.Element$<DLO>>
+  ): $vnode.Element$<DLO>;
+
+  export function dialog<DLU>(
+    attrs: _.List<$vattr.Attribute$<DLU>>,
+    children: _.List<$vnode.Element$<DLU>>
+  ): $vnode.Element$<DLU>;
+
+  export function summary<DMA>(
+    attrs: _.List<$vattr.Attribute$<DMA>>,
+    children: _.List<$vnode.Element$<DMA>>
+  ): $vnode.Element$<DMA>;
+
+  export function slot<DMG>(
+    attrs: _.List<$vattr.Attribute$<DMG>>,
+    fallback: _.List<$vnode.Element$<DMG>>
+  ): $vnode.Element$<DMG>;
+
+  export function template<DMM>(
+    attrs: _.List<$vattr.Attribute$<DMM>>,
+    children: _.List<$vnode.Element$<DMM>>
+  ): $vnode.Element$<DMM>;
+
+}
+
+declare module '*/benchmark/diff_benchmark.mjs' {
+  import type * as $exception from "../../exception/exception.d.mts";
+  import type * as $bench from "../../gleamy_bench/gleamy/bench.d.mts";
+  import type * as $diff from "../agnostic/vdom/diff.d.mts";
+  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../gleam.d.mts";
+
+  export function benchmark_10_rows(): _.Result<undefined, $exception.Exception$>;
+
+  export function benchmark_100_rows(): _.Result<undefined, $exception.Exception$>;
+
+  export function benchmark_1000_rows(): _.Result<
+    undefined,
+    $exception.Exception$
+  >;
+
+  export function benchmark_10_000_rows(): _.Result<
+    undefined,
+    $exception.Exception$
+  >;
+
+}
+
+declare module '*/snapshot/query_find_test.mjs' {
+  import type * as $query from "../agnostic/dev/query.d.mts";
+  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
+
+  export function find_element_by_id_test(): undefined;
+
+  export function find_element_by_tag_test(): undefined;
+
+  export function find_element_by_class_test(): undefined;
+
+  export function find_element_by_multiple_classes_test(): undefined;
+
+  export function find_element_by_inline_style_test(): undefined;
+
+  export function find_element_by_text_content_test(): undefined;
+
+  export function find_child_by_tag_test(): undefined;
+
+  export function find_child_descendant_by_data_attribute_test(): undefined;
+
+  export function find_descendant_by_attribute_test(): undefined;
+
+  export function find_element_directly_wrapped_in_map_test(): undefined;
+
+  export function find_element_nested_inside_map_test(): undefined;
+
+  export function find_all_by_tag_test(): undefined;
+
+  export function find_all_by_attribute_test(): undefined;
+
+  export function find_all_by_class_test(): undefined;
+
+}
+
+declare module '*/snapshot/query_to_string_test.mjs' {
+  export function tag_query_to_string_test(): undefined;
+
+  export function id_query_to_string_test(): undefined;
+
+  export function class_query_to_string_test(): undefined;
+
+  export function multiple_class_query_to_string_test(): undefined;
+
+  export function data_attribute_query_to_string_test(): undefined;
+
+  export function attribute_query_to_string_test(): undefined;
+
+  export function attribute_exists_query_to_string_test(): undefined;
+
+  export function tag_attribute_class_query_to_string_test(): undefined;
+
+  export function style_query_to_string_test(): undefined;
+
+  export function text_content_query_to_string_test(): undefined;
+
+  export function multiple_attribute_query_to_string_test(): undefined;
+
+  export function child_of_tag_with_class_query_to_string_test(): undefined;
+
+  export function child_nested_of_tag_with_class_query_to_string_test(): undefined;
+
+  export function child_with_style_and_text_query_to_string_test(): undefined;
+
+  export function descendant_of_tag_with_class_query_to_string_test(): undefined;
+
+  export function multiple_nested_descendants_query_to_string_test(): undefined;
+
+  export function complex_child_of_tag_with_class_and_descendant_query_to_string_test(
+    
+  ): undefined;
+
+  export function complex_mixed_query_to_string_test(): undefined;
+
+  export function style_and_class_with_descendants_query_to_string_test(): undefined;
+
+}
+
+declare module '*/snapshot/html_test.mjs' {
+  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
+
+  export function element_empty_test(): undefined;
+
+  export function element_multiple_children_test(): undefined;
+
+  export function void_elements_test(): undefined;
+
+  export function element_namespaced_void_test(): undefined;
+
+  export function serializer_custom_void_test(): undefined;
+
+  export function serializer_self_closing_test(): undefined;
+
+  export function keyed_void_elements_test(): undefined;
+
+  export function keyed_element_namespaced_void_test(): undefined;
+
+  export function serializer_keyed_custom_void_test(): undefined;
+
+  export function fragment_empty_test(): undefined;
+
+  export function fragment_single_text_test(): undefined;
+
+  export function fragment_single_element_test(): undefined;
+
+  export function fragment_multiple_text_test(): undefined;
+
+  export function fragment_adjacent_text_nodes_test(): undefined;
+
+  export function fragment_nested_simple_test(): undefined;
+
+  export function fragment_nested_with_text_test(): undefined;
+
+  export function fragment_deeply_nested_test(): undefined;
+
+  export function fragment_nested_mixed_content_test(): undefined;
+
+  export function fragment_multiple_elements_test(): undefined;
+
+  export function fragment_multiple_mixed_test(): undefined;
+
+  export function keyed_fragment_test(): undefined;
+
+  export function map_basic_test(): undefined;
+
+  export function map_with_key_test(): undefined;
+
+  export function map_with_special_chars_in_key_test(): undefined;
+
+  export function memo_basic_test(): undefined;
+
+  export function memo_with_key_test(): undefined;
+
+  export function memo_with_special_chars_in_key_test(): undefined;
+
+  export function default_value_attribute_test(): undefined;
+
+  export function default_checked_attribute_test(): undefined;
+
+  export function default_selected_attribute_test(): undefined;
+
+  export function namespaced_nesting_same_test(): undefined;
+
+  export function namespaced_nesting_different_test(): undefined;
+
+  export function namespaced_nesting_default_html_test(): undefined;
+
+  export function component_prerender_test(): undefined;
+
+  export function component_prerender_with_attributes_test(): undefined;
+
+  export function component_prerender_with_properties_test(): undefined;
+
+  export function component_prerender_with_children_test(): undefined;
+
+  export function to_document_string_html_element_test(): undefined;
+
+  export function to_document_string_body_only_test(): undefined;
+
+  export function to_document_string_head_only_test(): undefined;
+
+  export function to_document_string_html_in_memo_test(): undefined;
+
+  export function to_document_string_body_in_memo_test(): undefined;
+
+  export function to_document_string_head_in_memo_test(): undefined;
+
+  export function to_document_string_html_in_fragment_test(): undefined;
+
+  export function to_document_string_body_in_fragment_test(): undefined;
+
+  export function to_document_string_head_and_body_in_fragment_test(): undefined;
+
+  export function to_document_string_html_in_map_test(): undefined;
+
+  export function to_document_string_body_in_map_test(): undefined;
+
+}
+
+declare module '*/integration/runtime_test.mjs' {
+  export {}
+
+}
+
+declare module '*/integration/virtualise_test.mjs' {
+  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
+
+  export function virtualise_none_test(): undefined;
+
+  export function virtualise_empty_div_test(): undefined;
+
+  export function virtualise_fragment_root_test(): undefined;
+
+  export function virtualise_text_test(): undefined;
+
+  export function virtualise_tree_test(): undefined;
+
+  export function virtualise_keyed_test(): undefined;
+
+  export function virtualise_map_test(): undefined;
+
+  export function virtualise_map_with_fragment_test(): undefined;
+
+  export function virtualise_nested_map_test(): undefined;
+
+  export function virtualise_memo_test(): undefined;
+
+  export function virtualise_memo_with_fragment_test(): undefined;
+
+  export function virtualise_memo_with_map_test(): undefined;
+
+  export function virtualise_map_with_memo_test(): undefined;
+
+  export function virtualise_fragment_with_map_and_memo_test(): undefined;
+
+  export function virtualise_complex_nested_test(): undefined;
+
+  export function virtualise_external_html_fragment_test(): undefined;
+
+  export function virtualise_external_html_fragment_with_comments_test(): undefined;
+
+  export function virtualise_external_single_element_with_comments_test(): undefined;
+
+}
+
+declare module '*/integration/reconciler_test.mjs' {
+  import type * as $json from "../../gleam_json/gleam/json.d.mts";
+  import type * as $platform from "../agnostic/platform.d.mts";
+  import type * as $dom from "../agnostic/platform/dom.d.mts";
+  import type * as $patch from "../agnostic/vdom/patch.d.mts";
+  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
+
+  export type Reconciler$ = any;
+
+  export function get_html(): string;
+
+  export function mount(reconciler: Reconciler$, vdom: $vnode.Element$<any>): undefined;
+
+  export function do_with_reconciler(
+    debug: boolean,
+    get_platform: () => $platform.Platform$<
+      $dom.DomNode$,
+      $dom.DomNode$,
+      $dom.DomNode$,
+      $dom.DomEvent$,
+      any,
+      $dom.DomNode$
+    >,
+    f: (x0: Reconciler$) => undefined
+  ): undefined;
+
+  export function with_reconciler(
+    debug: boolean,
+    f: (x0: Reconciler$) => undefined
+  ): undefined;
+
+  export function reconciler_mount_none_test(): undefined;
+
+  export function reconciler_mount_empty_div_test(): undefined;
+
+  export function reconciler_mount_fragment_root_test(): undefined;
+
+  export function reconciler_mount_text_test(): undefined;
+
+  export function reconciler_mount_tree_test(): undefined;
+
+  export function reconciler_server_component_mount_input_test(): undefined;
+
+  export function reconciler_push_empty_node_test(): undefined;
+
+  export function reconciler_push_text_element_replaced_test(): undefined;
+
+  export function reconciler_push_text_to_element_replacement_test(): undefined;
+
+  export function reconciler_push_nested_attribute_changes_test(): undefined;
+
+  export function reconciler_push_node_attribute_added_test(): undefined;
+
+  export function reconciler_push_node_attribute_removed_test(): undefined;
+
+  export function reconciler_push_node_many_attributes_changed_test(): undefined;
+
+  export function reconciler_push_node_child_replaced_test(): undefined;
+
+  export function reconciler_push_node_many_children_changed_test(): undefined;
+
+  export function reconciler_push_node_children_removed_test(): undefined;
+
+  export function reconciler_push_fragment_many_children_changed_test(): undefined;
+
+  export function reconciler_push_fragment_child_replaced_test(): undefined;
+
+  export function reconciler_push_nested_fragment_child_replaced_test(): undefined;
+
+  export function reconciler_push_fragment_children_removed_test(): undefined;
+
+  export function reconciler_push_nested_fragment_children_removed_test(): undefined;
+
+  export function reconciler_push_fragment_update_with_different_children_counts_test(
+    
+  ): undefined;
+
+  export function reconciler_push_fragment_prepend_and_replace_with_node_test(): undefined;
+
+  export function reconciler_push_fragment_update_and_remove_test(): undefined;
+
+  export function reconciler_push_multiple_nested_fragments_test(): undefined;
+
+  export function reconciler_push_keyed_swap_test(): undefined;
+
+  export function reconciler_push_keyed_reorder_test(): undefined;
+
+  export function reconciler_push_keyed_insert_test(): undefined;
+
+  export function reconciler_push_keyed_list_with_updates_test(): undefined;
+
+  export function reconciler_push_mixed_keyed_and_regular_nodes_test(): undefined;
+
+  export function reconciler_push_multiple_class_and_styles_test(): undefined;
+
+  export function reconciler_push_empty_to_multiple_children_test(): undefined;
+
+  export function reconciler_push_mixed_text_and_element_changes_test(): undefined;
+
+  export function reconciler_push_keyed_move_fragment_with_replace_with_different_count_test(
+    
+  ): undefined;
+
+  export function reconciler_push_keyed_move_fragment_with_replace_to_simple_node_test(
+    
+  ): undefined;
+
+  export function reconciler_push_keyed_replace_fragment_test(): undefined;
+
+  export function reconciler_push_keyed_insert_fragment_test(): undefined;
+
+  export function reconciler_push_keyed_fragment_swap_test(): undefined;
+
+  export function reconciler_push_keyed_fragment_reorder_test(): undefined;
+
+  export function reconciler_push_keyed_fragment_insert_test(): undefined;
+
+  export function reconciler_push_keyed_fragment_remove_test(): undefined;
+
+  export function reconciler_push_memo_with_fragment_test(): undefined;
+
+  export function reconciler_push_memo_with_nested_fragment_test(): undefined;
+
+  export function reconciler_push_map_with_fragment_test(): undefined;
+
+  export function reconciler_push_map_with_nested_fragment_test(): undefined;
+
+  export function recociler_push_nested_fragment_replace_test(): undefined;
+
+  export function reconciler_push_doubly_nested_fragment_replace_test(): undefined;
+
+  export function reconciler_push_doubly_nested_fragment_replace_debug_test(): undefined;
+
+  export function reconciler_push_memo_map_with_fragment_test(): undefined;
+
+  export function reconciler_push_nested_memo_deps_flip_with_reorder_test(): undefined;
+
+}
+
+declare module '*/integration/simulate_test.mjs' {
+  import type * as $simulate from "../agnostic/dev/simulate.d.mts";
+  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../gleam.d.mts";
+
+  declare class ParentResetCount extends _.CustomType {
+    /** @deprecated */
+    constructor(argument$0: number);
+    /** @deprecated */
+    0: number;
+  }
+
+  declare class UserClickedIncrement extends _.CustomType {}
+
+  declare class UserClickedDecrement extends _.CustomType {}
+
+  type Message$ = ParentResetCount | UserClickedIncrement | UserClickedDecrement;
+
+  export function simulate_single_event_test(): undefined;
+
+  export function simulate_multiple_events_test(): undefined;
+
+  export function simulate_message_test(): undefined;
+
+  export function simulate_events_and_messages_test(): undefined;
+
+  export function simulate_event_on_directly_mapped_element_test(): undefined;
+
+  export function simulate_event_on_view_wrapped_in_map_test(): undefined;
+
+  export function simulate_missing_element_test(): undefined;
+
+  export function simulate_missing_event_handler_test(): undefined;
+
+}
+
+declare module '*/integration/runtime_ffi_test.mjs' {
+  export function runtime_is_browser_test(): undefined;
+
+  export function runtime_is_registered_test(): undefined;
+
+}
+
+declare module '*/integration/client_runtime_test.mjs' {
+  import type * as $platform from "../agnostic/platform.d.mts";
+  import type * as $dom from "../agnostic/platform/dom.d.mts";
+  import type * as $app from "../agnostic/runtime/app.d.mts";
+  import type * as $vnode from "../agnostic/vdom/vnode.d.mts";
+  import type * as _ from "../gleam.d.mts";
+
+  export type Runtime$<LTF, LTG> = any;
+
+  declare class Increment extends _.CustomType {}
+
+  declare class Decrement extends _.CustomType {}
+
+  declare class Reset extends _.CustomType {}
+
+  declare class SetTo extends _.CustomType {
+    /** @deprecated */
+    constructor(argument$0: number);
+    /** @deprecated */
+    0: number;
+  }
+
+  type CounterMessage$ = Increment | Decrement | Reset | SetTo;
+
+  export function get_model<LUX>(runtime: Runtime$<any, LUX>): LUX;
+
+  export function emit(
+    selector: string,
+    event_name: string,
+    callback: () => undefined
+  ): undefined;
+
+  export function with_client_runtime<LUD, LUE>(
+    initial_html: string,
+    make_app: () => $app.App$<undefined, LUD, LUE>,
+    get_platform: () => $platform.Platform$<
+      $dom.DomNode$,
+      $dom.DomNode$,
+      $dom.DomNode$,
+      $dom.DomEvent$,
+      LUE,
+      $dom.DomNode$
+    >,
+    test_callback: (x0: Runtime$<LUE, LUD>) => undefined
+  ): undefined;
+
+  export function client_runtime_map_with_events_test(): undefined;
+
+  export function get_vdom(): $vnode.Element$<any>;
+
+  export function send<LUQ>(
+    runtime: Runtime$<LUQ, any>,
+    message: LUQ,
+    callback: () => undefined
+  ): undefined;
+
+  export function client_runtime_memo_caching_test(): undefined;
+
+  export function client_runtime_memo_events_test(): undefined;
+
+  export function client_runtime_single_event_test(): undefined;
+
+  export function client_runtime_multiple_events_test(): undefined;
+
+  export function get_html(): string;
+
+  export function client_runtime_fragment_rendering_test(): undefined;
+
+  export function emit_with_value(
+    selector: string,
+    event_name: string,
+    value: string,
+    callback: () => undefined
+  ): undefined;
+
+  export function client_runtime_controlled_text_input_test(): undefined;
+
+  export function client_runtime_controlled_checkbox_test(): undefined;
+
+  export function client_runtime_select_dropdown_test(): undefined;
+
+  export function client_runtime_memo_dependency_change_test(): undefined;
+
+  export function client_runtime_memo_stable_dependency_test(): undefined;
+
+  export function client_runtime_event_bubbling_test(): undefined;
+
+  export function client_runtime_nested_fragments_test(): undefined;
+
+  export function client_runtime_keyed_fragments_test(): undefined;
+
+  export function client_runtime_keyed_move_events_test(): undefined;
+
+}
+
+declare module '*/unit/events_test.mjs' {
+  export function single_event_test(): undefined;
+
+  export function single_nested_event_test(): undefined;
+
+  export function single_nested_keyed_event_test(): undefined;
+
+  export function single_nested_keyed_event_with_period_test(): undefined;
+
+  export function fragment_event_test(): undefined;
+
+  export function nested_fragment_event_test(): undefined;
+
+  export function nested_fragment_with_multiple_children_event_test(): undefined;
+
+  export function single_mapped_event_test(): undefined;
+
+  export function multiple_mapped_event_test(): undefined;
+
+  export function event_added_test(): undefined;
+
+  export function event_removed_test(): undefined;
+
+  export function element_added_test(): undefined;
+
+  export function element_removed_test(): undefined;
+
+  export function element_replaced_test(): undefined;
+
+  export function keyed_element_replaced_test(): undefined;
+
+  export function moved_keyed_element_keeps_events_test(): undefined;
+
+}
+
+declare module '*/unit/find_path_test.mjs' {
+  export function find_path_in_single_event_test(): undefined;
+
+  export function find_path_in_single_nested_event_test(): undefined;
+
+  export function find_path_in_single_nested_keyed_event_test(): undefined;
+
+  export function find_path_in_single_nested_keyed_event_with_period_test(): undefined;
+
+  export function find_path_in_fragment_event_test(): undefined;
+
+  export function find_path_in_nested_fragment_event_test(): undefined;
+
+  export function find_path_in_nested_fragment_with_multiple_children_event_test(): undefined;
+
+  export function find_path_by_child_query_test(): undefined;
+
+  export function find_path_by_child_query_in_fragment_test(): undefined;
+
+  export function find_path_by_descendant_query_test(): undefined;
+
+  export function find_path_by_descendant_query_in_fragment_test(): undefined;
+
+}
+
+declare module '*/unit/diff_test.mjs' {
+  export function empty_node_test(): undefined;
+
+  export function text_element_replaced_test(): undefined;
+
+  export function text_to_element_replacement_test(): undefined;
+
+  export function nested_attribute_changes_test(): undefined;
+
+  export function node_attribute_added_test(): undefined;
+
+  export function node_attribute_removed_test(): undefined;
+
+  export function node_property_changed_test(): undefined;
+
+  export function node_many_attributes_changed_test(): undefined;
+
+  export function node_child_replaced_test(): undefined;
+
+  export function node_many_children_changed_test(): undefined;
+
+  export function node_children_removed_test(): undefined;
+
+  export function fragment_many_children_changed_test(): undefined;
+
+  export function fragment_child_replaced_test(): undefined;
+
+  export function nested_fragment_child_replaced_test(): undefined;
+
+  export function fragment_children_removed_test(): undefined;
+
+  export function nested_fragment_children_removed_test(): undefined;
+
+  export function fragment_update_with_different_children_counts_test(): undefined;
+
+  export function fragment_prepend_and_replace_with_node_test(): undefined;
+
+  export function fragment_update_and_remove_test(): undefined;
+
+  export function multiple_nested_fragments_test(): undefined;
+
+  export function keyed_swap_test(): undefined;
+
+  export function keyed_reorder_test(): undefined;
+
+  export function keyed_insert_test(): undefined;
+
+  export function keyed_list_with_updates_test(): undefined;
+
+  export function mixed_keyed_and_regular_nodes_test(): undefined;
+
+  export function complex_attribute_changes_test(): undefined;
+
+  export function multiple_class_and_styles_test(): undefined;
+
+  export function empty_to_multiple_children_test(): undefined;
+
+  export function mixed_text_and_element_changes_test(): undefined;
+
+  export function keyed_move_fragment_with_replace_with_different_count_test(): undefined;
+
+  export function keyed_move_fragment_with_replace_to_simple_node_test(): undefined;
+
+  export function keyed_replace_fragment_test(): undefined;
+
+  export function keyed_insert_fragment_test(): undefined;
+
+  export function keyed_fragment_swap_test(): undefined;
+
+  export function keyed_fragment_reorder_test(): undefined;
+
+  export function keyed_fragment_insert_test(): undefined;
+
+  export function keyed_duplicate_key_is_deduped_test(): undefined;
+
+  export function keyed_fragment_remove_test(): undefined;
+
+  export function memo_not_recomputed_test(): undefined;
+
+  export function memo_recomputed_when_dependency_changes_test(): undefined;
+
+  export function memo_with_multiple_dependencies_test(): undefined;
+
+  export function memo_recomputed_when_one_dependency_changes_test(): undefined;
+
+  export function memo_with_map_event_test(): undefined;
+
+  export function memo_with_map_event_not_recomputed_test(): undefined;
+
+  export function memo_with_map_event_recomputed_test(): undefined;
+
+  export function nested_memo_test(): undefined;
+
+  export function nested_memo_outer_changes_test(): undefined;
 
 }
 

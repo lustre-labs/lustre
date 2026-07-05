@@ -1,9 +1,9 @@
-name = "lustre_platform"
+name = "agnostic"
 version = "0.1.0"
 gleam = ">= 1.13.0"
 
 description = "A platform agnostic Elm-like framework (soft-fork of Lustre)"
-repository = { type = "github", user = "weedonandscott", repo = "lustre" }
+repository = { type = "github", user = "weedonandscott", repo = "agnostic" }
 licences = ["MIT"]
 
 [javascript]

@@ -10,7 +10,7 @@ import {
   ContextRequestEvent,
   LustreEvent,
 } from "../../../build/dev/javascript/agnostic/agnostic/runtime/platform/base.ffi.mjs";
-import { dom_strict } from "../../../build/dev/javascript/agnostic/agnostic/platform.mjs";
+import { platform_strict } from "../../../build/dev/javascript/agnostic/agnostic/platform/dom.mjs";
 import {
   mount_kind,
   reconcile_kind,
@@ -162,7 +162,7 @@ export class ServerComponent extends HTMLElement {
           this.#transport?.send(data);
         };
 
-        const platform = dom_strict(this.#shadowRoot);
+        const platform = platform_strict(this.#shadowRoot);
         this.#reconciler = new Reconciler(
           this.#shadowRoot,
           decodeEvent,

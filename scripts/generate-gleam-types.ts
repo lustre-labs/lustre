@@ -67,7 +67,7 @@ async function generate_declarations(): Promise<void> {
     declarations.push("");
   }
 
-  for (const pkg of ["lustre_platform_opentui", "lustre_platform"]) {
+  for (const pkg of ["agnostic"]) {
     const pkg_directory = path.join(build_directory, pkg);
     if (!fs.existsSync(pkg_directory)) continue;
 

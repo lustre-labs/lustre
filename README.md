@@ -1,4 +1,4 @@
-# lustre_platform
+# agnostic
 
 This is a soft fork of [Lustre](https://github.com/lustre-labs/lustre) that
 decouples the reconciler and runtime from the browser DOM through a composable
@@ -15,16 +15,16 @@ as the OpenTUI terminal renderer included in this repository.
   abstraction: <https://hexdocs.pm/lustre>.
 
 The OpenTUI platform below was merged from the former
-`lustre_platform_opentui` package and lives in `lustre/platform/opentui`.
+`lustre_platform_opentui` package and lives in `agnostic/platform/opentui`.
 
-# lustre_platform_opentui
+# agnostic/platform/opentui
 
 ## Develop TUI apps with Lustre and OpenTUI
 
-[![Package Version](https://img.shields.io/hexpm/v/lustre_platform_opentui)](https://hex.pm/packages/lustre_platform_opentui)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/lustre_platform_opentui/)
+[![Package Version](https://img.shields.io/hexpm/v/agnostic)](https://hex.pm/packages/agnostic)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/agnostic/)
 
-This is an early stage OpenTUI platform for [Lustre Platform](https://hexdocs.pm/lustre_platform).
+This is an early stage OpenTUI platform for [agnostic](https://hexdocs.pm/agnostic).
 
 It allows you to develop apps using Lustre on the Bun runtime and target OpenTUI
 as a renderer.
@@ -41,22 +41,22 @@ as a renderer.
 
 There are several examples in the `examples/` folder, but usage is essentially
 identical to regular Lustre, just use the elements and attributes supplied by
-`lustre_platform_opentui`:
+`agnostic/platform/opentui`:
 
 
 ```sh
-gleam add lustre_platform_opentui@1
+gleam add agnostic
 ```
 ```gleam
 import gleam/int
 
-import lustre
-import lustre/effect
-import lustre/platform/opentui
-import lustre/platform/opentui/attribute
-import lustre/platform/opentui/effect as tui_effect
-import lustre/platform/opentui/element
-import lustre/platform/opentui/event
+import agnostic
+import agnostic/effect
+import agnostic/platform/opentui
+import agnostic/platform/opentui/attribute
+import agnostic/platform/opentui/effect as tui_effect
+import agnostic/platform/opentui/element
+import agnostic/platform/opentui/event
 
 pub fn main() {
   let config =
@@ -64,8 +64,8 @@ pub fn main() {
     |> opentui.use_mouse(False)
 
   use platform <- opentui.platform(config)
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
+  let app = agnostic.application(init, update, view)
+  let assert Ok(_) = agnostic.start(app, on: platform, with: Nil)
   Nil
 }
 
@@ -190,7 +190,7 @@ fn view(model: Model) {
 }
 ```
 
-Further documentation can be found at <https://hexdocs.pm/lustre_opentui>.
+Further documentation can be found at <https://hexdocs.pm/agnostic>.
 
 ## Development
 

@@ -57,7 +57,7 @@ const wrapRef = (ref) => ref != null ? Result$Ok(ref) : Result$Error(undefined);
 //
 // The reconciler's debug-mode warnings can't use `console.warn` in TUI
 // platforms (opentui, etc.) because that would corrupt the terminal output.
-// Set the LUSTRE_DEBUG_LOG environment variable to a file path; the
+// Set the AGNOSTIC_DEBUG_LOG environment variable to a file path; the
 // reconciler will append diagnostic lines there in debug mode. If the env
 // var is unset (or `node:fs` isn't reachable, e.g. in a browser), debug
 // logging is a no-op — debug-mode crashes still happen at their original
@@ -66,7 +66,7 @@ const wrapRef = (ref) => ref != null ? Result$Ok(ref) : Result$Error(undefined);
 // The dynamic-import path through a string-concatenated module name keeps
 // bundlers from trying to statically resolve `node:fs` in browser builds.
 let debugWriteLine = () => {};
-const debugLogPath = globalThis.process?.env?.LUSTRE_DEBUG_LOG;
+const debugLogPath = globalThis.process?.env?.AGNOSTIC_DEBUG_LOG;
 if (debugLogPath) {
   try {
     const fs = await import(/* @vite-ignore */ "node:" + "fs");
@@ -216,7 +216,7 @@ export class Reconciler {
           // Path step references a metadata slot that does not exist. This
           // shows up under add_parent flattening (diff.gleam:88) when the
           // flattened path's prepended indices do not match the live
-          // metadata tree. Logging is a no-op unless LUSTRE_DEBUG_LOG is
+          // metadata tree. Logging is a no-op unless AGNOSTIC_DEBUG_LOG is
           // set in the environment (see debugWriteLine setup at top of
           // file). The next `node.children[index]` line will then crash at
           // the :179 destructure on the next loop iteration, which is what
@@ -297,7 +297,7 @@ export class Reconciler {
           // bad child-patch index, a Move/Replace/Remove that ran before
           // this iteration left fewer children than expected, or the array
           // has a sparse hole at `idx`. Logging is a no-op unless
-          // LUSTRE_DEBUG_LOG is set. Note: an intentionally-elided zero
+          // AGNOSTIC_DEBUG_LOG is set. Note: an intentionally-elided zero
           // index (json_object_builder.int skips 0, see
           // src/agnostic/internals/json_object_builder.gleam:36-41) is
           // benign when childNodes[0] exists; the `child === undefined`
