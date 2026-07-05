@@ -308,6 +308,22 @@ pub fn clear_selection() -> Effect(msg) {
   effect.from(do_clear_selection)
 }
 
+/// Highlight a range of text, spanning multiple paragraphs if needed. Selects from
+/// `anchor_id`:`anchor_offset` to `focus_id`:`focus_offset` and moves the caret to
+/// the focus end. Replaces any current selection; idempotent — safe every render.
+/// Clear with `clear_selection`.
+///
+pub fn set_selection_span(
+  anchor_id: String,
+  anchor_offset: Int,
+  focus_id: String,
+  focus_offset: Int,
+) -> Effect(msg) {
+  effect.before_paint(fn(_, _) {
+    do_set_selection_span(anchor_id, anchor_offset, focus_id, focus_offset)
+  })
+}
+
 // LIFECYCLE EFFECTS -----------------------------------------------------------
 
 /// Pause the renderer.
@@ -508,6 +524,14 @@ fn do_subscribe_selection(
 fn do_clear_selection(_dispatch: fn(msg) -> Nil) -> Nil {
   panic as "lustre/platform/opentui/effect only runs on JavaScript"
 }
+
+@external(javascript, "./effect.ffi.ts", "set_selection_span")
+fn do_set_selection_span(
+  anchor_id: String,
+  anchor_offset: Int,
+  focus_id: String,
+  focus_offset: Int,
+) -> Nil
 
 @external(javascript, "./effect.ffi.ts", "pause")
 fn do_pause(_dispatch: fn(msg) -> Nil) -> Nil {

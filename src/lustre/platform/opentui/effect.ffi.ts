@@ -11,6 +11,7 @@ import type {
   Renderable,
   CursorStyle,
   Selection as OpenTuiSelection,
+  EditBufferRenderable,
 } from "@opentui/core";
 import { KeyEvent, Selection, SelectionRange } from "./effect.mjs";
 import { Result$Ok, Result$Error, toList } from "../../../gleam.mjs";
@@ -277,6 +278,52 @@ export function subscribe_selection<Msg>(
 export function clear_selection(_dispatch: Dispatch<unknown>): void {
   const renderer = get_renderer();
   renderer.clearSelection();
+}
+
+// Convert a text offset to absolute screen coords without leaving a trace on the
+// renderable's cursor or scroll. Same conversion core uses for keyboard selection
+// (EditBufferRenderable: x + visualCol, y + visualRow). The cursor restore also
+// restores any auto-scroll setCursorByOffset triggered; setViewport re-asserts it
+// exactly for internally-scrolled editors (no-op when the content fits its height).
+function measureOffsetToScreen(
+  r: EditBufferRenderable,
+  offset: number,
+): [number, number] {
+  const view = r.editorView;
+  const savedOffset = r.cursorOffset;
+  const savedVp = view.getViewport();
+  view.setCursorByOffset(offset);
+  const vc = view.getVisualCursor();
+  const x = r.x + vc.visualCol;
+  const y = r.y + vc.visualRow;
+  r.cursorOffset = savedOffset;
+  view.setViewport(savedVp.offsetX, savedVp.offsetY, savedVp.width, savedVp.height, false);
+  return [x, y];
+}
+
+export function set_selection_span(
+  anchor_id: string,
+  anchor_offset: number,
+  focus_id: string,
+  focus_offset: number,
+): void {
+  const renderer = get_renderer();
+  const anchor = findDescendantById(renderer.root, anchor_id);
+  const focus = findDescendantById(renderer.root, focus_id);
+  if (!anchor || !focus) return;
+  if (!isEditBufferRenderable(anchor) || !isEditBufferRenderable(focus)) return;
+  if (isDestroyed(anchor) || isDestroyed(focus)) return;
+  if (!anchor.selectable) return; // startSelection() bails silently otherwise
+
+  const [ax, ay] = measureOffsetToScreen(anchor, anchor_offset);
+  const [fx, fy] = measureOffsetToScreen(focus, focus_offset);
+
+  // startSelection() clears any prior selection first -> calling this every render is
+  // idempotent. updateSelection(...,{ finishDragging: true }) settles the selection WITHOUT
+  // emitting CliRenderEvents.SELECTION (only the private finishSelection emits), so nothing
+  // loops back to the app.
+  renderer.startSelection(anchor, ax, ay);
+  renderer.updateSelection(focus, fx, fy, { finishDragging: true });
 }
 
 // LIFECYCLE EFFECTS -----------------------------------------------------------
