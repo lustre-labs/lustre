@@ -4,10 +4,10 @@ build
 erl_crash.dump
 .DS_Store
 
-examples/*/*/.github
-examples/*/*/.lustre
-examples/*/*/manifest.toml
-examples/*/*/priv/static
+examples/*/*/*/.github
+examples/*/*/*/.lustre
+examples/*/*/*/manifest.toml
+examples/*/*/*/priv/static
 
 node_modules/
 
