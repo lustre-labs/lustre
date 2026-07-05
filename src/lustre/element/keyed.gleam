@@ -173,29 +173,51 @@ pub fn dl(
 fn extract_keyed_children(
   children: List(#(String, Element(message))),
 ) -> #(MutableMap(String, Element(message)), List(Element(message))) {
-  do_extract_keyed_children(children, mutable_map.new(), constants.empty_list)
+  do_extract_keyed_children(
+    list.reverse(children),
+    mutable_map.new(),
+    constants.empty_list,
+  )
 }
 
+// Walks the input in reverse so the first sighting of a key in this traversal
+// corresponds to its last occurrence in the user-facing list. That matches the
+// map's last-wins overwrite semantic and lets us drop earlier duplicates from
+// the linear list too, keeping the map and list in sync. Without this, a
+// duplicate key would leave an orphan in the linear list that the diff would
+// emit a move/insert for against an already-parented node.
 fn do_extract_keyed_children(
-  key_children_pairs: List(#(String, Element(message))),
+  reversed_pairs: List(#(String, Element(message))),
   keyed_children: MutableMap(String, Element(message)),
   children: List(Element(message)),
 ) -> #(MutableMap(String, Element(message)), List(Element(message))) {
-  case key_children_pairs {
-    [] -> #(keyed_children, list.reverse(children))
+  case reversed_pairs {
+    [] -> #(keyed_children, children)
 
     [#(key, element), ..rest] -> {
       let keyed_element = vnode.to_keyed(key, element)
 
-      // Children with empty keys are not inserted into the lookup, but they are
-      // still returned in the children list.
-      let keyed_children = case key {
-        "" -> keyed_children
-        _ -> mutable_map.insert(keyed_children, key, keyed_element)
-      }
-      let children = [keyed_element, ..children]
+      case key {
+        // Children with empty keys are not inserted into the lookup, but they
+        // are still returned in the children list.
+        "" ->
+          do_extract_keyed_children(rest, keyed_children, [
+            keyed_element,
+            ..children
+          ])
 
-      do_extract_keyed_children(rest, keyed_children, children)
+        _ ->
+          case mutable_map.has_key(keyed_children, key) {
+            True -> do_extract_keyed_children(rest, keyed_children, children)
+
+            False ->
+              do_extract_keyed_children(
+                rest,
+                mutable_map.insert(keyed_children, key, keyed_element),
+                [keyed_element, ..children],
+              )
+          }
+      }
     }
   }
 }

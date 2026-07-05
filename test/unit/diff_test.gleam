@@ -914,6 +914,30 @@ pub fn keyed_fragment_insert_test() {
   assert diff.diff(cache.new(), prev, next).patch == diff
 }
 
+pub fn keyed_duplicate_key_is_deduped_test() {
+  use <- lustre_test.test_filter("keyed_duplicate_key_is_deduped_test")
+
+  // A duplicate key must collapse to the last occurrence in *both* the
+  // keyed_children map and the linear children list. If they get out of sync
+  // the diff emits a move/insert against an already-parented node, which
+  // strict child-graph platforms (e.g. OpenTUI's Yoga binding) treat as an
+  // invariant violation.
+  let duplicated =
+    keyed.div([], [
+      #("a", html.p([], [])),
+      #("a", html.div([], [])),
+      #("b", html.span([], [])),
+    ])
+
+  let deduped =
+    keyed.div([], [#("a", html.div([], [])), #("b", html.span([], []))])
+
+  let no_change = patch.new(0, 0, [], [])
+
+  assert diff.diff(cache.new(), duplicated, deduped).patch == no_change
+  assert diff.diff(cache.new(), deduped, duplicated).patch == no_change
+}
+
 pub fn keyed_fragment_remove_test() {
   use <- lustre_test.test_filter("keyed_fragment_remove_test")
 
