@@ -5,6 +5,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+@target(javascript)
 import lustre/platform.{type Platform}
 
 // TYPES -----------------------------------------------------------------------
@@ -194,6 +195,7 @@ pub fn default_config() -> Config {
   )
 }
 
+@target(javascript)
 /// Create an OpenTUI platform. This handles renderer creation internally.
 /// The callback receives the ready platform.
 ///
@@ -209,8 +211,6 @@ pub fn default_config() -> Config {
 ///
 @external(javascript, "./opentui.ffi.ts", "platform")
 pub fn platform(
-  _config: Config,
-  _callback: fn(Platform(Node, Renderer, Value, Event, msg, raw)) -> Nil,
-) -> Nil {
-  panic as "lustre_opentui only runs on JavaScript"
-}
+  config: Config,
+  callback: fn(Platform(Node, Renderer, Value, Event, msg, raw)) -> Nil,
+) -> Nil

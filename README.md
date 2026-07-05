@@ -1,88 +1,200 @@
-<h1 align="center">Lustre Platform</h1>
+# lustre_platform
 
-<div align="center">
-  <a href="https://hex.pm/packages/lustre_platform">
-    <img src="https://img.shields.io/hexpm/v/lustre_platform"
-      alt="Available on Hex" />
-  </a>
-  <a href="https://hexdocs.pm/lustre_platform">
-    <img src="https://img.shields.io/badge/hex-docs-ffaff3"
-      alt="Documentation" />
-  </a>
-</div>
+This is a soft fork of [Lustre](https://github.com/lustre-labs/lustre) that
+decouples the reconciler and runtime from the browser DOM through a composable
+`Platform` abstraction, so the same MVU application can render to arbitrary
+targets — the browser, headless HTML serialization, or custom platforms such
+as the OpenTUI terminal renderer included in this repository.
 
----
+- Based on upstream Lustre v5.7.0. How the fork tracks upstream — branch
+  scheme, versioning, rebase procedure — is documented in
+  [FORKING.md](./FORKING.md).
+- This fork's changes are in [CHANGELOG.md](./CHANGELOG.md); upstream's
+  changelog is preserved in [CHANGELOG_UPSTREAM.md](./CHANGELOG_UPSTREAM.md).
+- Upstream's documentation applies to everything not touched by the platform
+  abstraction: <https://hexdocs.pm/lustre>.
 
-Lustre platform is a **fork** of [Lustre](https://hexdocs.pm/lustre), an MVU web
-framework in Gleam. This fork adds the ability to define different rendering
-targets ("platforms") for Lustre, thus being able to use Lustre for applications
-outside the web, like TUIs or mobile apps.
+The OpenTUI platform below was merged from the former
+`lustre_platform_opentui` package and lives in `lustre/platform/opentui`.
 
-## Status and Limitations
+# lustre_platform_opentui
 
-- The code structure and design are very young
-- Except this to change often, including breaking changes
-- This repo diverges non-trivially from upstream, expect it to lag behind
-- Due to the immature architecture, some features are not available. For example,
-  the Erlang target only supports Headless platforms at the moment, and it's
-  impossible to build more Headless platforms without editing Lustre source,
-  since Element is opaque
-- Server component were _not_ tested
+## Develop TUI apps with Lustre and OpenTUI
 
-## Known Platforms
+[![Package Version](https://img.shields.io/hexpm/v/lustre_platform_opentui)](https://hex.pm/packages/lustre_platform_opentui)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/lustre_platform_opentui/)
 
-If you built a platform for Lustre Platform, please name your package with a
-`lustre_platform_` prefix, and open a PR to edit this list.
+This is an early stage OpenTUI platform for [Lustre Platform](https://hexdocs.pm/lustre_platform).
 
-- [lustre_platform_opentui](https://hexdocs.pm/lustre_platform_opentui)
+It allows you to develop apps using Lustre on the Bun runtime and target OpenTUI
+as a renderer.
 
-## Example {#example}
+### Status & Limitations
 
-If you've used Lustre before, the main difference will be defining a platform
-to start your app with. Platform specific utilieis functions, like printing
-the view to string (for SSR), are also now the job of the platform.
+- Must use Bun as runtime
+- Code is early stage, expect bugs and breaking changes
+- Read the [OpenTUI docs](https://opentui.com/docs/getting-started/) to know
+  which attribute fit which elements
 
-The web app platform is called dom:
 
+### Examples
+
+There are several examples in the `examples/` folder, but usage is essentially
+identical to regular Lustre, just use the elements and attributes supplied by
+`lustre_platform_opentui`:
+
+
+```sh
+gleam add lustre_platform_opentui@1
+```
 ```gleam
 import gleam/int
+
 import lustre
-import lustre/element.{text}
-import lustre/element/html.{div, button, p}
-import lustre/event.{on_click}
-import lustre/platform/dom
+import lustre/effect
+import lustre/platform/opentui
+import lustre/platform/opentui/attribute
+import lustre/platform/opentui/effect as tui_effect
+import lustre/platform/opentui/element
+import lustre/platform/opentui/event
 
 pub fn main() {
-  let assert Ok(platform) = dom.platform("#app")
-  let app = lustre.simple(init, update, view)
-  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
+  let config =
+    opentui.default_config()
+    |> opentui.use_mouse(False)
 
+  use platform <- opentui.platform(config)
+  let app = lustre.application(init, update, view)
+  let assert Ok(_) = lustre.start(app, on: platform, with: Nil)
   Nil
 }
 
-fn init(_flags) {
-  0
+pub type Model {
+  Model(count: Int)
 }
 
-type Message {
-  Incr
-  Decr
+pub type Msg {
+  Increment
+  Decrement
+  KeyPressed(tui_effect.KeyEvent)
 }
 
-fn update(model, message) {
-  case message {
-    Incr -> model + 1
-    Decr -> model - 1
+fn init(_flags: Nil) -> #(Model, effect.Effect(Msg)) {
+  #(
+    Model(count: 0),
+    effect.batch([
+      tui_effect.subscribe_keyboard(KeyPressed),
+      tui_effect.focus("btn-plus"),
+    ]),
+  )
+}
+
+fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
+  case msg {
+    Increment -> #(Model(count: model.count + 1), effect.none())
+    Decrement -> #(Model(count: model.count - 1), effect.none())
+    KeyPressed(key_event) ->
+      case key_event.key {
+        "tab" | "right" -> #(model, tui_effect.focus_next())
+        "left" -> #(model, tui_effect.focus_previous())
+        "up" -> #(Model(count: model.count + 1), effect.none())
+        "down" -> #(Model(count: model.count - 1), effect.none())
+        _ -> #(model, effect.none())
+      }
   }
 }
 
-fn view(model) {
-  let count = int.to_string(model)
-
-  div([], [
-    button([on_click(Incr)], [text(" + ")]),
-    p([], [text(count)]),
-    button([on_click(Decr)], [text(" - ")])
-  ])
+fn view(model: Model) {
+  element.box(
+    [
+      attribute.flex_direction("column"),
+      attribute.align_items("center"),
+      attribute.justify_content("center"),
+      attribute.width_("100%"),
+      attribute.height_("100%"),
+    ],
+    [
+      element.box(
+        [
+          attribute.flex_direction("column"),
+          attribute.align_items("center"),
+          attribute.border_style("round"),
+          attribute.border_color("#444"),
+          attribute.padding_left(3),
+          attribute.padding_right(3),
+          attribute.padding_top(1),
+          attribute.padding_bottom(1),
+          attribute.gap(1),
+          attribute.title(" Counter "),
+          attribute.title_alignment("center"),
+        ],
+        [
+          element.text_node(
+            [
+              attribute.bold("true"),
+              attribute.color("#e0e0e0"),
+              attribute.dim("true"),
+            ],
+            [element.text("Arrows to navigate, Enter to activate")],
+          ),
+          element.text_node([attribute.bold("true"), attribute.color("#fff")], [
+            model.count
+            |> int.to_string()
+            |> element.text(),
+          ]),
+          element.box([attribute.flex_direction("row"), attribute.gap(2)], [
+            element.box(
+              [
+                attribute.focusable(True),
+                attribute.border_style("round"),
+                attribute.border_color("#555"),
+                attribute.focused_border_color("#ff6b6b"),
+                attribute.focused_background_color("#2a1a1a"),
+                attribute.padding_left(2),
+                attribute.padding_right(2),
+                event.on_click(Decrement),
+                event.on_activate(Decrement),
+              ],
+              [
+                element.text_node(
+                  [attribute.bold("true"), attribute.color("#ff6b6b")],
+                  [element.text(" - ")],
+                ),
+              ],
+            ),
+            element.box(
+              [
+                attribute.id("btn-plus"),
+                attribute.focusable(True),
+                attribute.border_style("round"),
+                attribute.border_color("#555"),
+                attribute.focused_border_color("#69db7c"),
+                attribute.focused_background_color("#1a2a1a"),
+                attribute.padding_left(2),
+                attribute.padding_right(2),
+                event.on_click(Increment),
+                event.on_activate(Increment),
+              ],
+              [
+                element.text_node(
+                  [attribute.bold("true"), attribute.color("#69db7c")],
+                  [element.text(" + ")],
+                ),
+              ],
+            ),
+          ]),
+        ],
+      ),
+    ],
+  )
 }
+```
+
+Further documentation can be found at <https://hexdocs.pm/lustre_opentui>.
+
+## Development
+
+```sh
+gleam run   # Run the project
+gleam test  # Run the tests
 ```

@@ -2,7 +2,7 @@ name = "lustre_platform"
 version = "0.1.0"
 gleam = ">= 1.13.0"
 
-description = "Create HTML templates, single page applications, Web Components, and real-time server components in Gleam!"
+description = "A platform agnostic Elm-like framework (soft-fork of Lustre)"
 repository = { type = "github", user = "weedonandscott", repo = "lustre" }
 licences = ["MIT"]
 
@@ -46,9 +46,9 @@ pages = [
 
 [dependencies]
 gleam_erlang = ">= 1.0.0 and < 2.0.0"
-gleam_json = ">= 1.0.0 and < 4.0.0"
+gleam_json = ">= 3.1.0 and < 4.0.0"
 gleam_otp = ">= 1.0.0 and < 2.0.0"
-gleam_stdlib = ">= 0.60.0 and < 2.0.0"
+gleam_stdlib = ">= 1.0.0 and < 2.0.0"
 houdini = ">= 1.0.0 and < 2.0.0"
 
 [dev-dependencies]

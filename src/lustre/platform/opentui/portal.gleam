@@ -80,11 +80,9 @@ pub fn error_decoder() -> Decoder(Error) {
   case tag {
     _ if tag == missing_target_tag -> decode.success(MissingTarget)
 
-    _ if tag == target_not_found_tag ->
-      decode.success(TargetNotFound(id:))
+    _ if tag == target_not_found_tag -> decode.success(TargetNotFound(id:))
 
-    _ if tag == target_is_portal_tag ->
-      decode.success(TargetIsPortal(id:))
+    _ if tag == target_is_portal_tag -> decode.success(TargetIsPortal(id:))
 
     _ -> decode.failure(MissingTarget, "portal.Error")
   }
@@ -117,4 +115,3 @@ pub fn to_root(
     children,
   )
 }
-

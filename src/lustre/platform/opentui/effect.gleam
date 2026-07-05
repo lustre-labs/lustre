@@ -12,10 +12,15 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+@target(javascript)
 import gleam/dynamic.{type Dynamic}
+@target(javascript)
 import gleam/dynamic/decode.{type Decoder}
+@target(javascript)
 import gleam/option.{type Option, None, Some}
+@target(javascript)
 import lustre/effect.{type Effect}
+@target(javascript)
 import lustre/platform/opentui.{type Renderer}
 
 // TYPES -----------------------------------------------------------------------
@@ -57,6 +62,7 @@ pub type Selection {
 
 // CUSTOM EFFECTS --------------------------------------------------------------
 
+@target(javascript)
 /// Create a custom before-paint effect with access to the OpenTUI renderer.
 /// This is like `effect.before_paint` but provides the renderer instead of the
 /// raw root element, letting you interact with OpenTUI's renderer API directly.
@@ -82,6 +88,7 @@ pub fn before_paint(
   })
 }
 
+@target(javascript)
 /// Create a custom after-paint effect with access to the OpenTUI renderer.
 /// This is like `effect.after_paint` but provides the renderer instead of the
 /// raw root element, letting you interact with OpenTUI's renderer API directly.
@@ -91,13 +98,12 @@ pub fn before_paint(
 pub fn after_paint(
   handler: fn(fn(msg) -> Nil, Renderer) -> Nil,
 ) -> Effect(msg) {
-  effect.after_paint(fn(dispatch, _root) {
-    do_with_renderer(handler, dispatch)
-  })
+  effect.after_paint(fn(dispatch, _root) { do_with_renderer(handler, dispatch) })
 }
 
 // KEYBOARD & FOCUS EFFECTS ----------------------------------------------------
 
+@target(javascript)
 /// Subscribe to all keyboard events from the terminal. Dispatches
 /// `handler(KeyEvent)` on every keypress. Call this in your `init` function
 /// to start receiving keyboard events.
@@ -106,6 +112,7 @@ pub fn subscribe_keyboard(handler: fn(KeyEvent) -> msg) -> Effect(msg) {
   effect.from(do_subscribe_keyboard(handler, _))
 }
 
+@target(javascript)
 /// Subscribe to keyboard events, dispatching only when the predicate returns
 /// `Some(msg)`. Events for which the predicate returns `None` are silently
 /// ignored — no message is dispatched and no render cycle is triggered. This
@@ -142,6 +149,7 @@ pub fn subscribe_keyboard_with(
   })
 }
 
+@target(javascript)
 /// Focus the next focusable element in the renderable tree.
 ///
 /// This uses `before_paint` to ensure the view has been reconciled before
@@ -151,6 +159,7 @@ pub fn focus_next() -> Effect(msg) {
   effect.before_paint(fn(_dispatch, _root) { do_focus_next(fn(_) { Nil }) })
 }
 
+@target(javascript)
 /// Focus the previous focusable element in the renderable tree.
 ///
 /// This uses `before_paint` to ensure the view has been reconciled before
@@ -160,6 +169,7 @@ pub fn focus_previous() -> Effect(msg) {
   effect.before_paint(fn(_dispatch, _root) { do_focus_previous(fn(_) { Nil }) })
 }
 
+@target(javascript)
 /// Focus a specific element by its OpenTUI id.
 ///
 /// This uses `before_paint` to ensure the view has been reconciled before
@@ -169,6 +179,7 @@ pub fn focus(id: String) -> Effect(msg) {
   effect.before_paint(fn(_dispatch, _root) { do_focus(id, fn(_) { Nil }) })
 }
 
+@target(javascript)
 /// Get the id of the currently focused element. The handler receives
 /// `Some(id)` if an element is focused, or `None` if nothing is focused.
 ///
@@ -185,6 +196,7 @@ pub fn get_focused_id(handler: fn(Option(String)) -> msg) -> Effect(msg) {
   })
 }
 
+@target(javascript)
 /// Get the currently focused element and decode properties from it.
 /// The decoder runs against the raw focused node — use `decode.field` to
 /// access properties like "id" (String), "focused" (Bool), "width" (Int),
@@ -212,42 +224,49 @@ pub fn get_focused(
 
 // TERMINAL CONTROL EFFECTS ----------------------------------------------------
 
+@target(javascript)
 /// Set the terminal window title.
 ///
 pub fn set_terminal_title(title: String) -> Effect(msg) {
   effect.from(do_set_terminal_title(title, _))
 }
 
+@target(javascript)
 /// Set the terminal background color.
 ///
 pub fn set_background_color(color: String) -> Effect(msg) {
   effect.from(do_set_background_color(color, _))
 }
 
+@target(javascript)
 /// Set the cursor position and visibility.
 ///
 pub fn set_cursor_position(x: Int, y: Int, visible: Bool) -> Effect(msg) {
   effect.from(do_set_cursor_position(x, y, visible, _))
 }
 
+@target(javascript)
 /// Set the cursor style and blinking behavior.
 ///
 pub fn set_cursor_style(style: String, blinking: Bool) -> Effect(msg) {
   effect.from(do_set_cursor_style(style, blinking, _))
 }
 
+@target(javascript)
 /// Set the cursor color.
 ///
 pub fn set_cursor_color(color: String) -> Effect(msg) {
   effect.from(do_set_cursor_color(color, _))
 }
 
+@target(javascript)
 /// Get the current terminal dimensions. The handler receives width and height.
 ///
 pub fn get_terminal_dimensions(handler: fn(Int, Int) -> msg) -> Effect(msg) {
   effect.from(do_get_terminal_dimensions(handler, _))
 }
 
+@target(javascript)
 /// Subscribe to terminal resize events. The handler receives the new width and height.
 /// Call this in your `init` function alongside subscribe_keyboard.
 ///
@@ -255,6 +274,7 @@ pub fn subscribe_terminal_resize(handler: fn(Int, Int) -> msg) -> Effect(msg) {
   effect.from(do_subscribe_terminal_resize(handler, _))
 }
 
+@target(javascript)
 /// Toggle the debug overlay.
 ///
 pub fn toggle_debug_overlay() -> Effect(msg) {
@@ -263,12 +283,14 @@ pub fn toggle_debug_overlay() -> Effect(msg) {
 
 // CLIPBOARD EFFECTS -----------------------------------------------------------
 
+@target(javascript)
 /// Copy text to the clipboard via OSC52.
 ///
 pub fn copy_to_clipboard(text: String) -> Effect(msg) {
   effect.from(do_copy_to_clipboard(text, _))
 }
 
+@target(javascript)
 /// Clear the clipboard via OSC52.
 ///
 pub fn clear_clipboard() -> Effect(msg) {
@@ -277,6 +299,7 @@ pub fn clear_clipboard() -> Effect(msg) {
 
 // SELECTION EFFECTS -----------------------------------------------------------
 
+@target(javascript)
 /// Get the current active renderer-level selection, or `None` if nothing is
 /// selected. The returned `Selection` has the same shape as events delivered
 /// by `subscribe_selection`.
@@ -290,24 +313,25 @@ pub fn get_selection(handler: fn(Option(Selection)) -> msg) -> Effect(msg) {
   })
 }
 
+@target(javascript)
 /// Subscribe to renderer-level drag-completion selection events. Fires once
 /// per completed mouse drag. Does NOT fire during in-flight drag updates,
 /// programmatic `set_selection`, or `clear_selection`. Call this in your
 /// `init` function exactly once — calling it multiple times will install
 /// duplicate listeners.
 ///
-pub fn subscribe_selection(
-  handler: fn(Selection) -> msg,
-) -> Effect(msg) {
+pub fn subscribe_selection(handler: fn(Selection) -> msg) -> Effect(msg) {
   effect.from(do_subscribe_selection(handler, _))
 }
 
+@target(javascript)
 /// Clear the current text selection.
 ///
 pub fn clear_selection() -> Effect(msg) {
   effect.from(do_clear_selection)
 }
 
+@target(javascript)
 /// Highlight a range of text, spanning multiple paragraphs if needed. Selects from
 /// `anchor_id`:`anchor_offset` to `focus_id`:`focus_offset` and moves the caret to
 /// the focus end. Replaces any current selection; idempotent — safe every render.
@@ -326,36 +350,42 @@ pub fn set_selection_span(
 
 // LIFECYCLE EFFECTS -----------------------------------------------------------
 
+@target(javascript)
 /// Pause the renderer.
 ///
 pub fn pause() -> Effect(msg) {
   effect.from(do_pause)
 }
 
+@target(javascript)
 /// Suspend the renderer (pauses and restores terminal state).
 ///
 pub fn suspend() -> Effect(msg) {
   effect.from(do_suspend)
 }
 
+@target(javascript)
 /// Resume a paused or suspended renderer.
 ///
 pub fn resume() -> Effect(msg) {
   effect.from(do_resume)
 }
 
+@target(javascript)
 /// Destroy the renderer and clean up resources.
 ///
 pub fn destroy() -> Effect(msg) {
   effect.from(do_destroy)
 }
 
+@target(javascript)
 /// Stop the renderer's render loop.
 ///
 pub fn stop() -> Effect(msg) {
   effect.from(do_stop)
 }
 
+@target(javascript)
 /// Subscribe to renderer destroy event. Dispatches the given msg when destroyed.
 ///
 pub fn on_destroy(msg: msg) -> Effect(msg) {
@@ -364,17 +394,23 @@ pub fn on_destroy(msg: msg) -> Effect(msg) {
 
 // SCROLLING EFFECTS -----------------------------------------------------------
 
+@target(javascript)
 /// Scroll an element by a delta. The element is found by its id.
 ///
 /// This uses `before_paint` to ensure the view has been reconciled before
 /// attempting to find the element in the renderable tree.
 ///
-pub fn scroll_by(element_id: String, delta_x: Int, delta_y: Int) -> Effect(msg) {
+pub fn scroll_by(
+  element_id: String,
+  delta_x: Int,
+  delta_y: Int,
+) -> Effect(msg) {
   effect.before_paint(fn(_dispatch, _root) {
     do_scroll_by(element_id, delta_x, delta_y, fn(_) { Nil })
   })
 }
 
+@target(javascript)
 /// Scroll an element to an absolute position. The element is found by its id.
 ///
 /// This uses `before_paint` to ensure the view has been reconciled before
@@ -386,6 +422,7 @@ pub fn scroll_to(element_id: String, x: Int, y: Int) -> Effect(msg) {
   })
 }
 
+@target(javascript)
 /// Scroll a child element into view within a scrollable container.
 /// Only scrolls if the child is not fully visible.
 ///
@@ -397,134 +434,115 @@ pub fn scroll_into_view(container_id: String, child_id: String) -> Effect(msg) {
 
 // FFI -------------------------------------------------------------------------
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "with_renderer")
 fn do_with_renderer(
-  _handler: fn(fn(msg) -> Nil, Renderer) -> Nil,
-  _dispatch: fn(msg) -> Nil,
-) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+  handler: fn(fn(msg) -> Nil, Renderer) -> Nil,
+  dispatch: fn(msg) -> Nil,
+) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "subscribe_keyboard")
 fn do_subscribe_keyboard(
-  _handler: fn(KeyEvent) -> msg,
-  _dispatch: fn(msg) -> Nil,
-) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+  handler: fn(KeyEvent) -> msg,
+  dispatch: fn(msg) -> Nil,
+) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "subscribe_keyboard_raw")
 fn do_subscribe_keyboard_raw(callback: fn(KeyEvent) -> Nil) -> Nil
 
-
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "focus_next")
-fn do_focus_next(_dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_focus_next(dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "focus_previous")
-fn do_focus_previous(_dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_focus_previous(dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "focus")
-fn do_focus(_id: String, _dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_focus(id: String, dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "get_focused_id_raw")
-fn do_get_focused_id_raw() -> String {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_get_focused_id_raw() -> String
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "get_focused_node_raw")
-fn do_get_focused_node_raw() -> Dynamic {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_get_focused_node_raw() -> Dynamic
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "set_terminal_title")
-fn do_set_terminal_title(_title: String, _dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_set_terminal_title(title: String, dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "set_background_color")
-fn do_set_background_color(_color: String, _dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_set_background_color(color: String, dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "set_cursor_position")
 fn do_set_cursor_position(
-  _x: Int,
-  _y: Int,
-  _visible: Bool,
-  _dispatch: fn(msg) -> Nil,
-) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+  x: Int,
+  y: Int,
+  visible: Bool,
+  dispatch: fn(msg) -> Nil,
+) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "set_cursor_style")
 fn do_set_cursor_style(
-  _style: String,
-  _blinking: Bool,
-  _dispatch: fn(msg) -> Nil,
-) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+  style: String,
+  blinking: Bool,
+  dispatch: fn(msg) -> Nil,
+) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "set_cursor_color")
-fn do_set_cursor_color(_color: String, _dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_set_cursor_color(color: String, dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "get_terminal_dimensions")
 fn do_get_terminal_dimensions(
-  _handler: fn(Int, Int) -> msg,
-  _dispatch: fn(msg) -> Nil,
-) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+  handler: fn(Int, Int) -> msg,
+  dispatch: fn(msg) -> Nil,
+) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "toggle_debug_overlay")
-fn do_toggle_debug_overlay(_dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_toggle_debug_overlay(dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "subscribe_terminal_resize")
 fn do_subscribe_terminal_resize(
-  _handler: fn(Int, Int) -> msg,
-  _dispatch: fn(msg) -> Nil,
-) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+  handler: fn(Int, Int) -> msg,
+  dispatch: fn(msg) -> Nil,
+) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "copy_to_clipboard")
-fn do_copy_to_clipboard(_text: String, _dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_copy_to_clipboard(text: String, dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "clear_clipboard")
-fn do_clear_clipboard(_dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_clear_clipboard(dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "get_selection")
-fn do_get_selection() -> Result(Selection, Nil) {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_get_selection() -> Result(Selection, Nil)
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "subscribe_selection")
 fn do_subscribe_selection(
-  _handler: fn(Selection) -> msg,
-  _dispatch: fn(msg) -> Nil,
-) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+  handler: fn(Selection) -> msg,
+  dispatch: fn(msg) -> Nil,
+) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "clear_selection")
-fn do_clear_selection(_dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_clear_selection(dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "set_selection_span")
 fn do_set_selection_span(
   anchor_id: String,
@@ -533,61 +551,52 @@ fn do_set_selection_span(
   focus_offset: Int,
 ) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "pause")
-fn do_pause(_dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_pause(dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "suspend")
-fn do_suspend(_dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_suspend(dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "resume")
-fn do_resume(_dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_resume(dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "destroy")
-fn do_destroy(_dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_destroy(dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "stop")
-fn do_stop(_dispatch: fn(msg) -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_stop(dispatch: fn(msg) -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "on_destroy")
-fn do_on_destroy(_callback: fn() -> Nil) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+fn do_on_destroy(callback: fn() -> Nil) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "scroll_by")
 fn do_scroll_by(
-  _element_id: String,
-  _delta_x: Int,
-  _delta_y: Int,
-  _dispatch: fn(msg) -> Nil,
-) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+  element_id: String,
+  delta_x: Int,
+  delta_y: Int,
+  dispatch: fn(msg) -> Nil,
+) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "scroll_to")
 fn do_scroll_to(
-  _element_id: String,
-  _x: Int,
-  _y: Int,
-  _dispatch: fn(msg) -> Nil,
-) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+  element_id: String,
+  x: Int,
+  y: Int,
+  dispatch: fn(msg) -> Nil,
+) -> Nil
 
+@target(javascript)
 @external(javascript, "./effect.ffi.ts", "scroll_into_view")
 fn do_scroll_into_view(
-  _container_id: String,
-  _child_id: String,
-  _dispatch: fn(msg) -> Nil,
-) -> Nil {
-  panic as "lustre/platform/opentui/effect only runs on JavaScript"
-}
+  container_id: String,
+  child_id: String,
+  dispatch: fn(msg) -> Nil,
+) -> Nil

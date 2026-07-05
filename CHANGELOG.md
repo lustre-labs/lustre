@@ -17,6 +17,10 @@ Based on upstream Lustre v5.7.0.
 
 - [lustre/platform] Added the `Platform(node, target, value, event, message, raw)`
   type and the `headless` and `new` constructors.
+- [lustre/platform/opentui] Merged the `lustre_platform_opentui` package: an
+  OpenTUI platform for building terminal UIs, with `element`, `attribute`,
+  `event`, `effect`, and `portal` modules. JavaScript-only, gated with
+  `@target(javascript)`.
 - [lustre/platform/dom] Added the browser DOM platform via `platform(onto:)`.
 - [lustre/serializer] Added a configurable HTML serializer API.
 - [lustre/element] Added `unsafe_raw` and `unsafe_raw_content` for embedding
