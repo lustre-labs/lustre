@@ -2,7 +2,7 @@ name: Test Suite
 
 on:
   pull_request:
-    branches: [main]
+    branches: ["from-**"]
 
 jobs:
   test:
