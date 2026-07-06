@@ -97,9 +97,9 @@ When upstream releases vX.Y.Z:
    `gleam format --check && gleam test --target erlang && gleam test --target javascript && bunx tsc --noEmit && gleam run -m build`
    (`gleam run -m build` regenerates `priv/static/` and the runtime script
    embedded in `src/agnostic/server_component.gleam` — commit those artifacts.)
-8. Push `from-vX.Y.Z` and switch the GitHub default branch to it:
-   `gh repo edit weedonandscott/agnostic --default-branch from-vX.Y.Z`
-   Leave the old `from-*` branch in place.
+8. Push `from-vX.Y.Z` and switch the GitHub default branch to it in the web
+   UI: repository **Settings → General → Default branch**. Leave the old
+   `from-*` branch in place.
 9. Release when ready: tag `vN` (fork version) on the new branch, push that
    tag individually (never `git push --tags` — the repo carries inherited
    upstream tags that must not be pushed), and publish manually with
