@@ -1,38 +1,45 @@
 # agnostic
 
-This is a soft fork of [Lustre](https://github.com/lustre-labs/lustre) that
+agnostic is a soft fork of [Lustre](https://github.com/lustre-labs/lustre) that
 decouples the reconciler and runtime from the browser DOM through a composable
-`Platform` abstraction, so the same MVU application can render to arbitrary
-targets — the browser, headless HTML serialization, or custom platforms such
-as the OpenTUI terminal renderer included in this repository.
+`Platform` abstraction, so the framework's ergonomics can be used for apps on
+arbitrary targets.
 
-- Based on upstream Lustre v5.7.0. How the fork tracks upstream — branch
-  scheme, versioning, rebase procedure — is documented in
-  [FORKING.md](./FORKING.md).
-- This fork's changes are in [CHANGELOG.md](./CHANGELOG.md); upstream's
-  changelog is preserved in [CHANGELOG_UPSTREAM.md](./CHANGELOG_UPSTREAM.md).
-- Upstream's documentation applies to everything not touched by the platform
-  abstraction: <https://hexdocs.pm/lustre>.
+Currently we ship a DOM platform for the browser and an OpenTUI terminal
+platform. While the DOM platform is usable, the intention behind including it
+was reusing libraries from the lustre ecosystem across platforms, which was
+possible due to a Gleam bug. Since that bug has now been fixed, libraries cannot
+be shared anymore, and it is recommended to use upstream Lustre for webapps on 
+both client and server.
 
-The OpenTUI platform below was merged from the former
-`lustre_platform_opentui` package and lives in `agnostic/platform/opentui`.
+Use agnostic for the OpenTUI platform, or for building your own. A NativeScript
+one, for example, has been proven possible (code unavailable).
 
-# agnostic/platform/opentui
+The aim is for the ideas in this repo (or parts of them) to be implemented
+upstream, and therefore we try to keep things up to date with it. To see how we
+do that, please refer to [FORKING.md](./FORKING.md).
 
-## Develop TUI apps with Lustre and OpenTUI
+Agnostic is used in production by [Bliss Writer](https://blisswriter.app). 
 
-[![Package Version](https://img.shields.io/hexpm/v/agnostic)](https://hex.pm/packages/agnostic)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/agnostic/)
+## Docs
 
-This is an early stage OpenTUI platform for [agnostic](https://hexdocs.pm/agnostic).
+Familiarity with Lustre is assumed throughout this repository. Please refer to
+their documentation at <https://hexdocs.pm/lustre> to learn more about general
+framework use and the browser target (client or server side).
 
-It allows you to develop apps using Lustre on the Bun runtime and target OpenTUI
-as a renderer.
+When familiar, the differences are easily bridged by going over doc-comments and
+function signatures in agnostic.
+
+
+Examples are also available in the `examples/` folder.
+
+### agnostic/platform/opentui
+
+Allows you to develop apps targeting OpenTUI as a renderer.
 
 ### Status & Limitations
 
 - Must use Bun as runtime
-- Code is early stage, expect bugs and breaking changes
 - Read the [OpenTUI docs](https://opentui.com/docs/getting-started/) to know
   which attribute fit which elements
 
@@ -129,18 +136,16 @@ fn view(model: Model) {
           attribute.title_alignment("center"),
         ],
         [
-          element.text_node(
-            [
-              attribute.bold("true"),
-              attribute.color("#e0e0e0"),
-              attribute.dim("true"),
-            ],
-            [element.text("Arrows to navigate, Enter to activate")],
-          ),
-          element.text_node([attribute.bold("true"), attribute.color("#fff")], [
-            model.count
-            |> int.to_string()
-            |> element.text(),
+          element.text([
+            attribute.content("Arrows to navigate, Enter to activate"),
+            attribute.bold(True),
+            attribute.color("#e0e0e0"),
+            attribute.dim(True),
+          ]),
+          element.text([
+            attribute.content(int.to_string(model.count)),
+            attribute.bold(True),
+            attribute.color("#fff"),
           ]),
           element.box([attribute.flex_direction("row"), attribute.gap(2)], [
             element.box(
@@ -156,10 +161,11 @@ fn view(model: Model) {
                 event.on_activate(Decrement),
               ],
               [
-                element.text_node(
-                  [attribute.bold("true"), attribute.color("#ff6b6b")],
-                  [element.text(" - ")],
-                ),
+                element.text([
+                  attribute.content(" - "),
+                  attribute.bold(True),
+                  attribute.color("#ff6b6b"),
+                ]),
               ],
             ),
             element.box(
@@ -176,10 +182,11 @@ fn view(model: Model) {
                 event.on_activate(Increment),
               ],
               [
-                element.text_node(
-                  [attribute.bold("true"), attribute.color("#69db7c")],
-                  [element.text(" + ")],
-                ),
+                element.text([
+                  attribute.content(" + "),
+                  attribute.bold(True),
+                  attribute.color("#69db7c"),
+                ]),
               ],
             ),
           ]),
@@ -195,6 +202,8 @@ Further documentation can be found at <https://hexdocs.pm/agnostic>.
 ## Development
 
 ```sh
-gleam run   # Run the project
-gleam test  # Run the tests
+gleam test --target erlang      # Run the tests on Erlang
+gleam test --target javascript  # Run the tests on JavaScript
+bunx tsc --noEmit               # Typecheck the TypeScript FFI
+gleam run -m build              # Regenerate the server-component bundle
 ```
