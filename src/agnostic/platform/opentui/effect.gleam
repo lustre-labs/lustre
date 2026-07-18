@@ -152,12 +152,13 @@ pub type ScrollPadding {
 @target(javascript)
 /// Schedule a side effect guaranteed to run after the frame containing this
 /// update has been flushed to the terminal. This anchors on OpenTUI's FRAME
-/// event. Because the platform starts OpenTUI's continuous render loop, FRAME
-/// fires on every normal tick — even ones whose updates changed nothing
-/// visible — so this effect cannot be starved by an "inert" update. Ticks
-/// whose flush is blocked or backpressured drain at the next successful
-/// flush; a paused, suspended, or stopped renderer runs no ticks and so no
-/// phase effects at all.
+/// event. Every render requests the one-shot frame that flushes it — even
+/// when the update changed nothing visible — so this effect cannot be
+/// starved by an "inert" update. Ticks whose flush is blocked or
+/// backpressured drain at the next successful flush; a suspended renderer
+/// schedules no frames and so runs no phase effects until resumed, while a
+/// paused or stopped renderer still runs the one-shot frame each new update
+/// schedules.
 ///
 /// In addition to the `dispatch` function, your callback receives a
 /// [`Layout`](#Layout) and the OpenTUI renderer. Everything is readable and
@@ -209,11 +210,11 @@ pub fn after_flush(
 
 @target(javascript)
 /// Schedule a side effect guaranteed to run after this update has been
-/// reconciled into the renderable tree — in the same render-loop tick, before
-/// OpenTUI computes layout or paints. This anchors on OpenTUI's frame
-/// callbacks slot, which runs on every loop iteration — including ticks whose
-/// flush ends up blocked, where [`after_flush`](#after_flush) waits for the
-/// next successful flush.
+/// reconciled into the renderable tree — in the tick that renders this
+/// update, before OpenTUI computes layout or paints. This anchors on
+/// OpenTUI's frame callbacks slot, which runs on every loop iteration —
+/// including ticks whose flush ends up blocked, where
+/// [`after_flush`](#after_flush) waits for the next successful flush.
 ///
 /// In addition to the `dispatch` function, your callback receives the OpenTUI
 /// renderer. The tree is fresh: id lookups and traversal resolve elements
@@ -240,8 +241,8 @@ pub fn frame_callbacks(
 
 @target(javascript)
 /// Schedule a side effect guaranteed to run after yoga layout is final for
-/// the frame containing this update, before it paints — in the same
-/// render-loop tick. When the update dirtied layout this anchors on OpenTUI's
+/// the frame containing this update, before it paints — in the tick that
+/// renders this update. When the update dirtied layout this anchors on OpenTUI's
 /// `LAYOUT_CHANGED` event; when it did not, a frame-callback fallback runs
 /// the effect over the previous — still current — layout. Either way the
 /// effect runs on every loop iteration, flushed or not.
@@ -379,7 +380,7 @@ fn permissive_field(
 /// Focus the next focusable element in the renderable tree.
 ///
 /// This runs in the [`frame_callbacks`](#frame_callbacks) phase — after this
-/// update has been reconciled, in the same render-loop tick — so the
+/// update has been reconciled, in the tick that renders it — so the
 /// traversal sees the tree this update produced: elements it mounted are
 /// candidates and elements it removed are not. OpenTUI's focus setters
 /// request a render themselves, so the change is picked up by the very next
@@ -395,7 +396,7 @@ pub fn focus_next() -> Effect(msg) {
 /// Focus the previous focusable element in the renderable tree.
 ///
 /// This runs in the [`frame_callbacks`](#frame_callbacks) phase — after this
-/// update has been reconciled, in the same render-loop tick — so the
+/// update has been reconciled, in the tick that renders it — so the
 /// traversal sees the tree this update produced: elements it mounted are
 /// candidates and elements it removed are not. OpenTUI's focus setters
 /// request a render themselves, so the change is picked up by the very next
@@ -411,7 +412,7 @@ pub fn focus_previous() -> Effect(msg) {
 /// Focus a specific element by its OpenTUI id.
 ///
 /// This runs in the [`frame_callbacks`](#frame_callbacks) phase — after this
-/// update has been reconciled, in the same render-loop tick — so an element
+/// update has been reconciled, in the tick that renders it — so an element
 /// created by the *same* update (including a keyed remount) is resolvable and
 /// receives the focus. OpenTUI's focus setters request a render themselves,
 /// so the change is picked up by the very next flushed frame.
@@ -431,8 +432,8 @@ pub fn focus(id: String) -> Effect(msg) {
 ///
 /// This uses [`frame_callbacks`](#frame_callbacks): focus state is final once
 /// this update has been reconciled — nothing in layout, paint, or flush
-/// changes it — so the read reflects this update, happens in the same
-/// render-loop tick, and also runs for blocked frames where nothing flushed.
+/// changes it — so the read reflects this update, happens in the tick that
+/// renders it, and also runs for blocked frames where nothing flushed.
 ///
 pub fn get_focused_id(handler: fn(Option(String)) -> msg) -> Effect(msg) {
   frame_callbacks(fn(dispatch, renderer) {
@@ -455,8 +456,8 @@ pub fn get_focused_id(handler: fn(Option(String)) -> msg) -> Effect(msg) {
 ///
 /// This uses [`frame_callbacks`](#frame_callbacks): focus state is final once
 /// this update has been reconciled — nothing in layout, paint, or flush
-/// changes it — so the read reflects this update, happens in the same
-/// render-loop tick, and also runs for blocked frames where nothing flushed.
+/// changes it — so the read reflects this update, happens in the tick that
+/// renders it, and also runs for blocked frames where nothing flushed.
 /// Geometry fields read through the decoder are last paint walk's cached
 /// values, as at any timing.
 ///
@@ -700,7 +701,8 @@ pub fn clear_selection() -> Effect(msg) {
 /// frame mismatches that cache exactly when the same update mounts, moves,
 /// or scrolls the target, silently dropping or misplacing the selection.
 /// Post-paint, every coordinate source agrees — including for editors
-/// mounted by this same update — and the selection paints on the next tick.
+/// mounted by this same update — and the selection paints on the next
+/// flushed frame.
 ///
 pub fn set_selection_span(
   anchor_id: String,

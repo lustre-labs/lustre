@@ -102,13 +102,18 @@ pub fn use_mouse(config: Config, value: Bool) -> Config {
   Config(..config, use_mouse: value)
 }
 
-/// Set the target frames per second.
+/// Set the target frames per second. Rendering is on-demand: this paces the
+/// continuous render loop, which only runs while OpenTUI animations are
+/// active (`requestAnimationFrame`, timelines). It has no effect at idle or
+/// on state-change renders — those are paced by `max_fps`.
 ///
 pub fn target_fps(config: Config, value: Int) -> Config {
   Config(..config, target_fps: value)
 }
 
-/// Set the maximum frames per second.
+/// Set the maximum frames per second. This paces on-demand frames — the
+/// one-shot renders triggered by state changes — capping how fast bursts of
+/// updates repaint.
 ///
 pub fn max_fps(config: Config, value: Int) -> Config {
   Config(..config, max_fps: value)

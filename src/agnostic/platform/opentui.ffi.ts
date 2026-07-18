@@ -245,9 +245,16 @@ export function platform(
     }
 
     // The `frame_callbacks` phase anchors on OpenTUI's awaited frameCallbacks
-    // slot, which runs on EVERY loop iteration — same tick as the
-    // reconcile-carrying animation request, after it and before root.render
-    // (pre-layout) — flushed or blocked alike. setFrameCallback pushes into a
+    // slot, which runs on EVERY loop iteration, before root.render
+    // (pre-layout) — flushed or blocked alike. Reconciles run in a
+    // schedule_render macrotask or the flush path's microtask, outside loop
+    // ticks — except a flush dispatched from inside a phase task, whose
+    // microtask drains at the tick's next await boundary, after this slot ran
+    // and before root.render. Tasks enqueued here therefore always run
+    // post-reconcile and pre-layout: normally in the one-shot tick that
+    // after_render's requestRender() schedules to paint the reconcile; in the
+    // in-tick case, in the immediate-rerender tick that follows.
+    // setFrameCallback pushes into a
     // persistent registry (it never replaces), so one callback is registered
     // for the platform's lifetime, fanning out to a callback queue.
     const frameCallbacks: Array<() => undefined> = [];
@@ -389,8 +396,12 @@ export function mount(renderer: CliRenderer): [TuiNode, ReturnType<typeof none>]
   // Set up the reconciler metadata on the root.
   insertMetadataChild(element_kind, null, root, 0, null);
 
-  // Start the renderer's render loop so requestRender() actually flushes frames.
-  renderer.start();
+  // The renderer stays in the IDLE control state — no continuous loop. Every
+  // render is followed by after_render → requestRender(), which schedules a
+  // one-shot frame from IDLE, so the process sleeps between state changes.
+  // Continuous animation still works: OpenTUI's own requestAnimationFrame
+  // shim holds requestLive()/dropLive(), auto-starting and stopping the loop
+  // (AUTO_STARTED) while animation callbacks are pending.
 
   // Fresh TUI — no existing children to virtualise.
   return [root, none()];
@@ -1284,25 +1295,26 @@ const remove_event_listener = (
 
 // SCHEDULING ------------------------------------------------------------------
 
-declare function requestAnimationFrame(callback: (time: number) => void): number;
-declare function cancelAnimationFrame(id: number): void;
-
 // The runtime requires schedulers (schedule_render and every Phase.schedule)
-// to defer — never to invoke their callback synchronously. Calling OpenTUI's
-// requestAnimationFrame while the renderer is IDLE runs the loop synchronously
-// inside the call; agnostic's `mount` calls `renderer.start()`, so the
-// renderer is always running here and this contract holds. That start() call
-// is a requirement, not an accident.
+// to defer — never to invoke their callback synchronously. A plain macrotask
+// satisfies that. Deliberately NOT OpenTUI's requestAnimationFrame shim:
+// calling the shim while the renderer is IDLE runs the loop synchronously
+// inside the call, and keeping the renderer out of IDLE would require a
+// permanently running loop (a ~30fps wakeup at rest). The renderer instead
+// rests at IDLE; painting is driven by after_render → requestRender(), which
+// schedules a one-shot frame from IDLE.
 const schedule_render = (callback: () => undefined): (() => undefined) => {
-  const id = requestAnimationFrame((_time: number) => {
-    callback();
-  });
-  return () => { cancelAnimationFrame(id); return undefined; };
+  const id = setTimeout(() => callback(), 0);
+  return () => {
+    clearTimeout(id);
+    return undefined;
+  };
 };
 
-// See the defer contract note on schedule_render above: requestRender() only
-// marks the next loop tick; it never flushes synchronously while the renderer
-// is running.
+// The sole paint driver. From IDLE, requestRender() schedules a deferred
+// one-shot frame (throttled by max_fps) that drains the phase anchors and
+// paints; while the loop is running it marks the next tick. It never flushes
+// synchronously in either state, so calling it inside #render is safe.
 export function make_after_render(renderer: CliRenderer): () => undefined {
   return (): undefined => {
     if (renderer.requestRender) {

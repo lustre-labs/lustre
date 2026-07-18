@@ -104,9 +104,9 @@ export class PortalRenderable extends (BoxRenderable as any) {
 
     if (!target) {
       // The target may not exist yet if it's created later in the same
-      // render. Retry once in the frame_callbacks slot — post-reconcile,
-      // same render-loop tick — where a target mounted by this same update
-      // is resolvable.
+      // render. Retry once in the frame_callbacks slot of the one-shot tick
+      // that flushes this render — post-reconcile, so a target mounted by
+      // this same update is resolvable.
       if (!this.#pendingRetry) {
         this.#pendingRetry = true;
         scheduleFrameCallback(() => {
