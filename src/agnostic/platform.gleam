@@ -17,6 +17,26 @@ pub type PlatformError {
   NotMountable
 }
 
+/// A deferred effect phase declared by a platform. `name` identifies which
+/// tagged tasks the phase drains: effects constructed with
+/// [`effect.deferred`](./effect.html#deferred) — or a platform module's typed
+/// constructor built on it — carry a phase name, and at the end of each render
+/// pass the runtime hands the pending tasks of every declared phase to that
+/// phase's `schedule` function. Phases are drained in the platform's
+/// declaration order; the relative timing between phases is then determined by
+/// the schedulers themselves.
+///
+/// Tasks tagged with a phase name the running platform does not declare are
+/// silently dropped.
+///
+/// > **Note**: `schedule` must defer — it must never invoke its callback
+/// > synchronously. The runtime's render bookkeeping assumes control returns
+/// > to it before any scheduled callback runs.
+///
+pub type Phase {
+  Phase(name: String, schedule: fn(fn() -> Nil) -> Nil)
+}
+
 /// A platform configuration provides the low-level mutation methods needed to
 /// create, modify, and remove nodes in a render target. Lustre's reconciler
 /// calls these methods instead of hardcoded DOM APIs, allowing applications to
@@ -50,6 +70,7 @@ pub opaque type Platform(node, target, value, event, message, raw) {
     remove_event_listener: fn(node, String, fn(event) -> Nil) -> Nil,
     schedule_render: fn(fn() -> Nil) -> fn() -> Nil,
     after_render: fn() -> Nil,
+    phases: List(Phase),
   )
 }
 
@@ -58,6 +79,10 @@ pub opaque type Platform(node, target, value, event, message, raw) {
 /// Returns a headless [`Platform`](#Platform) for server components. Server
 /// components don't render to a DOM target — they send patches over the network
 /// to connected clients instead.
+///
+/// Headless platforms declare no deferred phases: effects deferred to a
+/// platform phase (such as `dom.before_paint` or `dom.after_paint`) are
+/// dropped and never run.
 ///
 /// ## Example
 ///
@@ -78,6 +103,17 @@ pub fn headless() -> Platform(node, target, value, event, message, raw) {
 /// Non-DOM targets can no-op `create_comment`, `create_fragment`,
 /// `set_raw_content`, `create_raw_node`, `add_event_listener`, and
 /// `remove_event_listener` and provide minimal implementations for the rest.
+///
+/// `phases` declares the platform's deferred effect [`Phase`](#Phase)s in
+/// drain order. Pass an empty list for no deferred phases — deferred effects
+/// are then dropped. To run effects constructed by another platform module's
+/// typed constructors, declare a phase whose name matches that platform's
+/// public phase-name constant (for example
+/// [`dom.before_paint_phase`](./platform/dom.html#before_paint_phase)).
+///
+/// > **Note**: `schedule_render` and every `Phase`'s `schedule` function must
+/// > defer — they must never invoke their callback synchronously. The
+/// > runtime's render bookkeeping assumes control returns to it first.
 ///
 pub fn new(
   target target: target,
@@ -110,6 +146,7 @@ pub fn new(
   ) -> Nil,
   schedule_render schedule_render: fn(fn() -> Nil) -> fn() -> Nil,
   after_render after_render: fn() -> Nil,
+  phases phases: List(Phase),
 ) -> Platform(node, target, value, event, message, raw) {
   Platform(
     target:,
@@ -133,6 +170,7 @@ pub fn new(
     remove_event_listener:,
     schedule_render:,
     after_render:,
+    phases:,
   )
 }
 

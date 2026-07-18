@@ -67,6 +67,33 @@ back as modify/delete conflicts **on that commit** — the resolution is always
 additions to the `[documentation]` pages list in `gleam.toml` conflict the
 same way; keep only the fork's Changelog entry.
 
+## Effect phases divergence
+
+The fork replaces upstream's fixed effect timing slots with platform-declared
+phases. Upstream's `Effect` type carries three lists (`synchronous`,
+`before_paint`, `after_paint`) and its runtime hardcodes their drain mechanisms
+(`queueMicrotask` and `requestAnimationFrame` in `runtime.ffi.mjs`'s
+`#render`). The fork's `Effect` carries `synchronous` plus a phase-tagged
+`deferred` list; each platform declares its own `Phase(name, scheduler)` list
+(`platform.new`'s `phases`), and `base.ffi.mjs` drains pending tasks per phase
+in declaration order. `effect.before_paint` / `effect.after_paint` moved to
+`agnostic/platform/dom`, built on the public `effect.deferred`; the DOM
+platform's schedulers in `dom.ffi.mjs` reproduce upstream's timing exactly.
+
+When rebasing, resolve conflicts by re-applying the phase mechanism:
+
+- Upstream changes to `effect.gleam`'s paint constructors map onto
+  `src/agnostic/platform/dom.gleam`'s `before_paint` / `after_paint`.
+- Upstream changes to `runtime.ffi.mjs`'s `#beforePaint` / `#afterPaint`
+  drain timing map onto `src/agnostic/platform/dom.ffi.mjs`'s
+  `schedule_before_paint` / `schedule_after_paint` schedulers.
+- Upstream changes to how deferred effects are batched or drained map onto
+  `src/agnostic/runtime/platform/base.ffi.mjs`'s `#pending` / `#phases`
+  handling in `#handleEffects` / `#render`.
+- `component.gleam`'s four ElementInternals effects (`set_form_value`,
+  `clear_form_value`, `set_pseudo_state`, `remove_pseudo_state`) call
+  `dom.before_paint` in the fork, not `effect.before_paint`.
+
 ## Upstream rebase procedure
 
 When upstream releases vX.Y.Z:
@@ -94,9 +121,12 @@ When upstream releases vX.Y.Z:
    upstream vX.Y.Z (see CHANGELOG_UPSTREAM.md)" plus any fork-side changes
    since the last release.
 7. Validate:
-   `gleam format --check && gleam test --target erlang && gleam test --target javascript && bunx tsc --noEmit && gleam run -m build`
-   (`gleam run -m build` regenerates `priv/static/` and the runtime script
-   embedded in `src/agnostic/server_component.gleam` — commit those artifacts.)
+   `gleam format --check && gleam test --target erlang && gleam test --target javascript && bun run typecheck && gleam run -m build`
+   (`bun run typecheck` regenerates `types/gleam.d.ts` from the JavaScript
+   build output before running `tsc` — the file is gitignored, never commit
+   it. `gleam run -m build` regenerates `priv/static/` and the runtime script
+   embedded in `src/agnostic/server_component.gleam` — commit those
+   artifacts.)
 8. Push `from-vX.Y.Z` and switch the GitHub default branch to it in the web
    UI: repository **Settings → General → Default branch**. Leave the old
    `from-*` branch in place.

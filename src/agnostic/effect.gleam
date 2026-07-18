@@ -32,6 +32,18 @@
 ////    it does provide bindings to many APIs that you can use to create your
 ////    own.)
 ////
+//// ## Effect timing
+////
+//// Effects created with [`from`](#from) carry no timing guarantee beyond
+//// running during effect processing of the dispatch that produced them.
+//// Deferred effects — those tied to a point in a platform's render lifecycle —
+//// are provided by the platform modules instead of this one:
+//// [`dom.before_paint`](./platform/dom.html#before_paint) and
+//// [`dom.after_paint`](./platform/dom.html#after_paint) for the browser DOM,
+//// and [`opentui/effect.after_flush`](./platform/opentui/effect.html#after_flush)
+//// for OpenTUI. Platform authors can build their own deferred effects with
+//// [`deferred`](#deferred).
+////
 //// ## Examples
 ////
 //// For folks coming from other languages (or other Gleam code!) where side
@@ -79,7 +91,6 @@ import gleam/erlang/process.{type Selector, type Subject}
 const empty: Effect(message) = Effect(
   constants.empty_list,
   constants.empty_list,
-  constants.empty_list,
 )
 
 // TYPES -----------------------------------------------------------------------
@@ -96,8 +107,7 @@ const empty: Effect(message) = Effect(
 pub opaque type Effect(message) {
   Effect(
     synchronous: List(fn(Actions(message)) -> Nil),
-    before_paint: List(fn(Actions(message)) -> Nil),
-    after_paint: List(fn(Actions(message)) -> Nil),
+    deferred: List(#(String, fn(Actions(message)) -> Nil)),
   )
 }
 
@@ -164,29 +174,24 @@ pub fn from(effect: fn(fn(message) -> Nil) -> Nil) -> Effect(message) {
   Effect(..empty, synchronous: constants.singleton_list(task))
 }
 
-/// Schedule a side effect that is guaranteed to run after your `view` function
-/// is called and the DOM has been updated, but **before** the browser has
-/// painted the screen. This effect is useful when you need to read from the DOM
-/// or perform other operations that might affect the layout of your application.
+/// Construct an effect deferred to a platform-declared phase. This is the
+/// platform-author API: platform modules wrap it with typed constructors
+/// (e.g. [`dom.before_paint`](./platform/dom.html#before_paint) or
+/// [`opentui/effect.after_flush`](./platform/opentui/effect.html#after_flush)),
+/// pairing each constructor with a [`Phase`](./platform.html#Phase) of the
+/// same name in that platform's `phases` declaration. Application code should
+/// prefer those typed constructors.
 ///
 /// In addition to the `dispatch` function, your callback will also be provided
-/// with root element of your app or component. This is especially useful inside
-/// of components, giving you a reference to the [Shadow Root](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot).
+/// with the root of your app or component as provided by the platform.
 ///
-/// Messages dispatched immediately in this effect will trigger a second re-render
-/// of your application before the browser paints the screen. This let's you read
-/// the state of the DOM, update your model, and then render a second time with
-/// the additional information.
+/// > **Note**: if the running platform does not declare `phase`, the effect is
+/// > silently dropped and never run. This is what happens to all deferred
+/// > effects in server components, which declare no phases.
 ///
-/// > **Note**: dispatching messages synchronously in this effect can lead to
-/// > degraded performance if not used correctly. In the worst case you can lock
-/// > up the browser and prevent it from painting the screen _at all_.
-///
-/// > **Note**: There is no concept of a "paint" for server components. These
-/// > effects will be ignored in those contexts and never run.
-///
-pub fn before_paint(
-  effect: fn(fn(message) -> Nil, Dynamic) -> Nil,
+pub fn deferred(
+  phase phase: String,
+  effect effect: fn(fn(message) -> Nil, Dynamic) -> Nil,
 ) -> Effect(message) {
   let task = fn(actions: Actions(message)) {
     let root = actions.root()
@@ -195,30 +200,7 @@ pub fn before_paint(
     effect(dispatch, root)
   }
 
-  Effect(..empty, before_paint: constants.singleton_list(task))
-}
-
-/// Schedule a side effect that is guaranteed to run after the browser has painted
-/// the screen.
-///
-/// In addition to the `dispatch` function, your callback will also be provided
-/// with root element of your app or component. This is especially useful inside
-/// of components, giving you a reference to the [Shadow Root](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot).
-///
-/// > **Note**: There is no concept of a "paint" for server components. These
-/// > effects will be ignored in those contexts and never run.
-///
-pub fn after_paint(
-  effect: fn(fn(message) -> Nil, Dynamic) -> Nil,
-) -> Effect(message) {
-  let task = fn(actions: Actions(message)) {
-    let root = actions.root()
-    let dispatch = actions.dispatch
-
-    effect(dispatch, root)
-  }
-
-  Effect(..empty, after_paint: constants.singleton_list(task))
+  Effect(..empty, deferred: constants.singleton_list(#(phase, task)))
 }
 
 /// Emit a custom event from a component as an effect. Parents can listen to these
@@ -323,8 +305,7 @@ pub fn batch(effects: List(Effect(message))) -> Effect(message) {
   use acc, eff <- list.fold(effects, empty)
   Effect(
     synchronous: list.fold(eff.synchronous, acc.synchronous, list.prepend),
-    before_paint: list.fold(eff.before_paint, acc.before_paint, list.prepend),
-    after_paint: list.fold(eff.after_paint, acc.after_paint, list.prepend),
+    deferred: list.fold(eff.deferred, acc.deferred, list.prepend),
   )
 }
 
@@ -337,8 +318,9 @@ pub fn batch(effects: List(Effect(message))) -> Effect(message) {
 pub fn map(effect: Effect(a), f: fn(a) -> b) -> Effect(b) {
   Effect(
     synchronous: do_map(effect.synchronous, f),
-    before_paint: do_map(effect.before_paint, f),
-    after_paint: do_map(effect.after_paint, f),
+    deferred: list.map(effect.deferred, fn(entry) {
+      #(entry.0, fn(actions) { entry.1(do_comap_actions(actions, f)) })
+    }),
   )
 }
 
@@ -383,8 +365,10 @@ fn do_comap_select(_, _, _) -> Nil {
 /// This is primarily used internally by the server component runtime, but it is
 /// may also useful for testing.
 ///
-/// Because this is run outside of the runtime, timing-related effects scheduled
-/// by `before_paint` and `after_paint` will **not** be run.
+/// Because this is run outside of the runtime, effects deferred to a
+/// platform-declared phase — such as those constructed with
+/// [`deferred`](#deferred) or the platform modules' typed constructors — will
+/// **not** be run.
 ///
 /// > **Note**: For now, you should **not** consider this function a part of the
 /// > public API. It may be removed in a future minor or patch release. If you have

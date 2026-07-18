@@ -2,6 +2,8 @@
 
 import {
   createCliRenderer,
+  CliRenderEvents,
+  LayoutEvents,
   BoxRenderable,
   TextRenderable,
   InputRenderable,
@@ -25,12 +27,24 @@ import {
   Result$Error,
   Result$isOk,
   Result$Ok$0,
+  List$Empty,
+  List$NonEmpty,
 } from "../../gleam.mjs";
 import type { Result } from "../../prelude.mjs";
 import { none } from "../../../agnostic/agnostic/element.mjs";
 import { insertMetadataChild } from "../../../agnostic/agnostic/vdom/reconciler.ffi.mjs";
 import { element_kind } from "../../../agnostic/agnostic/vdom/vnode.mjs";
-import { new$ as platform_new } from "../../../agnostic/agnostic/platform.mjs";
+import { new$ as platform_new, Phase$Phase } from "../../../agnostic/agnostic/platform.mjs";
+// Own compiled module: single source of truth for the OpenTUI phase names.
+// This is an ES-module cycle (the compiled opentui.mjs imports opentui.ffi.ts
+// for its externals), which is safe because the constants are only referenced
+// lazily — inside platform(), at platform-construction time — never in a
+// top-level initializer, where they could hit the temporal dead zone.
+import {
+  frame_callbacks_phase,
+  after_layout_phase,
+  after_flush_phase,
+} from "../../../agnostic/agnostic/platform/opentui.mjs";
 
 // TYPES -----------------------------------------------------------------------
 
@@ -92,6 +106,22 @@ export function get_renderer(): CliRenderer {
     throw new Error("Renderer not initialized. Call opentui.platform() first.");
   }
   return _renderer;
+}
+
+// Platform-internal enqueue point onto the frame_callbacks phase queue
+// (post-reconcile, pre-layout, every loop tick) — the retry anchor for
+// platform machinery such as the portal's target resolution. Set by
+// platform() once the queue exists; the microtask fallback only covers calls
+// before the platform is constructed (in practice unreachable, since
+// everything that enqueues is created by the platform).
+let _scheduleFrameCallback: ((callback: () => void) => void) | null = null;
+
+export function scheduleFrameCallback(callback: () => void): void {
+  if (_scheduleFrameCallback) {
+    _scheduleFrameCallback(callback);
+  } else {
+    queueMicrotask(callback);
+  }
 }
 
 // HELPERS ---------------------------------------------------------------------
@@ -214,6 +244,99 @@ export function platform(
       CUSTOM_ELEMENT_REGISTRY.set(entry[0], entry[1]);
     }
 
+    // The `frame_callbacks` phase anchors on OpenTUI's awaited frameCallbacks
+    // slot, which runs on EVERY loop iteration — same tick as the
+    // reconcile-carrying animation request, after it and before root.render
+    // (pre-layout) — flushed or blocked alike. setFrameCallback pushes into a
+    // persistent registry (it never replaces), so one callback is registered
+    // for the platform's lifetime, fanning out to a callback queue.
+    const frameCallbacks: Array<() => undefined> = [];
+
+    renderer.setFrameCallback(async () => {
+      if (frameCallbacks.length === 0) return;
+      // splice-before-run: callbacks that (via a dispatched message and
+      // re-render) schedule new frame_callbacks work land in the NEXT loop
+      // tick's batch.
+      for (const callback of frameCallbacks.splice(0)) callback();
+    });
+
+    // Phase scheduler. MUST defer (it only enqueues); the frameCallbacks slot
+    // always runs later in the tick (or a later tick) than any call site.
+    const schedule_frame_callbacks = (
+      callback: () => undefined,
+    ): undefined => {
+      frameCallbacks.push(callback);
+      return undefined;
+    };
+
+    // Wire the platform-internal retry anchor (scheduleFrameCallback) to
+    // this renderer's frame_callbacks queue.
+    _scheduleFrameCallback = (callback) => {
+      frameCallbacks.push(() => {
+        callback();
+        return undefined;
+      });
+    };
+
+    // The `after_layout` phase anchors on yoga layout being final for the
+    // frame, before it paints. LAYOUT_CHANGED is emitted on renderer.root
+    // inside calculateLayout — but only when layout was dirty this frame; a
+    // frame that paints without relayout never emits it. A persistent
+    // frameCallback fallback covers that case: when layout is NOT dirty this
+    // tick, the last computed layout is already final, so drain here; when it
+    // IS dirty, stand down — the LAYOUT_CHANGED listener drains over fresh
+    // geometry later this same tick. (Same two-hook pattern as the
+    // scroll_into_view reveal hooks in opentui/effect.ffi.ts.) Registered
+    // after the frame_callbacks drain above, so frame_callbacks tasks run
+    // first within the slot on relayout-free ticks — matching the phase
+    // declaration order.
+    const afterLayoutCallbacks: Array<() => undefined> = [];
+
+    const drainAfterLayout = (): void => {
+      if (afterLayoutCallbacks.length === 0) return;
+      // splice-before-run, as above: newly scheduled work lands in the next
+      // batch.
+      for (const callback of afterLayoutCallbacks.splice(0)) callback();
+    };
+
+    renderer.root.on(LayoutEvents.LAYOUT_CHANGED, drainAfterLayout);
+    renderer.setFrameCallback(async () => {
+      if (renderer.root.getLayoutNode().isDirty()) return;
+      drainAfterLayout();
+    });
+
+    // Phase scheduler. MUST defer (it only enqueues); both anchors fire later
+    // in the tick (or a later tick) than any call site.
+    const schedule_after_layout = (callback: () => undefined): undefined => {
+      afterLayoutCallbacks.push(callback);
+      return undefined;
+    };
+
+    // The `after_flush` phase anchors on OpenTUI's FRAME event, emitted
+    // synchronously inside the render loop immediately after renderNative()
+    // returns "rendered" — i.e. only for genuinely flushed frames. One
+    // persistent listener is installed for the platform's lifetime, fanning
+    // out to a callback queue. (Deliberately not OpenTUI's
+    // requestAnimationFrame: rAF callbacks run at the top of the next loop
+    // tick — pre-flush of that tick — and also fire after "blocked" frames
+    // where nothing flushed.)
+    const flushCallbacks: Array<() => undefined> = [];
+
+    renderer.on(CliRenderEvents.FRAME, () => {
+      if (flushCallbacks.length === 0) return;
+      // splice-before-run: callbacks that (via a dispatched message and
+      // re-render) schedule new after_flush work land in the NEXT flushed
+      // frame's batch.
+      for (const callback of flushCallbacks.splice(0)) callback();
+    });
+
+    // Phase scheduler. MUST defer (it only enqueues); the FRAME event always
+    // fires later in the tick (or a later tick) than any call site.
+    const schedule_after_flush = (callback: () => undefined): undefined => {
+      flushCallbacks.push(callback);
+      return undefined;
+    };
+
     const builtPlatform = platform_new(
       renderer,
       mount,
@@ -236,6 +359,18 @@ export function platform(
       remove_event_listener,
       schedule_render,
       make_after_render(renderer),
+      // Declaration order is drain scheduling order: frame_callbacks, then
+      // after_layout, then after_flush — matching frame anatomy.
+      List$NonEmpty(
+        Phase$Phase(frame_callbacks_phase, schedule_frame_callbacks),
+        List$NonEmpty(
+          Phase$Phase(after_layout_phase, schedule_after_layout),
+          List$NonEmpty(
+            Phase$Phase(after_flush_phase, schedule_after_flush),
+            List$Empty(),
+          ),
+        ),
+      ),
     );
 
     callback(builtPlatform);
@@ -756,6 +891,19 @@ const set_attribute = (node: TuiNode, name: string, value: unknown): undefined =
     node.attributes = enabled ? current | flag : current & ~flag;
     return undefined;
   }
+  // `scrollMargin` is a constructor-only option on OpenTUI's editor
+  // renderables — no setter exists, so plain property assignment is inert.
+  // Forward it to the editor view's setter instead (the native side clamps
+  // to 0.0–0.5). Nodes without an editorView are left alone.
+  if (prop === "scrollMargin") {
+    const margin =
+      typeof value === "number" ? value : parseFloat(String(value ?? ""));
+    if (Number.isFinite(margin)) {
+      (node as { editorView?: { setScrollMargin(margin: number): void } })
+        .editorView?.setScrollMargin(margin);
+    }
+    return undefined;
+  }
   const coerced = coerceValue(prop, value ?? "");
   if (prop === "id") {
     const parent = (node as unknown as { parent?: { renderableMapById?: Map<string, Renderable> } }).parent;
@@ -781,6 +929,13 @@ const remove_attribute = (node: TuiNode, name: string): undefined => {
   if (flag !== undefined) {
     const current = node.attributes ?? 0;
     node.attributes = current & ~flag;
+    return undefined;
+  }
+  // Mirror the set_attribute special case: restore the editor's constructor
+  // default scroll margin (EditBufferRenderable defaults to 0.2).
+  if (prop === "scrollMargin") {
+    (node as { editorView?: { setScrollMargin(margin: number): void } })
+      .editorView?.setScrollMargin(0.2);
     return undefined;
   }
   // Blur focused nodes before clearing, matching React/Solid behaviour.
@@ -1132,6 +1287,12 @@ const remove_event_listener = (
 declare function requestAnimationFrame(callback: (time: number) => void): number;
 declare function cancelAnimationFrame(id: number): void;
 
+// The runtime requires schedulers (schedule_render and every Phase.schedule)
+// to defer — never to invoke their callback synchronously. Calling OpenTUI's
+// requestAnimationFrame while the renderer is IDLE runs the loop synchronously
+// inside the call; agnostic's `mount` calls `renderer.start()`, so the
+// renderer is always running here and this contract holds. That start() call
+// is a requirement, not an accident.
 const schedule_render = (callback: () => undefined): (() => undefined) => {
   const id = requestAnimationFrame((_time: number) => {
     callback();
@@ -1139,6 +1300,9 @@ const schedule_render = (callback: () => undefined): (() => undefined) => {
   return () => { cancelAnimationFrame(id); return undefined; };
 };
 
+// See the defer contract note on schedule_render above: requestRender() only
+// marks the next loop tick; it never flushes synchronously while the renderer
+// is running.
 export function make_after_render(renderer: CliRenderer): () => undefined {
   return (): undefined => {
     if (renderer.requestRender) {

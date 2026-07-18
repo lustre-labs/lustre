@@ -886,9 +886,12 @@ pub fn show_cursor(value: Bool) -> Attribute(msg) {
   }
 }
 
-/// Set the scroll margin as a fraction of the viewport height (e.g. 0.2 means
-/// scrolling starts when the cursor is within 20% of the top/bottom edge).
-/// Only applicable to textarea elements.
+/// Set the editor's caret-follow scroll margin as a fraction of the editor's
+/// own viewport (e.g. 0.2 means the editor scrolls once the caret comes within
+/// 20% of the top/bottom edge). Out-of-range values are clamped by OpenTUI.
+///
+/// Only applicable to textarea and input elements. This tunes the
+/// *intra-editor* caret follow — it is unrelated to `scrollbox` scrolling.
 ///
 pub fn scroll_margin(value: Float) -> Attribute(msg) {
   attribute("scroll-margin", float.to_string(value))

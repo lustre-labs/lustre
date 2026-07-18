@@ -13,6 +13,8 @@ import agnostic/internals/mutable_map
 @target(erlang)
 import agnostic/platform
 @target(erlang)
+import agnostic/platform/dom
+@target(erlang)
 import agnostic/runtime/headless
 @target(erlang)
 import agnostic/runtime/transport
@@ -146,6 +148,52 @@ pub fn server_emit_event_test() {
   let emit = transport.emit("reset", json.null())
 
   assert process.receive_forever(client) == emit
+}
+
+// DEFERRED EFFECT TESTS -------------------------------------------------------
+
+@target(erlang)
+pub fn headless_drops_deferred_effects_test() {
+  use <- lustre_test.test_filter("headless_drops_deferred_effects_test")
+
+  // The synchronous effect dispatches Incr; the deferred effect would dispatch
+  // Decr, but headless platforms declare no phases so it must never run.
+  let init = fn(count) {
+    #(
+      count,
+      effect.batch([
+        effect.from(fn(dispatch) { dispatch(Incr) }),
+        dom.before_paint(fn(dispatch, _root) { dispatch(Decr) }),
+      ]),
+    )
+  }
+
+  let app = agnostic.application(init, update, view)
+  let assert Ok(runtime) = agnostic.start(app, on: platform.headless(), with: 0)
+  let client = process.new_subject()
+
+  server_component.register_subject(client) |> agnostic.send(to: runtime)
+
+  // The synchronous effect ran before the client connected: the mounted view
+  // shows the incremented count.
+  assert process.receive_forever(client)
+    == transport.mount(
+      True,
+      True,
+      [],
+      [],
+      [],
+      dict.new(),
+      view(1),
+      mutable_map.new(),
+    )
+
+  // The deferred effect is dropped: no patch ever arrives.
+  let assert Error(Nil) = process.receive(client, 100)
+
+  server_component.deregister_subject(client) |> agnostic.send(to: runtime)
+
+  agnostic.shutdown() |> agnostic.send(to: runtime)
 }
 
 // UTILS -----------------------------------------------------------------------

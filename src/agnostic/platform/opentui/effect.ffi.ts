@@ -10,27 +10,26 @@ import type {
   CliRenderer,
   Renderable,
   CursorStyle,
-  Selection as OpenTuiSelection,
   EditBufferRenderable,
+  Selection as OpenTuiSelection,
 } from "@opentui/core";
-import { KeyEvent, Selection, SelectionRange } from "./effect.mjs";
-import { Result$Ok, Result$Error, toList } from "../../../gleam.mjs";
+import { Rect$Rect, ScrollExtents$ScrollExtents } from "./effect.mjs";
+import { Result$Ok, Result$Error, List$Empty, List$NonEmpty } from "../../../gleam.mjs";
+import type { List } from "../../../prelude.mjs";
 import { get_renderer } from "../opentui.ffi.ts";
 import { isPortal } from "./portal.ffi.ts";
 
 // TYPES -----------------------------------------------------------------------
 
-interface KeyEventData {
-  name?: string;
-  ctrl?: boolean;
-  shift?: boolean;
-  meta?: boolean;
-  option?: boolean;
-}
-
 type Dispatch<Msg> = (msg: Msg) => void;
 
 // HELPERS ---------------------------------------------------------------------
+
+const listFromArray = <T>(array: T[]): List<T> =>
+  array.reduceRight<List<T>>(
+    (tail, head) => List$NonEmpty(head, tail),
+    List$Empty<T>(),
+  );
 
 const isDestroyed = (node: Renderable | null | undefined): boolean =>
   node != null && node.isDestroyed === true;
@@ -43,18 +42,6 @@ const isRendererDestroyed = (): boolean => {
     return false; // can't confirm destroyed, let it fire
   }
 };
-
-function collectFocusables(node: Renderable): Renderable[] {
-  // Skip portal children — they are teleported to their target and will be
-  // found there during traversal. Descending here would double-count them.
-  if (isPortal(node) || isDestroyed(node)) return [];
-  const result: Renderable[] = [];
-  if (node.focusable) result.push(node);
-  for (const child of node.getChildren()) {
-    result.push(...collectFocusables(child));
-  }
-  return result;
-}
 
 function findDescendantById(root: Renderable, id: string): Renderable | null {
   // Skip portal children — they are reachable through their teleport target.
@@ -77,85 +64,86 @@ export function with_renderer<Msg>(
   handler(dispatch, renderer);
 }
 
-// FOCUS EFFECTS ---------------------------------------------------------------
+// Thin externals behind the after_layout `Layout` payload. Both read
+// yoga-direct geometry — the only fresh source at that timing (the cached
+// accessors are last-paint until the render walk) — and return Gleam values;
+// the Layout record itself is assembled in Gleam.
 
-export function subscribe_keyboard<Msg>(
-  handler: (keyEvent: KeyEvent) => Msg,
-  dispatch: Dispatch<Msg>
-): void {
-  const renderer = get_renderer();
-  renderer.keyInput.on("keypress", (keyEvent: KeyEventData) => {
-    // Guard: don't dispatch if renderer is destroyed
-    if (isRendererDestroyed()) return;
-    const ke = new KeyEvent(
-      keyEvent.name ?? "",
-      !!keyEvent.ctrl,
-      !!keyEvent.shift,
-      !!keyEvent.meta,
-      !!keyEvent.option,
-    );
-    dispatch(handler(ke));
-  });
+export function fresh_rect(renderer: CliRenderer, id: string): unknown {
+  const node = findDescendantById(renderer.root, id);
+  if (!node || isDestroyed(node)) return Result$Error(undefined);
+  return Result$Ok(node_rect(node));
 }
+
+export function fresh_extents(renderer: CliRenderer, id: string): unknown {
+  const node = findDescendantById(renderer.root, id);
+  if (!(node instanceof ScrollBoxRenderable) || isDestroyed(node)) {
+    return Result$Error(undefined);
+  }
+  // preclampScrollbars both reads the fresh extents and (idempotently)
+  // re-syncs the scrollbars to them, so scroll writes made in the same
+  // callback clamp against exactly what this report says.
+  const { contentLayout, viewportLayout } = preclampScrollbars(node);
+  return Result$Ok(
+    ScrollExtents$ScrollExtents(
+      Math.round(contentLayout.width),
+      Math.round(contentLayout.height),
+      Math.round(viewportLayout.width),
+      Math.round(viewportLayout.height),
+      Math.round(node.scrollLeft),
+      Math.round(node.scrollTop),
+    ),
+  );
+}
+
+// NODE TOUCHPOINTS --------------------------------------------------------------
+//
+// One-line reads/writes on OpenTUI renderables. All traversal, filtering,
+// ring arithmetic, guard chains, and geometry math live in effect.gleam;
+// these only deliver the platform data.
+
+export const root = (renderer: CliRenderer): Renderable => renderer.root;
+
+export const children = (node: Renderable): List<Renderable> =>
+  listFromArray(node.getChildren());
+
+export const is_portal = (node: Renderable): boolean => isPortal(node);
+
+export const is_destroyed = (node: Renderable): boolean =>
+  node.isDestroyed === true;
+
+export const is_focusable = (node: Renderable): boolean =>
+  node.focusable === true;
+
+export const is_focused = (node: Renderable): boolean => node.focused === true;
+
+export const node_id = (node: Renderable): string => node.id;
+
+export const focus_node = (node: Renderable): void => node.focus?.();
+
+export const to_dynamic = (node: Renderable): unknown => node;
+
+export const find_node = (renderer: CliRenderer, id: string): unknown => {
+  const node = findDescendantById(renderer.root, id);
+  return node ? Result$Ok(node) : Result$Error(undefined);
+};
+
+export const parent_node = (node: Renderable): unknown =>
+  node.parent ? Result$Ok(node.parent) : Result$Error(undefined);
+
+export const same_node = (a: Renderable, b: Renderable): boolean => a === b;
+
+// KEYBOARD EFFECTS --------------------------------------------------------------
 
 export function subscribe_keyboard_raw(
-  callback: (keyEvent: KeyEvent) => void,
+  callback: (keyEvent: unknown) => void,
 ): void {
   const renderer = get_renderer();
-  renderer.keyInput.on("keypress", (keyEvent: KeyEventData) => {
+  renderer.keyInput.on("keypress", (keyEvent: unknown) => {
+    // Guard: don't deliver if renderer is destroyed
     if (isRendererDestroyed()) return;
-    const ke = new KeyEvent(
-      keyEvent.name ?? "",
-      !!keyEvent.ctrl,
-      !!keyEvent.shift,
-      !!keyEvent.meta,
-      !!keyEvent.option,
-    );
-    callback(ke);
+    callback(keyEvent);
   });
-}
-
-export function focus_next(_dispatch: Dispatch<unknown>): void {
-  const renderer = get_renderer();
-  // Filter out destroyed nodes from focusables
-  const focusables = collectFocusables(renderer.root).filter((n) => !isDestroyed(n));
-  if (focusables.length === 0) return;
-  const idx = focusables.findIndex((n) => n.focused);
-  const next = (idx + 1) % focusables.length;
-  const target = focusables[next];
-  if (target && !isDestroyed(target)) target.focus?.();
-}
-
-export function focus_previous(_dispatch: Dispatch<unknown>): void {
-  const renderer = get_renderer();
-  // Filter out destroyed nodes from focusables
-  const focusables = collectFocusables(renderer.root).filter((n) => !isDestroyed(n));
-  if (focusables.length === 0) return;
-  const idx = focusables.findIndex((n) => n.focused);
-  const prev = idx <= 0 ? focusables.length - 1 : idx - 1;
-  const target = focusables[prev];
-  if (target && !isDestroyed(target)) target.focus?.();
-}
-
-export function focus(id: string, _dispatch: Dispatch<unknown>): void {
-  const renderer = get_renderer();
-  const focusables = collectFocusables(renderer.root).filter((n) => !isDestroyed(n));
-  const target = focusables.find((n) => n.id === id);
-  if (target && !isDestroyed(target)) target.focus?.();
-}
-
-export function get_focused_id_raw(): string {
-  const renderer = get_renderer();
-  const focusables = collectFocusables(renderer.root).filter((n) => !isDestroyed(n));
-  const focused = focusables.find((n) => n.focused);
-  return focused?.id ?? "";
-}
-
-export function get_focused_node_raw(): Renderable | null {
-  const renderer = get_renderer();
-  const focusables = collectFocusables(renderer.root).filter((n) => !isDestroyed(n));
-  const focused = focusables.find((n) => n.focused);
-  return focused ?? null;
 }
 
 // TERMINAL CONTROL EFFECTS ----------------------------------------------------
@@ -233,97 +221,121 @@ export function clear_clipboard(_dispatch: Dispatch<unknown>): void {
 
 // SELECTION EFFECTS -----------------------------------------------------------
 
-function buildSelectionRecord(sel: OpenTuiSelection): Selection {
-  const renderer = get_renderer();
-
-  const ranges: SelectionRange[] = [];
-  for (const r of sel.selectedRenderables) {
-    if (!isEditBufferRenderable(r)) continue;
-    if (isDestroyed(r)) continue;
-    const range = r.getSelection();
-    if (!range) continue;
-    ranges.push(new SelectionRange(r.id, range.start, range.end));
-  }
-
-  const focused = renderer.currentFocusedRenderable;
-  const focusedId = focused?.id ?? "";
-
-  return new Selection(
-    toList(ranges),
-    focusedId,
-    [sel.anchor.x, sel.anchor.y],
-    [sel.focus.x, sel.focus.y],
-  );
+export function get_selection_raw(renderer: CliRenderer): unknown {
+  const selection = renderer.getSelection();
+  return selection ? Result$Ok(selection) : Result$Error(undefined);
 }
 
-export function get_selection(): unknown {
-  const renderer = get_renderer();
-  const sel = renderer.getSelection();
-  if (!sel) return Result$Error(undefined);
-  return Result$Ok(buildSelectionRecord(sel));
-}
-
-export function subscribe_selection<Msg>(
-  handler: (sel: Selection) => Msg,
-  dispatch: Dispatch<Msg>,
+export function subscribe_selection_raw(
+  callback: (selection: unknown) => void,
 ): void {
   const renderer = get_renderer();
-  renderer.on("selection", (sel: OpenTuiSelection) => {
-    // Guard: don't dispatch if renderer is destroyed
+  renderer.on("selection", (selection: OpenTuiSelection) => {
+    // Guard: don't deliver if renderer is destroyed
     if (isRendererDestroyed()) return;
-    dispatch(handler(buildSelectionRecord(sel)));
+    callback(selection);
   });
 }
+
+export const selected_renderables = (
+  selection: OpenTuiSelection,
+): List<Renderable> => listFromArray(selection.selectedRenderables);
+
+export const selection_anchor = (
+  selection: OpenTuiSelection,
+): [number, number] => [selection.anchor.x, selection.anchor.y];
+
+export const selection_focus = (
+  selection: OpenTuiSelection,
+): [number, number] => [selection.focus.x, selection.focus.y];
+
+export const node_selection_range = (node: Renderable): unknown => {
+  const range = (node as EditBufferRenderable).getSelection();
+  return range ? Result$Ok([range.start, range.end]) : Result$Error(undefined);
+};
+
+export const current_focused = (renderer: CliRenderer): unknown => {
+  const focused = renderer.currentFocusedRenderable;
+  return focused ? Result$Ok(focused) : Result$Error(undefined);
+};
+
+export const is_edit_buffer = (node: Renderable): boolean =>
+  isEditBufferRenderable(node);
+
+export const is_selectable = (node: Renderable): boolean =>
+  (node as EditBufferRenderable).selectable === true;
+
+// Convert a text offset to viewport-relative visual cursor coords without
+// leaving a trace on the renderable's cursor or scroll. The save/restore
+// exists only to leave OpenTUI-internal mutable state untouched: the cursor
+// restore also restores any auto-scroll setCursorByOffset triggered, and
+// setViewport re-asserts it exactly for internally-scrolled editors (no-op
+// when the content fits its height).
+export function measure_visual_cursor(
+  node: Renderable,
+  offset: number,
+): [number, number] {
+  const editor = node as EditBufferRenderable;
+  const view = editor.editorView;
+  const savedOffset = editor.cursorOffset;
+  const savedViewport = view.getViewport();
+  view.setCursorByOffset(offset);
+  const cursor = view.getVisualCursor();
+  editor.cursorOffset = savedOffset;
+  view.setViewport(
+    savedViewport.offsetX,
+    savedViewport.offsetY,
+    savedViewport.width,
+    savedViewport.height,
+    false,
+  );
+  return [cursor.visualCol, cursor.visualRow];
+}
+
+export const start_selection = (
+  renderer: CliRenderer,
+  node: Renderable,
+  x: number,
+  y: number,
+): void => {
+  renderer.startSelection(node, x, y);
+};
+
+export const update_selection = (
+  renderer: CliRenderer,
+  node: Renderable,
+  x: number,
+  y: number,
+): void => {
+  // finishDragging settles the selection WITHOUT emitting
+  // CliRenderEvents.SELECTION (only the private finishSelection emits), so
+  // nothing loops back to the app.
+  renderer.updateSelection(node, x, y, { finishDragging: true });
+};
 
 export function clear_selection(_dispatch: Dispatch<unknown>): void {
   const renderer = get_renderer();
   renderer.clearSelection();
 }
 
-// Convert a text offset to absolute screen coords without leaving a trace on the
-// renderable's cursor or scroll. Same conversion core uses for keyboard selection
-// (EditBufferRenderable: x + visualCol, y + visualRow). The cursor restore also
-// restores any auto-scroll setCursorByOffset triggered; setViewport re-asserts it
-// exactly for internally-scrolled editors (no-op when the content fits its height).
-function measureOffsetToScreen(
-  r: EditBufferRenderable,
-  offset: number,
-): [number, number] {
-  const view = r.editorView;
-  const savedOffset = r.cursorOffset;
-  const savedVp = view.getViewport();
-  view.setCursorByOffset(offset);
-  const vc = view.getVisualCursor();
-  const x = r.x + vc.visualCol;
-  const y = r.y + vc.visualRow;
-  r.cursorOffset = savedOffset;
-  view.setViewport(savedVp.offsetX, savedVp.offsetY, savedVp.width, savedVp.height, false);
+// Absolute screen position from yoga-direct reads: sum each node's computed
+// left/top plus its live translate up the parent chain — the fresh equivalent
+// of the recursive cached `x`/`y` accessors (parent.x + _x + _translateX).
+// Never the cached accessors themselves: they refresh only during the paint
+// walk, so at after_layout they still hold last frame's positions.
+// translateX/Y (how ScrollBox positions its scrolled content) live outside
+// yoga and update immediately on write, so they are read as-is.
+function yogaAbsolutePosition(r: Renderable): [number, number] {
+  let x = 0;
+  let y = 0;
+  let node: Renderable | null = r;
+  while (node != null) {
+    const layout = node.getLayoutNode().getComputedLayout();
+    x += layout.left + node.translateX;
+    y += layout.top + node.translateY;
+    node = node.parent;
+  }
   return [x, y];
-}
-
-export function set_selection_span(
-  anchor_id: string,
-  anchor_offset: number,
-  focus_id: string,
-  focus_offset: number,
-): void {
-  const renderer = get_renderer();
-  const anchor = findDescendantById(renderer.root, anchor_id);
-  const focus = findDescendantById(renderer.root, focus_id);
-  if (!anchor || !focus) return;
-  if (!isEditBufferRenderable(anchor) || !isEditBufferRenderable(focus)) return;
-  if (isDestroyed(anchor) || isDestroyed(focus)) return;
-  if (!anchor.selectable) return; // startSelection() bails silently otherwise
-
-  const [ax, ay] = measureOffsetToScreen(anchor, anchor_offset);
-  const [fx, fy] = measureOffsetToScreen(focus, focus_offset);
-
-  // startSelection() clears any prior selection first -> calling this every render is
-  // idempotent. updateSelection(...,{ finishDragging: true }) settles the selection WITHOUT
-  // emitting CliRenderEvents.SELECTION (only the private finishSelection emits), so nothing
-  // loops back to the app.
-  renderer.startSelection(anchor, ax, ay);
-  renderer.updateSelection(focus, fx, fy, { finishDragging: true });
 }
 
 // LIFECYCLE EFFECTS -----------------------------------------------------------
@@ -360,77 +372,59 @@ export function on_destroy(callback: () => void): void {
 
 // SCROLLING EFFECTS -----------------------------------------------------------
 
-export function scroll_by(
-  element_id: string,
-  delta_x: number,
-  delta_y: number,
-  _dispatch: Dispatch<unknown>
-): void {
-  const renderer = get_renderer();
-  const node = findDescendantById(renderer.root, element_id);
-  // Guard: skip if node is destroyed
-  if (node instanceof ScrollBoxRenderable && !isDestroyed(node)) {
-    node.scrollBy({ x: delta_x, y: delta_y });
-  }
+// Pre-clamp a scrollbox's scrollbars against this frame's yoga extents
+// (mirroring ScrollBox.recalculateBarProps) so a scroll write clamps against
+// fresh sizes, not last frame's — `ScrollBar.set scrollPosition` clamps to
+// `scrollSize - viewportSize`, values otherwise refreshed only during the
+// paint walk. Sizes must come from yoga directly (getComputedLayout) — never
+// the cached accessors, and never via updateFromLayout (per-frameId
+// memoization would poison the real walk). The walk's own recalc re-sets the
+// same values later this frame — idempotent. Returns the layouts for callers
+// that need them.
+function preclampScrollbars(container: ScrollBoxRenderable) {
+  const contentLayout = container.content.getLayoutNode().getComputedLayout();
+  const viewportLayout = container.viewport.getLayoutNode().getComputedLayout();
+  container.verticalScrollBar.scrollSize = contentLayout.height;
+  container.verticalScrollBar.viewportSize = viewportLayout.height;
+  container.horizontalScrollBar.scrollSize = contentLayout.width;
+  container.horizontalScrollBar.viewportSize = viewportLayout.width;
+  return { contentLayout, viewportLayout };
 }
 
-export function scroll_to(
-  element_id: string,
+export const scroll_content = (node: Renderable): Renderable =>
+  (node as ScrollBoxRenderable).content;
+
+export const node_rect = (node: Renderable): unknown => {
+  const [x, y] = yogaAbsolutePosition(node);
+  const layout = node.getLayoutNode().getComputedLayout();
+  return Rect$Rect(
+    Math.round(x),
+    Math.round(y),
+    Math.round(layout.width),
+    Math.round(layout.height),
+  );
+};
+
+export const set_scroll_position = (
+  node: Renderable,
   x: number,
   y: number,
-  _dispatch: Dispatch<unknown>
-): void {
-  const renderer = get_renderer();
-  const node = findDescendantById(renderer.root, element_id);
-  // Guard: skip if node is destroyed
-  if (node instanceof ScrollBoxRenderable && !isDestroyed(node)) {
-    node.scrollTo({ x, y });
-  }
-}
+): void => {
+  (node as ScrollBoxRenderable).scrollTo({ x, y });
+};
 
-export function scroll_into_view(
-  container_id: string,
-  child_id: string,
-  _dispatch: Dispatch<unknown>
-): void {
-  const renderer = get_renderer();
-  const container = findDescendantById(renderer.root, container_id);
-  const child = findDescendantById(renderer.root, child_id);
+export const scroll_node_by = (
+  node: Renderable,
+  deltaX: number,
+  deltaY: number,
+): void => {
+  (node as ScrollBoxRenderable).scrollBy({ x: deltaX, y: deltaY });
+};
 
-  // Guard: skip if container or child is destroyed
-  if (!(container instanceof ScrollBoxRenderable) || !child || isDestroyed(container) || isDestroyed(child)) {
-    return;
-  }
+export const visual_cursor = (node: Renderable): [number, number] => {
+  const cursor = (node as EditBufferRenderable).visualCursor;
+  return [cursor.visualCol, cursor.visualRow];
+};
 
-  // Get the container's content area (where children are placed)
-  const content = container.content;
-  if (!content) {
-    return;
-  }
-
-  // Find the child's index within the content's children to calculate offset
-  const children = content.getChildren?.() ?? [];
-  let childOffsetY = 0;
-  for (const c of children) {
-    if (c.id === child_id || c === child) {
-      break;
-    }
-    childOffsetY += c.height ?? 1;
-  }
-
-  const childHeight = child.height ?? 1;
-
-  // Get the container's scroll state
-  const scrollTop = container.scrollTop ?? 0;
-  const viewportHeight = container.viewport?.height ?? container.height ?? 10;
-
-  // Check if child is above the visible area
-  if (childOffsetY < scrollTop) {
-    container.scrollTo({ x: 0, y: childOffsetY });
-  }
-  // Check if child is below the visible area
-  else if (childOffsetY + childHeight > scrollTop + viewportHeight) {
-    container.scrollTo({ x: 0, y: childOffsetY + childHeight - viewportHeight });
-  }
-  // Otherwise, child is already visible - don't scroll
-}
+export const wrap_mode = (node: Renderable): string =>
+  String((node as EditBufferRenderable).wrapMode);

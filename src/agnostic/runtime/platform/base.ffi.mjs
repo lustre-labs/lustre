@@ -3,14 +3,13 @@
 import {
   Result$isOk,
   Result$Ok$0,
-  List$isNonEmpty,
 } from "../../../gleam.mjs";
 import { empty_list } from "../../internals/constants.mjs";
 import { diff } from "../../vdom/diff.mjs";
 import * as Cache from "../../vdom/cache.mjs";
 import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
 import { isEqual } from "../../internals/equals.ffi.mjs";
-import { append, iterate } from "../../internals/list.ffi.mjs";
+import { iterate, toList } from "../../internals/list.ffi.mjs";
 import { run as decode } from "../../../../gleam_stdlib/gleam/dynamic/decode.mjs";
 
 //
@@ -45,6 +44,15 @@ export class Runtime {
     this.#update = update;
     this.#platformScheduleRender = platform.schedule_render;
     this.#platformAfterRender = platform.after_render;
+
+    // The platform declares an ordered list of deferred-effect phases. The
+    // pending Map is seeded with the declared names and doubles as the
+    // declared-phase set: tasks tagged with a name that has no entry are
+    // silently dropped.
+    iterate(platform.phases, (phase) => {
+      this.#phases.push(phase);
+      this.#pending.set(phase.name, []);
+    });
 
     this.root.addEventListener("context-request", (event) => {
       // So that we're compatible with other implementations of the proposed
@@ -226,8 +234,8 @@ export class Runtime {
   #shouldQueue = false;
   #queue = [];
 
-  #beforePaint = empty_list;
-  #afterPaint = empty_list;
+  #phases = [];
+  #pending = new Map();
   #renderTimer = null;
 
   #platformScheduleRender;
@@ -265,9 +273,9 @@ export class Runtime {
     // applied before the next render.
     this.#shouldQueue = true;
 
-    // beforePaint and aterPaint effects get run without an preceeding `update`.
-    // To know if we need to schedule another frame, we need to know if the `model`
-    // has been touched while processing effects.
+    // Deferred effects get run without a preceeding `update`. To know if we
+    // need to schedule another frame, we need to know if the `model` has been
+    // touched while processing effects.
     let updateCalledDuringEffects = false;
 
     // We step into this loop to process any synchronous effects and batch any
@@ -279,11 +287,15 @@ export class Runtime {
       // of the `Actions` record define in the effect module.
       iterate(effects.synchronous, (effect) => effect(this.#actions));
 
-      // Both `before_paint` and `after_paint` are lists of effects that should
-      // be deferred until we next perform a render. That means we need to collect
-      // them all up in order and save them for later.
-      this.#beforePaint = append(this.#beforePaint, effects.before_paint);
-      this.#afterPaint = append(this.#afterPaint, effects.after_paint);
+      // `deferred` is a list of phase-tagged tasks that should be deferred
+      // until we next perform a render. Each entry is a Gleam tuple of a phase
+      // name and a task; we batch each task into its phase's pending queue in
+      // order. Tasks tagged with a phase this platform does not declare are
+      // silently dropped — the defined semantics for undeclared phases.
+      iterate(effects.deferred, ([name, task]) => {
+        const pending = this.#pending.get(name);
+        if (pending) pending.push(task);
+      });
 
       // Once we've batched any deferred effects, we check if there are any
       // messages in the queue. If not, we can break out of the loop and continue
@@ -304,8 +316,8 @@ export class Runtime {
     return updateCalledDuringEffects;
   }
 
-  // Async effects (before_paint and after_paint) can trigger without causing a
-  // new model update. Here we process these effects and schedules the next
+  // Async effects (drained phase tasks) can trigger without causing a new
+  // model update. Here we process these effects and schedules the next
   // (synchronous) frame if required.
   #handleAsyncEffects(effects) {
     if (this.#handleEffects(effects)) {
@@ -326,27 +338,19 @@ export class Runtime {
 
     this.#platformAfterRender();
 
-    // We have performed a render, the DOM has been updated but the browser has
-    // not yet been given the opportunity to paint. We queue a microtask to block
-    // the browser from painting until we have processed any effects that need to
-    // be run first.
-    if (List$isNonEmpty(this.#beforePaint)) {
-      const effects = makeEffect(this.#beforePaint);
-      this.#beforePaint = empty_list;
+    // We have performed a render; the platform's target has been updated. Now
+    // invoke the schedulers of phases with pending tasks in the platform's
+    // declaration order — the relative timing between phases is determined by
+    // the schedulers themselves. `splice(0)` empties each buffer before
+    // scheduling so tasks scheduled during a phase callback accumulate for the
+    // next render instead.
+    for (const phase of this.#phases) {
+      const pending = this.#pending.get(phase.name);
+      if (!pending.length) continue;
 
-      // We explicitly queue a microtask instead of synchronously calling the
-      // `handleAsyncEffects` function to allow the runtime to process any
-      // microtasks queued by synchronous effects first such as promise callbacks.
-      queueMicrotask(() => this.#handleAsyncEffects(effects));
-    }
+      const effects = makeEffect(toList(pending.splice(0)));
 
-    // If there are effects to schedule for after the browser has painted, we can
-    // request an animation frame and process them then.
-    if (List$isNonEmpty(this.#afterPaint)) {
-      const effects = makeEffect(this.#afterPaint);
-      this.#afterPaint = empty_list;
-
-      this.#platformScheduleRender(() => this.#handleAsyncEffects(effects));
+      phase.schedule(() => this.#handleAsyncEffects(effects));
     }
   }
 }
@@ -360,8 +364,7 @@ export const send = (runtime, message) => {
 function makeEffect(synchronous) {
   return {
     synchronous,
-    after_paint: empty_list,
-    before_paint: empty_list,
+    deferred: empty_list,
   };
 }
 

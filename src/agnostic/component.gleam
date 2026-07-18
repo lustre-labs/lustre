@@ -39,6 +39,7 @@ import agnostic/attribute.{type Attribute, attribute}
 import agnostic/effect.{type Effect}
 import agnostic/element.{type Element}
 import agnostic/element/html
+import agnostic/platform/dom
 import agnostic/runtime/app.{type App, Config, Option}
 import agnostic/runtime/headless
 import agnostic/vdom/vattr.{Attribute, Event, Property}
@@ -567,8 +568,11 @@ pub fn slot(name: String) -> Attribute(message) {
 /// automatically included in the form submission and available in the form's
 /// `FormData` object.
 ///
+/// > **Note**: this effect only runs on platforms that declare the DOM
+/// > `before_paint` phase; on other platforms it is dropped.
+///
 pub fn set_form_value(value: String) -> Effect(message) {
-  use _, root <- effect.before_paint
+  use _, root <- dom.before_paint
   do_set_form_value(root, value)
 }
 
@@ -581,8 +585,11 @@ fn do_set_form_value(_root: Dynamic, _value: String) -> Nil {
 /// When the form is submitted, this component's value will not be included in
 /// the form data.
 ///
+/// > **Note**: this effect only runs on platforms that declare the DOM
+/// > `before_paint` phase; on other platforms it is dropped.
+///
 pub fn clear_form_value() -> Effect(message) {
-  use _, root <- effect.before_paint
+  use _, root <- dom.before_paint
   do_clear_form_value(root)
 }
 
@@ -611,8 +618,11 @@ fn do_clear_form_value(_root: Dynamic) -> Nil {
 /// }
 /// ```
 ///
+/// > **Note**: this effect only runs on platforms that declare the DOM
+/// > `before_paint` phase; on other platforms it is dropped.
+///
 pub fn set_pseudo_state(value: String) -> Effect(message) {
-  use _, root <- effect.before_paint
+  use _, root <- dom.before_paint
   do_set_pseudo_state(root, value)
 }
 
@@ -623,8 +633,11 @@ fn do_set_pseudo_state(_root: Dynamic, _value: String) -> Nil {
 
 /// Remove a custom state set by [`set_pseudo_state`](#set_pseudo_state).
 ///
+/// > **Note**: this effect only runs on platforms that declare the DOM
+/// > `before_paint` phase; on other platforms it is dropped.
+///
 pub fn remove_pseudo_state(value: String) -> Effect(message) {
-  use _, root <- effect.before_paint
+  use _, root <- dom.before_paint
   do_remove_pseudo_state(root, value)
 }
 

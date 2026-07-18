@@ -32,6 +32,32 @@ pub type Renderer
 pub type ElementFactory =
   fn(Renderer) -> Node
 
+// EFFECT PHASES ---------------------------------------------------------------
+
+/// The phase name tagged by
+/// [`opentui/effect.frame_callbacks`](./opentui/effect.html#frame_callbacks)
+/// and declared by the OpenTUI platform. Public so custom platforms can
+/// declare a [`Phase`](../platform.html#Phase) with this exact name to run
+/// `frame_callbacks` effects.
+///
+pub const frame_callbacks_phase = "frame_callbacks"
+
+/// The phase name tagged by
+/// [`opentui/effect.after_layout`](./opentui/effect.html#after_layout) and
+/// declared by the OpenTUI platform. Public so custom platforms can declare a
+/// [`Phase`](../platform.html#Phase) with this exact name to run
+/// `after_layout` effects.
+///
+pub const after_layout_phase = "after_layout"
+
+/// The phase name tagged by
+/// [`opentui/effect.after_flush`](./opentui/effect.html#after_flush) and
+/// declared by the OpenTUI platform. Public so custom platforms can declare a
+/// [`Phase`](../platform.html#Phase) with this exact name to run `after_flush`
+/// effects.
+///
+pub const after_flush_phase = "after_flush"
+
 /// Configuration for creating an OpenTUI renderer.
 ///
 pub opaque type Config {

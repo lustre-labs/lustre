@@ -5,10 +5,10 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun scripts/generate-gleam-types.ts && tsc --noEmit"
   },
   "devDependencies": {
-    "@opentui/core": "^0.4.1",
+    "@opentui/core": "0.4.1",
     "@types/bun": "^1.3.14",
     "typescript": "^6.0.3"
   }

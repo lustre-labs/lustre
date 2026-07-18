@@ -11,7 +11,14 @@ import {
   Result$isOk,
   Result$Ok$0,
 } from "../../gleam.mjs";
-import { new$ as newPlatform } from "../platform.mjs";
+import { new$ as newPlatform, Phase$Phase } from "../platform.mjs";
+import { toList } from "../internals/list.ffi.mjs";
+// Own compiled module: single source of truth for the DOM phase names. This is
+// an ES-module cycle (dom.mjs imports dom.ffi.mjs for its externals), which is
+// safe because the constants are only referenced lazily — inside phases(),
+// called from dom_strict at platform-construction time — never in a top-level
+// initializer, where they could hit the temporal dead zone.
+import { before_paint_phase, after_paint_phase } from "./dom.mjs";
 
 // Helpers to convert between Gleam Result and nullable.
 const unwrapResult = (result) =>
@@ -117,6 +124,34 @@ export const schedule_render = (callback) => {
 
 export const after_render = () => {};
 
+// EFFECT PHASES ---------------------------------------------------------------
+
+const schedule_before_paint = (callback) => {
+  // Upstream-exact: a microtask after the render pass blocks the browser from
+  // painting until the phase's effects (and any second render they dispatch)
+  // have run. We explicitly queue a microtask instead of synchronously calling
+  // the callback to allow the runtime to process any microtasks queued by
+  // synchronous effects first, such as promise callbacks.
+  queueMicrotask(callback);
+};
+
+const schedule_after_paint = (callback) => {
+  // Upstream-exact: rAF requested from within the render pass; fires after the
+  // browser paints. Deliberately window.requestAnimationFrame directly — not
+  // schedule_render — matching upstream (no cancel handle).
+  window.requestAnimationFrame(callback);
+};
+
+// Declaration order [before_paint, after_paint] + the runtime's in-order
+// scheduler invocation reproduces upstream's drain order: microtasks precede
+// rAF/paint, so before_paint effects always run before after_paint effects
+// from the same render.
+const phases = () =>
+  toList([
+    Phase$Phase(before_paint_phase, schedule_before_paint),
+    Phase$Phase(after_paint_phase, schedule_after_paint),
+  ]);
+
 // PLATFORM CONSTRUCTOR --------------------------------------------------------
 
 // Returns a complete Platform record configured for the browser DOM.
@@ -144,5 +179,6 @@ export const dom_strict = (root) => {
     remove_event_listener,
     schedule_render,
     after_render,
+    phases(),
   );
 };

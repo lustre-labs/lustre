@@ -2,6 +2,7 @@
 
 import { BoxRenderable } from "@opentui/core";
 import type { CliRenderer, Renderable } from "@opentui/core";
+import { scheduleFrameCallback } from "../opentui.ffi.ts";
 
 // TYPES -----------------------------------------------------------------------
 
@@ -102,11 +103,13 @@ export class PortalRenderable extends (BoxRenderable as any) {
     const target = findDescendantById(this.#renderer.root, this.#targetId);
 
     if (!target) {
-      // The target may not exist yet if it's created later in the same render.
-      // Retry once after the current synchronous reconciliation completes.
+      // The target may not exist yet if it's created later in the same
+      // render. Retry once in the frame_callbacks slot — post-reconcile,
+      // same render-loop tick — where a target mounted by this same update
+      // is resolvable.
       if (!this.#pendingRetry) {
         this.#pendingRetry = true;
-        queueMicrotask(() => {
+        scheduleFrameCallback(() => {
           this.#pendingRetry = false;
           if (this.#target) return; // already resolved
           this.#target = this.#resolveTargetImmediate();

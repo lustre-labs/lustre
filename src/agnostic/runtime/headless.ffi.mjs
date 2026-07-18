@@ -281,8 +281,10 @@ export class Runtime {
 export const start = (app, start_arguments) => {
   const config = Component.to_server_component_config(app.config);
 
+  // The constructor's first parameter is the (unused) app name, mirroring the
+  // Erlang runtime's start signature.
   return Result$Ok(
-    new Runtime(app.init, app.update, app.view, config, start_arguments),
+    new Runtime(app.name, app.init, app.update, app.view, config, start_arguments),
   );
 };
 

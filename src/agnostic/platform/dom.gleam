@@ -8,6 +8,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import agnostic/effect.{type Effect}
 import agnostic/platform.{type Platform, type PlatformError}
 import agnostic/serializer.{type Serializer, Serializer}
 import agnostic/vdom/vattr
@@ -15,6 +16,7 @@ import agnostic/vdom/vnode.{
   type Element, Element, Fragment, Map, Memo, RawContainer, RawNode, Text,
 }
 import gleam/bool
+import gleam/dynamic.{type Dynamic}
 import gleam/list
 import gleam/result
 import gleam/set.{type Set}
@@ -43,6 +45,67 @@ pub type DomEvent
 ///
 pub opaque type SerializerConfig {
   SerializerConfig(void_elements: Set(String), self_closing_tags: Set(String))
+}
+
+// EFFECT PHASES ---------------------------------------------------------------
+
+/// The phase name tagged by [`before_paint`](#before_paint) and declared by
+/// the DOM platform. Public so custom platforms can declare a
+/// [`Phase`](../platform.html#Phase) with this exact name to run
+/// `before_paint` effects.
+///
+pub const before_paint_phase = "before_paint"
+
+/// The phase name tagged by [`after_paint`](#after_paint) and declared by the
+/// DOM platform. Public so custom platforms can declare a
+/// [`Phase`](../platform.html#Phase) with this exact name to run `after_paint`
+/// effects.
+///
+pub const after_paint_phase = "after_paint"
+
+// EFFECTS ---------------------------------------------------------------------
+
+/// Schedule a side effect that is guaranteed to run after your `view` function
+/// is called and the DOM has been updated, but **before** the browser has
+/// painted the screen. This effect is useful when you need to read from the DOM
+/// or perform other operations that might affect the layout of your application.
+///
+/// In addition to the `dispatch` function, your callback will also be provided
+/// with root element of your app or component. This is especially useful inside
+/// of components, giving you a reference to the [Shadow Root](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot).
+///
+/// Messages dispatched immediately in this effect will trigger a second re-render
+/// of your application before the browser paints the screen. This let's you read
+/// the state of the DOM, update your model, and then render a second time with
+/// the additional information.
+///
+/// > **Note**: dispatching messages synchronously in this effect can lead to
+/// > degraded performance if not used correctly. In the worst case you can lock
+/// > up the browser and prevent it from painting the screen _at all_.
+///
+/// > **Note**: platforms that do not declare this phase — including server
+/// > components — drop this effect and never run it.
+///
+pub fn before_paint(
+  effect: fn(fn(message) -> Nil, Dynamic) -> Nil,
+) -> Effect(message) {
+  effect.deferred(before_paint_phase, effect)
+}
+
+/// Schedule a side effect that is guaranteed to run after the browser has painted
+/// the screen.
+///
+/// In addition to the `dispatch` function, your callback will also be provided
+/// with root element of your app or component. This is especially useful inside
+/// of components, giving you a reference to the [Shadow Root](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot).
+///
+/// > **Note**: platforms that do not declare this phase — including server
+/// > components — drop this effect and never run it.
+///
+pub fn after_paint(
+  effect: fn(fn(message) -> Nil, Dynamic) -> Nil,
+) -> Effect(message) {
+  effect.deferred(after_paint_phase, effect)
 }
 
 // DOM PLATFORM CONSTRUCTORS ---------------------------------------------------

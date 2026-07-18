@@ -204,6 +204,13 @@ Further documentation can be found at <https://hexdocs.pm/agnostic>.
 ```sh
 gleam test --target erlang      # Run the tests on Erlang
 gleam test --target javascript  # Run the tests on JavaScript
-bunx tsc --noEmit               # Typecheck the TypeScript FFI
+bun run typecheck               # Typecheck the TypeScript FFI
 gleam run -m build              # Regenerate the server-component bundle
 ```
+
+`bun run typecheck` first regenerates `types/gleam.d.ts` — the TypeScript
+declarations for the compiled Gleam modules that the `.ffi.ts` files import —
+and then runs `tsc --noEmit`. The declarations are generated from the build
+output and are not committed, so a fresh clone shows unresolved imports in
+`.ffi.ts` files until the first `gleam build --target javascript && bun run
+typecheck`.
