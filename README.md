@@ -1,3 +1,9 @@
+_A note on AI usage:_ agnostic is a soft work yet has many large refactors
+compared to upstream Lustre. This makes LLMs instrumental in managing rebases
+and expanding functionality. You may utilize LLMs in coding, but must understand
+every change. You will find even frontier models will make absolutely terrible
+changes without proper supervision. All issues and PRs must be written by humans
+
 # agnostic
 
 agnostic is a soft fork of [Lustre](https://github.com/lustre-labs/lustre) that
