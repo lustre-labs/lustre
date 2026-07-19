@@ -878,6 +878,7 @@ var separator_subtree = "\r";
 var separator_element = "	";
 
 // build/dev/javascript/agnostic/agnostic/internals/list.ffi.mjs
+var toList2 = (arr) => arr.reduceRight((xs, x) => List$NonEmpty(x, xs), empty_list);
 var iterate = (list4, callback) => {
   if (Array.isArray(list4)) {
     for (let i = 0; i < list4.length; i++) {
@@ -1549,8 +1550,16 @@ function map6(element3, f) {
 }
 
 // build/dev/javascript/agnostic/agnostic/platform.mjs
+var Phase = class extends CustomType {
+  constructor(name, schedule) {
+    super();
+    this.name = name;
+    this.schedule = schedule;
+  }
+};
+var Phase$Phase = (name, schedule) => new Phase(name, schedule);
 var Platform = class extends CustomType {
-  constructor(target, mount, create_element2, create_text_node2, create_fragment2, create_comment2, insert_before2, move_before2, remove_child3, next_sibling2, get_attribute2, set_attribute2, remove_attribute2, set_property2, set_text2, set_raw_content2, create_raw_node2, add_event_listener2, remove_event_listener2, schedule_render2, after_render2) {
+  constructor(target, mount, create_element2, create_text_node2, create_fragment2, create_comment2, insert_before2, move_before2, remove_child3, next_sibling2, get_attribute2, set_attribute2, remove_attribute2, set_property2, set_text2, set_raw_content2, create_raw_node2, add_event_listener2, remove_event_listener2, schedule_render2, after_render2, phases2) {
     super();
     this.target = target;
     this.mount = mount;
@@ -1573,9 +1582,10 @@ var Platform = class extends CustomType {
     this.remove_event_listener = remove_event_listener2;
     this.schedule_render = schedule_render2;
     this.after_render = after_render2;
+    this.phases = phases2;
   }
 };
-function new$4(target, mount, create_element2, create_text_node2, create_fragment2, create_comment2, insert_before2, move_before2, remove_child3, next_sibling2, get_attribute2, set_attribute2, remove_attribute2, set_property2, set_text2, set_raw_content2, create_raw_node2, add_event_listener2, remove_event_listener2, schedule_render2, after_render2) {
+function new$4(target, mount, create_element2, create_text_node2, create_fragment2, create_comment2, insert_before2, move_before2, remove_child3, next_sibling2, get_attribute2, set_attribute2, remove_attribute2, set_property2, set_text2, set_raw_content2, create_raw_node2, add_event_listener2, remove_event_listener2, schedule_render2, after_render2, phases2) {
   return new Platform(
     target,
     mount,
@@ -1597,7 +1607,8 @@ function new$4(target, mount, create_element2, create_text_node2, create_fragmen
     add_event_listener2,
     remove_event_listener2,
     schedule_render2,
-    after_render2
+    after_render2,
+    phases2
   );
 }
 
@@ -1681,7 +1692,7 @@ var virtualise = (root2) => {
     rootMeta.parent = rootNodeMeta;
     rootNodeMeta.children.push(rootMeta);
     root2.insertBefore(rootMeta.node, root2.firstChild);
-    return fragment2(toList2(children));
+    return fragment2(toList3(children));
   }
   if (children.length === 1) {
     return children[0][1];
@@ -1727,7 +1738,7 @@ var virtualiseElement = (metaParent, node, index2) => {
   }
   const attributes = virtualiseAttributes(node);
   const { children } = virtualiseChildren(meta2, node, node.firstChild);
-  const vnode = isHtmlElement ? element2(tag, attributes, toList2(children)) : namespaced(namespace, tag, attributes, toList2(children));
+  const vnode = isHtmlElement ? element2(tag, attributes, toList3(children)) : namespaced(namespace, tag, attributes, toList3(children));
   return childResult(key, vnode, node.nextSibling);
 };
 var virtualiseChildren = (meta2, domParent, childNode) => {
@@ -1752,7 +1763,7 @@ var virtualiseFragment = (metaParent, domParent, node, index2) => {
   const meta2 = insertMetadataChild(fragment_kind, metaParent, node, index2, key);
   const { children, end } = virtualiseChildren(meta2, domParent, node.nextSibling);
   meta2.endNode = end;
-  const vnode = fragment2(toList2(children));
+  const vnode = fragment2(toList3(children));
   return childResult(key, vnode, end?.nextSibling);
 };
 var virtualiseMap = (metaParent, domParent, node, index2) => {
@@ -1768,7 +1779,7 @@ var virtualiseMemo = (meta2, domParent, node, index2) => {
   const child2 = virtualiseNextChild(meta2, domParent, node, index2);
   if (!child2) return null;
   domParent.removeChild(node);
-  const vnode = memo2(toList2([ref({})]), () => child2.vnode);
+  const vnode = memo2(toList3([ref({})]), () => child2.vnode);
   return childResult(key, vnode, child2.next);
 };
 var virtualiseNextChild = (meta2, domParent, node, index2) => {
@@ -1790,7 +1801,7 @@ var virtualiseAttributes = (node) => {
       attributes.push(attribute2(attr.localName, attr.value));
     }
   }
-  return toList2(attributes);
+  return toList3(attributes);
 };
 var INPUT_ELEMENTS = ["input", "select", "textarea"];
 var virtualiseInputEvents = (tag, node) => {
@@ -1817,7 +1828,7 @@ var parseKey = (data2) => {
 var unescapeKey = (key) => {
   return key.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&#39;/g, "'");
 };
-var toList2 = (arr) => arr.reduceRight((xs, x) => List$NonEmpty(x, xs), empty_list);
+var toList3 = (arr) => arr.reduceRight((xs, x) => List$NonEmpty(x, xs), empty_list);
 
 // build/dev/javascript/agnostic/agnostic/platform/dom.ffi.mjs
 var unwrapResult = (result) => Result$isOk(result) ? Result$Ok$0(result) : null;
@@ -1858,6 +1869,16 @@ var schedule_render = (callback) => {
 };
 var after_render = () => {
 };
+var schedule_before_paint = (callback) => {
+  queueMicrotask(callback);
+};
+var schedule_after_paint = (callback) => {
+  window.requestAnimationFrame(callback);
+};
+var phases = () => toList2([
+  Phase$Phase(before_paint_phase, schedule_before_paint),
+  Phase$Phase(after_paint_phase, schedule_after_paint)
+]);
 var dom_strict = (root2) => {
   return new$4(
     root2,
@@ -1880,9 +1901,14 @@ var dom_strict = (root2) => {
     add_event_listener,
     remove_event_listener,
     schedule_render,
-    after_render
+    after_render,
+    phases()
   );
 };
+
+// build/dev/javascript/agnostic/agnostic/platform/dom.mjs
+var before_paint_phase = "before_paint";
+var after_paint_phase = "after_paint";
 
 // build/dev/javascript/agnostic/agnostic/runtime/transport.mjs
 var mount_kind = 0;
