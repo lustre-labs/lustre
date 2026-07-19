@@ -178,7 +178,7 @@ export class PortalRenderable extends (BoxRenderable as any) {
     for (const child of this.#children) {
       if (!isDestroyed(child)) {
         try {
-          this.#target.remove(child.id!);
+          this.#target.remove(child);
         } catch {
           // child may not be in target
         }
@@ -212,11 +212,11 @@ export class PortalRenderable extends (BoxRenderable as any) {
     }
   }
 
-  remove(childId: string): void {
-    this.#children = this.#children.filter((c) => c.id !== childId);
+  remove(child: TuiNode): void {
+    this.#children = this.#children.filter((c) => c !== child);
     if (this.#target) {
       try {
-        this.#target.remove(childId);
+        this.#target.remove(child);
       } catch {
         // child may not be in target
       }
@@ -236,7 +236,7 @@ export class PortalRenderable extends (BoxRenderable as any) {
     for (const child of children) {
       if (this.#target && !isDestroyed(child)) {
         try {
-          this.#target.remove(child.id!);
+          this.#target.remove(child);
         } catch {
           // ignore
         }

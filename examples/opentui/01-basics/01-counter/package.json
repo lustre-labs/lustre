@@ -3,9 +3,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "gleam build --target javascript && bun build/dev/javascript/counter/counter.mjs"
+    "start": "gleam run"
   },
   "dependencies": {
-    "@opentui/core": "^0.1.77"
+    "@opentui/core": "0.4.5"
   }
 }

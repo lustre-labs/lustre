@@ -21,6 +21,9 @@ import {
   TextAttributes,
 } from "@opentui/core";
 import type { CliRenderer, Renderable } from "@opentui/core";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { PortalRenderable, PORTAL_TAG } from "./opentui/portal.ffi.ts";
 import {
   Result$Ok,
@@ -202,6 +205,60 @@ const NUMERIC_PROPS = new Set([
 // Properties that are floats.
 const FLOAT_PROPS = new Set(["opacity"]);
 
+// OPENTUI VERSION CHECK ---------------------------------------------------------
+
+// This FFI layer binds to @opentui/core contracts that shift between 0.x
+// minors — e.g. 0.4.3 replaced id-keyed child management with identity-based
+// remove(child), which older versions mis-handle silently. The constraint
+// can't live in any manifest: this package ships via Hex, not npm, so there
+// is no peerDependencies to declare against the @opentui/core that downstream
+// projects install themselves. Enforce it here, at platform construction.
+// Exact version: the single @opentui/core release this platform is developed
+// and tested against.
+const SUPPORTED_OPENTUI_VERSION = "0.4.5";
+
+// The version of @opentui/core this process actually resolved, read from its
+// package.json. The exports map doesn't expose "./package.json", so resolve
+// the entry module and walk up to the directory whose package.json carries
+// the package name. Returns null when the version can't be determined.
+function installedOpentuiVersion(): string | null {
+  try {
+    const entry = fileURLToPath(import.meta.resolve("@opentui/core"));
+    let dir = path.dirname(entry);
+    while (true) {
+      const pkgPath = path.join(dir, "package.json");
+      if (fs.existsSync(pkgPath)) {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8")) as {
+          name?: string;
+          version?: string;
+        };
+        if (pkg.name === "@opentui/core" && pkg.version) return pkg.version;
+      }
+      const parent = path.dirname(dir);
+      if (parent === dir) return null;
+      dir = parent;
+    }
+  } catch {
+    return null;
+  }
+}
+
+// Throws on a confirmed mismatched @opentui/core; fails open when the
+// installed version can't be determined. Runs before the renderer is
+// created, so the error lands on a normal terminal, not an alternate screen.
+function assertSupportedOpentui(): void {
+  const version = installedOpentuiVersion();
+  if (version == null) return;
+  if (version !== SUPPORTED_OPENTUI_VERSION) {
+    throw new Error(
+      `Unsupported @opentui/core version ${version}. ` +
+        `The opentui platform requires exactly ${SUPPORTED_OPENTUI_VERSION}. ` +
+        `Pin "@opentui/core": "${SUPPORTED_OPENTUI_VERSION}" in your ` +
+        `package.json and reinstall.`,
+    );
+  }
+}
+
 // RENDERER --------------------------------------------------------------------
 
 function create_renderer(config: RendererConfig): Promise<CliRenderer> {
@@ -235,6 +292,7 @@ export function platform(
   config: RendererConfig,
   callback: (platform: unknown) => void,
 ): void {
+  assertSupportedOpentui();
   create_renderer(config).then((renderer) => {
     _renderer = renderer; // Store for effects
 
@@ -549,12 +607,6 @@ function doInsertBefore(
     return;
   }
 
-  // Create-then-insert: the node's id was set while it was still unparented, so
-  // the set_attribute guard was a no-op. Now that it's being attached, move any
-  // live sibling holding the same id off the key before add()/insertBefore
-  // overwrites the parent's renderableMapById and remove() later detaches wrong.
-  rekeyOccupant(parent, (node as TuiNode).id, node);
-
   if (refNode != null && (parent as TuiNode).insertBefore) {
     if (node === refNode) {
       return;
@@ -607,7 +659,7 @@ const remove_child = (
   }
 
   if (parent && !isDestroyed(parent) && parent.remove) {
-    parent.remove(child.id);
+    parent.remove(child);
   }
   child._parent = undefined;
 
@@ -859,28 +911,6 @@ function coerceValue(prop: string, value: unknown): unknown {
   return value;
 }
 
-// Re-key sentinel ids for the id-collision guard. A monotonic counter keeps them
-// unique; the prefix keeps them clear of app ids and OpenTUI's auto `renderable-N`.
-let rekeyCounter = 0;
-const freshRekeyId = (): string => `__lustre_rekey_${rekeyCounter++}`;
-
-// If a *different* live node already holds `id` under `parent`, move that node off
-// the contested key via its own public id setter. OpenTUI keys `renderableMapById`
-// (read by remove/destroy/insertBefore) on `node.id`; two live siblings sharing an
-// id make `remove(id)` detach the wrong node → use-after-free / missing nodes. The
-// reconciler can transiently assign an id a live sibling still holds — e.g. a
-// create-before-remove rebuild after a memo bust. The sentinel is transient: the
-// displaced node is removed or relabeled later in the same pass. Public API only
-// (the occupant's id setter), so no yoga/internals poking.
-const rekeyOccupant = (parent: unknown, id: unknown, claimant: unknown): void => {
-  const map = (parent as { renderableMapById?: Map<string, Renderable> } | null | undefined)
-    ?.renderableMapById;
-  const occupant = map?.get(String(id));
-  if (occupant && occupant !== (claimant as Renderable) && !isDestroyed(occupant)) {
-    occupant.id = freshRekeyId();
-  }
-};
-
 const get_attribute = (node: TuiNode, name: string): unknown => {
   const prop = ATTR_MAP[name] ?? name;
   // @ts-expect-error dynamic property access — same pattern as OpenTUI React reconciler (utils/index.ts:93)
@@ -916,16 +946,6 @@ const set_attribute = (node: TuiNode, name: string, value: unknown): undefined =
     return undefined;
   }
   const coerced = coerceValue(prop, value ?? "");
-  if (prop === "id") {
-    const parent = (node as unknown as { parent?: { renderableMapById?: Map<string, Renderable> } }).parent;
-    // Re-id of an already-parented node: any collision is live now. (On the
-    // create-then-insert path the node is still unparented here, so this is a
-    // no-op — doInsertBefore runs the same check once the node is attached.)
-    rekeyOccupant(parent, coerced, node);
-    // @ts-expect-error dynamic property access — same pattern as OpenTUI React reconciler (utils/index.ts:93)
-    node[prop] = coerced;
-    return undefined;
-  }
   // @ts-expect-error dynamic property access — same pattern as OpenTUI React reconciler (utils/index.ts:93)
   node[prop] = coerced;
   return undefined;
@@ -1037,7 +1057,7 @@ export function make_set_raw_content(
         for (const child of existingChildren) {
           if (node.remove) {
             try {
-              node.remove(child.id!);
+              node.remove(child);
             } catch {
               // not found
             }

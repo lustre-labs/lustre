@@ -5,3 +5,6 @@ target = "javascript"
 [dependencies]
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
 agnostic = { path = "../../../../" }
+
+[javascript]
+runtime = "bun"
