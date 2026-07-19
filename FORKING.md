@@ -56,7 +56,10 @@ Deliberately **not** renamed (wire/protocol compatibility): the
 `lustre-server-component` custom-element tag and bundle filename, the
 `lustre:fragment` / `lustre:map` / `lustre:memo` virtualisation markers,
 `data-lustre-key`, the `lustre:mount|connect|close` events, and the
-`lustre_test` test-runner module (upstream file, not published).
+`lustre_test` test-runner module (upstream file, not published). Also left
+as-is (internal, upstream-identical): the reconciler's `Symbol("lustre")`
+metadata key and `[lustre]` debug-log prefixes, and the `runtime.lustre`
+property in `test/integration/client_test.ffi.mjs`.
 
 ## Deleted upstream content
 
