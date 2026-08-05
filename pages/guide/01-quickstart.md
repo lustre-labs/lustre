@@ -78,8 +78,11 @@ gleam add --dev lustre_dev_tools
 ```
 
 Lustre's dev tools include a development server that will serve your app and
-rebuild it as you make changes. It's important to make sure you add this package
-as a `--dev` dependency for two reasons:
+rebuild it as you make changes. They also help you add static assets like CSS files,
+images and fonts; and minify and bundle your app for production.
+
+It's important to make sure you add this package as a `--dev` dependency for two
+reasons:
 
 - The dev tools are not needed in production, so we want to be sure we don't
   accidentally ship them.
