@@ -12,7 +12,8 @@ import gleam/dynamic/decode
 // KEYBOARD EVENTS -------------------------------------------------------------
 
 /// Listen for key press events. The handler receives a `KeyEvent` containing
-/// the key name and the state of the shift, ctrl, meta, and option modifiers.
+/// the key name and the state of the shift, ctrl, meta, option, and super
+/// modifiers.
 ///
 pub fn on_key_press(handler: fn(KeyEvent) -> msg) -> Attribute(msg) {
   event.on("keypress", {
@@ -253,7 +254,8 @@ fn decode_key_event() -> decode.Decoder(KeyEvent) {
   use shift <- decode.then(decode.at(["detail", "shift"], decode.bool))
   use meta <- decode.then(decode.at(["detail", "meta"], decode.bool))
   use option <- decode.then(decode.at(["detail", "option"], decode.bool))
-  decode.success(KeyEvent(key:, ctrl:, shift:, meta:, option:))
+  use super <- decode.then(decode.at(["detail", "super"], decode.bool))
+  decode.success(KeyEvent(key:, ctrl:, shift:, meta:, option:, super:))
 }
 
 fn decode_detail_value() -> decode.Decoder(String) {

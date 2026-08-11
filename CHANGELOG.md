@@ -11,6 +11,11 @@ is preserved in [CHANGELOG_UPSTREAM.md](./CHANGELOG_UPSTREAM.md).
 
 ## [Unreleased]
 
+### Added
+
+- [agnostic/platform/opentui] **Breaking:** `KeyEvent` gained a `super` field
+  reporting the super modifier (`cmd` on Macs).
+
 ## [v1.0.0] - 2026-07-19
 
 Based on upstream Lustre v5.7.0.

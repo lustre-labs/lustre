@@ -36,7 +36,14 @@ import gleam/result
 /// A keyboard event from the terminal.
 ///
 pub type KeyEvent {
-  KeyEvent(key: String, ctrl: Bool, shift: Bool, meta: Bool, option: Bool)
+  KeyEvent(
+    key: String,
+    ctrl: Bool,
+    shift: Bool,
+    meta: Bool,
+    option: Bool,
+    super: Bool,
+  )
 }
 
 /// A single EditBuffer's contribution to a multi-paragraph selection.
@@ -355,7 +362,8 @@ fn key_event_decoder() -> Decoder(KeyEvent) {
   use shift <- permissive_field("shift", False, decode.bool)
   use meta <- permissive_field("meta", False, decode.bool)
   use option <- permissive_field("option", False, decode.bool)
-  decode.success(KeyEvent(key:, ctrl:, shift:, meta:, option:))
+  use super <- permissive_field("super", False, decode.bool)
+  decode.success(KeyEvent(key:, ctrl:, shift:, meta:, option:, super:))
 }
 
 @target(javascript)

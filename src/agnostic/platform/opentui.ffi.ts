@@ -89,6 +89,7 @@ interface KeyEventData {
   shift?: boolean;
   meta?: boolean;
   option?: boolean;
+  super?: boolean;
 }
 
 interface RenderableConstructor {
@@ -1236,6 +1237,7 @@ const add_event_listener = (
         shift: !!keyEvent?.shift,
         meta: !!keyEvent?.meta,
         option: !!keyEvent?.option,
+        super: !!keyEvent?.super,
       };
       handler(event);
     };
