@@ -63,7 +63,7 @@
 - [Where next](#where-next)
 - [Support](#support)
 
-## Features {#features}
+## Features
 
 - A **declarative**, functional API for constructing HTML. No templates, no macros,
   just Gleam.
@@ -78,7 +78,7 @@
 
 - **Server-side rendering** for static HTML templating.
 
-## Example {#example}
+## Example
 
 Lustre comes with [over 20 examples](https://hexdocs.pm/lustre/reference/examples.html)!
 Here's what it looks like:
@@ -124,7 +124,7 @@ fn view(model) {
 }
 ```
 
-## Philosophy {#philosophy}
+## Philosophy
 
 Lustre is an _opinionated_ library for building frontend Web applications. Modern
 frontend development is hard and complex. Some of that complexity is necessary, but
@@ -147,7 +147,7 @@ an existing Lustre application, export them as a standalone Web Component, or ru
 them on the server with a minimal runtime for patching the DOM. Lustre calls these
 **universal components** and they're written with Gleam's multiple targets in mind.
 
-## Installation {#installation}
+## Installation
 
 Lustre is published on [Hex](https://hex.pm/packages/lustre)! You can add it to
 your Gleam projects from the command line:
@@ -167,7 +167,7 @@ like to install:
 gleam add --dev lustre_dev_tools
 ```
 
-## Where next {#where-next}
+## Where next
 
 To get up to speed with Lustre, check out the [quickstart guide](https://hexdocs.pm/lustre/guide/01-quickstart.html).
 If you prefer to see some code, the [examples](https://github.com/lustre-labs/lustre/tree/main/examples)
@@ -177,7 +177,7 @@ aspects of the library.
 You can also read through the documentation and API reference on
 [HexDocs](https://hexdocs.pm/lustre).
 
-## Support {#support}
+## Support
 
 Lustre is mostly built by just me, [Hayleigh](https://github.com/hayleigh-dot-dev),
 around two jobs. If you'd like to support my work, you can [sponsor me on GitHub](https://github.com/sponsors/hayleigh-dot-dev).
