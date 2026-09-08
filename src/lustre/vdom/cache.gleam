@@ -74,8 +74,8 @@ pub fn new() -> Cache(message) {
     events: new_events(),
     vdoms: mutable_map.new(),
     old_vdoms: mutable_map.new(),
-    dispatched_paths: constants.empty_list,
-    next_dispatched_paths: constants.empty_list,
+    dispatched_paths: [],
+    next_dispatched_paths: [],
   )
 }
 
@@ -95,7 +95,7 @@ pub fn tick(cache: Cache(message)) -> Cache(message) {
     vdoms: mutable_map.new(),
     old_vdoms: cache.vdoms,
     dispatched_paths: cache.next_dispatched_paths,
-    next_dispatched_paths: constants.empty_list,
+    next_dispatched_paths: [],
   )
 }
 

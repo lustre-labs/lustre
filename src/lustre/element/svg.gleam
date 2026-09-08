@@ -2,7 +2,6 @@
 
 import lustre/attribute.{type Attribute}
 import lustre/element.{type Element, namespaced, text as inline_text}
-import lustre/internals/constants
 
 // CONSTANTS -------------------------------------------------------------------
 
@@ -22,59 +21,59 @@ pub const namespace = "http://www.w3.org/2000/svg"
 
 ///
 pub fn animate(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "animate", attrs, constants.empty_list)
+  namespaced(namespace, "animate", attrs, [])
 }
 
 ///
 pub fn animate_motion(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "animateMotion", attrs, constants.empty_list)
+  namespaced(namespace, "animateMotion", attrs, [])
 }
 
 ///
 pub fn animate_transform(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "animateTransform", attrs, constants.empty_list)
+  namespaced(namespace, "animateTransform", attrs, [])
 }
 
 ///
 pub fn mpath(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "mpath", attrs, constants.empty_list)
+  namespaced(namespace, "mpath", attrs, [])
 }
 
 ///
 pub fn set(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "set", attrs, constants.empty_list)
+  namespaced(namespace, "set", attrs, [])
 }
 
 // SVG ELEMENTS: BASIC SHAPES --------------------------------------------------
 
 ///
 pub fn circle(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "circle", attrs, constants.empty_list)
+  namespaced(namespace, "circle", attrs, [])
 }
 
 ///
 pub fn ellipse(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "ellipse", attrs, constants.empty_list)
+  namespaced(namespace, "ellipse", attrs, [])
 }
 
 ///
 pub fn line(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "line", attrs, constants.empty_list)
+  namespaced(namespace, "line", attrs, [])
 }
 
 ///
 pub fn polygon(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "polygon", attrs, constants.empty_list)
+  namespaced(namespace, "polygon", attrs, [])
 }
 
 ///
 pub fn polyline(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "polyline", attrs, constants.empty_list)
+  namespaced(namespace, "polyline", attrs, [])
 }
 
 ///
 pub fn rect(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "rect", attrs, constants.empty_list)
+  namespaced(namespace, "rect", attrs, [])
 }
 
 // SVG ELEMENTS: CONTAINER ELEMENTS --------------------------------------------
@@ -205,29 +204,29 @@ pub fn filter(
 
 ///
 pub fn fe_blend(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feBlend", attrs, constants.empty_list)
+  namespaced(namespace, "feBlend", attrs, [])
 }
 
 ///
 pub fn fe_color_matrix(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feColorMatrix", attrs, constants.empty_list)
+  namespaced(namespace, "feColorMatrix", attrs, [])
 }
 
 ///
 pub fn fe_component_transfer(
   attrs: List(Attribute(message)),
 ) -> Element(message) {
-  namespaced(namespace, "feComponentTransfer", attrs, constants.empty_list)
+  namespaced(namespace, "feComponentTransfer", attrs, [])
 }
 
 ///
 pub fn fe_composite(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feComposite", attrs, constants.empty_list)
+  namespaced(namespace, "feComposite", attrs, [])
 }
 
 ///
 pub fn fe_convolve_matrix(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feConvolveMatrix", attrs, constants.empty_list)
+  namespaced(namespace, "feConvolveMatrix", attrs, [])
 }
 
 ///
@@ -242,47 +241,47 @@ pub fn fe_diffuse_lighting(
 pub fn fe_displacement_map(
   attrs: List(Attribute(message)),
 ) -> Element(message) {
-  namespaced(namespace, "feDisplacementMap", attrs, constants.empty_list)
+  namespaced(namespace, "feDisplacementMap", attrs, [])
 }
 
 ///
 pub fn fe_drop_shadow(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feDropShadow", attrs, constants.empty_list)
+  namespaced(namespace, "feDropShadow", attrs, [])
 }
 
 ///
 pub fn fe_flood(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feFlood", attrs, constants.empty_list)
+  namespaced(namespace, "feFlood", attrs, [])
 }
 
 ///
 pub fn fe_func_a(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feFuncA", attrs, constants.empty_list)
+  namespaced(namespace, "feFuncA", attrs, [])
 }
 
 ///
 pub fn fe_func_b(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feFuncB", attrs, constants.empty_list)
+  namespaced(namespace, "feFuncB", attrs, [])
 }
 
 ///
 pub fn fe_func_g(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feFuncG", attrs, constants.empty_list)
+  namespaced(namespace, "feFuncG", attrs, [])
 }
 
 ///
 pub fn fe_func_r(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feFuncR", attrs, constants.empty_list)
+  namespaced(namespace, "feFuncR", attrs, [])
 }
 
 ///
 pub fn fe_gaussian_blur(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feGaussianBlur", attrs, constants.empty_list)
+  namespaced(namespace, "feGaussianBlur", attrs, [])
 }
 
 ///
 pub fn fe_image(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feImage", attrs, constants.empty_list)
+  namespaced(namespace, "feImage", attrs, [])
 }
 
 ///
@@ -295,17 +294,17 @@ pub fn fe_merge(
 
 ///
 pub fn fe_merge_node(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feMergeNode", attrs, constants.empty_list)
+  namespaced(namespace, "feMergeNode", attrs, [])
 }
 
 ///
 pub fn fe_morphology(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feMorphology", attrs, constants.empty_list)
+  namespaced(namespace, "feMorphology", attrs, [])
 }
 
 ///
 pub fn fe_offset(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feOffset", attrs, constants.empty_list)
+  namespaced(namespace, "feOffset", attrs, [])
 }
 
 ///
@@ -326,7 +325,7 @@ pub fn fe_tile(
 
 ///
 pub fn fe_turbulence(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feTurbulence", attrs, constants.empty_list)
+  namespaced(namespace, "feTurbulence", attrs, [])
 }
 
 // SVG ELEMENTS: GRADIENT ELEMENTS ---------------------------------------------
@@ -349,19 +348,19 @@ pub fn radial_gradient(
 
 ///
 pub fn stop(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "stop", attrs, constants.empty_list)
+  namespaced(namespace, "stop", attrs, [])
 }
 
 // SVG ELEMENTS: GRAPHICAL ELEMENTS --------------------------------------------
 
 ///
 pub fn image(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "image", attrs, constants.empty_list)
+  namespaced(namespace, "image", attrs, [])
 }
 
 ///
 pub fn path(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "path", attrs, constants.empty_list)
+  namespaced(namespace, "path", attrs, [])
 }
 
 ///
@@ -374,24 +373,24 @@ pub fn text(
 
 ///
 pub fn use_(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "use", attrs, constants.empty_list)
+  namespaced(namespace, "use", attrs, [])
 }
 
 // SVG ELEMENTS: LIGHTING ELEMENTS ---------------------------------------------
 
 ///
 pub fn fe_distant_light(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feDistantLight", attrs, constants.empty_list)
+  namespaced(namespace, "feDistantLight", attrs, [])
 }
 
 ///
 pub fn fe_point_light(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "fePointLight", attrs, constants.empty_list)
+  namespaced(namespace, "fePointLight", attrs, [])
 }
 
 ///
 pub fn fe_spot_light(attrs: List(Attribute(message))) -> Element(message) {
-  namespaced(namespace, "feSpotLight", attrs, constants.empty_list)
+  namespaced(namespace, "feSpotLight", attrs, [])
 }
 
 // SVG ELEMENTS: NEVER-RENDERED ELEMENTS ---------------------------------------

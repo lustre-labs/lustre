@@ -2,9 +2,11 @@ import {
   List$NonEmpty,
   List$NonEmpty$rest,
   List$NonEmpty$first,
+  List$Empty,
 } from "../../gleam.mjs";
-import { empty_list } from "./constants.mjs";
 import { append as $list_append } from "../../../gleam_stdlib/gleam/list.mjs";
+
+const empty_list = List$Empty();
 
 export const toList = (arr) =>
   arr.reduceRight((xs, x) => List$NonEmpty(x, xs), empty_list);

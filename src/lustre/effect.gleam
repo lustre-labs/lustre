@@ -76,11 +76,7 @@ import gleam/erlang/process.{type Selector, type Subject}
 
 // CONSTANTS -------------------------------------------------------------------
 
-const empty: Effect(message) = Effect(
-  constants.empty_list,
-  constants.empty_list,
-  constants.empty_list,
-)
+const empty: Effect(message) = Effect([], [], [])
 
 // TYPES -----------------------------------------------------------------------
 
@@ -256,16 +252,16 @@ pub fn select(_sel) {
 /// Provide a context value to child components in the DOM that this Lustre app
 /// didn't render. This occurs in components with that render one or more `<slot>`
 /// elements in their `view` function.
-/// 
+///
 /// Once a value for the given key has been provided, children can [`subscribe`](#subscribe)
 /// to changes and receive updates any subsequent times `provide` is called with
 /// the same key. This facilitates parent-child communication even in cases where
-/// the parent doesn't own the child element directly. 
-/// 
+/// the parent doesn't own the child element directly.
+///
 /// **Note**: This is one half of the WCCG [Context Protocol](https://github.com/webcomponents-cg/community-protocols/blob/main/proposals/context.md)
 /// and will work in tandem with not just Lustre components but any third-party
 /// Web Component that implements the [`context-request` event](https://github.com/webcomponents-cg/community-protocols/blob/main/proposals/context.md#the-context-request-event).
-/// 
+///
 pub fn provide(key: String, value: Json) -> Effect(message) {
   let task = fn(actions: Actions(message)) { actions.provide(key, value) }
 
@@ -277,19 +273,19 @@ pub fn provide(key: String, value: Json) -> Effect(message) {
 /// that has _already provided_ a context for this key at least once. Once a
 /// subscription is set up, any changes to the context value will trigger additional
 /// messages to be dispatched with the new decoded value.
-/// 
+///
 /// If no parent elements have provided a context for the given key at the time
 /// this effect is run, no subscription is set up even if a parent later provides
 /// a context for this key.
-/// 
+///
 /// **Note**: Pay attention to timing and lifecycle differences between applications
 /// and components. Components that need to subscribe to a context should make sure
 /// this effect is called _after_ the component has [connected](./component.html#on_connect).
-/// 
+///
 /// **Note**: This is one half of the WCCG [Context Protocol](https://github.com/webcomponents-cg/community-protocols/blob/main/proposals/context.md)
 /// and will work in tandem with not just Lustre components and applications, but
 /// any third-party Web Component that acts as a [context provider](https://github.com/webcomponents-cg/community-protocols/blob/main/proposals/context.md#context-providers).
-/// 
+///
 pub fn subscribe(key: String, decoder: Decoder(message)) -> Effect(message) {
   let task = fn(actions: Actions(message)) { actions.subscribe(key, decoder) }
 
@@ -298,7 +294,7 @@ pub fn subscribe(key: String, decoder: Decoder(message)) -> Effect(message) {
 
 /// Unsubscribe from a context [`subscription`](#subscribe) that was previously
 /// set up for this key.
-/// 
+///
 pub fn unsubscribe(key: String) -> Effect(message) {
   let task = fn(actions: Actions(message)) { actions.unsubscribe(key) }
 

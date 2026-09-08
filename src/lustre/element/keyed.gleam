@@ -55,7 +55,6 @@
 import gleam/list
 import lustre/attribute.{type Attribute}
 import lustre/element.{type Element}
-import lustre/internals/constants
 import lustre/internals/mutable_map.{type MutableMap}
 import lustre/vdom/vnode
 
@@ -177,7 +176,7 @@ pub fn dl(
 fn extract_keyed_children(
   children: List(#(String, Element(message))),
 ) -> #(MutableMap(String, Element(message)), List(Element(message))) {
-  do_extract_keyed_children(children, mutable_map.new(), constants.empty_list)
+  do_extract_keyed_children(children, mutable_map.new(), [])
 }
 
 fn do_extract_keyed_children(

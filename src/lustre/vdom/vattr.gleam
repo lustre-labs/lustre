@@ -7,7 +7,6 @@ import gleam/order.{type Order}
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import houdini
-import lustre/internals/constants
 import lustre/internals/json_object_builder
 
 // TYPES -----------------------------------------------------------------------
@@ -100,7 +99,7 @@ pub fn prepare(
       attributes
       // Sort in reverse because `merge` will build the list in reverse anyway.
       |> list.sort(by: fn(a, b) { compare(b, a) })
-      |> merge(constants.empty_list)
+      |> merge([])
   }
 }
 

@@ -52,7 +52,7 @@ pub fn on(name: String, handler: Decoder(message)) -> Attribute(message) {
     handler: decode.map(handler, fn(message) {
       Handler(prevent_default: False, stop_propagation: False, message: message)
     }),
-    include: constants.empty_list,
+    include: [],
     prevent_default: vattr.never,
     stop_propagation: vattr.never,
     debounce: 0,
@@ -81,7 +81,7 @@ pub fn advanced(
   vattr.event(
     name:,
     handler:,
-    include: constants.empty_list,
+    include: [],
     prevent_default: vattr.possible,
     stop_propagation: vattr.possible,
     debounce: 0,

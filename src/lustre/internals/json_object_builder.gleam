@@ -5,13 +5,12 @@
 //// the order of our keys, we can just leave the list like it is.
 
 import gleam/json.{type Json}
-import lustre/internals/constants
 
 pub type Builder =
   List(#(String, Json))
 
 pub fn new() -> Builder {
-  constants.empty_list
+  []
 }
 
 pub fn tagged(kind: Int) -> Builder {

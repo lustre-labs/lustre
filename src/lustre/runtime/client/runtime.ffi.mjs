@@ -1,7 +1,11 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import { Result$isOk, Result$Ok$0, List$isNonEmpty } from "../../../gleam.mjs";
-import { empty_list } from "../../internals/constants.mjs";
+import {
+  Result$isOk,
+  Result$Ok$0,
+  List$Empty,
+  List$isNonEmpty,
+} from "../../../gleam.mjs";
 import { diff } from "../../vdom/diff.mjs";
 import * as Cache from "../../vdom/cache.mjs";
 import { Reconciler } from "../../vdom/reconciler.ffi.mjs";
@@ -11,6 +15,8 @@ import { append, iterate } from "../../internals/list.ffi.mjs";
 import { run as decode } from "../../../../gleam_stdlib/gleam/dynamic/decode.mjs";
 
 //
+
+const empty_list = List$Empty();
 
 export const is_browser = () => !!globalThis.document;
 
@@ -192,7 +198,7 @@ export class Runtime {
           }
         },
         true,
-      )
+      ),
     );
   }
 

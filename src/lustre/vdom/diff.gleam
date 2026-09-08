@@ -51,8 +51,8 @@ pub fn diff(
       //
       node_index: 0,
       patch_index: 0,
-      changes: constants.empty_list,
-      children: constants.empty_list,
+      changes: [],
+      children: [],
       //
       path: path.root,
       cache:,
@@ -352,8 +352,8 @@ fn do_diff(
           removed: 0,
           node_index: 0,
           patch_index: node_index,
-          changes: constants.empty_list,
-          children: constants.empty_list,
+          changes: [],
+          children: [],
           path: path.add(path, node_index, next.key),
           cache:,
           events:,
@@ -401,12 +401,12 @@ fn do_diff(
           events:,
           old: prev.attributes,
           new: next.attributes,
-          added: constants.empty_list,
-          removed: constants.empty_list,
+          added: [],
+          removed: [],
         )
 
       let initial_child_changes = case added_attrs, removed_attrs {
-        [], [] -> constants.empty_list
+        [], [] -> []
         _, _ ->
           constants.singleton_list(patch.update(
             added: added_attrs,
@@ -426,7 +426,7 @@ fn do_diff(
           node_index: 0,
           patch_index: node_index,
           changes: initial_child_changes,
-          children: constants.empty_list,
+          children: [],
           path: child_path,
           cache:,
           events:,
@@ -485,7 +485,7 @@ fn do_diff(
           index: node_index,
           removed: 0,
           changes: constants.singleton_list(patch.replace_text(next.content)),
-          children: constants.empty_list,
+          children: [],
         )
 
       do_diff(
@@ -517,12 +517,12 @@ fn do_diff(
           events:,
           old: prev.attributes,
           new: next.attributes,
-          added: constants.empty_list,
-          removed: constants.empty_list,
+          added: [],
+          removed: [],
         )
 
       let child_changes = case added_attrs, removed_attrs {
-        [], [] -> constants.empty_list
+        [], [] -> []
         _, _ ->
           constants.singleton_list(patch.update(
             added: added_attrs,
@@ -537,10 +537,7 @@ fn do_diff(
 
       let children = case child_changes {
         [] -> children
-        _ -> [
-          patch.new(node_index, 0, child_changes, constants.empty_list),
-          ..children
-        ]
+        _ -> [patch.new(node_index, 0, child_changes, []), ..children]
       }
 
       do_diff(
@@ -577,8 +574,8 @@ fn do_diff(
           removed: 0,
           node_index: 0,
           patch_index: node_index,
-          changes: constants.empty_list,
-          children: constants.empty_list,
+          changes: [],
+          children: [],
           path: path.subtree(child_path),
           cache:,
           events: cache.get_subtree(events, child_key, old_mapper: prev.mapper),

@@ -6,7 +6,6 @@ import gleam/erlang/process.{type Name}
 import gleam/list
 import gleam/option
 import lustre/effect.{type Effect}
-import lustre/internals/constants
 import lustre/runtime/server/runtime
 import lustre/vdom/vnode.{type Element}
 
@@ -51,22 +50,23 @@ pub type Option(message) {
 
 // CONSTANTS -------------------------------------------------------------------
 
-pub const default_config: Config(message) = Config(
-  open_shadow_root: True,
-  adopt_styles: True,
-  delegates_focus: False,
-  attributes: constants.empty_list,
-  properties: constants.empty_list,
-  contexts: constants.empty_list,
-  is_form_associated: False,
-  on_form_autofill: option.None,
-  on_form_reset: option.None,
-  on_form_restore: option.None,
-  on_form_disabled: option.None,
-  on_connect: option.None,
-  on_adopt: option.None,
-  on_disconnect: option.None,
-)
+pub const default_config: Config(message) =
+  Config(
+    open_shadow_root: True,
+    adopt_styles: True,
+    delegates_focus: False,
+    attributes: [],
+    properties: [],
+    contexts: [],
+    is_form_associated: False,
+    on_form_autofill: option.None,
+    on_form_reset: option.None,
+    on_form_restore: option.None,
+    on_form_disabled: option.None,
+    on_connect: option.None,
+    on_adopt: option.None,
+    on_disconnect: option.None,
+  )
 
 // MANIPULATIONS ---------------------------------------------------------------
 

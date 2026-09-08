@@ -3,7 +3,6 @@
 import gleam/json
 import lustre/attribute.{type Attribute}
 import lustre/element.{type Element, element, namespaced}
-import lustre/internals/constants
 
 // HTML ELEMENTS: MAIN ROOT ----------------------------------------------------
 
@@ -23,7 +22,7 @@ pub fn text(content: String) -> Element(message) {
 
 ///
 pub fn base(attrs: List(Attribute(message))) -> Element(message) {
-  element("base", attrs, constants.empty_list)
+  element("base", attrs, [])
 }
 
 ///
@@ -36,12 +35,12 @@ pub fn head(
 
 ///
 pub fn link(attrs: List(Attribute(message))) -> Element(message) {
-  element("link", attrs, constants.empty_list)
+  element("link", attrs, [])
 }
 
 ///
 pub fn meta(attrs: List(Attribute(message))) -> Element(message) {
-  element("meta", attrs, constants.empty_list)
+  element("meta", attrs, [])
 }
 
 ///
@@ -257,7 +256,7 @@ pub fn figure(
 
 ///
 pub fn hr(attrs: List(Attribute(message))) -> Element(message) {
-  element("hr", attrs, constants.empty_list)
+  element("hr", attrs, [])
 }
 
 ///
@@ -352,7 +351,7 @@ pub fn bdo(
 
 ///
 pub fn br(attrs: List(Attribute(message))) -> Element(message) {
-  element("br", attrs, constants.empty_list)
+  element("br", attrs, [])
 }
 
 ///
@@ -533,14 +532,14 @@ pub fn var(
 
 ///
 pub fn wbr(attrs: List(Attribute(message))) -> Element(message) {
-  element("wbr", attrs, constants.empty_list)
+  element("wbr", attrs, [])
 }
 
 // HTML ELEMENTS: IMAGE AND MULTIMEDIA -----------------------------------------
 
 ///
 pub fn area(attrs: List(Attribute(message))) -> Element(message) {
-  element("area", attrs, constants.empty_list)
+  element("area", attrs, [])
 }
 
 ///
@@ -553,7 +552,7 @@ pub fn audio(
 
 ///
 pub fn img(attrs: List(Attribute(message))) -> Element(message) {
-  element("img", attrs, constants.empty_list)
+  element("img", attrs, [])
 }
 
 /// Used with <area> elements to define an image map (a clickable link area).
@@ -567,7 +566,7 @@ pub fn map(
 
 ///
 pub fn track(attrs: List(Attribute(message))) -> Element(message) {
-  element("track", attrs, constants.empty_list)
+  element("track", attrs, [])
 }
 
 ///
@@ -582,17 +581,17 @@ pub fn video(
 
 ///
 pub fn embed(attrs: List(Attribute(message))) -> Element(message) {
-  element("embed", attrs, constants.empty_list)
+  element("embed", attrs, [])
 }
 
 ///
 pub fn iframe(attrs: List(Attribute(message))) -> Element(message) {
-  element("iframe", attrs, constants.empty_list)
+  element("iframe", attrs, [])
 }
 
 ///
 pub fn object(attrs: List(Attribute(message))) -> Element(message) {
-  element("object", attrs, constants.empty_list)
+  element("object", attrs, [])
 }
 
 ///
@@ -605,12 +604,12 @@ pub fn picture(
 
 ///
 pub fn portal(attrs: List(Attribute(message))) -> Element(message) {
-  element("portal", attrs, constants.empty_list)
+  element("portal", attrs, [])
 }
 
 ///
 pub fn source(attrs: List(Attribute(message))) -> Element(message) {
-  element("source", attrs, constants.empty_list)
+  element("source", attrs, [])
 }
 
 // HTML ELEMENTS: SVG AND MATHML -----------------------------------------------
@@ -635,7 +634,7 @@ pub fn svg(
 
 ///
 pub fn canvas(attrs: List(Attribute(message))) -> Element(message) {
-  element("canvas", attrs, constants.empty_list)
+  element("canvas", attrs, [])
 }
 
 ///
@@ -681,7 +680,7 @@ pub fn caption(
 
 ///
 pub fn col(attrs: List(Attribute(message))) -> Element(message) {
-  element.element("col", attrs, constants.empty_list)
+  element.element("col", attrs, [])
 }
 
 ///
@@ -784,7 +783,7 @@ pub fn form(
 
 ///
 pub fn input(attrs: List(Attribute(message))) -> Element(message) {
-  element.element("input", attrs, constants.empty_list)
+  element.element("input", attrs, [])
 }
 
 ///

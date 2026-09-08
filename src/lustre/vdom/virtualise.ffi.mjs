@@ -1,10 +1,9 @@
-import { List$NonEmpty } from "../../gleam.mjs";
+import { List$NonEmpty, List$Empty } from "../../gleam.mjs";
 import { text, none, memo, ref, map } from "../element.mjs";
 import { element, namespaced, fragment } from "../element/keyed.mjs";
 import { attribute } from "../attribute.mjs";
 import { insertMetadataChild } from "./reconciler.ffi.mjs";
 import { element_kind, fragment_kind, text_kind, map_kind } from "./vnode.mjs";
-import { empty_list } from "../internals/constants.mjs";
 import {
   ELEMENT_NODE,
   TEXT_NODE,
@@ -143,7 +142,11 @@ const virtualiseFragment = (metaParent, domParent, node, index) => {
 
   const meta = insertMetadataChild(fragment_kind, metaParent, node, index, key);
 
-  const { children, end } = virtualiseChildren(meta, domParent, node.nextSibling);
+  const { children, end } = virtualiseChildren(
+    meta,
+    domParent,
+    node.nextSibling,
+  );
   meta.endNode = end;
 
   const vnode = fragment(toList(children));
@@ -255,6 +258,8 @@ const unescapeKey = (key) => {
     .replace(/&amp;/g, "&")
     .replace(/&#39;/g, "'");
 };
+
+const empty_list = List$Empty();
 
 const toList = (arr) =>
   arr.reduceRight((xs, x) => List$NonEmpty(x, xs), empty_list);
