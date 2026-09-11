@@ -29,14 +29,108 @@ function escape2(string5) {
 }
 
 // build/dev/javascript/prelude.mjs
+var CustomType = class {
+  withFields(fields) {
+    let properties = Object.keys(this).map(
+      (label) => label in fields ? fields[label] : this[label]
+    );
+    return new this.constructor(...properties);
+  }
+};
+var List = class {
+  static fromArray(array3, tail) {
+    return toList(array3, tail);
+  }
+  [Symbol.iterator]() {
+    return new ListIterator(this);
+  }
+  toArray() {
+    return [...this];
+  }
+  atLeastLength(desired) {
+    let current = this;
+    while (desired-- > 0 && current) current = current.tail;
+    return current !== void 0;
+  }
+  hasLength(desired) {
+    let current = this;
+    while (desired-- > 0 && current) current = current.tail;
+    return desired === -1 && current instanceof Empty;
+  }
+  countLength() {
+    let current = this;
+    let length2 = 0;
+    while (current) {
+      current = current.tail;
+      length2++;
+    }
+    return length2 - 1;
+  }
+};
+function toList(elements, tail) {
+  let t = tail || List$Empty$const;
+  for (let i = elements.length - 1; i >= 0; --i) {
+    t = new NonEmpty(elements[i], t);
+  }
+  return t;
+}
+var ListIterator = class {
+  #current;
+  constructor(current) {
+    this.#current = current;
+  }
+  next() {
+    if (this.#current instanceof Empty) {
+      return { done: true };
+    } else {
+      let { head, tail } = this.#current;
+      this.#current = tail;
+      return { value: head, done: false };
+    }
+  }
+};
+var Empty = class extends List {
+};
+var List$Empty$const = new Empty();
+var NonEmpty = class extends List {
+  constructor(head, tail) {
+    super();
+    this.head = head;
+    this.tail = tail;
+  }
+};
 var List$NonEmpty$first = (value) => value.head;
 var List$NonEmpty$rest = (value) => value.tail;
+
+// build/dev/javascript/gleam_stdlib/gleam/order.mjs
+var Lt = class extends CustomType {
+};
+var Order$Lt$const = new Lt();
+var Eq = class extends CustomType {
+};
+var Order$Eq$const = new Eq();
+var Gt = class extends CustomType {
+};
+var Order$Gt$const = new Gt();
+
+// build/dev/javascript/gleam_stdlib/gleam/option.mjs
+var None = class extends CustomType {
+};
+var Option$None$const = new None();
 
 // build/dev/javascript/gleam_stdlib/dict.mjs
 var bits = 5;
 var mask = (1 << bits) - 1;
 var noElementMarker = Symbol();
 var generationKey = Symbol();
+
+// build/dev/javascript/gleam_stdlib/gleam/list.mjs
+var Ascending = class extends CustomType {
+};
+var Sorting$Ascending$const = new Ascending();
+var Descending = class extends CustomType {
+};
+var Sorting$Descending$const = new Descending();
 
 // build/dev/javascript/gleam_stdlib/gleam_stdlib.mjs
 var unicode_whitespaces = [
@@ -64,6 +158,24 @@ var trim_start_regex = /* @__PURE__ */ new RegExp(
 );
 var trim_end_regex = /* @__PURE__ */ new RegExp(`[${unicode_whitespaces}]*$`);
 
+// build/dev/javascript/gleam_stdlib/gleam/string_tree.mjs
+var All = class extends CustomType {
+};
+var Direction$All$const = new All();
+
+// build/dev/javascript/gleam_stdlib/gleam/string.mjs
+var Leading = class extends CustomType {
+};
+var Direction$Leading$const = new Leading();
+var Trailing = class extends CustomType {
+};
+var Direction$Trailing$const = new Trailing();
+
+// build/dev/javascript/gleam_json/gleam/json.mjs
+var UnexpectedEndOfInput = class extends CustomType {
+};
+var DecodeError$UnexpectedEndOfInput$const = new UnexpectedEndOfInput();
+
 // build/dev/javascript/lustre/lustre/vdom/vattr.mjs
 var attribute_kind = 0;
 var property_kind = 1;
@@ -89,6 +201,9 @@ var replace_kind = 5;
 var insert_kind = 6;
 
 // build/dev/javascript/lustre/lustre/vdom/path.mjs
+var Root = class extends CustomType {
+};
+var Path$Root$const = new Root();
 var separator_subtree = "\r";
 var separator_element = "	";
 
@@ -482,7 +597,7 @@ var Reconciler = class {
     } = attribute3;
     if (prevent.kind === always_kind) event2.preventDefault();
     if (stop.kind === always_kind) event2.stopPropagation();
-    if (type === "submit") {
+    if (event2 instanceof window.SubmitEvent) {
       event2.detail ??= {};
       event2.detail.formData = [
         ...new FormData(event2.target, event2.submitter).entries()
@@ -563,6 +678,23 @@ var SYNCED_ATTRIBUTES = {
   }
 };
 
+// build/dev/javascript/lustre/lustre/element.mjs
+var Html = class extends CustomType {
+};
+var DocumentType$Html$const = new Html();
+var HeadOnly = class extends CustomType {
+};
+var DocumentType$HeadOnly$const = new HeadOnly();
+var BodyOnly = class extends CustomType {
+};
+var DocumentType$BodyOnly$const = new BodyOnly();
+var HeadAndBody = class extends CustomType {
+};
+var DocumentType$HeadAndBody$const = new HeadAndBody();
+var Other = class extends CustomType {
+};
+var DocumentType$Other$const = new Other();
+
 // build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs
 var copiedStyleSheets = /* @__PURE__ */ new WeakMap();
 async function adoptStylesheets(shadowRoot) {
@@ -583,7 +715,7 @@ async function adoptStylesheets(shadowRoot) {
     return [];
   }
   shadowRoot.adoptedStyleSheets = shadowRoot.host.getRootNode().adoptedStyleSheets;
-  const pending = [];
+  const adoptedStyleNodes = [];
   for (const sheet of globalThis.document.styleSheets) {
     try {
       shadowRoot.adoptedStyleSheets.push(sheet);
@@ -601,11 +733,11 @@ async function adoptStylesheets(shadowRoot) {
       } catch {
         const node = sheet.ownerNode.cloneNode();
         shadowRoot.prepend(node);
-        pending.push(node);
+        adoptedStyleNodes.push(node);
       }
     }
   }
-  return pending;
+  return adoptedStyleNodes;
 }
 var ContextRequestEvent = class extends Event {
   constructor(context, callback, subscribe) {
@@ -943,9 +1075,9 @@ var ServerComponent = class extends HTMLElement {
   }
   //
   async #adoptStyleSheets() {
+    this.shadowRoot.adoptedStyleSheets = [];
     while (this.#adoptedStyleNodes.length) {
       this.#adoptedStyleNodes.pop().remove();
-      this.#shadowRoot.firstChild.remove();
     }
     this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);
   }
