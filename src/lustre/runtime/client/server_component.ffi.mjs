@@ -417,9 +417,10 @@ export class ServerComponent extends HTMLElement {
   //
 
   async #adoptStyleSheets() {
+    this.shadowRoot.adoptedStyleSheets = [];
+
     while (this.#adoptedStyleNodes.length) {
       this.#adoptedStyleNodes.pop().remove();
-      this.#shadowRoot.firstChild.remove();
     }
 
     this.#adoptedStyleNodes = await adoptStylesheets(this.#shadowRoot);

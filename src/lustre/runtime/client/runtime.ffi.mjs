@@ -192,7 +192,7 @@ export class Runtime {
           }
         },
         true,
-      )
+      ),
     );
   }
 
@@ -386,7 +386,7 @@ export async function adoptStylesheets(shadowRoot) {
   shadowRoot.adoptedStyleSheets =
     shadowRoot.host.getRootNode().adoptedStyleSheets;
 
-  const pending = [];
+  const adoptedStyleNodes = [];
 
   for (const sheet of globalThis.document.styleSheets) {
     try {
@@ -407,12 +407,12 @@ export async function adoptStylesheets(shadowRoot) {
         const node = sheet.ownerNode.cloneNode();
 
         shadowRoot.prepend(node);
-        pending.push(node);
+        adoptedStyleNodes.push(node);
       }
     }
   }
 
-  return pending;
+  return adoptedStyleNodes;
 }
 
 export class ContextRequestEvent extends Event {

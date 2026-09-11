@@ -13,8 +13,10 @@ request to fix it.
 
 ### Changed
 
+- [lustre/component] Fixed a bug causing an exception when adopted style nodes were removed.
 - [lustre/runtime] Fixed a bug where the special-cased handling of "submit" events would apply to unrelated events of the same name dispatched by Web Components.
 - [lustre/runtime] Remove an invalid `@__PURE__` annotation causing warnings in some bundlers and build tools.
+- [lustre/server_component] Fixed a bug causing an exception when adopted style nodes were removed.
 
 ## [v5.7.1] - 2026-14-07
 

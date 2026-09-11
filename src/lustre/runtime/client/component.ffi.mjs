@@ -246,9 +246,10 @@ export const make_component = ({ init, update, view, config }, name) => {
     }
 
     async #adoptStyleSheets() {
+      this.internals.shadowRoot.adoptedStyleSheets = [];
+
       while (this.#adoptedStyleNodes.length) {
         this.#adoptedStyleNodes.pop().remove();
-        this.shadowRoot.firstChild.remove();
       }
 
       this.#adoptedStyleNodes = await adoptStylesheets(
