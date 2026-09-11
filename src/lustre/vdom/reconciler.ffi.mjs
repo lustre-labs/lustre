@@ -591,7 +591,7 @@ export class Reconciler {
     if (prevent.kind === always_kind) event.preventDefault();
     if (stop.kind === always_kind) event.stopPropagation();
 
-    if (type === "submit") {
+    if (event instanceof window.SubmitEvent) {
       event.detail ??= {};
       event.detail.formData = [
         ...new FormData(event.target, event.submitter).entries(),

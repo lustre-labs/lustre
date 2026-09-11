@@ -9,6 +9,12 @@ Changelogs can change! If you spot something is wrong or missing, please conside
 [opening an issue](https://github.com/lustre-labs/lustre/issues/new) or a pull
 request to fix it.
 
+## Unreleased
+
+### Changed
+
+- [lustre/runtime] Fixed a bug where the special-cased handling of "submit" events would apply to unrelated events of the same name dispatched by Web Components.
+
 ## [v5.7.1] - 2026-14-07
 
 ### Changed
