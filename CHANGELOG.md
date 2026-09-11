@@ -18,7 +18,7 @@ request to fix it.
 - [lustre/runtime] Remove an invalid `@__PURE__` annotation causing warnings in some bundlers and build tools.
 - [lustre/server_component] Fixed a bug causing an exception when adopted style nodes were removed.
 
-## [v5.7.1] - 2026-14-07
+## [v5.7.1] - 2026-07-14
 
 ### Changed
 
