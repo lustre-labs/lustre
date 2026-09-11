@@ -5,4 +5,4 @@ export const COMMENT_NODE = 8;
 export const DOCUMENT_FRAGMENT_NODE = 11;
 
 export const SUPPORTS_MOVE_BEFORE =
-  /* @__PURE__ */ !!globalThis.HTMLElement?.prototype?.moveBefore;
+  !!globalThis.HTMLElement?.prototype?.moveBefore;
