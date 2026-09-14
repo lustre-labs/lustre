@@ -28,7 +28,7 @@ import {
 
 export class ServerComponent extends HTMLElement {
   static get observedAttributes() {
-    return ["route", "method", "csrf-token"];
+    return ["route", "method", "csrf-token", "provides"];
   }
 
   #shadowRoot;
@@ -43,6 +43,7 @@ export class ServerComponent extends HTMLElement {
   #connected = false;
   #changedAttributesQueue = [];
   #contexts = new Map();
+  #provided = new Set();
   #contextSubscriptions = new Map();
 
   #observer = new MutationObserver((mutations) => {
@@ -80,6 +81,30 @@ export class ServerComponent extends HTMLElement {
     this.internals = this.attachInternals();
     this.#observer.observe(this, {
       attributes: true,
+    });
+
+    // Listen for context requests from child elements
+    this.addEventListener("context-request", (event) => {
+      // Verify this is a valid context request event
+      if (!event.context || !event.callback) return;
+      if (!this.#contexts.has(event.context)) return;
+
+      event.stopImmediatePropagation();
+
+      const context = this.#contexts.get(event.context);
+
+      if (event.subscribe) {
+        const unsubscribe = () => {
+          context.subscribers = context.subscribers.filter(
+            (subscriber) => subscriber !== event.callback,
+          );
+        };
+
+        context.subscribers.push([event.callback, unsubscribe]);
+        event.callback(context.value, unsubscribe);
+      } else {
+        event.callback(context.value);
+      }
     });
   }
 
@@ -132,6 +157,37 @@ export class ServerComponent extends HTMLElement {
         if (this.#connected) {
           this.#connect();
         }
+
+        return;
+      }
+
+      case prev !== next && "provides": {
+        const prevProvided = this.#provided;
+        const nextProvided = new Set(next.split(" "));
+
+        for (const name of prevProvided) {
+          const context = this.#contexts.get(name);
+
+          // If there are no subscribers for this (old) context and it's not
+          // still provided in the incoming set, then it's safe to remove it
+          // from the context map.
+          if (context?.subscribers.length == 0 && !nextProvided.has(name)) {
+            this.#contexts.delete(name);
+          }
+        }
+
+        for (const name of nextProvided) {
+          // If the name is new we need to provide it in the context map with a
+          // default `null` value. When the server component connects in the
+          // future
+          if (!this.#contexts.has(name)) {
+            this.provide(name, null);
+          }
+        }
+
+        this.#provided = nextProvided;
+
+        return;
       }
     }
   }
@@ -216,30 +272,6 @@ export class ServerComponent extends HTMLElement {
         if (data.will_adopt_styles) {
           await this.#adoptStyleSheets();
         }
-
-        // Listen for context requests from child elements
-        this.#shadowRoot.addEventListener("context-request", (event) => {
-          // Verify this is a valid context request event
-          if (!event.context || !event.callback) return;
-          if (!this.#contexts.has(event.context)) return;
-
-          event.stopImmediatePropagation();
-
-          const context = this.#contexts.get(event.context);
-
-          if (event.subscribe) {
-            const unsubscribe = () => {
-              context.subscribers = context.subscribers.filter(
-                (subscriber) => subscriber !== event.callback,
-              );
-            };
-
-            context.subscribers.push([event.callback, unsubscribe]);
-            event.callback(context.value, unsubscribe);
-          } else {
-            event.callback(context.value);
-          }
-        });
 
         this.#reconciler.mount(data.vdom);
 
@@ -382,6 +414,16 @@ export class ServerComponent extends HTMLElement {
 
     const onClose = () => {
       this.#connected = false;
+
+      for (const [key, { subscribers }] of this.#contexts) {
+        // If the server component disconnects, we can remove any contexts from
+        // the map that do not currently have any subscribers and have not been
+        // declared in the `provides` attribute.
+        if (!this.#provided.has(key) && subscribers?.length === 0) {
+          this.#contexts.delete(key);
+        }
+      }
+
       this.dispatchEvent(
         new CustomEvent("lustre:close", {
           detail: {

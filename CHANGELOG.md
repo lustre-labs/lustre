@@ -11,6 +11,10 @@ request to fix it.
 
 ## Unreleased
 
+## Added
+
+- [lustre/server_component] Add the `provides` attribute to declare any contexts to provide before/while the server component is disconnected.
+
 ### Changed
 
 - [lustre/component] Fixed a bug causing an exception when adopted style nodes were removed.
