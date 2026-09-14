@@ -772,7 +772,7 @@ var context_provided_kind = 4;
 // src/lustre/runtime/client/server_component.ffi.mjs
 var ServerComponent = class extends HTMLElement {
   static get observedAttributes() {
-    return ["route", "method", "csrf-token"];
+    return ["route", "method", "csrf-token", "provides"];
   }
   #shadowRoot;
   #method = "ws";
@@ -786,6 +786,7 @@ var ServerComponent = class extends HTMLElement {
   #connected = false;
   #changedAttributesQueue = [];
   #contexts = /* @__PURE__ */ new Map();
+  #provided = /* @__PURE__ */ new Set();
   #contextSubscriptions = /* @__PURE__ */ new Map();
   #observer = new MutationObserver((mutations) => {
     const attributes = [];
@@ -817,6 +818,23 @@ var ServerComponent = class extends HTMLElement {
     this.internals = this.attachInternals();
     this.#observer.observe(this, {
       attributes: true
+    });
+    this.addEventListener("context-request", (event2) => {
+      if (!event2.context || !event2.callback) return;
+      if (!this.#contexts.has(event2.context)) return;
+      event2.stopImmediatePropagation();
+      const context = this.#contexts.get(event2.context);
+      if (event2.subscribe) {
+        const unsubscribe = () => {
+          context.subscribers = context.subscribers.filter(
+            (subscriber) => subscriber !== event2.callback
+          );
+        };
+        context.subscribers.push([event2.callback, unsubscribe]);
+        event2.callback(context.value, unsubscribe);
+      } else {
+        event2.callback(context.value);
+      }
     });
   }
   connectedCallback() {
@@ -857,6 +875,24 @@ var ServerComponent = class extends HTMLElement {
         if (this.#connected) {
           this.#connect();
         }
+        return;
+      }
+      case (prev !== next && "provides"): {
+        const prevProvided = this.#provided;
+        const nextProvided = new Set(next.split(" "));
+        for (const name2 of prevProvided) {
+          const context = this.#contexts.get(name2);
+          if (context?.subscribers.length == 0 && !nextProvided.has(name2)) {
+            this.#contexts.delete(name2);
+          }
+        }
+        for (const name2 of nextProvided) {
+          if (!this.#contexts.has(name2)) {
+            this.provide(name2, null);
+          }
+        }
+        this.#provided = nextProvided;
+        return;
       }
     }
   }
@@ -927,23 +963,6 @@ var ServerComponent = class extends HTMLElement {
         if (data.will_adopt_styles) {
           await this.#adoptStyleSheets();
         }
-        this.#shadowRoot.addEventListener("context-request", (event2) => {
-          if (!event2.context || !event2.callback) return;
-          if (!this.#contexts.has(event2.context)) return;
-          event2.stopImmediatePropagation();
-          const context = this.#contexts.get(event2.context);
-          if (event2.subscribe) {
-            const unsubscribe = () => {
-              context.subscribers = context.subscribers.filter(
-                (subscriber) => subscriber !== event2.callback
-              );
-            };
-            context.subscribers.push([event2.callback, unsubscribe]);
-            event2.callback(context.value, unsubscribe);
-          } else {
-            event2.callback(context.value);
-          }
-        });
         this.#reconciler.mount(data.vdom);
         this.dispatchEvent(new CustomEvent("lustre:mount"));
         break;
@@ -1046,6 +1065,11 @@ var ServerComponent = class extends HTMLElement {
     };
     const onClose = () => {
       this.#connected = false;
+      for (const [key, { subscribers }] of this.#contexts) {
+        if (!this.#provided.has(key) && subscribers?.length === 0) {
+          this.#contexts.delete(key);
+        }
+      }
       this.dispatchEvent(
         new CustomEvent("lustre:close", {
           detail: {
