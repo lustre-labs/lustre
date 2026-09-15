@@ -137,6 +137,11 @@ pub fn fragment(
 
 // ELEMENTS --------------------------------------------------------------------
 
+/// A _keyed_ variant of `lustre/element/html.ul`. Represents a list of items
+/// where the order is not meaningful, such that rearranging the items would not
+/// materially change the document's meaning.
+///
+/// <https://html.spec.whatwg.org/multipage/grouping-content.html#the-ul-element>
 pub fn ul(
   attributes: List(Attribute(message)),
   children: List(#(String, Element(message))),
@@ -144,6 +149,11 @@ pub fn ul(
   element("ul", attributes, children)
 }
 
+/// A _keyed_ variant of `lustre/element/html.ol`. Represents a list of items
+/// where the order is meaningful, such that rearranging the items would change
+/// the meaning of the document.
+///
+/// <https://html.spec.whatwg.org/multipage/grouping-content.html#the-ol-element>
 pub fn ol(
   attributes: List(Attribute(message)),
   children: List(#(String, Element(message))),
@@ -151,6 +161,10 @@ pub fn ol(
   element("ol", attributes, children)
 }
 
+/// A _keyed_ variant of `lustre/element/html.div`. Has no special meaning of
+/// its own; it simply represents its children.
+///
+/// <https://html.spec.whatwg.org/multipage/grouping-content.html#the-div-element>
 pub fn div(
   attributes: List(Attribute(message)),
   children: List(#(String, Element(message))),
@@ -158,6 +172,10 @@ pub fn div(
   element("div", attributes, children)
 }
 
+/// A _keyed_ variant of `lustre/element/html.tbody`. Represents a block of rows
+/// that make up the body of data for its parent table element.
+///
+/// <https://html.spec.whatwg.org/multipage/tables.html#the-tbody-element>
 pub fn tbody(
   attributes: List(Attribute(message)),
   children: List(#(String, Element(message))),
@@ -165,6 +183,11 @@ pub fn tbody(
   element("tbody", attributes, children)
 }
 
+/// A _keyed_ variant of `lustre/element/html.dl`. Represents an association
+/// list of zero or more name-value groups, each consisting of terms and their
+/// descriptions.
+///
+/// <https://html.spec.whatwg.org/multipage/grouping-content.html#the-dl-element>
 pub fn dl(
   attributes: List(Attribute(message)),
   children: List(#(String, Element(message))),
