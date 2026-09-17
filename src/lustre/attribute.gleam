@@ -1075,7 +1075,7 @@ pub fn maxlength(length: Int) -> Attribute(message) {
 
 /// Minimum value
 ///
-/// The following input types support the `"max"` attribute:
+/// The following input types support the `"min"` attribute:
 ///
 /// - `"date"`
 /// - `"datetime-local"`
