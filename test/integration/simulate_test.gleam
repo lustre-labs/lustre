@@ -60,6 +60,51 @@ pub fn simulate_events_and_messages_test() {
   |> birdie.snap("[simulate] Events and messages")
 }
 
+pub fn simulate_history_stepper_test() {
+  use <- lustre_test.test_filter("simulate_history_stepper_test")
+
+  let latest =
+    simulate.simple(init:, update:, view:)
+    |> simulate.start(0)
+    |> simulate.message(ParentResetCount(10))
+    |> simulate.message(UserClickedIncrement)
+
+  assert simulate.model(latest) == 11
+
+  let previous = simulate.step_back(latest)
+  assert simulate.model(previous) == 10
+  assert simulate.history(previous) == simulate.history(latest)
+
+  let initial = simulate.step_back(previous)
+  assert simulate.model(initial) == 0
+  assert simulate.history(initial) == simulate.history(latest)
+
+  let restored = simulate.step_forward(previous)
+  assert simulate.model(restored) == simulate.model(latest)
+}
+
+pub fn simulate_history_branching_test() {
+  use <- lustre_test.test_filter("simulate_history_branching_test")
+  let initial =
+    simulate.simple(init:, update:, view:)
+    |> simulate.start(0)
+    |> simulate.message(ParentResetCount(10))
+    |> simulate.message(UserClickedIncrement)
+
+  let branched =
+    initial
+    |> simulate.step_back
+    |> simulate.message(ParentResetCount(20))
+
+  assert simulate.model(branched) == 20
+
+  assert simulate.history(branched)
+    == [
+      simulate.Dispatch(ParentResetCount(10)),
+      simulate.Dispatch(ParentResetCount(20)),
+    ]
+}
+
 // ELEMENT.MAP -----------------------------------------------------------------
 
 pub fn simulate_event_on_directly_mapped_element_test() {

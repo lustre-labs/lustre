@@ -1,6 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
-import gleam/dynamic.{type Dynamic}
+import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/json.{type Json}
 import gleam/list
@@ -47,9 +47,16 @@ pub opaque type Simulation(model, message) {
   Simulation(
     update: fn(model, message) -> #(model, Effect(message)),
     view: fn(model) -> Element(message),
-    history: List(Event(message)),
-    model: model,
+    history: History(model, message),
     html: Element(message),
+  )
+}
+
+type History(model, message) {
+  History(
+    model: model,
+    prev: List(#(Event(message), model)),
+    future: List(#(Event(message), model)),
   )
 }
 
@@ -121,8 +128,17 @@ pub fn start(
 ) -> Simulation(model, message) {
   let #(model, _) = app.init(args)
   let html = app.view(model)
+  let history = History(model:, prev: [], future: [])
 
-  Simulation(update: app.update, view: app.view, history: [], model:, html:)
+  Simulation(update: app.update, view: app.view, history:, html:)
+}
+
+fn push_event(
+  history: History(model, message),
+  model: model,
+  event: Event(message),
+) -> History(model, message) {
+  History(model:, prev: [#(event, history.model), ..history.prev], future: [])
 }
 
 /// Simulate a message sent directly to the runtime. This is often used to mimic
@@ -161,11 +177,12 @@ pub fn message(
   simulation: Simulation(model, message),
   message: message,
 ) -> Simulation(model, message) {
-  let #(model, _) = simulation.update(simulation.model, message)
+  let #(model, _) = simulation.update(simulation.history.model, message)
   let html = simulation.view(model)
-  let history = [Dispatch(message: message), ..simulation.history]
+  let history =
+    push_event(simulation.history, model, Dispatch(message: message))
 
-  Simulation(..simulation, history:, model:, html:)
+  Simulation(..simulation, history:, html:)
 }
 
 /// Simulate a DOM event on the first element that matches the given query. The
@@ -213,7 +230,7 @@ pub fn event(
         data
           |> json.to_string
           |> json.parse(decode.dynamic)
-          |> result.unwrap(erase(Nil)),
+          |> result.unwrap(dynamic.properties([])),
       )),
       problem(
         simulation,
@@ -225,14 +242,17 @@ pub fn event(
       ),
     ))
 
-    let #(model, _) = simulation.update(simulation.model, handler.message)
+    let #(model, _) =
+      simulation.update(simulation.history.model, handler.message)
     let html = simulation.view(model)
-    let history = [
-      Event(target: query, name: event, data:),
-      ..simulation.history
-    ]
+    let history =
+      push_event(
+        simulation.history,
+        model,
+        Event(target: query, name: event, data:),
+      )
 
-    Ok(Simulation(..simulation, history:, model:, html:))
+    Ok(Simulation(..simulation, history:, html:))
   }
 
   case result {
@@ -328,9 +348,74 @@ pub fn problem(
   name name: String,
   message message: String,
 ) -> Simulation(model, message) {
-  let history = [Problem(name:, message:), ..simulation.history]
+  let history =
+    push_event(
+      simulation.history,
+      simulation.history.model,
+      Problem(name:, message:),
+    )
 
   Simulation(..simulation, history:)
+}
+
+// TIME-TRAVEL -----------------------------------------------------------------
+
+///
+/// 
+pub fn restart(
+  simulation: Simulation(model, message),
+) -> Simulation(model, message) {
+  case step_back(simulation) {
+    Simulation(history: History(prev: [], ..), ..) as simulation -> simulation
+    simulation -> restart(simulation)
+  }
+}
+
+///
+/// 
+pub fn jump(
+  simulation: Simulation(model, message),
+  steps: Int,
+) -> Simulation(model, message) {
+  case steps {
+    s if s > 0 -> step_forward(simulation) |> jump(s - 1)
+    s if s < 0 -> step_back(simulation) |> jump(s + 1)
+    _ -> simulation
+  }
+}
+
+///
+/// 
+pub fn step_back(
+  simulation: Simulation(model, message),
+) -> Simulation(model, message) {
+  case simulation.history {
+    History(prev: [], ..) -> simulation
+    History(model, [#(event, previous), ..prev], future) -> {
+      let history =
+        History(model: previous, prev:, future: [#(event, model), ..future])
+      let html = simulation.view(previous)
+
+      Simulation(..simulation, history:, html:)
+    }
+  }
+}
+
+/// 
+/// 
+pub fn step_forward(
+  simulation: Simulation(model, message),
+) -> Simulation(model, message) {
+  case simulation.history {
+    History(future: [], ..) -> simulation
+    History(model, prev, [#(event, next), ..future]) -> {
+      let history =
+        History(model: next, prev: [#(event, model), ..prev], future:)
+      let html = simulation.view(next)
+
+      Simulation(..simulation, history:, html:)
+    }
+  }
 }
 
 // INTROSPECTION ---------------------------------------------------------------
@@ -339,7 +424,7 @@ pub fn problem(
 /// to debug why a simulation is not producing the view you expect.
 ///
 pub fn model(simulation: Simulation(model, message)) -> model {
-  simulation.model
+  simulation.history.model
 }
 
 /// Introspect the current `view` of a running simulation. Typically you would
@@ -351,8 +436,8 @@ pub fn view(simulation: Simulation(model, message)) -> Element(message) {
   simulation.html
 }
 
-/// Receive the current [`Event`](#Event) log of a running simulation. You can
-/// use this to produce more detailed snapshots by also rendering the sequence of
+/// Receive the full [`Event`](#Event) log of a running simulation. You can use
+/// this to produce more detailed snapshots by also rendering the sequence of
 /// events that produced the given view.
 ///
 /// In addition to simulated DOM events and message dispatch, the event log will
@@ -360,11 +445,31 @@ pub fn view(simulation: Simulation(model, message)) -> Element(message) {
 /// the view and cases where an event was fired but not handled by your application.
 ///
 pub fn history(simulation: Simulation(model, message)) -> List(Event(message)) {
-  simulation.history |> list.reverse
+  do_history(simulation.history)
 }
 
-// UTILS -----------------------------------------------------------------------
+fn do_history(history: History(model, message)) -> List(Event(message)) {
+  history.future
+  |> list.map(pair.first)
+  |> list.fold(history.prev, _, fn(events, entry) { [entry.0, ..events] })
+}
 
-@external(erlang, "gleam@function", "identity")
-@external(javascript, "../../../gleam_stdlib/gleam/function.mjs", "identity")
-fn erase(value: a) -> Dynamic
+/// Recieve the current [`Event`](#Event) log of a running simulation. Compared
+/// to [`history`](#history), this function is useful if you have used functions
+/// like [`step_back`](#step_back) or [`jump`](#jump) as it will only report the
+/// sequence of events that have occurred up to the current point in the simulation.
+///
+/// You can use this to produce more detailed snapshots by also rendering the
+/// sequence of events that produced the given view.
+///  
+/// In addition to simulated DOM events and message dispatch, the event log will
+/// also include entries for when the queried event target could not be found in
+/// the view and cases where an event was fired but not handled by your application.
+///
+pub fn current_history(
+  simulation: Simulation(model, message),
+) -> List(Event(message)) {
+  list.fold(simulation.history.prev, [], fn(events, entry) {
+    [entry.0, ..events]
+  })
+}
