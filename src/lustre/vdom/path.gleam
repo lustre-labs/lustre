@@ -2,7 +2,6 @@
 
 import gleam/int
 import gleam/string
-import lustre/internals/constants
 
 // CONSTANTS -------------------------------------------------------------------
 
@@ -80,19 +79,19 @@ pub fn subtree(path: Path) -> Path {
 /// This returns a partial path, up to the closest Memo barrier.
 ///
 pub fn event(path: Path, event: String) -> String {
-  do_to_string(False, path, [separator_event, event, ..constants.empty_list])
+  do_to_string(False, path, [separator_event, event, ..[]])
 }
 
 /// Convert a path to a child tree to a resolved string.
 ///
 pub fn child(path: Path) -> String {
-  do_to_string(False, path, constants.empty_list)
+  do_to_string(False, path, [])
 }
 
 /// Convert a path to a full resolved string, including all memo barriers.
 ///
 pub fn to_string(path: Path) -> String {
-  do_to_string(True, path, constants.empty_list)
+  do_to_string(True, path, [])
 }
 
 fn do_to_string(full, path, acc) {

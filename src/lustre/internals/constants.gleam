@@ -9,10 +9,8 @@
 
 // CONSTRUCTORS ----------------------------------------------------------------
 
-pub const empty_list = []
-
 pub const error_nil = Error(Nil)
 
 pub fn singleton_list(item: a) -> List(a) {
-  [item, ..empty_list]
+  [item, ..[]]
 }

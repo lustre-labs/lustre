@@ -1,7 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/json.{type Json}
-import lustre/internals/constants
 import lustre/internals/json_object_builder
 import lustre/vdom/vattr.{type Attribute}
 import lustre/vdom/vnode.{type Element, type Memos}
@@ -13,7 +12,7 @@ import lustre/vdom/vnode.{type Element, type Memos}
 ///
 /// - An `index` which is the index of the node in the real DOM relative to its
 ///   parent's `childNodes` list.
-/// 
+///
 /// - A `path` which represents any additional traversal to get to the relevant
 ///   node. This happens when we have a change deep in the tree and no changes to
 ///   any of the nodes above it. By compressing the path into a single list we can
@@ -80,7 +79,7 @@ pub fn new(
   changes changes: List(Change(message)),
   children children: List(Patch(message)),
 ) -> Patch(message) {
-  Patch(path: constants.empty_list, index:, removed:, changes:, children:)
+  Patch(path: [], index:, removed:, changes:, children:)
 }
 
 pub const replace_text_kind: Int = 0
