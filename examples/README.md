@@ -28,6 +28,9 @@ or rendering elements that can handle events.
 - [`06-flags`](https://github.com/lustre-labs/lustre/tree/main/examples/01-basics/06-flags) shows
   how to pass initialization data to your Lustre application.
 
+- [`07-element-map`](https://github.com/lustre-labs/lustre/tree/main/examples/01-basics/07-element-map) shows
+  a way to manage state in a sub module of a Lustre application without using a component
+
 ## 02-inputs
 
 Handling inputs and interactive elements is an important part of any application!
