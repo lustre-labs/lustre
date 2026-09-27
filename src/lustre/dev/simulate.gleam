@@ -6,6 +6,7 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/pair
 import gleam/result
+import gleam/string
 import lustre/dev/query.{type Query}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -295,6 +296,46 @@ pub fn input(
   event(simulation, on: query, name: "input", data: [
     #("target", json.object([#("value", json.string(value))])),
   ])
+}
+
+/// Simulate multiple input events on the first element matching the given query.
+/// The provided `text` will be split into graphemes and accumulated into successive
+/// input events.
+/// 
+/// ```gleam
+/// assert typing(simulation, on: query, text: "hello") == {
+///   simulation
+///   |> input(on: query, value: "h")
+///   |> input(on: query, value: "he")
+///   |> input(on: query, value: "hel")
+///   |> input(on: query, value: "hell")
+///   |> input(on: query, value: "hello")
+/// }
+/// ``` 
+/// 
+/// Each input event has an event payload that looks like this:
+///
+/// ```json
+/// {
+///   "target": {
+///     "value": value
+///   }
+/// }
+/// ```
+///
+/// and is appropriate for event handlers that use Lustre's `on_input` handler
+/// or custom handlers that only decode the event target value.
+///
+pub fn typing(
+  simulation: Simulation(model, message),
+  on query: Query,
+  text value: String,
+) -> Simulation(model, message) {
+  string.to_graphemes(value)
+  |> list.scan("", string.append)
+  |> list.fold(simulation, fn(simulation, value) {
+    input(simulation, on: query, value:)
+  })
 }
 
 /// Simulate a submit event on the first element matching the given query. The

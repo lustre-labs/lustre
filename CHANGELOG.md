@@ -13,6 +13,7 @@ request to fix it.
 
 ## Added
 
+- [lustre/dev/simulate] Add a `typing` function to simulate multiple `input` events at once. 
 - [lustre/server_component] Add the `provides` attribute to declare any contexts to provide before/while the server component is disconnected.
 
 ### Changed
