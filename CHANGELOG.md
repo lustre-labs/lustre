@@ -14,6 +14,8 @@ request to fix it.
 ## Added
 
 - [lustre/dev/simulate] Add a `typing` function to simulate multiple `input` events at once. 
+- [lustre/dev/simulate] Add the `change` and `check` functions to simulate additional input interactions.
+- [lustre/dev/query] Add the `button`, `input`, `form`, and `select` convenience selectors.
 - [lustre/server_component] Add the `provides` attribute to declare any contexts to provide before/while the server component is disconnected.
 
 ### Changed
