@@ -256,6 +256,22 @@ pub fn text(content: String) -> Selector {
   HasText(content:)
 }
 
+/// Select a `<button>` element. This is a shorthand for `query.tag("button")`.
+/// 
+pub const button = Type(namespace: "", tag: "button")
+
+/// Select an `<input>` element. This is a shorthand for `query.tag("input")`.
+/// 
+pub const input = Type(namespace: "", tag: "input")
+
+/// Select a `<form>` element. This is a shorthand for `query.tag("form")`.
+/// 
+pub const form = Type(namespace: "", tag: "form")
+
+/// Select a `<select>` element. This is a shorthand for `query.tag("select")`.
+/// 
+pub const select = Type(namespace: "", tag: "select")
+
 // SEARCHING -------------------------------------------------------------------
 
 /// Find the first element in a view that matches the given [`Query`](#Query).
