@@ -375,6 +375,58 @@ pub fn submit(
   ])
 }
 
+/// Simulate a change event on the first element matching the given query: typically
+/// an `<input>`, `<select>`, or `<textarea>` element. The simulated event payload
+/// looks like this:
+/// 
+/// ```json
+/// {
+///   "target": {
+///     "value": value
+///   }
+/// }
+/// ```
+///
+/// and is appropriate for event handlers that use Lustre's `on_change` handler
+/// or custom handlers that only decode the event target value.
+///
+/// For checkbox inputs (`<input type="checkbox">`), you can use the [`check`](#check)
+/// function instead.
+/// 
+pub fn change(
+  simulation: Simulation(model, message),
+  on query: Query,
+  value value: String,
+) -> Simulation(model, message) {
+  event(simulation, on: query, name: "change", data: [
+    #("target", json.object([#("value", json.string(value))])),
+  ])
+}
+
+/// Simulate a change event on the first element matching the given query. This
+/// helper has an event payload that looks like this:
+///
+/// ```json
+/// {
+///   "target": {
+///     "checked": value
+///   }
+/// }
+/// ```
+///
+/// and is appropriate for event handlers that use Lustre's `on_check` handler
+/// or custom handlers that only decode the event target's `checked` property.
+///
+pub fn check(
+  simulation: Simulation(model, message),
+  on query: Query,
+  value value: Bool,
+) -> Simulation(model, message) {
+  event(simulation, on: query, name: "change", data: [
+    #("target", json.object([#("checked", json.bool(value))])),
+  ])
+}
+
 /// Log a problem that occurred during the simulation. This function is useful for
 /// external packages that want to provide functions to simulate certain effects
 /// that may fail in the real world. For example, a routing package may log a
