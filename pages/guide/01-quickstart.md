@@ -286,9 +286,10 @@ non-deterministic in some way. For example, an HTTP request is non-deterministic
 because we don't know when it will finish or what the result will be!
 
 It's possible to write your own effects but for now, we'll use another package
+
 - [rsvp](https://hexdocs.pm/rsvp/) - to handle HTTP requests and modify our
-counter app to fetch a random cat image from the [cat api](https://thecatapi.com/)
-when the count is incremented.
+  counter app to fetch a random cat image from the [cat api](https://thecatapi.com/)
+  when the count is incremented.
 
 Just as we upgraded our `lustre.element` app to `lustre.simple`, we can do the
 same again to a full `lustre.application` to gain access to Lustre's managed
@@ -357,7 +358,7 @@ fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
     )
 
     UserClickedRemoveCat -> #(
-      Model(total: model.total - 1, cats: list.drop(model.cats, 1)),
+      Model(total: int.max(0, model.total - 1), cats: list.drop(model.cats, 1)),
       effect.none()
     )
 
