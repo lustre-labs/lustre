@@ -3,8 +3,18 @@
 Up until now, we have focused on Lustre's ability as a library for building interactive
 Single Page Applications (SPAs). While Lustre's development and feature set is
 primarily focused on SPA development, that doesn't mean it can't be used on the
-backend as well! In this guide we'll set up a small [mist](https://hexdocs.pm/mist/)
-server that renders some static HTML using Lustre.
+backend as well! 
+
+Lustre is capable of rendering on the server in two different ways:
+
+  1. Classic server-side rendering where HTML documents are created using Lustre
+     elements and either returned as HTTP responses or written to files on disk.
+
+  2. As dynamic server components that receive events from the browser, update and
+     render on the server, and then send back patches to the client.   
+
+In this guide we'll set up a small [mist](https://hexdocs.pm/mist/) HTTP server
+that renders dynamically renders a HTML document using Lustre.
 
 ## Setting up the project
 
