@@ -364,7 +364,14 @@ export class ServerComponent extends HTMLElement {
           value,
         });
 
-        this.#contextSubscriptions.get(key)?.();
+        const previousUnsubscribe = this.#contextSubscriptions.get(key);
+
+        // Call the old unsubscribe callback if it has changed. This probably
+        // means we have a new provider.
+        if (previousUnsubscribe !== unsubscribe) {
+          previousUnsubscribe?.();
+        }
+
         this.#contextSubscriptions.set(unsubscribe);
       }),
     );
