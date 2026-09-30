@@ -404,7 +404,7 @@ export async function adoptStylesheets(shadowRoot) {
 
         shadowRoot.adoptedStyleSheets.push(copiedSheet);
       } catch {
-        const node = sheet.ownerNode.cloneNode();
+        const node = sheet.ownerNode.cloneNode(true);
 
         shadowRoot.prepend(node);
         adoptedStyleNodes.push(node);
