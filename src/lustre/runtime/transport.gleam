@@ -248,6 +248,7 @@ pub fn server_message_decoder() -> Decoder(ServerMessage) {
     _ if kind == property_changed_kind -> property_changed_decoder()
     _ if kind == event_fired_kind -> event_fired_decoder()
     _ if kind == batch_kind -> batch_decoder()
+    _ if kind == context_provided_kind -> context_provided_decoder()
     _ -> decode.failure(batch([]), "")
   }
 }
