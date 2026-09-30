@@ -90,12 +90,6 @@ reasons:
 - The dev tools are an **Erlang** app designed to be run through `gleam run` rather
   than a package you import in your own code.
 
-> **Note**: the lustre_dev_tools development server watches your filesystem for
-> changes to your gleam code and can automatically reload the browser. For Linux
-> users, this requires [inotify-tools](https://github.com/inotify-tools/inotify-tools)
-> be installed. If you do not or cannot install this, the development server will
-> still run but it will not watch your files for changes.
-
 To start the development server, run:
 
 ```bash
