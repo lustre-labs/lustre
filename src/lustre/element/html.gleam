@@ -593,7 +593,7 @@ pub fn q(
   element("q", attrs, children)
 }
 
-/// The `<rp>` element is used in combination with the [`<ruby`](#ruby) and
+/// The `<rp>` element is used in combination with the [`<ruby>`](#ruby) and
 /// [`<rt>`](#rt) elements to render ruby annotations properly. You should use
 /// the `<rp>` element to wrap [`<rt>`](#rt) annotations in parentheses.
 /// 
@@ -712,7 +712,7 @@ pub fn strong(
 /// You can use the `<sub>` element to represent subscript text when marking up
 /// footnotes, chemical formulas, or mathematical expressions.
 /// 
-/// This element should only be used to _typographic_ purposes: in cases where
+/// This element should only be used for _typographic_ purposes: in cases where
 /// subscript text is desired for purely presentation purposes, CSS should be used
 /// instead.
 /// 
@@ -728,7 +728,7 @@ pub fn sub(
 /// You can use the `<sup>` element to represent superscript text such as exponents
 /// in mathematical expressions or ordinal numbers.
 /// 
-/// This element should only be used to _typographic_ purposes: in cases where
+/// This element should only be used for _typographic_ purposes: in cases where
 /// superscript text is desired for purely presentation purposes, CSS should be used
 /// instead.
 /// 
@@ -803,12 +803,32 @@ pub fn wbr(attrs: List(Attribute(message))) -> Element(message) {
 
 // HTML ELEMENTS: IMAGE AND MULTIMEDIA -----------------------------------------
 
-///
+/// The `<area>` element defines a clickable area within a [`<map>`](#map) element.
+/// 
+/// Common attributes include: [`alt`](../attribute.html#alt), [`coords`](../attribute.html#coords), [`href`](../attribute.html#href),
+/// [`download`](../attribute.html#download), [`href`](../attribute.html#href),
+/// [`interestfor`](../attribute.html#interestfor), [`ping`](../attribute.html#ping),
+/// [`referrerpolicy`](../attribute.html#referrerpolicy), [`rel`](../attribute.html#rel),
+/// [`shape`](../attribute.html#shape), and [`target`](../attribute.html#target).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/area
+/// 
 pub fn area(attrs: List(Attribute(message))) -> Element(message) {
   element("area", attrs, constants.empty_list)
 }
 
-///
+/// You can use the `<audio>` element to embed sound and music content in a Web
+/// page. When combined with the [`<source>`](#source) element, you can provide
+/// multiple audio sources to handle browsers with different levels of support.
+/// 
+/// Common attributes include: [`autoplay`](../attribute.html#autoplay), 
+/// [`controls`](../attribute.html#controls), [`controlslist`](../attribute.html#controlslist),
+/// [`crossorigin`](../attribute.html#crossorigin), [`disableremoteplayback`](../attribute.html#disableremoteplayback),
+/// [`loop`](../attribute.html#loop), [`preload`](../attribute.html#preload),
+/// and [`src`](../attribute.html#src).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio
+/// 
 pub fn audio(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -816,13 +836,29 @@ pub fn audio(
   element("audio", attrs, children)
 }
 
-///
+/// You can use the `<img>` element to embed images in a Web page.
+/// 
+/// Common attributes include: [`alt`](../attribute.html#alt), [`crossorigin`](../attribute.html#crossorigin),
+/// [`decoding`](../attribute.html#decoding), [`elementtiming`](../attribute.html#elementtiming),
+/// [`fetchpriority`](../attribute.html#fetchpriority), [`height`](../attribute.html#height),
+/// [`ismap`](../attribute.html#ismap), [`loading`](../attribute.html#loading),
+/// [`referrerpolicy`](../attribute.html#referrerpolicy), [`sizes`](../attribute.html#sizes),
+/// [`src`](../attribute.html#src), [`srcset`](../attribute.html#srcset), and
+/// [`width`](../attribute.html#width).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
+/// 
 pub fn img(attrs: List(Attribute(message))) -> Element(message) {
   element("img", attrs, constants.empty_list)
 }
 
-/// Used with <area> elements to define an image map (a clickable link area).
-///
+/// The `<map>` element, used in conjunction with an [`<img>`](#img) and any number
+/// of [`<area>`](#area) elements, defines multiple clickable regions on an image.
+/// 
+/// Common attributes include: [`name`](../attribute.html#name).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/map
+/// 
 pub fn map(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -830,12 +866,36 @@ pub fn map(
   element("map", attrs, children)
 }
 
-///
+/// You can use one or more `<track>` elements as children of either the [`<audio>`](#audio)
+/// or [`<video>`](#video) elements to provide timed subtitles or closed captions.
+/// 
+/// Captions should be marked up using the [WebVTT format](https://developer.mozilla.org/en-US/docs/Web/API/WebVTT_API).
+/// 
+/// Common attributes include: [`default`](../attribute.html#default), [`kind`](../attribute.html#kind),
+/// [`label`](../attribute.html#label), [`src`](../attribute.html#src), and
+/// [`srclang`](../attribute.html#srclang).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/track
+/// 
 pub fn track(attrs: List(Attribute(message))) -> Element(message) {
   element("track", attrs, constants.empty_list)
 }
 
-///
+/// You can use the `<video>` element to embed a video in a Web page.
+/// 
+/// Common attributes include: [`autoplay`](../attributes.html#autoplay), [`controls`](../attributes.html#controls),
+/// [`controlslist`](../attributes.html#controlslist), [`crossorigin`](../attributes.html#crossorigin),
+/// [`disablepictureinpicture`](../attributes.html#disablepictureinpicture),
+/// [`disableremoteplayback`](../attributes.html#disableremoteplayback),
+/// [`height`](../attributes.html#height), [`loading`](../attributes.html#loading),
+/// [`eager`](../attributes.html#eager), [`lazy`](../attributes.html#lazy),
+/// [`loop`](../attributes.html#loop), [`muted`](../attributes.html#muted),
+/// [`playsinline`](../attributes.html#playsinline), [`poster`](../attributes.html#poster),
+/// [`preload`](../attributes.html#preload), [`src`](../attributes.html#src), and
+/// [`width`](../attributes.html#width).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
+/// 
 pub fn video(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
