@@ -21,6 +21,8 @@ request to fix it.
 ### Changed
 
 - [lustre] Bumped minimum `gleam_otp` version to 1.2.0.
+- [lustre/dev/simulate] The opaque `simulate.App` type is now an alias for `lustre.App`.
+- [lustre/dev/simulate] The simulated app constructors `simulate.simple` and `simple.application` have been deprecated in favour of real application constructors.
 - [lustre/component] Fixed a bug causing an exception when adopted style nodes were removed.
 - [lustre/runtime] Fixed a bug where the special-cased handling of "submit" events would apply to unrelated events of the same name dispatched by Web Components.
 - [lustre/runtime] Remove an invalid `@__PURE__` annotation causing warnings in some bundlers and build tools.

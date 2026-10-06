@@ -5,6 +5,7 @@ import gleam/int
 import gleam/json
 import gleam/list
 import gleam/string
+import lustre
 import lustre/attribute
 import lustre/dev/query.{data, element}
 import lustre/dev/simulate
@@ -19,7 +20,7 @@ pub fn simulate_single_event_test() {
   use <- lustre_test.test_filter("simulate_single_event_test")
   let incr_button = element(data("test-id", "incr"))
 
-  simulate.simple(init:, update:, view:)
+  lustre.simple(init:, update:, view:)
   |> simulate.start(0)
   |> simulate.event(on: incr_button, name: "click", data: [])
   |> to_snapshot
@@ -30,7 +31,7 @@ pub fn simulate_multiple_events_test() {
   use <- lustre_test.test_filter("simulate_multiple_events_test")
   let incr_button = element(data("test-id", "incr"))
 
-  simulate.simple(init:, update:, view:)
+  lustre.simple(init:, update:, view:)
   |> simulate.start(0)
   |> simulate.event(on: incr_button, name: "click", data: [])
   |> simulate.event(on: incr_button, name: "click", data: [])
@@ -40,7 +41,8 @@ pub fn simulate_multiple_events_test() {
 
 pub fn simulate_message_test() {
   use <- lustre_test.test_filter("simulate_message_test")
-  simulate.simple(init:, update:, view:)
+
+  lustre.simple(init:, update:, view:)
   |> simulate.start(0)
   |> simulate.message(ParentResetCount(10))
   |> to_snapshot
@@ -51,7 +53,7 @@ pub fn simulate_events_and_messages_test() {
   use <- lustre_test.test_filter("simulate_events_and_messages_test")
   let incr_button = element(data("test-id", "incr"))
 
-  simulate.simple(init:, update:, view:)
+  lustre.simple(init:, update:, view:)
   |> simulate.start(0)
   |> simulate.event(on: incr_button, name: "click", data: [])
   |> simulate.message(ParentResetCount(10))
@@ -64,7 +66,7 @@ pub fn simulate_history_stepper_test() {
   use <- lustre_test.test_filter("simulate_history_stepper_test")
 
   let latest =
-    simulate.simple(init:, update:, view:)
+    lustre.simple(init:, update:, view:)
     |> simulate.start(0)
     |> simulate.message(ParentResetCount(10))
     |> simulate.message(UserClickedIncrement)
@@ -86,7 +88,7 @@ pub fn simulate_history_stepper_test() {
 pub fn simulate_history_branching_test() {
   use <- lustre_test.test_filter("simulate_history_branching_test")
   let initial =
-    simulate.simple(init:, update:, view:)
+    lustre.simple(init:, update:, view:)
     |> simulate.start(0)
     |> simulate.message(ParentResetCount(10))
     |> simulate.message(UserClickedIncrement)
@@ -113,7 +115,7 @@ pub fn simulate_event_on_directly_mapped_element_test() {
   )
   let incr_button = element(data("test-id", "incr"))
 
-  simulate.simple(init:, update:, view: fn(model) {
+  lustre.simple(init:, update:, view: fn(model) {
     html.div([], [
       html.button([event.on_click(UserClickedDecrement)], [html.text("-")]),
       html.p([], [html.text(int.to_string(model))]),
@@ -139,7 +141,7 @@ pub fn simulate_event_on_view_wrapped_in_map_test() {
   use <- lustre_test.test_filter("simulate_event_on_view_wrapped_in_map_test")
   let incr_button = element(data("test-id", "incr"))
 
-  simulate.simple(init:, update:, view: fn(model) {
+  lustre.simple(init:, update:, view: fn(model) {
     view(model)
     |> element.map(fn(message) { message })
   })
@@ -157,7 +159,7 @@ pub fn simulate_missing_element_test() {
   use <- lustre_test.test_filter("simulate_missing_element_test")
   let submit_button = element(data("test-id", "submit"))
 
-  simulate.simple(init:, update:, view:)
+  lustre.simple(init:, update:, view:)
   |> simulate.start(0)
   |> simulate.event(on: submit_button, name: "click", data: [])
   |> to_snapshot
@@ -168,7 +170,7 @@ pub fn simulate_missing_event_handler_test() {
   use <- lustre_test.test_filter("simulate_missing_event_handler_test")
   let incr_button = element(data("test-id", "incr"))
 
-  simulate.simple(init:, update:, view:)
+  lustre.simple(init:, update:, view:)
   |> simulate.start(0)
   |> simulate.event(on: incr_button, name: "keydown", data: [])
   |> to_snapshot

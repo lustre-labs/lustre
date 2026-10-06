@@ -7,6 +7,7 @@ import gleam/list
 import gleam/pair
 import gleam/result
 import gleam/string
+import lustre
 import lustre/dev/query.{type Query}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -28,13 +29,9 @@ import lustre/vdom/path
 /// > you want to simulate messages coming from the outside world, you can use
 /// > the [`message`](#message) or [`event`](#event) functions.
 ///
-pub opaque type App(args, model, message) {
-  App(
-    init: fn(args) -> #(model, Effect(message)),
-    update: fn(model, message) -> #(model, Effect(message)),
-    view: fn(model) -> Element(message),
-  )
-}
+@deprecated("Use the `lustre.App` type directly instead.")
+pub type App(args, model, message) =
+  lustre.App(args, model, message)
 
 /// A running simulation of a Lustre application, produced by calling
 /// [`start`](#start).This is similar to the [`Runtime`](https://hexdocs.pm/lustre/lustre.html#Runtime)
@@ -86,16 +83,13 @@ pub type Event(message) {
 /// DOM events and messages dispatched by effects can be simulated using the
 /// [`event`](#event) and [`message`](#message) functions.
 ///
+@deprecated("Use real application constructors like `lustre.simple` instead.")
 pub fn simple(
   init init: fn(args) -> model,
   update update: fn(model, message) -> model,
   view view: fn(model) -> Element(message),
-) -> App(args, model, message) {
-  App(
-    init: fn(args) { #(init(args), effect.none()) },
-    update: fn(model, message) { #(update(model, message), effect.none()) },
-    view:,
-  )
+) -> lustre.App(args, model, message) {
+  lustre.simple(init:, update:, view:)
 }
 
 /// Construct a simulated Lustre application. The simulation can be started
@@ -109,22 +103,25 @@ pub fn simple(
 /// > of an effect by using the [`message`](#message) function, but to test side
 /// > effects you should test your application in a real environment.
 ///
+@deprecated("Use real application constructors like `lustre.application` instead.")
 pub fn application(
   init init: fn(args) -> #(model, Effect(message)),
   update update: fn(model, message) -> #(model, Effect(message)),
   view view: fn(model) -> Element(message),
-) -> App(args, model, message) {
-  App(init:, update:, view:)
+) -> lustre.App(args, model, message) {
+  lustre.application(init:, update:, view:)
 }
 
 // RUNNING SIMULATIONS ---------------------------------------------------------
 
 /// Start a simulated Lustre application. Once a simulation is running you can
 /// use the [`message`](#message) and [`event`](#event) functions to simulate
-/// events
+/// events.
 ///
+/// > **Note**: effects produced by a simulated application are never run.
+/// 
 pub fn start(
-  app: App(args, model, message),
+  app: lustre.App(args, model, message),
   args: args,
 ) -> Simulation(model, message) {
   let #(model, _) = app.init(args)
