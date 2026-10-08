@@ -96,7 +96,7 @@ export class ServerComponent extends HTMLElement {
       if (event.subscribe) {
         const unsubscribe = () => {
           context.subscribers = context.subscribers.filter(
-            (subscriber) => subscriber !== event.callback,
+            ([callback]) => callback !== event.callback,
           );
         };
 
@@ -357,23 +357,27 @@ export class ServerComponent extends HTMLElement {
 
     this.#contextSubscriptions.get(key)?.();
     this.dispatchEvent(
-      new ContextRequestEvent(key, (value, unsubscribe) => {
-        this.#transport?.send({
-          kind: context_provided_kind,
-          key,
-          value,
-        });
+      new ContextRequestEvent(
+        key,
+        (value, unsubscribe) => {
+          this.#transport?.send({
+            kind: context_provided_kind,
+            key,
+            value,
+          });
 
-        const previousUnsubscribe = this.#contextSubscriptions.get(key);
+          const previousUnsubscribe = this.#contextSubscriptions.get(key);
 
-        // Call the old unsubscribe callback if it has changed. This probably
-        // means we have a new provider.
-        if (previousUnsubscribe !== unsubscribe) {
-          previousUnsubscribe?.();
-        }
+          // Call the old unsubscribe callback if it has changed. This probably
+          // means we have a new provider.
+          if (previousUnsubscribe !== unsubscribe) {
+            previousUnsubscribe?.();
+          }
 
-        this.#contextSubscriptions.set(unsubscribe);
-      }),
+          this.#contextSubscriptions.set(key, unsubscribe);
+        },
+        true,
+      ),
     );
   }
 
