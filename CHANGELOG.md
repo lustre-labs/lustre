@@ -27,9 +27,12 @@ request to fix it.
 - [lustre/runtime] Fixed a bug where the special-cased handling of "submit" events would apply to unrelated events of the same name dispatched by Web Components.
 - [lustre/runtime] Remove an invalid `@__PURE__` annotation causing warnings in some bundlers and build tools.
 - [lustre/runtime] Fixed a bug where adopting inline `<style>` nodes that included `@import` rules did not clone the style node's inner text.
+- [lustre/runtime] Fixed a bug where unsubscribing from a context provided by a Lustre app or component had no effect.
 - [lustre/server_component] Fixed a bug causing an exception when adopted style nodes were removed.
 - [lustre/server_component] Fixed a bug preventing subscribed context values from being sent to the server component.
 - [lustre/server_component] Fixed a bug causing server components to immediately unsubscribe after receiving a value.
+- [lustre/server_component] Fixed a bug where server components only received the first value of a subscribed context instead of every update.
+- [lustre/server_component] Fixed a bug where server components never unsubscribed from a context when asked to or when disconnected.
 
 ## [v5.7.1] - 2026-07-14
 
