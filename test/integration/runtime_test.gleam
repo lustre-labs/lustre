@@ -2,35 +2,23 @@
 
 @target(erlang)
 import gleam/dict
-@target(erlang)
 import gleam/dynamic
 @target(erlang)
 import gleam/erlang/process
-@target(erlang)
 import gleam/int
-@target(erlang)
 import gleam/json
-@target(erlang)
 import lustre
-@target(erlang)
 import lustre/effect
-@target(erlang)
+@target(javascript)
+import lustre/element
 import lustre/element/html
-@target(erlang)
 import lustre/event
-@target(erlang)
 import lustre/internals/mutable_map
-@target(erlang)
 import lustre/runtime/server/runtime
-@target(erlang)
 import lustre/runtime/transport
-@target(erlang)
 import lustre/server_component
-@target(erlang)
 import lustre/vdom/patch
-@target(erlang)
 import lustre/vdom/path
-@target(erlang)
 import lustre_test
 
 // CLIENT INTERACTION TESTS ----------------------------------------------------
@@ -146,6 +134,60 @@ pub fn server_emit_event_test() {
   assert process.receive_forever(client) == emit
 }
 
+// JAVASCRIPT RUNTIME TESTS ----------------------------------------------------
+
+@target(javascript)
+pub fn javascript_client_connect_test() {
+  use <- lustre_test.test_filter("javascript_client_connect_test")
+  use received, _ <- with_javascript_runtime
+
+  // Event handlers are closures, which JavaScript can't compare structurally,
+  // so compare the rendered HTML instead.
+  let assert [transport.Mount(vdom:, ..)] = received()
+
+  assert element.to_string(vdom) == element.to_string(view(0))
+}
+
+@target(javascript)
+pub fn javascript_client_send_event_test() {
+  use <- lustre_test.test_filter("javascript_client_send_event_test")
+  use received, runtime <- with_javascript_runtime
+
+  // Discard the `Mount` message
+  let _ = received()
+
+  let click = transport.event_fired(incr, "click", dynamic.nil())
+
+  runtime.ClientDispatchedMessage(click) |> lustre.send(to: runtime)
+
+  let patch =
+    patch.new(0, 0, [patch.replace_text("1")], [])
+    |> patch.add_parent(1)
+    |> patch.add_parent(0)
+    |> patch.add_parent(0)
+
+  assert received() == [transport.reconcile(patch, mutable_map.new())]
+}
+
+@target(javascript)
+pub fn javascript_effect_send_event_test() {
+  use <- lustre_test.test_filter("javascript_effect_send_event_test")
+  use received, runtime <- with_javascript_runtime
+
+  // Discard the `Mount` message
+  let _ = received()
+
+  lustre.dispatch(Incr) |> lustre.send(to: runtime)
+
+  let patch =
+    patch.new(0, 0, [patch.replace_text("1")], [])
+    |> patch.add_parent(1)
+    |> patch.add_parent(0)
+    |> patch.add_parent(0)
+
+  assert received() == [transport.reconcile(patch, mutable_map.new())]
+}
+
 // UTILS -----------------------------------------------------------------------
 
 @target(erlang)
@@ -163,21 +205,40 @@ fn with_erlang_runtime(run_test) {
   lustre.shutdown() |> lustre.send(to: runtime)
 }
 
+@target(javascript)
+fn with_javascript_runtime(run_test) {
+  let app = lustre.application(init, update, view)
+  let assert Ok(runtime) = lustre.start_server_component(app, 0)
+  let #(client, received) = new_client()
+
+  server_component.register_callback(client) |> lustre.send(to: runtime)
+
+  run_test(received, runtime)
+
+  server_component.deregister_callback(client) |> lustre.send(to: runtime)
+
+  lustre.shutdown() |> lustre.send(to: runtime)
+}
+
+@target(javascript)
+@external(javascript, "./runtime_test.ffi.mjs", "new_client")
+fn new_client() -> #(
+  fn(transport.ClientMessage(message)) -> Nil,
+  fn() -> List(transport.ClientMessage(message)),
+)
+
 // COUNTER APP -----------------------------------------------------------------
 
-@target(erlang)
 fn init(count) {
   #(count, effect.none())
 }
 
-@target(erlang)
 type Message {
   Incr
   Decr
   Reset
 }
 
-@target(erlang)
 fn update(model, message) {
   case message {
     Incr -> #(model + 1, effect.none())
@@ -186,13 +247,11 @@ fn update(model, message) {
   }
 }
 
-@target(erlang)
 const incr = "0" <> path.separator_element <> "2"
 
 @target(erlang)
 const reset = "0" <> path.separator_element <> "3"
 
-@target(erlang)
 fn view(model) {
   html.div([], [
     html.button([event.on_click(Decr)], [html.text("-")]),

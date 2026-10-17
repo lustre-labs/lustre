@@ -70,8 +70,7 @@ export class Runtime {
 
   send(message) {
     if (Message$isClientDispatchedMessage(message)) {
-      const { message } = message;
-      const next = this.#handle_client_message(message);
+      const next = this.#handle_client_message(message.message);
       const diff = Diff.diff(this.#cache, this.#vdom, next);
 
       this.#vdom = next;
@@ -106,8 +105,7 @@ export class Runtime {
         this.#dispatch(Option.Option$Some$0(this.#config.on_disconnect));
       }
     } else if (Message$isEffectDispatchedMessage(message)) {
-      const { message } = message;
-      const [model, effect] = this.#update(this.#model, message);
+      const [model, effect] = this.#update(this.#model, message.message);
       const next = this.#view(model);
       const diff = Diff.diff(this.#cache, this.#vdom, next);
 
@@ -207,8 +205,7 @@ export class Runtime {
         return this.#vdom;
       }
 
-      const { message } = Result$Ok$0(result);
-      return this.#dispatch(message);
+      return this.#dispatch(Result$Ok$0(result).message);
     } else if (ServerMessage$isContextProvided(message)) {
       const { key, value } = message;
       let result = Dict.get(this.#config.contexts, key);
@@ -282,7 +279,14 @@ export const start = (app, start_arguments) => {
   const config = App.configure_server_component(app.config);
 
   return Result$Ok(
-    new Runtime(app.init, app.update, app.view, config, start_arguments),
+    new Runtime(
+      undefined,
+      app.init,
+      app.update,
+      app.view,
+      config,
+      start_arguments,
+    ),
   );
 };
 
