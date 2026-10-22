@@ -121,7 +121,7 @@ fn view_table(
   shuffle: Bool,
   keyed: Bool,
 ) -> Element(message) {
-  let rows = list.range(1 + offset, rows + offset)
+  let rows = int.range(1 + offset, rows + offset, [], list.prepend)
   let rows = case shuffle {
     True -> list.shuffle(rows)
     False -> rows
