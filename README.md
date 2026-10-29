@@ -1,7 +1,7 @@
 <h1 align="center">Lustre</h1>
 
 <div align="center">
-  ✨ <strong>Make your frontend shine</strong> ✨
+  ✨ <strong>Frontend can be <em>joyful</em></strong> ✨
 </div>
 
 <div align="center">
@@ -54,16 +54,7 @@
 
 ---
 
-## Table of contents
-
-- [Features](#features)
-- [Example](#example)
-- [Philosophy](#philosophy)
-- [Installation](#installation)
-- [Where next](#where-next)
-- [Support](#support)
-
-## Features {#features}
+## Features
 
 - A **declarative**, functional API for constructing HTML. No templates, no macros,
   just Gleam.
@@ -72,13 +63,14 @@
 
 - **Managed side effects** for predictable, testable code.
 
-- Universal components. **Write once, run anywhere**. Elm meets Phoenix LiveView.
+- Universal components that enable "**write once, run anywhere**"" code. Lustre
+  applications can be mounted onto elements on a page, built and distributed as
+  **Web Components**, or run as interactive **Server Components**.
 
-- A **batteries-included CLI** that makes scaffolding and building apps a breeze.
+- A **batteries-included CLI** that lets you develop and build Lustre applications
+  without managing a JavaScript runtime.
 
-- **Server-side rendering** for static HTML templating.
-
-## Example {#example}
+## Example
 
 Lustre comes with [over 20 examples](https://hexdocs.pm/lustre/reference/examples.html)!
 Here's what it looks like:
@@ -86,9 +78,9 @@ Here's what it looks like:
 ```gleam
 import gleam/int
 import lustre
-import lustre/element.{text}
-import lustre/element/html.{div, button, p}
-import lustre/event.{on_click}
+import lustre/element.{type Element}
+import lustre/element/html
+import lustre/event
 
 pub fn main() {
   let app = lustre.simple(init, update, view)
@@ -97,34 +89,41 @@ pub fn main() {
   Nil
 }
 
-fn init(_flags) {
+type Model
+  = Int
+
+fn init(_flags) -> Model {
   0
 }
 
 type Message {
-  Incr
-  Decr
+  UserClickedIncrement
+  UserClickedDecrement
 }
 
-fn update(model, message) {
+fn update(model: Model, message: Message) -> Model {
   case message {
-    Incr -> model + 1
-    Decr -> model - 1
+    UserClickedIncrement -> model + 1
+    UserClickedDecrement -> model - 1
   }
 }
 
-fn view(model) {
+fn view(model: Model) -> Element(Message) {
   let count = int.to_string(model)
 
-  div([], [
-    button([on_click(Incr)], [text(" + ")]),
-    p([], [text(count)]),
-    button([on_click(Decr)], [text(" - ")])
+  html.div([], [
+    html.button([event.on_click(UserClickedIncrement)], [
+      html.text(" + ")
+    ]),
+    html.p([], [html.text(count)]),
+    html.button([event.on_click(UserClickedDecrement)], [
+      html.text(" - ")
+    ])
   ])
 }
 ```
 
-## Philosophy {#philosophy}
+## Philosophy
 
 Lustre is an _opinionated_ library for building frontend Web applications. Modern
 frontend development is hard and complex. Some of that complexity is necessary, but
@@ -147,7 +146,7 @@ an existing Lustre application, export them as a standalone Web Component, or ru
 them on the server with a minimal runtime for patching the DOM. Lustre calls these
 **universal components** and they're written with Gleam's multiple targets in mind.
 
-## Installation {#installation}
+## Installation
 
 Lustre is published on [Hex](https://hex.pm/packages/lustre)! You can add it to
 your Gleam projects from the command line:
@@ -163,7 +162,7 @@ like to install:
 gleam add --dev lustre_dev_tools
 ```
 
-## Where next {#where-next}
+## Where next
 
 To get up to speed with Lustre, check out the [quickstart guide](https://hexdocs.pm/lustre/guide/01-quickstart.html).
 If you prefer to see some code, the [examples](https://github.com/lustre-labs/lustre/tree/main/examples)
@@ -173,7 +172,7 @@ aspects of the library.
 You can also read through the documentation and API reference on
 [HexDocs](https://hexdocs.pm/lustre).
 
-## Support {#support}
+## Support
 
 Lustre is mostly built by just me, [Hayleigh](https://github.com/hayleigh-dot-dev),
 around two jobs. If you'd like to support my work, you can [sponsor me on GitHub](https://github.com/sponsors/hayleigh-dot-dev).
