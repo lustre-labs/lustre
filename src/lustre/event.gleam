@@ -194,6 +194,12 @@ pub fn on_click(message: message) -> Attribute(message) {
 }
 
 ///
+/// 
+pub fn on_double_click(message: message) -> Attribute(message) {
+  on("dblclick", decode.success(message))
+}
+
+///
 pub fn on_mouse_down(message: message) -> Attribute(message) {
   on("mousedown", decode.success(message))
 }
