@@ -3,6 +3,8 @@ import booklet
 @target(javascript)
 import gleam/int
 @target(javascript)
+import gleam/json
+@target(javascript)
 import gleam/list
 @target(javascript)
 import gleam/string
@@ -10,6 +12,8 @@ import gleam/string
 import lustre
 @target(javascript)
 import lustre/attribute
+@target(javascript)
+import lustre/effect
 @target(javascript)
 import lustre/element.{type Element}
 @target(javascript)
@@ -604,6 +608,30 @@ pub fn client_runtime_keyed_move_events_test() {
   assert get_model(runtime) == #([], [2, 1])
 }
 
+@target(javascript)
+pub fn client_runtime_context_unsubscribe_test() {
+  use <- lustre_test.test_filter("client_runtime_context_unsubscribe_test")
+
+  let view = fn(_) { html.div([], []) }
+  let app =
+    lustre.application(
+      fn(_) { #("dark", effect.provide("theme", json.string("dark"))) },
+      fn(_, theme) { #(theme, effect.provide("theme", json.string(theme))) },
+      view,
+    )
+
+  use runtime <- with_client_runtime(element.to_string(view("dark")), app)
+
+  let subscription = subscribe_to_context("div", "theme")
+  use <- send(runtime, "light")
+  assert context_values(subscription) == ["dark", "light"]
+
+  // Once unsubscribed, the provider should stop sending us new values.
+  unsubscribe_from_context(subscription)
+  use <- send(runtime, "blue")
+  assert context_values(subscription) == ["dark", "light"]
+}
+
 // FFI ------------------------------------------------------------------------
 
 @target(javascript)
@@ -646,3 +674,18 @@ pub fn get_vdom() -> Element(message)
 @target(javascript)
 @external(javascript, "./client_test.ffi.mjs", "model")
 pub fn get_model(runtime: Runtime(message, model)) -> model
+
+@target(javascript)
+pub type ContextSubscription
+
+@target(javascript)
+@external(javascript, "./client_test.ffi.mjs", "subscribe_to_context")
+fn subscribe_to_context(selector: String, key: String) -> ContextSubscription
+
+@target(javascript)
+@external(javascript, "./client_test.ffi.mjs", "context_values")
+fn context_values(subscription: ContextSubscription) -> List(String)
+
+@target(javascript)
+@external(javascript, "./client_test.ffi.mjs", "unsubscribe_from_context")
+fn unsubscribe_from_context(subscription: ContextSubscription) -> Nil

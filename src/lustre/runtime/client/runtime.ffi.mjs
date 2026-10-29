@@ -55,7 +55,7 @@ export class Runtime {
       if (event.subscribe) {
         const unsubscribe = () => {
           context.subscribers = context.subscribers.filter(
-            (subscriber) => subscriber !== event.callback,
+            ([callback]) => callback !== event.callback,
           );
         };
 

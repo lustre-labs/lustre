@@ -2,6 +2,7 @@ import { register, unregister } from "./happy-dom.ffi.mjs";
 import { virtualise as do_virtualise } from "../lustre/vdom/virtualise.ffi.mjs";
 import { Reconciler } from "../lustre/vdom/reconciler.ffi.mjs";
 import { Runtime } from "../lustre/runtime/client/runtime.ffi.mjs";
+import { toList } from "../gleam.mjs";
 
 async function runInBrowserContext(callback) {
   register({
@@ -118,7 +119,9 @@ export async function emit(selector, event_name, callback) {
     throw new Error(`Element not found: ${selector}`);
   }
 
-  element.dispatchEvent(new Event(event_name, { bubbles: true, composed: true }));
+  element.dispatchEvent(
+    new Event(event_name, { bubbles: true, composed: true }),
+  );
 
   await waitForNextFrame();
   await callback();
@@ -138,7 +141,9 @@ export async function emit_with_value(selector, event_name, value, callback) {
   }
 
   // Dispatch the event
-  element.dispatchEvent(new Event(event_name, { bubbles: true, composed: true }));
+  element.dispatchEvent(
+    new Event(event_name, { bubbles: true, composed: true }),
+  );
 
   await waitForNextFrame();
   await callback();
@@ -146,6 +151,40 @@ export async function emit_with_value(selector, event_name, value, callback) {
 
 export function model(runtime) {
   return runtime.model;
+}
+
+export function subscribe_to_context(selector, key) {
+  const element = document.querySelector(selector);
+  if (!element) {
+    throw new Error(`Element not found: ${selector}`);
+  }
+
+  const subscription = { values: [], unsubscribe: () => {} };
+
+  // We build a plain `context-request` event like any other implementation of
+  // the context protocol would. Lustre's own `ContextRequestEvent` extends
+  // whichever `Event` existed when the runtime module was first loaded, which
+  // in this test suite is Node's rather than happy-dom's.
+  const event = new Event("context-request", { bubbles: true, composed: true });
+
+  event.context = key;
+  event.subscribe = true;
+  event.callback = (value, unsubscribe) => {
+    subscription.values.push(value);
+    subscription.unsubscribe = unsubscribe;
+  };
+
+  element.dispatchEvent(event);
+
+  return subscription;
+}
+
+export function context_values(subscription) {
+  return toList(subscription.values);
+}
+
+export function unsubscribe_from_context(subscription) {
+  subscription.unsubscribe();
 }
 
 function waitForNextFrame() {
