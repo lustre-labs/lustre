@@ -1,7 +1,6 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Dynamic}
-import gleam/function
 import gleam/json.{type Json}
 import gleam/list
 import gleam/string
