@@ -158,7 +158,9 @@ export class ServerComponent extends HTMLElement {
 
       case prev !== next && "provides": {
         const prevProvided = this.#provided;
-        const nextProvided = new Set(next.split(" "));
+        const nextProvided = next
+          ? new Set(next.split(" ").map((s) => s.trim()))
+          : new Set();
 
         for (const name of prevProvided) {
           const context = this.#contexts.get(name);
