@@ -95,7 +95,7 @@ export class ServerComponent extends HTMLElement {
       if (event.subscribe) {
         const unsubscribe = () => {
           context.subscribers = context.subscribers.filter(
-            (subscriber) => subscriber !== event.callback,
+            ([callback, _]) => callback !== event.callback,
           );
         };
 

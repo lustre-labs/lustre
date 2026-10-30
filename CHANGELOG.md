@@ -26,6 +26,7 @@ request to fix it.
 - [lustre/dev/simulate] The opaque `simulate.App` type is now an alias for `lustre.App`.
 - [lustre/dev/simulate] The simulated app constructors `simulate.simple` and `simple.application` have been deprecated in favour of real application constructors.
 - [lustre/component] Fixed a bug causing an exception when adopted style nodes were removed.
+- [lustre/component] Fixed a bug making it impossible to unsubscribe to requested contexts.
 - [lustre/element] Fixed a bug where `element.to_snapshot_string` would incorrectly apply indentation to children of `<pre>`, `<textarea>` and raw HTML elements.
 - [lustre/runtime] Fixed a bug where the special-cased handling of "submit" events would apply to unrelated events of the same name dispatched by Web Components.
 - [lustre/runtime] Remove an invalid `@__PURE__` annotation causing warnings in some bundlers and build tools.
@@ -35,6 +36,7 @@ request to fix it.
 - [lustre/server_component] Fixed a bug causing server components to immediately unsubscribe after receiving a value.
 - [lustre/server_component] Fixed a bug where changing a server component's `route` would not send any observed attributes on init of the second connection.
 - [lustre/server_component] Fixed a bug where context subscriptions were not correctly registered on the client.
+- [lustre/server_component] Fixed a bug making it impossible to unsubscribe to requested contexts.
 
 ## [v5.7.1] - 2026-07-14
 
