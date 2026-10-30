@@ -377,7 +377,7 @@ export class ServerComponent extends HTMLElement {
           previousUnsubscribe?.();
         }
 
-        this.#contextSubscriptions.set(unsubscribe);
+        this.#contextSubscriptions.set(key, unsubscribe);
       }),
     );
   }
