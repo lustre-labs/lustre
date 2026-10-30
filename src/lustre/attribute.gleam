@@ -541,6 +541,15 @@ pub fn open(is_open: Bool) -> Attribute(message) {
   boolean_attribute("open", is_open)
 }
 
+// QUOTE ATTRIBUTES ------------------------------------------------------------
+
+/// Links to the source of a quotation provided in a `<blockquote>` or `<q>`
+/// element. Its value should be a valid URL.
+/// 
+pub fn cite(value: String) -> Attribute(message) {
+  attribute("cite", value)
+}
+
 // ANCHOR AND LINK ATTRIBUTES --------------------------------------------------
 
 /// Specifies the URL of a linked resource. This attribute can be used on various
