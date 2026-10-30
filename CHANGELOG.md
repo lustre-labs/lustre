@@ -31,6 +31,8 @@ request to fix it.
 - [lustre/server_component] Fixed a bug causing an exception when adopted style nodes were removed.
 - [lustre/server_component] Fixed a bug preventing subscribed context values from being sent to the server component.
 - [lustre/server_component] Fixed a bug causing server components to immediately unsubscribe after receiving a value.
+- [lustre/server_component] Fixed a bug where `start_server_component` passed the wrong arguments to the JavaScript server component runtime.
+- [lustre/server_component] Fixed a bug where the JavaScript server component runtime threw on every client message, client event, and dispatched message.
 
 ## [v5.7.1] - 2026-07-14
 
