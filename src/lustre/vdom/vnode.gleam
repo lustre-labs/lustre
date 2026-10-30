@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/dynamic.{type Dynamic}
+import gleam/function
 import gleam/json.{type Json}
 import gleam/list
 import gleam/string
@@ -393,11 +394,18 @@ fn do_to_snapshot_builder(
   namespace parent_namespace: String,
   indent indent: Int,
 ) -> StringTree {
-  let spaces = string.repeat("  ", indent)
+  let spaces = case raw {
+    True -> ""
+    False -> string.repeat("  ", indent)
+  }
+
+  let newline = case raw {
+    True -> ""
+    False -> "\n"
+  }
 
   case node {
     Text(content: "", ..) -> string_tree.new()
-    Text(content:, ..) if raw -> string_tree.from_strings([spaces, content])
     Text(content:, ..) ->
       string_tree.from_strings([spaces, houdini.escape(content)])
 
@@ -435,6 +443,27 @@ fn do_to_snapshot_builder(
       |> string_tree.append("</" <> tag <> ">")
     }
 
+    Element(key:, namespace:, tag:, attributes:, children:, ..)
+      if tag == "pre" || tag == "textarea"
+    -> {
+      let html = string_tree.from_string("<" <> tag)
+      let attributes =
+        vattr.to_string_tree(key, namespace, parent_namespace, attributes)
+
+      html
+      |> string_tree.prepend(spaces)
+      |> string_tree.append_tree(attributes)
+      |> string_tree.append(">")
+      |> children_to_snapshot_builder(
+        children:,
+        raw: True,
+        debug:,
+        namespace:,
+        indent: indent + 1,
+      )
+      |> string_tree.append("</" <> tag <> ">")
+    }
+
     Element(key:, namespace:, tag:, attributes:, children:, ..) -> {
       let html = string_tree.from_string("<" <> tag)
       let attributes =
@@ -442,7 +471,7 @@ fn do_to_snapshot_builder(
       html
       |> string_tree.prepend(spaces)
       |> string_tree.append_tree(attributes)
-      |> string_tree.append(">\n")
+      |> string_tree.append(">" <> newline)
       |> children_to_snapshot_builder(
         children:,
         raw:,
@@ -469,8 +498,8 @@ fn do_to_snapshot_builder(
 
     Fragment(key:, children:, ..) if debug -> {
       marker_comment("lustre:fragment", key)
+      |> string_tree.append(newline)
       |> string_tree.prepend(spaces)
-      |> string_tree.append("\n")
       |> children_to_snapshot_builder(
         children:,
         raw:,
@@ -494,8 +523,8 @@ fn do_to_snapshot_builder(
 
     Map(key:, child:, ..) if debug -> {
       marker_comment("lustre:map", key)
+      |> string_tree.append(newline)
       |> string_tree.prepend(spaces)
-      |> string_tree.append("\n")
       |> string_tree.append_tree(do_to_snapshot_builder(
         node: child,
         raw:,
@@ -516,8 +545,8 @@ fn do_to_snapshot_builder(
 
     Memo(key:, view:, ..) if debug -> {
       marker_comment("lustre:memo", key)
+      |> string_tree.append(newline)
       |> string_tree.prepend(spaces)
-      |> string_tree.append("\n")
       |> string_tree.append_tree(do_to_snapshot_builder(
         node: view(),
         raw:,
@@ -560,7 +589,10 @@ fn children_to_snapshot_builder(
     [child, ..rest] ->
       child
       |> do_to_snapshot_builder(raw:, debug:, namespace:, indent:)
-      |> string_tree.append("\n")
+      |> string_tree.append(case raw {
+        True -> ""
+        False -> "\n"
+      })
       |> string_tree.prepend_tree(html)
       |> children_to_snapshot_builder(
         children: rest,

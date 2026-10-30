@@ -25,6 +25,7 @@ request to fix it.
 - [lustre/dev/simulate] The opaque `simulate.App` type is now an alias for `lustre.App`.
 - [lustre/dev/simulate] The simulated app constructors `simulate.simple` and `simple.application` have been deprecated in favour of real application constructors.
 - [lustre/component] Fixed a bug causing an exception when adopted style nodes were removed.
+- [lustre/element] Fixed a bug where `element.to_snapshot_string` would incorrectly apply indentation to children of `<pre>`, `<textarea>` and raw HTML elements.
 - [lustre/runtime] Fixed a bug where the special-cased handling of "submit" events would apply to unrelated events of the same name dispatched by Web Components.
 - [lustre/runtime] Remove an invalid `@__PURE__` annotation causing warnings in some bundlers and build tools.
 - [lustre/runtime] Fixed a bug where adopting inline `<style>` nodes that included `@import` rules did not clone the style node's inner text.

@@ -1,0 +1,7 @@
+---
+version: 2.0.2
+title: [html] pre does not indent its content
+---
+<pre><code>pub fn example() {
+  1234
+}</code></pre>

@@ -1,0 +1,8 @@
+---
+version: 2.0.2
+title: [html] textarea does not indent its content
+---
+<textarea>  some leading whitespace
+and some
+additional
+  lines</textarea>

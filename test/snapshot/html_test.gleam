@@ -600,6 +600,43 @@ pub fn to_document_string_body_in_map_test() {
   |> document_snapshot("body inside map is wrapped in html")
 }
 
+// RAW CHILDREN TESTS ----------------------------------------------------------
+
+pub fn pre_does_not_indent_test() {
+  use <- lustre_test.test_filter("pre_does_not_indent_test")
+
+  html.pre([], [
+    html.code([], [
+      html.text({
+        "pub fn example() {
+  1234
+}"
+      }),
+    ]),
+  ])
+  |> snapshot("pre does not indent its content")
+}
+
+pub fn textarea_does_not_indent_test() {
+  use <- lustre_test.test_filter("textarea_does_not_indent_test")
+
+  html.textarea(
+    [],
+    "  some leading whitespace
+and some
+additional
+  lines",
+  )
+  |> snapshot("textarea does not indent its content")
+}
+
+pub fn unsafe_raw_html_does_not_indent_test() {
+  use <- lustre_test.test_filter("unsafe_raw_html_does_not_indent_test")
+
+  element.unsafe_raw_html("", "p", [], "<b>raw html</b>")
+  |> snapshot("unsafe raw html does not indent its content")
+}
+
 // UTILS -----------------------------------------------------------------------
 
 fn snapshot(el: Element(message), title: String) -> Nil {
