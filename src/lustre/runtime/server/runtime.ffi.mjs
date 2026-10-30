@@ -2,6 +2,7 @@ import {
   Result$Ok,
   Result$Ok$0,
   Result$isOk,
+  List$isNonEmpty,
   List$NonEmpty$rest,
   List$NonEmpty$first,
 } from "../../../gleam.mjs";
@@ -39,7 +40,6 @@ import {
   ServerMessage$isEventFired,
   ServerMessage$isContextProvided,
 } from "../transport.mjs";
-import { toList } from "../../internals/list.ffi.mjs";
 
 //
 
@@ -71,13 +71,14 @@ export class Runtime {
   send(message) {
     if (Message$isClientDispatchedMessage(message)) {
       const { message: clientMessage } = message;
-      const next = this.#handle_client_message(clientMessage);
-      const diff = Diff.diff(this.#cache, this.#vdom, next);
+      const effects = [];
 
-      this.#vdom = next;
-      this.#cache = diff.cache;
+      this.#handle_client_message(clientMessage, effects);
+      this.#render_and_broadcast();
 
-      this.broadcast(Transport.reconcile(diff.patch, Cache.memos(diff.cache)));
+      for (const effect of effects) {
+        this.#handle_effect(effect);
+      }
     } else if (Message$isClientRegisteredCallback(message)) {
       const { callback } = message;
       this.#callbacks.add(callback);
@@ -96,28 +97,37 @@ export class Runtime {
       );
 
       if (Option.Option$isSome(this.#config.on_connect)) {
-        this.#dispatch(Option.Option$Some$0(this.#config.on_connect));
+        const connectMessage = Option.Option$Some$0(this.#config.on_connect);
+        const [model, effect] = this.#update(this.#model, connectMessage);
+
+        this.#model = model;
+
+        this.#render_and_broadcast();
+        this.#handle_effect(effect);
       }
     } else if (Message$isClientDeregisteredCallback(message)) {
       const { callback } = message;
       this.#callbacks.delete(callback);
 
       if (Option.Option$isSome(this.#config.on_disconnect)) {
-        this.#dispatch(Option.Option$Some$0(this.#config.on_disconnect));
+        const disconnectMessage = Option.Option$Some$0(
+          this.#config.on_disconnect,
+        );
+        const [model, effect] = this.#update(this.#model, disconnectMessage);
+
+        this.#model = model;
+
+        this.#render_and_broadcast();
+        this.#handle_effect(effect);
       }
     } else if (Message$isEffectDispatchedMessage(message)) {
       const { message: appMessage } = message;
       const [model, effect] = this.#update(this.#model, appMessage);
-      const next = this.#view(model);
-      const diff = Diff.diff(this.#cache, this.#vdom, next);
-
-      this.#handle_effect(effect);
 
       this.#model = model;
-      this.#vdom = next;
-      this.#cache = diff.cache;
 
-      this.broadcast(Transport.reconcile(diff.patch, Cache.memos(diff.cache)));
+      this.#render_and_broadcast();
+      this.#handle_effect(effect);
     } else if (Message$isEffectEmitEvent(message)) {
       const { name, data } = message;
       this.broadcast(Transport.emit(name, data));
@@ -159,78 +169,74 @@ export class Runtime {
     }
   }
 
-  #handle_client_message(message) {
+  // Renders the current model, computes the diff, and broadcasts the patch to
+  // all connected clients.
+  #render_and_broadcast() {
+    const next = this.#view(this.#model);
+    const diff = Diff.diff(this.#cache, this.#vdom, next);
+
+    this.#vdom = next;
+    this.#cache = diff.cache;
+
+    this.broadcast(Transport.reconcile(diff.patch, Cache.memos(diff.cache)));
+  }
+
+  // Handles a message or batch of messages received from the client without
+  // rendering. The provided `effects` array is mutated to accumulate effects
+  // from batched messages.
+  #handle_client_message(message, effects) {
     if (ServerMessage$isBatch(message)) {
       const { messages } = message;
-      let model = this.#model;
-      let effect = Effect.none();
 
       for (
         let list = messages;
-        List$NonEmpty$rest(list);
+        List$isNonEmpty(list);
         list = List$NonEmpty$rest(list)
       ) {
-        const result = this.#handle_client_message(List$NonEmpty$first(list));
-        if (Result$isOk(result)) {
-          model = Result$Ok$0(result)[0];
-          effect = Effect.batch(toList([effect, Result$Ok$0(result)[1]]));
-          break;
-        }
+        this.#handle_client_message(List$NonEmpty$first(list), effects);
       }
-
-      this.#handle_effect(effect);
-      this.#model = model;
-
-      return this.#view(model);
     } else if (ServerMessage$isAttributeChanged(message)) {
       const { name, value } = message;
       const result = this.#handle_attribute_change(name, value);
-      if (!Result$isOk(result)) {
-        return this.#vdom;
-      }
 
-      return this.#dispatch(Result$Ok$0(result));
+      if (Result$isOk(result)) {
+        effects.push(this.#dispatch(Result$Ok$0(result)));
+      }
     } else if (ServerMessage$isPropertyChanged(message)) {
       const { name, value } = message;
       const result = this.#handle_properties_change(name, value);
-      if (!Result$isOk(result)) {
-        return this.#vdom;
-      }
 
-      return this.#dispatch(Result$Ok$0(result));
+      if (Result$isOk(result)) {
+        effects.push(this.#dispatch(Result$Ok$0(result)));
+      }
     } else if (ServerMessage$isEventFired(message)) {
       const { path, name, event } = message;
       const [cache, result] = Cache.handle(this.#cache, path, name, event);
 
       this.#cache = cache;
-      if (!Result$isOk(result)) {
-        return this.#vdom;
-      }
 
-      const { message } = Result$Ok$0(result);
-      return this.#dispatch(message);
+      if (Result$isOk(result)) {
+        effects.push(this.#dispatch(Result$Ok$0(result).message));
+      }
     } else if (ServerMessage$isContextProvided(message)) {
       const { key, value } = message;
-      let result = Dict.get(this.#config.contexts, key);
-      if (!Result$isOk(result)) {
-        return this.#vdom;
-      }
+      const decoder = Dict.get(this.#config.contexts, key);
 
-      result = Decode.run(value, Result$Ok$0(result));
-      if (!Result$isOk(result)) {
-        return this.#vdom;
-      }
+      if (Result$isOk(decoder)) {
+        const result = Decode.run(value, Result$Ok$0(decoder));
 
-      return this.#dispatch(Result$Ok$0(result));
+        if (Result$isOk(result)) {
+          effects.push(this.#dispatch(Result$Ok$0(result)));
+        }
+      }
     }
   }
 
   #dispatch(message) {
-    const [model, effects] = this.#update(this.#model, message);
-    this.#handle_effect(effects);
+    const [model, effect] = this.#update(this.#model, message);
     this.#model = model;
 
-    return this.#view(this.#model);
+    return effect;
   }
 
   #handle_attribute_change(name, value) {
@@ -243,12 +249,12 @@ export class Runtime {
   }
 
   #handle_properties_change(name, value) {
-    const result = Dict.get(this.#config.properties, name);
-    if (!Result$isOk(result)) {
-      return result;
+    const decoder = Dict.get(this.#config.properties, name);
+    if (!Result$isOk(decoder)) {
+      return decoder;
     }
 
-    return Result$Ok$0(result)(value);
+    return Decode.run(value, Result$Ok$0(decoder));
   }
 
   #handle_effect(effect) {

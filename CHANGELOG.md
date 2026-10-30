@@ -40,6 +40,7 @@ request to fix it.
 - [lustre/server_component] Fixed a bug where removing the `provides` attribute would throw.
 - [lustre/server_component] Fixed a bug where server components running on the JavaScript runtime could not be constructed.
 - [lustre/server_component] Fixed a bug where receiving certain runtime messages on the JavaScript server component runtime could throw.
+- [lustre/server_component] Fix numerous issues in the JavaScript server component runtime around handling messages and effects.
 
 ## [v5.7.1] - 2026-07-14
 
