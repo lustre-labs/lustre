@@ -1,0 +1,11 @@
+name = "app"
+version = "1.0.0"
+target = "javascript"
+
+[dependencies]
+gleam_http = ">= 3.7.2 and < 5.0.0"
+gleam_javascript = ">= 1.0.1 and < 2.0.0"
+gleam_json = ">= 2.3.0 and < 4.0.0"
+gleam_stdlib = ">= 0.60.0 and < 2.0.0"
+lustre = { path = "../../../" }
+smol = ">= 2.3.1 and < 3.0.0"
