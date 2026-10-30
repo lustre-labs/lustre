@@ -7,7 +7,14 @@ import lustre/internals/constants
 
 // HTML ELEMENTS: MAIN ROOT ----------------------------------------------------
 
-///
+/// The `<html>` element is the root of an HTML document. When server rendering
+/// a page with Lustre, it's important to always start with the `<html>` element
+/// and its two child elements: [`<head>`](#head) and [`<body>`](#body).
+/// 
+/// Common attributes include: [`lang`](../attributes.html#lang).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/html
+/// 
 pub fn html(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -15,18 +22,50 @@ pub fn html(
   element("html", attrs, children)
 }
 
+/// Renders a plain text node. For example, to produce the following HTML...
+/// 
+/// ```html
+/// <h1>
+///   Hello, Lucy!
+/// </h1>
+/// ```
+/// 
+/// ... you would write:
+/// 
+/// ```gleam
+/// html.h1([], [
+///   html.text("Hello, Lucy!"),
+/// ])
+/// ```
+/// 
 pub fn text(content: String) -> Element(message) {
   element.text(content)
 }
 
 // HTML ELEMENTS: DOCUMENT METADATA --------------------------------------------
 
-///
+/// The `<base>` element lets you change the base URL for all relative URLs in
+/// the document. 
+/// 
+/// Common attributes include: [`href`](../attributes.html#href) and
+/// [`target`](../attributes.html#target).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+/// 
 pub fn base(attrs: List(Attribute(message))) -> Element(message) {
   element("base", attrs, constants.empty_list)
 }
 
-///
+/// The `<head>` element contains metadata and links to other resources like
+/// scripts and stylesheets. The content of the `<head>` element is not displayed
+/// to the user but is instead is provided for machine processing.
+/// 
+/// When server rendering a page with Lustre, it's important to always start with
+/// the [`<html>`](#html) element and its two child elements: `<head>`] and
+/// [`<body>`](#body).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/head
+/// 
 pub fn head(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -34,22 +73,88 @@ pub fn head(
   element("head", attrs, children)
 }
 
-///
+/// You can use the `<link>` element to include external resources like stylesheets,
+/// fonts, and icons for mobile devices.
+/// 
+/// Common attributes include: [`as_`](../attributes.html#as_),
+/// [`blocking`](../attributes.html#blocking),
+/// [`crossorigin`](../attributes.html#crossorigin),
+/// [`disabled`](../attributes.html#disabled),
+/// [`fetchpriority`](../attributes.html#fetchpriority),
+/// [`href`](../attributes.html#href),
+/// [`hreflang`](../attributes.html#hreflang),
+/// [`imagesizes`](../attributes.html#imagesizes),
+/// [`imagesrcset`](../attributes.html#imagesrcset),
+/// [`integrity`](../attributes.html#integrity),
+/// [`media`](../attributes.html#media),
+/// [`referrerpolicy`](../attributes.html#referrerpolicy),
+/// [`rel`](../attributes.html#rel),
+/// [`sizes`](../attributes.html#sizes),
+/// [`title`](../attributes.html#title),
+/// [`type_`](../attributes.html#type_).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/link
+/// 
 pub fn link(attrs: List(Attribute(message))) -> Element(message) {
   element("link", attrs, constants.empty_list)
 }
 
-///
+/// The `<meta>` element is used to provide arbitrary metadata about the document
+/// that cannot be represented by existing more-specific elements. The kind of
+/// metadata being provided depends on which one of the follow attributes is used:
+/// 
+/// - [`name`](../attributes.html#name) means the element is providing metadata
+///   about the entire page, such as the author, its description, or some keywords.
+/// 
+/// - [`http_equiv`](../attributes.html#http_equiv) is used to simulate certain
+///   HTTP headers as if the response that returned the HTML document included them.
+/// 
+/// - The [`charset`](../attributes.html#charset) attribute specifies the character
+///   encoding for the HTML document.
+/// 
+/// - [`itemprop`](../attributes.html#itemprop) is used to specify machine-readable
+///   microdata that may be used by search engines and crawlers to better-understand
+///   the content.
+/// 
+/// Common attributes include: [`charset`](../attributes.html#charset),
+/// [`content`](../attributes.html#content),
+/// [`http_equiv`](../attributes.html#http_equiv),
+/// [`media`](../attributes.html#media),
+/// [`name`](../attributes.html#name),
+/// [`itemprop`](../attributes.html#itemprop).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta
+/// 
 pub fn meta(attrs: List(Attribute(message))) -> Element(message) {
   element("meta", attrs, constants.empty_list)
 }
 
-///
+/// The `<style>` element is used to embed CSS styles on the page without linking
+/// to an external stylesheet. Style elements are most commonly placed in the
+/// [`<head>`](#head) of the document, but can also appear elsewhere in the
+/// [`<body>`](#body) when making use of the [`@scope`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@scope)
+/// rule.
+/// 
+/// Common attributes include: [`blocking`](../attributes.html#blocking),
+/// [`media`](../attributes.html#media),
+/// [`nonce`](../attributes.html#nonce),
+/// [`title`](../attributes.html#title).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
+/// 
 pub fn style(attrs: List(Attribute(message)), css: String) -> Element(message) {
   element.unsafe_raw_html("", "style", attrs, css)
 }
 
-///
+/// The `<title>` element should appear in the [`<head>`](#head) of every HTML
+/// document. It is displayed in the browser's title bar, used by search engines,
+/// and announced by accessibility tools.
+/// 
+/// The content of the `<title>` element should be plain text and any HTML tags
+/// will be ignored.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/title
+/// 
 pub fn title(
   attrs: List(Attribute(message)),
   content: String,
@@ -57,7 +162,7 @@ pub fn title(
   element("title", attrs, [text(content)])
 }
 
-// HTML ELEMENTS: SECTIONING ROOT -----------------------------------------------
+// HTML ELEMENTS: SECTIONING ROOT ----------------------------------------------
 
 ///
 pub fn body(
