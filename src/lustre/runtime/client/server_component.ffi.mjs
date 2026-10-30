@@ -41,19 +41,20 @@ export class ServerComponent extends HTMLElement {
   #remoteObservedAttributes = new Set();
   #remoteObservedProperties = new Set();
   #connected = false;
-  #changedAttributesQueue = [];
   #contexts = new Map();
   #provided = new Set();
   #contextSubscriptions = new Map();
 
   #observer = new MutationObserver((mutations) => {
+    if (!this.#connected) return;
+
     const attributes = [];
 
     for (const mutation of mutations) {
       if (mutation.type !== "attributes") continue;
       const name = mutation.attributeName;
 
-      if (!this.#connected || this.#remoteObservedAttributes.has(name)) {
+      if (this.#remoteObservedAttributes.has(name)) {
         attributes.push([name, this.getAttribute(name)]);
       }
     }
@@ -70,8 +71,6 @@ export class ServerComponent extends HTMLElement {
           value,
         })),
       });
-    } else {
-      this.#changedAttributesQueue.push(...attributes);
     }
   });
 
@@ -108,11 +107,7 @@ export class ServerComponent extends HTMLElement {
     });
   }
 
-  connectedCallback() {
-    for (const attribute of this.attributes) {
-      this.#changedAttributesQueue.push([attribute.name, attribute.value]);
-    }
-  }
+  connectedCallback() {}
 
   attributeChangedCallback(name, prev, next) {
     switch (name) {
@@ -223,18 +218,28 @@ export class ServerComponent extends HTMLElement {
           dispatch,
         );
 
+        // Typically, the `attributeChangedCallback` fired immediately when the
+        // custom element is created because thats when the initial attributes are
+        // set. For a Lustre component that means you receive all those messages
+        // at start up.
+        //
+        // We can't do that for a server component because there's a network in
+        // between things, but we can mimic the behaviour by sending the current
+        // value of any observed attributes when the connection is first established.
         this.#remoteObservedAttributes = new Set(data.observed_attributes);
-        const filteredQueuedAttributes = this.#changedAttributesQueue.filter(
-          ([name]) => this.#remoteObservedAttributes.has(name),
+        const messages = Array.from(this.#remoteObservedAttributes).flatMap(
+          (name) =>
+            this.hasAttribute(name)
+              ? [
+                  {
+                    kind: attribute_changed_kind,
+                    name,
+                    value: this.getAttribute(name),
+                  },
+                ]
+              : [],
         );
 
-        const messages = filteredQueuedAttributes.map(([name, value]) => ({
-          kind: attribute_changed_kind,
-          name,
-          value,
-        }));
-
-        this.#changedAttributesQueue = [];
         this.#remoteObservedProperties = new Set(data.observed_properties);
 
         for (const name of this.#remoteObservedProperties) {
