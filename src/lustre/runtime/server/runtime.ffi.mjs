@@ -55,7 +55,7 @@ export class Runtime {
 
   #callbacks = /* @__PURE__ */ new Set();
 
-  constructor(_, init, update, view, config, start_arguments) {
+  constructor(init, update, view, config, start_arguments) {
     const [model, effects] = init(start_arguments);
     this.#model = model;
     this.#update = update;
@@ -138,7 +138,7 @@ export class Runtime {
       this.#config.contexts = Dict.insert(this.#config.contexts, key, decoder);
     } else if (Message$isEffectRemovedContextSubscription(message)) {
       const { key } = message;
-      
+
       this.broadcast(Transport.unsubscribe(key));
       this.#config.contexts = Dict.delete$(this.#config.contexts, key);
     } else if (Message$isSystemRequestedShutdown(message)) {
@@ -259,20 +259,21 @@ export class Runtime {
     const internals = () => undefined;
     const provide = (key, value) =>
       this.send(Message$EffectProvidedValue(key, value));
-    const subscribe = (key, decoder) => 
+    const subscribe = (key, decoder) =>
       this.send(Message$EffectRequestedContextSubscription(key, decoder));
-    const unsubscribe = (key) => 
+    const unsubscribe = (key) =>
       this.send(Message$EffectRemovedContextSubscription(key));
 
     globalThis.queueMicrotask(() => {
-      Effect.perform(effect, 
-        dispatch, 
-        emit, 
-        select, 
-        internals, 
-        provide, 
-        subscribe, 
-        unsubscribe
+      Effect.perform(
+        effect,
+        dispatch,
+        emit,
+        select,
+        internals,
+        provide,
+        subscribe,
+        unsubscribe,
       );
     });
   }
