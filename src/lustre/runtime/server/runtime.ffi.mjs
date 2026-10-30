@@ -70,8 +70,8 @@ export class Runtime {
 
   send(message) {
     if (Message$isClientDispatchedMessage(message)) {
-      const { message } = message;
-      const next = this.#handle_client_message(message);
+      const { message: clientMessage } = message;
+      const next = this.#handle_client_message(clientMessage);
       const diff = Diff.diff(this.#cache, this.#vdom, next);
 
       this.#vdom = next;
@@ -106,8 +106,8 @@ export class Runtime {
         this.#dispatch(Option.Option$Some$0(this.#config.on_disconnect));
       }
     } else if (Message$isEffectDispatchedMessage(message)) {
-      const { message } = message;
-      const [model, effect] = this.#update(this.#model, message);
+      const { message: appMessage } = message;
+      const [model, effect] = this.#update(this.#model, appMessage);
       const next = this.#view(model);
       const diff = Diff.diff(this.#cache, this.#vdom, next);
 

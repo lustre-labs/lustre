@@ -38,7 +38,8 @@ request to fix it.
 - [lustre/server_component] Fixed a bug where context subscriptions were not correctly registered on the client.
 - [lustre/server_component] Fixed a bug making it impossible to unsubscribe to requested contexts.
 - [lustre/server_component] Fixed a bug where removing the `provides` attribute would throw.
-- [lustre/server_component] FIxed a bug where server components running on the JavaScript runtime could not be constructed.
+- [lustre/server_component] Fixed a bug where server components running on the JavaScript runtime could not be constructed.
+- [lustre/server_component] Fixed a bug where receiving certain runtime messages on the JavaScript server component runtime could throw.
 
 ## [v5.7.1] - 2026-07-14
 
