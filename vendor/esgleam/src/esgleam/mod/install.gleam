@@ -1,9 +1,13 @@
+//// This file has been modified from its original version. The original can be
+//// found here: https://github.com/Enderchief/esgleam/blob/master/src/esgleam/mod/install.gleam
+
 import esgleam/mod/platform
 import gleam/io
 import gleam/string
 
 /// Should be updated for every esgleam release
-const tarball_url = "https://registry.npmjs.org/@esbuild/{#platform}/-/{#platform}-0.27.0.tgz"
+const tarball_url =
+  "https://registry.npmjs.org/@esbuild/{#platform}/-/{#platform}-0.28.2.tgz"
 
 @target(erlang)
 @external(erlang, "ffi_esgleam", "do_fetch")
