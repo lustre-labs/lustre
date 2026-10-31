@@ -41,7 +41,6 @@ pages = [
 ]
 
 [dependencies]
-exception = ">= 2.0.0 and < 3.0.0"
 gleam_erlang = ">= 1.0.0 and < 2.0.0"
 gleam_json = ">= 1.0.0 and < 4.0.0"
 gleam_otp = ">= 1.2.0 and < 2.0.0"
@@ -51,11 +50,12 @@ houdini = ">= 1.0.0 and < 2.0.0"
 [dev-dependencies]
 argv = ">= 1.0.2 and < 2.0.0"
 birdie = ">= 2.0.0 and < 3.0.0"
+booklet = ">= 1.1.0 and < 2.0.0"
 esgleam = { path = "./vendor/esgleam" }
+exception = ">= 2.0.0 and < 3.0.0"
 gleam_regexp = ">= 1.1.0 and < 2.0.0"
 gleamy_bench = ">= 0.5.0 and < 1.0.0"
 gleeunit = "~> 1.0"
 pprint = ">= 1.0.4 and < 2.0.0"
 shellout = "~> 1.6"
 simplifile = "~> 2.0"
-booklet = ">= 1.1.0 and < 2.0.0"
