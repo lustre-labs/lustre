@@ -1,0 +1,20 @@
+name = "esgleam"
+version = "1.0.0"
+gleam = ">= 1.12.0"
+
+description = "esbuild for Gleam"
+licences = ["Apache-2.0"]
+repository = { type = "github", user = "Enderchief", repo = "esgleam" }
+# links = [{ title = "Website", href = "https://gleam.run" }]
+
+target = "javascript"
+
+[javascript]
+typescript_declarations = true
+
+[dependencies]
+gleam_stdlib = "~> 0.44"
+simplifile = ">= 2.0.0 and < 3.0.0"
+gleam_regexp = ">= 1.1.0 and < 2.0.0"
+
+[dev-dependencies]

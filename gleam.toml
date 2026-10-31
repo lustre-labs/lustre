@@ -51,7 +51,7 @@ houdini = ">= 1.0.0 and < 2.0.0"
 [dev-dependencies]
 argv = ">= 1.0.2 and < 2.0.0"
 birdie = ">= 2.0.0 and < 3.0.0"
-esgleam = ">= 1.0.0 and < 2.0.0"
+esgleam = { path = "./vendor/esgleam" }
 gleam_regexp = ">= 1.1.0 and < 2.0.0"
 gleamy_bench = ">= 0.5.0 and < 1.0.0"
 gleeunit = "~> 1.0"
