@@ -41,6 +41,7 @@ fn init(_) -> #(Model, Effect(Message)) {
 type Message {
   UserClickedExpand
   DomReturnedHeight(Int)
+  DomImageLoaded
   DomTransitionEnded
 }
 
@@ -53,6 +54,15 @@ fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
       }
 
     DomReturnedHeight(height) -> #(Model(..model, height:), effect.none())
+
+    // The image is only rendered once we expand, so the first time we measure
+    // it the browser may not have loaded it yet and doesn't know how tall it is.
+    // When it finishes loading we measure again to get the real height.
+    DomImageLoaded ->
+      case model.state {
+        Expanded -> #(model, measure_height())
+        _ -> #(model, effect.none())
+      }
 
     DomTransitionEnded ->
       case model.state {
@@ -106,6 +116,7 @@ fn view(model: Model) -> Element(Message) {
             html.img([
               attribute.class("aspect-square w-full max-w-2xl"),
               attribute.src("https://cdn2.thecatapi.com/images/8lg.gif"),
+              event.on("load", decode.success(DomImageLoaded)),
             ])
         },
         on_collapse: DomTransitionEnded,
