@@ -164,7 +164,12 @@ pub fn title(
 
 // HTML ELEMENTS: SECTIONING ROOT ----------------------------------------------
 
-///
+/// The `<body>` element contains the human-readable content of an HTML document.
+/// It is always a direct child of the [`<html>`](#html) element and should be
+/// accompanied by a single [`<head>`](#head) element.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body
+/// 
 pub fn body(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -174,7 +179,19 @@ pub fn body(
 
 // HTML ELEMENTS: CONTENT SECTIONING -------------------------------------------
 
-///
+/// One of many semantic HTML elements that make your content more-accessible
+/// and easier to understand for search engines and other automations. The
+/// `<address>` element contains _contact information_ for a person, group, or
+/// organisation. This _may_ be a physical address, but it may also be an email
+/// address, phone number, URL, social media handle, or any other form of contact
+/// information.
+/// 
+/// Semantically, the `<address>` element provides contact information for its
+/// _furthest_ [`<article>`](#article) or [`<body>`](#body) ancestor, and should
+/// not be used to provide general contact information unrelated to those elements.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/address
+/// 
 pub fn address(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -182,7 +199,17 @@ pub fn address(
   element("address", attrs, children)
 }
 
-///
+/// An `<article>` represents self-contained content that could be independently
+/// understood or distributed without the context of the rest of the document.
+/// Although the name of the element implies long-form content, its suitable for
+/// a wide range of content such as forum posts, product cards, and other small
+/// widgets.
+/// 
+/// Articles may be nested. For example a weather card could be an `<article>`
+/// containing multiple nested `<article>` elements for each daily forecast.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article
+/// 
 pub fn article(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -190,7 +217,11 @@ pub fn article(
   element("article", attrs, children)
 }
 
-///
+/// The `<aside>` element represents content that is tangentially related to the
+/// main content of the document, such as sidebars, pull quotes, or ads.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/aside
+/// 
 pub fn aside(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -198,7 +229,13 @@ pub fn aside(
   element("aside", attrs, children)
 }
 
-///
+/// The `<footer>` element can be used to include author information, copyright
+/// notices, links to related documents, and other information about the containing
+/// document or sectioning element (such as an [`<article>`](#article) or
+/// [`<section>`](#section)).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/footer
+/// 
 pub fn footer(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -206,7 +243,16 @@ pub fn footer(
   element("footer", attrs, children)
 }
 
-///
+/// When not nested within a sectioning element such as [`<main>`](#main) or
+/// [`<article>`](#article), the `<header>` element represents a site-wide banner
+/// typically containing the site logo, search features, and global navigation.
+/// 
+/// When nested within a sectioning element, the `<header>` element becomes a
+/// container for introductory content or navigational aids related specifically
+/// to that section.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/header
+/// 
 pub fn header(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -214,7 +260,13 @@ pub fn header(
   element("header", attrs, children)
 }
 
-///
+/// The heading elements `<h1>` through [`<h6>`](#h6) represent the six levels
+/// of section headings in a document. Headings are a _crucial_ navigation aid
+/// for screen readers and as such it is important that headings correctly form
+/// a hierarchical structure without skipping levels.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/heading_elements
+/// 
 pub fn h1(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -222,7 +274,13 @@ pub fn h1(
   element("h1", attrs, children)
 }
 
-///
+/// The heading elements [`<h1>`](#h1) through [`<h6>`](#h6) represent the six levels
+/// of section headings in a document. Headings are a _crucial_ navigation aid
+/// for screen readers and as such it is important that headings correctly form
+/// a hierarchical structure without skipping levels.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/heading_elements
+/// 
 pub fn h2(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -230,7 +288,13 @@ pub fn h2(
   element("h2", attrs, children)
 }
 
-///
+/// The heading elements [`<h1>`](#h1) through [`<h6>`](#h6) represent the six levels
+/// of section headings in a document. Headings are a _crucial_ navigation aid
+/// for screen readers and as such it is important that headings correctly form
+/// a hierarchical structure without skipping levels.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/heading_elements
+/// 
 pub fn h3(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -238,7 +302,13 @@ pub fn h3(
   element("h3", attrs, children)
 }
 
-///
+/// The heading elements [`<h1>`](#h1) through [`<h6>`](#h6) represent the six levels
+/// of section headings in a document. Headings are a _crucial_ navigation aid
+/// for screen readers and as such it is important that headings correctly form
+/// a hierarchical structure without skipping levels.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/heading_elements
+/// 
 pub fn h4(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -246,7 +316,13 @@ pub fn h4(
   element("h4", attrs, children)
 }
 
-///
+/// The heading elements [`<h1>`](#h1) through [`<h6>`](#h6) represent the six levels
+/// of section headings in a document. Headings are a _crucial_ navigation aid
+/// for screen readers and as such it is important that headings correctly form
+/// a hierarchical structure without skipping levels.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/heading_elements
+/// 
 pub fn h5(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -254,7 +330,13 @@ pub fn h5(
   element("h5", attrs, children)
 }
 
-///
+/// The heading elements [`<h1>`](#h1) through [`<h6>`](#h6) represent the six levels
+/// of section headings in a document. Headings are a _crucial_ navigation aid
+/// for screen readers and as such it is important that headings correctly form
+/// a hierarchical structure without skipping levels.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/heading_elements
+/// 
 pub fn h6(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -262,7 +344,12 @@ pub fn h6(
   element("h6", attrs, children)
 }
 
-///
+/// The `<hgroup`> element can be used to group a single heading element with
+/// one or more [paragraphs](#p) acting as subheadings, alternative titles, or
+/// taglines.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hgroup
+/// 
 pub fn hgroup(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -270,7 +357,14 @@ pub fn hgroup(
   element("hgroup", attrs, children)
 }
 
-///
+/// The `<main>` element contains the main content of the page. It should be 
+/// content unique to that page and not include shared or repeated elements
+/// like sidebars or navigation menus.
+/// 
+/// There should only be one visible `<main>` element on the page.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main
+/// 
 pub fn main(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -278,7 +372,14 @@ pub fn main(
   element("main", attrs, children)
 }
 
-///
+/// The `<nav>` element represents content whose primary purpose is to provide
+/// links to content either on the page or elsewhere. Using the `<nav>` element
+/// where appropriate can help screen readers and other user agents better-present
+/// the page by, for example, omitting navigational content from the main reading
+/// flow.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav
+/// 
 pub fn nav(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -286,7 +387,16 @@ pub fn nav(
   element("nav", attrs, children)
 }
 
-///
+/// A `<section>` is the most general sectioning element. It represents a standalone
+/// section of content without any additional semantics. Because of that, it's
+/// important that each `<section>` _always_ has a heading to identify its content.
+/// 
+/// Before using a `<section>`, consider whether a more-specific element can be
+/// used such as [`<article>`](#article), [`<aside>`](#aside), [`<main>`](#main),
+/// or [`<nav>`](#nav).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section
+/// 
 pub fn section(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -294,7 +404,12 @@ pub fn section(
   element("section", attrs, children)
 }
 
-///
+/// The `<search>` sectioning element identifies its content as a collection of
+/// controls or other content specifically related to search or filtering
+/// functionality.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/search
+/// 
 pub fn search(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
