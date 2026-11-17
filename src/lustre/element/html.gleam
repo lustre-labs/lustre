@@ -419,7 +419,13 @@ pub fn search(
 
 // HTML ELEMENTS: TEXT CONTENT -------------------------------------------------
 
-///
+/// Use the `<blockquote>` element to render an extended or visually distinct
+/// quotation.
+/// 
+/// Common attributes include: [`cite`](../attribute.html#cite)
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/blockquote
+/// 
 pub fn blockquote(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -427,7 +433,11 @@ pub fn blockquote(
   element("blockquote", attrs, children)
 }
 
-///
+/// The `<dd>` element provides a description or definition for a preceding
+/// [term](#dt) in a [description list](#dl).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd
+/// 
 pub fn dd(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -435,7 +445,11 @@ pub fn dd(
   element("dd", attrs, children)
 }
 
-///
+/// A `<div>` is a generic container with no special meaning or semantics. These
+/// elements are primarily used for grouping and styling content with CSS.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/div
+/// 
 pub fn div(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -451,7 +465,11 @@ pub fn dl(
   element("dl", attrs, children)
 }
 
-///
+/// The `<dt>` element represents a term in a [description list](#dl) that will
+/// be defined by a subsequent [`<dd>`](#dd) element.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
+/// 
 pub fn dt(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -459,7 +477,13 @@ pub fn dt(
   element("dt", attrs, children)
 }
 
-///
+/// The `<figcaption>` element is used inside a [`<figure>`](#figure) to provide
+/// a caption or legend for the figure. It is also used by assistive technologies
+/// to provide a description of the figure and is therefore important to include
+/// when content such as a chart would otherwise lack a textual description.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption
+/// 
 pub fn figcaption(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -467,7 +491,17 @@ pub fn figcaption(
   element("figcaption", attrs, children)
 }
 
-///
+/// The `<figure>` element is used to represent self-contained content such as
+/// an image or code snippet that is referenced in the main content but could be
+/// understood independently too.
+/// 
+/// For figures containing charts, code snippets, quotes, or other content that
+/// may not have an inherent textual description, it is important to include a
+/// [`<figcaption>`](#figcaption) element to provide a description for assistive
+/// technologies.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figure
+/// 
 pub fn figure(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -475,12 +509,24 @@ pub fn figure(
   element("figure", attrs, children)
 }
 
-///
+/// The `<hr>` element marks a thematic break between two elements. It should not
+/// be used as a generic divider between elements or controls.
+/// 
+/// Additionally, the `<hr>` element may be used inside a [`<select>`](#select)
+/// to separate groups of options within the dropdown menu.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hr
+/// 
 pub fn hr(attrs: List(Attribute(message))) -> Element(message) {
   element("hr", attrs, constants.empty_list)
 }
 
-///
+/// The `<li>` element represents one item in an [ordered](#ol) list, an [unordered](#ul)
+/// list, or a [`<menu>`](#menu). The `<li>` element must be a _direct_ child of
+/// one of these elements in order to be valid HTML.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/li
+/// 
 pub fn li(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -488,7 +534,13 @@ pub fn li(
   element("li", attrs, children)
 }
 
-///
+/// The `<menu>` element is equivalent to the [`<ul>`](#ul) element and represents
+/// an unordered list of items. You might prefer to use this in your markup to
+/// contain a list of commands or controls rather than a bulleted list used in
+/// prose.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/menu
+/// 
 pub fn menu(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -496,7 +548,14 @@ pub fn menu(
   element("menu", attrs, children)
 }
 
-///
+/// The `<ol>` element represents an _ordered_ list of content such that rearranging
+/// the items would change or destroy the meaning of the list.
+/// 
+/// Common attributes include: [`reversed`](../attribute.html#reversed),
+/// [`start`](../attribute.html#start), and [`type`](../attribute.html#type).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ol
+/// 
 pub fn ol(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -504,7 +563,13 @@ pub fn ol(
   element("ol", attrs, children)
 }
 
-///
+/// The `<p>` element represents a paragraph of text. Breaking your content up
+/// into separate paragraphs improves readability for sighted users, but also
+/// improves the experience for users of assistive technologies too as it makes
+/// it possible to quickly skim through the content.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/p
+/// 
 pub fn p(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -512,7 +577,20 @@ pub fn p(
   element("p", attrs, children)
 }
 
-///
+/// You can use the `<pre>` element to display text exactly as it is provided,
+/// without any additional formatting or interpretation. The `<pre>` element is
+/// commonly used as a container for semantic elements such as [`<code>`] or
+/// [`<samp>`](#samp).
+/// 
+/// Because the formatting of `<pre>` text is typically an important part of its
+/// meaning, you should think about how users of screen readers and other assistive
+/// technologies will understand your content. One common approach is to wrap
+/// the `<pre>` element in a [`<figure>`](#figure) element and then provide a
+/// descriptive [`<figcaption>`](#figcaption) that can be read by assistive
+/// technologies.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
+/// 
 pub fn pre(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
@@ -520,7 +598,13 @@ pub fn pre(
   element("pre", attrs, children)
 }
 
-///
+/// The `<ul>` element represents an _unordered_ list of content such that the
+/// order of the items does not carry any special meaning. It is equivalent to
+/// the [`<menu>`](#menu) element but may be preferable in prose and other content
+/// where a bulleted list makes more sense than a menu of options.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ul
+/// 
 pub fn ul(
   attrs: List(Attribute(message)),
   children: List(Element(message)),
