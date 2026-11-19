@@ -1574,6 +1574,17 @@ pub fn summary(
 
 // HTML ELEMENTS: WEB COMPONENTS -----------------------------------------------
 
+/// The `<slot>` element acts as a placeholder or hole inside a shadow DOM tree.
+/// Slots are how content is passed into a custom element or a Lustre component.
+/// By giving the slot a name, a custom element can specify multiple holes for
+/// content to be slotted into.
+///
+/// The children rendered inside a `<slot>` element are used as fallback content
+/// when no content has been assigned to the slot by a parent element.
+/// 
+/// Common attributes include: [`name`](../attributes.html#name).
+///
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/slot
 ///
 pub fn slot(
   attrs: List(Attribute(message)),
@@ -1582,6 +1593,16 @@ pub fn slot(
   element.element("slot", attrs, fallback)
 }
 
+/// The `<template>` element holds HTML that is not immediately rendered, and 
+/// instead can be cloned by JavaScript or used when server-rendering a custom
+/// element.
+///
+/// Common attributes include: [`shadowrootmode`](../attributes.html#shadowrootmode),
+/// [`shadowrootclonable`](../attributes.html#shadowrootclonable),
+/// [`shadowrootdelegatesfocus`](../attributes.html#shadowrootdelegatesfocus), and
+/// [`shadowrootserializable`](../attributes.html#shadowrootserializable).
+///
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/template
 ///
 pub fn template(
   attrs: List(Attribute(message)),
