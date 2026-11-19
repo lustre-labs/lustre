@@ -14,7 +14,8 @@ request to fix it.
 ## Added
 
 - [lustre/attribute] Add the missing `cite` attribute for `<blockquote>` and `<q>` elements.
-- [lustre/dev/simulate] Add a `typing` function to simulate multiple `input` events at once. 
+- [lustre/attribute] Add SVG attributes.
+- [lustre/dev/simulate] Add a `typing` function to simulate multiple `input` events at once.
 - [lustre/dev/simulate] Add the `change` and `check` functions to simulate additional input interactions.
 - [lustre/dev/query] Add the `button`, `input`, `form`, and `select` convenience selectors.
 - [lustre/event] Add the `on_double_click` simple event handler.

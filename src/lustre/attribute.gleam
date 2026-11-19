@@ -1,7 +1,9 @@
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/float
 import gleam/int
 import gleam/json.{type Json}
+import gleam/list
 import gleam/string
 import lustre/vdom/vattr
 
@@ -1941,4 +1943,1096 @@ pub fn aria_valuenow(value: String) -> Attribute(message) {
 ///
 pub fn aria_valuetext(value: String) -> Attribute(message) {
   aria("valuetext", value)
+}
+
+// SVG ATTRIBUTES --------------------------------------------------------------
+
+///
+/// 
+pub fn accumulate(value: String) -> Attribute(message) {
+  attribute("accumulate", value)
+}
+
+///
+/// 
+pub fn additive(value: String) -> Attribute(message) {
+  attribute("additive", value)
+}
+
+///
+/// 
+pub fn alignment_baseline(value: String) -> Attribute(message) {
+  attribute("alignment-baseline", value)
+}
+
+///
+/// 
+pub fn amplitude(value: Float) -> Attribute(message) {
+  attribute("amplitude", float.to_string(value))
+}
+
+///
+/// 
+pub fn attribute_name(value: String) -> Attribute(message) {
+  attribute("attributeName", value)
+}
+
+///
+/// 
+pub fn attribute_type(value: String) -> Attribute(message) {
+  attribute("attributeType", value)
+}
+
+///
+/// 
+pub fn azimuth(value: Float) -> Attribute(message) {
+  attribute("azimuth", float.to_string(value))
+}
+
+///
+/// 
+pub fn base_frequency(
+  horizontal: Float,
+  vertical: Float,
+) -> Attribute(message) {
+  let horizontal = float.max(horizontal, 0.0)
+  let vertical = float.max(vertical, 0.0)
+
+  attribute(
+    "baseFrequency",
+    float.to_string(horizontal) <> " " <> float.to_string(vertical),
+  )
+}
+
+///
+/// 
+pub fn baseline_shift(value: String) -> Attribute(message) {
+  attribute("baseline-shift", value)
+}
+
+///
+/// 
+pub fn begin(value: String) -> Attribute(message) {
+  attribute("begin", value)
+}
+
+///
+/// 
+pub fn bias(value: Float) -> Attribute(message) {
+  attribute("bias", float.to_string(value))
+}
+
+///
+/// 
+pub fn by(value: String) -> Attribute(message) {
+  attribute("by", value)
+}
+
+///
+/// 
+pub fn calc_mode(value: String) -> Attribute(message) {
+  attribute("calcMode", value)
+}
+
+///
+/// 
+pub fn clip(value: String) -> Attribute(message) {
+  attribute("clip", value)
+}
+
+///
+/// 
+pub fn clip_path_units(value: String) -> Attribute(message) {
+  attribute("clipPathUnits", value)
+}
+
+///
+/// 
+pub fn clip_path(value: String) -> Attribute(message) {
+  attribute("clip-path", value)
+}
+
+///
+/// 
+pub fn clip_rule(value: String) -> Attribute(message) {
+  attribute("clip-rule", value)
+}
+
+///
+/// 
+pub fn color(value: String) -> Attribute(message) {
+  attribute("color", value)
+}
+
+///
+/// 
+pub fn color_interpolation(value: String) -> Attribute(message) {
+  attribute("color-interpolation", value)
+}
+
+///
+/// 
+pub fn color_interpolation_filters(value: String) -> Attribute(message) {
+  attribute("color-interpolation-filters", value)
+}
+
+///
+/// 
+pub fn cursor(value: String) -> Attribute(message) {
+  attribute("cursor", value)
+}
+
+///
+/// 
+pub fn cx(value: String) -> Attribute(message) {
+  attribute("cx", value)
+}
+
+///
+/// 
+pub fn cy(value: String) -> Attribute(message) {
+  attribute("cy", value)
+}
+
+///
+/// 
+pub fn d(value: String) -> Attribute(message) {
+  attribute("d", value)
+}
+
+///
+/// 
+pub fn diffuse_constant(value: Float) -> Attribute(message) {
+  attribute("diffuseConstant", float.to_string(value))
+}
+
+///
+/// 
+pub fn direction(value: String) -> Attribute(message) {
+  attribute("direction", value)
+}
+
+///
+/// 
+pub fn display(value: String) -> Attribute(message) {
+  attribute("display", value)
+}
+
+///
+/// 
+pub fn divisor(value: Float) -> Attribute(message) {
+  attribute("divisor", float.to_string(value))
+}
+
+///
+/// 
+pub fn dominant_baseline(value: String) -> Attribute(message) {
+  attribute("dominant-baseline", value)
+}
+
+///
+/// 
+pub fn dur(value: String) -> Attribute(message) {
+  attribute("dur", value)
+}
+
+///
+/// 
+pub fn dx(value: String) -> Attribute(message) {
+  attribute("dx", value)
+}
+
+///
+/// 
+pub fn dy(value: String) -> Attribute(message) {
+  attribute("dy", value)
+}
+
+///
+/// 
+pub fn e(value: String) -> Attribute(message) {
+  attribute("E", value)
+}
+
+///
+/// 
+pub fn edge_mode(value: String) -> Attribute(message) {
+  attribute("edgeMode", value)
+}
+
+///
+/// 
+pub fn elevation(value: Float) -> Attribute(message) {
+  attribute("elevation", float.to_string(value))
+}
+
+///
+/// 
+pub fn end(value: String) -> Attribute(message) {
+  attribute("end", value)
+}
+
+///
+/// 
+pub fn exponent(value: Float) -> Attribute(message) {
+  attribute("exponent", float.to_string(value))
+}
+
+///
+/// 
+pub fn fill(value: String) -> Attribute(message) {
+  attribute("fill", value)
+}
+
+///
+/// 
+pub fn fill_opacity(value: String) -> Attribute(message) {
+  attribute("fill-opacity", value)
+}
+
+///
+/// 
+pub fn fill_rule(value: String) -> Attribute(message) {
+  attribute("fill-rule", value)
+}
+
+///
+/// 
+pub fn filter(value: String) -> Attribute(message) {
+  attribute("filter", value)
+}
+
+///
+/// 
+pub fn filter_units(value: String) -> Attribute(message) {
+  attribute("filterUnits", value)
+}
+
+///
+/// 
+pub fn flood_color(value: String) -> Attribute(message) {
+  attribute("flood-color", value)
+}
+
+///
+/// 
+pub fn flood_opacity(value: String) -> Attribute(message) {
+  attribute("flood-opacity", value)
+}
+
+///
+/// 
+pub fn font_family(value: String) -> Attribute(message) {
+  attribute("font-family", value)
+}
+
+///
+/// 
+pub fn font_size(value: String) -> Attribute(message) {
+  attribute("font-size", value)
+}
+
+///
+/// 
+pub fn font_size_adjust(value: String) -> Attribute(message) {
+  attribute("font-size-adjust", value)
+}
+
+///
+/// 
+pub fn font_stretch(value: String) -> Attribute(message) {
+  attribute("font-stretch", value)
+}
+
+///
+/// 
+pub fn font_style(value: String) -> Attribute(message) {
+  attribute("font-style", value)
+}
+
+///
+/// 
+pub fn font_variant(value: String) -> Attribute(message) {
+  attribute("font-variant", value)
+}
+
+///
+/// 
+pub fn font_weight(value: String) -> Attribute(message) {
+  attribute("font-weight", value)
+}
+
+///
+/// 
+pub fn font_width(value: String) -> Attribute(message) {
+  attribute("font-width", value)
+}
+
+///
+/// 
+pub fn fr(value: String) -> Attribute(message) {
+  attribute("fr", value)
+}
+
+///
+/// 
+pub fn from(value: String) -> Attribute(message) {
+  attribute("from", value)
+}
+
+///
+/// 
+pub fn fx(value: String) -> Attribute(message) {
+  attribute("fx", value)
+}
+
+///
+/// 
+pub fn fy(value: String) -> Attribute(message) {
+  attribute("fy", value)
+}
+
+///
+/// 
+pub fn glyph_orientation_horizontal(value: String) -> Attribute(message) {
+  attribute("glyph-orientation-horizontal", value)
+}
+
+///
+/// 
+pub fn glyph_orientation_vertical(value: String) -> Attribute(message) {
+  attribute("glyph-orientation-vertical", value)
+}
+
+///
+/// 
+pub fn gradient_transform(value: String) -> Attribute(message) {
+  attribute("gradientTransform", value)
+}
+
+///
+/// 
+pub fn gradient_units(value: String) -> Attribute(message) {
+  attribute("gradientUnits", value)
+}
+
+///
+/// 
+pub fn image_rendering(value: String) -> Attribute(message) {
+  attribute("image-rendering", value)
+}
+
+///
+/// 
+pub fn in_(value: String) -> Attribute(message) {
+  attribute("in", value)
+}
+
+///
+/// 
+pub fn in2(value: String) -> Attribute(message) {
+  attribute("in2", value)
+}
+
+///
+/// 
+pub fn intercept(value: String) -> Attribute(message) {
+  attribute("intercept", value)
+}
+
+///
+/// 
+pub fn k1(value: Float) -> Attribute(message) {
+  attribute("k1", float.to_string(value))
+}
+
+///
+/// 
+pub fn k2(value: Float) -> Attribute(message) {
+  attribute("k2", float.to_string(value))
+}
+
+///
+/// 
+pub fn k3(value: Float) -> Attribute(message) {
+  attribute("k3", float.to_string(value))
+}
+
+///
+/// 
+pub fn k4(value: Float) -> Attribute(message) {
+  attribute("k4", float.to_string(value))
+}
+
+///
+/// 
+pub fn kernel_matrix(value: String) -> Attribute(message) {
+  attribute("kernelMatrix", value)
+}
+
+///
+/// 
+pub fn kernel_unit_length(value: String) -> Attribute(message) {
+  attribute("kernelUnitLength", value)
+}
+
+///
+/// 
+pub fn key_points(value: String) -> Attribute(message) {
+  attribute("keyPoints", value)
+}
+
+///
+/// 
+pub fn key_splines(value: String) -> Attribute(message) {
+  attribute("keySplines", value)
+}
+
+///
+/// 
+pub fn key_times(value: String) -> Attribute(message) {
+  attribute("keyTimes", value)
+}
+
+///
+/// 
+pub fn length_adjust(value: String) -> Attribute(message) {
+  attribute("lengthAdjust", value)
+}
+
+///
+/// 
+pub fn letter_spacing(value: String) -> Attribute(message) {
+  attribute("letter-spacing", value)
+}
+
+///
+/// 
+pub fn lighting_color(value: String) -> Attribute(message) {
+  attribute("lighting-color", value)
+}
+
+///
+/// 
+pub fn limiting_cone_angle(value: String) -> Attribute(message) {
+  attribute("limitingConeAngle", value)
+}
+
+///
+/// 
+pub fn marker_end(value: String) -> Attribute(message) {
+  attribute("marker-end", value)
+}
+
+///
+/// 
+pub fn marker_mid(value: String) -> Attribute(message) {
+  attribute("marker-mid", value)
+}
+
+///
+/// 
+pub fn marker_start(value: String) -> Attribute(message) {
+  attribute("marker-start", value)
+}
+
+///
+/// 
+pub fn marker_height(value: String) -> Attribute(message) {
+  attribute("markerHeight", value)
+}
+
+///
+/// 
+pub fn marker_units(value: String) -> Attribute(message) {
+  attribute("markerUnits", value)
+}
+
+///
+/// 
+pub fn marker_width(value: String) -> Attribute(message) {
+  attribute("markerWidth", value)
+}
+
+///
+/// 
+pub fn mask(value: String) -> Attribute(message) {
+  attribute("mask", value)
+}
+
+///
+/// 
+pub fn mask_content_units(value: String) -> Attribute(message) {
+  attribute("maskContentUnits", value)
+}
+
+///
+/// 
+pub fn mask_units(value: String) -> Attribute(message) {
+  attribute("maskUnits", value)
+}
+
+///
+/// 
+pub fn mode(value: String) -> Attribute(message) {
+  attribute("mode", value)
+}
+
+///
+/// 
+pub fn num_octaves(value: Int) -> Attribute(message) {
+  let value = int.max(value, 0)
+
+  attribute("numOctaves", int.to_string(value))
+}
+
+///
+/// 
+pub fn offset(value: String) -> Attribute(message) {
+  attribute("offset", value)
+}
+
+///
+/// 
+pub fn opacity(value: Float) -> Attribute(message) {
+  let value = float.max(value, 0.0) |> float.min(1.0)
+
+  attribute("opacity", float.to_string(value))
+}
+
+///
+/// 
+pub fn operator(value: String) -> Attribute(message) {
+  attribute("operator", value)
+}
+
+///
+/// 
+pub fn order(value: String) -> Attribute(message) {
+  attribute("order", value)
+}
+
+///
+/// 
+pub fn orient(value: String) -> Attribute(message) {
+  attribute("orient", value)
+}
+
+///
+/// 
+pub fn origin(value: String) -> Attribute(message) {
+  attribute("origin", value)
+}
+
+///
+/// 
+pub fn overflow(value: String) -> Attribute(message) {
+  attribute("overflow", value)
+}
+
+///
+/// 
+pub fn paint_order(value: String) -> Attribute(message) {
+  attribute("paint-order", value)
+}
+
+///
+/// 
+pub fn path(value: String) -> Attribute(message) {
+  attribute("path", value)
+}
+
+///
+/// 
+pub fn path_length(value: Float) -> Attribute(message) {
+  attribute("pathLength", float.to_string(value))
+}
+
+///
+/// 
+pub fn pattern_content_units(value: String) -> Attribute(message) {
+  attribute("patternContentUnits", value)
+}
+
+///
+/// 
+pub fn pattern_transform(value: String) -> Attribute(message) {
+  attribute("patternTransform", value)
+}
+
+///
+/// 
+pub fn pattern_units(value: String) -> Attribute(message) {
+  attribute("patternUnits", value)
+}
+
+///
+/// 
+pub fn pointer_events(value: String) -> Attribute(message) {
+  attribute("pointer-events", value)
+}
+
+///
+/// 
+pub fn points(value: String) -> Attribute(message) {
+  attribute("points", value)
+}
+
+///
+/// 
+pub fn points_at_x(value: Float) -> Attribute(message) {
+  attribute("pointsAtX", float.to_string(value))
+}
+
+///
+/// 
+pub fn points_at_y(value: Float) -> Attribute(message) {
+  attribute("pointsAtY", float.to_string(value))
+}
+
+///
+/// 
+pub fn points_at_z(value: Float) -> Attribute(message) {
+  attribute("pointsAtZ", float.to_string(value))
+}
+
+///
+/// 
+pub fn preserve_alpha(value: String) -> Attribute(message) {
+  attribute("preserveAlpha", value)
+}
+
+///
+/// 
+pub fn preserve_aspect_ratio(value: String) -> Attribute(message) {
+  attribute("preserveAspectRatio", value)
+}
+
+///
+/// 
+pub fn primitive_units(value: String) -> Attribute(message) {
+  attribute("primitiveUnits", value)
+}
+
+///
+/// 
+pub fn r(value: String) -> Attribute(message) {
+  attribute("r", value)
+}
+
+///
+/// 
+pub fn radius(rx: Float, ry: Float) -> Attribute(message) {
+  attribute("radius", float.to_string(rx) <> " " <> float.to_string(ry))
+}
+
+///
+/// 
+pub fn ref_x(value: String) -> Attribute(message) {
+  attribute("refX", value)
+}
+
+///
+/// 
+pub fn ref_y(value: String) -> Attribute(message) {
+  attribute("refY", value)
+}
+
+///
+/// 
+pub fn repeat_count(value: String) -> Attribute(message) {
+  attribute("repeatCount", value)
+}
+
+///
+/// 
+pub fn repeat_dur(value: String) -> Attribute(message) {
+  attribute("repeatDur", value)
+}
+
+///
+/// 
+pub fn required_extensions(value: String) -> Attribute(message) {
+  attribute("requiredExtensions", value)
+}
+
+///
+/// 
+pub fn required_features(value: String) -> Attribute(message) {
+  attribute("requiredFeatures", value)
+}
+
+///
+/// 
+pub fn restart(value: String) -> Attribute(message) {
+  attribute("restart", value)
+}
+
+///
+/// 
+pub fn result(value: String) -> Attribute(message) {
+  attribute("result", value)
+}
+
+///
+/// 
+pub fn rotate(value: String) -> Attribute(message) {
+  attribute("rotate", value)
+}
+
+///
+/// 
+pub fn rx(value: String) -> Attribute(message) {
+  attribute("rx", value)
+}
+
+///
+/// 
+pub fn ry(value: String) -> Attribute(message) {
+  attribute("ry", value)
+}
+
+///
+/// 
+pub fn scale(value: Float) -> Attribute(message) {
+  attribute("scale", float.to_string(value))
+}
+
+///
+/// 
+pub fn seed(value: Float) -> Attribute(message) {
+  attribute("seed", float.to_string(value))
+}
+
+///
+/// 
+pub fn shape_rendering(value: String) -> Attribute(message) {
+  attribute("shape-rendering", value)
+}
+
+///
+/// 
+pub fn side(value: String) -> Attribute(message) {
+  attribute("side", value)
+}
+
+///
+/// 
+pub fn slope(value: Float) -> Attribute(message) {
+  attribute("slope", float.to_string(value))
+}
+
+///
+/// 
+pub fn spacing(value: String) -> Attribute(message) {
+  attribute("spacing", value)
+}
+
+///
+/// 
+pub fn specular_constant(value: Float) -> Attribute(message) {
+  attribute("specularConstant", float.to_string(value))
+}
+
+///
+/// 
+pub fn specular_exponent(value: Float) -> Attribute(message) {
+  attribute("specularExponent", float.to_string(value))
+}
+
+///
+/// 
+pub fn spread_method(value: String) -> Attribute(message) {
+  attribute("spreadMethod", value)
+}
+
+///
+/// 
+pub fn start_offset(value: String) -> Attribute(message) {
+  attribute("startOffset", value)
+}
+
+///
+/// 
+pub fn std_deviation(x: Float, y: Float) -> Attribute(message) {
+  let x = float.max(x, 0.0)
+  let y = float.max(y, 0.0)
+
+  attribute("stdDeviation", float.to_string(x) <> " " <> float.to_string(y))
+}
+
+///
+/// 
+pub fn stitch_tiles(value: String) -> Attribute(message) {
+  attribute("stitchTiles", value)
+}
+
+///
+/// 
+pub fn stop_color(value: String) -> Attribute(message) {
+  attribute("stop-color", value)
+}
+
+///
+/// 
+pub fn stop_opacity(value: Float) -> Attribute(message) {
+  let value = float.max(value, 0.0) |> float.min(1.0)
+
+  attribute("stop-opacity", float.to_string(value))
+}
+
+///
+/// 
+pub fn stroke(value: String) -> Attribute(message) {
+  attribute("stroke", value)
+}
+
+///
+/// 
+pub fn stroke_dasharray(value: String) -> Attribute(message) {
+  attribute("stroke-dasharray", value)
+}
+
+///
+/// 
+pub fn stroke_dashoffset(value: String) -> Attribute(message) {
+  attribute("stroke-dashoffset", value)
+}
+
+///
+/// 
+pub fn stroke_linecap(value: String) -> Attribute(message) {
+  attribute("stroke-linecap", value)
+}
+
+///
+/// 
+pub fn stroke_linejoin(value: String) -> Attribute(message) {
+  attribute("stroke-linejoin", value)
+}
+
+///
+/// 
+pub fn stroke_miterlimit(value: Float) -> Attribute(message) {
+  let value = float.max(value, 1.0)
+
+  attribute("stroke-miterlimit", float.to_string(value))
+}
+
+///
+/// 
+pub fn stroke_opacity(value: Float) -> Attribute(message) {
+  let value = float.max(value, 0.0) |> float.min(1.0)
+
+  attribute("stroke-opacity", float.to_string(value))
+}
+
+///
+/// 
+pub fn stroke_width(value: String) -> Attribute(message) {
+  attribute("stroke-width", value)
+}
+
+///
+/// 
+pub fn surface_scale(value: Float) -> Attribute(message) {
+  attribute("surfaceScale", float.to_string(value))
+}
+
+///
+/// 
+pub fn system_language(value: String) -> Attribute(message) {
+  attribute("systemLanguage", value)
+}
+
+///
+/// 
+pub fn table_values(value: List(Float)) -> Attribute(message) {
+  attribute("tableValues", {
+    value
+    |> list.map(float.to_string)
+    |> string.join(" ")
+  })
+}
+
+///
+/// 
+pub fn target_x(value: Int) -> Attribute(message) {
+  attribute("targetX", int.to_string(value))
+}
+
+///
+/// 
+pub fn target_y(value: Int) -> Attribute(message) {
+  attribute("targetY", int.to_string(value))
+}
+
+///
+/// 
+pub fn text_anchor(value: String) -> Attribute(message) {
+  attribute("text-anchor", value)
+}
+
+///
+/// 
+pub fn text_decoration(value: String) -> Attribute(message) {
+  attribute("text-decoration", value)
+}
+
+///
+/// 
+pub fn text_overflow(value: String) -> Attribute(message) {
+  attribute("text-overflow", value)
+}
+
+///
+/// 
+pub fn text_rendering(value: String) -> Attribute(message) {
+  attribute("text-rendering", value)
+}
+
+///
+/// 
+pub fn text_length(value: String) -> Attribute(message) {
+  attribute("textLength", value)
+}
+
+///
+/// 
+pub fn to(value: String) -> Attribute(message) {
+  attribute("to", value)
+}
+
+///
+/// 
+pub fn transform(value: String) -> Attribute(message) {
+  attribute("transform", value)
+}
+
+///
+/// 
+pub fn transform_origin(value: String) -> Attribute(message) {
+  attribute("transform-origin", value)
+}
+
+///
+/// 
+pub fn unicode_bidi(value: String) -> Attribute(message) {
+  attribute("unicode-bidi", value)
+}
+
+///
+/// 
+pub fn values(value: String) -> Attribute(message) {
+  attribute("values", value)
+}
+
+///
+/// 
+pub fn vector_effect(value: String) -> Attribute(message) {
+  attribute("vector-effect", value)
+}
+
+///
+/// 
+pub fn version(value: String) -> Attribute(message) {
+  attribute("version", value)
+}
+
+///
+/// 
+pub fn view_box(
+  min_x: Float,
+  min_y: Float,
+  width: Float,
+  height: Float,
+) -> Attribute(message) {
+  attribute(
+    "viewBox",
+    float.to_string(min_x)
+      <> " "
+      <> float.to_string(min_y)
+      <> " "
+      <> float.to_string(width)
+      <> " "
+      <> float.to_string(height),
+  )
+}
+
+///
+/// 
+pub fn visibility(value: String) -> Attribute(message) {
+  attribute("visibility", value)
+}
+
+///
+/// 
+pub fn white_space(value: String) -> Attribute(message) {
+  attribute("white-space", value)
+}
+
+///
+/// 
+pub fn word_spacing(value: String) -> Attribute(message) {
+  attribute("word-spacing", value)
+}
+
+///
+/// 
+pub fn writing_mode(value: String) -> Attribute(message) {
+  attribute("writing-mode", value)
+}
+
+///
+/// 
+pub fn x(value: String) -> Attribute(message) {
+  attribute("x", value)
+}
+
+///
+/// 
+pub fn x1(value: String) -> Attribute(message) {
+  attribute("x1", value)
+}
+
+///
+/// 
+pub fn x2(value: String) -> Attribute(message) {
+  attribute("x2", value)
+}
+
+///
+/// 
+pub fn x_channel_selector(value: String) -> Attribute(message) {
+  attribute("xChannelSelector", value)
+}
+
+///
+/// 
+pub fn y(value: String) -> Attribute(message) {
+  attribute("y", value)
+}
+
+///
+/// 
+pub fn y1(value: String) -> Attribute(message) {
+  attribute("y1", value)
+}
+
+///
+/// 
+pub fn y2(value: String) -> Attribute(message) {
+  attribute("y2", value)
+}
+
+///
+/// 
+pub fn y_channel_selector(value: String) -> Attribute(message) {
+  attribute("yChannelSelector", value)
+}
+
+///
+/// 
+pub fn z(value: Float) -> Attribute(message) {
+  attribute("z", float.to_string(value))
 }
