@@ -1140,7 +1140,11 @@ pub fn audio(
   element("audio", attrs, children)
 }
 
-/// You can use the `<img>` element to embed images in a Web page.
+/// You can use the `<img>` element to embed images in a Web page. You should
+/// _always_ include the [`alt`](../attribute.html#alt) attribute to provide a
+/// description of the image for screen readers and other assistive technologies.
+/// If the image is purely decorative, it is still important to include the `alt`
+/// attribute with an empty string.
 /// 
 /// Common attributes include: [`alt`](../attribute.html#alt), [`crossorigin`](../attribute.html#crossorigin),
 /// [`decoding`](../attribute.html#decoding), [`elementtiming`](../attribute.html#elementtiming),
@@ -1209,21 +1213,59 @@ pub fn video(
 
 // HTML ELEMENTS: EMBEDDED CONTENT ---------------------------------------------
 
+/// The `<embed>` element is a general container for external (typically non-HTML)
+/// content. In modern HTML, this element is typically superceded by more-specific
+/// elements such as [`<image>`](#img) or [`<video>`](#video).
+///
+/// Common attributes include: [`height`](../attributes.html#height),
+/// [`src`](../attributes.html#src), [`type_`](../attributes.html#type_), and
+/// [`width`](../attributes.html#width).
+///
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/embed
 ///
 pub fn embed(attrs: List(Attribute(message))) -> Element(message) {
   element("embed", attrs, constants.empty_list)
 }
 
+/// The `<iframe>` element can be used to embed another HTML document on the
+/// current page. It is commonly used to embed widgets from other platforms
+/// such as social media posts or video players without requiring JavaScript
+/// libraries.
+///
+/// Common attributes include: [`allow`](../attribute.html#allow),
+/// [`allowfullscreen`](../attribute.html#allowfullscreen), [`height`](../attribute.html#height),
+/// [`loading`](../attribute.html#loading), [`name`](../attribute.html#name),
+/// [`sandbox`](../attribute.html#sandbox), [`src`](../attribute.html#src),
+/// [`srcdoc`](../attribute.html#srcdoc), and [`width`](../attribute.html#width).
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/iframe
 ///
 pub fn iframe(attrs: List(Attribute(message))) -> Element(message) {
   element("iframe", attrs, constants.empty_list)
 }
 
+/// Like [`<embed>`](#embed), the `<object>` element describes an external resource
+/// that the browser may embed on the page. In many cases this element is
+/// superceded by more-specific elements such as [`<image>`](#img) or [`<iframe>`](#iframe),
+/// but in some contexts it may be used to embed PDFs in browsers that support it.
+///
+/// Common attributes include: [`data`](../attributes.html#data),
+/// [`form`](../attributes.html#form), [`height`](../attributes.html#height),
+/// [`name`](../attributes.html#name), [`type_`](../attributes.html#type_), and
+/// [`width`](../attributes.html#width).
+///
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/object
 ///
 pub fn object(attrs: List(Attribute(message))) -> Element(message) {
   element("object", attrs, constants.empty_list)
 }
 
+/// The `<picture>` element contains zero or more [`<source>`](#source) elements
+/// and one [`<img>`](#img) element. This lets you provide different images for
+/// device screen sizes, or provide the same image in multiple formats for wider
+/// browser support.
+/// 
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/picture
 ///
 pub fn picture(
   attrs: List(Attribute(message)),
@@ -1237,6 +1279,18 @@ pub fn portal(attrs: List(Attribute(message))) -> Element(message) {
   element("portal", attrs, constants.empty_list)
 }
 
+/// The `<source>` element specifies one or more media resources for a
+/// [`<picture>`](#picture), [`<audio>`](#audio), or [`<video>`](#video) element.
+/// Because the browser automatically chooses the first source it supports, multiple
+/// `<source>` elements can be used to link to more-modern file formats while
+/// providing graceful fallback options for older browsers.
+///
+/// Common attributes include: [`height`](../attributes.html#height),
+/// [`media`](../attributes.html#media), [`sizes`](../attributes.html#sizes),
+/// [`src`](../attributes.html#src), [`srcset`](../attributes.html#srcset),
+/// [`type_`](../attributes.html#type_), and [`width`](../attributes.html#width).
+///
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/source
 ///
 pub fn source(attrs: List(Attribute(message))) -> Element(message) {
   element("source", attrs, constants.empty_list)
