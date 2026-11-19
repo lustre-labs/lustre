@@ -1548,6 +1548,14 @@ pub fn textarea(
 
 // HTML ELEMENTS: INTERACTIVE ELEMENTS -----------------------------------------
 
+/// The `<details>` element, also known as a "disclosure", provides a control to
+/// show or hide additional content. It should contain a [`<summary>`](#summary)
+/// element as its first child which is always visible and serves as the accessible
+/// description of the content that will be revealed.
+///
+/// Common attributes include: [`open`](../attributes.html#open).
+///
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/details
 ///
 pub fn details(
   attrs: List(Attribute(message)),
@@ -1556,6 +1564,15 @@ pub fn details(
   element.element("details", attrs, children)
 }
 
+/// The `<dialog>` element is a container for content that sits above the document,
+/// such as modals, inspectors, or control panels. For modals, the dialog must be
+/// opened _imperatively_ by calling the `showModal()` method instead of relying
+/// on the `open` attribute.
+///
+/// Common attributes include: [`closedby`](../attributes.html#closedby) and
+/// [`open`](../attributes.html#open).
+///
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog
 ///
 pub fn dialog(
   attrs: List(Attribute(message)),
@@ -1564,6 +1581,12 @@ pub fn dialog(
   element.element("dialog", attrs, children)
 }
 
+/// The `<summary>` element provides the interactive toggle for a [`<details>`](#details)
+/// element. This element is used as the accessible description of a [`<details>`](#details)
+/// element so it's important that its content describes or summarises whatever 
+/// the `<details>` element contains.
+///
+/// See also: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/summary
 ///
 pub fn summary(
   attrs: List(Attribute(message)),
