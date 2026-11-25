@@ -450,7 +450,7 @@ pub fn problem(
 
 // TIME-TRAVEL -----------------------------------------------------------------
 
-///
+/// Rewind the simulation state back to the beginning. 
 /// 
 pub fn restart(
   simulation: Simulation(model, message),
@@ -461,7 +461,8 @@ pub fn restart(
   }
 }
 
-///
+/// Jump the simulation state forward or backward by the given number of steps.
+/// 
 /// 
 pub fn jump(
   simulation: Simulation(model, message),
@@ -474,7 +475,8 @@ pub fn jump(
   }
 }
 
-///
+/// Step the simulation state backward by one step. If the simulation is already
+/// at the beginning, this function is a no-op.
 /// 
 pub fn step_back(
   simulation: Simulation(model, message),
@@ -491,7 +493,8 @@ pub fn step_back(
   }
 }
 
-/// 
+/// Step the simulation state forward by one step. If the simulation is already
+/// at the latest step, this function is a no-op.
 /// 
 pub fn step_forward(
   simulation: Simulation(model, message),
