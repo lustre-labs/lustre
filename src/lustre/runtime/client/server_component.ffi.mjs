@@ -94,9 +94,7 @@ export class ServerComponent extends HTMLElement {
 
       if (event.subscribe) {
         const unsubscribe = () => {
-          context.subscribers = context.subscribers.filter(
-            ([callback, _]) => callback !== event.callback,
-          );
+          context.subscribers = context.subscribers.filter(([callback, _]) => callback !== event.callback);
         };
 
         context.subscribers.push([event.callback, unsubscribe]);
@@ -158,9 +156,7 @@ export class ServerComponent extends HTMLElement {
 
       case prev !== next && "provides": {
         const prevProvided = this.#provided;
-        const nextProvided = next
-          ? new Set(next.split(" ").map((s) => s.trim()))
-          : new Set();
+        const nextProvided = next ? new Set(next.split(" ").map((s) => s.trim())) : new Set();
 
         for (const name of prevProvided) {
           const context = this.#contexts.get(name);
@@ -214,11 +210,7 @@ export class ServerComponent extends HTMLElement {
           this.#transport?.send(data);
         };
 
-        this.#reconciler = new Reconciler(
-          this.#shadowRoot,
-          decodeEvent,
-          dispatch,
-        );
+        this.#reconciler = new Reconciler(this.#shadowRoot, decodeEvent, dispatch);
 
         // Typically, the `attributeChangedCallback` fired immediately when the
         // custom element is created because thats when the initial attributes are
@@ -229,17 +221,16 @@ export class ServerComponent extends HTMLElement {
         // between things, but we can mimic the behaviour by sending the current
         // value of any observed attributes when the connection is first established.
         this.#remoteObservedAttributes = new Set(data.observed_attributes);
-        const messages = Array.from(this.#remoteObservedAttributes).flatMap(
-          (name) =>
-            this.hasAttribute(name)
-              ? [
-                  {
-                    kind: attribute_changed_kind,
-                    name,
-                    value: this.getAttribute(name),
-                  },
-                ]
-              : [],
+        const messages = Array.from(this.#remoteObservedAttributes).flatMap((name) =>
+          this.hasAttribute(name)
+            ? [
+                {
+                  kind: attribute_changed_kind,
+                  name,
+                  value: this.getAttribute(name),
+                },
+              ]
+            : [],
         );
 
         this.#remoteObservedProperties = new Set(data.observed_properties);
@@ -381,6 +372,7 @@ export class ServerComponent extends HTMLElement {
 
         this.#contextSubscriptions.set(key, unsubscribe);
       }),
+      true,
     );
   }
 
@@ -516,11 +508,7 @@ export class ServerComponent extends HTMLElement {
 
     // Similarly, it's overwhelmingly likely that if someone is listening for
     // key-related events that they're interested in the input key.
-    if (
-      event.type === "keydown" ||
-      event.type === "keyup" ||
-      event.type === "keypress"
-    ) {
+    if (event.type === "keydown" || event.type === "keyup" || event.type === "keypress") {
       include.push("key");
     }
 
@@ -629,10 +617,7 @@ class WebsocketTransport {
 
       this.#connect();
 
-      this.#reconnectDelay = Math.min(
-        this.#reconnectDelay * 2,
-        this.#maxReconnectDelay,
-      );
+      this.#reconnectDelay = Math.min(this.#reconnectDelay * 2, this.#maxReconnectDelay);
     };
 
     // If the document is hidden, attempt to reconnect as soon as it becomes
@@ -640,10 +625,7 @@ class WebsocketTransport {
     if (document.hidden) {
       const handleVisibilityChange = () => {
         if (!document.hidden && this.#shouldReconnect) {
-          document.removeEventListener(
-            "visibilitychange",
-            handleVisibilityChange,
-          );
+          document.removeEventListener("visibilitychange", handleVisibilityChange);
 
           reconnect();
         }
@@ -726,10 +708,7 @@ class SseTransport {
 
       this.#connect();
 
-      this.#reconnectDelay = Math.min(
-        this.#reconnectDelay * 2,
-        this.#maxReconnectDelay,
-      );
+      this.#reconnectDelay = Math.min(this.#reconnectDelay * 2, this.#maxReconnectDelay);
     };
 
     // If the document is hidden, attempt to reconnect as soon as it becomes
@@ -737,10 +716,7 @@ class SseTransport {
     if (document.hidden) {
       const handleVisibilityChange = () => {
         if (!document.hidden && this.#shouldReconnect) {
-          document.removeEventListener(
-            "visibilitychange",
-            handleVisibilityChange,
-          );
+          document.removeEventListener("visibilitychange", handleVisibilityChange);
 
           reconnect();
         }
